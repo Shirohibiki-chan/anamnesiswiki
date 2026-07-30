@@ -4,14 +4,14 @@
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
-import { useFolderDialog } from "../../hooks/use-folder-dialog";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { getDefaultProjectsDir } from "../../constants/paths";
 import "./shell.css";
 
 export function ProjectPicker() {
   const { loadProject, createProjectAt } = useProject();
   const { recentProjects, recordProjectOpened, forgetProject } = useAppSettings();
-  const { pickFolder } = useFolderDialog();
+  const { pickFolder } = useDialogs();
 
   const [isBusy, setIsBusy] = useState(false);
   const [isCreatingOpen, setIsCreatingOpen] = useState(false);

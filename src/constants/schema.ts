@@ -5,6 +5,18 @@ export type BlockNoteDocument = unknown[];
 
 export const FOLDER_TEMPLATE_KEY = "folder";
 
+// Canonical order used in the New Page picker. See docs/constants-and-theming.md.
+export const TEMPLATE_KEYS = [
+  "folder",
+  "character",
+  "location",
+  "faction",
+  "item",
+  "event",
+  "species",
+  "note",
+] as const;
+
 export type Tab = {
   id: string;
   label: string;

@@ -1,17 +1,16 @@
 // Three-column app frame — left tree / center page / right properties.
-// Tree, page, and properties content are placeholders until Phases 3, 4, 6.
+// Page and properties content are still placeholders until Phases 4 and 6.
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
+import { TreeSidebar } from "../tree/TreeSidebar";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
 export function AppLayout() {
-  const { project, nodes, closeProject } = useProject();
+  const { project, closeProject } = useProject();
   const { clearLastOpenedProject } = useAppSettings();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
-
-  const nodeCount = Object.keys(nodes).length;
 
   async function handleSwitchProject() {
     await clearLastOpenedProject();
@@ -21,12 +20,7 @@ export function AppLayout() {
   return (
     <div className={`app-layout${isRightPanelOpen ? "" : " app-layout-properties-collapsed"}`}>
       <aside className="app-layout-tree">
-        <div className="app-layout-placeholder">
-          <p>Tree view arrives in Phase 3.</p>
-          <p className="app-layout-placeholder-sub">
-            {nodeCount} node{nodeCount === 1 ? "" : "s"} in this project so far.
-          </p>
-        </div>
+        <TreeSidebar />
       </aside>
 
       <div className="app-layout-center">

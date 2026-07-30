@@ -2,7 +2,7 @@
 
 ## Where We Are
 
-**Phase 2 shipped 2026-07-30.** The app now opens to a real project picker (recent projects, open any folder, or create a new one) and, once a project's loaded, a three-column shell (tree / page / properties) with a working right-panel toggle and a fading "Saved" indicator. The last-opened project reloads automatically on relaunch. Tauri's fs scope is now unrestricted (the user chose "anywhere on disk" over sandboxing to `~/Documents`) so opening a project from any location actually works. No tree contents, no page view, no editor yet — that's Phases 3-5.
+**Phase 3 shipped 2026-07-30.** The left sidebar is a real, working tree now: create folders and pages, rename inline, drag to reparent, color-code with cascade, search by name or `#tag`, right-click for rename/duplicate/set color/delete. The center page area is still empty — that's Phase 4.
 
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
@@ -74,6 +74,7 @@ Deferred to later phases; explicitly out of scope now:
 - User-editable templates — templates live in code in Phase 1.
 - Interactive atlas / nested maps — LK's atlas feature is not being cloned in Phase 1.
 - Timeline / relationship graph views — future features, not scoped.
+- **OS-level file drag-and-drop is off** (`dragDropEnabled: false` in `tauri.conf.json`), traded off in Phase 3 to make the tree's own drag-to-reparent work — Tauri's native drag-drop handling was intercepting react-dnd's in-page drag events before they ever reached the page (a known Tauri/WebView2 conflict). Phase 6 (image upload drag-drop) and Phase 8 (`.lk` drag-in) were both expecting native OS drop zones; they'll need `onDragDropEvent` (Tauri's own drag event API, separate from HTML5 DnD) or a plain file-picker button instead.
 
 ## What Phase 0 Delivered
 
@@ -106,6 +107,20 @@ The app shell: a project picker on launch, and a three-column frame once a proje
 - **`src/components/shell/SaveIndicator.tsx`** — flashes "Saved" using a `key`-remounted CSS animation rather than a timer + state, because this project's ESLint config (`eslint-plugin-react-hooks` v7's stricter rule set) flags both calling `Date.now()` during render and calling `setState` synchronously inside an effect — the usual timer-based approach trips both.
 - `project-store.ts` gained a `lastSavedAt` timestamp, touched by every action that writes to disk, which `SaveIndicator` reads.
 - **"Switch project" button**, added right after the initial Phase 2 push once live testing surfaced the gap: closing the whole app was the only way back to the picker. `project-store.ts` gained `closeProject()` (resets in-memory state to nothing loaded), `use-app-settings.ts` gained `clearLastOpenedProject()`, and `TopBar.tsx` got a folder icon button next to the panel toggle that calls both. The recent-projects list is untouched by this, so the project you just left is still one click away from the picker.
+
+## What Phase 3 Delivered
+
+The tree: create, rename, drag-reparent, color, search.
+
+- **`src/services/tree-service.ts`** — the pure logic layer, Vitest-covered like Phase 1's `resolveNodePath`. `buildTreeData` turns the flat `Record<string, Node>` graph into react-arborist's nested shape; `getEffectiveColor` walks the parent chain for the color cascade; `createSearchMatcher` wraps Fuse.js for the name/`#tag` filter.
+- **`project-store.ts`** gained `duplicateNode` (deep-clones a node's whole subtree with fresh ids and a "(Copy)" suffix on the top-level clone's name — the on-disk naming collision is already handled for free by the existing collision-suffixing logic), `selectNode`/`setExpanded` (persist `project.selectedId`/`expandedIds`, debounced so clicking around the tree doesn't hammer disk), and `moveNode` learned an optional root-level reorder index.
+- **`src/constants/templates.ts`** — a deliberately temporary stand-in for Phase 7's real `template-registry.ts`. Just enough (display labels, which template types can hold children) for the tree to function without pulling Phase 7's tabs/property-schema work forward. **Phase 7 should fold this into `template-registry.ts` rather than keep it as a separate file.**
+- **The tree components**, all in `src/components/tree/`: `TreeSidebar` (tab strip + header + search + panel), `ProjectHeader` (home icon, name, root-level add), `TreeSearch` (Fuse-backed filter input), `TreePanel` (wraps react-arborist's `<Tree>`, owns its own pixel sizing since react-arborist doesn't auto-size — see `use-element-size.ts`), `TreeItem` (the actual row: icon, cascade color, inline rename, hover buttons, drag handle), `ColorPicker`/`TemplatePicker`/`ContextMenu` (popover content), and `TreePopover` (shared portal wrapper — see below).
+- **Two real bugs, both fixed same-session via live testing:**
+  - *Context menu visually glitched depending on mouse position.* Every react-arborist row is its own `position: absolute` stacking context for virtualization, so a popover nested inside one row's DOM subtree can never paint above a neighboring row via z-index alone — z-index only resolves within a shared stacking context. Fixed by having all three popovers render through `TreePopover.tsx`, which portals to `document.body` with a fixed position computed from the trigger's `getBoundingClientRect()` instead of being CSS-anchored inside the row.
+  - *Dragging did nothing.* Tauri enables its own native OS drag-and-drop handling by default, which swallows drag events in WebView2 before react-dnd's in-page HTML5 backend sees them. Fixed with `"dragDropEnabled": false` on the window in `tauri.conf.json` — see the Known Design Gaps entry above for the Phase 6/8 trade-off this creates.
+- **`window.confirm()` doesn't work in Tauri's webview** — it no-ops instead of blocking, so Delete was silently deleting with no prompt at all. `dialog-service.ts` gained `confirmDestructive()` using Tauri's actual dialog plugin; the old `use-folder-dialog.ts` hook was folded into a broader `use-dialogs.ts` since dialogs now cover more than folder-picking.
+- A drop-target highlight (accent outline + tint on the folder a drag is currently hovering over, via react-arborist's `node.willReceiveDrop`) was added as a quick polish pass once dragging actually worked.
 
 See `docs/plan.md` for the full phase list.
 

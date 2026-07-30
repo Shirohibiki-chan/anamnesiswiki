@@ -25,9 +25,16 @@ type ProjectStoreState = {
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
   renameNode: (id: string, name: string) => void;
-  moveNode: (id: string, newParentId: string | null) => void;
+  moveNode: (id: string, newParentId: string | null, rootIndex?: number) => void;
   deleteNode: (id: string) => void;
+  duplicateNode: (id: string) => void;
+  selectNode: (id: string | null) => void;
+  setExpanded: (id: string, isOpen: boolean) => void;
 };
+
+// Debounce key for project.json metadata writes (selection, expanded state)
+// that aren't node edits but shouldn't hammer disk on every click either.
+const PROJECT_META_SAVE_KEY = "__project_meta__";
 
 function descendantIds(id: string, nodes: Record<string, Node>): string[] {
   const children = Object.values(nodes).filter((n) => n.parentId === id);
@@ -118,7 +125,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       void fsService.renameNode(rootPath, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
     },
 
-    moveNode(id, newParentId) {
+    moveNode(id, newParentId, rootIndex) {
       const { rootPath, project, nodes } = get();
       const existing = nodes[id];
       if (!rootPath || !project || !existing) return;
@@ -128,10 +135,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextNodes = { ...nodes, [id]: updated };
 
       let nextProject = project;
-      if (existing.parentId === null && newParentId !== null) {
+      if (newParentId === null) {
+        // Leaving root, entering root, or just reordering within root — in
+        // every case the node's final position in rootOrder is what matters.
+        const withoutId = project.rootOrder.filter((n) => n !== id);
+        const insertAt = rootIndex === undefined ? withoutId.length : Math.min(rootIndex, withoutId.length);
+        const nextRootOrder = [...withoutId.slice(0, insertAt), id, ...withoutId.slice(insertAt)];
+        nextProject = { ...project, rootOrder: nextRootOrder };
+      } else if (existing.parentId === null) {
         nextProject = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
-      } else if (existing.parentId !== null && newParentId === null) {
-        nextProject = { ...project, rootOrder: [...project.rootOrder, id] };
       }
 
       set({ nodes: nextNodes, project: nextProject });
@@ -152,6 +164,68 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ nodes: nextNodes, project: nextProject });
       void fsService.deleteNode(rootPath, existing, allNodesBefore).then(markSaved);
       void fsService.saveProject(rootPath, nextProject).then(markSaved);
+    },
+
+    duplicateNode(id) {
+      const { rootPath, project, nodes } = get();
+      const original = nodes[id];
+      if (!rootPath || !project || !original) return;
+
+      const subtreeIds = [id, ...descendantIds(id, nodes)];
+      const idMap = new Map(subtreeIds.map((subId) => [subId, crypto.randomUUID()]));
+      const now = Date.now();
+
+      const clones: Node[] = subtreeIds.map((subId) => {
+        const source = nodes[subId];
+        const isRootOfDuplicate = subId === id;
+        return {
+          ...source,
+          id: idMap.get(subId)!,
+          parentId: isRootOfDuplicate ? source.parentId : (idMap.get(source.parentId!) ?? null),
+          name: isRootOfDuplicate ? `${source.name} (Copy)` : source.name,
+          createdAt: now,
+          updatedAt: now,
+        };
+      });
+
+      const nextNodes = { ...nodes };
+      for (const clone of clones) nextNodes[clone.id] = clone;
+
+      const cloneRootId = idMap.get(id)!;
+      let nextProject = project;
+      if (original.parentId === null) {
+        const originalIndex = project.rootOrder.indexOf(id);
+        const nextRootOrder = [...project.rootOrder];
+        nextRootOrder.splice(originalIndex + 1, 0, cloneRootId);
+        nextProject = { ...project, rootOrder: nextRootOrder };
+      }
+
+      set({ nodes: nextNodes, project: nextProject });
+      for (const clone of clones) {
+        void fsService.saveNode(rootPath, clone, Object.values(nextNodes)).then(markSaved);
+      }
+      if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
+    },
+
+    selectNode(id) {
+      const { rootPath, project } = get();
+      if (!rootPath || !project) return;
+      const nextProject: Project = { ...project, selectedId: id };
+      set({ project: nextProject });
+      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    },
+
+    setExpanded(id, isOpen) {
+      const { rootPath, project } = get();
+      if (!rootPath || !project) return;
+      const alreadyExpanded = project.expandedIds.includes(id);
+      if (isOpen === alreadyExpanded) return;
+      const expandedIds = isOpen
+        ? [...project.expandedIds, id]
+        : project.expandedIds.filter((expandedId) => expandedId !== id);
+      const nextProject: Project = { ...project, expandedIds };
+      set({ project: nextProject });
+      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
     },
   };
 });
