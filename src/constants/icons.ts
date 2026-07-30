@@ -3,6 +3,7 @@
 // docs/constants-and-theming.md §Key Constants.
 import {
   Calendar,
+  File,
   FileText,
   Folder as FolderIcon,
   MapPin,
@@ -22,6 +23,7 @@ export const TEMPLATE_ICONS: Record<string, LucideIcon> = {
   event: Calendar,
   species: Sparkles,
   note: FileText,
+  blank: File,
 };
 
 export function getTemplateIcon(templateKey: string): LucideIcon {

@@ -6,12 +6,12 @@ import { useState, type CSSProperties } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
-import { TEMPLATE_LABELS, canHaveChildren } from "../../constants/templates";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useProject } from "../../hooks/use-project";
 import { useTreeData } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useTemplates } from "../../hooks/use-templates";
 import type { TreeNodeData } from "../../services/tree-service";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
@@ -24,6 +24,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const { nodes, duplicateNode, deleteNode, addNode, updateNode } = useProject();
   const { getEffectiveColor } = useTreeData();
   const { confirmDestructive } = useDialogs();
+  const { getLabel, canHaveChildren } = useTemplates();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
@@ -65,7 +66,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   }
 
   function handleAddChild(templateKey: string) {
-    addNode({ parentId: node.id, templateKey, name: `New ${TEMPLATE_LABELS[templateKey as keyof typeof TEMPLATE_LABELS]}` });
+    addNode({ parentId: node.id, templateKey, name: `New ${getLabel(templateKey)}` });
     closePopover();
     node.open();
   }

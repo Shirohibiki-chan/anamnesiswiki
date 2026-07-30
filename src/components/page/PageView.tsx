@@ -15,7 +15,7 @@ import "./page.css";
 // (the page's first tab) is recomputed fresh on every node switch without
 // needing an effect to reset it.
 export function PageView() {
-  const { project, nodes, updateTabContent, toggleTabHidden } = useProject();
+  const { project, nodes, updateTabContent, toggleTabHidden, addTab, renameTab, deleteTab, reorderTabs } = useProject();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
 
@@ -26,11 +26,21 @@ export function PageView() {
 
   const activeTab = node.tabs.find((tab) => tab.id === activeTabId) ?? node.tabs[0];
 
+  function handleAddTab() {
+    const tab = addTab(node!.id, "New Tab");
+    setActiveTabId(tab.id);
+  }
+
   return (
     <div className="page-view">
       <PageTitle node={node} />
       {node.tabs.length === 0 ? (
-        <p className="page-view-no-tabs">This page doesn't have any tabs yet.</p>
+        <div className="page-view-no-tabs">
+          <p>This page doesn't have any tabs yet.</p>
+          <button type="button" className="page-view-add-tab" onClick={handleAddTab}>
+            Add a tab
+          </button>
+        </div>
       ) : (
         <>
           <PageTabs
@@ -38,6 +48,10 @@ export function PageView() {
             activeTabId={activeTab?.id ?? null}
             onSelect={setActiveTabId}
             onToggleHidden={(tabId) => toggleTabHidden(node.id, tabId)}
+            onAdd={handleAddTab}
+            onRename={(tabId, label) => renameTab(node.id, tabId, label)}
+            onDelete={(tabId) => deleteTab(node.id, tabId)}
+            onReorder={(orderedTabIds) => reorderTabs(node.id, orderedTabIds)}
           />
           {activeTab && (
             <Editor

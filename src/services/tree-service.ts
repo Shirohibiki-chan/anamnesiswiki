@@ -2,7 +2,7 @@
 // into the nested shape react-arborist wants, and computes each node's
 // effective (cascaded) color. See docs/glossary.md §Color Cascade.
 import Fuse from "fuse.js";
-import { canHaveChildren } from "../constants/templates";
+import { canHaveChildren } from "./template-registry";
 import type { Node } from "../constants/schema";
 
 export type TreeNodeData = {

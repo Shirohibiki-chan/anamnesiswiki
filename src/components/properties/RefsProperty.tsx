@@ -11,9 +11,10 @@ type RefsPropertyProps = {
   excludeNodeId: string;
   nodes: Record<string, Node>;
   onChange: (nodeIds: string[]) => void;
+  onRemove?: () => void;
 };
 
-export function RefsProperty({ label, nodeIds, excludeNodeId, nodes, onChange }: RefsPropertyProps) {
+export function RefsProperty({ label, nodeIds, excludeNodeId, nodes, onChange, onRemove }: RefsPropertyProps) {
   const [query, setQuery] = useState("");
 
   const candidates = useMemo(() => {
@@ -32,7 +33,14 @@ export function RefsProperty({ label, nodeIds, excludeNodeId, nodes, onChange }:
 
   return (
     <div className="property-field">
-      <div className="property-field-label">{label}</div>
+      <div className="property-field-label-row">
+        <div className="property-field-label">{label}</div>
+        {onRemove && (
+          <button type="button" className="property-field-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
+            <X size={11} />
+          </button>
+        )}
+      </div>
       <input
         type="text"
         className="property-field-input"

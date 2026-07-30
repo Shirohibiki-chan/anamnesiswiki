@@ -7,12 +7,14 @@ import {
   createProject,
   createTab,
   FOLDER_TEMPLATE_KEY,
+  type CustomPropertySpec,
   type Node,
   type Project,
   type Tab,
 } from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushSave, scheduleSave } from "../services/autosave";
+import { getDefaultTabs } from "../services/template-registry";
 
 // Starter top-level folders for a brand-new project, matching the user's
 // actual LK structure (see docs/plan.md Phase 2).
@@ -34,8 +36,15 @@ type ProjectStoreState = {
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
   updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
   toggleTabHidden: (nodeId: string, tabId: string) => void;
+  addTab: (nodeId: string, label: string) => Tab;
+  renameTab: (nodeId: string, tabId: string, label: string) => void;
+  deleteTab: (nodeId: string, tabId: string) => void;
+  reorderTabs: (nodeId: string, orderedTabIds: string[]) => void;
+  applyTemplate: (nodeId: string, templateKey: string) => void;
   updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
   updateNodeTags: (nodeId: string, tags: string[]) => void;
+  addCustomProperty: (nodeId: string, label: string, type: CustomPropertySpec["type"]) => void;
+  removeCustomProperty: (nodeId: string, key: string) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   clearNodeImage: (nodeId: string) => Promise<void>;
   renameNode: (id: string, name: string) => void;
@@ -105,10 +114,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) throw new Error("addNode: no project loaded");
 
-      // Every non-folder page starts with a single "Main" tab so the page
-      // view has something to show before Phase 7's template registry can
-      // supply a real default tab set per template.
-      const tabs = input.templateKey === FOLDER_TEMPLATE_KEY ? [] : [createTab({ id: "main", label: "Main" })];
+      const tabs = getDefaultTabs(input.templateKey);
       const node = createNode({ ...input, tabs });
       const nextNodes = { ...nodes, [node.id]: node };
       const nextProject: Project =
@@ -147,6 +153,58 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       get().updateNode(nodeId, { tabs });
     },
 
+    addTab(nodeId, label) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) throw new Error("addTab: node not found");
+      const tab = createTab({ id: crypto.randomUUID(), label });
+      get().updateNode(nodeId, { tabs: [...existing.tabs, tab] });
+      return tab;
+    },
+
+    renameTab(nodeId, tabId, label) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const tabs = existing.tabs.map((tab) => (tab.id === tabId ? { ...tab, label } : tab));
+      get().updateNode(nodeId, { tabs });
+    },
+
+    deleteTab(nodeId, tabId) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const tabs = existing.tabs.filter((tab) => tab.id !== tabId);
+      get().updateNode(nodeId, { tabs });
+    },
+
+    // Takes the full post-drag tab id order (dnd-kit's arrayMove already
+    // computed it in PageTabs.tsx) rather than a from/to pair — simpler and
+    // unambiguous versus re-deriving insert-before-or-after from two ids.
+    reorderTabs(nodeId, orderedTabIds) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const byId = new Map(existing.tabs.map((tab) => [tab.id, tab]));
+      const tabs = orderedTabIds.map((id) => byId.get(id)).filter((tab): tab is Tab => Boolean(tab));
+      if (tabs.length !== existing.tabs.length) return;
+      get().updateNode(nodeId, { tabs });
+    },
+
+    // Sets a page's template and adds that template's default tabs — but
+    // only the ones this page doesn't already have (by id), so applying a
+    // template to a blank page that's already been written in never
+    // clobbers the user's own tabs/content. Used by Phase 7's "Apply a
+    // template" prompt on blank pages (see PropertiesPanel.tsx).
+    applyTemplate(nodeId, templateKey) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const existingTabIds = new Set(existing.tabs.map((tab) => tab.id));
+      const newTabs = getDefaultTabs(templateKey).filter((tab) => !existingTabIds.has(tab.id));
+      get().updateNode(nodeId, { templateKey, tabs: [...existing.tabs, ...newTabs] });
+    },
+
     updateNodeProperty(nodeId, key, value) {
       const { nodes } = get();
       const existing = nodes[nodeId];
@@ -156,6 +214,24 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
     updateNodeTags(nodeId, tags) {
       get().updateNode(nodeId, { tags });
+    },
+
+    addCustomProperty(nodeId, label, type) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const spec: CustomPropertySpec = { key: crypto.randomUUID(), label, type };
+      get().updateNode(nodeId, { customProperties: [...(existing.customProperties ?? []), spec] });
+    },
+
+    removeCustomProperty(nodeId, key) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const customProperties = (existing.customProperties ?? []).filter((spec) => spec.key !== key);
+      const properties = { ...existing.properties };
+      delete properties[key];
+      get().updateNode(nodeId, { customProperties, properties });
     },
 
     async setNodeImage(nodeId, data, extension) {

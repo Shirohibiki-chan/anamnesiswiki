@@ -20,13 +20,32 @@
   margin-bottom: 1.25rem;
 }
 
+.property-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
 .property-field-label {
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  margin-bottom: 0.375rem;
+}
+
+.property-field-remove {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.property-field-remove:hover {
+  color: var(--color-destructive);
 }
 
 .property-field-input,
@@ -277,4 +296,101 @@
 
 .property-image-input {
   display: none;
+}
+
+/* --- Add property (per-page custom properties) --- */
+
+.property-add-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.375rem 0;
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.property-add-trigger:hover {
+  color: var(--color-text-primary);
+}
+
+.property-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-panel-alt);
+}
+
+.property-add-type {
+  width: 100%;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+  font-family: inherit;
+}
+
+.property-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.property-add-actions button {
+  font-size: 0.8125rem;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.property-add-actions button[type="submit"] {
+  background: var(--color-accent-faint);
+  border: 1px solid var(--color-accent-faint-border);
+  color: var(--color-text-primary);
+}
+
+.property-add-actions button[type="button"] {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+/* --- Apply-a-template prompt (blank pages) --- */
+
+.properties-panel-apply-template {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.375rem;
+  text-align: center;
+}
+
+.properties-panel-apply-template p {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.properties-panel-apply-template button {
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+}
+
+.properties-panel-apply-template button:hover {
+  border-color: var(--color-accent-faint-border);
 }

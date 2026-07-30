@@ -3,7 +3,7 @@
 import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, readDir, readFile, readTextFile, remove, rename, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
-import { canHaveChildren } from "../constants/templates";
+import { canHaveChildren } from "./template-registry";
 import { ASSETS_DIR, FOLDER_META_FILE as FOLDER_FILE, PAGE_META_FILE, PROJECT_FILE } from "../constants/paths";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames

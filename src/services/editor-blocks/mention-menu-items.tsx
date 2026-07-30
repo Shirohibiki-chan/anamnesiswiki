@@ -3,7 +3,7 @@
 import type { BlockNoteEditor } from "@blocknote/core";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
 import { getTemplateIcon } from "../../constants/icons";
-import { TEMPLATE_LABELS } from "../../constants/templates";
+import { getTemplate } from "../template-registry";
 import type { Node } from "../../constants/schema";
 
 export function getMentionMenuItems(
@@ -19,7 +19,7 @@ export function getMentionMenuItems(
       const Icon = getTemplateIcon(node.templateKey);
       return {
         title: node.name,
-        subtext: TEMPLATE_LABELS[node.templateKey as keyof typeof TEMPLATE_LABELS],
+        subtext: getTemplate(node.templateKey)?.label ?? node.templateKey,
         icon: <Icon size={14} />,
         onItemClick: () => {
           editor.insertInlineContent([{ type: "mention", props: { nodeId: node.id, label: node.name } }, " "]);

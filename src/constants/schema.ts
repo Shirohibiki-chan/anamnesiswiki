@@ -18,6 +18,7 @@ export const TEMPLATE_KEYS = [
   "event",
   "species",
   "note",
+  "blank",
 ] as const;
 
 export type Tab = {
@@ -27,6 +28,17 @@ export type Tab = {
   content: BlockNoteDocument;
 };
 
+// One-off extra fields a user adds to a single page beyond its template's
+// fixed property list (Notion's "+ Add property" pattern) — logged as a
+// queued adjustment during Phase 6, built in Phase 7. The definition (key,
+// label, type) lives here on the node; the value itself lives in
+// `properties[key]` the same way a template-defined property's value does.
+export type CustomPropertySpec = {
+  key: string;
+  label: string;
+  type: "text" | "longtext" | "refs" | "date";
+};
+
 export type Node = {
   id: string;
   parentId: string | null;
@@ -34,6 +46,10 @@ export type Node = {
   name: string;
   tabs: Tab[];
   properties: Record<string, unknown>;
+  // Optional (not defaulted to []) because pages saved before this field
+  // existed won't have it on disk — every read site falls back to [] itself
+  // rather than relying on a load-time migration. See createNode below.
+  customProperties?: CustomPropertySpec[];
   tags: string[];
   color?: string;
   // Filename of the uploaded portrait/cover image inside the project's
@@ -69,6 +85,7 @@ export function createNode(input: {
   name: string;
   tabs?: Tab[];
   properties?: Record<string, unknown>;
+  customProperties?: CustomPropertySpec[];
   tags?: string[];
   color?: string;
 }): Node {
@@ -80,6 +97,7 @@ export function createNode(input: {
     name: input.name,
     tabs: input.tabs ?? [],
     properties: input.properties ?? {},
+    customProperties: input.customProperties ?? [],
     tags: input.tags ?? [],
     color: input.color,
     createdAt: now,

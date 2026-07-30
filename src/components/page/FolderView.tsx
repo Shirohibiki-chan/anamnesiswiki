@@ -4,17 +4,18 @@
 // §Node colors.
 import { useState, type CSSProperties } from "react";
 import type { Node } from "../../constants/schema";
-import { TEMPLATE_LABELS } from "../../constants/templates";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useProject } from "../../hooks/use-project";
 import { useTreeData } from "../../hooks/use-tree-data";
+import { useTemplates } from "../../hooks/use-templates";
 import { TemplatePicker } from "../tree/TemplatePicker";
 import { TreePopover } from "../tree/TreePopover";
 
 export function FolderView({ node }: { node: Node }) {
   const { addNode } = useProject();
   const { getEffectiveColor } = useTreeData();
+  const { getLabel } = useTemplates();
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   const { color: effectiveKey } = getEffectiveColor(node.id);
@@ -24,7 +25,7 @@ export function FolderView({ node }: { node: Node }) {
   const containerStyle: CSSProperties = effectiveHex ? { backgroundColor: `${effectiveHex}14` } : {};
 
   function handleAdd(templateKey: string) {
-    addNode({ parentId: node.id, templateKey, name: `New ${TEMPLATE_LABELS[templateKey as keyof typeof TEMPLATE_LABELS]}` });
+    addNode({ parentId: node.id, templateKey, name: `New ${getLabel(templateKey)}` });
     setAnchorRect(null);
   }
 

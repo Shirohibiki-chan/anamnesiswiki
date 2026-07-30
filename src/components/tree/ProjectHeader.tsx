@@ -4,16 +4,17 @@
 import { useState } from "react";
 import { Home, Plus } from "lucide-react";
 import { useProject } from "../../hooks/use-project";
-import { TEMPLATE_LABELS } from "../../constants/templates";
+import { useTemplates } from "../../hooks/use-templates";
 import { TemplatePicker } from "./TemplatePicker";
 import { TreePopover } from "./TreePopover";
 
 export function ProjectHeader() {
   const { project, addNode } = useProject();
+  const { getLabel } = useTemplates();
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   function handleAdd(templateKey: string) {
-    addNode({ parentId: null, templateKey, name: `New ${TEMPLATE_LABELS[templateKey as keyof typeof TEMPLATE_LABELS]}` });
+    addNode({ parentId: null, templateKey, name: `New ${getLabel(templateKey)}` });
     setAnchorRect(null);
   }
 

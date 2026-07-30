@@ -5,6 +5,7 @@ import { useAppSettings } from "../../hooks/use-app-settings";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
@@ -41,6 +42,8 @@ export function AppLayout() {
           <PropertiesPanel key={project?.selectedId ?? "none"} />
         </aside>
       )}
+
+      <ConfirmDialog />
     </div>
   );
 }

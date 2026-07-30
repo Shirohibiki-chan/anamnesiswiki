@@ -58,7 +58,7 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 ## Queued Adjustments
 
-- **Per-page custom properties** (requested during Phase 6 live-testing): beyond a template's fixed property list, the user wants to add one-off extra fields to a single page (Notion's "+ Add property" pattern) — not the same as making templates themselves user-editable (that's a separate, larger Phase 2+ idea per `CLAUDE.md`'s Templates section, and not what was asked for here). Needs its own design pass: what field types are allowed, where the data lives on `Node` (a second bag alongside `properties`, or a schema-less entry inside it), and how it interacts with Phase 7's per-template `PropertySpec` list. Deferred — not scoped into Phase 6.
+*(Empty. This section fills in as new deferred requests surface.)*
 
 ---
 
@@ -203,7 +203,7 @@ Two feature requests came up during live-testing and were logged rather than bui
 
 ---
 
-## Phase 7 — Templates
+## Phase 7 — Templates ✅ Shipped 2026-07-30
 
 `src/services/template-registry.ts` — the single source of truth for template definitions. All 8 templates (Folder, Character, Location, Faction, Item, Event, Species, Note) with tabs and property schemas, copy-pasted from the prototype at `docs/prototype/anamnesis.jsx` verbatim.
 
@@ -214,6 +214,21 @@ Two feature requests came up during live-testing and were logged rather than bui
 **Blank pages, template-optional** (requested during Phase 6 live-testing): forcing a template choice on every new page is too rigid. `NewPageModal.tsx` needs a "Blank" option alongside the 8 templates — a blank page starts with no tabs/properties (like Note, but with the door open to apply a template later) and the user can voluntarily apply a template to it afterward from the page itself. Needs a design decision when we get here: applying a template to a page that already has its own tabs/content should *add* that template's default tabs/properties alongside whatever's already there, not silently overwrite or delete existing user content.
 
 **End state:** the "+" buttons and top-level Add throughout the app open the template picker. Every new page comes pre-populated with structural prompts, and the user can freely add, rename, or delete tabs on top of that starting point. The 8 templates fully match the prototype.
+
+**Shipped:** `src/services/template-registry.ts` is now the single source of truth for all 8 templates plus a new 9th "Blank" entry — tabs, property schemas, and `canHaveChildren` all live there, folded in from the temporary `constants/templates.ts` (deleted) per that file's own header comment. Tab placeholder copy is transcribed verbatim from `docs/prototype/anamnesis.jsx`, translated from its HTML into BlockNote's block JSON via small local helpers (`p`/`h2`/`info`/`quote`/`secret`) rather than parsed at runtime. `project-store.ts`'s `addNode` now instantiates a template's real default tabs instead of Phase 4's placeholder single "Main" tab; a new `applyTemplate` action powers the blank-page flow below, merging in only the tabs a page doesn't already have (by id) so nothing already written gets clobbered.
+
+**Blank pages, template-optional** shipped as designed — "Blank" is a real 9th entry in the same template-picker grid used everywhere a page gets created. A blank page's properties panel shows an "Apply a template" prompt instead of a fixed field list. Considered making "+" skip the picker entirely and default straight to blank (to save a click) per user request mid-testing, but the user chose to keep the picker as-is after weighing it — no change made there.
+
+**Per-page tab management** shipped: `PageTabs.tsx` gained a "+" to add a tab, double-click-to-rename, and a confirmed delete, on top of whatever a template started a page with. Reordering went through two live-testing iterations — see below.
+
+**Interpretive call, disclosed:** kept the existing tree "+"-button `TemplatePicker`/`TreePopover` as the "choose a template" UI rather than building a separate `NewPageModal.tsx` — it already delivers the "grid of template icons" this phase called for, so a second, functionally-identical component would've been pure duplication.
+
+Rounds of live-testing fixes:
+- Tab reordering's first pass used plain HTML5 drag-and-drop, the same approach that worked fine for Phase 6's image drop — but with the whole tab row covered by real `<button>`s (label/eye/delete), a mousedown almost always landed on one of those, and browsers don't reliably start a native drag gesture from a nested button even with a draggable ancestor. First fix added a dedicated grip handle; feedback was that dragging still felt "clunky" and imprecise with no live reorder preview. Replaced the whole mechanism with `@dnd-kit/core`/`@dnd-kit/sortable`/`@dnd-kit/utilities` (new dependencies), which animates the other tabs sliding out of the way as you drag. Follow-up feedback wanted to grab a tab from anywhere on it, not just the grip — dnd-kit's `PointerSensor` with a small activation-distance threshold made that safe (a plain click still reaches the label/eye/delete buttons underneath; only real pointer movement starts a drag), so the grip is now a visual affordance only, not the exclusive drag surface.
+- A layout bug surfaced alongside that: tab labels had no `white-space: nowrap`, so a longer tab name could wrap onto two lines once the strip got crowded, visually breaking the eye icon's position. Fixed, and the tab strip now scrolls horizontally instead of squeezing tabs when there isn't room.
+- Delete confirmations (deleting a node, deleting a tab) rendered as native OS dialog boxes via Tauri's `confirm()`, visually inconsistent with the app's dark theme. Replaced with an in-app themed modal (`src/state/dialog-store.ts` + `src/components/shell/ConfirmDialog.tsx`), keeping the same `confirmDestructive(message): Promise<boolean>` call shape so existing call sites didn't need to change. `dialog-service.ts` now only wraps the native folder-browse dialog, which should stay OS-native.
+
+**Per-page custom properties**, previously logged as a deferred Queued Adjustment from Phase 6, got pulled into this phase at the user's request: a "+ Add property" control at the bottom of the sidebar (above Tags) lets a page get one-off extra fields beyond its template's fixed list — pick a type (Text, Long text, References, Date), give it a name, and it renders with a remove affordance (template-defined fields still aren't removable). Stored as a new `customProperties?: CustomPropertySpec[]` on `Node` — optional rather than defaulted to `[]`, since pages saved before this field existed won't have it on disk; every read site falls back to `[]` itself rather than relying on a load-time migration.
 
 ---
 
