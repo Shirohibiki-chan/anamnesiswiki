@@ -5,6 +5,34 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default"
+    "opener:default",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    },
+    {
+      "identifier": "fs:allow-rename",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$DOCUMENT/Anamnesis" }, { "path": "$DOCUMENT/Anamnesis/**" }]
+    }
   ]
 }

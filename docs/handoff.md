@@ -2,7 +2,7 @@
 
 ## Where We Are
 
-**Phase 0 shipped 2026-07-29.** The repo is scaffolded: Tauri v2 + React 19 + TypeScript, all Phase 0 dependencies installed, the `src/` folder skeleton in place per `CLAUDE.md`'s layer order, dark theme CSS tokens and self-hosted fonts wired up, ESLint configured. `pnpm tauri dev` opens a native window showing a placeholder screen. No worldbuilding functionality yet — that starts with Phase 1 (Data Layer).
+**Phase 1 shipped 2026-07-30.** The data layer is real: `filesystem-service.ts` reads and writes a project folder as JSON files on disk (matching the tree-mirroring layout in `docs/spec.md`), `project-store.ts` holds the in-memory node graph, `autosave.ts` debounces content writes. The placeholder screen now creates/loads a real test project under `~/Documents/Anamnesis/TestWorld` and can add nodes that persist across restarts. No tree, no page view, no editor yet — that's Phases 2-5.
 
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
@@ -80,6 +80,19 @@ Deferred to later phases; explicitly out of scope now:
 Empty scaffold with the right shape. Tauri v2 window that opens, folder structure per CLAUDE.md, deps installed, CSS token system in place, dark theme applied, self-hosted fonts loaded, ESLint config. No worldbuilding functionality yet.
 
 Dev machine notes for next time: the local clone lives at `C:\Users\shiro\anamnesiswiki`. pnpm and the Rust toolchain (via `rustup`) are now installed on this machine — the "First-Time Setup Notes" section above about needing Rust is resolved. The `fs` and `dialog` Tauri plugins are installed and registered in `src-tauri/src/lib.rs`, but no capability permissions are granted yet — that's a Phase 1/2 decision once `filesystem-service.ts` and the project picker actually need specific folder/dialog access.
+
+## What Phase 1 Delivered
+
+The data layer: load a project folder into memory, dispatch changes, write back to disk, autosave on content edits.
+
+- `src/constants/schema.ts` — `Node`, `Tab`, `Project` types and their factory functions. `BlockNoteDocument` is a placeholder (`unknown[]`) until Phase 5 wires in the real editor and can swap in BlockNote's actual `Block[]` type.
+- `src/services/filesystem-service.ts` — the sole disk-toucher. `resolveNodePath` is a pure function that recomputes a node's on-disk location (ancestor folder directories, plus its own file or `_folder.json`) directly from the in-memory node graph every time, rather than storing a path. That means a rename or reparent is just "resolve the old path, resolve the new path, `fs.rename` if they differ" — no separate tracking of what a node used to be called on disk. Same-parent, same-name, same-type siblings get a deterministic ` (2)`, ` (3)`... suffix on the filename only (ties broken by creation time then id), and a folder/page sharing a name never collides since one's a directory and the other's a `.json` file. Covered by 7 Vitest unit tests in `filesystem-service.test.ts`.
+- `src/services/autosave.ts` — per-key debounced (300ms) save scheduler. Structural changes (create/rename/move/delete) write immediately instead of debouncing; only in-place content edits (`updateNode`) go through the debounce.
+- `src/state/project-store.ts` — Zustand store holding the in-memory node graph, wired to the two services above. Keeps `project.rootOrder` in sync when nodes are added, moved in/out of the root, or deleted. Deleting a folder also drops its in-memory descendants (the actual on-disk subtree is removed in one `fs.remove(..., {recursive: true})`).
+- `src/hooks/use-project.ts` — the only import path components have into the store, per CLAUDE.md's layer rule.
+- Tauri's fs capability (`src-tauri/capabilities/default.json`) is scoped to `$DOCUMENT/Anamnesis/**`. **Deliberately narrow for now** — Phase 2's "Open any folder" project picker will need broader or dynamically-granted scope to open a project anywhere on disk; that's a Phase 2 decision, not made yet.
+- `App.tsx` is still a placeholder, now wired to actually exercise the data layer: on launch it loads (or creates) a test project at `~/Documents/Anamnesis/TestWorld`, shows the node list, and has an "Add test page" button to prove writes persist across restarts. This gets replaced by the real project picker + shell in Phase 2.
+- Added Vitest (`pnpm test`) since the path-resolution logic needed real verification before UI gets built on top of it, not just a manual look.
 
 See `docs/plan.md` for the full phase list.
 
