@@ -3,15 +3,18 @@
 import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, readDir, readTextFile, remove, rename, writeTextFile } from "@tauri-apps/plugin-fs";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
+import { FOLDER_META_FILE as FOLDER_FILE, PROJECT_FILE } from "../constants/paths";
 
-const PROJECT_FILE = "project.json";
-const FOLDER_FILE = "_folder.json";
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
 
-function sanitizeSegment(name: string): string {
+export function sanitizeSegment(name: string): string {
   const cleaned = name.replace(ILLEGAL_CHARS, "_").trim().replace(/[. ]+$/, "");
   return cleaned.length > 0 ? cleaned : "Untitled";
+}
+
+export async function pathExists(path: string): Promise<boolean> {
+  return exists(path);
 }
 
 function isFolderNode(node: Node): boolean {

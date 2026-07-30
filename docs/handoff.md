@@ -2,7 +2,7 @@
 
 ## Where We Are
 
-**Phase 1 shipped 2026-07-30.** The data layer is real: `filesystem-service.ts` reads and writes a project folder as JSON files on disk (matching the tree-mirroring layout in `docs/spec.md`), `project-store.ts` holds the in-memory node graph, `autosave.ts` debounces content writes. The placeholder screen now creates/loads a real test project under `~/Documents/Anamnesis/TestWorld` and can add nodes that persist across restarts. No tree, no page view, no editor yet — that's Phases 2-5.
+**Phase 2 shipped 2026-07-30.** The app now opens to a real project picker (recent projects, open any folder, or create a new one) and, once a project's loaded, a three-column shell (tree / page / properties) with a working right-panel toggle and a fading "Saved" indicator. The last-opened project reloads automatically on relaunch. Tauri's fs scope is now unrestricted (the user chose "anywhere on disk" over sandboxing to `~/Documents`) so opening a project from any location actually works. No tree contents, no page view, no editor yet — that's Phases 3-5.
 
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
@@ -90,9 +90,21 @@ The data layer: load a project folder into memory, dispatch changes, write back 
 - `src/services/autosave.ts` — per-key debounced (300ms) save scheduler. Structural changes (create/rename/move/delete) write immediately instead of debouncing; only in-place content edits (`updateNode`) go through the debounce.
 - `src/state/project-store.ts` — Zustand store holding the in-memory node graph, wired to the two services above. Keeps `project.rootOrder` in sync when nodes are added, moved in/out of the root, or deleted. Deleting a folder also drops its in-memory descendants (the actual on-disk subtree is removed in one `fs.remove(..., {recursive: true})`).
 - `src/hooks/use-project.ts` — the only import path components have into the store, per CLAUDE.md's layer rule.
-- Tauri's fs capability (`src-tauri/capabilities/default.json`) is scoped to `$DOCUMENT/Anamnesis/**`. **Deliberately narrow for now** — Phase 2's "Open any folder" project picker will need broader or dynamically-granted scope to open a project anywhere on disk; that's a Phase 2 decision, not made yet.
-- `App.tsx` is still a placeholder, now wired to actually exercise the data layer: on launch it loads (or creates) a test project at `~/Documents/Anamnesis/TestWorld`, shows the node list, and has an "Add test page" button to prove writes persist across restarts. This gets replaced by the real project picker + shell in Phase 2.
+- Tauri's fs capability (`src-tauri/capabilities/default.json`) was scoped to `$DOCUMENT/Anamnesis/**` at the time — **deliberately narrow for now**, with the broader scope needed for Phase 2's "Open any folder" picker flagged as a decision for later. Resolved in Phase 2 (see below).
+- `App.tsx` was still a placeholder, wired to exercise the data layer: on launch it loaded (or created) a test project at `~/Documents/Anamnesis/TestWorld`, showed the node list, and had an "Add test page" button to prove writes persist across restarts. Replaced by the real project picker + shell in Phase 2.
 - Added Vitest (`pnpm test`) since the path-resolution logic needed real verification before UI gets built on top of it, not just a manual look.
+
+## What Phase 2 Delivered
+
+The app shell: a project picker on launch, and a three-column frame once a project's loaded.
+
+- **Resolved the fs-scope question from Phase 1.** Asked the user directly: sandbox to Documents, or let "Open folder" work anywhere? She picked anywhere, reasoning that a native folder dialog that lets you browse anywhere but then silently fails outside one directory is a worse experience than just trusting wherever you point it — same as VS Code, Obsidian, or LegendKeeper itself. `src-tauri/capabilities/default.json` now grants `fs:read-all` + `fs:write-all` with an unscoped `fs:scope` (`allow: ["**"]`). Also added `dialog:default`, which had been missing since Phase 0 despite the dialog plugin being registered — nothing had needed it until now.
+- **`@tauri-apps/plugin-store`** installed for app-level settings that live outside any project folder (which project was open last, the recent-projects list) — this is the "Tauri store" `docs/plan.md` referred to. `src/services/app-settings-service.ts` + `src/hooks/use-app-settings.ts` wrap it.
+- **`src/components/shell/ProjectPicker.tsx`** — recent projects (click to reopen), "Open folder" (native dialog, any location), "New project" (name only; created under `~/Documents/Anamnesis/` with six starter folders: Canon, AUs, Characters, Locations, Factions, Worldbuilding). `project-store.ts` gained `createProjectAt()` for the creation flow.
+- **`src/components/shell/StartupRouter.tsx`** — checks the last-opened project on launch; loads it directly if it's still on disk, otherwise shows the picker.
+- **`src/components/shell/AppLayout.tsx`** — three-column grid (tree / page / properties), right-panel toggle in `TopBar.tsx`. Panel collapses automatically below 700px width (tree below 640px) — this threshold was originally 900px, which sat *above* the app's default 800×600 window size and made the right panel look permanently stuck no matter what the toggle did. Caught during live testing and tuned down.
+- **`src/components/shell/SaveIndicator.tsx`** — flashes "Saved" using a `key`-remounted CSS animation rather than a timer + state, because this project's ESLint config (`eslint-plugin-react-hooks` v7's stricter rule set) flags both calling `Date.now()` during render and calling `setState` synchronously inside an effect — the usual timer-based approach trips both.
+- `project-store.ts` gained a `lastSavedAt` timestamp, touched by every action that writes to disk, which `SaveIndicator` reads.
 
 See `docs/plan.md` for the full phase list.
 

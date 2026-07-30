@@ -1,17 +1,26 @@
 // In-memory node graph. Never imported directly by components — access is
 // always through src/hooks/use-project.ts. See CLAUDE.md's layer order.
 import { create } from "zustand";
-import { createNode, createProject, type Node, type Project } from "../constants/schema";
+import { join } from "@tauri-apps/api/path";
+import { createNode, createProject, FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
 import { scheduleSave } from "../services/autosave";
+
+// Starter top-level folders for a brand-new project, matching the user's
+// actual LK structure (see docs/plan.md Phase 2).
+const STARTER_FOLDERS = ["Canon", "AUs", "Characters", "Locations", "Factions", "Worldbuilding"];
+
+export type CreateProjectResult = { ok: true; rootPath: string } | { ok: false; error: string };
 
 type ProjectStoreState = {
   rootPath: string | null;
   project: Project | null;
   nodes: Record<string, Node>;
   isLoaded: boolean;
-  loadProject: (rootPath: string) => Promise<boolean>;
+  lastSavedAt: number | null;
+  loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
+  createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
   renameNode: (id: string, name: string) => void;
@@ -24,97 +33,120 @@ function descendantIds(id: string, nodes: Record<string, Node>): string[] {
   return children.flatMap((child) => [child.id, ...descendantIds(child.id, nodes)]);
 }
 
-export const useProjectStore = create<ProjectStoreState>((set, get) => ({
-  rootPath: null,
-  project: null,
-  nodes: {},
-  isLoaded: false,
+export const useProjectStore = create<ProjectStoreState>((set, get) => {
+  const markSaved = () => set({ lastSavedAt: Date.now() });
 
-  async loadProject(rootPath) {
-    const result = await fsService.loadProject(rootPath);
-    if (!result) return false;
-    const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
-    set({ rootPath, project: result.project, nodes, isLoaded: true });
-    return true;
-  },
+  return {
+    rootPath: null,
+    project: null,
+    nodes: {},
+    isLoaded: false,
+    lastSavedAt: null,
 
-  async initializeProject(rootPath, name) {
-    const project = createProject({ name });
-    await fsService.saveProject(rootPath, project);
-    set({ rootPath, project, nodes: {}, isLoaded: true });
-  },
+    async loadProject(rootPath) {
+      const result = await fsService.loadProject(rootPath);
+      if (!result) return null;
+      const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
+      set({ rootPath, project: result.project, nodes, isLoaded: true });
+      return { name: result.project.name };
+    },
 
-  addNode(input) {
-    const { rootPath, project, nodes } = get();
-    if (!rootPath || !project) throw new Error("addNode: no project loaded");
+    async initializeProject(rootPath, name) {
+      const project = createProject({ name });
+      await fsService.saveProject(rootPath, project);
+      set({ rootPath, project, nodes: {}, isLoaded: true });
+      markSaved();
+    },
 
-    const node = createNode(input);
-    const nextNodes = { ...nodes, [node.id]: node };
-    const nextProject: Project =
-      input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
+    async createProjectAt(parentDir, name) {
+      const trimmed = name.trim();
+      if (!trimmed) return { ok: false, error: "Give your project a name." };
 
-    set({ nodes: nextNodes, project: nextProject });
-    void fsService.saveNode(rootPath, node, Object.values(nextNodes));
-    if (nextProject !== project) void fsService.saveProject(rootPath, nextProject);
-    return node;
-  },
+      const folderName = fsService.sanitizeSegment(trimmed);
+      const rootPath = await join(parentDir, folderName);
+      if (await fsService.pathExists(rootPath)) {
+        return { ok: false, error: "A folder with that name already exists there." };
+      }
 
-  updateNode(id, patch) {
-    const { rootPath, nodes } = get();
-    const existing = nodes[id];
-    if (!rootPath || !existing) return;
+      await get().initializeProject(rootPath, trimmed);
+      for (const folder of STARTER_FOLDERS) {
+        get().addNode({ parentId: null, templateKey: FOLDER_TEMPLATE_KEY, name: folder });
+      }
+      return { ok: true, rootPath };
+    },
 
-    const updated: Node = { ...existing, ...patch, updatedAt: Date.now() };
-    const nextNodes = { ...nodes, [id]: updated };
-    set({ nodes: nextNodes });
-    scheduleSave(id, () => fsService.saveNode(rootPath, updated, Object.values(nextNodes)));
-  },
+    addNode(input) {
+      const { rootPath, project, nodes } = get();
+      if (!rootPath || !project) throw new Error("addNode: no project loaded");
 
-  renameNode(id, name) {
-    const { rootPath, nodes } = get();
-    const existing = nodes[id];
-    if (!rootPath || !existing) return;
+      const node = createNode(input);
+      const nextNodes = { ...nodes, [node.id]: node };
+      const nextProject: Project =
+        input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
 
-    const allNodesBefore = Object.values(nodes);
-    const updated: Node = { ...existing, name, updatedAt: Date.now() };
-    const nextNodes = { ...nodes, [id]: updated };
-    set({ nodes: nextNodes });
-    void fsService.renameNode(rootPath, allNodesBefore, Object.values(nextNodes), id);
-  },
+      set({ nodes: nextNodes, project: nextProject });
+      void fsService.saveNode(rootPath, node, Object.values(nextNodes)).then(markSaved);
+      if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      return node;
+    },
 
-  moveNode(id, newParentId) {
-    const { rootPath, project, nodes } = get();
-    const existing = nodes[id];
-    if (!rootPath || !project || !existing) return;
+    updateNode(id, patch) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[id];
+      if (!rootPath || !existing) return;
 
-    const allNodesBefore = Object.values(nodes);
-    const updated: Node = { ...existing, parentId: newParentId, updatedAt: Date.now() };
-    const nextNodes = { ...nodes, [id]: updated };
+      const updated: Node = { ...existing, ...patch, updatedAt: Date.now() };
+      const nextNodes = { ...nodes, [id]: updated };
+      set({ nodes: nextNodes });
+      scheduleSave(id, () => fsService.saveNode(rootPath, updated, Object.values(nextNodes)).then(markSaved));
+    },
 
-    let nextProject = project;
-    if (existing.parentId === null && newParentId !== null) {
-      nextProject = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
-    } else if (existing.parentId !== null && newParentId === null) {
-      nextProject = { ...project, rootOrder: [...project.rootOrder, id] };
-    }
+    renameNode(id, name) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[id];
+      if (!rootPath || !existing) return;
 
-    set({ nodes: nextNodes, project: nextProject });
-    void fsService.moveNode(rootPath, allNodesBefore, Object.values(nextNodes), id);
-    if (nextProject !== project) void fsService.saveProject(rootPath, nextProject);
-  },
+      const allNodesBefore = Object.values(nodes);
+      const updated: Node = { ...existing, name, updatedAt: Date.now() };
+      const nextNodes = { ...nodes, [id]: updated };
+      set({ nodes: nextNodes });
+      void fsService.renameNode(rootPath, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
+    },
 
-  deleteNode(id) {
-    const { rootPath, project, nodes } = get();
-    const existing = nodes[id];
-    if (!rootPath || !project || !existing) return;
+    moveNode(id, newParentId) {
+      const { rootPath, project, nodes } = get();
+      const existing = nodes[id];
+      if (!rootPath || !project || !existing) return;
 
-    const allNodesBefore = Object.values(nodes);
-    const toRemove = new Set([id, ...descendantIds(id, nodes)]);
-    const nextNodes = Object.fromEntries(Object.entries(nodes).filter(([nodeId]) => !toRemove.has(nodeId)));
-    const nextProject: Project = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
+      const allNodesBefore = Object.values(nodes);
+      const updated: Node = { ...existing, parentId: newParentId, updatedAt: Date.now() };
+      const nextNodes = { ...nodes, [id]: updated };
 
-    set({ nodes: nextNodes, project: nextProject });
-    void fsService.deleteNode(rootPath, existing, allNodesBefore);
-    void fsService.saveProject(rootPath, nextProject);
-  },
-}));
+      let nextProject = project;
+      if (existing.parentId === null && newParentId !== null) {
+        nextProject = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
+      } else if (existing.parentId !== null && newParentId === null) {
+        nextProject = { ...project, rootOrder: [...project.rootOrder, id] };
+      }
+
+      set({ nodes: nextNodes, project: nextProject });
+      void fsService.moveNode(rootPath, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
+      if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
+    },
+
+    deleteNode(id) {
+      const { rootPath, project, nodes } = get();
+      const existing = nodes[id];
+      if (!rootPath || !project || !existing) return;
+
+      const allNodesBefore = Object.values(nodes);
+      const toRemove = new Set([id, ...descendantIds(id, nodes)]);
+      const nextNodes = Object.fromEntries(Object.entries(nodes).filter(([nodeId]) => !toRemove.has(nodeId)));
+      const nextProject: Project = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
+
+      set({ nodes: nextNodes, project: nextProject });
+      void fsService.deleteNode(rootPath, existing, allNodesBefore).then(markSaved);
+      void fsService.saveProject(rootPath, nextProject).then(markSaved);
+    },
+  };
+});
