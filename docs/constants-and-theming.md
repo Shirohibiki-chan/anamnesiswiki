@@ -61,7 +61,7 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
 | `--color-text-muted` | `#6a6a78` | Quiet labels — property field labels, breadcrumb separators |
 | `--color-text-placeholder` | `#4a4a55` | Placeholder text in inputs, disabled states |
-| `--color-accent` | `#14b8a6` | Base teal accent; used for focus rings and selection base |
+| `--color-accent` | `rgba(20,184,166,0.15)` | Subtle selection/hover tint — same value as `--color-accent-faint`. Also doubles as shadcn/ui's "accent" role (Phase 5's menu-kit component library uses this exact name for hover/selected menu rows), so it's kept as the translucent tint rather than the bold hue. Use `--color-accent-light`/`--color-accent-dark` for anything that needs the full-saturation teal (focus rings, primary buttons). |
 | `--color-accent-light` | `#5eead4` | Accent text on dark surfaces — active tab labels, selected tree row text, save indicator |
 | `--color-accent-dark` | `#0d9488` | Hover states that need to go darker than base accent |
 | `--color-accent-faint` | `rgba(20,184,166,0.15)` | Tinted backgrounds for selected tree rows, active tabs |
@@ -93,6 +93,14 @@ All values below are from the dark theme (the only shipped theme).
 The three custom BlockNote block types (Info, Quote, Secret) each use a 3-token group (`-bg`, `-border`/main hue, `-text`) applied through the block's rendered wrapper. This mirrors the CharSnap metric-tinting pattern — adding a new callout type means adding both a BlockNote block definition and a matching `--color-callout-*` group in `index.css`.
 
 The Secret block additionally renders a label chip (`🔒 SECRET`) using `--color-callout-secret` as the label text on a slightly darker background. Hidden-tab visibility and secret-block visibility are separate concerns — a tab can be hidden while containing no secret blocks, and secret blocks can appear inside visible tabs.
+
+### BlockNote editor theming (Phase 5)
+
+The editor draws itself through two *separate* custom-property namespaces, both bridged onto the app's own semantic tokens rather than left at their library defaults:
+
+- **`--bn-*`** — BlockNote core's own theme variables (`--bn-colors-editor-background`, `--bn-colors-hovered-background`, `--bn-font-family`, etc.). Overridden in `src/components/page/page.css` on `.editor-shell.bn-root`, all with `!important` — BlockNote's own built-in dark theme sets these same variables at `.bn-root[data-color-scheme=dark]`, which has equal-or-higher CSS specificity than a plain class, so a non-`!important` override would silently lose depending on stylesheet order.
+- **shadcn/ui's token set** (`--accent`, `--popover`, `--muted-foreground`, etc.) — `@blocknote/shadcn` (the menu/toolbar "flavor" package BlockNote needs to render its UI at all) is a Tailwind-utility-class component library built against shadcn/ui's standard token names, a completely different naming convention from the app's own tokens. `src/index.css`'s `@theme` block re-declares each one the package actually uses (`--color-background`, `--color-accent-foreground`, and so on — Tailwind v4 auto-generates a utility class from any `--color-*` name) pointed at the equivalent existing app token. `--color-accent` itself is the one token shared between both worlds — see the table above.
+- **`@source "../node_modules/@blocknote/shadcn";`** at the top of `index.css` is required for any of this to matter — Tailwind only generates CSS for a utility class it can see referenced in a scanned file, and this package lives in `node_modules`, outside Tailwind v4's default scan path. Adding a shadcn-flavor package without this directive silently ships components with most of their classes missing (no error, just unstyled — no hover states, wrong cursor, etc.).
 
 ### Node coloring and cascade
 

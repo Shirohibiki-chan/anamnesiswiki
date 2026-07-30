@@ -162,16 +162,25 @@ async function relocateNode(rootPath: string, allNodesBefore: Node[], allNodesAf
   if (usesDirectoryStorage(after)) {
     const oldDir = await join(rootPath, ...oldResolved.dirSegments);
     const newDir = await join(rootPath, ...newResolved.dirSegments);
-    if (oldDir === newDir) return;
-    await mkdir(await join(rootPath, ...newResolved.dirSegments.slice(0, -1)), { recursive: true });
-    await rename(oldDir, newDir);
+    if (oldDir !== newDir) {
+      await mkdir(await join(rootPath, ...newResolved.dirSegments.slice(0, -1)), { recursive: true });
+      await rename(oldDir, newDir);
+    }
   } else {
     const oldFile = await join(rootPath, ...oldResolved.dirSegments, oldResolved.fileName);
     const newFile = await join(rootPath, ...newResolved.dirSegments, newResolved.fileName);
-    if (oldFile === newFile) return;
-    await mkdir(await join(rootPath, ...newResolved.dirSegments), { recursive: true });
-    await rename(oldFile, newFile);
+    if (oldFile !== newFile) {
+      await mkdir(await join(rootPath, ...newResolved.dirSegments), { recursive: true });
+      await rename(oldFile, newFile);
+    }
   }
+
+  // A plain filesystem rename only relocates the path — it never touches the
+  // file's own contents, which still reflect the node as it was *before*
+  // this rename/reparent (the rename/reparent itself is a real field change:
+  // a new `name`, a new `parentId`). Always rewrite the node's own file at
+  // its resolved new location so disk exactly matches the in-memory node.
+  await saveNode(rootPath, after, allNodesAfter);
 }
 
 export async function renameNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {

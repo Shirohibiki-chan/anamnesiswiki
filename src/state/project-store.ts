@@ -12,7 +12,7 @@ import {
   type Tab,
 } from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
-import { scheduleSave } from "../services/autosave";
+import { cancelSave, flushSave, scheduleSave } from "../services/autosave";
 
 // Starter top-level folders for a brand-new project, matching the user's
 // actual LK structure (see docs/plan.md Phase 2).
@@ -143,42 +143,61 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       get().updateNode(nodeId, { tabs });
     },
 
-    renameNode(id, name) {
+    async renameNode(id, name) {
       const { rootPath, nodes } = get();
       const existing = nodes[id];
       if (!rootPath || !existing) return;
 
-      const allNodesBefore = Object.values(nodes);
-      const updated: Node = { ...existing, name, updatedAt: Date.now() };
-      const nextNodes = { ...nodes, [id]: updated };
+      // A rename/move changes where this node resolves on disk. If a
+      // debounced content edit for this same node is still pending, flush it
+      // first so it lands at the *old* path before that path stops existing
+      // — otherwise it fires later with a stale pre-rename path snapshot and
+      // either silently fails or resurrects a duplicate directory (this
+      // orphaned a page mid-testing during Phase 5; see docs/handoff.md).
+      await flushSave(id);
+
+      const { rootPath: rootPathAfter, nodes: nodesAfter } = get();
+      const existingAfter = nodesAfter[id];
+      if (!rootPathAfter || !existingAfter) return;
+
+      const allNodesBefore = Object.values(nodesAfter);
+      const updated: Node = { ...existingAfter, name, updatedAt: Date.now() };
+      const nextNodes = { ...nodesAfter, [id]: updated };
       set({ nodes: nextNodes });
-      void fsService.renameNode(rootPath, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
+      void fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
     },
 
-    moveNode(id, newParentId, rootIndex) {
+    async moveNode(id, newParentId, rootIndex) {
       const { rootPath, project, nodes } = get();
       const existing = nodes[id];
       if (!rootPath || !project || !existing) return;
 
-      const allNodesBefore = Object.values(nodes);
-      const updated: Node = { ...existing, parentId: newParentId, updatedAt: Date.now() };
-      const nextNodes = { ...nodes, [id]: updated };
+      // Same stale-path race as renameNode above.
+      await flushSave(id);
 
-      let nextProject = project;
+      const { rootPath: rootPathAfter, project: projectAfter, nodes: nodesAfter } = get();
+      const existingAfter = nodesAfter[id];
+      if (!rootPathAfter || !projectAfter || !existingAfter) return;
+
+      const allNodesBefore = Object.values(nodesAfter);
+      const updated: Node = { ...existingAfter, parentId: newParentId, updatedAt: Date.now() };
+      const nextNodes = { ...nodesAfter, [id]: updated };
+
+      let nextProject = projectAfter;
       if (newParentId === null) {
         // Leaving root, entering root, or just reordering within root — in
         // every case the node's final position in rootOrder is what matters.
-        const withoutId = project.rootOrder.filter((n) => n !== id);
+        const withoutId = projectAfter.rootOrder.filter((n) => n !== id);
         const insertAt = rootIndex === undefined ? withoutId.length : Math.min(rootIndex, withoutId.length);
         const nextRootOrder = [...withoutId.slice(0, insertAt), id, ...withoutId.slice(insertAt)];
-        nextProject = { ...project, rootOrder: nextRootOrder };
-      } else if (existing.parentId === null) {
-        nextProject = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
+        nextProject = { ...projectAfter, rootOrder: nextRootOrder };
+      } else if (existingAfter.parentId === null) {
+        nextProject = { ...projectAfter, rootOrder: projectAfter.rootOrder.filter((n) => n !== id) };
       }
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService.moveNode(rootPath, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
-      if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      void fsService.moveNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
+      if (nextProject !== projectAfter) void fsService.saveProject(rootPathAfter, nextProject).then(markSaved);
     },
 
     deleteNode(id) {
@@ -188,6 +207,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
       const allNodesBefore = Object.values(nodes);
       const toRemove = new Set([id, ...descendantIds(id, nodes)]);
+      // Cancel (not flush) any pending debounced writes for everything being
+      // deleted — a stale write firing after deletion would silently
+      // resurrect the file/directory that was just removed.
+      for (const removedId of toRemove) cancelSave(removedId);
       const nextNodes = Object.fromEntries(Object.entries(nodes).filter(([nodeId]) => !toRemove.has(nodeId)));
       const nextProject: Project = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
 

@@ -4,11 +4,11 @@
 import { useState } from "react";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
+import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
 import { PageTabs } from "./PageTabs";
 import { PageTitle } from "./PageTitle";
-import { PlaceholderEditor } from "./PlaceholderEditor";
 import "./page.css";
 
 // Rendered with `key={node.id}` by AppLayout, so activeTabId's initial value
@@ -40,10 +40,11 @@ export function PageView() {
             onToggleHidden={(tabId) => toggleTabHidden(node.id, tabId)}
           />
           {activeTab && (
-            <PlaceholderEditor
+            <Editor
               key={activeTab.id}
-              value={typeof activeTab.content[0] === "string" ? activeTab.content[0] : ""}
-              onChange={(value) => updateTabContent(node.id, activeTab.id, [value])}
+              nodeId={node.id}
+              content={activeTab.content}
+              onContentChange={(content) => updateTabContent(node.id, activeTab.id, content)}
             />
           )}
         </>

@@ -1,7 +1,7 @@
 // Wraps react-arborist's Tree: converts the node graph to its nested data
 // shape, wires rename/move/toggle back to the project store, and handles
 // its own pixel sizing (react-arborist doesn't auto-size itself).
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
 import { useProject } from "../../hooks/use-project";
 import { useTreeData } from "../../hooks/use-tree-data";
@@ -12,12 +12,29 @@ import { TreeSearch } from "./TreeSearch";
 
 export function TreePanel() {
   const { project, nodes, renameNode, moveNode, setExpanded, selectNode } = useProject();
-  const { treeData } = useTreeData();
+  const { treeData, getAncestorChain } = useTreeData();
   const [searchQuery, setSearchQuery] = useState("");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
   const treeApiRef = useRef<TreeApi<TreeNodeData> | null>(null);
 
   const searchMatcher = useMemo(() => createSearchMatcher(nodes, searchQuery), [nodes, searchQuery]);
+
+  // Selecting a node isn't only ever a click on this tree anymore — a
+  // mention/wikilink click in the editor calls `selectNode` directly (see
+  // Phase 5's MentionChip.tsx), which react-arborist has no way to know
+  // about on its own. Expand the target's ancestors and sync the tree's own
+  // selection/focus state to match whenever `selectedId` changes for any
+  // reason. `treeApi.select()` re-fires `onSelect` with the same id, which
+  // is a no-op here since the dependency below is keyed on the id value.
+  useEffect(() => {
+    const selectedId = project?.selectedId;
+    if (!selectedId) return;
+    for (const ancestor of getAncestorChain(selectedId)) {
+      if (!project?.expandedIds.includes(ancestor.id)) setExpanded(ancestor.id, true);
+    }
+    treeApiRef.current?.select(selectedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.selectedId]);
 
   // Seeds react-arborist's open/closed state once at mount from the
   // persisted project.expandedIds. TreePanel remounts fresh whenever a

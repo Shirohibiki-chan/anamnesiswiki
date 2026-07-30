@@ -18,12 +18,15 @@ export function scheduleSave(key: string, save: () => Promise<void> | void): voi
   pending.set(key, { timer, save });
 }
 
-export function flushSave(key: string): void {
+// Returns the pending save's own promise so a caller that's about to
+// relocate the same node on disk (rename/move) can await it first — writing
+// the latest content to the *old* path before that path stops existing.
+export async function flushSave(key: string): Promise<void> {
   const existing = pending.get(key);
   if (!existing) return;
   clearTimeout(existing.timer);
   pending.delete(key);
-  void existing.save();
+  await existing.save();
 }
 
 export function cancelSave(key: string): void {

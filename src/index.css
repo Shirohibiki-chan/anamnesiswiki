@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* @blocknote/shadcn's suggestion menu, toolbar, etc. are styled with plain
+   Tailwind utility classes (hover:bg-accent, cursor-default, and so on)
+   baked into its shipped JS — Tailwind only generates the CSS for a utility
+   class if it can see that class name in a scanned file, and this package
+   lives in node_modules (outside the default scan path), so without this
+   line its menus render with those classes silently missing. */
+@source "../node_modules/@blocknote/shadcn";
+
 /* Self-hosted fonts — no CDN, fully offline (see docs/constants-and-theming.md) */
 
 @font-face {
@@ -66,7 +74,14 @@
   --color-text-muted: #6a6a78;
   --color-text-placeholder: #4a4a55;
 
-  --color-accent: #14b8a6;
+  /* Also doubles as shadcn/ui's "accent" role (the shadcn component library
+     bundled with BlockNote's menus uses --color-accent for hover/selected
+     MENU ROWS specifically), so it's the same subtle translucent tint used
+     for selected tree rows and active tabs elsewhere — not the bold hue.
+     Anything that wants the bold, fully-saturated teal (a focus ring, a
+     primary button) should use --color-accent-light or --color-accent-dark
+     instead. */
+  --color-accent: rgba(20, 184, 166, 0.15);
   --color-accent-light: #5eead4;
   --color-accent-dark: #0d9488;
   --color-accent-faint: rgba(20, 184, 166, 0.15);
@@ -94,6 +109,29 @@
   --color-palette-indigo: #a5b4fc;
   --color-palette-red: #fca5a5;
   --color-palette-gray: #a1a1aa;
+
+  /* shadcn/ui compatibility layer — @blocknote/shadcn's components (the
+     suggestion menu, toolbar, etc.) are built against shadcn/ui's standard
+     token names (bg-accent, text-muted-foreground, and so on), which is a
+     different naming convention from our own semantic tokens above. These
+     just re-point the standard names at our existing tokens so those
+     components pick up the app's real theme instead of rendering unstyled. */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text-primary);
+  --color-card: var(--color-panel);
+  --color-card-foreground: var(--color-text-primary);
+  --color-popover: var(--color-panel-edge);
+  --color-popover-foreground: var(--color-text-primary);
+  --color-primary: var(--color-accent-light);
+  --color-primary-foreground: var(--color-bg);
+  --color-secondary: var(--color-panel-alt);
+  --color-secondary-foreground: var(--color-text-primary);
+  --color-muted: var(--color-panel);
+  --color-muted-foreground: var(--color-text-secondary);
+  --color-destructive: #f87171;
+  --color-input: var(--color-border);
+  --color-ring: var(--color-accent-light);
+  --color-accent-foreground: var(--color-accent-light);
 }
 
 @layer base {

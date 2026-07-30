@@ -1,6 +1,9 @@
 // Canonical Node / Tab / Project shapes. See docs/spec.md §Data model.
-// BlockNoteDocument is a placeholder until Phase 5 wires up the real BlockNote
-// editor and this can become BlockNote's actual Block[] type.
+// BlockNoteDocument stays a loose `unknown[]` deliberately, even after Phase 5
+// wired up the real editor — this is a `constants/` file, and CLAUDE.md's
+// strict layer order means constants can never import from `services/`,
+// where the actual BlockNote schema (custom blocks + mention content) lives.
+// Real typing happens at the boundary in src/components/page/Editor.tsx.
 export type BlockNoteDocument = unknown[];
 
 export const FOLDER_TEMPLATE_KEY = "folder";
