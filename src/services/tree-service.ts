@@ -74,6 +74,20 @@ export function getEffectiveColor(nodeId: string, nodes: Record<string, Node>): 
   return { color: null, isOwner: false };
 }
 
+// Ancestors from the project root down to (but excluding) nodeId itself —
+// used for the page view's breadcrumb trail.
+export function getAncestorChain(nodeId: string, nodes: Record<string, Node>): Node[] {
+  const chain: Node[] = [];
+  let currentParentId = nodes[nodeId]?.parentId ?? null;
+  while (currentParentId) {
+    const parent: Node | undefined = nodes[currentParentId];
+    if (!parent) break;
+    chain.unshift(parent);
+    currentParentId = parent.parentId;
+  }
+  return chain;
+}
+
 // Fuzzy name-and-tag search for the tree filter. A leading `#` searches tags
 // only (e.g. "#antagonist"); otherwise both name and tags are searched.
 // Returns null for an empty query, meaning "don't filter."

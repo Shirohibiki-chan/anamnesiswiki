@@ -2,7 +2,7 @@
 
 ## Where We Are
 
-**Phase 3 shipped 2026-07-30.** The left sidebar is a real, working tree now: create folders and pages, rename inline, drag to reparent, color-code with cascade, search by name or `#tag`, right-click for rename/duplicate/set color/delete. The center page area is still empty — that's Phase 4.
+**Phase 4 shipped 2026-07-30.** Clicking a page in the tree now shows a real page view — breadcrumb, click-to-rename title, tab strip with hide/show toggles, and a placeholder text box to write in. Clicking a folder shows a simple "add a page" view instead. Real rich-text (BlockNote) is Phase 5.
 
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
@@ -75,6 +75,7 @@ Deferred to later phases; explicitly out of scope now:
 - Interactive atlas / nested maps — LK's atlas feature is not being cloned in Phase 1.
 - Timeline / relationship graph views — future features, not scoped.
 - **OS-level file drag-and-drop is off** (`dragDropEnabled: false` in `tauri.conf.json`), traded off in Phase 3 to make the tree's own drag-to-reparent work — Tauri's native drag-drop handling was intercepting react-dnd's in-page drag events before they ever reached the page (a known Tauri/WebView2 conflict). Phase 6 (image upload drag-drop) and Phase 8 (`.lk` drag-in) were both expecting native OS drop zones; they'll need `onDragDropEvent` (Tauri's own drag event API, separate from HTML5 DnD) or a plain file-picker button instead.
+- **Pages can't have tabs added, renamed, or deleted yet** — only the template's starting tabs exist (currently just the one "Main" stopgap tab, since templates themselves don't exist until Phase 7). Flagged during Phase 4 live-testing: LegendKeeper itself treats tabs as freeform per page, not locked to a template, so this is real functionality to add, not a nice-to-have. Deliberately deferred to Phase 7 rather than bolted onto Phase 4, since it depends on the template registry existing first. See `docs/plan.md` Phase 7.
 
 ## What Phase 0 Delivered
 
@@ -121,6 +122,20 @@ The tree: create, rename, drag-reparent, color, search.
   - *Dragging did nothing.* Tauri enables its own native OS drag-and-drop handling by default, which swallows drag events in WebView2 before react-dnd's in-page HTML5 backend sees them. Fixed with `"dragDropEnabled": false` on the window in `tauri.conf.json` — see the Known Design Gaps entry above for the Phase 6/8 trade-off this creates.
 - **`window.confirm()` doesn't work in Tauri's webview** — it no-ops instead of blocking, so Delete was silently deleting with no prompt at all. `dialog-service.ts` gained `confirmDestructive()` using Tauri's actual dialog plugin; the old `use-folder-dialog.ts` hook was folded into a broader `use-dialogs.ts` since dialogs now cover more than folder-picking.
 - A drop-target highlight (accent outline + tint on the folder a drag is currently hovering over, via react-arborist's `node.willReceiveDrop`) was added as a quick polish pass once dragging actually worked.
+
+## What Phase 4 Delivered
+
+The page view: a real center panel instead of a placeholder.
+
+- **`src/components/page/`** — `PageView.tsx` (routes between `FolderView`, the tabbed page view, and `EmptyPageView` based on the selected node), `PageTitle.tsx` (breadcrumb trail via the tree's ancestor chain, tinted template icon, click-to-rename), `PageTabs.tsx` (active-tab underline, hover-revealed eye toggle for hide/show, dim/italic styling on hidden tabs), `FolderView.tsx` (full color tint like the tree, "Add a page" reusing the tree's own template picker popover), `EmptyPageView.tsx`, and `PlaceholderEditor.tsx` (a plain textarea standing in for Phase 5's real BlockNote editor).
+- **`tree-service.ts`** gained `getAncestorChain` (root-to-parent, Vitest-covered) for the breadcrumb.
+- **`project-store.ts`** gained `updateTabContent`/`toggleTabHidden`, both routed through the existing debounced `updateNode` so tab edits autosave the same way node edits already did. Every new non-folder page now starts with one default "Main" tab — a stopgap until Phase 7's template registry supplies real per-template tab sets.
+- **Bugs fixed during live testing:**
+  - The left sidebar's scrollbar flashed in and out while resizing the window — a leftover `overflow-y: auto` on `.app-layout-tree` from Phase 2 racing against react-arborist's own `ResizeObserver`-driven internal scrolling. Removed, since the tree already manages its own scroll region.
+  - Scrollbars rendered as the browser's plain default instead of matching the dark theme. Fixed with one global themed-scrollbar rule in `index.css` covering every scrollable area app-wide.
+  - Adding a Note specifically appeared to do nothing. `TreePopover.tsx` positioned itself from the trigger's bounding rect with no viewport clamping, so opening the template picker from low in a tall tree could push its last grid row (Species/Note) below the visible window. Fixed by measuring the popover after mount and clamping/flipping it to stay on-screen.
+  - **A serious pre-existing bug in `filesystem-service.ts`, dating back to Phase 1 and only now surfaced:** pages nested under a Character/Location/Faction/Species (any nestable non-folder node) silently disappeared from the app on every reload, even though their files were untouched on disk. `walkDirectory` only recognized a subdirectory as node-owned if it contained `_folder.json`; a nestable page's own children-directory never has one, so it was treated the same as an unrelated directory like `assets/` and skipped. Fixed by giving nestable non-folder templates the same treatment folders already get — they now store themselves inside their own directory too, in a `_page.json` marker file, so a directory's ownership is never derived from its current name (which a rename could silently invalidate). This was a real design decision (every character/location/faction/species is now a small directory on disk, not a single file) and was confirmed with the user before implementing. See `CLAUDE.md`'s "Data on disk" section for the updated layout.
+- **Scope decision from live testing:** users need to add/rename/delete tabs on a page beyond whatever the template started it with (LegendKeeper itself works this way — tabs are freeform per page). Tracked as part of Phase 7 rather than added now, since it depends on the template registry existing.
 
 See `docs/plan.md` for the full phase list.
 

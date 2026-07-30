@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTreeData, createSearchMatcher, getEffectiveColor } from "./tree-service";
+import { buildTreeData, createSearchMatcher, getAncestorChain, getEffectiveColor } from "./tree-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -93,6 +93,25 @@ describe("getEffectiveColor", () => {
     const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
     const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note" });
     expect(getEffectiveColor("page", byId([canon, page]))).toEqual({ color: null, isOwner: false });
+  });
+});
+
+describe("getAncestorChain", () => {
+  it("returns an empty array for a root-level node", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    expect(getAncestorChain("canon", byId([canon]))).toEqual([]);
+  });
+
+  it("returns ancestors from root to immediate parent, excluding the node itself", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const sub = node({ id: "sub", name: "Sub", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "page", name: "Page", parentId: "sub", templateKey: "note" });
+    const chain = getAncestorChain("page", byId([canon, sub, page]));
+    expect(chain.map((n) => n.id)).toEqual(["canon", "sub"]);
+  });
+
+  it("returns an empty array for an unknown node id", () => {
+    expect(getAncestorChain("missing", {})).toEqual([]);
   });
 });
 

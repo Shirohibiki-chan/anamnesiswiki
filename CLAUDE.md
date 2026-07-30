@@ -121,7 +121,7 @@ Valeraverse/
 ├── project.json                 # tree order, expanded state, selection, project name
 ├── Canon/
 │   ├── _folder.json             # folder's own metadata (color, tags, notes)
-│   ├── Main Story.json          # a page node
+│   ├── Main Story.json          # a leaf page node (item/event/note — never has children)
 │   └── ...
 ├── AUs/
 │   ├── _folder.json
@@ -129,7 +129,9 @@ Valeraverse/
 │   │   ├── _folder.json
 │   │   ├── Characters/
 │   │   │   ├── _folder.json
-│   │   │   ├── Valera Jiang.json
+│   │   │   ├── Valera Jiang/
+│   │   │   │   ├── _page.json   # the character's own data
+│   │   │   │   └── Her Sword.json  # a page nested under the character
 │   │   │   └── ...
 │   │   └── ...
 │   └── ...
@@ -139,9 +141,11 @@ Valeraverse/
 
 **Why file-per-node with tree-mirroring layout:** the user's writing is legible outside the app. Sync tools (Dropbox, Syncthing) only touch changed files. Git diffs are clean. If the app ever breaks, the user still owns their work as plain JSON.
 
-**Renames and reparents:** `fs.rename` on the file. Watch Windows path-length limits (~260 chars); warn or truncate for deep nesting.
+**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` for a folder, `_page.json` for a nestable page — rather than as a flat sibling file. This is deliberate, not incidental: a directory's ownership must never be derived from its *current* name (a rename or a sibling's suffix shifting would silently orphan its children on the next load — this happened once, see `docs/handoff.md`'s Phase 4 notes). Leaf templates (item/event/note) can never have children, so they stay a flat `Name.json` — no wrapping directory.
 
-**Naming collisions between siblings:** append ` (2)`, ` (3)` to the filename only. Node IDs stay unique inside the JSON.
+**Renames and reparents:** `fs.rename` on the file (leaf templates) or the whole directory (folders and nestable pages — children move for free). Watch Windows path-length limits (~260 chars); warn or truncate for deep nesting.
+
+**Naming collisions between siblings:** append ` (2)`, ` (3)` to the filename (leaf templates) or the directory name (folders and nestable pages) only. Node IDs stay unique inside the JSON. A folder and a nestable page sharing a name *do* collide (both are directories); a folder or nestable page and a same-named leaf page never do (one's a directory, the other's a plain file).
 
 ## Reference Docs (read only when relevant)
 

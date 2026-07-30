@@ -2,9 +2,20 @@
 // layer order — components never import services directly.
 import { useMemo } from "react";
 import { useProject } from "./use-project";
-import { buildTreeData, getEffectiveColor, type EffectiveColor, type TreeNodeData } from "../services/tree-service";
+import {
+  buildTreeData,
+  getAncestorChain,
+  getEffectiveColor,
+  type EffectiveColor,
+  type TreeNodeData,
+} from "../services/tree-service";
+import type { Node } from "../constants/schema";
 
-export function useTreeData(): { treeData: TreeNodeData[]; getEffectiveColor: (nodeId: string) => EffectiveColor } {
+export function useTreeData(): {
+  treeData: TreeNodeData[];
+  getEffectiveColor: (nodeId: string) => EffectiveColor;
+  getAncestorChain: (nodeId: string) => Node[];
+} {
   const { project, nodes } = useProject();
 
   const treeData = useMemo(() => buildTreeData(nodes, project?.rootOrder ?? []), [nodes, project?.rootOrder]);
@@ -12,5 +23,6 @@ export function useTreeData(): { treeData: TreeNodeData[]; getEffectiveColor: (n
   return {
     treeData,
     getEffectiveColor: (nodeId: string) => getEffectiveColor(nodeId, nodes),
+    getAncestorChain: (nodeId: string) => getAncestorChain(nodeId, nodes),
   };
 }

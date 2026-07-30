@@ -27,10 +27,19 @@
 .app-layout-tree,
 .app-layout-properties {
   background: var(--color-panel);
+}
+
+.app-layout-properties {
   overflow-y: auto;
 }
 
 .app-layout-tree {
+  /* No overflow-y here on purpose: TreeSidebar/TreePanel size react-arborist's
+     virtualized list to this container via ResizeObserver and handle their
+     own internal scrolling. A second overflow:auto on this outer element
+     raced with that observer during window resizes, causing a scrollbar to
+     flash in and out for a frame before the tree caught up. */
+  overflow: hidden;
   border-right: 1px solid var(--color-border);
 }
 

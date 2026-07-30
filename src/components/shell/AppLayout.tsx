@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { TreeSidebar } from "../tree/TreeSidebar";
+import { PageView } from "../page/PageView";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
@@ -31,10 +32,7 @@ export function AppLayout() {
           onSwitchProject={() => void handleSwitchProject()}
         />
         <main className="app-layout-page">
-          <div className="app-layout-placeholder">
-            <p>The page view arrives in Phase 4.</p>
-            <p className="app-layout-placeholder-sub">Once the tree exists, selecting a page will show it here.</p>
-          </div>
+          <PageView key={project?.selectedId ?? "none"} />
         </main>
       </div>
 

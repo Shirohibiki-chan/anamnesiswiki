@@ -2,7 +2,15 @@
 // always through src/hooks/use-project.ts. See CLAUDE.md's layer order.
 import { create } from "zustand";
 import { join } from "@tauri-apps/api/path";
-import { createNode, createProject, FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
+import {
+  createNode,
+  createProject,
+  createTab,
+  FOLDER_TEMPLATE_KEY,
+  type Node,
+  type Project,
+  type Tab,
+} from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
 import { scheduleSave } from "../services/autosave";
 
@@ -24,6 +32,8 @@ type ProjectStoreState = {
   closeProject: () => void;
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
+  updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
+  toggleTabHidden: (nodeId: string, tabId: string) => void;
   renameNode: (id: string, name: string) => void;
   moveNode: (id: string, newParentId: string | null, rootIndex?: number) => void;
   deleteNode: (id: string) => void;
@@ -91,7 +101,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) throw new Error("addNode: no project loaded");
 
-      const node = createNode(input);
+      // Every non-folder page starts with a single "Main" tab so the page
+      // view has something to show before Phase 7's template registry can
+      // supply a real default tab set per template.
+      const tabs = input.templateKey === FOLDER_TEMPLATE_KEY ? [] : [createTab({ id: "main", label: "Main" })];
+      const node = createNode({ ...input, tabs });
       const nextNodes = { ...nodes, [node.id]: node };
       const nextProject: Project =
         input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
@@ -111,6 +125,22 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextNodes = { ...nodes, [id]: updated };
       set({ nodes: nextNodes });
       scheduleSave(id, () => fsService.saveNode(rootPath, updated, Object.values(nextNodes)).then(markSaved));
+    },
+
+    updateTabContent(nodeId, tabId, content) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const tabs = existing.tabs.map((tab) => (tab.id === tabId ? { ...tab, content } : tab));
+      get().updateNode(nodeId, { tabs });
+    },
+
+    toggleTabHidden(nodeId, tabId) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const tabs = existing.tabs.map((tab) => (tab.id === tabId ? { ...tab, hidden: !tab.hidden } : tab));
+      get().updateNode(nodeId, { tabs });
     },
 
     renameNode(id, name) {
