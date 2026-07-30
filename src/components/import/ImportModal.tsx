@@ -1,0 +1,162 @@
+// Phase 8 — bring a LegendKeeper `.lk` export in as a brand-new project. Four
+// steps in one modal: pick the file, preview what was found (tree + inferred
+// template counts + a plain-language list of anything that won't come across
+// perfectly), pick a destination folder, then write it all to disk. See
+// docs/lk-format.md for the field mapping this preview reflects.
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { getTemplateIcon } from "../../constants/icons";
+import { useAppSettings } from "../../hooks/use-app-settings";
+import { useDialogs } from "../../hooks/use-dialogs";
+import { useLkImport } from "../../hooks/use-lk-import";
+import { useTemplates } from "../../hooks/use-templates";
+import type { ImportPlan, ImportPreviewNode } from "../../services/lk-import";
+import "./import.css";
+
+type Status = "idle" | "parsing" | "preview" | "importing" | "error";
+
+function pluralizeLabel(label: string, count: number): string {
+  if (count === 1) return label;
+  return label === "Species" ? label : `${label}s`;
+}
+
+function ImportPreviewRow({ node, depth }: { node: ImportPreviewNode; depth: number }) {
+  const Icon = getTemplateIcon(node.templateKey);
+  return (
+    <div className="import-modal-tree-node">
+      <div className="import-modal-tree-row" style={{ paddingLeft: `${depth * 1.125}rem` }}>
+        {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
+        <Icon size={13} className="import-modal-tree-icon" />
+        <span>{node.name}</span>
+      </div>
+      {node.children.map((child) => (
+        <ImportPreviewRow key={child.id} node={child} depth={depth + 1} />
+      ))}
+    </div>
+  );
+}
+
+export function ImportModal({ onClose }: { onClose: () => void }) {
+  const { pickLkFile, pickFolder } = useDialogs();
+  const { parseLkFile, importLkProject } = useLkImport();
+  const { recordProjectOpened } = useAppSettings();
+  const { getLabel } = useTemplates();
+
+  const [status, setStatus] = useState<Status>("idle");
+  const [plan, setPlan] = useState<ImportPlan | null>(null);
+  const [projectName, setProjectName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePickFile() {
+    const path = await pickLkFile();
+    if (!path) return;
+    setStatus("parsing");
+    setError(null);
+    try {
+      const result = await parseLkFile(path);
+      setPlan(result);
+      setProjectName(result.projectName);
+      setStatus("preview");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't read that file.");
+      setStatus("error");
+    }
+  }
+
+  async function handleConfirm() {
+    if (!plan) return;
+    const trimmedName = projectName.trim();
+    if (!trimmedName) {
+      setError("Give your project a name.");
+      return;
+    }
+    const parentDir = await pickFolder({ title: "Choose where to save the imported project" });
+    if (!parentDir) return;
+
+    setStatus("importing");
+    setError(null);
+    const result = await importLkProject(parentDir, trimmedName, plan.nodes, plan.rootOrder, plan.pendingImages);
+    if (!result.ok) {
+      setError(result.error);
+      setStatus("preview");
+      return;
+    }
+    await recordProjectOpened(result.rootPath, trimmedName);
+    onClose();
+  }
+
+  const isBusy = status === "parsing" || status === "importing";
+
+  return createPortal(
+    <div className="import-modal-backdrop" onClick={isBusy ? undefined : onClose}>
+      <div className="import-modal" onClick={(e) => e.stopPropagation()}>
+        <h2 className="import-modal-title">Import from LegendKeeper</h2>
+
+        {(status === "idle" || status === "parsing" || status === "error") && (
+          <div className="import-modal-pick">
+            <p>Bring in your pages, tabs, and cross-references from a LegendKeeper .lk export.</p>
+            {error && <p className="import-modal-error">{error}</p>}
+            <button type="button" onClick={() => void handlePickFile()} disabled={status === "parsing"}>
+              {status === "parsing" ? "Reading file…" : "Choose a .lk file"}
+            </button>
+          </div>
+        )}
+
+        {status === "preview" && plan && (
+          <div className="import-modal-preview">
+            <label className="import-modal-name-field">
+              Project name
+              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+            </label>
+
+            <p className="import-modal-summary">
+              {plan.totalResources} page{plan.totalResources === 1 ? "" : "s"} found —{" "}
+              {Object.entries(plan.templateCounts)
+                .map(([key, count]) => `${count} ${pluralizeLabel(getLabel(key), count ?? 0)}`)
+                .join(", ")}
+            </p>
+
+            <div className="import-modal-tree">
+              {plan.preview.map((node) => (
+                <ImportPreviewRow key={node.id} node={node} depth={0} />
+              ))}
+            </div>
+
+            {plan.lossyNotes.length > 0 && (
+              <div className="import-modal-lossy">
+                <h3>A few things won't come across perfectly:</h3>
+                <ul>
+                  {plan.lossyNotes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {error && <p className="import-modal-error">{error}</p>}
+
+            <div className="import-modal-actions">
+              <button type="button" className="import-modal-cancel" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="button" className="import-modal-confirm" onClick={() => void handleConfirm()}>
+                Choose folder &amp; import
+              </button>
+            </div>
+          </div>
+        )}
+
+        {status === "importing" && (
+          <div className="import-modal-pick">
+            <p>
+              Importing your world
+              {plan?.pendingImages.length ? ` and ${plan.pendingImages.length} image${plan.pendingImages.length === 1 ? "" : "s"}` : ""} —
+              this can take a little while.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}

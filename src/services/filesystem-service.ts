@@ -210,3 +210,11 @@ export async function deleteAssetImage(rootPath: string, fileName: string): Prom
   const path = await join(rootPath, ASSETS_DIR, fileName);
   if (await exists(path)) await remove(path);
 }
+
+// Phase 8 LK import — the user points a native file picker at a `.lk` export
+// living anywhere on disk, outside any project folder. Reading its raw bytes
+// is still a disk touch, so it goes through here rather than lk-import.ts
+// reaching for the fs plugin directly.
+export async function readRawFile(path: string): Promise<Uint8Array> {
+  return readFile(path);
+}

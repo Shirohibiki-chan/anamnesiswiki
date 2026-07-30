@@ -15,6 +15,8 @@ import {
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushSave, scheduleSave } from "../services/autosave";
 import { getDefaultTabs } from "../services/template-registry";
+import * as lkImportService from "../services/lk-import";
+import type { ImportPendingImage } from "../services/lk-import";
 
 // Starter top-level folders for a brand-new project, matching the user's
 // actual LK structure (see docs/plan.md Phase 2).
@@ -31,6 +33,13 @@ type ProjectStoreState = {
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
   createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
+  importLkProject: (
+    parentDir: string,
+    name: string,
+    nodes: Node[],
+    rootOrder: string[],
+    pendingImages: ImportPendingImage[],
+  ) => Promise<CreateProjectResult>;
   closeProject: () => void;
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
@@ -47,6 +56,9 @@ type ProjectStoreState = {
   removeCustomProperty: (nodeId: string, key: string) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   clearNodeImage: (nodeId: string) => Promise<void>;
+  setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
+  setBannerFocus: (nodeId: string, focusY: number) => void;
+  clearNodeBanner: (nodeId: string) => Promise<void>;
   renameNode: (id: string, name: string) => void;
   moveNode: (id: string, newParentId: string | null, rootIndex?: number) => void;
   deleteNode: (id: string) => void;
@@ -103,6 +115,46 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       for (const folder of STARTER_FOLDERS) {
         get().addNode({ parentId: null, templateKey: FOLDER_TEMPLATE_KEY, name: folder });
       }
+      return { ok: true, rootPath };
+    },
+
+    // The Phase 8 LK-import path: unlike createProjectAt (a handful of stub
+    // folders), this writes a whole already-built node graph converted by
+    // src/services/lk-import.ts. Images live on LegendKeeper's own CDN, so
+    // each pending one is fetched here (the single network call this app
+    // ever makes, and only for this explicit, user-confirmed action — see
+    // docs/handoff.md) before anything hits disk. A failed download just
+    // leaves that one page without a picture rather than failing the import.
+    async importLkProject(parentDir, name, nodes, rootOrder, pendingImages) {
+      const trimmed = name.trim();
+      if (!trimmed) return { ok: false, error: "Give your project a name." };
+
+      const folderName = fsService.sanitizeSegment(trimmed);
+      const rootPath = await join(parentDir, folderName);
+      if (await fsService.pathExists(rootPath)) {
+        return { ok: false, error: "A folder with that name already exists there." };
+      }
+
+      for (const pending of pendingImages) {
+        try {
+          const bytes = await lkImportService.fetchLkImage(pending.url);
+          const fileName = `${crypto.randomUUID()}.${lkImportService.extensionFromUrl(pending.url)}`;
+          await fsService.saveAssetImage(rootPath, fileName, bytes);
+          const node = nodes.find((n) => n.id === pending.nodeId);
+          if (node) node[pending.field] = fileName;
+        } catch {
+          // Ignore — see comment above.
+        }
+      }
+
+      const project = createProject({ name: trimmed, rootOrder });
+      const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
+      set({ rootPath, project, nodes: nodesRecord, isLoaded: true });
+
+      await fsService.saveProject(rootPath, project);
+      await Promise.all(nodes.map((node) => fsService.saveNode(rootPath, node, nodes)));
+      markSaved();
+
       return { ok: true, rootPath };
     },
 
@@ -257,6 +309,34 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       await fsService.deleteAssetImage(rootPath, previousImage);
     },
 
+    // The page-header cover image (Phase 8's PageBanner) — a separate slot
+    // from setNodeImage's sidebar portrait above, matching LegendKeeper's own
+    // banner-vs-sidebar-image distinction.
+    async setNodeBanner(nodeId, data, extension) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[nodeId];
+      if (!rootPath || !existing) return;
+
+      const fileName = `${crypto.randomUUID()}.${extension}`;
+      await fsService.saveAssetImage(rootPath, fileName, data);
+      const previousBanner = get().nodes[nodeId]?.banner;
+      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50 });
+      if (previousBanner) void fsService.deleteAssetImage(rootPath, previousBanner);
+    },
+
+    setBannerFocus(nodeId, focusY) {
+      get().updateNode(nodeId, { bannerFocusY: Math.min(100, Math.max(0, focusY)) });
+    },
+
+    async clearNodeBanner(nodeId) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[nodeId];
+      if (!rootPath || !existing?.banner) return;
+      const previousBanner = existing.banner;
+      get().updateNode(nodeId, { banner: undefined, bannerFocusY: undefined });
+      await fsService.deleteAssetImage(rootPath, previousBanner);
+    },
+
     async renameNode(id, name) {
       const { rootPath, nodes } = get();
       const existing = nodes[id];
@@ -331,13 +411,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ nodes: nextNodes, project: nextProject });
       void fsService.deleteNode(rootPath, existing, allNodesBefore).then(markSaved);
       void fsService.saveProject(rootPath, nextProject).then(markSaved);
-      // A deleted node's own uploaded image (see ImageSlot, Phase 6) lives in
-      // the flat assets/ dir, not inside the node's own file/directory, so
-      // fsService.deleteNode above never touches it — clean it up here or it
-      // orphans forever.
+      // A deleted node's own uploaded image/banner (see ImageSlot Phase 6,
+      // PageBanner Phase 8) lives in the flat assets/ dir, not inside the
+      // node's own file/directory, so fsService.deleteNode above never
+      // touches either — clean them up here or they orphan forever.
       for (const removedId of toRemove) {
-        const removedImage = nodes[removedId]?.image;
-        if (removedImage) void fsService.deleteAssetImage(rootPath, removedImage);
+        const removed = nodes[removedId];
+        if (removed?.image) void fsService.deleteAssetImage(rootPath, removed.image);
+        if (removed?.banner) void fsService.deleteAssetImage(rootPath, removed.banner);
       }
     },
 
@@ -354,25 +435,28 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         subtreeIds.map(async (subId) => {
           const source = nodes[subId];
           const isRootOfDuplicate = subId === id;
-          // A clone must get its own copy of the image file — sharing the
-          // original's filename would mean deleting/replacing the image on
+          // A clone must get its own copy of the image/banner file — sharing
+          // the original's filename would mean deleting/replacing it on
           // either the original or the copy later deletes it out from under
           // the other (fsService has no dedicated "copy" — read + rewrite
           // under a fresh name does the same thing).
-          let image = source.image;
-          if (image) {
-            const extension = image.slice(image.lastIndexOf(".") + 1);
+          const projectRootPath: string = rootPath;
+          async function cloneAsset(fileName: string | undefined): Promise<string | undefined> {
+            if (!fileName) return fileName;
+            const extension = fileName.slice(fileName.lastIndexOf(".") + 1);
             const clonedFileName = `${crypto.randomUUID()}.${extension}`;
-            const bytes = await fsService.readAssetImage(rootPath, image);
-            await fsService.saveAssetImage(rootPath, clonedFileName, bytes);
-            image = clonedFileName;
+            const bytes = await fsService.readAssetImage(projectRootPath, fileName);
+            await fsService.saveAssetImage(projectRootPath, clonedFileName, bytes);
+            return clonedFileName;
           }
+          const [image, banner] = await Promise.all([cloneAsset(source.image), cloneAsset(source.banner)]);
           return {
             ...source,
             id: idMap.get(subId)!,
             parentId: isRootOfDuplicate ? source.parentId : (idMap.get(source.parentId!) ?? null),
             name: isRootOfDuplicate ? `${source.name} (Copy)` : source.name,
             image,
+            banner,
             createdAt: now,
             updatedAt: now,
           };

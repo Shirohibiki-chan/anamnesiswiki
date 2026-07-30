@@ -9,12 +9,138 @@
   color: var(--color-text-muted);
 }
 
-.page-view {
+/* The outer shell spans the whole center panel, edge to edge, so PageBanner
+   can run full-bleed the way Notion/Obsidian banners do (LK's own banners
+   stay boxed to the text column — asked not to match that). `.page-view`
+   nested inside is the actual reading column: capped width, centered. */
+.page-view-shell {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+}
+
+.page-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: 60rem;
+  margin: 0 auto;
   padding: 2rem 2.5rem;
-  max-width: 48rem;
+}
+
+/* --- PageBanner --- */
+
+.page-banner {
+  position: relative;
+  width: 100%;
+  height: 14rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+/* Gentle fade into the page background at the bottom, matching Notion/
+   Obsidian's treatment rather than just a hard image edge. */
+.page-banner::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3rem;
+  background: linear-gradient(to bottom, transparent, var(--color-bg));
+  pointer-events: none;
+}
+
+.page-banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+
+.page-banner-hint {
+  position: absolute;
+  bottom: 0.625rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.page-banner:hover .page-banner-hint {
+  opacity: 1;
+}
+
+.page-banner-remove {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.page-banner:hover .page-banner-remove {
+  opacity: 1;
+}
+
+.page-banner-remove:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.page-banner-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.25rem 2.5rem 0;
+}
+
+.page-banner-add {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.page-banner-add:hover {
+  background: var(--color-panel-edge);
+  color: var(--color-text-primary);
+}
+
+.page-banner-error {
+  font-size: 0.75rem;
+  color: var(--color-destructive);
+}
+
+.page-banner-input {
+  display: none;
 }
 
 /* --- PageTitle --- */

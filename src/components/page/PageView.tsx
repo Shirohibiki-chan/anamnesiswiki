@@ -7,6 +7,7 @@ import { useProject } from "../../hooks/use-project";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
+import { PageBanner } from "./PageBanner";
 import { PageTabs } from "./PageTabs";
 import { PageTitle } from "./PageTitle";
 import "./page.css";
@@ -32,37 +33,40 @@ export function PageView() {
   }
 
   return (
-    <div className="page-view">
-      <PageTitle node={node} />
-      {node.tabs.length === 0 ? (
-        <div className="page-view-no-tabs">
-          <p>This page doesn't have any tabs yet.</p>
-          <button type="button" className="page-view-add-tab" onClick={handleAddTab}>
-            Add a tab
-          </button>
-        </div>
-      ) : (
-        <>
-          <PageTabs
-            tabs={node.tabs}
-            activeTabId={activeTab?.id ?? null}
-            onSelect={setActiveTabId}
-            onToggleHidden={(tabId) => toggleTabHidden(node.id, tabId)}
-            onAdd={handleAddTab}
-            onRename={(tabId, label) => renameTab(node.id, tabId, label)}
-            onDelete={(tabId) => deleteTab(node.id, tabId)}
-            onReorder={(orderedTabIds) => reorderTabs(node.id, orderedTabIds)}
-          />
-          {activeTab && (
-            <Editor
-              key={activeTab.id}
-              nodeId={node.id}
-              content={activeTab.content}
-              onContentChange={(content) => updateTabContent(node.id, activeTab.id, content)}
+    <div className="page-view-shell">
+      <PageBanner node={node} />
+      <div className="page-view">
+        <PageTitle node={node} />
+        {node.tabs.length === 0 ? (
+          <div className="page-view-no-tabs">
+            <p>This page doesn't have any tabs yet.</p>
+            <button type="button" className="page-view-add-tab" onClick={handleAddTab}>
+              Add a tab
+            </button>
+          </div>
+        ) : (
+          <>
+            <PageTabs
+              tabs={node.tabs}
+              activeTabId={activeTab?.id ?? null}
+              onSelect={setActiveTabId}
+              onToggleHidden={(tabId) => toggleTabHidden(node.id, tabId)}
+              onAdd={handleAddTab}
+              onRename={(tabId, label) => renameTab(node.id, tabId, label)}
+              onDelete={(tabId) => deleteTab(node.id, tabId)}
+              onReorder={(orderedTabIds) => reorderTabs(node.id, orderedTabIds)}
             />
-          )}
-        </>
-      )}
+            {activeTab && (
+              <Editor
+                key={activeTab.id}
+                nodeId={node.id}
+                content={activeTab.content}
+                onContentChange={(content) => updateTabContent(node.id, activeTab.id, content)}
+              />
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

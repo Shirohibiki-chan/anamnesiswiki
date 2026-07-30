@@ -52,11 +52,18 @@ export type Node = {
   customProperties?: CustomPropertySpec[];
   tags: string[];
   color?: string;
-  // Filename of the uploaded portrait/cover image inside the project's
+  // Filename of the uploaded portrait/sidebar image inside the project's
   // assets/ directory (see paths.ts's ASSETS_DIR), not a full path — Phase 6's
   // ImageSlot resolves it against the project root when it needs to display
   // or delete the file.
   image?: string;
+  // A separate full-width cover image shown above the page title (Phase 8's
+  // PageBanner) — distinct from `image` above, matching LegendKeeper's own
+  // banner-vs-sidebar-image distinction. Same assets/ dir, addressed the same
+  // way. `bannerFocusY` is a 0-100 vertical focus point (LK's own banners are
+  // draggable the same way) used as the image's CSS object-position.
+  banner?: string;
+  bannerFocusY?: number;
   createdAt: number;
   updatedAt: number;
 };

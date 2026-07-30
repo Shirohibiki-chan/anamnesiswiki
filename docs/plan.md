@@ -58,7 +58,7 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 ## Queued Adjustments
 
-*(Empty. This section fills in as new deferred requests surface.)*
+- **A proper "project home" feature.** Phase 8's import brings the LK project root's own text in as a real "Home" page (see Phase 8 below), but the user also wants an actual project-home concept in the app itself — a dedicated landing view (not just an importable page) reachable independent of any single node, likely tied to `ProjectHeader.tsx`'s existing home icon. Needs its own design pass (how it's stored, whether it's a special reserved Node excluded from the normal tree, how it interacts with `rootOrder`) rather than being bolted onto Phase 8. Not started.
 
 ---
 
@@ -232,7 +232,7 @@ Rounds of live-testing fixes:
 
 ---
 
-## Phase 8 — LK Import
+## Phase 8 — LK Import ✅ Shipped 2026-07-30
 
 `src/services/lk-import.ts` — the only file that reads `.lk` files. Ungzip, parse JSON, walk the `resources` array, build an id-map from old LK ids to new node ids for mention rewriting.
 
@@ -243,6 +243,20 @@ Template inference from tab signatures (see `CLAUDE.md`). `ImportModal.tsx` with
 Acceptance test: the user's actual `Valeraverse.lk` (75 resources) imports fully — every page, every tab, every ProseMirror block preserved.
 
 **End state:** user can drag their `Valeraverse.lk` into the app and see the whole world land in a new project.
+
+**Shipped:** `src/services/lk-import.ts` implements the full mapping documented in the new `docs/lk-format.md` — ungzip via the browser's native `DecompressionStream` (no extra dependency needed), full ProseMirror→BlockNote block translation (including LK's `expand` collapsible blocks mapping losslessly to BlockNote's own native `toggleListItem`, and LK's own `bodiedExtension: block-secret` mapping losslessly to our Secret callout), template inference exactly per `CLAUDE.md`'s signature table, and per-page property import (Summary/Friends/Homeland-type fields) on top of tabs. `ImportModal.tsx` (new `src/components/import/`) walks file-pick → preview (tree, template counts, plain-language lossy-conversion list) → destination folder → commit, reusing the tree's existing template icons. Entry point is an "Import from LegendKeeper" button on `ProjectPicker.tsx`, since import always creates a brand-new project. `project-store.ts` gained `importLkProject`, mirroring `createProjectAt` but taking a fully-built node graph. 32 new Vitest tests cover the converter's pure functions.
+
+**Two decisions escalated to the user mid-build, both resolved before shipping:**
+- Whether to import LK's per-resource sidebar properties (Summary, Friends, Homeland, etc.) at all, beyond tabs — spec's Phase 8 write-up only mentioned tabs. **User chose yes**, since skipping would silently drop real content (44 of 75 resources had these filled in).
+- Whether to download page images/banners from LegendKeeper's own CDN during the one-time import action — a real exception to the app's normal zero-network-calls policy. **User chose yes.** Implemented via `@tauri-apps/plugin-http` (new Rust plugin + JS binding), scoped narrowly to `https://assets.legendkeeper.com/*` in `src-tauri/capabilities/default.json` — not a general network grant. This is the only network call the app makes, and only for this explicit, confirmed action.
+
+**The LK project root** (the one no-parent resource in every LK export, holding LK's own auto-generated "Welcome to LegendKeeper" boilerplate) doesn't become a Node — its name becomes the project's own name, and its children become the top-level tree. Its own text, when the user had actually written something there (not just LK's boilerplate), is still preserved as a real "Home" page rather than thrown away — added after a live-testing round explicitly asked for it (see the Queued Adjustments entry above for the bigger "real project home feature" ask that came with it, deferred separately).
+
+**A real, user-reported bug found and fixed same-session:** LK sidebar properties whose title matched a field the inferred template already has built in (e.g. Character's own "Friends") were importing as brand-new custom properties instead of filling the template's existing field — the properties panel showed the same field twice, once empty and once with the real value. Fixed by matching LK property titles against the template's own schema first; only genuinely new fields (Enemies, Languages, "Romantic Interests" — things no template has a slot for) become custom properties.
+
+**Banners, added mid-phase after live-testing pushback:** the written spec's "preserve banner as page header image if present" was initially implemented by reusing the existing sidebar `image` slot, which the user firmly rejected — LK's banner and sidebar image are two different things and both needed to survive import. Added a real `Node.banner`/`bannerFocusY` pair (separate from `image`), a new `PageBanner.tsx` full-bleed cover-image component (upload, drag-to-reposition-vertically, remove) rendered above `PageTitle` outside the page's centered reading-width column — matching Notion/Obsidian's edge-to-edge banner treatment rather than LK's own boxed-to-the-text-column one, per explicit request — with a soft fade into the page background at the bottom.
+
+**Reading-column width increased from 48rem to 60rem and properly centered** (it was never centered before, just left-aligned with a max-width — unnoticed until the user ran the app at true fullscreen for the first time). The sidebar portrait image's max-height also increased from 20rem to 28rem to better match LegendKeeper's own proportions.
 
 ---
 

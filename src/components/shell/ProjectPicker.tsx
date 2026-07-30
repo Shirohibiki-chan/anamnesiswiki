@@ -6,6 +6,7 @@ import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { getDefaultProjectsDir } from "../../constants/paths";
+import { ImportModal } from "../import/ImportModal";
 import "./shell.css";
 
 export function ProjectPicker() {
@@ -15,6 +16,7 @@ export function ProjectPicker() {
 
   const [isBusy, setIsBusy] = useState(false);
   const [isCreatingOpen, setIsCreatingOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +98,10 @@ export function ProjectPicker() {
           Open folder
         </button>
 
+        <button type="button" onClick={() => setIsImportOpen(true)} disabled={isBusy}>
+          Import from LegendKeeper
+        </button>
+
         {!isCreatingOpen ? (
           <button type="button" onClick={() => setIsCreatingOpen(true)} disabled={isBusy}>
             New project
@@ -135,6 +141,8 @@ export function ProjectPicker() {
       </div>
 
       {error && <p className="project-picker-error">{error}</p>}
+
+      {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
     </main>
   );
 }

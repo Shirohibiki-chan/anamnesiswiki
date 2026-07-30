@@ -13,6 +13,10 @@
     {
       "identifier": "fs:scope",
       "allow": ["**"]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://assets.legendkeeper.com/*" }]
     }
   ]
 }

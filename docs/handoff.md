@@ -2,7 +2,7 @@
 
 ## Where We Are
 
-**Phase 7 shipped 2026-07-30.** Real templates: all 8 templates now come pre-populated with their actual LK-style tabs and starter copy instead of a placeholder "Main" tab, plus a new "Blank" option for pages that shouldn't be forced into a template up front. Pages can have tabs added/renamed/deleted/reordered beyond their template's starting set, and can get one-off custom properties beyond their template's fixed field list. Next up is Phase 8 (LK Import).
+**Phase 8 shipped 2026-07-30.** LK import: the user's real `Valeraverse.lk` (75 resources) imports as a brand-new project — tabs, formatting, cross-references, properties, images, and banners all included. Next up is Phase 9 (LK Export), though a "proper project home" feature is queued ahead of it (see Queued Adjustments in `docs/plan.md`).
 
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
@@ -34,7 +34,6 @@ Everything Claude Code needs to start Phase 0 is already written:
 Docs not yet written but referenced in the plan:
 
 - `docs/data-model.md` — schemas for Node / Tab / Project on disk. Will be created in Phase 1.
-- `docs/lk-format.md` — full LK `.lk` field mapping and ProseMirror block translation table. Will be created in Phase 8. The CLAUDE.md §LegendKeeper Import/Export section has the working notes; expand into a proper doc when the importer is being built.
 
 ## First-Time Setup Notes
 
@@ -74,9 +73,11 @@ Deferred to later phases; explicitly out of scope now:
 - User-editable templates — templates live in code in Phase 1.
 - Interactive atlas / nested maps — LK's atlas feature is not being cloned in Phase 1.
 - Timeline / relationship graph views — future features, not scoped.
-- **OS-level file drag-and-drop is off** (`dragDropEnabled: false` in `tauri.conf.json`), traded off in Phase 3 to make the tree's own drag-to-reparent work — Tauri's native drag-drop handling was intercepting react-dnd's in-page drag events before they ever reached the page (a known Tauri/WebView2 conflict). **Turned out to be a non-issue for Phase 6's image upload** — with Tauri's own interception off, plain HTML5 DnD works normally in the webview, so a dropped OS file arrives as a real browser `File` with usable bytes; no Tauri-specific drag API needed. Phase 8 (`.lk` drag-in) still hasn't been built, so it's unconfirmed there yet, but the same should hold.
+- **OS-level file drag-and-drop is off** (`dragDropEnabled: false` in `tauri.conf.json`), traded off in Phase 3 to make the tree's own drag-to-reparent work — Tauri's native drag-drop handling was intercepting react-dnd's in-page drag events before they ever reached the page (a known Tauri/WebView2 conflict). **Turned out to be a non-issue for Phase 6's image upload** — with Tauri's own interception off, plain HTML5 DnD works normally in the webview, so a dropped OS file arrives as a real browser `File` with usable bytes; no Tauri-specific drag API needed. **Phase 8's `.lk` import sidesteps the question entirely** — it uses a native file-picker button (`pickLkFile` via the dialog plugin) rather than drag-in, so this constraint never came up there.
 - **Pages can't have tabs added, renamed, or deleted yet** — only the template's starting tabs exist (currently just the one "Main" stopgap tab, since templates themselves don't exist until Phase 7). Flagged during Phase 4 live-testing: LegendKeeper itself treats tabs as freeform per page, not locked to a template, so this is real functionality to add, not a nice-to-have. Deliberately deferred to Phase 7 rather than bolted onto Phase 4, since it depends on the template registry existing first. See `docs/plan.md` Phase 7.
 - **Wikilinks never guess between two pages sharing the same name** — `[[Name]]` only auto-converts when the name is unique across the project; otherwise it's left as plain text (same principle as Obsidian: ambiguity should never resolve silently). There's no picker specifically for "which one did you mean" beyond that — use `@` instead, which always lists every match. Flagged during Phase 5 live-testing as a real, if minor, gap; not fixed since the user was fine leaving it as-is for now.
+- **No proper "project home" feature yet.** Phase 8's LK import brings the project root's own text in as a real "Home" page, but there's no dedicated project-home *view* in the app itself (independent of any one page, reachable via `ProjectHeader.tsx`'s home icon). Requested during Phase 8 live-testing; logged in `docs/plan.md`'s Queued Adjustments rather than bolted on, since it needs its own design pass.
+- **LK export (Phase 9) isn't built** — Phase 8 only covers import. Round-tripping `Valeraverse.lk` back out isn't possible yet.
 
 ## What Phase 0 Delivered
 
@@ -180,6 +181,18 @@ Real templates: all 8 templates plus a new "Blank" option, per-page tab manageme
   - Tab reordering's first pass used plain HTML5 drag-and-drop. With the whole tab row covered by real `<button>`s (label/eye/delete), a mousedown almost always landed on one of those, and browsers don't reliably start a native drag gesture from a nested button even with a draggable ancestor — worked around with a dedicated grip handle, but the user found the result "clunky," with no live reorder preview. Replaced with dnd-kit's sortable preset, which animates other tabs sliding out of the way as you drag. A follow-up ask wanted to grab a tab from anywhere on it, not just the grip — dnd-kit's `PointerSensor` activation-distance threshold makes that safe (a plain click still reaches the buttons underneath; only real pointer movement starts a drag), so the grip is now a visual cue only, not the exclusive drag surface.
   - Tab labels had no `white-space: nowrap`, so a longer name could wrap onto two lines once the strip got crowded, visually breaking the eye icon's position. Fixed; the strip now scrolls horizontally instead of squeezing tabs when it runs out of room.
   - Delete confirmations rendered as native OS dialog boxes via Tauri's `confirm()` — visually inconsistent with the app's own dark theme. Replaced with an in-app themed modal (`src/state/dialog-store.ts` + `src/components/shell/ConfirmDialog.tsx`), keeping the same `confirmDestructive(message): Promise<boolean>` shape so existing call sites needed no changes. `dialog-service.ts` now only wraps the native folder-browse dialog (which should stay OS-native).
+
+## What Phase 8 Delivered
+
+LK import: the user's real `Valeraverse.lk` lands as a brand-new project.
+
+- **`src/services/lk-import.ts`** — ungzip via the browser's native `DecompressionStream` (no new dependency), full ProseMirror→BlockNote block translation, template inference, id-map-based mention/reference resolution, per-page property import, and lossy-conversion tracking surfaced in the import preview. Full field mapping now lives in the new **`docs/lk-format.md`**.
+- **`src/components/import/ImportModal.tsx`** — file pick → preview (tree, template counts, plain-language lossy list) → destination folder → commit. Entry point is an "Import from LegendKeeper" button on `ProjectPicker.tsx`. `project-store.ts` gained `importLkProject`.
+- **Two decisions escalated mid-build, both approved:** importing LK's per-page sidebar properties (Summary/Friends/etc., not just tabs — spec's Phase 8 write-up only mentioned tabs), and downloading page images from LegendKeeper's own CDN during the one-time import action — the one exception to the app's zero-network-calls policy, via a new `@tauri-apps/plugin-http` Rust plugin scoped narrowly to `https://assets.legendkeeper.com/*`.
+- **A real bug found and fixed same-session:** LK properties matching a template's own built-in field (e.g. Character's "Friends") were importing as duplicate custom properties instead of filling the existing field, so the panel showed the same field twice. Fixed by routing property titles against the inferred template's schema first.
+- **Banners**, added after the user firmly rejected an initial version that reused the sidebar `image` slot for LK's banner too — LK's banner and sidebar image are different things. Added a real `Node.banner`/`bannerFocusY` pair and a new `PageBanner.tsx`, full-bleed above the page title (Notion/Obsidian-style, not boxed to the text column like LK's own), with upload/drag-to-reposition/remove.
+- **Page reading-column width increased (48rem→60rem) and centered** (it was never actually centered before — unnoticed until the user ran the app at true fullscreen), and the sidebar portrait image's max-height increased (20rem→28rem) to better match LegendKeeper's own proportions.
+- Also: LK's `expand` (collapsible section) blocks now map losslessly to BlockNote's own native `toggleListItem`, replacing an earlier flatten-to-heading approach — noticed and fixed while explaining the tradeoff to the user, since BlockNote already ships the block type needed.
 
 See `docs/plan.md` for the full phase list.
 

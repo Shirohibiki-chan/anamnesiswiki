@@ -9,3 +9,13 @@ export async function pickFolder(options?: { title?: string; defaultPath?: strin
   const result = await open({ directory: true, multiple: false, ...options });
   return typeof result === "string" ? result : null;
 }
+
+export async function pickLkFile(): Promise<string | null> {
+  const result = await open({
+    directory: false,
+    multiple: false,
+    title: "Import a LegendKeeper export",
+    filters: [{ name: "LegendKeeper export", extensions: ["lk"] }],
+  });
+  return typeof result === "string" ? result : null;
+}
