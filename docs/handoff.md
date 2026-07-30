@@ -2,9 +2,9 @@
 
 ## Where We Are
 
-Nothing is built yet. This is the initial handoff from design/planning to Claude Code. The spec is stable, the reference prototype exists, and the docs describe the target architecture in enough detail for Phase 0 to start.
+**Phase 0 shipped 2026-07-29.** The repo is scaffolded: Tauri v2 + React 19 + TypeScript, all Phase 0 dependencies installed, the `src/` folder skeleton in place per `CLAUDE.md`'s layer order, dark theme CSS tokens and self-hosted fonts wired up, ESLint configured. `pnpm tauri dev` opens a native window showing a placeholder screen. No worldbuilding functionality yet — that starts with Phase 1 (Data Layer).
 
-Once Phase 0 ships, this doc becomes the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff. For now, most of it is empty and forward-looking.
+This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
 ## Repo Snapshot
 
@@ -75,9 +75,11 @@ Deferred to later phases; explicitly out of scope now:
 - Interactive atlas / nested maps — LK's atlas feature is not being cloned in Phase 1.
 - Timeline / relationship graph views — future features, not scoped.
 
-## What Phase 0 Will Deliver
+## What Phase 0 Delivered
 
 Empty scaffold with the right shape. Tauri v2 window that opens, folder structure per CLAUDE.md, deps installed, CSS token system in place, dark theme applied, self-hosted fonts loaded, ESLint config. No worldbuilding functionality yet.
+
+Dev machine notes for next time: the local clone lives at `C:\Users\shiro\anamnesiswiki`. pnpm and the Rust toolchain (via `rustup`) are now installed on this machine — the "First-Time Setup Notes" section above about needing Rust is resolved. The `fs` and `dialog` Tauri plugins are installed and registered in `src-tauri/src/lib.rs`, but no capability permissions are granted yet — that's a Phase 1/2 decision once `filesystem-service.ts` and the project picker actually need specific folder/dialog access.
 
 See `docs/plan.md` for the full phase list.
 

@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* Self-hosted fonts — no CDN, fully offline (see docs/constants-and-theming.md) */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/inter-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/inter-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/inter-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/newsreader-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/newsreader-400-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/fraunces-variable.woff2") format("woff2-variations");
+}
+
+/* Dark theme tokens — the only shipped theme in Phase 1 (docs/constants-and-theming.md) */
+
+@theme {
+  --color-bg: #0f0f14;
+  --color-panel: #1a1a22;
+  --color-panel-alt: #1f1f28;
+  --color-panel-edge: #252530;
+
+  --color-border: #2a2a35;
+  --color-border-subtle: #22222c;
+
+  --color-text-primary: #e8e8ee;
+  --color-text-secondary: #9a9aaa;
+  --color-text-muted: #6a6a78;
+  --color-text-placeholder: #4a4a55;
+
+  --color-accent: #14b8a6;
+  --color-accent-light: #5eead4;
+  --color-accent-dark: #0d9488;
+  --color-accent-faint: rgba(20, 184, 166, 0.15);
+  --color-accent-faint-border: rgba(20, 184, 166, 0.3);
+
+  --color-callout-info: #60a5fa;
+  --color-callout-info-bg: rgba(59, 130, 246, 0.12);
+  --color-callout-info-text: #dbeafe;
+
+  --color-callout-quote: #a1a1aa;
+  --color-callout-quote-bg: rgba(255, 255, 255, 0.03);
+  --color-callout-quote-text: #d4d4d8;
+
+  --color-callout-secret: #c4b5fd;
+  --color-callout-secret-bg: rgba(167, 139, 250, 0.12);
+  --color-callout-secret-text: #ede9fe;
+
+  --color-palette-teal: #5eead4;
+  --color-palette-sky: #7dd3fc;
+  --color-palette-purple: #c4b5fd;
+  --color-palette-rose: #fda4af;
+  --color-palette-amber: #fcd34d;
+  --color-palette-sage: #86efac;
+  --color-palette-orange: #fdba74;
+  --color-palette-indigo: #a5b4fc;
+  --color-palette-red: #fca5a5;
+  --color-palette-gray: #a1a1aa;
+}
+
+@layer base {
+  body {
+    font-family: "Inter", sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+  }
+}
+
+/* Wiki body prose — wraps every BlockNote editor instance */
+.wiki-body {
+  font-family: "Newsreader", serif;
+}
+
+/* Page titles, section headings inside wiki content, modal titles */
+.font-display {
+  font-family: "Fraunces", serif;
+}
+
+/* Tabular numerals for the properties panel and small data displays */
+.num {
+  font-family: "Inter", sans-serif;
+  font-feature-settings: "tnum";
+}
