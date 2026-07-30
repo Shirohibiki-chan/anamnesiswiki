@@ -108,7 +108,7 @@
   gap: 0.75rem;
 }
 
-.top-bar-toggle {
+.top-bar-icon-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,12 +121,12 @@
   cursor: pointer;
 }
 
-.top-bar-toggle:hover {
+.top-bar-icon-button:hover {
   background: var(--color-panel-edge);
   color: var(--color-text-primary);
 }
 
-.top-bar-toggle[aria-pressed="true"] {
+.top-bar-icon-button[aria-pressed="true"] {
   color: var(--color-accent-light);
 }
 

@@ -38,10 +38,13 @@ export function useAppSettings() {
     [refreshRecentProjects],
   );
 
+  const clearLastOpenedProject = useCallback(() => appSettings.setLastOpenedProject(null), []);
+
   return {
     recentProjects,
     recordProjectOpened,
     forgetProject,
     getLastOpenedProject: appSettings.getLastOpenedProject,
+    clearLastOpenedProject,
   };
 }

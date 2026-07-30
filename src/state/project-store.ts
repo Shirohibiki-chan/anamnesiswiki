@@ -21,6 +21,7 @@ type ProjectStoreState = {
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
   createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
+  closeProject: () => void;
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
   renameNode: (id: string, name: string) => void;
@@ -73,6 +74,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         get().addNode({ parentId: null, templateKey: FOLDER_TEMPLATE_KEY, name: folder });
       }
       return { ok: true, rootPath };
+    },
+
+    closeProject() {
+      set({ rootPath: null, project: null, nodes: {}, isLoaded: false, lastSavedAt: null });
     },
 
     addNode(input) {

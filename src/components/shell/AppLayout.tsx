@@ -2,14 +2,21 @@
 // Tree, page, and properties content are placeholders until Phases 3, 4, 6.
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
+import { useAppSettings } from "../../hooks/use-app-settings";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
 export function AppLayout() {
-  const { project, nodes } = useProject();
+  const { project, nodes, closeProject } = useProject();
+  const { clearLastOpenedProject } = useAppSettings();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
   const nodeCount = Object.keys(nodes).length;
+
+  async function handleSwitchProject() {
+    await clearLastOpenedProject();
+    closeProject();
+  }
 
   return (
     <div className={`app-layout${isRightPanelOpen ? "" : " app-layout-properties-collapsed"}`}>
@@ -27,6 +34,7 @@ export function AppLayout() {
           projectName={project?.name ?? "Untitled Project"}
           isRightPanelOpen={isRightPanelOpen}
           onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
+          onSwitchProject={() => void handleSwitchProject()}
         />
         <main className="app-layout-page">
           <div className="app-layout-placeholder">

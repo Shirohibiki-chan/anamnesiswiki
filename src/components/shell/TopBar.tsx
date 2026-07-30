@@ -1,16 +1,17 @@
 // Spans the center panel — breadcrumb on the left, right-panel toggle + save
 // indicator on the right. Breadcrumb is project-name-only until Phase 3/4
 // give it a real selected-page path to walk.
-import { PanelRight } from "lucide-react";
+import { FolderOpen, PanelRight } from "lucide-react";
 import { SaveIndicator } from "./SaveIndicator";
 
 type TopBarProps = {
   projectName: string;
   isRightPanelOpen: boolean;
   onToggleRightPanel: () => void;
+  onSwitchProject: () => void;
 };
 
-export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel }: TopBarProps) {
+export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel, onSwitchProject }: TopBarProps) {
   return (
     <header className="top-bar">
       <div className="top-bar-breadcrumb">
@@ -18,9 +19,12 @@ export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel }: To
       </div>
       <div className="top-bar-right">
         <SaveIndicator />
+        <button type="button" className="top-bar-icon-button" aria-label="Switch project" onClick={onSwitchProject}>
+          <FolderOpen size={16} />
+        </button>
         <button
           type="button"
-          className="top-bar-toggle"
+          className="top-bar-icon-button"
           aria-pressed={isRightPanelOpen}
           aria-label={isRightPanelOpen ? "Hide properties panel" : "Show properties panel"}
           onClick={onToggleRightPanel}
