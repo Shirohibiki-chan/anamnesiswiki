@@ -9,7 +9,7 @@ import { useProject } from "../../hooks/use-project";
 import { useTreeData } from "../../hooks/use-tree-data";
 
 export function PageTitle({ node }: { node: Node }) {
-  const { project, renameNode } = useProject();
+  const { project, renameNode, selectNode } = useProject();
   const { getEffectiveColor, getAncestorChain } = useTreeData();
   const [isEditing, setIsEditing] = useState(false);
 
@@ -27,11 +27,15 @@ export function PageTitle({ node }: { node: Node }) {
   return (
     <div className="page-title">
       <div className="page-title-breadcrumb">
-        <span>{project?.name}</span>
+        <button type="button" className="page-title-breadcrumb-link" onClick={() => selectNode(null)}>
+          {project?.name}
+        </button>
         {ancestors.map((ancestor) => (
           <span key={ancestor.id} className="page-title-breadcrumb-item">
             <ChevronRight size={10} />
-            {ancestor.name}
+            <button type="button" className="page-title-breadcrumb-link" onClick={() => selectNode(ancestor.id)}>
+              {ancestor.name}
+            </button>
           </span>
         ))}
         <span className="page-title-breadcrumb-item page-title-breadcrumb-current">

@@ -2,7 +2,7 @@
 
 ## Where We Are
 
-**Phase 5 shipped 2026-07-30.** Pages now use a real BlockNote block editor — slash-menu blocks, three custom callouts (Info/Quote/Secret), `@` mentions, and `[[wikilink]]` cross-references, all with click-to-navigate. Next up is Phase 6 (properties panel).
+**Phase 6 shipped 2026-07-30.** The right sidebar now renders a real properties panel — image upload, template-defined fields (Summary, Friends, Leader, Participants, etc.), and tags — for every non-folder page. Next up is Phase 7 (templates).
 
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
 
@@ -74,9 +74,11 @@ Deferred to later phases; explicitly out of scope now:
 - User-editable templates — templates live in code in Phase 1.
 - Interactive atlas / nested maps — LK's atlas feature is not being cloned in Phase 1.
 - Timeline / relationship graph views — future features, not scoped.
-- **OS-level file drag-and-drop is off** (`dragDropEnabled: false` in `tauri.conf.json`), traded off in Phase 3 to make the tree's own drag-to-reparent work — Tauri's native drag-drop handling was intercepting react-dnd's in-page drag events before they ever reached the page (a known Tauri/WebView2 conflict). Phase 6 (image upload drag-drop) and Phase 8 (`.lk` drag-in) were both expecting native OS drop zones; they'll need `onDragDropEvent` (Tauri's own drag event API, separate from HTML5 DnD) or a plain file-picker button instead.
+- **OS-level file drag-and-drop is off** (`dragDropEnabled: false` in `tauri.conf.json`), traded off in Phase 3 to make the tree's own drag-to-reparent work — Tauri's native drag-drop handling was intercepting react-dnd's in-page drag events before they ever reached the page (a known Tauri/WebView2 conflict). **Turned out to be a non-issue for Phase 6's image upload** — with Tauri's own interception off, plain HTML5 DnD works normally in the webview, so a dropped OS file arrives as a real browser `File` with usable bytes; no Tauri-specific drag API needed. Phase 8 (`.lk` drag-in) still hasn't been built, so it's unconfirmed there yet, but the same should hold.
 - **Pages can't have tabs added, renamed, or deleted yet** — only the template's starting tabs exist (currently just the one "Main" stopgap tab, since templates themselves don't exist until Phase 7). Flagged during Phase 4 live-testing: LegendKeeper itself treats tabs as freeform per page, not locked to a template, so this is real functionality to add, not a nice-to-have. Deliberately deferred to Phase 7 rather than bolted onto Phase 4, since it depends on the template registry existing first. See `docs/plan.md` Phase 7.
 - **Wikilinks never guess between two pages sharing the same name** — `[[Name]]` only auto-converts when the name is unique across the project; otherwise it's left as plain text (same principle as Obsidian: ambiguity should never resolve silently). There's no picker specifically for "which one did you mean" beyond that — use `@` instead, which always lists every match. Flagged during Phase 5 live-testing as a real, if minor, gap; not fixed since the user was fine leaving it as-is for now.
+- **No per-page custom properties yet** — the properties panel only renders whatever fields the node's template defines; there's no "+ Add property" for a one-off field on a single page. Requested during Phase 6 live-testing, logged in `docs/plan.md`'s Queued Adjustments for its own design pass rather than bolted on.
+- **New pages always require picking a template up front** — requested during Phase 6 live-testing that this become optional (a "Blank" option that a template can be applied to later). Logged under `docs/plan.md` Phase 7 rather than built now, since Phase 7 is what actually builds the template picker.
 
 ## What Phase 0 Delivered
 
@@ -149,6 +151,23 @@ The real writing surface: a live BlockNote editor instead of Phase 4's placehold
   - Renaming/moving a node right after typing in it could leave a stale duplicate directory behind, or leave the renamed file's own content one save behind. Root causes: a pending debounced content-save could race an immediate rename/move (fixed by flushing pending saves before relocating, and cancelling them before deleting, using `autosave.ts`'s previously-unused `flushSave`/`cancelSave`); and `relocateNode` only ever moved the file to its new path without ever rewriting its contents, so a renamed file's own `name` field could still say the old name (fixed by always re-saving the node at its new location right after the move).
   - The tree's selection highlight didn't follow a mention/wikilink-driven navigation (only ever synced from the tree's own clicks). `TreePanel.tsx` now syncs the tree's selection/focus (and expands whatever ancestors it needs to) whenever `project.selectedId` changes, regardless of cause.
 - Also fixed: clicking the visually-empty space below a short page's content did nothing, since BlockNote's editable area shrink-wraps to its own text and won't stretch via CSS. Worked around in JS — a click landing on the wrapper's own background (not any rendered content) places the cursor at the document's end.
+
+## What Phase 6 Delivered
+
+The right sidebar: image upload, per-template fields, and tags for every non-folder page.
+
+- **`src/components/properties/`** — `PropertiesPanel.tsx` (reads `templates.ts`'s new `PROPERTY_SCHEMAS` for the selected node's template and renders `ImageSlot` + fixed text/date fields + refs fields + `TagsProperty`, in that order), `ImageSlot.tsx`, `TextProperty.tsx`, `DateProperty.tsx`, `TagsProperty.tsx`, `RefsProperty.tsx`, `properties.css`. Wired into `AppLayout.tsx` in place of the Phase 2 placeholder.
+- **`templates.ts` gained `PROPERTY_SCHEMAS`** — the per-template property lists copied from the prototype (minus tabs/placeholder copy, which stay Phase 7's job), same "fold into `template-registry.ts` later" pattern already used for `TEMPLATE_LABELS`/`canHaveChildren`.
+- **`schema.ts`'s `Node` gained `image?: string`** (an asset filename inside `assets/`, not a path). **`filesystem-service.ts`** gained `saveAssetImage`/`readAssetImage`/`deleteAssetImage` (binary read/write, addressed by filename since an image outlives any single rename/move of its page). **`project-store.ts`** gained `updateNodeProperty`, `updateNodeTags`, `setNodeImage`, `clearNodeImage`. A new **`use-node-image.ts`** hook resolves an image filename to a Blob object URL for display.
+- **A drag-drop assumption from Phase 3 turned out fine** — see the Known Design Gaps entry above; `ImageSlot`'s drop zone is plain HTML5 DnD and works because `dragDropEnabled: false` already stops Tauri's webview from intercepting it.
+- **Two interpretive calls**, surfaced to the user rather than assumed silently: reference fields (Leader, Owner, etc.) stay multi-select like Friends rather than special-casing singular-sounding ones; the `date` property type renders as free text rather than a native date picker, since fictional calendars ("Year 872, Third Age") don't fit a real calendar widget. No template currently uses `date` — Event's "When" is `text` — but the component exists for whenever one does.
+- **Five rounds of live-testing polish**, all from screenshots since the issues were hard to describe in words alone:
+  - Image preview was forced into a square crop; now only the empty "drop image here" state stays square, a set image shows at its own aspect ratio, and the placeholder border/background frame disappears once an image is set (matches LegendKeeper's borderless look).
+  - Text-type fields (Summary, When) now read as plain content, invisible-bordered until hover/focus, via a `.property-value-input`/`.property-value-textarea` style used only for those — the Friends-search and Add-tag inputs kept their normal visible bordered look since those are action affordances.
+  - Field order took two passes: fixed text/date fields always render first (so a growing refs list can't push them down), refs fields come next, Tags stays last.
+  - The search/add input in both `RefsProperty` and `TagsProperty` now renders above its own chip list, not below — otherwise the input's position kept drifting down as chips accumulated.
+  - `PageTitle.tsx`'s breadcrumb trail is now clickable (project name + every ancestor), same click-to-navigate as a mention/wikilink.
+- **Two asset-lifecycle bugs caught in a final self-review**, not user-reported: deleting a node never cleaned up its image file in `assets/` (fixed in `deleteNode`), and duplicating a node with an image cloned the filename verbatim, so original and copy shared one file on disk — replacing/removing the image on either would've deleted it out from under the other (fixed by making `duplicateNode` async and copying the image bytes to a fresh filename per clone).
 
 See `docs/plan.md` for the full phase list.
 

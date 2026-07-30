@@ -1,10 +1,10 @@
 // The only file that reads or writes project data on disk. See CLAUDE.md's
 // architecture rules and docs/spec.md §Data model for the on-disk layout.
 import { join } from "@tauri-apps/api/path";
-import { exists, mkdir, readDir, readTextFile, remove, rename, writeTextFile } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, readDir, readFile, readTextFile, remove, rename, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
 import { canHaveChildren } from "../constants/templates";
-import { FOLDER_META_FILE as FOLDER_FILE, PAGE_META_FILE, PROJECT_FILE } from "../constants/paths";
+import { ASSETS_DIR, FOLDER_META_FILE as FOLDER_FILE, PAGE_META_FILE, PROJECT_FILE } from "../constants/paths";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -189,4 +189,24 @@ export async function renameNode(rootPath: string, allNodesBefore: Node[], allNo
 
 export async function moveNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
   await relocateNode(rootPath, allNodesBefore, allNodesAfter, nodeId);
+}
+
+// Phase 6 image slot — assets live in a flat assets/ dir (not tree-mirrored,
+// since a node's uploaded image outlives any single rename/move) addressed by
+// the filename stored on Node.image. Never derived from the node's name, so
+// renaming a page can't orphan its own image the way an early filesystem-path
+// scheme once orphaned children (see relocateNode's comments above).
+export async function saveAssetImage(rootPath: string, fileName: string, data: Uint8Array): Promise<void> {
+  const assetsDir = await join(rootPath, ASSETS_DIR);
+  await mkdir(assetsDir, { recursive: true });
+  await writeFile(await join(assetsDir, fileName), data);
+}
+
+export async function readAssetImage(rootPath: string, fileName: string): Promise<Uint8Array> {
+  return readFile(await join(rootPath, ASSETS_DIR, fileName));
+}
+
+export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {
+  const path = await join(rootPath, ASSETS_DIR, fileName);
+  if (await exists(path)) await remove(path);
 }

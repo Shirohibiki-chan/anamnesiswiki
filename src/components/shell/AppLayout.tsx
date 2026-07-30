@@ -1,10 +1,10 @@
 // Three-column app frame — left tree / center page / right properties.
-// Page and properties content are still placeholders until Phases 4 and 6.
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
+import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
@@ -38,9 +38,7 @@ export function AppLayout() {
 
       {isRightPanelOpen && (
         <aside className="app-layout-properties">
-          <div className="app-layout-placeholder">
-            <p>Properties panel arrives in Phase 6.</p>
-          </div>
+          <PropertiesPanel key={project?.selectedId ?? "none"} />
         </aside>
       )}
     </div>

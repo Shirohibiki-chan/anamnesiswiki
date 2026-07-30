@@ -34,10 +34,14 @@ type ProjectStoreState = {
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
   updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
   toggleTabHidden: (nodeId: string, tabId: string) => void;
+  updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
+  updateNodeTags: (nodeId: string, tags: string[]) => void;
+  setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
+  clearNodeImage: (nodeId: string) => Promise<void>;
   renameNode: (id: string, name: string) => void;
   moveNode: (id: string, newParentId: string | null, rootIndex?: number) => void;
   deleteNode: (id: string) => void;
-  duplicateNode: (id: string) => void;
+  duplicateNode: (id: string) => Promise<void>;
   selectNode: (id: string | null) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
 };
@@ -143,6 +147,40 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       get().updateNode(nodeId, { tabs });
     },
 
+    updateNodeProperty(nodeId, key, value) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      get().updateNode(nodeId, { properties: { ...existing.properties, [key]: value } });
+    },
+
+    updateNodeTags(nodeId, tags) {
+      get().updateNode(nodeId, { tags });
+    },
+
+    async setNodeImage(nodeId, data, extension) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[nodeId];
+      if (!rootPath || !existing) return;
+
+      const fileName = `${crypto.randomUUID()}.${extension}`;
+      await fsService.saveAssetImage(rootPath, fileName, data);
+      // Drop the old file only after the new one is safely written, and only
+      // if this node still exists (it could have been deleted mid-upload).
+      const previousImage = get().nodes[nodeId]?.image;
+      get().updateNode(nodeId, { image: fileName });
+      if (previousImage) void fsService.deleteAssetImage(rootPath, previousImage);
+    },
+
+    async clearNodeImage(nodeId) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[nodeId];
+      if (!rootPath || !existing?.image) return;
+      const previousImage = existing.image;
+      get().updateNode(nodeId, { image: undefined });
+      await fsService.deleteAssetImage(rootPath, previousImage);
+    },
+
     async renameNode(id, name) {
       const { rootPath, nodes } = get();
       const existing = nodes[id];
@@ -217,9 +255,17 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ nodes: nextNodes, project: nextProject });
       void fsService.deleteNode(rootPath, existing, allNodesBefore).then(markSaved);
       void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      // A deleted node's own uploaded image (see ImageSlot, Phase 6) lives in
+      // the flat assets/ dir, not inside the node's own file/directory, so
+      // fsService.deleteNode above never touches it — clean it up here or it
+      // orphans forever.
+      for (const removedId of toRemove) {
+        const removedImage = nodes[removedId]?.image;
+        if (removedImage) void fsService.deleteAssetImage(rootPath, removedImage);
+      }
     },
 
-    duplicateNode(id) {
+    async duplicateNode(id) {
       const { rootPath, project, nodes } = get();
       const original = nodes[id];
       if (!rootPath || !project || !original) return;
@@ -228,18 +274,34 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const idMap = new Map(subtreeIds.map((subId) => [subId, crypto.randomUUID()]));
       const now = Date.now();
 
-      const clones: Node[] = subtreeIds.map((subId) => {
-        const source = nodes[subId];
-        const isRootOfDuplicate = subId === id;
-        return {
-          ...source,
-          id: idMap.get(subId)!,
-          parentId: isRootOfDuplicate ? source.parentId : (idMap.get(source.parentId!) ?? null),
-          name: isRootOfDuplicate ? `${source.name} (Copy)` : source.name,
-          createdAt: now,
-          updatedAt: now,
-        };
-      });
+      const clones: Node[] = await Promise.all(
+        subtreeIds.map(async (subId) => {
+          const source = nodes[subId];
+          const isRootOfDuplicate = subId === id;
+          // A clone must get its own copy of the image file — sharing the
+          // original's filename would mean deleting/replacing the image on
+          // either the original or the copy later deletes it out from under
+          // the other (fsService has no dedicated "copy" — read + rewrite
+          // under a fresh name does the same thing).
+          let image = source.image;
+          if (image) {
+            const extension = image.slice(image.lastIndexOf(".") + 1);
+            const clonedFileName = `${crypto.randomUUID()}.${extension}`;
+            const bytes = await fsService.readAssetImage(rootPath, image);
+            await fsService.saveAssetImage(rootPath, clonedFileName, bytes);
+            image = clonedFileName;
+          }
+          return {
+            ...source,
+            id: idMap.get(subId)!,
+            parentId: isRootOfDuplicate ? source.parentId : (idMap.get(source.parentId!) ?? null),
+            name: isRootOfDuplicate ? `${source.name} (Copy)` : source.name,
+            image,
+            createdAt: now,
+            updatedAt: now,
+          };
+        }),
+      );
 
       const nextNodes = { ...nodes };
       for (const clone of clones) nextNodes[clone.id] = clone;

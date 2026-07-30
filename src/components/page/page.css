@@ -38,6 +38,20 @@
   color: var(--color-text-secondary);
 }
 
+.page-title-breadcrumb-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.page-title-breadcrumb-link:hover {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+
 .page-title-row {
   display: flex;
   align-items: center;

@@ -167,7 +167,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           <ContextMenu
             canHaveChildren={nestable}
             onRename={() => void node.edit()}
-            onDuplicate={() => duplicateNode(node.id)}
+            onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
             onDelete={handleDelete}
             onAddChild={() => setOpenPopover("add")}

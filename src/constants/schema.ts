@@ -36,6 +36,11 @@ export type Node = {
   properties: Record<string, unknown>;
   tags: string[];
   color?: string;
+  // Filename of the uploaded portrait/cover image inside the project's
+  // assets/ directory (see paths.ts's ASSETS_DIR), not a full path — Phase 6's
+  // ImageSlot resolves it against the project root when it needs to display
+  // or delete the file.
+  image?: string;
   createdAt: number;
   updatedAt: number;
 };
