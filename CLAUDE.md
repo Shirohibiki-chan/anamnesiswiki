@@ -85,16 +85,7 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 10. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
 11. **No backend, no database, no authentication, no unprompted network calls** — see Policy Boundary.
 12. **Template placeholder copy is not reworded without asking** — the LK-style prompts are a designed asset, deliberately shaped. Don't extract them into an editable content system either.
-
-### Naming
-
-| Convention | Applied to |
-|------------|-----------|
-| `PascalCase.tsx` | React components |
-| `lowercase-hyphenated.ts` | Everything else — hooks, services, constants, state |
-| `use-*.ts` | Custom hooks |
-
-No `index.ts` barrel files. No files named `utils`, `misc`, `helpers`, or `common`.
+13. **No `index.ts` barrel files, and no files named `utils`, `misc`, `helpers`, or `common`** — naming otherwise follows what's already on disk.
 
 ### Data on disk
 
@@ -152,15 +143,7 @@ Import shows a preview (tree + inferred template counts + a plain-language list 
 
 ## Deployment
 
-Desktop-first, via `pnpm tauri build`: `.dmg`, `.msi`, `.deb`, `.AppImage`. No auto-update and no CI/CD in Phase 1 — manual builds until there's a release rhythm.
-
-## Don't Do This
-
-Everything in Architecture Rules and Policy Boundary above, plus:
-
-- Don't fork BlockNote — extend it via its documented API.
-- Don't add custom Rust commands unless the fs plugin genuinely can't do the job.
-- Don't scatter template metadata across components.
+No CI/CD in Phase 1 — releases are manual `pnpm tauri build` runs until there's a rhythm worth automating.
 
 ## File Editing
 
