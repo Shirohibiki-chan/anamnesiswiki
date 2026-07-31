@@ -11,7 +11,7 @@ import { TreeItem } from "./TreeItem";
 import { TreeSearch } from "./TreeSearch";
 
 export function TreePanel() {
-  const { project, renameNode, moveNode, setExpanded, selectNode } = useProject();
+  const { project, renameNode, moveNodes, setExpanded, selectNode } = useProject();
   const { treeData, getAncestorChain } = useTreeData();
   const [searchQuery, setSearchQuery] = useState("");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
@@ -26,13 +26,18 @@ export function TreePanel() {
   // selection/focus state to match whenever `selectedId` changes for any
   // reason. `treeApi.select()` re-fires `onSelect` with the same id, which
   // is a no-op here since the dependency below is keyed on the id value.
+  //
+  // The `isSelected` guard is what lets multi-selection survive: `select()`
+  // replaces the whole selection with one node, so running it for a node the
+  // tree has *already* got selected would collapse a ctrl-click selection the
+  // moment it was made.
   useEffect(() => {
     const selectedId = project?.selectedId;
     if (!selectedId) return;
     for (const ancestor of getAncestorChain(selectedId)) {
       if (!project?.expandedIds.includes(ancestor.id)) setExpanded(ancestor.id, true);
     }
-    treeApiRef.current?.select(selectedId);
+    if (!treeApiRef.current?.isSelected(selectedId)) treeApiRef.current?.select(selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.selectedId]);
 
@@ -60,17 +65,28 @@ export function TreePanel() {
             initialOpenState={initialOpenState}
             searchTerm={searchQuery}
             searchMatch={(node) => (searchMatcher ? searchMatcher(node.data.id) : true)}
-            disableMultiSelection
             onRename={({ id, name }) => renameNode(id, name)}
             onMove={({ dragIds, parentId, index }) => {
               // react-arborist reports the drop index within the destination
               // regardless of depth. It used to be discarded for anything but
               // the root, so dragging a page around inside a folder appeared
               // to work and then snapped back to creation order.
-              dragIds.forEach((id, offset) => moveNode(id, parentId, index + offset));
+              //
+              // All of them go in one call — a dragged multi-selection arrives
+              // here as several ids, and moving them one at a time races on
+              // disk (see the store's moveNodes).
+              void moveNodes(dragIds, parentId, index);
             }}
             onToggle={(id) => setExpanded(id, treeApiRef.current?.isOpen(id) ?? false)}
-            onSelect={(selected) => selectNode(selected[0]?.id ?? null)}
+            // The page view follows the row you last touched, not the topmost
+            // one in the selection — `selected` arrives in tree order, so
+            // shift-selecting *upwards* would otherwise throw you onto a
+            // different page than the one you clicked.
+            onSelect={(selected) => {
+              const focused = treeApiRef.current?.focusedNode;
+              const primary = focused && selected.some((node) => node.id === focused.id) ? focused : selected[0];
+              selectNode(primary?.id ?? null);
+            }}
           >
             {TreeItem}
           </Tree>

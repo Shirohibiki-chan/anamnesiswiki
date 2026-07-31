@@ -1,21 +1,33 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 // Only the pure path logic is unit-tested here; saveNode is included because
 // its length guard runs before it touches disk, and the fs plugin is mocked
 // out to nothing so nothing is written either way.
 vi.mock("@tauri-apps/api/path", () => ({ sep: () => "/" }));
-vi.mock("@tauri-apps/plugin-fs", () => ({
-  mkdir: async () => {},
-  writeTextFile: async () => {},
-  exists: async () => false,
-  readDir: async () => [],
-  readTextFile: async () => "",
-  remove: async () => {},
-  rename: async () => {},
-  readFile: async () => new Uint8Array(),
-  writeFile: async () => {},
+// Spies rather than bare stubs, because the batch delete/move paths are about
+// *which* paths get touched and in what order — that's the whole risk they
+// carry, and it's invisible from their return values.
+const fsMock = vi.hoisted(() => ({
+  mkdir: vi.fn<(path: string, options?: unknown) => Promise<void>>(async () => {}),
+  writeTextFile: vi.fn<(path: string, contents: string) => Promise<void>>(async () => {}),
+  exists: vi.fn<(path: string) => Promise<boolean>>(async () => false),
+  readDir: vi.fn<(path: string) => Promise<unknown[]>>(async () => []),
+  readTextFile: vi.fn<(path: string) => Promise<string>>(async () => ""),
+  remove: vi.fn<(path: string, options?: unknown) => Promise<void>>(async () => {}),
+  rename: vi.fn<(from: string, to: string) => Promise<void>>(async () => {}),
+  readFile: vi.fn<(path: string) => Promise<Uint8Array>>(async () => new Uint8Array()),
+  writeFile: vi.fn<(path: string, data: Uint8Array) => Promise<void>>(async () => {}),
 }));
+vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 
-import { buildPathIndex, PathTooLongError, planRelocations, resolveNodePath, saveNode } from "./filesystem-service";
+import {
+  buildPathIndex,
+  deleteNodes,
+  moveNodes,
+  PathTooLongError,
+  planRelocations,
+  resolveNodePath,
+  saveNode,
+} from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -319,5 +331,72 @@ describe("path length guard", () => {
   it("allows an ordinary path through untouched", async () => {
     const ordinary = node({ id: "o", name: "Valera Jiang", parentId: null, templateKey: "character" });
     await expect(saveNode("C:/Projects/World", ordinary, [ordinary])).resolves.toBeUndefined();
+  });
+});
+
+// Deleting or moving a multi-selection is one operation, not a loop over the
+// single-node calls — every relocation renumbers colliding siblings across the
+// whole graph, so a second pass would resolve its target against a layout the
+// first had already rearranged underneath it. See docs/handoff.md §Storage.
+describe("batch delete and move", () => {
+  beforeEach(() => {
+    fsMock.remove.mockClear();
+    fsMock.rename.mockClear();
+    fsMock.writeTextFile.mockClear();
+  });
+
+  it("resolves every deleted path against the pre-delete layout", async () => {
+    const first = node({ id: "1", name: "Ruins", parentId: null, templateKey: "note", createdAt: 1 });
+    const second = node({ id: "2", name: "Ruins", parentId: null, templateKey: "note", createdAt: 2 });
+
+    await deleteNodes("/root", [first, second], [first, second], []);
+
+    // Not ["/root/Ruins.json", "/root/Ruins.json"] — which is what resolving
+    // the second one against a graph the first had already left would give,
+    // deleting one file twice and leaving the other on disk forever.
+    expect(fsMock.remove.mock.calls.map((call) => call[0])).toEqual(["/root/Ruins.json", "/root/Ruins (2).json"]);
+  });
+
+  it("renumbers a surviving collision sibling once, after the deletes", async () => {
+    const first = node({ id: "1", name: "Ruins", parentId: null, templateKey: "note", createdAt: 1 });
+    const second = node({ id: "2", name: "Ruins", parentId: null, templateKey: "note", createdAt: 2 });
+
+    await deleteNodes("/root", [first], [first, second], [second]);
+
+    expect(fsMock.remove.mock.calls.map((call) => call[0])).toEqual(["/root/Ruins.json"]);
+    // "Ruins (2)" is now the only Ruins, so it takes the unsuffixed name.
+    expect(fsMock.rename.mock.calls).toEqual([["/root/Ruins (2).json", "/root/Ruins.json"]]);
+  });
+
+  it("moves several nodes into a folder in one pass, rewriting each one's own file", async () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const before = [
+      canon,
+      node({ id: "a", name: "Sampo", parentId: null, templateKey: "note" }),
+      node({ id: "b", name: "Valera", parentId: null, templateKey: "note" }),
+    ];
+    const after = [
+      canon,
+      node({ id: "a", name: "Sampo", parentId: "canon", templateKey: "note" }),
+      node({ id: "b", name: "Valera", parentId: "canon", templateKey: "note" }),
+    ];
+
+    await moveNodes("/root", before, after, ["a", "b"]);
+
+    // Two relocations means applyRelocations stages via temp paths first (so a
+    // crash mid-shuffle can't leave one node sitting on another's path), hence
+    // four renames rather than two — what matters is where they start and end.
+    const sources = fsMock.rename.mock.calls.map((call) => call[0]);
+    const destinations = fsMock.rename.mock.calls.map((call) => call[1]);
+    expect(sources).toContain("/root/Sampo.json");
+    expect(sources).toContain("/root/Valera.json");
+    expect(destinations).toContain("/root/Canon/Sampo.json");
+    expect(destinations).toContain("/root/Canon/Valera.json");
+    // Both files rewritten at their new homes — a rename moves the path but
+    // leaves the stale parentId inside the file.
+    expect(fsMock.writeTextFile.mock.calls.map((call) => call[0])).toEqual([
+      "/root/Canon/Sampo.json",
+      "/root/Canon/Valera.json",
+    ]);
   });
 });

@@ -25,7 +25,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNode, addNode, updateNode, setProjectHome } = useProjectActions();
+  const { duplicateNode, deleteNodes, addNode, updateNode, setProjectHome } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive } = useDialogs();
@@ -68,11 +68,30 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // declaration, which could in principle be called before it.
   const nodeName = fullNode.name;
 
+  // What a menu action applies to. Acting on a row that's part of a
+  // multi-selection acts on the whole selection — right-clicking a row
+  // *outside* it has already replaced the selection with just that row (see
+  // the context-menu handler below), so this reads correctly either way.
+  function targetIds(): string[] {
+    const selected = node.tree.selectedIds;
+    return selected.size > 1 && selected.has(node.id) ? [...selected] : [node.id];
+  }
+
+  const selectionCount = targetIds().length;
+
   async function handleDelete() {
-    const warning = hasChildren
-      ? `Delete "${nodeName}" and everything inside it? This can't be undone.`
-      : `Delete "${nodeName}"? This can't be undone.`;
-    if (await confirmDestructive(warning)) deleteNode(node.id);
+    const ids = targetIds();
+    let warning: string;
+    if (ids.length > 1) {
+      // Deliberately doesn't try to count descendants: "12 pages" when the
+      // user selected 3 folders reads like a miscount rather than a warning.
+      warning = `Delete these ${ids.length} pages, and everything inside them? This can't be undone.`;
+    } else {
+      warning = hasChildren
+        ? `Delete "${nodeName}" and everything inside it? This can't be undone.`
+        : `Delete "${nodeName}"? This can't be undone.`;
+    }
+    if (await confirmDestructive(warning)) deleteNodes(ids);
   }
 
   function handleAddChild(templateKey: string) {
@@ -88,7 +107,10 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         style={rowStyle}
         onContextMenu={(e) => {
           e.preventDefault();
-          node.select();
+          // Right-clicking inside a multi-selection keeps it — that's the
+          // whole point of having made one. Right-clicking anywhere else
+          // replaces it, the way every file manager behaves.
+          if (!node.isSelected) node.select();
           openPopoverAt("menu", e.currentTarget);
         }}
       >
@@ -164,7 +186,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             ownColor={fullNode.color}
             showInheritedHint={!isOwner && effectiveKey !== null}
             onSelect={(colorKey) => {
-              updateNode(node.id, { color: colorKey });
+              for (const id of targetIds()) updateNode(id, { color: colorKey });
               closePopover();
             }}
           />
@@ -180,6 +202,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           <ContextMenu
             canHaveChildren={nestable}
             isProjectHome={isProjectHome}
+            selectionCount={selectionCount}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}

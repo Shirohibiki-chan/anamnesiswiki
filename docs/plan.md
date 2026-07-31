@@ -58,6 +58,14 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 ## Queued Adjustments
 
+- **Duplicate doesn't work on a multi-selection.** The right-click menu hides it
+  above one selected row rather than looping `duplicateNode`, which writes
+  through `saveNodes` without a relocation pass — adding several nodes at once
+  can shift colliding siblings' suffixes the same way deleting them does, and
+  that path hasn't been worked through. Bulk delete, move, and colour are all
+  supported. Fix by giving duplicate the same batch treatment as
+  `deleteNodes`/`moveNodes` (see `docs/handoff.md` §Storage).
+
 - **More right-click menu items.** The user has been through LK's own node context menu against a live (non-read-only) account and has further items she wants; "Set as project home" was the first, built 2026-07-31 because project home depended on it. The rest aren't listed yet — ask her before designing anything.
 
 ---
