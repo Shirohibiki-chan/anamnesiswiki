@@ -89,7 +89,7 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 
 ### Data on disk
 
-The user picks a project folder on first launch (default: `~/Documents/Anamnesis/`). (`docs/spec.md` §Data model says the same thing; both were corrected together on 2026-07-30.)
+The user picks a project folder on first launch (default: `~/Documents/Anamnesis/`, changeable in Settings → Projects — read it via `getProjectsDir`, never `getDefaultProjectsDir`, which is only the fallback). (`docs/spec.md` §Data model says the same thing; both were corrected together on 2026-07-30.)
 
 ```
 Valeraverse/

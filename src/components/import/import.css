@@ -174,3 +174,59 @@
 .import-modal-confirm:hover {
   filter: brightness(1.1);
 }
+
+/* Where the imported world is about to land, shown before you commit to it —
+   this used to be a folder browser that opened after you pressed Import. */
+.import-modal-destination {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.import-modal-destination-path {
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.import-modal-destination-change {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.import-modal-destination-change:hover {
+  color: var(--color-accent-light);
+}
+
+/* Import progress. The bar is the only thing on screen during the minute an
+   image-heavy world takes, so it gets to be the loud element. */
+.import-modal-progress-track {
+  width: 100%;
+  height: 6px;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background: var(--color-panel-alt);
+  overflow: hidden;
+}
+
+.import-modal-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent);
+  transition: width 120ms linear;
+}
+
+.import-modal-progress-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}

@@ -948,3 +948,36 @@
   background: var(--color-panel-alt);
   color: var(--color-text-primary);
 }
+
+/* Settings → Projects. Reuses .update-check-link for the two actions so the
+   settings panels keep one link style between them. */
+.projects-settings-label {
+  margin: 0 0 0.375rem;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.projects-settings-path {
+  margin: 0 0 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-panel-edge);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  /* A path is one long unbroken token; without this it runs off the panel. */
+  word-break: break-all;
+}
+
+.projects-settings-line {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin: 0;
+}
+
+.projects-settings-note {
+  margin: 0.625rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}

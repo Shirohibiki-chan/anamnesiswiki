@@ -93,6 +93,17 @@ export async function pathExists(path: string): Promise<boolean> {
   return exists(path);
 }
 
+/**
+ * Make a directory (and its parents) if it isn't there yet. Used for the
+ * projects folder, which is otherwise only ever a *default path* nobody
+ * creates — a native folder browser can only navigate to folders that exist,
+ * so pointing one at `Documents/Anamnesis` before anything has made it drops
+ * the user in `Documents` to create it by hand.
+ */
+export async function ensureDir(path: string): Promise<void> {
+  await mkdir(path, { recursive: true });
+}
+
 function isFolderNode(node: Node): boolean {
   return node.templateKey === FOLDER_TEMPLATE_KEY;
 }

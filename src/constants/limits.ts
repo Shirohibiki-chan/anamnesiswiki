@@ -23,3 +23,8 @@ export const SEARCH_SNIPPET_CHARS = 100;
 // it, are longer still. A page whose own path is already at 260 has nowhere
 // left to put its contents.
 export const MAX_PATH_CHARS = 200;
+
+// How many LK pictures an import downloads at once. Strictly one at a time
+// made a 53-picture world take about a minute with the window looking frozen;
+// a small pool cuts that without leaning on someone else's server.
+export const IMPORT_IMAGE_CONCURRENCY = 6;

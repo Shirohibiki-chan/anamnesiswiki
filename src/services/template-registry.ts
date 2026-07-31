@@ -101,7 +101,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       },
     ],
     properties: [
-      { key: "summary", label: "Summary", type: "text", placeholder: "A one-line summary." },
+      { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
       { key: "friends", label: "Friends", type: "refs" },
     ],
   },
@@ -151,7 +151,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       },
     ],
     properties: [
-      { key: "summary", label: "Summary", type: "text", placeholder: "A one-line summary." },
+      { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
       { key: "parent_location", label: "Part of", type: "refs" },
     ],
   },
@@ -192,7 +192,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       },
     ],
     properties: [
-      { key: "summary", label: "Summary", type: "text", placeholder: "A one-line summary." },
+      { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
       { key: "leader", label: "Leader", type: "refs" },
       { key: "members", label: "Members", type: "refs" },
     ],
@@ -232,7 +232,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       },
     ],
     properties: [
-      { key: "summary", label: "Summary", type: "text", placeholder: "A one-line summary." },
+      { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
       { key: "owner", label: "Current Owner", type: "refs" },
     ],
   },
@@ -271,7 +271,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       },
     ],
     properties: [
-      { key: "summary", label: "Summary", type: "text", placeholder: "A one-line summary." },
+      { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
       { key: "when", label: "When", type: "text", placeholder: "e.g. Year 872, Third Age" },
       { key: "where", label: "Where", type: "refs" },
       { key: "participants", label: "Participants", type: "refs" },
@@ -353,7 +353,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       },
     ],
     properties: [
-      { key: "summary", label: "Summary", type: "text", placeholder: "A one-line summary." },
+      { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
       { key: "homeland", label: "Homeland", type: "refs" },
     ],
   },

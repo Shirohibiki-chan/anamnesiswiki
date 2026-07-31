@@ -12,6 +12,7 @@ import {
   type Project,
   type Tab,
 } from "../constants/schema";
+import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
@@ -26,6 +27,13 @@ import { useHistoryStore } from "./history-store";
 const STARTER_FOLDERS = ["Canon", "AUs", "Characters", "Locations", "Factions", "Worldbuilding"];
 
 export type CreateProjectResult = { ok: true; rootPath: string } | { ok: false; error: string };
+
+/**
+ * How far along an import is. Two phases, because they fail differently and
+ * take differently long: `images` is dozens of requests to LK's servers and is
+ * where the wait actually is, `writing` is local disk and is quick.
+ */
+export type ImportProgress = { phase: "images" | "writing"; done: number; total: number };
 
 // ─── Undo support ───────────────────────────────────────────────────────────
 
@@ -93,6 +101,7 @@ export type ProjectStoreState = {
     parentDir: string,
     name: string,
     plan: { nodes: Node[]; rootOrder: string[]; pendingImages: ImportPendingImage[]; homeNodeId: string | null },
+    onProgress?: (progress: ImportProgress) => void,
   ) => Promise<CreateProjectResult>;
   closeProject: () => void;
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
@@ -354,7 +363,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // ever makes, and only for this explicit, user-confirmed action — see
     // docs/handoff.md) before anything hits disk. A failed download just
     // leaves that one page without a picture rather than failing the import.
-    async importLkProject(parentDir, name, plan) {
+    async importLkProject(parentDir, name, plan, onProgress) {
       const { nodes, rootOrder, pendingImages, homeNodeId } = plan;
       const trimmed = name.trim();
       if (!trimmed) return { ok: false, error: "Give your project a name." };
@@ -365,7 +374,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         return { ok: false, error: "A folder with that name already exists there." };
       }
 
-      for (const pending of pendingImages) {
+      // Pictures come down from LK's servers one HTTP request each, and a real
+      // world has dozens — this is where essentially all of an import's time
+      // goes. Fetched a few at a time rather than strictly one after another,
+      // and reported as they land, because the alternative is a minute of a
+      // window that looks frozen.
+      let fetched = 0;
+      onProgress?.({ phase: "images", done: 0, total: pendingImages.length });
+
+      async function fetchOne(pending: ImportPendingImage): Promise<void> {
         try {
           const bytes = await lkImportService.fetchLkImage(pending.url);
           const fileName = `${crypto.randomUUID()}.${lkImportService.extensionFromUrl(pending.url)}`;
@@ -374,9 +391,23 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
           if (node) node[pending.field] = fileName;
         } catch {
           // Ignore — see comment above.
+        } finally {
+          fetched += 1;
+          onProgress?.({ phase: "images", done: fetched, total: pendingImages.length });
         }
       }
 
+      // Fixed-size pool: each worker takes the next index until they run out.
+      // Kept modest deliberately — this is someone else's server.
+      const queue = [...pendingImages];
+      const workers = Array.from({ length: Math.min(IMPORT_IMAGE_CONCURRENCY, queue.length) }, async () => {
+        for (let next = queue.shift(); next; next = queue.shift()) {
+          await fetchOne(next);
+        }
+      });
+      await Promise.all(workers);
+
+      onProgress?.({ phase: "writing", done: 0, total: nodes.length });
       useHistoryStore.getState().clear();
       const project = { ...createProject({ name: trimmed, rootOrder }), homeNodeId };
       const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
