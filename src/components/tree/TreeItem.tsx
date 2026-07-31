@@ -4,11 +4,11 @@
 // §Color Cascade and docs/spec.md §Node colors.
 import { useState, type CSSProperties } from "react";
 import type { NodeRendererProps } from "react-arborist";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Plus } from "lucide-react";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
-import { useNode, useProjectActions } from "../../hooks/use-project";
+import { useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
 import { useEffectiveColor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
@@ -25,8 +25,9 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNode, addNode, updateNode } = useProjectActions();
+  const { duplicateNode, deleteNode, addNode, updateNode, setProjectHome } = useProjectActions();
   const effective = useEffectiveColor(node.id);
+  const homeNodeId = useProjectHomeId();
   const { confirmDestructive } = useDialogs();
   const { getLabel, canHaveChildren } = useTemplates();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
@@ -42,6 +43,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const Icon = getTemplateIcon(fullNode.templateKey);
   const showFolderTint = isFolder && !!effectiveHex;
   const hasChildren = (node.children?.length ?? 0) > 0;
+  const isProjectHome = homeNodeId === node.id;
   const showToggle = hasChildren || (nestable && node.isOpen);
 
   const rowStyle: CSSProperties = {
@@ -126,6 +128,8 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           </span>
         )}
 
+        {isProjectHome && <Home size={11} className="tree-row-home-badge" aria-label="Project home" />}
+
         <button
           type="button"
           className="tree-row-color-dot"
@@ -175,9 +179,11 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
             canHaveChildren={nestable}
+            isProjectHome={isProjectHome}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
+            onToggleProjectHome={() => setProjectHome(node.id)}
             onDelete={handleDelete}
             onAddChild={() => setOpenPopover("add")}
             onClose={closePopover}

@@ -56,6 +56,25 @@
   min-width: 0;
 }
 
+/* The house icon doubles as the jump-to-home button once a page has been
+   designated. Sized to the icon itself so the row's layout doesn't shift
+   between the button and the plain-icon fallback. */
+.tree-project-header-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.tree-project-header-home:hover {
+  color: var(--color-text-primary);
+}
+
 .tree-project-header-name span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -227,6 +246,14 @@
 .tree-row:hover .tree-row-color-dot,
 .tree-row:hover .tree-row-add {
   opacity: 1;
+}
+
+/* Unlike the color dot and add button either side of it, the home badge is an
+   indicator rather than a control — it stays visible without hovering, since
+   its whole job is marking which page is home at a glance. */
+.tree-row-home-badge {
+  flex-shrink: 0;
+  color: var(--color-accent-light);
 }
 
 .tree-row-add:hover {

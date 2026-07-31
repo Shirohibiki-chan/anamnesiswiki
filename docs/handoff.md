@@ -18,8 +18,8 @@ Kept short on purpose — this file is read most sessions.
 
 **Phase 8 shipped 2026-07-30.** LK import works against the user's real
 `Valeraverse.lk` (75 resources): tabs, formatting, cross-references, properties,
-images, banners. Phase 9 is LK Export, with a "proper project home" feature
-queued ahead of it (`docs/plan.md` → Queued Adjustments).
+images, banners. **Project home shipped 2026-07-31**, clearing the last thing
+queued ahead of Phase 9 — which is LK Export, designed but not started.
 
 A structural code review, a disk-I/O pass, and a documentation accuracy pass all
 ran on 2026-07-30. What they changed is in `CHANGELOG.md`; what they *concluded*
@@ -203,6 +203,32 @@ is below.
 - **BlockNote's editable area shrink-wraps to its own text** and won't stretch via
   CSS, so clicking the empty space below a short page is handled in JS.
 
+## LK import
+
+- **The LK project root is now a real Node** — the imported project's home page
+  — where Phase 8 turned it into the project's *name* plus, sometimes, a page
+  called "Home". It keeps the root's own name, which is also the project name,
+  the same way LK shows it in both places.
+
+- **The root is in `idMap` but not in `importedIds`, and the two are not
+  interchangeable.** `idMap` is what resolves mentions, so the root belongs in
+  it — that's what fixed the 15 cross-references pointing at the project root.
+  The parent-grouping pass must use `importedIds` instead: group by `idMap` and
+  the root's children key themselves under the root, leaving the top-level walk
+  empty and the whole tree unbuilt.
+
+- **The home page is appended to `nodes` and promoted in `rootOrder`,** not
+  unshifted into both. `nodes` is an unordered bag — the store keys it by id on
+  arrival — and putting home at the front of it only moved every array index in
+  the tests by one for no gain.
+
+- **LK's stock "Welcome to LegendKeeper" page is not imported.** Every fresh LK
+  project ships the identical tutorial there, and importing it verbatim drops
+  LK's onboarding copy (with links to their demo world) into the middle of the
+  user's own. The home page is still created, just empty, and the preview says
+  why. Matched on the heading text, which is the part that survives their
+  releases.
+
 ## Editor & templates
 
 - **Don't fork BlockNote.** Extend via its documented block-spec API.
@@ -237,6 +263,33 @@ is below.
   underneath. Plain HTML5 DnD can't do this — browsers won't reliably start a drag
   from a nested `<button>`.
 
+## Project home
+
+- **Home is an ordinary page that's been *designated*, not a reserved node.**
+  `Project.homeNodeId` points at it and that's the whole mechanism — no special
+  file, no exclusion from the tree, no branch in the loader or the path
+  resolver. This is LK's own model (right-click any page → "Set as project
+  home"), confirmed against a live LK account. The reserved-node design was
+  considered first and is worse: it needs its own storage path, its own load
+  step, and a rule for what happens when the user wants a *different* page to
+  be home.
+
+- **A designated page stays exactly where it lives in the tree.** It isn't
+  hoisted to the root or hidden from its parent — home can be nested three
+  folders deep and still be home. The house badge on its row is the only thing
+  marking it, which is why that badge doesn't hide on hover the way the row's
+  colour dot and add button do.
+
+- **Deleting the home page is allowed and clears the designation** — including
+  when home was merely *inside* a deleted subtree rather than its root. A
+  dangling `homeNodeId` would leave the tree's house button pointing at
+  nothing.
+
+- **`setProjectHome` writes `project.json` immediately**, not through the
+  debounced `PROJECT_META_SAVE_KEY` path that selection and expanded-state use.
+  Those are incidental UI state; this is a deliberate act the user just
+  performed.
+
 ## Product decisions
 
 - **Folders get full-row colour tinting; pages get icon-only.** Folders are
@@ -266,15 +319,14 @@ is below.
 
 Deferred on purpose, not forgotten:
 
-- **No project-home view.** LK import brings the project root's text in as a
-  "Home" page, but there's no dedicated home view independent of any one page.
-  Queued in `docs/plan.md`; needs its own design pass.
 - **LK export (Phase 9) isn't built** — import only. No round-trip yet.
 - **`duplicateNode` stamps every clone in a subtree with the same `createdAt`**,
   so a duplicated folder's children come out in arbitrary order. Cosmetic.
-- **15 broken cross-reference links** on importing the real export — mentions
-  pointing at the LK project root, which becomes the Project rather than a Node.
-  Worth revisiting with the project-home feature, since that's what they'd point at.
+- **The 15 broken cross-reference links are fixed in code but not in the user's
+  copy.** They were mentions pointing at the LK project root, which now imports
+  as a real page. Her existing Valeraverse was imported before that, so it still
+  has them as plain text — they come back on a re-import, which she also needs
+  for LK image URLs (see Phase 9's plan).
 - **The Windows path-length refusal has never fired against a real project.**
   Verified by test only.
 - **The updater's download-and-install path has never run against a real
