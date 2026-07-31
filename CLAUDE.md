@@ -1,88 +1,65 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code working in this repo. **This file is loaded every session — keep it short.** Detail belongs in `docs/`, read on demand.
 
 ## Project Context
 
-This is a personal local-first worldbuilding wiki app for the user, styled as an offline alternative to LegendKeeper. The user builds worlds (characters, locations, factions, species, etc.) via a tree of pages with template-driven structure. All content is stored as JSON files on disk in a folder the user controls.
+A personal local-first worldbuilding wiki for the user, styled as an offline alternative to LegendKeeper. She builds worlds — characters, locations, factions, species — as a tree of pages with template-driven structure, stored as JSON files in a folder she controls.
 
-**What this is:**
-- Tauri v2 desktop app (React + TypeScript renderer, Rust shell)
-- Local-first — the user's project folder is the source of truth, on their disk
-- Single-user by default — no accounts, no cloud, no sign-in
-- LegendKeeper-import compatible on Day 1 (the user has an existing 75-page world to migrate)
-- Template-driven — new pages come pre-populated with structural prompts
+Tauri v2 desktop app: React 19 + TypeScript + Vite renderer, Rust shell left as thin as Tauri ships it. Local-first, single-user, offline. LegendKeeper-import compatible on day one — she has an existing 75-page world to migrate.
 
-**What this is NOT:**
-- Not a browser app. It ships as a desktop app. There is no hosted version.
-- Not a cloud service. There is no server, no backend database, no user auth.
-- Not a LegendKeeper client. The app NEVER talks to LegendKeeper's servers or API. LK integration is import/export of `.lk` files the user manually provides.
-- Not an AI writing tool. No LLM calls baked into the editor. The user writes; the app organizes.
-- Not multi-user in Phase 1. Read-only publish for sharing comes in Phase 1.5.
+**What it is not:** not a browser app (no hosted version), not a cloud service, not a LegendKeeper client, not an AI writing tool, not multi-user in Phase 1. Read-only publish for sharing comes in Phase 1.5.
 
 ## Policy Boundary
 
-This project's design depends on a hard line:
-- OK: Read/write JSON files inside the user's project folder via Tauri's fs plugin.
-- OK: Import a `.lk` file the user drags in, export a `.lk` file the user asks for.
-- OK (Phase 1.5): Generate a static HTML site to a user-chosen output folder for read-only sharing.
-- NOT OK: Any network call to LegendKeeper's servers, ever. LK integration is file-based only.
-- NOT OK: Any network call at all in Phase 1. No telemetry, no error reporting, no update checks, no font CDNs. Bundle everything.
-- NOT OK: Any cloud sync, auth, or account layer in Phase 1. If a feature proposal requires "let's just add a Supabase call," the answer is no — Phase 2 is when we revisit that, and only if the shared-folder sync approach genuinely stops working for the user.
-- NOT OK: Baking LLM/AI features into the editor. This is a writing tool for a human writer.
+Hard lines. If a feature seems to require crossing one, push back and find a local-file alternative.
 
-If a feature seems to require any of the above, push back and find a local-file alternative.
+- **No network calls at all in Phase 1.** No telemetry, error reporting, update checks, or font CDNs — bundle everything. One exception, already shipped: LK import fetches images from LK's CDN, on explicit user confirmation only.
+- **Never contact LegendKeeper's servers.** LK integration is file-based only — import and export of `.lk` files the user provides.
+- **No cloud sync, auth, or accounts in Phase 1.** Not "let's just add a Supabase call." Phase 2 revisits this, and only if shared-folder sync genuinely stops working for her.
+- **No LLM/AI features in the editor.** This is a writing tool for a human writer.
+- OK: read/write JSON inside the user's project folder via Tauri's fs plugin. OK in Phase 1.5: generate a static HTML site to a user-chosen output folder.
 
 ## Plan
 
-See `docs/plan.md`. Work phases in order. Do not build ahead. The master spec is `docs/spec.md` — it's the reference for what any given phase item actually means; don't invent scope not in there.
+See `docs/plan.md`. Work phases in order, don't build ahead. `docs/spec.md` is the master spec for what a phase item means — don't invent scope that isn't in it.
 
 ## Tracking Docs
 
-When shipping a change, update the tracking doc that owns the relevant item to reflect resolution. These updates are part of completing the change — show them in the plan before executing.
+Updating these is part of completing a change, not a follow-up. Show them in the plan before executing.
 
-- `docs/plan.md` — mark completed phase items done. New in-scope work goes under the appropriate phase or a "Queued" section near the bottom.
-- `docs/handoff.md` — mark resolved polish items as shipped (note the version or date). Add newly discovered issues to the appropriate section.
-- `docs/lk-format.md` — when import/export changes, update the mapping notes. This doc is what future-us reads when LK ships a new schema version.
-- `CHANGELOG.md` — required for all user-visible changes. Add a new dated section at the top with Additions / Fixes / Adjustments / Renames subheaders as appropriate. Plain-language, user-visible entries — not internal refactor notes.
+- **`CHANGELOG.md`** — required for all user-visible changes. New dated section at top (`## 2026-07-30`), with Additions / Fixes / Adjustments / Renames as needed. Plain-language and user-visible — not internal refactor notes. Never `[Unreleased]`.
+- **`docs/plan.md`** — mark phase items done; new in-scope work goes under its phase or the Queued section.
+- **`docs/handoff.md`** — current state. Mark resolved items shipped, add newly discovered ones. Internal/architectural detail that doesn't belong in the changelog goes here.
+- **`docs/lk-format.md`** — update whenever import/export mapping changes. This is what future-us reads when LK ships a new schema version.
 
 ## Commands
 
 ```bash
-pnpm install         # install dependencies
-pnpm dev             # Vite dev server, browser-only (for fast UI iteration without Rust rebuilds)
-pnpm tauri dev       # full desktop app with hot reload
+pnpm install
+pnpm dev             # Vite only, browser-only — fast UI iteration, no Rust rebuild
+pnpm tauri dev       # full desktop app, hot reload
 pnpm build           # Vite production build → dist/
-pnpm tauri build     # full desktop installer → src-tauri/target/release/bundle/
+pnpm tauri build     # installers → src-tauri/target/release/bundle/
 pnpm lint            # ESLint
-pnpm test            # Vitest unit tests (single run)
+pnpm test            # Vitest, single run
 ```
 
-Tests are Vitest, colocated as `*.test.ts` next to what they cover. Services are the unit-tested layer — pure logic (path resolution, tree shape, LK conversion, autosave) is testable without a DOM, and that's where the bugs that cost real data have shown up. Components aren't tested; there's no jsdom/RTL setup and adding one isn't currently scoped.
+Tests are Vitest, colocated as `*.test.ts`. Services are the unit-tested layer — pure logic (path resolution, tree shape, LK conversion, autosave) is testable without a DOM, and that's where the bugs that cost real data have shown up. Components aren't tested; there's no jsdom/RTL setup and adding one isn't scoped.
 
 ## Architecture
 
-Tauri v2 desktop app. React 19 + TypeScript + Vite in the renderer, Rust shell handling filesystem access via the `@tauri-apps/plugin-fs` plugin. **All app logic lives in the renderer.** Rust code is left as thin as Tauri ships it — no custom Rust commands unless there's a clear reason.
+**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job.
 
-State management: **Zustand**. The store lives in `src/state/`. Hooks access it via `src/hooks/`; components never import the store directly.
+State is **Zustand** in `src/state/`. Editor is **BlockNote** — custom Info/Quote/Secret callout blocks live in `src/services/editor-blocks/`; extend it via its documented API, never fork it. Tree is **react-arborist**.
 
-Editor: **BlockNote** (`@blocknote/react`, `@blocknote/core`). Custom blocks for Info / Quote / Secret callouts live in `src/services/editor-blocks/`. Do not fork BlockNote — extend it via its documented extension API.
-
-Tree: **react-arborist** for the left-panel tree. Drag/drop reparenting, filter, custom row rendering.
-
-### Strict layer order — imports only flow downward:
+### Strict layer order — imports only flow downward
 
 ```
 constants → services → hooks → components
 ```
 
-- Components may only import from `hooks/` (never stores or services directly).
-- Hooks may import from `state/` and `services/`.
-- Services are plain TS — no React imports.
-- `filesystem-service.ts` is the *only* file that reads or writes project files on disk — no exceptions.
-- `lk-import.ts` and `lk-export.ts` are the *only* files that touch the LegendKeeper `.lk` format.
-- `template-registry.ts` is the *only* source of template definitions. Do not scatter template metadata across components.
-- `autosave.ts` is a plain service, not a hook — the debounce timer must survive React re-renders.
+Hooks may import from `state/` and `services/`. Services are plain TS, no React imports. Components live at `src/components/[layer]/File.tsx`, two levels from `src/` — reach `src/state/` as `../../state/`, never `../../../`.
 
 ### Architecture Rules
 
@@ -97,148 +74,101 @@ constants → services → hooks → components
 9. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
 10. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
 11. **No backend, no database, no authentication, no network calls** — see Policy Boundary.
-12. **Template placeholder copy is not to be reworded without asking** — the LK-style prompts are deliberately shaped. See `docs/spec.md` §Templates.
+12. **Template placeholder copy is not reworded without asking** — the LK-style prompts are a designed asset, deliberately shaped. Don't extract them into an editable content system either.
 
-### Naming Conventions
+### Naming
 
 | Convention | Applied to |
 |------------|-----------|
-| `PascalCase.tsx` | All React component files |
-| `lowercase-hyphenated.ts` | All non-component files (hooks, services, constants, state) |
-| `use-*.ts` | Custom React hooks |
-| No `index.ts` barrel files | Imports always reference the file directly |
-| No `utils`, `misc`, `helpers`, `common` | Files are named after what they actually do |
+| `PascalCase.tsx` | React components |
+| `lowercase-hyphenated.ts` | Everything else — hooks, services, constants, state |
+| `use-*.ts` | Custom hooks |
 
-### Import path depth
-
-Components live at `src/components/[layer]/File.tsx` — two levels deep from `src/`. To reach `src/state/` or `src/services/` use `../../state/` and `../../services/`, not `../../../`.
+No `index.ts` barrel files. No files named `utils`, `misc`, `helpers`, or `common`.
 
 ### Data on disk
 
-The user picks a project folder on first launch (default: `~/Documents/Anamnesis/`). Inside:
+The user picks a project folder on first launch (default: `~/Documents/Anamnesis/`). **This section is authoritative** — `docs/spec.md` §Data model predates the directory-storage decision below and is stale on this point.
 
 ```
 Valeraverse/
 ├── project.json                 # tree order, expanded state, selection, project name
 ├── Canon/
 │   ├── _folder.json             # folder's own metadata (color, tags, notes)
-│   ├── Main Story.json          # a leaf page node (item/event/note — never has children)
+│   ├── Main Story.json          # a leaf page (item/event/note — never has children)
 │   └── ...
 ├── AUs/
 │   ├── _folder.json
-│   ├── Demonic AU/
-│   │   ├── _folder.json
-│   │   ├── Characters/
-│   │   │   ├── _folder.json
-│   │   │   ├── Valera Jiang/
-│   │   │   │   ├── _page.json   # the character's own data
-│   │   │   │   └── Her Sword.json  # a page nested under the character
-│   │   │   └── ...
-│   │   └── ...
-│   └── ...
+│   └── Demonic AU/
+│       ├── _folder.json
+│       └── Characters/
+│           ├── _folder.json
+│           └── Valera Jiang/
+│               ├── _page.json      # the character's own data
+│               └── Her Sword.json  # a page nested under the character
 └── assets/
     └── {assetId}.{ext}          # user-uploaded images
 ```
 
-**Why file-per-node with tree-mirroring layout:** the user's writing is legible outside the app. Sync tools (Dropbox, Syncthing) only touch changed files. Git diffs are clean. If the app ever breaks, the user still owns their work as plain JSON.
+**Why file-per-node mirroring the tree:** the user's writing stays legible outside the app. Sync tools (Dropbox, Syncthing) only touch changed files. Git diffs are clean. If the app ever breaks, she still owns her work as plain JSON.
 
-**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` for a folder, `_page.json` for a nestable page — rather than as a flat sibling file. This is deliberate, not incidental: a directory's ownership must never be derived from its *current* name (a rename or a sibling's suffix shifting would silently orphan its children on the next load — this happened once, see `docs/handoff.md`'s Phase 4 notes). Leaf templates (item/event/note) can never have children, so they stay a flat `Name.json` — no wrapping directory.
+**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` or `_page.json` — rather than as a flat sibling file. Deliberate, not incidental: a directory's ownership must never be derived from its *current* name, or a rename (or a sibling's suffix shifting) silently orphans its children on the next load. That happened once; see `docs/handoff.md` Phase 4 notes. Leaf templates (item/event/note) can never have children, so they stay a flat `Name.json`.
 
-**Renames and reparents:** `fs.rename` on the file (leaf templates) or the whole directory (folders and nestable pages — children move for free). Watch Windows path-length limits (~260 chars); warn or truncate for deep nesting.
+**Renames and reparents** are `fs.rename` on the file, or on the whole directory so children move for free. Watch Windows path length (~260 chars) on deep nesting.
 
-**Naming collisions between siblings:** append ` (2)`, ` (3)` to the filename (leaf templates) or the directory name (folders and nestable pages) only. Node IDs stay unique inside the JSON. A folder and a nestable page sharing a name *do* collide (both are directories); a folder or nestable page and a same-named leaf page never do (one's a directory, the other's a plain file).
-
-## Reference Docs (read only when relevant)
-
-- `docs/spec.md` — the master build spec. Everything derives from here.
-- `docs/plan.md` — phased build roadmap; work top-down, don't build ahead
-- `docs/data-model.md` — Node / Tab / Template / Project schemas, on-disk shape
-- `docs/lk-format.md` — LegendKeeper `.lk` import/export mapping, ProseMirror block translation table
-- `docs/glossary.md` — domain terms (node, tab, template, cascade color, secret block)
-- `docs/handoff.md` — outstanding polish items, known quirks, deferred work
+**Sibling name collisions** append ` (2)`, ` (3)` to the filename or directory name only — never to the node's `name` in the JSON, and node IDs stay unique regardless. Two directory-storage nodes with the same name *do* collide; a directory-storage node and a same-named leaf page never do, since one's a directory and the other's a plain file. Suffixes are recomputed from creation order on every resolve, so changing one sibling renumbers the others — see `planRelocations` in `filesystem-service.ts`.
 
 ## Templates
 
-Templates live in `src/services/template-registry.ts` as a plain data object. Each template defines its default tabs (with placeholder content) and its sidebar property schema. On creating a new page from a template, the tabs and properties are populated with the template's defaults; the user then edits from there.
-
-**Template placeholder copy is a designed asset** — the LK-style walking-you-through-it prompts are deliberately shaped. Do not reword them without asking the user. The reference prototype at `docs/prototype/anamnesis.jsx` has the canonical copy for all 8 templates (Folder, Character, Location, Faction, Item, Event, Species, Note).
-
-Templates are not user-editable in Phase 1 — they live in code. User-editable templates are a Phase 2+ consideration and not currently scoped.
+Templates live in `src/services/template-registry.ts` as a plain data object — default tabs (with placeholder content) plus the sidebar property schema. Not user-editable in Phase 1; that's a Phase 2+ consideration and not scoped. `docs/prototype/anamnesis.jsx` holds the canonical copy for all 8 templates (Folder, Character, Location, Faction, Item, Event, Species, Note), but see the token warning below before opening it.
 
 ## LegendKeeper Import/Export
 
-The user has an existing 75-page `Valeraverse.lk` export that must import cleanly. `.lk` files are **gzipped JSON** with content stored as ProseMirror JSON — BlockNote-compatible with light adaptation. See `docs/lk-format.md` for the full field mapping.
+`.lk` files are gzipped JSON with content as ProseMirror JSON. **`docs/lk-format.md` has the full field mapping, the block translation table, and the current template-inference rules** — read it before touching import/export rather than working from memory.
 
-**Import risk areas** (handle explicitly, don't silently drop):
+Import shows a preview (tree + inferred template counts + a plain-language list of anything lossy) and requires confirmation before committing. **Round-trip target:** anything that started in LK re-exports losslessly. Anamnesis-only templates export as freeform documents with matching tab structures.
 
-- `panel` blocks with `panelType` — map to Info / Quote / Secret custom blocks
-- `layoutSection` / `layoutColumn` — collapse to sequential blocks (BlockNote has no columns)
-- `inlineExtension` (embedded icons) — strip or convert to text
-- `mention` blocks — resolve `id` to our new node id via an id-map built during import
-- `banner` per resource — preserve as page header image if present
-- `iconColor` — map to our color feature (nearest preset, or store raw hex)
+## Reference Docs (read only when relevant)
 
-**On import, infer template from tab signature:**
-
-- `[Overview, Backstory]` → character
-- `[Overview, Map, History]` → location
-- `[Overview, Biology, Lifestyle, Beliefs, Relations]` → species
-- `[Main]` only → folder if it has children, else note
-- Anything else → note, preserving the tabs as-is
-
-Show a preview of the import (tree + inferred template counts) and require user confirmation before committing.
-
-**Round-trip target:** anything that started in LK should re-export losslessly. New Anamnesis-only templates (Faction, Item, Event, Species) export as freeform documents with matching tab structures.
+- `docs/spec.md` — master build spec (§Data model is stale; see above)
+- `docs/plan.md` — phased roadmap, queued work, known bugs
+- `docs/handoff.md` — current state, design decisions, known gaps
+- `docs/lk-format.md` — `.lk` mapping, ProseMirror → BlockNote translation
+- `docs/glossary.md` — domain terms
+- `docs/constants-and-theming.md` — CSS token system, palette, callout tokens
+- `docs/components-reference.md` — feature → component file map
+- `docs/project-summary.md` — plain-language overview for planning
 
 ## Deployment
 
-Desktop-first. Signed installers for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` and `.AppImage`). Tauri handles the bundling via `pnpm tauri build`.
-
-No auto-update in Phase 1. The user manually downloads a new version from wherever we're hosting the installer.
-
-No CI/CD for now. Manual builds until we hit a release rhythm.
+Desktop-first, via `pnpm tauri build`: `.dmg`, `.msi`, `.deb`, `.AppImage`. No auto-update and no CI/CD in Phase 1 — manual builds until there's a release rhythm.
 
 ## Don't Do This
 
-- Don't hardcode strings, numbers, or colors in logic files — always import from `src/constants/`
-- Don't import stores or services directly in components — always go through a hook
-- Don't reach past `filesystem-service.ts` to touch disk from anywhere else
-- Don't scatter template metadata across components — it lives in `template-registry.ts`
-- Don't create `index.ts` barrel files
-- Don't name files `utils`, `misc`, `helpers`, or `common`
-- Don't nest folders deeper than `src/components/feature/`
-- Don't reword template placeholder copy without asking — see Templates section
-- Don't add cloud sync, auth, telemetry, or update checks in Phase 1
-- Don't add anything that reaches LegendKeeper's servers — see Policy Boundary
-- Don't bake LLM/AI features into the editor
-- Don't fork BlockNote — extend it via its documented extension API
-- Don't add custom Rust commands unless there's a real reason the fs plugin can't handle it
+Everything in Architecture Rules and Policy Boundary above, plus:
+
+- Don't fork BlockNote — extend it via its documented API.
+- Don't add custom Rust commands unless the fs plugin genuinely can't do the job.
+- Don't scatter template metadata across components.
 
 ## File Editing
 
-- When the Edit tool fails due to unicode characters (em-dashes, non-breaking spaces, template placeholder text with curly quotes, etc.), use targeted `sed` commands for surgical replacements — do **not** load and rewrite the entire file via Python or similar; that dumps the full file contents into context unnecessarily.
-- The template registry file is large by design (8 templates × multiple tabs × placeholder content). Edit it with targeted Edit calls, not full rewrites.
+When an Edit fails on unicode (em-dashes, curly quotes in placeholder copy), use targeted `sed` — don't load and rewrite the whole file through Python, which dumps its full contents into context. The template registry is large by design; edit it with targeted Edit calls, never a full rewrite.
 
 ## Communication
 
-The user (shiro) is non-technical. Explain choices in plain language, not just code. When an exploratory or design discussion includes multiple decisions to make, finish the message with a numbered list of the specific clarifications you need from the user — one decision per item, with the options enumerated `(a)/(b)/(c)`. Lay out reasoning and tradeoffs in prose above the list as usual, but the trailing list should be self-contained enough that the user can reply with `1. a, 2. b, 3. yes` and unambiguously approve the path forward.
+The user (shiro) is non-technical. Explain choices in plain language, not just code. She knows her use case — LK workflow, worldbuilding habits, how she and her co-writers actually work — better than the codebase implies. When she pushes back with non-technical reasoning, that's information about the product, not a preference to override.
 
-If the user pushes back on a technical choice with non-technical reasoning, take it seriously — she knows her use case (LK workflow, worldbuilding habits, how she and her co-writers actually work) better than the codebase implies. When she says "that would drive me bonkers," that's information about the product, not a preference to override.
+When a discussion has multiple open decisions, end with a numbered list — one decision per item, options as `(a)/(b)/(c)` — self-contained enough that she can reply `1. a, 2. b, 3. yes`. Reasoning and tradeoffs go in prose above it.
 
-Do not manage her — no unsolicited advice about scope, pace, or self-care. Match her tone; she uses casual voice and contractions, so do the same in explanations.
+Match her tone: casual, contractions. Don't manage her — no unsolicited advice about scope, pace, or self-care.
 
-## Token Cost Warnings
+## Token Cost
 
-Some actions consume a disproportionate number of tokens. Warn the user **before** performing any of the following:
+Warn before, and offer the cheaper alternative:
 
-- **`/compact`** — Summarizes the entire conversation history. Cost scales with session length. On a long session with many file reads and code generations, this can consume 20–30% of your usage budget in one shot. **Alternative:** Start a new session earlier (before context gets large), or accept the larger per-message cost of a long session instead of compacting.
-
-- **Reading very large files** — Reading a file with thousands of lines dumps it all into context. The template registry and any large imported LK JSON are the most likely offenders here. **Alternative:** Use `offset` + `limit` parameters to read only the relevant section, or use `Grep` to find specific lines first.
-
-- **Full file rewrites via `Write`** — Rewriting an existing file sends the entire contents through the model. **Alternative:** Use `Edit` for targeted changes whenever possible.
-
-- **Long Agent/subagent tasks** — Spawning an agent on a vague or open-ended task can burn many tokens exploring dead ends. **Alternative:** Give the agent a specific, narrow question; or use `Grep`/`Glob` directly for simple searches.
-
-- **Parsing the user's actual `Valeraverse.lk` for testing** — the file is ~220KB decompressed with 75 resources and ProseMirror content. Load selectively (a few resources at a time) unless you specifically need the full structure.
-
-When any of these is about to happen on a large or expensive operation, say so and ask for confirmation or suggest the cheaper alternative.
+- **`/compact`** — cost scales with session length; 20–30% of the usage budget in one shot on a long session. Alternative: start a new session earlier.
+- **Reading `template-registry.ts` or `docs/prototype/anamnesis.jsx` whole** (~10k tokens each) — use `offset`/`limit` or `Grep` for the relevant section.
+- **Parsing the real `Valeraverse.lk`** — ~220KB decompressed, 75 resources. Load a few resources at a time unless the full structure is genuinely needed.
+- **Full-file `Write` where a targeted `Edit` would do.**
+- **Open-ended subagent tasks** — give a narrow question, or use `Grep`/`Glob` directly.
