@@ -5,6 +5,7 @@
 // header rather than duplicating it.
 import { FolderOpen, PanelRight } from "lucide-react";
 import { SaveIndicator } from "./SaveIndicator";
+import { SettingsButton } from "./SettingsButton";
 
 type TopBarProps = {
   projectName: string;
@@ -24,6 +25,7 @@ export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel, onSw
         <button type="button" className="top-bar-icon-button" aria-label="Switch project" onClick={onSwitchProject}>
           <FolderOpen size={16} />
         </button>
+        <SettingsButton />
         <button
           type="button"
           className="top-bar-icon-button"
