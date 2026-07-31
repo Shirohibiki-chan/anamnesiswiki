@@ -229,6 +229,34 @@ Acceptance test: the user's actual `Valeraverse.lk` (75 resources) imports fully
 
 ---
 
+## Phase 10 — Polish + Distribution ✅ Shipped 2026-07-31
+
+The phase that makes the app something other people can install, and something the user can fix without a terminal. Seven items, shipped across one day and moved here from `docs/plan.md` when the phase closed.
+
+**Node duplication** — right-click → Duplicate, actually shipped back in Phase 3. Still single-selection only; the batch fix is folded into Phase 15, which reworks that menu anyway.
+
+**The in-app update check**, pulled forward from this phase and shipped early. **v0.2.0 and v0.2.1 are published** — installer, signature and `latest.json` attached to the GitHub release, and the endpoint the app reads (`releases/latest/download/latest.json`) serves correctly. The reasoning that still governs it — why the signing key exists, why "install updates but skip the check" must never ship — is in `handoff.md` §Updates.
+
+**Global search + Cmd+K.** `search-service.ts` searches names, tags and every tab's text; the palette jumps to the matching *tab*, not just the page. One deviation from the original sketch worth knowing: it is **not** a single Fuse index over content. Names and tags are fuzzy; prose is exact substring, because fuzzy matching across thousands of characters returns scattered letters from unrelated paragraphs and calls them hits. See `handoff.md` §Search.
+
+**Keyboard shortcuts** — Cmd+K search, Cmd+N new page, Cmd+S manual save. Bindings in `constants/shortcuts.ts`, matching and rendering in `services/shortcut-service.ts`, one listener in `use-global-shortcuts.ts`. Cmd+N adds a *sibling* of the current selection; a row's own "+" already covers "child of this". **Unverified in the desktop build:** whether WebView2 lets the page keep Cmd+N — see `handoff.md` §Shortcuts, which also records the fix if it turns out it doesn't.
+
+**Rebindable shortcuts**, asked for by the user as an accessibility feature rather than a power-user one — which is what decided the rules. Settings → Keyboard lists every action with a key recorder and a per-action reset. Overrides (only the changed ones) persist through `app-settings-service.ts`; `shortcut-store.ts` merges them over the defaults and everything reads from there. A binding needs a modifier **or** to be a bare F-key. **Adding a new shortcut is three lines** — `SHORTCUT_ACTIONS`, `SHORTCUT_LABELS`, `DEFAULT_BINDINGS` — plus a handler in `useGlobalShortcuts`; it appears in Settings on its own.
+
+**Settings grouped into tabs** once there were two sections and more coming. Real ARIA tabs — roving tabindex, arrow keys, Home/End — rather than buttons that look like tabs, because the rebinding screen lives behind one of them and a mouse-only tab strip would put the accessibility screen behind a mouse.
+
+**App-level undo/redo** over the sidebar operations: add, delete, rename, move, duplicate, colour, project home, multi-selections included. An entry is a pair of closures built where the operation happens, reversing itself through the ordinary store actions rather than through a second copy of the path-relocation logic — that logic is the part of this app that has already lost real pages, and a second implementation of it was not worth the symmetry. Deleting reads its pictures' bytes before removing them so undo restores the whole page. It shares Ctrl+Z with the editor by standing down whenever the caret is in text; §Undo in `handoff.md` has why that's safe and what would break it. **Not covered:** properties, tags, tab changes — carried to Phase 19.
+
+**Automated releases, all four platforms.** Pushing a `v*` tag builds Windows, macOS (Intel and Apple Silicon) and Linux, signs them, writes `latest.json` across all four, and drafts the release for review. A version check runs first, so a tag disagreeing with the version files fails in seconds instead of after twenty minutes of compiling. `docs/releasing.md` is the procedure. The one manual step — the signing key into the repository's Actions secrets — was done by the user on 2026-07-31, which is what closed this phase.
+
+**README install instructions** for the unsigned-app warning on each platform, written earlier in the phase and verified still accurate at close.
+
+### What this phase did not prove
+
+The undo work was built and unit-tested but **never exercised against a real project on disk**, because the browser preview has no Tauri filesystem and can't open one. The restore-after-delete path in particular writes files the app has only ever deleted before. Same limit that applies to most of this project's UI work; noted here rather than buried.
+
+---
+
 # Session Notes by Phase
 
 What each phase actually involved, written at the time — including the bugs found

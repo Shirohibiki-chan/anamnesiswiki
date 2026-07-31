@@ -12,10 +12,12 @@ The user builds fictional worlds — characters, locations, factions, species, e
 
 Import/export of LegendKeeper's `.lk` format is a Phase 1 must-have because the user has an existing 75-page world to migrate.
 
-**Phases 0 through 9 are built and working**: the data layer, app shell, tree,
+**Phases 0 through 10 are built and working**: the data layer, app shell, tree,
 page view, BlockNote editor with custom callouts and `@`/`[[ ]]` cross-references,
-properties panel, all templates, and LegendKeeper import *and* export. Phase 10
-(polish and distribution) is the next one up, and is partly done already.
+properties panel, all templates, LegendKeeper import *and* export, project-wide
+search, rebindable keyboard shortcuts, sidebar undo/redo, and automated signed
+releases for four platforms. **The app is shippable.** Phase 1.5 (read-only
+publish) is next up; phases 11–23 are planned in `docs/plan.md`.
 
 > **If you are a Claude reading this to plan or write code:** this summary
 > describes the shape of the project, not its current source. Code has been
@@ -149,9 +151,11 @@ Max folder depth is 3: `src/components/tree/TreeItem.tsx` is the deepest allowed
 
 ## What's Next
 
-Phase 10 — polish and distribution — is next, and partly done: the update check and two published releases already landed early. What's left there is global search, keyboard shortcuts, undo/redo, and automating release builds. `docs/plan.md` has the remaining phases and the queued work; `docs/shipped.md` records what Phases 0–9 delivered.
+**Phase 1 is done.** Phase 10 closed 2026-07-31, and with it everything Phase 1 needed to be a real, installable, updatable app. `docs/plan.md` has what's left and the queued work; `docs/shipped.md` records what each phase delivered.
 
-After Phase 1 is stable and shipped, the next unlock is Phase 1.5 — read-only static-site publishing. Same feature serves two use cases: sharing a world with a co-writer for read-only viewing, and eventual public release of a world (e.g. Orynthia going public). Not blocked on anything; just sequenced after Phase 1 is solid.
+The next unlock is Phase 1.5 — read-only static-site publishing. Same feature serves two use cases: sharing a world with a co-writer for read-only viewing, and eventual public release of a world (e.g. Orynthia going public). Not blocked on anything.
+
+Phases 11–23 were planned out on 2026-07-31 from the user's own list of wants: her own writing in the templates, a theme switcher and the queued palettes, richer property types, everyday navigation, the full right-click menu, sidebar blocks and meters, version history, markdown import, the shell rework, collections and graphs. Two things carried over from Phase 10 deliberately — undo for the right-hand panel (Phase 19) and duplicate-on-multi-selection (Phase 15).
 
 Cloud sync (Phase 2) is deferred indefinitely. The Phase 1 data model — file-per-node on disk — already supports shared-folder sync via Dropbox / Syncthing / iCloud without any code, so a real cloud backend is only needed if that approach demonstrably stops working.
 

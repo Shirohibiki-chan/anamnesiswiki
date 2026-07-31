@@ -15,13 +15,16 @@ It's shaped like LegendKeeper, on purpose. Tree of pages, tabbed content per pag
 - **8 templates** with worldbuilding prompts built in: Folder, Character, Location, Faction, Item, Event, Species, Note
 - **Tabbed pages** with per-tab visibility (hide backstory/history/lore tabs for GM-only material)
 - **Notion-style block editor** with slash commands, drag-to-reorder blocks, and custom callout blocks (Info, Quote, Secret)
-- **@mentions and `[[wikilinks]]`** for cross-page references — hover to preview, click to navigate
+- **@mentions and `[[wikilinks]]`** for cross-page references — click to navigate
+- **Search everything you've written** — page names, tags, and the text on every tab, from anywhere with Ctrl+K
+- **Keyboard shortcuts you can change** — every one of them, from Settings, including a single-function-key option if two-key combinations are awkward for you
+- **Undo for the sidebar** — deleting, moving, renaming, duplicating and recolouring pages all take Ctrl+Z
 - **Color-code any folder or page** — colors cascade to descendants unless overridden
 - **Template-driven properties** in the right sidebar — references to other pages, tags, images, dates
 - **Import your existing LegendKeeper world** from a `.lk` export on Day 1
 - **Export back to LK format** anytime, in case you ever want to go back
 - **Read-only publish** to a static site of selected pages, for sharing worlds with co-writers or the public *(Phase 1.5)*
-- **Fully offline** — no network calls, no telemetry, no update pings
+- **Offline** — nothing about you or your world ever leaves your machine. No telemetry, no analytics, no accounts, and nothing that phones home on a timer. The app makes exactly two network requests, both only when you press a button for them: fetching your pictures during a LegendKeeper import, and checking whether a newer version exists
 
 ## Install
 
@@ -32,6 +35,8 @@ Grab the installer for your platform from the [Releases page](../../releases).
 - **macOS:** right-click the app in Applications, choose Open, then click Open in the confirmation dialog. You only need to do this once.
 - **Windows:** on the SmartScreen warning, click "More info," then "Run anyway."
 - **Linux:** no warning — the `.deb` or `.AppImage` should just work.
+
+**Updating.** Settings → Updates has a *Check for updates* button. Nothing happens on its own — no background checks, no nagging. If there's a newer version it tells you what changed and offers to install it, and it verifies the download was signed by this project before it does. Your project folders are never touched by an update.
 
 ## Import from LegendKeeper
 
@@ -65,9 +70,11 @@ Requires Node 20+ and Rust (for Tauri).
 pnpm install
 pnpm tauri dev       # dev mode with hot reload
 pnpm tauri build     # build installers for your current platform
+pnpm lint            # ESLint
+pnpm test            # Vitest
 ```
 
-Architecture, code style, and design rules are in `CLAUDE.md`. Full spec is in `docs/spec.md`.
+Architecture, code style, and design rules are in `CLAUDE.md`. Full spec is in `docs/spec.md`. Releases are automated — pushing a `v*` tag builds, signs and drafts one for all four platforms; `docs/releasing.md` is the procedure.
 
 ## Not affiliated with LegendKeeper
 
