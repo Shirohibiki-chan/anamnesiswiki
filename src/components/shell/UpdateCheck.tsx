@@ -1,6 +1,7 @@
-// Lives on the startup screen rather than in the main window on purpose:
-// installing an update replaces the running program and restarts it, and the
-// one moment that's guaranteed safe is before a world is open.
+// The Updates section of the settings panel, reachable from the cog on both
+// the start-up screen and the in-project top bar. Installing replaces the
+// running program and restarts it, so `useUpdates` flushes pending saves
+// first — that flush is what makes it safe to reach this mid-project.
 import { useUpdates } from "../../hooks/use-updates";
 
 function formatSize(bytes: number): string {

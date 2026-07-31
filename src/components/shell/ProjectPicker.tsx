@@ -7,7 +7,7 @@ import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { getDefaultProjectsDir } from "../../constants/paths";
 import { ImportModal } from "../import/ImportModal";
-import { UpdateCheck } from "./UpdateCheck";
+import { SettingsButton } from "./SettingsButton";
 import "./shell.css";
 
 export function ProjectPicker() {
@@ -147,7 +147,9 @@ export function ProjectPicker() {
 
       {error && <p className="project-picker-error">{error}</p>}
 
-      <UpdateCheck />
+      <div className="project-picker-settings">
+        <SettingsButton variant="standalone" />
+      </div>
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
     </main>

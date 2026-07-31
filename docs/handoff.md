@@ -150,11 +150,13 @@ is below.
   scope is still narrowed to LK's CDN alone. Widening `http:` to reach GitHub
   would be a real policy change for no gain.
 
-- **The check runs only from the button, and only on the startup screen.**
-  Installing replaces the running executable and relaunches; the one moment
-  that's guaranteed safe is before a project is open. `useUpdates` flushes
-  pending saves before installing anyway, because "usually nothing is pending"
-  isn't a guarantee.
+- **The check runs only from the button.** Nothing is scheduled, and nothing
+  runs at launch. It lives in the settings panel, reachable from the cog on both
+  the start-up screen and the in-project top bar — so an install can be started
+  with a world open. **`useUpdates` flushing pending saves before installing is
+  what makes that safe**; the installer replaces the running executable and
+  relaunches, and anything still inside the 300ms debounce would be gone.
+  Removing that flush turns a mid-session update into silent data loss.
 
 - **A failed check must read as a non-event.** The app is offline-first; not
   reaching GitHub costs the user nothing, and the message says so rather than
