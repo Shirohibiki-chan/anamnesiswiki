@@ -4,10 +4,10 @@
 // order ("hooks may import from state/ and services/").
 import { useEffect, useState } from "react";
 import * as fsService from "../services/filesystem-service";
-import { useProject } from "./use-project";
+import { useProjectRootPath } from "./use-project";
 
 export function useNodeImage(imageFileName: string | undefined): string | null {
-  const { rootPath } = useProject();
+  const rootPath = useProjectRootPath();
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {

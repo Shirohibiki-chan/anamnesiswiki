@@ -8,8 +8,8 @@ import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
-import { useProject } from "../../hooks/use-project";
-import { useTreeData } from "../../hooks/use-tree-data";
+import { useNode, useProjectActions } from "../../hooks/use-project";
+import { useEffectiveColor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
 import type { TreeNodeData } from "../../services/tree-service";
@@ -21,19 +21,22 @@ import { TreePopover } from "./TreePopover";
 type OpenPopover = "color" | "add" | "menu" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
-  const { nodes, duplicateNode, deleteNode, addNode, updateNode } = useProject();
-  const { getEffectiveColor } = useTreeData();
+  // Narrow subscriptions on purpose: this renders once per visible tree row,
+  // and a full-store subscription re-rendered every row on every keystroke
+  // typed into the editor.
+  const fullNode = useNode(node.id);
+  const { duplicateNode, deleteNode, addNode, updateNode } = useProjectActions();
+  const effective = useEffectiveColor(node.id);
   const { confirmDestructive } = useDialogs();
   const { getLabel, canHaveChildren } = useTemplates();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
-  const fullNode = nodes[node.id];
   if (!fullNode) return null;
 
   const isFolder = fullNode.templateKey === FOLDER_TEMPLATE_KEY;
   const nestable = canHaveChildren(fullNode.templateKey);
-  const { color: effectiveKey, isOwner } = getEffectiveColor(node.id);
+  const { color: effectiveKey, isOwner } = effective;
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const ownHex = getPaletteHex(fullNode.color);
   const Icon = getTemplateIcon(fullNode.templateKey);
@@ -58,10 +61,15 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     setAnchorRect(null);
   }
 
+  // Read out here rather than inside handleDelete: `fullNode` is narrowed by
+  // the guard above, but that narrowing doesn't reach into a hoisted function
+  // declaration, which could in principle be called before it.
+  const nodeName = fullNode.name;
+
   async function handleDelete() {
     const warning = hasChildren
-      ? `Delete "${fullNode.name}" and everything inside it? This can't be undone.`
-      : `Delete "${fullNode.name}"? This can't be undone.`;
+      ? `Delete "${nodeName}" and everything inside it? This can't be undone.`
+      : `Delete "${nodeName}"? This can't be undone.`;
     if (await confirmDestructive(warning)) deleteNode(node.id);
   }
 
