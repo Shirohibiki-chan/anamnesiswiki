@@ -14,7 +14,7 @@ import {
 } from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
-import { getDefaultTabs } from "../services/template-registry";
+import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import * as lkImportService from "../services/lk-import";
 import type { ImportPendingImage } from "../services/lk-import";
@@ -38,6 +38,11 @@ export type ProjectStoreState = {
   // catch anything, so without this a failed write is invisible and the app
   // goes on claiming "Saved" from the last one that worked — see SaveWarning.
   saveErrors: string[];
+  // Pages that were found parked under a move's temp name on the last load and
+  // put back. Worth telling the user about: it means an earlier move was
+  // interrupted, and silence is what made that dangerous in the first place.
+  recoveredCount: number;
+  dismissRecovered: () => void;
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   dismissSkippedFiles: () => void;
   dismissSaveErrors: () => void;
@@ -136,6 +141,22 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
   setSaveErrorHandler((_key, error) => recordSaveError(error));
 
+  // Every direct disk write in this store goes through here. These calls are
+  // deliberately not awaited — the UI updates from memory and shouldn't block
+  // on the filesystem — but `void promise.then(markSaved)` leaves a rejection
+  // with nowhere to go, so a failed write became an unhandled promise
+  // rejection in a console nobody was reading while the app went on showing
+  // "Saved". That is exactly the failure `setSaveErrorHandler` was built to
+  // prevent, and it was only ever wired to autosave's debounced writes; every
+  // other path — adding a page, moving one, deleting one — was silent.
+  //
+  // This has already cost the user real pages (2026-07-31: a half-completed
+  // move left files stranded under temp names and said nothing). Don't
+  // reintroduce a bare `void fsService.…` here.
+  const track = (work: Promise<unknown>): void => {
+    void work.then(markSaved).catch(recordSaveError);
+  };
+
   return {
     rootPath: null,
     project: null,
@@ -144,6 +165,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     lastSavedAt: null,
     skippedFiles: [],
     saveErrors: [],
+    recoveredCount: 0,
 
     // Resolves null for anything that means "this isn't an openable project"
     // — missing or unreadable project.json, an unreadable folder — so callers
@@ -160,12 +182,23 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (!result) return null;
 
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
-      set({ rootPath, project: result.project, nodes, isLoaded: true, skippedFiles: result.skipped });
+      set({
+        rootPath,
+        project: result.project,
+        nodes,
+        isLoaded: true,
+        skippedFiles: result.skipped,
+        recoveredCount: result.recoveredCount,
+      });
       return { name: result.project.name };
     },
 
     dismissSkippedFiles() {
       set({ skippedFiles: [] });
+    },
+
+    dismissRecovered() {
+      set({ recoveredCount: 0 });
     },
 
     dismissSaveErrors() {
@@ -240,7 +273,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     closeProject() {
-      set({ rootPath: null, project: null, nodes: {}, isLoaded: false, lastSavedAt: null, skippedFiles: [], saveErrors: [] });
+      set({
+        rootPath: null,
+        project: null,
+        nodes: {},
+        isLoaded: false,
+        lastSavedAt: null,
+        skippedFiles: [],
+        saveErrors: [],
+        recoveredCount: 0,
+      });
     },
 
     addNode(input) {
@@ -254,8 +296,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService.saveNode(rootPath, node, Object.values(nextNodes)).then(markSaved);
-      if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      track(fsService.saveNode(rootPath, node, Object.values(nextNodes)));
+      if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
       return node;
     },
 
@@ -391,7 +433,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // if this node still exists (it could have been deleted mid-upload).
       const previousImage = get().nodes[nodeId]?.image;
       get().updateNode(nodeId, { image: fileName });
-      if (previousImage) void fsService.deleteAssetImage(rootPath, previousImage);
+      if (previousImage) track(fsService.deleteAssetImage(rootPath, previousImage));
     },
 
     async clearNodeImage(nodeId) {
@@ -415,7 +457,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       await fsService.saveAssetImage(rootPath, fileName, data);
       const previousBanner = get().nodes[nodeId]?.banner;
       get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50 });
-      if (previousBanner) void fsService.deleteAssetImage(rootPath, previousBanner);
+      if (previousBanner) track(fsService.deleteAssetImage(rootPath, previousBanner));
     },
 
     setBannerFocus(nodeId, focusY) {
@@ -452,7 +494,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const updated: Node = { ...existingAfter, name, updatedAt: Date.now() };
       const nextNodes = { ...nodesAfter, [id]: updated };
       set({ nodes: nextNodes });
-      void fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
+      track(fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id));
     },
 
     async moveNode(id, newParentId, index) {
@@ -468,6 +510,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (!rootPath || !project) return;
       const moving = ids.filter((id) => nodes[id]);
       if (moving.length === 0) return;
+
+      // A leaf template has no directory of its own, so a child filed under it
+      // is written into a plain directory with no marker in it and vanishes
+      // from the tree on the next load. The tree already refuses this drop
+      // (TreePanel's disableDrop); this is the backstop, because losing a
+      // subtree is too expensive to guard in one place only.
+      if (newParentId) {
+        const newParent = nodes[newParentId];
+        if (!newParent || !canHaveChildren(newParent.templateKey)) return;
+      }
 
       // Same stale-path race as renameNode above.
       await Promise.all(moving.map((id) => flushSave(id)));
@@ -518,8 +570,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       }
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present).then(markSaved);
-      if (nextProject !== projectAfter) void fsService.saveProject(rootPathAfter, nextProject).then(markSaved);
+      track(fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present));
+      if (nextProject !== projectAfter) track(fsService.saveProject(rootPathAfter, nextProject));
     },
 
     deleteNode(id) {
@@ -577,18 +629,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       };
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService
-        .deleteNodes(rootPath, removalRoots.map((id) => nodes[id]), allNodesBefore, Object.values(nextNodes))
-        .then(markSaved);
-      void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      track(
+        fsService.deleteNodes(rootPath, removalRoots.map((id) => nodes[id]), allNodesBefore, Object.values(nextNodes)),
+      );
+      track(fsService.saveProject(rootPath, nextProject));
       // A deleted node's own uploaded image/banner (see ImageSlot Phase 6,
       // PageBanner Phase 8) lives in the flat assets/ dir, not inside the
       // node's own file/directory, so fsService.deleteNodes above never
       // touches either — clean them up here or they orphan forever.
       for (const removedId of toRemove) {
         const removed = nodes[removedId];
-        if (removed?.image) void fsService.deleteAssetImage(rootPath, removed.image);
-        if (removed?.banner) void fsService.deleteAssetImage(rootPath, removed.banner);
+        if (removed?.image) track(fsService.deleteAssetImage(rootPath, removed.image));
+        if (removed?.banner) track(fsService.deleteAssetImage(rootPath, removed.banner));
       }
     },
 
@@ -653,8 +705,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ nodes: nextNodes, project: nextProject });
       // Duplicating a folder writes its whole subtree, so the clones share one
       // path index rather than each rebuilding it from the full graph.
-      void fsService.saveNodes(rootPath, clones, Object.values(nextNodes)).then(markSaved);
-      if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      track(fsService.saveNodes(rootPath, clones, Object.values(nextNodes)));
+      if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
     },
 
     selectNode(id) {
@@ -676,7 +728,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const homeNodeId = project.homeNodeId === id ? null : id;
       const nextProject: Project = { ...project, homeNodeId };
       set({ project: nextProject });
-      void fsService.saveProject(rootPath, nextProject).then(markSaved);
+      track(fsService.saveProject(rootPath, nextProject));
     },
 
     setExpanded(id, isOpen) {

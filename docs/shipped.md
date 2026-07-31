@@ -732,3 +732,58 @@ the app**: the tree needs a loaded project, which needs Tauri's file access, so
 the browser preview confirms only that the app still boots clean. Shift-click,
 ctrl-click, multi-drag, and bulk delete all need `pnpm tauri dev` or the
 "Anamnesis (latest code)" shortcut.
+
+## Silent Data Loss 2026-07-31
+
+The user reported blank pages vanishing after a refresh — "Two Survived". They
+had not been deleted. Diagnosis and recovery came before any code change.
+
+### What was actually on disk
+
+Her projects live in `OneDrive\Documents\Anamnesis`. In `test3434`, four items
+sat under `.anamnesis-move-<uuid>` staging names: two `New Blank` pages, the
+`AUs` folder, and a stale duplicate of `Characters`. `applyRelocations` stages
+every path through a temp name before moving it to its destination; phase one
+had completed, phase two had not, and the error went nowhere. The two pages
+that survived were exactly the two that weren't in that plan.
+
+A second, unrelated loss turned up in the **real** Valeraverse during the same
+sweep: `Xuěhuā`, a character, had been dropped onto `Valera Jiang`, a *note*.
+Leaf templates have no directory of their own, so she'd been written into a
+plain `Valera Jiang/` directory with no marker file — and the load walk
+returned early on marker-less directories without walking them, so the subtree
+was invisible while sitting intact on disk.
+
+All five were restored by hand, both projects snapshotted first, and a sweep
+confirmed no marker-less directories and no staging leftovers remain in either.
+
+### Fixes
+
+- **`track()` in `project-store`.** Thirteen writes used a bare
+  `void fsService.…().then(markSaved)`, so every rejection was an unhandled
+  promise nobody saw. `setSaveErrorHandler` existed for exactly this and was
+  wired only to autosave. This is the fix that matters most: the app knew.
+- **`applyRelocations` rolls back.** Anything still staged returns to its
+  original path before the error propagates. Items already delivered stay put —
+  the invariant is "no file left under a temp name", not "all or nothing".
+- **The loader recovers stranded nodes.** `MOVE_TEMP_PREFIX` is now known to
+  the load walk, a parked file is read like any other node file, and
+  `repairStrandedNodes` renames it back afterwards — a rename, never a
+  save-then-delete, because a parked directory has its children inside it.
+  Reported via `recoveredCount` and `RecoveryNotice.tsx`.
+- **Marker-less directories are walked**, contents reparented up a level, which
+  is what `handoff.md` had claimed all along. `assets/` is skipped by name
+  instead — one fewer directory listing per load.
+- **Leaf templates refuse drops**, in `TreePanel`'s `disableDrop` and again in
+  the store's `moveNodes`.
+
+### Verification
+
+141 tests (was 137). Four new ones cover the recovery paths, each written
+against a way pages were actually lost. The load-test mock was also corrected:
+it had been deciding "is this a directory?" by whether the name ended in
+`.json`, which is precisely wrong for a temp file and had it disagreeing with
+the disk about the exact entries this bug involves.
+
+**Not verified in the app.** Same limit as everything else this session — the
+browser preview can't open a project.

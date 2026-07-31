@@ -8,6 +8,7 @@ const files = new Map<string, string>();
 // Counts the round trips a load makes into the fs plugin. Each one is real IPC
 // into Rust in the running app, so "how many" is the thing worth asserting on.
 const calls = { readDir: 0, exists: 0, readTextFile: 0 };
+const renames: [string, string][] = [];
 
 // The real `sep()` reads a value the Tauri runtime injects into the webview,
 // which doesn't exist here. "/" keeps the in-memory paths below readable.
@@ -35,22 +36,27 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
       const [head] = rest.split("/");
       names.add(head);
     }
-    return [...names].map((name) => ({
-      name,
-      isDirectory: !name.endsWith(".json"),
-      isFile: name.endsWith(".json"),
-      isSymlink: false,
-    }));
+    // A name is a directory when some other path continues through it, not
+    // when it merely lacks an extension — plenty of real entries have no
+    // suffix (a move's temp file, an image), and guessing by extension made
+    // this mock disagree with the disk about exactly those.
+    return [...names].map((name) => {
+      const isDirectory = [...files.keys()].some((path) => path.startsWith(`${dirPath}/${name}/`));
+      return { name, isDirectory, isFile: !isDirectory, isSymlink: false };
+    });
   },
   mkdir: async () => {},
   remove: async () => {},
-  rename: async () => {},
+  rename: async (from: string, to: string) => {
+    renames.push([from, to]);
+  },
   readFile: async () => new Uint8Array(),
   writeFile: async () => {},
   writeTextFile: async () => {},
 }));
 
 const { loadProject } = await import("./filesystem-service");
+const { MOVE_TEMP_PREFIX } = await import("../constants/paths");
 
 const ROOT = "/World";
 
@@ -67,6 +73,7 @@ beforeEach(() => {
   calls.readDir = 0;
   calls.exists = 0;
   calls.readTextFile = 0;
+  renames.length = 0;
   put("project.json", { version: 1, name: "World", rootOrder: [], expandedIds: [], selectedId: null, createdAt: 1 });
 });
 
@@ -122,6 +129,53 @@ describe("loadProject", () => {
     expect(result!.skipped).toEqual([`${ROOT}/Canon/_folder.json`]);
   });
 
+  // Every test in this block is a way the user actually lost pages on
+  // 2026-07-31. None of these were failures of writing — the files were on
+  // disk the whole time, and the loader walked straight past them.
+  describe("recovering pages the loader used to walk past", () => {
+    // A page dropped onto a leaf template gets written into a plain directory
+    // named after that page, which has no marker file in it. Returning early
+    // on such a directory took the entire subtree with it.
+    it("keeps the contents of a marker-less directory, reparented up a level", async () => {
+      put("Valera Jiang.json", nodeJson("vj", "Valera Jiang", "note"));
+      put("Valera Jiang/Xuehua/_page.json", nodeJson("xh", "Xuehua", "character"));
+
+      const result = await loadProject(ROOT);
+      expect(result!.nodes.map((n) => n.id).sort()).toEqual(["vj", "xh"]);
+      expect(result!.nodes.find((n) => n.id === "xh")!.parentId).toBeNull();
+      expect(result!.skipped).toEqual([]);
+    });
+
+    // An interrupted move leaves nodes parked under a temp name. A file parked
+    // that way has no .json suffix, so the extension check skipped it and the
+    // page was simply gone.
+    it("loads a page stranded under a move's temp name, and puts it back", async () => {
+      put(`Canon/_folder.json`, nodeJson("canon", "Canon", "folder"));
+      put(`Canon/${MOVE_TEMP_PREFIX}abc123`, nodeJson("lost", "New Blank", "blank"));
+
+      const result = await loadProject(ROOT);
+      expect(result!.nodes.map((n) => n.id).sort()).toEqual(["canon", "lost"]);
+      expect(result!.recoveredCount).toBe(1);
+      expect(renames).toEqual([[`${ROOT}/Canon/${MOVE_TEMP_PREFIX}abc123`, `${ROOT}/Canon/New Blank.json`]]);
+    });
+
+    it("puts a stranded directory back by renaming it, so its children come too", async () => {
+      put(`${MOVE_TEMP_PREFIX}def456/_folder.json`, nodeJson("aus", "AUs", "folder"));
+      put(`${MOVE_TEMP_PREFIX}def456/Inside.json`, nodeJson("inside", "Inside", "note"));
+
+      const result = await loadProject(ROOT);
+      expect(result!.nodes.map((n) => n.id).sort()).toEqual(["aus", "inside"]);
+      expect(result!.recoveredCount).toBe(1);
+      // A rename, never a save-then-delete: the children are inside it.
+      expect(renames).toEqual([[`${ROOT}/${MOVE_TEMP_PREFIX}def456`, `${ROOT}/AUs`]]);
+    });
+
+    it("reports nothing to recover for an ordinary project", async () => {
+      put("Letter.json", nodeJson("letter", "Letter", "note"));
+      expect((await loadProject(ROOT))!.recoveredCount).toBe(0);
+    });
+  });
+
   it("ignores directories with no marker file, like assets/", async () => {
     put("assets/abc.png", "binary-ish");
     put("Letter.json", nodeJson("letter", "Letter", "note"));
@@ -147,8 +201,9 @@ describe("loadProject disk round trips", () => {
 
   it("lists each directory exactly once", async () => {
     await loadProject(ROOT);
-    // root, Canon/, AUs/, AUs/Valera/, assets/ — five directories, five reads.
-    expect(calls.readDir).toBe(5);
+    // root, Canon/, AUs/, AUs/Valera/ — four reads. assets/ is skipped by
+    // name without being listed at all, since it never holds nodes.
+    expect(calls.readDir).toBe(4);
   });
 
   it("never probes for a marker file separately from listing its directory", async () => {

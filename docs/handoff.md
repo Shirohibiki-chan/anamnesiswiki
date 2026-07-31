@@ -61,6 +61,22 @@ is below.
   already took. The store filters to nodes whose parent isn't also being
   removed.
 
+- **A relocation that fails puts back everything it had staged.** Several nodes
+  swapping paths are renamed to temp names first so none lands on another's; if
+  any rename then fails — and on Windows they do, transiently, when a sync
+  client has a directory open — the staged ones are returned to their original
+  paths before the error propagates. Items that already reached their
+  destination are deliberately left there: each is at a real path, and undoing
+  them risks a third state. The invariant is *"no file is left under a temp
+  name"*, not "all or nothing".
+
+- **A leaf template can never be a drop target.** It has no directory of its
+  own, so a child filed under it is written into a marker-less directory and
+  disappears from the tree on the next load. Enforced twice on purpose —
+  `TreePanel`'s `disableDrop` and the store's `moveNodes` — because losing a
+  subtree is too expensive to guard in one place. This is separate from
+  `canHaveChildren` gating the "Add child" button, which never covered drag.
+
 - **Collision comparison is case-folded.** Windows and macOS default to
   case-insensitive filesystems, so `Ruins` and `ruins` are one file to the OS. The
   displayed segment keeps the user's own capitalisation — only the test folds.
@@ -97,6 +113,13 @@ is below.
   the app went on showing "Saved" from the last write that worked. That's worse
   than a crash: the user has active evidence their work is safe.
 
+- **Every disk write in `project-store` goes through `track()`.** The rule above
+  was only ever enforced for autosave's debounced writes; adding, moving,
+  renaming and deleting all used a bare `void fsService.…().then(markSaved)`,
+  which leaves a rejection nowhere to go. So when a move failed on 2026-07-31
+  the app said nothing and carried on as though it had worked. Don't reintroduce
+  a bare `void fsService.…` — the whole point is that there's one place to look.
+
 - **`updateNode` snapshots the graph when the debounce *fires*, not when it's
   scheduled.** A 300ms-old snapshot can resolve against a world that no longer
   exists — a sibling renamed inside the window shifts collision suffixes and the
@@ -114,6 +137,25 @@ is below.
 - **One damaged file must never cost the user the rest of the project.**
   Unreadable nodes are skipped and reported via `skippedFiles`; a folder whose own
   marker is corrupt still gets walked, its children reparented one level up.
+
+- **A directory with *no* marker is walked too, not skipped.** It contributes no
+  node of its own, and everything inside it reparents to the level above. This
+  used to return early, and that cost the user a page: dropping a page onto a
+  leaf-template page writes the child into a plain `Name/` directory with no
+  marker in it, and the whole subtree then vanished from the tree while sitting
+  intact on disk. `assets/` is skipped by name instead, which is also one fewer
+  directory listing per load.
+
+- **The load walk knows `MOVE_TEMP_PREFIX`, and that isn't optional.** Anything
+  still parked under a move's temp name is a real page whose relocation was
+  interrupted. A parked *file* has no `.json` suffix, so the extension check
+  skipped it outright — that is exactly how two pages disappeared on
+  2026-07-31. `repairStrandedNodes` renames them back afterwards and the count
+  surfaces through `recoveredCount` (see `RecoveryNotice.tsx`).
+
+- **Repair is a rename, never a save-then-delete.** A stranded *directory* has
+  its children inside it; writing the node's own marker at the new path and
+  removing the old directory would take them with it.
 
 - **The read limiter holds its permit around a single read, never across the
   recursion into a subdirectory.** Wrapping the recursive call instead deadlocks
