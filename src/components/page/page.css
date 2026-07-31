@@ -534,3 +534,9 @@
   border-color: var(--color-accent-faint-border);
   background: var(--color-accent-faint);
 }
+
+/* Holds the banner's space while its bytes are read, so switching pages
+   doesn't flash the empty "Add banner" prompt. See page/PageBanner.tsx. */
+.page-banner-loading {
+  background: var(--color-panel-alt);
+}

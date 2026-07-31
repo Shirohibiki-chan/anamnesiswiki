@@ -18,7 +18,7 @@ function extensionFor(file: File): string {
 
 export function PageBanner({ node }: { node: Node }) {
   const { setNodeBanner, setBannerFocus, clearNodeBanner } = useProject();
-  const bannerUrl = useNodeImage(node.banner);
+  const { url: bannerUrl, status: bannerStatus } = useNodeImage(node.banner);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,11 +55,15 @@ export function PageBanner({ node }: { node: Node }) {
     dragState.current = null;
   }
 
+  // Hold the space while the bytes are being read, rather than flashing the
+  // empty "Add banner" prompt on every page switch.
+  if (bannerStatus === "loading") return <div className="page-banner page-banner-loading" />;
+
   if (!bannerUrl) {
     return (
       <div className="page-banner-empty">
         <button type="button" className="page-banner-add" onClick={() => inputRef.current?.click()}>
-          <ImageIcon size={13} /> Add banner
+          <ImageIcon size={13} /> {bannerStatus === "error" ? "Banner file missing — add another" : "Add banner"}
         </button>
         {error && <span className="page-banner-error">{error}</span>}
         <input

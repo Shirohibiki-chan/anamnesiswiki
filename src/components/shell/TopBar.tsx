@@ -1,6 +1,8 @@
-// Spans the center panel — breadcrumb on the left, right-panel toggle + save
-// indicator on the right. Breadcrumb is project-name-only until Phase 3/4
-// give it a real selected-page path to walk.
+// Spans the center panel — project name on the left, right-panel toggle +
+// save indicator on the right. The clickable breadcrumb trail lives on the
+// page itself (see page/PageTitle.tsx), where it sits directly above the
+// title it describes; this bar deliberately stays a fixed project-level
+// header rather than duplicating it.
 import { FolderOpen, PanelRight } from "lucide-react";
 import { SaveIndicator } from "./SaveIndicator";
 
