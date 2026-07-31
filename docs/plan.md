@@ -105,7 +105,9 @@ Global search across all nodes' content (Fuse.js index rebuilt on load, updated 
 
 Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`) via `pnpm tauri build`. README instructions for the unsigned-installer bypass on each platform.
 
-**Still outstanding here:** a GitHub Releases workflow that publishes installers on tag push, attaching the signed updater artifacts and a `latest.json` manifest. The in-app update check was pulled forward and shipped on 2026-07-31 (see `CHANGELOG.md`), and it points at `releases/latest/download/latest.json` — until a release exists at that URL, the button correctly reports there's nothing to update to. Releases must be built with `TAURI_SIGNING_PRIVATE_KEY` set or clients will reject the update as unsigned; see `docs/handoff.md` → Updates.
+**Partly done.** The in-app update check was pulled forward and shipped on 2026-07-31, and **v0.2.0 is published** — installer, signature, and `latest.json` are attached to the GitHub release, and the endpoint the app reads (`releases/latest/download/latest.json`) serves correctly.
+
+Cutting a release is currently manual: bump the version in `package.json`, `tauri.conf.json` and `Cargo.toml`, build with `TAURI_SIGNING_PRIVATE_KEY` set (or clients reject the update as unsigned), hand-write `latest.json` with the `.sig` contents inlined, then `gh release create`. **Still outstanding:** automating that as a workflow on tag push, and macOS/Linux bundles — `latest.json` currently declares `windows-x86_64` only, so a non-Windows build would find no platform entry. See `docs/handoff.md` → Updates.
 
 **End state:** app is shippable. User can install it, other people can install it, everyone's data stays local.
 
