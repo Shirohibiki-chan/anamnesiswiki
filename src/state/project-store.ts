@@ -69,7 +69,9 @@ export type ProjectStoreState = {
   clearNodeBanner: (nodeId: string) => Promise<void>;
   renameNode: (id: string, name: string) => void;
   moveNode: (id: string, newParentId: string | null, index?: number) => void;
+  moveNodes: (ids: string[], newParentId: string | null, index?: number) => Promise<void>;
   deleteNode: (id: string) => void;
+  deleteNodes: (ids: string[]) => void;
   duplicateNode: (id: string) => Promise<void>;
   selectNode: (id: string | null) => void;
   setProjectHome: (id: string | null) => void;
@@ -454,65 +456,97 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     async moveNode(id, newParentId, index) {
+      await get().moveNodes([id], newParentId, index);
+    },
+
+    // A multi-selection drops as one operation. Looping moveNode instead
+    // would fire several un-awaited filesystem relocations that each plan
+    // across the whole graph — they'd interleave, and the later ones would
+    // rename paths the earlier ones had already moved.
+    async moveNodes(ids, newParentId, index) {
       const { rootPath, project, nodes } = get();
-      const existing = nodes[id];
-      if (!rootPath || !project || !existing) return;
+      if (!rootPath || !project) return;
+      const moving = ids.filter((id) => nodes[id]);
+      if (moving.length === 0) return;
 
       // Same stale-path race as renameNode above.
-      await flushSave(id);
+      await Promise.all(moving.map((id) => flushSave(id)));
 
       const { rootPath: rootPathAfter, project: projectAfter, nodes: nodesAfter } = get();
-      const existingAfter = nodesAfter[id];
-      if (!rootPathAfter || !projectAfter || !existingAfter) return;
+      if (!rootPathAfter || !projectAfter) return;
+      const present = moving.filter((id) => nodesAfter[id]);
+      if (present.length === 0) return;
 
       const allNodesBefore = Object.values(nodesAfter);
-      const updated: Node = { ...existingAfter, parentId: newParentId, updatedAt: Date.now() };
-      const nextNodes = { ...nodesAfter, [id]: updated };
+      const movingSet = new Set(present);
+      const now = Date.now();
+      const nextNodes = { ...nodesAfter };
+      for (const id of present) nextNodes[id] = { ...nodesAfter[id], parentId: newParentId, updatedAt: now };
 
-      // Every drop is "put this node at this position under this parent",
+      // Every drop is "put these nodes at this position under this parent",
       // whether that's the root or a folder, whether the parent changed or
       // not. The destination list is rebuilt from the sibling order actually
       // on screen (not from whatever partial list is stored) so a folder that
       // has never been reordered still gets a complete, correct list the
-      // first time something is dropped into it.
-      const oldParentId = existingAfter.parentId;
-      const destinationIds = orderedSiblingIds(nextNodes, projectAfter, newParentId).filter((n) => n !== id);
+      // first time something is dropped into it. Dragged nodes keep their own
+      // relative order, which is the order react-arborist hands them over in.
+      const destinationIds = orderedSiblingIds(nextNodes, projectAfter, newParentId).filter((n) => !movingSet.has(n));
       const insertAt = index === undefined ? destinationIds.length : Math.min(Math.max(index, 0), destinationIds.length);
-      const destinationOrder = [...destinationIds.slice(0, insertAt), id, ...destinationIds.slice(insertAt)];
+      const destinationOrder = [...destinationIds.slice(0, insertAt), ...present, ...destinationIds.slice(insertAt)];
 
       let nextProject: Project =
         newParentId === null
           ? { ...projectAfter, rootOrder: destinationOrder }
           : { ...projectAfter, childOrder: { ...projectAfter.childOrder, [newParentId]: destinationOrder } };
 
-      // Drop it out of wherever it used to live, so a stale entry can't pull
-      // it back to an old position if it's ever moved home again.
-      if (oldParentId !== newParentId) {
+      // Drop them out of wherever they used to live, so a stale entry can't
+      // pull one back to an old position if it's ever moved home again. A
+      // multi-selection can span several old parents.
+      const oldParentIds = new Set(present.map((id) => nodesAfter[id].parentId).filter((p) => p !== newParentId));
+      for (const oldParentId of oldParentIds) {
         if (oldParentId === null) {
-          nextProject = { ...nextProject, rootOrder: nextProject.rootOrder.filter((n) => n !== id) };
+          nextProject = { ...nextProject, rootOrder: nextProject.rootOrder.filter((n) => !movingSet.has(n)) };
         } else if (nextProject.childOrder?.[oldParentId]) {
           nextProject = {
             ...nextProject,
             childOrder: {
               ...nextProject.childOrder,
-              [oldParentId]: nextProject.childOrder[oldParentId].filter((n) => n !== id),
+              [oldParentId]: nextProject.childOrder[oldParentId].filter((n) => !movingSet.has(n)),
             },
           };
         }
       }
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService.moveNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
+      void fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present).then(markSaved);
       if (nextProject !== projectAfter) void fsService.saveProject(rootPathAfter, nextProject).then(markSaved);
     },
 
     deleteNode(id) {
+      get().deleteNodes([id]);
+    },
+
+    // The tree can hand up a whole multi-selection, and that has to be one
+    // operation rather than a loop over deleteNode: each delete renumbers
+    // colliding siblings on disk, so a second call would resolve its target
+    // against a layout the first had already changed underneath it.
+    deleteNodes(ids) {
       const { rootPath, project, nodes } = get();
-      const existing = nodes[id];
-      if (!rootPath || !project || !existing) return;
+      if (!rootPath || !project) return;
+
+      const existing = ids.filter((id) => nodes[id]);
+      if (existing.length === 0) return;
 
       const allNodesBefore = Object.values(nodes);
-      const toRemove = new Set([id, ...descendantIds(id, nodes)]);
+      const toRemove = new Set(existing.flatMap((id) => [id, ...descendantIds(id, nodes)]));
+      // Only the roots of the removal go to disk. A selection can easily hold
+      // both a folder and something inside it, and a directory-storage node
+      // takes its whole subtree with it — asking for the child as well would
+      // try to remove a path its parent already took.
+      const removalRoots = existing.filter((id) => {
+        const parentId = nodes[id].parentId;
+        return !parentId || !toRemove.has(parentId);
+      });
       // Cancel (not flush) any pending debounced writes for everything being
       // deleted — a stale write firing after deletion would silently
       // resurrect the file/directory that was just removed.
@@ -529,21 +563,27 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       }
       const nextProject: Project = {
         ...project,
-        rootOrder: project.rootOrder.filter((n) => n !== id),
+        rootOrder: project.rootOrder.filter((n) => !toRemove.has(n)),
         childOrder: nextChildOrder,
         // Home is an ordinary page, so it can be deleted like any other — but
         // a dangling homeNodeId would leave the house button pointing at
         // nothing. Cleared here, including when home was merely *inside* the
         // subtree being deleted rather than its root.
         homeNodeId: project.homeNodeId && toRemove.has(project.homeNodeId) ? null : project.homeNodeId,
+        // Selection survives a delete only if what was selected is still
+        // there — a stale selectedId leaves the page view rendering nothing
+        // with no way back to a real page.
+        selectedId: project.selectedId && toRemove.has(project.selectedId) ? null : project.selectedId,
       };
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService.deleteNode(rootPath, existing, allNodesBefore, Object.values(nextNodes)).then(markSaved);
+      void fsService
+        .deleteNodes(rootPath, removalRoots.map((id) => nodes[id]), allNodesBefore, Object.values(nextNodes))
+        .then(markSaved);
       void fsService.saveProject(rootPath, nextProject).then(markSaved);
       // A deleted node's own uploaded image/banner (see ImageSlot Phase 6,
       // PageBanner Phase 8) lives in the flat assets/ dir, not inside the
-      // node's own file/directory, so fsService.deleteNode above never
+      // node's own file/directory, so fsService.deleteNodes above never
       // touches either — clean them up here or they orphan forever.
       for (const removedId of toRemove) {
         const removed = nodes[removedId];

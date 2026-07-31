@@ -366,22 +366,45 @@ export async function saveNodes(rootPath: string, nodesToSave: Node[], allNodes:
 // `allNodesAfter` is the graph with this node (and its descendants) already
 // dropped — removing a node can free up a name its same-name siblings were
 // suffixed around, so they need relocating too. See planRelocations.
+// Deleting several nodes at once is not the same as calling this once per
+// node. Every removal ends by renumbering colliding siblings on disk (see
+// planRelocations), so the second single-node call would resolve its target
+// against an index built before the first call had already moved things —
+// and delete, or fail to find, the wrong path. Here every path is resolved
+// against the one pre-delete index, and relocations run once at the end
+// against the final state.
+//
+// `nodes` should hold only the *roots* of the removal: a directory-storage
+// node takes its whole subtree with it, so passing a child as well would try
+// to remove a path its parent already took.
+export async function deleteNodes(
+  rootPath: string,
+  nodes: Node[],
+  allNodesBefore: Node[],
+  allNodesAfter: Node[],
+): Promise<void> {
+  const indexBefore = buildPathIndex(allNodesBefore);
+
+  for (const node of nodes) {
+    const { dirSegments, fileName } = resolveNodePath(node, indexBefore);
+    const dirPath = joinPath(rootPath, ...dirSegments);
+    if (usesDirectoryStorage(node)) {
+      await remove(dirPath, { recursive: true });
+    } else {
+      await remove(joinPath(dirPath, fileName));
+    }
+  }
+
+  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter, indexBefore));
+}
+
 export async function deleteNode(
   rootPath: string,
   node: Node,
   allNodesBefore: Node[],
   allNodesAfter: Node[],
 ): Promise<void> {
-  const indexBefore = buildPathIndex(allNodesBefore);
-  const { dirSegments, fileName } = resolveNodePath(node, indexBefore);
-  const dirPath = joinPath(rootPath, ...dirSegments);
-  if (usesDirectoryStorage(node)) {
-    await remove(dirPath, { recursive: true });
-  } else {
-    await remove(joinPath(dirPath, fileName));
-  }
-
-  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter, indexBefore));
+  await deleteNodes(rootPath, [node], allNodesBefore, allNodesAfter);
 }
 
 // The single unit that actually gets moved on disk for a node: its whole own
@@ -467,29 +490,42 @@ async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<v
   }
 }
 
-async function relocateNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
+// Relocating several nodes is one operation, not a loop. `planRelocations`
+// plans across the *whole* graph, so the first call already moves everything
+// the before/after pair implies — a second call would then compute the same
+// plan from a snapshot disk no longer matches and rename paths that aren't
+// there. Multi-drag in the tree is what makes this reachable.
+async function relocateNodes(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeIds: string[]): Promise<void> {
   const indexBefore = buildPathIndex(allNodesBefore);
   const indexAfter = buildPathIndex(allNodesAfter);
-  const before = indexBefore.byId.get(nodeId);
-  const after = indexAfter.byId.get(nodeId);
-  if (!before || !after) throw new Error(`relocateNode: node ${nodeId} not found in before/after graph`);
+  const moved: Node[] = [];
+  for (const nodeId of nodeIds) {
+    const before = indexBefore.byId.get(nodeId);
+    const after = indexAfter.byId.get(nodeId);
+    if (!before || !after) throw new Error(`relocateNodes: node ${nodeId} not found in before/after graph`);
+    moved.push(after);
+  }
 
   await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter, indexBefore));
 
   // A plain filesystem rename only relocates the path — it never touches the
   // file's own contents, which still reflect the node as it was *before*
   // this rename/reparent (the rename/reparent itself is a real field change:
-  // a new `name`, a new `parentId`). Always rewrite the node's own file at
+  // a new `name`, a new `parentId`). Always rewrite each node's own file at
   // its resolved new location so disk exactly matches the in-memory node.
-  await saveNode(rootPath, after, indexAfter);
+  for (const after of moved) await saveNode(rootPath, after, indexAfter);
 }
 
 export async function renameNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
-  await relocateNode(rootPath, allNodesBefore, allNodesAfter, nodeId);
+  await relocateNodes(rootPath, allNodesBefore, allNodesAfter, [nodeId]);
 }
 
 export async function moveNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
-  await relocateNode(rootPath, allNodesBefore, allNodesAfter, nodeId);
+  await relocateNodes(rootPath, allNodesBefore, allNodesAfter, [nodeId]);
+}
+
+export async function moveNodes(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeIds: string[]): Promise<void> {
+  await relocateNodes(rootPath, allNodesBefore, allNodesAfter, nodeIds);
 }
 
 // Phase 6 image slot — assets live in a flat assets/ dir (not tree-mirrored,

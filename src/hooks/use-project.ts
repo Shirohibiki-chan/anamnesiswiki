@@ -28,6 +28,7 @@ export function useProjectActions() {
       renameNode: state.renameNode,
       moveNode: state.moveNode,
       deleteNode: state.deleteNode,
+      deleteNodes: state.deleteNodes,
       duplicateNode: state.duplicateNode,
       selectNode: state.selectNode,
       setProjectHome: state.setProjectHome,

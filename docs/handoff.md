@@ -44,6 +44,23 @@ is below.
   renumbers the others. `planRelocations` exists solely to keep disk in step with
   that; deleting it reintroduces two directories claiming the same node id.
 
+- **Deleting or moving several nodes is one call, never a loop over the
+  single-node one.** This follows directly from the line above: every delete and
+  every move ends by renumbering colliding siblings across the *whole* graph, so
+  a second single-node call resolves its target against a layout the first call
+  has already rearranged — it removes the wrong file, or renames a path that
+  isn't there. `deleteNodes`/`moveNodes` resolve every path against one
+  pre-change index and relocate once at the end. The store mirrors the same
+  split, and its `deleteNode`/`moveNode` are now thin wrappers. Multi-select in
+  the tree is what made this reachable; the batch tests in
+  `filesystem-service.test.ts` are the guard.
+
+- **Only the *roots* of a removal go to disk.** A selection can hold both a
+  folder and something inside it, and a directory-storage node takes its whole
+  subtree with it — passing the child as well tries to remove a path its parent
+  already took. The store filters to nodes whose parent isn't also being
+  removed.
+
 - **Collision comparison is case-folded.** Windows and macOS default to
   case-insensitive filesystems, so `Ruins` and `ruins` are one file to the OS. The
   displayed segment keeps the user's own capitalisation — only the test folds.
@@ -184,6 +201,20 @@ is below.
   timestamp. This project's ESLint config (`eslint-plugin-react-hooks` v7) flags
   both `setState` inside an effect and `Date.now()` during render, so the usual
   approaches don't lint. This is deliberate, not incidental.
+
+- **The tree's selection-sync effect must not fire for an already-selected
+  node.** `treeApi.select()` replaces the whole selection with one node, and
+  that effect runs whenever `project.selectedId` changes — including when it
+  changed *because* the user ctrl-clicked a second row. Without the
+  `isSelected` guard, every multi-selection collapses the instant it's made.
+  (The effect itself exists because the editor's mentions call `selectNode`
+  directly, which react-arborist can't see.)
+
+- **`project.selectedId` is the page on screen, not the selection.** The tree
+  can have many rows selected; `selectedId` follows the *focused* one — the row
+  last touched — because `onSelect` receives its nodes in tree order, so
+  shift-selecting upwards would otherwise throw the user onto a page they
+  didn't click.
 
 - **Popovers portal to `document.body` via `TreePopover`.** Every react-arborist
   row is its own `position: absolute` stacking context for virtualisation, so a

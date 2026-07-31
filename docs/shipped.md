@@ -678,3 +678,57 @@ the browser preview reaches the start-up screen and no further — it confirmed
 the app renders clean with no console errors and nothing more. The tree row
 badge, the menu item, and the house button need `pnpm tauri dev` or the
 "Anamnesis (latest code)" desktop shortcut.
+
+## Tree Multi-Select 2026-07-31
+
+Shift-click and ctrl-click in the sidebar. react-arborist supports both natively
+and the tree had `disableMultiSelection` set, so turning it on was one prop —
+everything below is what had to be true before that prop was safe to remove.
+
+### The disk half
+
+Multi-drag and multi-delete both became reachable for the first time, and both
+would have looped the single-node store actions, each of which fires an
+un-awaited whole-graph relocation. Two of those interleaving rename paths the
+other has already moved. So:
+
+- `filesystem-service` gained `deleteNodes` and `moveNodes`, each resolving
+  every path against one pre-change index and applying relocations once at the
+  end. `deleteNode`/`moveNode`/`renameNode` now delegate to them.
+- `project-store` gained the matching `deleteNodes`/`moveNodes`; the singular
+  actions are wrappers. The delete path filters to *removal roots* — a
+  selection holding both a folder and its child would otherwise ask to remove a
+  path the parent already took.
+- `deleteNodes` also clears `selectedId` when the selected page is among the
+  deleted, which the old single-node path never did (it left the page view
+  rendering nothing).
+
+Three tests cover it, all asserting on which paths get touched rather than on
+return values: pre-delete path resolution for colliding siblings, the surviving
+sibling's renumber, and a two-node move rewriting both files at their new homes.
+
+### The UI half
+
+`selectedId` now follows the *focused* row rather than `selected[0]`, since
+`onSelect` hands its nodes over in tree order and shift-selecting upwards would
+otherwise jump the page view somewhere the user didn't click. The
+selection-sync effect grew an `isSelected` guard — `treeApi.select()` replaces
+the whole selection, so without it every ctrl-click collapsed what it had just
+made.
+
+Right-clicking inside a multi-selection keeps it; right-clicking outside
+replaces it, as every file manager does. The menu shows a "N pages selected"
+heading and drops the items that only mean something for one page — rename,
+duplicate, add child, set as project home. Colour and delete apply to all of
+them; delete asks once, naming the count.
+
+Duplicate is deliberately single-only rather than looped — see the Queued
+Adjustment in `docs/plan.md` for why.
+
+### Verification
+
+137 tests passing (was 134), lint and `tsc --noEmit` clean. **Not verified in
+the app**: the tree needs a loaded project, which needs Tauri's file access, so
+the browser preview confirms only that the app still boots clean. Shift-click,
+ctrl-click, multi-drag, and bulk delete all need `pnpm tauri dev` or the
+"Anamnesis (latest code)" shortcut.
