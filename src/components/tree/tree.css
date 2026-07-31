@@ -175,6 +175,27 @@
   filter: brightness(1.1);
 }
 
+/* react-arborist puts real DOM focus on the row element (tabIndex -1, then
+   .focus() on whichever row is focused), so the browser paints its own focus
+   ring there — a hard white box against a dark sidebar. It was always there;
+   multi-selection is what made it visible as a thing separate from the teal
+   selection fill, since focus and selection can now be different rows.
+
+   Suppressed on the row element and replaced with a themed ring on our own,
+   which keeps keyboard navigation legible. Dropped entirely once the row is
+   selected: the fill already says where you are, and a second box around it is
+   noise. Deliberately keyed on `:focus` rather than `:focus-visible` — the
+   focus here is programmatic, and browsers disagree about whether that counts
+   as visible after a mouse click. */
+.tree-panel [role="treeitem"]:focus {
+  outline: none;
+}
+
+.tree-panel [role="treeitem"]:focus .tree-row:not(.tree-row-selected) {
+  outline: 1.5px solid var(--color-accent-faint-border);
+  outline-offset: -1.5px;
+}
+
 .tree-row-drop-target {
   outline: 1.5px solid var(--color-accent-light);
   outline-offset: -1.5px;
