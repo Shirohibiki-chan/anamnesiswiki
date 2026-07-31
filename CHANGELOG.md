@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-31 — after v0.2.1
+
+*(Not in a release — these live in the repo and affect this machine only.)*
+
+### Additions
+- **Two shortcuts on the Desktop, so opening the current version doesn't need anyone else.** Until now the only Anamnesis you could open by yourself was the one in your Start menu, and that only changes when a release gets published — which is meant to be occasional. So the copy you could reach was always behind, and the up-to-date one needed a terminal. **Anamnesis (latest code)** fixes that: double-click it and the app opens running the newest code, no release involved. It leaves a black window open while it runs — that window is the app, so closing it closes Anamnesis. **Update installed Anamnesis** does the other version: it rebuilds and installs over your Start-menu copy, taking a few minutes but leaving you with the ordinary app, up to date, with nothing to keep open. Releases go back to being only about *other people's* copies finding an update, which is all they were ever for.
+
 ## 2026-07-31 — v0.2.1
 
 ### Additions
