@@ -42,6 +42,7 @@
 - **Scrollbars didn't match the dark theme** — they were rendering as your browser's plain default. Every scrollbar in the app is now themed to match.
 
 ### Adjustments
+- **More internal doc tidying, still nothing visible in the app:** the build spec had drifted out of date in a few places — it described pages being stored on disk in a way the app stopped using months of work ago, listed the wrong number of templates, and still had the LegendKeeper import rule we replaced last night. Corrected. The plan document now only covers what's still to come, with the finished phases moved to their own file, and the summary doc kept for pasting into a fresh chat no longer claims the app hasn't been built yet. Two possible problems turned up while checking and are now written down: two pages named the same thing apart from capitalisation could overwrite each other on Windows, and the promised warning about very long file paths was never actually built.
 - **Internal tidy-up, nothing visible in the app:** the instructions file Claude reads at the start of every session had grown to where a chunk of it said the same thing three times over. Trimmed by about a third with no rules removed — purely duplication. It also pointed at a reference doc that doesn't exist and missed three that do, which is now fixed.
 
 ## 2026-07-29

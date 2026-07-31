@@ -2,6 +2,10 @@
 
 A local-first worldbuilding wiki app, LegendKeeper-shaped, for personal use. Notion-style block editor + tree navigation + template-driven pages + tabbed content per page + right-sidebar properties. Runs as a desktop app so data lives on disk as JSON files (which makes shared-folder sync with a co-writer trivial).
 
+> **Status: this is the original build spec, written before any code existed.** Phases 0–8 have since shipped. The *intent* sections below (Phase 1.5, Phase 2, UI/UX notes, non-goals) still stand as written. The *factual* sections — data model, schemas, LK mapping — were corrected against the shipped code on 2026-07-30, and anywhere the built thing differs from the original plan is now called out inline rather than quietly left wrong.
+>
+> For what's actually true right now, in order of reliability: the code itself, then `docs/lk-format.md` for import/export, then `CLAUDE.md` for architecture rules, then this file. `docs/shipped.md` records what each completed phase delivered.
+
 ## Reference material
 
 A working React prototype exists at `anamnesis.jsx` (companion file). It demonstrates the target layout, template content, tab-with-visibility pattern, tree behavior, and properties sidebar. **The prototype uses a plain contentEditable for the body — the real build must replace this with BlockNote for a proper Notion-style block editor.** Everything else in the prototype (tree structure, template schema, tab system, properties, storage flow) is broadly the right shape.
@@ -22,6 +26,8 @@ Screenshots of LegendKeeper (the app being cloned) show the target aesthetic: da
 - **Fuse.js** — fuzzy search for the tag/name filter
 - **date-fns** — light date formatting for the Event template
 
+Added during the build, not in the original list: `@blocknote/shadcn` (the editor's shipped theming layer), `@dnd-kit/*` (tab reordering — react-arborist only covers the tree), `lucide-react` (icons), Vitest (unit tests for the service layer), and the Tauri plugins for dialog, fs, http and store.
+
 Do not use Electron. Do not add a backend in phase 1. Do not add authentication in phase 1.
 
 ## Data model
@@ -35,7 +41,7 @@ Each project is a folder on disk. The user picks the folder location on first la
 ├── project.json                         # tree order, expanded state, selection
 ├── Canon/
 │   ├── _folder.json                     # folder's own metadata (color, tags)
-│   ├── Main Story.json
+│   ├── Main Story.json                  # a leaf page — never has children
 │   └── Side Stories.json
 ├── AUs/
 │   ├── _folder.json
@@ -43,24 +49,33 @@ Each project is a folder on disk. The user picks the folder location on first la
 │   │   ├── _folder.json
 │   │   ├── Characters/
 │   │   │   ├── _folder.json
-│   │   │   ├── Valera Jiang.json
-│   │   │   ├── Sampo Koski.json
-│   │   │   └── ...
+│   │   │   ├── Valera Jiang/            # a character gets its own directory
+│   │   │   │   ├── _page.json           # the character's own data
+│   │   │   │   └── Her Sword.json       # a page nested under the character
+│   │   │   └── Sampo Koski/
+│   │   │       └── _page.json
 │   │   └── Locations/
 │   │       └── ...
-│   └── ...
-├── Characters/
-│   ├── _folder.json
 │   └── ...
 └── assets/
     └── {assetId}.{ext}                  # uploaded images
 ```
 
+**Corrected 2026-07-30.** This diagram originally showed characters as flat `Valera Jiang.json` files. That was the pre-build plan; it isn't what got built, and the difference matters.
+
+**Two storage kinds.** Folders *and* any nestable non-folder template (character, location, faction, species) store themselves inside their own directory — `_folder.json` or `_page.json` respectively — alongside their children. Leaf templates (item, event, note) can never have children, so they stay a flat `Name.json` with no wrapping directory.
+
+**Why a page gets its own directory at all**: a directory's ownership must never be derived from its *current* name. The original flat scheme matched children to parents by filename, which meant renaming a page — or a sibling's collision suffix shifting — silently orphaned everything under it on the next load. That happened in Phase 4. The marker file is now what identifies ownership, and it survives any rename.
+
 **Why this layout**: the folder is human-browsable outside the app. If the app ever breaks, the user's writing is still there as legible JSON files they can open in any text editor. Shared-folder sync (Dropbox / Syncthing / iCloud) still works fine — each save touches one file. Git diffs are clean and human-readable.
 
-**Handling reparents and renames**: moving a page in the tree = `fs.rename` on the file. Renaming a page = `fs.rename`. Both are cheap. On Windows, watch out for path length limits (~260 chars by default) — either warn the user when deep nesting approaches the limit, or truncate long names for the file path while keeping the full name in the JSON body.
+**Handling reparents and renames**: `fs.rename` on the file (leaf templates) or on the whole directory (folders and nestable pages — children move for free). On Windows, watch out for path length limits (~260 chars by default) — either warn the user when deep nesting approaches the limit, or truncate long names for the file path while keeping the full name in the JSON body. *(The path-length warning is specified but not implemented.)*
 
-**Naming conflicts**: if two siblings would share a filename (case-insensitive, since Windows and macOS default to case-insensitive filesystems), append ` (2)`, ` (3)`, etc. to the filename only. Node IDs stay unique inside the JSON regardless.
+**Naming conflicts**: if two siblings would share a filename, append ` (2)`, ` (3)` etc. to the filename or directory name only. Node IDs stay unique inside the JSON regardless. Two directory-storage nodes with the same name do collide; a directory-storage node and a same-named leaf page never do, since one is a directory and the other a plain file.
+
+Suffixes are recomputed from creation order on every resolve rather than stored, so changing one sibling renumbers the others — `planRelocations` in `filesystem-service.ts` exists to keep disk in step with that.
+
+> **Known gap:** this spec originally called for case-*insensitive* collision detection, on the grounds that Windows and macOS default to case-insensitive filesystems. The shipped comparison is case-**sensitive**, so `Ruins` and `ruins` as siblings are treated as distinct and neither gets a suffix — on Windows they would then contend for the same file. Not yet fixed; logged in `docs/plan.md` under Known Bugs.
 
 **Why `_folder.json` for folder metadata**: so the folder can carry its own properties (color, tags, notes) alongside its children. The underscore prefix keeps it at the top when sorted alphabetically.
 
@@ -74,8 +89,12 @@ type Node = {
   name: string;
   tabs: Tab[];                   // per-page tabbed content, see below
   properties: Record<string, unknown>;   // per-template sidebar values
+  customProperties?: CustomPropertySpec[];  // Phase 7 — user-added one-off fields
   tags: string[];
   color?: string;                // hex code, for folders and optionally other nodes
+  image?: string;                // Phase 6 — filename in assets/
+  banner?: string;               // Phase 8 — filename in assets/, full-width header
+  bannerFocusY?: number;         // vertical framing for the banner, 0–100
   createdAt: number;
   updatedAt: number;
 };
@@ -95,6 +114,9 @@ type Project = {
   version: 1;
   name: string;
   rootOrder: string[];           // node ids in top-level display order
+  childOrder?: Record<string, string[]>;  // per-parent manual order; sparse and
+                                          // optional, so a project saved before
+                                          // it existed still loads unchanged
   expandedIds: string[];         // which folders are expanded
   selectedId: string | null;
   createdAt: number;
@@ -108,7 +130,8 @@ type Template = {
   key: string;
   name: string;
   icon: string;                  // lucide icon name
-  isFolder?: boolean;
+  canHaveChildren: boolean;      // whether pages can be nested under it — this
+                                 // also decides its on-disk storage kind above
   tabs: TabSpec[];               // default tabs new pages get
   properties: PropertySpec[];    // sidebar fields
 };
@@ -116,12 +139,14 @@ type Template = {
 type PropertySpec = {
   key: string;
   label: string;
-  type: 'text' | 'longtext' | 'refs' | 'tags' | 'image' | 'date';
+  type: 'text' | 'longtext' | 'refs' | 'date';
   placeholder?: string;
 };
 ```
 
-Templates are defined in code (not user-editable in phase 1). See prototype file for the full definitions of all 7 templates with their placeholder copy — that copy should be preserved verbatim in the real build.
+Templates are defined in code (not user-editable in phase 1). `src/services/template-registry.ts` is the source of truth; `docs/prototype/anamnesis.jsx` holds the original placeholder copy, which is preserved verbatim in the build.
+
+**Nine template keys ship**, not the seven this document says elsewhere: `folder`, `character`, `location`, `faction`, `item`, `event`, `species`, `note`, plus `blank` — added in Phase 7 for starting a page with nothing on it and applying a template later. `isFolder` was replaced by `canHaveChildren`, which is the property the storage layout actually keys off.
 
 ## Phase 1 — Local editing app
 
@@ -142,7 +167,7 @@ Everything a single user needs to build worlds. No sharing, no sync, no accounts
    - Right-click context menu: rename, duplicate, delete, add child, **set color**
    - "+" button on hover to add a child page
    - Search/filter input at the top (name + `#tag` prefix filters by tag)
-   - "Project / Templates / Assets" tab strip at the very top (only Project matters in phase 1)
+   - ~~"Project / Templates / Assets" tab strip at the very top~~ — **never built.** Only the Project view was ever going to be functional in Phase 1, so a three-tab strip with two dead tabs was dropped rather than shipped as decoration. Reconsider if Templates or Assets ever get real views.
 
 3. **Node colors**
    - **Any node** (folder or page) can have a color assigned to it
@@ -157,7 +182,7 @@ Everything a single user needs to build worlds. No sharing, no sync, no accounts
    - **This maps to LK's `iconColor` per resource** so colors round-trip cleanly through LK import/export.
 
 4. **New page modal**
-   - Grid of the 7 templates with icons
+   - Grid of the templates with icons
    - Clicking creates a new node of that type as a child of the target parent
 
 5. **Page view** (center)
@@ -237,13 +262,8 @@ Everything a single user needs to build worlds. No sharing, no sync, no accounts
       - `heading`, `paragraph`, `bulletList`, `orderedList`, `rule`, `text` with marks → pass through directly
     - `iconColor` → node's `color` (map hex → nearest preset color, or store the raw hex)
     - `name` → node's `name`
-    - Templates: LK doesn't have a template concept — it's freeform documents. On import, we **infer** the template from the tab signature:
-      - `[Overview, Backstory]` → character
-      - `[Overview, Map, History]` → location
-      - `[Overview, Biology, Lifestyle, Beliefs, Relations]` → species
-      - `[Main]` only → folder if it has children, else note
-      - Anything else → note (preserving the tabs as-is)
-    - Show a preview of the import (tree + inferred template counts) and let the user confirm before committing.
+    - Templates: LK doesn't have a template concept — it's freeform documents. On import, we **infer** the template from the tab signature. **`docs/lk-format.md` holds the current rules; don't work from the list that used to be here.** The original spec called for *exact* signature matching, which shipped in Phase 8 and turned out to lose data: a character page with one extra tab of the user's own failed to match, fell back to Note, and Notes can't hold children — so its sub-pages vanished. Matching is now by subset, with a backstop that anything with children always gets a template that can hold them.
+    - Show a preview of the import (tree + inferred template counts + a plain-language list of anything lossy) and let the user confirm before committing.
 
     **Export mapping** is the inverse — serialize our nodes as LK resources with their documents and ProseMirror content, gzip the result, save as `.lk`. Round-trip should be lossless for anything that started in LK; new content types (Species, Item, Faction, Event templates) export as freeform documents with matching tab structures.
 
@@ -251,7 +271,7 @@ Everything a single user needs to build worlds. No sharing, no sync, no accounts
 
 ### Nice-to-have (still phase 1 if time allows)
 
-- Node duplication (right-click → duplicate creates a full copy with fresh id, renamed "{original} (copy)")
+- Node duplication (right-click → duplicate creates a full copy with fresh id, renamed "{original} (Copy)")
 - Undo/redo at the app level (BlockNote handles per-editor undo natively)
 - Global search across all nodes' content (Fuse.js)
 - Keyboard shortcuts: Cmd/Ctrl+K for search, Cmd/Ctrl+N for new page
@@ -339,5 +359,5 @@ Approximate order of operations chosen so each layer can be tested against the l
 
 - The developer is comfortable in React (has previously built a React + IndexedDB dashboard app) but is not a full-time engineer. Prefer readable code over clever code. Comment anywhere the intent isn't obvious.
 - Include a `README.md` with dev setup, build commands, and a short explanation of how the data model maps to files on disk. The developer should be able to hand-edit a node JSON file to fix data if something breaks.
-- Ship with the 7 templates and their exact placeholder copy from the prototype — this content is deliberately shaped and shouldn't be reworded.
+- Ship with the templates and their exact placeholder copy from the prototype — this content is deliberately shaped and shouldn't be reworded.
 - Do not add features not in this spec without asking. Especially: no login walls, no telemetry, no cloud service dependencies, no AI features baked in.
