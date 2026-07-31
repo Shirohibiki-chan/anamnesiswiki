@@ -103,7 +103,9 @@ Round-trip test: import `Valeraverse.lk`, export it back, diff the two — conte
 
 Global search across all nodes' content (Fuse.js index rebuilt on load, updated on change). Keyboard shortcuts (Cmd+K search, Cmd+N new page, Cmd+S manual save indicator). Node duplication (right-click → Duplicate). App-level undo/redo.
 
-Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`) via `pnpm tauri build`. GitHub Releases workflow to publish installers on tag push. README instructions for the unsigned-installer bypass on each platform.
+Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`) via `pnpm tauri build`. README instructions for the unsigned-installer bypass on each platform.
+
+**Still outstanding here:** a GitHub Releases workflow that publishes installers on tag push, attaching the signed updater artifacts and a `latest.json` manifest. The in-app update check was pulled forward and shipped on 2026-07-31 (see `CHANGELOG.md`), and it points at `releases/latest/download/latest.json` — until a release exists at that URL, the button correctly reports there's nothing to update to. Releases must be built with `TAURI_SIGNING_PRIVATE_KEY` set or clients will reject the update as unsigned; see `docs/handoff.md` → Updates.
 
 **End state:** app is shippable. User can install it, other people can install it, everyone's data stays local.
 
