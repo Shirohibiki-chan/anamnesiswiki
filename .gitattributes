@@ -1,0 +1,10 @@
+# cmd parses .bat files by byte offset, so LF-only endings mangle multi-line
+# constructs -- and a mangled block doesn't error, it makes conditions quietly
+# evaluate false. That cost several rounds of chasing a launcher that reported
+# correctly-installed tools as missing. Force CRLF on checkout regardless of
+# anyone's core.autocrlf.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Everything else: normalise in the repo, let git decide on checkout.
+* text=auto
