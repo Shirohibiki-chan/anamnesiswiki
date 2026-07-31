@@ -4,7 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri + React + Typescript</title>
+    <title>Anamnesis</title>
+    <!--
+      Inline, and duplicating --color-bg from index.css on purpose. This is the
+      only style that exists during the first paint: index.css arrives as a
+      separate request and React later still, so without this the window shows
+      the browser's default white for a few hundred milliseconds before the
+      dark theme lands. On a dark app in a dark room that reads as a camera
+      flash. Keep it in sync with --color-bg by hand; it cannot reference the
+      variable, because the file defining it is exactly what hasn't loaded yet.
+      The matching native window colour is `backgroundColor` in tauri.conf.json,
+      which covers the earlier gap before the webview paints at all.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0f0f14;
+      }
+    </style>
   </head>
 
   <body>
