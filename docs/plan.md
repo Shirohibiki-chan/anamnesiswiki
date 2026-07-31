@@ -138,21 +138,19 @@ Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImag
   `use-global-shortcuts.ts`. Cmd+N adds a *sibling* of the current selection —
   a row's own "+" already covers "child of this". **Unverified in the desktop
   build:** whether WebView2 lets the page keep Cmd+N. See handoff §Shortcuts.
+- **Rebindable shortcuts**, shipped 2026-07-31 — asked for by the user that day
+  as an accessibility feature, not a power-user one, which is what decides the
+  rules. Settings → Keyboard lists every action with a key recorder and a
+  per-action reset. Overrides (only the changed ones) persist through
+  `app-settings-service.ts`; `shortcut-store.ts` merges them over the defaults
+  and everything reads from there. A binding needs a modifier **or** to be a
+  bare F-key, and can't take a combination another action or the editor owns.
+  **Adding a new shortcut is now three lines** — an entry in `SHORTCUT_ACTIONS`,
+  one in `SHORTCUT_LABELS`, one in `DEFAULT_BINDINGS` — plus a handler in
+  `useGlobalShortcuts`. It shows up in Settings on its own.
 
 **Still to do:**
 
-- **Making the shortcuts rebindable from Settings** — the user asked for this
-  as an accessibility feature on 2026-07-31, and it's the next thing to build.
-  The three pieces it needs are already shaped for it: `DEFAULT_BINDINGS` is a
-  plain record keyed by action, `shortcut-service.ts` already matches and
-  renders an arbitrary `Binding`, and `app-settings-service.ts` is where
-  overrides persist. What's left is a Keyboard section in `SettingsModal`, a
-  key recorder, and validation: **a modifier or a bare F-key** (a plain letter
-  fires while typing; requiring chords is the exact thing that's hard for some
-  people, so F-keys are the escape hatch), no collisions with another action,
-  and nothing BlockNote owns (Mod-z, Mod-y, Mod-Alt-\*, Mod-Shift-\*).
-  `useShortcutLabel` is the seam — every advertised shortcut already renders
-  through it, so labels follow a rebind on their own.
 - **App-level undo/redo.** Not started, and not a small one — BlockNote already
   binds Mod-z/Mod-y for editor history, and tree operations write to disk as
   they happen, so "undo" there means reversing a filesystem change rather than

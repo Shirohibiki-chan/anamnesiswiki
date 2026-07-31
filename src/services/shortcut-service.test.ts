@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { formatBinding, formatKey, matchesBinding, normalizeKey } from "./shortcut-service";
+import {
+  bindingFromEvent,
+  bindingsEqual,
+  checkBinding,
+  formatBinding,
+  formatKey,
+  matchesBinding,
+  mergeBindings,
+  normalizeKey,
+  parseOverrides,
+} from "./shortcut-service";
 import { DEFAULT_BINDINGS } from "../constants/shortcuts";
 
 // The tests run in Vitest's node environment (see vitest.config.ts), so there
@@ -91,5 +101,127 @@ describe("formatBinding", () => {
 
   it("renders a bare function key with no modifier text", () => {
     expect(formatBinding({ key: "F2" }, false)).toBe("F2");
+  });
+});
+
+describe("bindingsEqual", () => {
+  it("treats an absent modifier and an explicit false as the same", () => {
+    expect(bindingsEqual({ key: "k", mod: true }, { key: "k", mod: true, shift: false, alt: false })).toBe(true);
+  });
+
+  it("separates bindings that differ only by a modifier", () => {
+    expect(bindingsEqual({ key: "k", mod: true }, { key: "k", mod: true, shift: true })).toBe(false);
+  });
+});
+
+describe("bindingFromEvent", () => {
+  it("ignores the frames where only modifiers are down", () => {
+    expect(bindingFromEvent(keyEvent("Control", { ctrlKey: true }))).toBeNull();
+    expect(bindingFromEvent(keyEvent("Shift", { shiftKey: true }))).toBeNull();
+  });
+
+  it("reads the modifiers that were held", () => {
+    expect(bindingFromEvent(keyEvent("P", { ctrlKey: true, shiftKey: true }))).toEqual({
+      key: "p",
+      mod: true,
+      shift: true,
+    });
+  });
+
+  it("leaves function keys unlowercased", () => {
+    expect(bindingFromEvent(keyEvent("F4"))).toEqual({ key: "F4" });
+  });
+});
+
+describe("checkBinding", () => {
+  const current = DEFAULT_BINDINGS;
+
+  it("accepts an unclaimed modifier combination", () => {
+    expect(checkBinding({ key: "j", mod: true }, "search", current)).toBeNull();
+  });
+
+  // The accessibility decision: a bare letter can't work in a text editor, but
+  // requiring a chord is the exact barrier this screen exists to remove.
+  it("refuses a bare letter", () => {
+    expect(checkBinding({ key: "j" }, "search", current)?.reason).toBe("needsModifier");
+  });
+
+  it("accepts a function key with no modifier at all", () => {
+    expect(checkBinding({ key: "F4" }, "search", current)).toBeNull();
+    expect(checkBinding({ key: "F12" }, "search", current)).toBeNull();
+  });
+
+  it("refuses Shift-plus-letter, which still fires while typing", () => {
+    expect(checkBinding({ key: "j", shift: true }, "search", current)?.reason).toBe("needsModifier");
+  });
+
+  it("refuses every Ctrl+Alt combination, since headings claim the space", () => {
+    expect(checkBinding({ key: "j", mod: true, alt: true }, "search", current)?.reason).toBe("reservedByEditor");
+  });
+
+  it("refuses the editor's own history keys", () => {
+    expect(checkBinding({ key: "z", mod: true }, "search", current)?.reason).toBe("reservedByEditor");
+    expect(checkBinding({ key: "y", mod: true }, "search", current)?.reason).toBe("reservedByEditor");
+    expect(checkBinding({ key: "z", mod: true, shift: true }, "search", current)?.reason).toBe("reservedByEditor");
+  });
+
+  it("refuses copy and paste", () => {
+    expect(checkBinding({ key: "c", mod: true }, "search", current)?.reason).toBe("reservedBySystem");
+    expect(checkBinding({ key: "v", mod: true }, "search", current)?.reason).toBe("reservedBySystem");
+  });
+
+  it("names the action already holding the key", () => {
+    const problem = checkBinding({ key: "n", mod: true }, "search", current);
+    expect(problem?.reason).toBe("alreadyTaken");
+    expect(problem?.message).toContain("New page");
+  });
+
+  it("lets an action keep the binding it already has", () => {
+    expect(checkBinding(DEFAULT_BINDINGS.search, "search", current)).toBeNull();
+  });
+});
+
+describe("parseOverrides", () => {
+  it("survives junk", () => {
+    expect(parseOverrides(null)).toEqual({});
+    expect(parseOverrides("nope")).toEqual({});
+    expect(parseOverrides({ search: "Ctrl+K" })).toEqual({});
+    expect(parseOverrides({ search: { key: 7 } })).toEqual({});
+    expect(parseOverrides({ search: { key: "j", mod: "yes" } })).toEqual({});
+  });
+
+  it("ignores keys that aren't actions", () => {
+    expect(parseOverrides({ somethingElse: { key: "j", mod: true } })).toEqual({});
+  });
+
+  // The file outlives any given version: a binding that was legal when written
+  // may have been claimed since, and falling back to the default beats keeping
+  // a shortcut that can no longer fire.
+  it("drops a stored binding that today's rules refuse", () => {
+    expect(parseOverrides({ search: { key: "z", mod: true } })).toEqual({});
+    expect(parseOverrides({ search: { key: "j" } })).toEqual({});
+  });
+
+  it("keeps a usable one", () => {
+    expect(parseOverrides({ search: { key: "j", mod: true } })).toEqual({ search: { key: "j", mod: true } });
+  });
+
+  // Checked for shape but not for collisions, so swapping two actions' keys
+  // round-trips instead of being thrown away as a clash with the defaults.
+  it("keeps a swap of two actions' keys", () => {
+    const swapped = { search: { key: "n", mod: true }, newPage: { key: "k", mod: true } };
+    expect(parseOverrides(swapped)).toEqual(swapped);
+  });
+});
+
+describe("mergeBindings", () => {
+  it("leaves untouched actions on their defaults", () => {
+    const merged = mergeBindings({ search: { key: "j", mod: true } });
+    expect(merged.search).toEqual({ key: "j", mod: true });
+    expect(merged.newPage).toEqual(DEFAULT_BINDINGS.newPage);
+  });
+
+  it("returns every action even with no overrides at all", () => {
+    expect(mergeBindings({})).toEqual(DEFAULT_BINDINGS);
   });
 });
