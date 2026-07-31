@@ -61,6 +61,28 @@ Skipping silently would be worse than the crash it replaces (pages would just qu
 
 5 new tests in `tree-service.test.ts`. Note this supersedes half of the `duplicateNode` ordering note below: clone *placement* is now explicit, though clones still share a `createdAt`, so ordering *within* a duplicated subtree is still arbitrary.
 
+### Fixed: whole-app re-render on every keystroke
+
+`use-project.ts` was a single `useProject()` returning `useProjectStore()` — an unselected, whole-store subscription. Every `updateNode` replaces the `nodes` map, so one character typed re-rendered every consumer: all ~30 virtualized `TreeItem` rows, every `MentionChip` in the open document, `PropertiesPanel` and its fields, `PageBanner`, `PageTitle`, `SaveIndicator`.
+
+Added narrow hooks alongside the existing one — `useNode(id)`, `useProjectActions()`, `useProjectName()`, `useProjectRootPath()`, `useLastSavedAt()`, plus `useEffectiveColor(id)` / `useAncestorChain(id)` in `use-tree-data.ts` (both `useShallow`-compared, since they derive from the whole map by walking the parent chain). Converted the per-row and per-mention consumers: `TreeItem`, `MentionChip`, `SaveIndicator`, `useNodeImage`, `PageTitle`, `FolderView`. `TreePanel`, `PropertiesPanel`, `PageView` and `Editor` keep the full subscription — they genuinely track broad state.
+
+Store actions are created once and never replaced, so `useProjectActions()` is a permanently stable reference: a component that only dispatches never re-renders from a store update at all.
+
+**Verified against the real store in the browser.** Seeded two sibling nodes, edited one, and checked selector output identity — which is exactly what decides whether React bails out of a re-render:
+
+| | result |
+|---|---|
+| `nodes` map identity changed (full subscribers re-render) | yes |
+| `useNode("b")` reference stable | yes |
+| `useLastSavedAt()` / `useProjectRootPath()` stable | yes |
+| `useEffectiveColor("b")` shallow-stable when a sibling is edited | yes |
+| `useEffectiveColor("b")` updates when its parent folder is recoloured | yes |
+
+The last row matters most — the narrowing must not break the colour cascade, and it doesn't.
+
+**Not measured:** actual frame timings or render counts under load. The mechanism is verified; the felt improvement on a 75-page project is worth a look next time the desktop app is running.
+
 **Noted, not fixed:** `duplicateNode` stamps every clone in a subtree with the same `createdAt`, so cloned siblings fall back to the `id.localeCompare` tie-break — meaning a duplicated folder's children come out in an arbitrary order rather than matching the original. Ordering only, no data loss.
 
 **Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.

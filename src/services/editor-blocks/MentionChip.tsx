@@ -5,15 +5,17 @@
 import type { ReactCustomInlineContentRenderProps } from "@blocknote/react";
 import type { DefaultStyleSchema } from "@blocknote/core";
 import { getTemplateIcon } from "../../constants/icons";
-import { useProject } from "../../hooks/use-project";
+import { useNode, useProjectActions } from "../../hooks/use-project";
 import type { MentionConfig } from "./mention-inline-content";
 
 type MentionChipProps = ReactCustomInlineContentRenderProps<MentionConfig, DefaultStyleSchema>;
 
 export function MentionChip({ inlineContent, contentRef }: MentionChipProps) {
   const { nodeId, label } = inlineContent.props;
-  const { nodes, selectNode } = useProject();
-  const target = nodes[nodeId];
+  // Narrow subscriptions on purpose: a document can hold dozens of these, and
+  // a full-store subscription re-rendered every one of them on every keystroke.
+  const target = useNode(nodeId);
+  const { selectNode } = useProjectActions();
   const Icon = getTemplateIcon(target?.templateKey ?? "note");
 
   return (

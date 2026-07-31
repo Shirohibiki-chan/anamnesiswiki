@@ -6,19 +6,18 @@ import { useState, type CSSProperties } from "react";
 import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
-import { useProject } from "../../hooks/use-project";
-import { useTreeData } from "../../hooks/use-tree-data";
+import { useProjectActions } from "../../hooks/use-project";
+import { useEffectiveColor } from "../../hooks/use-tree-data";
 import { useTemplates } from "../../hooks/use-templates";
 import { TemplatePicker } from "../tree/TemplatePicker";
 import { TreePopover } from "../tree/TreePopover";
 
 export function FolderView({ node }: { node: Node }) {
-  const { addNode } = useProject();
-  const { getEffectiveColor } = useTreeData();
+  const { addNode } = useProjectActions();
   const { getLabel } = useTemplates();
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
-  const { color: effectiveKey } = getEffectiveColor(node.id);
+  const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const Icon = getTemplateIcon(node.templateKey);
 
