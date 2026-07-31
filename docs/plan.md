@@ -58,7 +58,7 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 ## Queued Adjustments
 
-- **A proper "project home" feature.** Phase 8's import brings the LK project root's own text in as a real "Home" page (see Phase 8 below), but the user also wants an actual project-home concept in the app itself — a dedicated landing view (not just an importable page) reachable independent of any single node, likely tied to `ProjectHeader.tsx`'s existing home icon. Needs its own design pass (how it's stored, whether it's a special reserved Node excluded from the normal tree, how it interacts with `rootOrder`) rather than being bolted onto Phase 8. Not started.
+- **More right-click menu items.** The user has been through LK's own node context menu against a live (non-read-only) account and has further items she wants; "Set as project home" was the first, built 2026-07-31 because project home depended on it. The rest aren't listed yet — ask her before designing anything.
 
 ---
 
@@ -84,6 +84,9 @@ Phases 0–8 are complete. **`docs/shipped.md`** has what each one delivered;
 | 6 | Properties Panel | 2026-07-30 |
 | 7 | Templates | 2026-07-30 |
 | 8 | LK Import | 2026-07-30 |
+
+Project home — the last Queued Adjustment standing before Phase 9 — shipped
+2026-07-31.
 
 ---
 

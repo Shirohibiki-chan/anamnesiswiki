@@ -102,7 +102,7 @@ The user picks a project folder on first launch (default: `~/Documents/Anamnesis
 
 ```
 Valeraverse/
-├── project.json                 # tree order, expanded state, selection, project name
+├── project.json                 # tree order, expanded state, selection, project name, home page
 ├── Canon/
 │   ├── _folder.json             # folder's own metadata (color, tags, notes)
 │   ├── Main Story.json          # a leaf page (item/event/note — never has children)

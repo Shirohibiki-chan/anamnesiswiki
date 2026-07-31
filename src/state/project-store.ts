@@ -46,9 +46,7 @@ export type ProjectStoreState = {
   importLkProject: (
     parentDir: string,
     name: string,
-    nodes: Node[],
-    rootOrder: string[],
-    pendingImages: ImportPendingImage[],
+    plan: { nodes: Node[]; rootOrder: string[]; pendingImages: ImportPendingImage[]; homeNodeId: string | null },
   ) => Promise<CreateProjectResult>;
   closeProject: () => void;
   addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
@@ -74,6 +72,7 @@ export type ProjectStoreState = {
   deleteNode: (id: string) => void;
   duplicateNode: (id: string) => Promise<void>;
   selectNode: (id: string | null) => void;
+  setProjectHome: (id: string | null) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
 };
 
@@ -202,7 +201,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // ever makes, and only for this explicit, user-confirmed action — see
     // docs/handoff.md) before anything hits disk. A failed download just
     // leaves that one page without a picture rather than failing the import.
-    async importLkProject(parentDir, name, nodes, rootOrder, pendingImages) {
+    async importLkProject(parentDir, name, plan) {
+      const { nodes, rootOrder, pendingImages, homeNodeId } = plan;
       const trimmed = name.trim();
       if (!trimmed) return { ok: false, error: "Give your project a name." };
 
@@ -224,7 +224,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         }
       }
 
-      const project = createProject({ name: trimmed, rootOrder });
+      const project = { ...createProject({ name: trimmed, rootOrder }), homeNodeId };
       const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
       set({ rootPath, project, nodes: nodesRecord, isLoaded: true });
 
@@ -531,6 +531,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         ...project,
         rootOrder: project.rootOrder.filter((n) => n !== id),
         childOrder: nextChildOrder,
+        // Home is an ordinary page, so it can be deleted like any other — but
+        // a dangling homeNodeId would leave the house button pointing at
+        // nothing. Cleared here, including when home was merely *inside* the
+        // subtree being deleted rather than its root.
+        homeNodeId: project.homeNodeId && toRemove.has(project.homeNodeId) ? null : project.homeNodeId,
       };
 
       set({ nodes: nextNodes, project: nextProject });
@@ -618,6 +623,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextProject: Project = { ...project, selectedId: id };
       set({ project: nextProject });
       scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    },
+
+    // Designating a page as this world's home. Written immediately rather than
+    // through the debounced metadata path selection/expansion use — this is a
+    // deliberate act the user just performed, not incidental UI state, and it
+    // should survive a crash in the next 300ms.
+    setProjectHome(id) {
+      const { rootPath, project, nodes } = get();
+      if (!rootPath || !project) return;
+      if (id !== null && !nodes[id]) return;
+      const homeNodeId = project.homeNodeId === id ? null : id;
+      const nextProject: Project = { ...project, homeNodeId };
+      set({ project: nextProject });
+      void fsService.saveProject(rootPath, nextProject).then(markSaved);
     },
 
     setExpanded(id, isOpen) {

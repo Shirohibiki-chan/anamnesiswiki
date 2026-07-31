@@ -627,3 +627,54 @@ saying why.
 The banner needs a loaded project and a real write failure, so it needs
 `pnpm tauri dev`. Verified by test (122 passing, 8 new covering the reporting
 channel and the length guard) and by confirming the app boots clean.
+
+## Project Home 2026-07-31
+
+The last Queued Adjustment standing between Phase 8 and Phase 9. Designed
+against a live LegendKeeper account (the user made a fresh one specifically to
+see the editable, non-read-only UI), which changed the design substantially:
+LK's project home is not a reserved view but an ordinary page with a
+"Set as project home" item in its right-click menu. Anamnesis now does the same.
+
+### What shipped
+
+`Project.homeNodeId` — optional and nullable, so existing projects need no
+migration and a world needn't have a home at all. `setProjectHome` toggles it
+and writes `project.json` immediately rather than through the debounced
+metadata path. `deleteNode` clears it when the designated page is removed,
+including when home sat inside a deleted subtree rather than at its root.
+
+UI: a "Set as project home" / "Remove as project home" item in the tree's
+right-click menu, a house badge on the designated row (always visible, unlike
+the hover-revealed colour dot and add button beside it), the tree header's
+previously-decorative house icon turned into a jump-to-home button, and a
+"Home" chip beside the page title — LK's own arrangement in each case.
+
+### The import half
+
+Bigger than the UI. The LK project root now becomes a real Node instead of
+being dissolved into the project's name plus an occasional "Home" page:
+
+- It keeps the root's name, which is also the project name.
+- It's created unconditionally, since the designation is the point.
+- It's in `idMap`, which is what makes mentions pointing at the project root
+  resolve — the 15 broken cross-references in the user's real export.
+- Parent-grouping moved to a separate `importedIds` set, because with the root
+  in `idMap` the old check filed the root's children *under* the root and left
+  the top-level walk empty.
+- LK's stock "Welcome to LegendKeeper" tutorial is detected and left out; the
+  home page is created empty and the preview's lossy list says why.
+- `importLkProject` takes the plan object rather than four positional pieces of
+  it, which is what a fifth would have made unreadable.
+
+### Verification
+
+134 tests passing (was 132). Four import tests changed behaviour and were
+rewritten rather than patched; two new ones cover the boilerplate skip and the
+root-mention resolution. Lint and `tsc --noEmit` clean.
+
+**Not verified in the app.** Opening a project needs Tauri's file access, so
+the browser preview reaches the start-up screen and no further — it confirmed
+the app renders clean with no console errors and nothing more. The tree row
+badge, the menu item, and the house button need `pnpm tauri dev` or the
+"Anamnesis (latest code)" desktop shortcut.

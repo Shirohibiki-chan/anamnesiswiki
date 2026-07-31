@@ -42,6 +42,10 @@ export type ImportPlan = {
   projectName: string;
   nodes: Node[];
   rootOrder: string[];
+  // LK's project root comes across as a real page designated the project home
+  // (see buildImportPlan) — never null in practice for a well-formed export,
+  // null only for the malformed no-single-root fallback.
+  homeNodeId: string | null;
   templateCounts: Partial<Record<TemplateKey, number>>;
   totalResources: number;
   lossyNotes: string[];
@@ -154,6 +158,9 @@ function describeLossy(tracker: LossyTracker): string[] {
   if (mentions) notes.push(`${plural(mentions, "cross-reference link")} pointed at a page that wasn't included, and became plain text.`);
   const unknown = tracker.get("unknownBlocks");
   if (unknown) notes.push(`${plural(unknown, "block")} used a LegendKeeper feature Anamnesis doesn't recognize — its text was kept, formatting may be off.`);
+  if (tracker.get("welcomeBoilerplate")) {
+    notes.push("Your project home page comes across empty — it still held LegendKeeper's stock \"Welcome to LegendKeeper\" tutorial, which is theirs rather than yours.");
+  }
   return notes;
 }
 
@@ -170,6 +177,25 @@ function textLength(nodes: LkNode[] | undefined): number {
     if (node.content) length += textLength(node.content);
   }
   return length;
+}
+
+function collectText(nodes: LkNode[] | undefined): string {
+  let out = "";
+  for (const node of nodes ?? []) {
+    if (node.type === "text" && node.text) out += node.text;
+    if (node.content) out += collectText(node.content);
+  }
+  return out;
+}
+
+// Every fresh LegendKeeper project ships the identical "Welcome to
+// LegendKeeper" home page — a tutorial with links to their own demo world, not
+// anything the user wrote. Importing it verbatim would drop LK's onboarding
+// copy into the middle of someone's world, so a root page still carrying it
+// comes across as an empty home page instead. Matched on the heading text,
+// which is the stable part; the rest of the page varies with their releases.
+function isLkWelcomeBoilerplate(documents: LkDocument[]): boolean {
+  return documents.some((doc) => collectText(doc.content?.content).toLowerCase().includes("welcome to legendkeeper"));
 }
 
 // ---- Inline content: text runs, marks, mentions, hard breaks ----
@@ -414,9 +440,21 @@ export function buildImportPlan(raw: unknown): ImportPlan {
   const idMap = new Map<string, string>();
   for (const resource of importedResources) idMap.set(resource.id, crypto.randomUUID());
 
+  // The root resource gets an id in the map too, because it also becomes a
+  // real page — the project home, built at the bottom of this function. That's
+  // what lets a mention pointing *at* the project root resolve to something;
+  // before the home page existed those came across as plain text (15 of them
+  // in the user's own export).
+  const homeNodeId = rootResource ? crypto.randomUUID() : null;
+  if (rootResource && homeNodeId) idMap.set(rootResource.id, homeNodeId);
+
+  // Grouped by a plain id set rather than by `idMap`, which now knows the root
+  // as well: the root's children are the project's *top-level* nodes, and
+  // keying them under the root instead would leave the top-level walk empty.
+  const importedIds = new Set(importedResources.map((resource) => resource.id));
   const byParent = new Map<string, LkResource[]>();
   for (const resource of importedResources) {
-    const parentKey = resource.parentId && idMap.has(resource.parentId) ? resource.parentId : "";
+    const parentKey = resource.parentId && importedIds.has(resource.parentId) ? resource.parentId : "";
     const list = byParent.get(parentKey) ?? [];
     list.push(resource);
     byParent.set(parentKey, list);
@@ -489,45 +527,62 @@ export function buildImportPlan(raw: unknown): ImportPlan {
 
   const preview = walk("", null);
 
-  // The root resource's own text (LK's "project home" page) isn't a Node —
-  // it became the project's own name above — but if the user actually wrote
-  // something there (not just LK's stock welcome boilerplate), it still
-  // deserves a real page rather than silent deletion. Given pride of place
-  // as the first thing in the tree.
-  if (rootResource && textLength(rootResource.documents.flatMap((d) => d.content?.content ?? []))) {
-    const homeId = crypto.randomUUID();
+  // LK's project root is its project home page, and here it becomes exactly
+  // that: an ordinary page marked as the project's home (Project.homeNodeId),
+  // first in the tree. Always created, even when it has nothing on it — the
+  // designation is the point, and a world's home page is somewhere to write
+  // rather than something earned by having written already. It keeps the
+  // root's own name, which is also the project's name, the same way LK shows
+  // it in both places.
+  if (rootResource && homeNodeId) {
     const sortedDocs = [...rootResource.documents].sort((a, b) => posCompare(a.pos, b.pos));
+    const isBoilerplate = isLkWelcomeBoilerplate(sortedDocs);
+    if (isBoilerplate) bump(lossy, "welcomeBoilerplate");
+
+    const importedTabs = isBoilerplate
+      ? []
+      : sortedDocs.map((doc) =>
+          createTab({
+            id: crypto.randomUUID(),
+            label: doc.name,
+            hidden: Boolean(doc.isHidden),
+            content: convertBlocks(doc.content?.content, ctx),
+          }),
+        );
+
     const createdAt = createdCounter++;
     const homeNode: Node = {
-      id: homeId,
+      id: homeNodeId,
       parentId: null,
       templateKey: "note",
-      name: "Home",
-      tabs: sortedDocs.map((doc) =>
-        createTab({
-          id: crypto.randomUUID(),
-          label: doc.name,
-          hidden: Boolean(doc.isHidden),
-          content: convertBlocks(doc.content?.content, ctx),
-        }),
-      ),
+      name: rootResource.name.trim() || "Home",
+      // A page with no tabs at all has nowhere to type, so an emptied or
+      // tab-less root still gets one to start from.
+      tabs: importedTabs.length > 0 ? importedTabs : [createTab({ id: crypto.randomUUID(), label: "Main" })],
       properties: {},
       customProperties: [],
       tags: [],
       createdAt,
       updatedAt: createdAt,
     };
-    nodes.unshift(homeNode);
-    preview.unshift({ id: homeId, name: homeNode.name, templateKey: "note", children: [] });
+    nodes.push(homeNode);
+    preview.unshift({ id: homeNodeId, name: homeNode.name, templateKey: "note", children: [] });
     templateCounts.note = (templateCounts.note ?? 0) + 1;
   }
 
-  const rootOrder = nodes.filter((n) => n.parentId === null).map((n) => n.id);
+  // Home leads the tree, whatever order it was built in — `nodes` itself is an
+  // unordered bag (the store keys it by id the moment it lands), so the home
+  // page is appended there and promoted here rather than the other way round.
+  const rootOrder = [
+    ...(homeNodeId ? [homeNodeId] : []),
+    ...nodes.filter((n) => n.parentId === null && n.id !== homeNodeId).map((n) => n.id),
+  ];
 
   return {
     projectName,
     nodes,
     rootOrder,
+    homeNodeId,
     templateCounts,
     totalResources: importedResources.length,
     lossyNotes: describeLossy(lossy),

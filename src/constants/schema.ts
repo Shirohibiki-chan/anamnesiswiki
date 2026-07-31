@@ -79,6 +79,13 @@ export type Project = {
   // entry. Anything unlisted falls back to creation order (see
   // tree-service.ts's orderSiblings), so this is additive, never a migration.
   childOrder?: Record<string, string[]>;
+  // The page designated as this world's home — an ordinary Node like any
+  // other, not a reserved one, exactly as LegendKeeper does it ("Set as
+  // project home" on any page's right-click menu). Optional and nullable:
+  // projects saved before this existed have no entry, and a world simply
+  // needn't have a home page. Deleting the designated page clears it (see
+  // project-store's deleteNode) so this never points at a node that's gone.
+  homeNodeId?: string | null;
   expandedIds: string[];
   selectedId: string | null;
   createdAt: number;

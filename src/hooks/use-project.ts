@@ -30,6 +30,7 @@ export function useProjectActions() {
       deleteNode: state.deleteNode,
       duplicateNode: state.duplicateNode,
       selectNode: state.selectNode,
+      setProjectHome: state.setProjectHome,
       setExpanded: state.setExpanded,
     })),
   );
@@ -43,6 +44,13 @@ export function useNode(nodeId: string | null | undefined): Node | undefined {
 
 export function useProjectName(): string | undefined {
   return useProjectStore((state) => state.project?.name);
+}
+
+// The page designated as this world's home, if any. Narrow on purpose: every
+// tree row asks whether it's the home page, and a full-store subscription in a
+// per-row component re-renders the whole tree on every keystroke.
+export function useProjectHomeId(): string | null {
+  return useProjectStore((state) => state.project?.homeNodeId ?? null);
 }
 
 export function useProjectRootPath(): string | null {

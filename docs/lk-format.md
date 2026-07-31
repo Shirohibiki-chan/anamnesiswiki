@@ -20,11 +20,13 @@ Ungzip via the browser's native `DecompressionStream("gzip")` (no `pako`/zlib de
 
 ## The project root
 
-LK's export always has exactly one resource with no `parentId` — this is LK's own "project home" page (every fresh LK project ships identical "Welcome to LegendKeeper..." boilerplate here, confirmed against the real export). It does **not** become a Node:
+LK's export always has exactly one resource with no `parentId` — this is LK's own project home page (every fresh LK project ships identical "Welcome to LegendKeeper…" boilerplate here, confirmed against the real export). Since 2026-07-31 it becomes a real Node, the imported project's home page:
 
-- Its `name` becomes the new project's name.
-- Its own tab content, **if the user actually wrote something there** (not just LK's boilerplate), is imported as a real top-level page named "Home" — first in `rootOrder` — rather than thrown away. Detected via a plain text-length check across its documents.
-- Its direct children become the project's top-level nodes (`rootOrder`), sorted by `pos`.
+- Its `name` becomes both the new project's name and the home page's own name — LK shows it in both places too.
+- It's created whether or not anything is written on it, and designated via `Project.homeNodeId` (see `docs/handoff.md` §Project home). First in `rootOrder`.
+- Its tab content comes across as an ordinary page's would, **unless it still holds LK's stock welcome tutorial** — matched on the "Welcome to LegendKeeper" heading, reported in the preview's lossy list, and left out. An empty or tab-less root still gets one blank `Main` tab so there's somewhere to type.
+- It gets an entry in `idMap` like any other resource, so `mention`s pointing at the project root resolve to the home page instead of degrading to plain text. Parent-grouping deliberately uses a separate id set — see `docs/handoff.md` §LK import for what breaks otherwise.
+- Its direct children become the project's top-level nodes, sorted by `pos`, following home in `rootOrder`.
 
 If an export doesn't have exactly one no-parent resource (malformed/unexpected), the importer falls back to treating every resource with an unresolvable `parentId` as top-level, and the project name defaults to "Imported World" (the user can rename it before confirming the import).
 
@@ -104,4 +106,3 @@ Before committing anything to disk, `ImportModal.tsx` shows: the parsed tree wit
 ## Deferred
 
 - **Export (Phase 9)** — the inverse of everything above. Not started.
-- **A dedicated "project home" app feature** (distinct from just importing the root's text as a page) — logged in `docs/plan.md`'s Queued Adjustments, not built.

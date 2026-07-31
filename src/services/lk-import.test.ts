@@ -49,37 +49,78 @@ describe("buildImportPlan", () => {
     expect(() => buildImportPlan(null)).toThrow();
   });
 
-  it("excludes the sole no-parent resource, using its name as the project name", () => {
+  it("takes the project name from the sole no-parent resource", () => {
     const plan = buildImportPlan(withRoot([resource("a", "Sampo Koski", "A")]));
     expect(plan.projectName).toBe("Valeraverse");
-    expect(plan.nodes.some((n) => n.name === "Valeraverse")).toBe(false);
-    expect(plan.nodes).toHaveLength(1);
   });
 
-  it("brings the root's own text in as a real \"Home\" page, first in the tree, when it has real content", () => {
+  it("brings the root in as the project home page — keeping its name, first in the tree", () => {
     const plan = buildImportPlan(
       withRoot([resource("a", "Page", "A")], {
-        documents: [doc("root-main", "Main", "A", [paragraph([text("Welcome to LegendKeeper")])])],
+        documents: [doc("root-main", "Main", "A", [paragraph([text("The world of Valera.")])])],
       }),
     );
-    const home = plan.nodes.find((n) => n.name === "Home");
-    expect(home).toBeDefined();
-    expect(home!.templateKey).toBe("note");
-    const blocks = home!.tabs[0].content as Record<string, unknown>[];
-    expect((blocks[0].content as Record<string, unknown>[])[0]).toMatchObject({ text: "Welcome to LegendKeeper" });
-    expect(plan.rootOrder[0]).toBe(home!.id);
+    const home = plan.nodes.find((n) => n.id === plan.homeNodeId)!;
+    expect(home.name).toBe("Valeraverse");
+    expect(home.templateKey).toBe("note");
+    expect(home.parentId).toBeNull();
+    const blocks = home.tabs[0].content as Record<string, unknown>[];
+    expect((blocks[0].content as Record<string, unknown>[])[0]).toMatchObject({ text: "The world of Valera." });
+    expect(plan.rootOrder[0]).toBe(home.id);
   });
 
-  it("doesn't add a Home page for an empty/boilerplate-free root", () => {
-    const plan = buildImportPlan(withRoot([resource("a", "Page", "A")]));
-    expect(plan.nodes.some((n) => n.name === "Home")).toBe(false);
+  it("still designates a home page when the root has nothing on it, with somewhere to type", () => {
+    const plan = buildImportPlan(withRoot([resource("a", "Page", "A")], { documents: [] }));
+    const home = plan.nodes.find((n) => n.id === plan.homeNodeId)!;
+    expect(home).toBeDefined();
+    expect(home.tabs).toHaveLength(1);
+    expect(home.tabs[0].content).toEqual([]);
+  });
+
+  it("leaves LK's stock welcome tutorial out of the home page, and says so", () => {
+    const plan = buildImportPlan(
+      withRoot([resource("a", "Page", "A")], {
+        documents: [
+          doc("root-main", "Main", "A", [
+            { type: "heading", attrs: { level: 1 }, content: [text("Welcome to LegendKeeper")] },
+            paragraph([text("This page is your Project Home.")]),
+          ]),
+        ],
+      }),
+    );
+    const home = plan.nodes.find((n) => n.id === plan.homeNodeId)!;
+    expect(home.tabs[0].content).toEqual([]);
+    expect(plan.lossyNotes.some((note) => note.includes("Welcome to LegendKeeper"))).toBe(true);
+  });
+
+  // The root is a page now, so a mention pointing at it resolves like any
+  // other — 15 of these came across as plain text in the user's real export.
+  it("resolves a mention pointing at the project root to the home page", () => {
+    const plan = buildImportPlan(
+      withRoot([
+        resource("a", "Page", "A", {
+          documents: [
+            doc("a-main", "Main", "A", [paragraph([{ type: "mention", attrs: { id: "root", text: "Valeraverse" } }])]),
+          ],
+        }),
+      ]),
+    );
+    const blocks = plan.nodes[0].tabs[0].content as Record<string, unknown>[];
+    const inline = (blocks[0].content as Record<string, unknown>[])[0];
+    expect(inline).toEqual({ type: "mention", props: { nodeId: plan.homeNodeId, label: "Valeraverse" } });
+    expect(plan.lossyNotes.some((note) => note.includes("cross-reference"))).toBe(false);
   });
 
   it("orders siblings by LK's fractional-index pos, not resource order", () => {
     const plan = buildImportPlan(
       withRoot([resource("second", "Second", "M"), resource("first", "First", "A")]),
     );
-    expect(plan.rootOrder.map((id) => plan.nodes.find((n) => n.id === id)?.name)).toEqual(["First", "Second"]);
+    // Home leads the tree; the imported siblings follow it in pos order.
+    expect(plan.rootOrder.map((id) => plan.nodes.find((n) => n.id === id)?.name)).toEqual([
+      "Valeraverse",
+      "First",
+      "Second",
+    ]);
   });
 
   describe("template inference", () => {
@@ -526,7 +567,7 @@ describe("buildImportPlan", () => {
     });
   });
 
-  it("counts inferred templates and total imported resources, excluding the project root", () => {
+  it("counts inferred templates and total imported resources, counting the home page but not the root as a resource", () => {
     const plan = buildImportPlan(
       withRoot([
         resource("a", "Valera", "A", { documents: [doc("d1", "Overview", "A"), doc("d2", "Backstory", "B")] }),
@@ -534,7 +575,7 @@ describe("buildImportPlan", () => {
         resource("c", "Untitled", "C"),
       ]),
     );
-    expect(plan.templateCounts).toEqual({ character: 2, note: 1 });
+    expect(plan.templateCounts).toEqual({ character: 2, note: 2 });
     expect(plan.totalResources).toBe(3);
   });
 });

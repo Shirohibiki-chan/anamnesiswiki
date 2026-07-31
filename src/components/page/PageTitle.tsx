@@ -1,15 +1,16 @@
 // Page header — breadcrumb trail, template icon (tinted per effective
 // color), and a click-to-rename title. See docs/spec.md §Page view.
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
-import { useProjectActions, useProjectName } from "../../hooks/use-project";
+import { useProjectActions, useProjectHomeId, useProjectName } from "../../hooks/use-project";
 import { useAncestorChain, useEffectiveColor } from "../../hooks/use-tree-data";
 
 export function PageTitle({ node }: { node: Node }) {
   const projectName = useProjectName();
+  const homeNodeId = useProjectHomeId();
   const { renameNode, selectNode } = useProjectActions();
   const [isEditing, setIsEditing] = useState(false);
 
@@ -66,6 +67,11 @@ export function PageTitle({ node }: { node: Node }) {
           <h1 className="page-title-name" onClick={() => setIsEditing(true)}>
             {node.name}
           </h1>
+        )}
+        {homeNodeId === node.id && (
+          <span className="page-title-home-badge">
+            <Home size={12} /> Home
+          </span>
         )}
       </div>
     </div>

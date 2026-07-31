@@ -79,7 +79,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     // "Importing your world" with no error and no way back.
     let result: Awaited<ReturnType<typeof importLkProject>>;
     try {
-      result = await importLkProject(parentDir, trimmedName, plan.nodes, plan.rootOrder, plan.pendingImages);
+      result = await importLkProject(parentDir, trimmedName, plan);
     } catch (e) {
       result = { ok: false, error: e instanceof Error ? e.message : "Something went wrong writing the project to disk." };
     }
