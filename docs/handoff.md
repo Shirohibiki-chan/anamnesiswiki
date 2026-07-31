@@ -260,9 +260,11 @@ Deferred on purpose, not forgotten:
   Worth revisiting with the project-home feature, since that's what they'd point at.
 - **The Windows path-length refusal has never fired against a real project.**
   Verified by test only.
-- **No GitHub release exists yet**, so the update check has nothing to compare
-  against and correctly reports there's nothing to update to. The download and
-  install path is therefore unexercised against a real release. Not a bug.
+- **The updater's download-and-install path has never run against a real
+  release.** v0.2.0 is published and the check path is verified end to end, but
+  nothing has yet *found* a newer version, because v0.2.0 is the newest. The
+  first real exercise of download → signature check → install happens on the
+  next release; watch it rather than assuming it works.
 - Not built and not scoped: theme switcher and the five extra palettes, cloud
   sync, mobile, user-editable templates, interactive atlas, timeline views, and
   any LLM feature in the editor.
