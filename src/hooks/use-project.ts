@@ -22,6 +22,7 @@ export function useProjectActions() {
   return useProjectStore(
     useShallow((state) => ({
       dismissSkippedFiles: state.dismissSkippedFiles,
+      dismissSaveErrors: state.dismissSaveErrors,
       addNode: state.addNode,
       updateNode: state.updateNode,
       renameNode: state.renameNode,
@@ -50,4 +51,10 @@ export function useProjectRootPath(): string | null {
 
 export function useLastSavedAt(): number | null {
   return useProjectStore((state) => state.lastSavedAt);
+}
+
+// Writes that failed. Separate from skippedFiles: one is "we couldn't read
+// this when opening", the other is "we couldn't write this just now."
+export function useSaveErrors(): string[] {
+  return useProjectStore(useShallow((state) => state.saveErrors));
 }

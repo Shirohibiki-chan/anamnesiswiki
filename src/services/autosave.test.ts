@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cancelSave, flushAllSaves, flushSave, hasPendingSaves, scheduleSave } from "./autosave";
+import {
+  cancelSave,
+  flushAllSaves,
+  flushSave,
+  hasPendingSaves,
+  scheduleSave,
+  setSaveErrorHandler,
+} from "./autosave";
 
 afterEach(async () => {
   await flushAllSaves();
@@ -70,5 +77,68 @@ describe("autosave", () => {
     await expect(flushAllSaves()).resolves.toBeUndefined();
     expect(good).toHaveBeenCalledTimes(1);
     expect(hasPendingSaves()).toBe(false);
+  });
+});
+
+// Regression: a debounced save runs with no caller left to catch anything, so
+// a rejected write used to disappear as an unhandled rejection while the app
+// went on showing the last successful save's "Saved". These cover the reporting
+// channel that replaced that silence.
+describe("save failure reporting", () => {
+  afterEach(() => setSaveErrorHandler(null));
+
+  it("reports a debounced save that throws", async () => {
+    const reported: unknown[] = [];
+    setSaveErrorHandler((_key, error) => reported.push(error));
+
+    const boom = new Error("disk full");
+    scheduleSave("node-1", () => Promise.reject(boom));
+    await flushAllSaves();
+
+    expect(reported).toEqual([boom]);
+  });
+
+  it("passes the failing key through, so the store can name what didn't save", async () => {
+    const keys: string[] = [];
+    setSaveErrorHandler((key) => keys.push(key));
+
+    scheduleSave("node-7", () => Promise.reject(new Error("nope")));
+    await flushAllSaves();
+
+    expect(keys).toEqual(["node-7"]);
+  });
+
+  it("reports a synchronous throw as well as a rejected promise", async () => {
+    const reported: unknown[] = [];
+    setSaveErrorHandler((_key, error) => reported.push(error));
+
+    scheduleSave("node-2", () => {
+      throw new Error("sync boom");
+    });
+    await flushAllSaves();
+
+    expect(reported).toHaveLength(1);
+  });
+
+  it("lets the remaining keys flush even when one of them fails", async () => {
+    setSaveErrorHandler(() => {});
+    const good = vi.fn();
+
+    scheduleSave("bad", () => Promise.reject(new Error("nope")));
+    scheduleSave("good", good);
+    await flushAllSaves();
+
+    expect(good).toHaveBeenCalledTimes(1);
+    expect(hasPendingSaves()).toBe(false);
+  });
+
+  it("does not report a save that succeeds", async () => {
+    const reported: unknown[] = [];
+    setSaveErrorHandler((_key, error) => reported.push(error));
+
+    scheduleSave("fine", () => Promise.resolve());
+    await flushAllSaves();
+
+    expect(reported).toEqual([]);
   });
 });

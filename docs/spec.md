@@ -69,13 +69,13 @@ Each project is a folder on disk. The user picks the folder location on first la
 
 **Why this layout**: the folder is human-browsable outside the app. If the app ever breaks, the user's writing is still there as legible JSON files they can open in any text editor. Shared-folder sync (Dropbox / Syncthing / iCloud) still works fine — each save touches one file. Git diffs are clean and human-readable.
 
-**Handling reparents and renames**: `fs.rename` on the file (leaf templates) or on the whole directory (folders and nestable pages — children move for free). On Windows, watch out for path length limits (~260 chars by default) — either warn the user when deep nesting approaches the limit, or truncate long names for the file path while keeping the full name in the JSON body. *(The path-length warning is specified but not implemented.)*
+**Handling reparents and renames**: `fs.rename` on the file (leaf templates) or on the whole directory (folders and nestable pages — children move for free). On Windows, watch out for path length limits (~260 chars by default) — either warn the user when deep nesting approaches the limit, or truncate long names for the file path while keeping the full name in the JSON body. *(Implemented 2026-07-30 as a hard refusal rather than a warning: a save whose resolved path would exceed the limit throws `PathTooLongError` before writing, and the shell reports it. Truncating long names to fit was the other option in this spec and was not taken — silently renaming the user's files is worse than telling them.)*
 
 **Naming conflicts**: if two siblings would share a filename, append ` (2)`, ` (3)` etc. to the filename or directory name only. Node IDs stay unique inside the JSON regardless. Two directory-storage nodes with the same name do collide; a directory-storage node and a same-named leaf page never do, since one is a directory and the other a plain file.
 
 Suffixes are recomputed from creation order on every resolve rather than stored, so changing one sibling renumbers the others — `planRelocations` in `filesystem-service.ts` exists to keep disk in step with that.
 
-> **Known gap:** this spec originally called for case-*insensitive* collision detection, on the grounds that Windows and macOS default to case-insensitive filesystems. The shipped comparison is case-**sensitive**, so `Ruins` and `ruins` as siblings are treated as distinct and neither gets a suffix — on Windows they would then contend for the same file. Not yet fixed; logged in `docs/plan.md` under Known Bugs.
+> **Fixed 2026-07-30.** The shipped comparison was case-*sensitive*, so `Ruins` and `ruins` as siblings each kept the bare name and, on a case-insensitive filesystem, resolved to the same file. Collision grouping now folds case; the segment itself keeps whatever capitalisation the user typed.
 
 **Why `_folder.json` for folder metadata**: so the folder can carry its own properties (color, tags, notes) alongside its children. The underscore prefix keeps it at the top when sorted alphabetically.
 

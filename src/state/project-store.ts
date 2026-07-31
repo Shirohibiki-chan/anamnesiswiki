@@ -13,7 +13,7 @@ import {
   type Tab,
 } from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
-import { cancelSave, flushSave, scheduleSave } from "../services/autosave";
+import { cancelSave, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import * as lkImportService from "../services/lk-import";
@@ -34,8 +34,13 @@ export type ProjectStoreState = {
   // Node files that couldn't be read on the last load (corrupt JSON, wrong
   // shape). Surfaced once by the shell, then dismissed — see LoadWarning.tsx.
   skippedFiles: string[];
+  // Writes that didn't happen. Debounced saves run with no caller left to
+  // catch anything, so without this a failed write is invisible and the app
+  // goes on claiming "Saved" from the last one that worked — see SaveWarning.
+  saveErrors: string[];
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   dismissSkippedFiles: () => void;
+  dismissSaveErrors: () => void;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
   createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
   importLkProject: (
@@ -116,6 +121,20 @@ function descendantIds(id: string, nodes: Record<string, Node>): string[] {
 export const useProjectStore = create<ProjectStoreState>((set, get) => {
   const markSaved = () => set({ lastSavedAt: Date.now() });
 
+  // Records a write that didn't happen so the shell can say so. Deduped:
+  // a debounced save retries on every subsequent keystroke, and a page nested
+  // too deep fails identically every time — one banner, not eighty. Capped
+  // for the same reason, since a whole failing project would otherwise fill
+  // the list with the same handful of causes.
+  const recordSaveError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    const { saveErrors } = get();
+    if (saveErrors.includes(message) || saveErrors.length >= 10) return;
+    set({ saveErrors: [...saveErrors, message] });
+  };
+
+  setSaveErrorHandler((_key, error) => recordSaveError(error));
+
   return {
     rootPath: null,
     project: null,
@@ -123,6 +142,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     isLoaded: false,
     lastSavedAt: null,
     skippedFiles: [],
+    saveErrors: [],
 
     // Resolves null for anything that means "this isn't an openable project"
     // — missing or unreadable project.json, an unreadable folder — so callers
@@ -145,6 +165,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
     dismissSkippedFiles() {
       set({ skippedFiles: [] });
+    },
+
+    dismissSaveErrors() {
+      set({ saveErrors: [] });
     },
 
     async initializeProject(rootPath, name) {
@@ -214,7 +238,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     closeProject() {
-      set({ rootPath: null, project: null, nodes: {}, isLoaded: false, lastSavedAt: null, skippedFiles: [] });
+      set({ rootPath: null, project: null, nodes: {}, isLoaded: false, lastSavedAt: null, skippedFiles: [], saveErrors: [] });
     },
 
     addNode(input) {
