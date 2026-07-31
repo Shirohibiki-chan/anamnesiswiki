@@ -5,10 +5,12 @@ Anamnesis for Windows, macOS and Linux, signs the update, writes the file the
 update button reads, and puts it all on the releases page as a draft for you to
 look at before anyone gets it.
 
-## One-time setup
+## One-time setup — ✅ done 2026-07-31
 
-**This has to happen once before the first automated release, and only you can
-do it — it involves your private key, which nothing in this repo may touch.**
+**Already handled. The signing key is in the repository's Actions secrets, so
+releases work now.** Kept below because it's what to redo if the key is ever
+rotated or the secret is deleted, and because nothing in this repo may touch the
+key — only you can do this part.
 
 Anamnesis signs its updates so the app can tell a real update from something
 pretending to be one. The key that does the signing lives on your machine at:
