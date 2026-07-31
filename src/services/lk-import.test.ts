@@ -139,11 +139,81 @@ describe("buildImportPlan", () => {
     it("infers note for an unrecognized tab signature, preserving the tabs as-is", () => {
       const plan = buildImportPlan(
         withRoot([
-          resource("a", "Odd Page", "A", { documents: [doc("d1", "Overview", "A"), doc("d2", "Gallery", "B"), doc("d3", "Backstory", "C")] }),
+          resource("a", "Odd Page", "A", { documents: [doc("d1", "Notes", "A"), doc("d2", "Gallery", "B")] }),
         ]),
       );
       expect(plan.nodes[0].templateKey).toBe("note");
+      expect(plan.nodes[0].tabs.map((t) => t.label)).toEqual(["Notes", "Gallery"]);
+    });
+
+    // LK treats tabs as freeform per page, so a signature is a subset test,
+    // not an exact match — this is the real "Valera Jiang" shape from the
+    // user's own export, which exact-matching misfiled as a note.
+    it("matches a signature when the page carries extra tabs of its own", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "Valera Jiang", "A", {
+            documents: [doc("d1", "Overview", "A"), doc("d2", "Gallery", "B"), doc("d3", "Backstory", "C")],
+          }),
+        ]),
+      );
+      expect(plan.nodes[0].templateKey).toBe("character");
       expect(plan.nodes[0].tabs.map((t) => t.label)).toEqual(["Overview", "Gallery", "Backstory"]);
+    });
+
+    it("prefers the most specific signature when several could match", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "Foxians", "A", {
+            documents: [
+              doc("d1", "Overview", "A"),
+              doc("d2", "Backstory", "B"),
+              doc("d3", "Biology", "C"),
+              doc("d4", "Lifestyle", "D"),
+              doc("d5", "Beliefs", "E"),
+              doc("d6", "Relations", "F"),
+            ],
+          }),
+        ]),
+      );
+      expect(plan.nodes[0].templateKey).toBe("species");
+    });
+  });
+
+  describe("nestability net", () => {
+    // Regression: a page LK let hold sub-pages used to be able to land on a
+    // leaf template, which dropped the sub-pages from the tree entirely and
+    // wrote them where the loader would never find them again.
+    it("never classifies a resource with children as a template that can't hold them", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("parent", "Magic System", "A", { documents: [doc("d1", "Rules", "A")] }),
+          resource("child", "Blood Magic", "B", { parentId: "parent" }),
+        ]),
+      );
+      const parent = plan.nodes.find((n) => n.name === "Magic System")!;
+      const child = plan.nodes.find((n) => n.name === "Blood Magic")!;
+      expect(parent.templateKey).toBe("folder");
+      expect(child.parentId).toBe(parent.id);
+    });
+
+    it("keeps a leaf template for the same page when it has no children", () => {
+      const plan = buildImportPlan(
+        withRoot([resource("a", "Magic System", "A", { documents: [doc("d1", "Rules", "A")] })]),
+      );
+      expect(plan.nodes[0].templateKey).toBe("note");
+    });
+
+    it("reports the dropped text when a page with children and its own writing is promoted", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("parent", "Magic System", "A", {
+            documents: [doc("d1", "Rules", "A", [paragraph([text("Mana is finite.")])])],
+          }),
+          resource("child", "Blood Magic", "B", { parentId: "parent" }),
+        ]),
+      );
+      expect(plan.lossyNotes.some((note) => note.includes("sub-pages and their own text"))).toBe(true);
     });
 
     it("gives a folder-classified resource no tabs, and flags it if it had real text", () => {
