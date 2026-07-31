@@ -5,6 +5,7 @@
 *(Not in a release — these live in the repo and affect this machine only.)*
 
 ### Fixes
+- **The white box around the page you last clicked in the sidebar is gone.** That was your browser's own "this is the focused thing" outline, drawn in its default white because nothing had told it otherwise. It was always there — it only became obvious once you could select several pages at once, because the outline and the teal highlight stopped being the same row. Now the teal highlight does the job on its own, and a page that's focused *without* being selected (which happens when you're moving around with the arrow keys) gets a quiet teal outline instead of a white one.
 - **No more white flash when Anamnesis opens.** Starting the app meant a few hundred milliseconds of blank white before the dark theme appeared — which, on a dark app at night, is a camera flash to the face. Three separate things caused it, and all three are fixed: the window itself was painting white before anything was drawn in it, the page was white before the stylesheet loaded, and the window appeared before either had happened. The window now stays hidden until there's something to show, and everything behind it is already dark. It also has two independent ways to appear, so it can't get stuck invisible.
 - **The window is called "Anamnesis" now**, not "Tauri + React + Typescript" — the placeholder title from the very first scaffold, still there eight phases later.
 

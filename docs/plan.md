@@ -102,7 +102,9 @@ Project home — the last Queued Adjustment standing before Phase 9 — shipped
 
 `src/services/lk-export.ts` — the inverse of Phase 8. Serialize nodes back into the LK `resources` shape, translate BlockNote content back to ProseMirror JSON (including callout → panel), gzip, save.
 
-`ExportModal.tsx` — checkbox tree of what to export, output file location picker.
+Entry point is the tree's **right-click menu**, matching LK. **Exporting a page always brings its whole subtree** — confirmed against a live LK account 2026-07-31: LK's `.lk` export offers no options at all, no subpage toggle and no image toggle (its HTML export has both, which is why that one's their default — it's the one meant to leave). Right-clicking the project name exports the whole world. `ExportModal.tsx` handles the output file location and the lossy summary.
+
+**Images can't go in a `.lk`.** The format holds URLs pointing at LK's own servers, not picture data, and we have nowhere to put a local file that LK could read. Decided 2026-07-31: import will additionally remember each picture's original LK URL, so anything that *came from* LK round-trips; pictures added inside Anamnesis can't be exported and the export screen says so plainly, with a count. This needs a re-import of Valeraverse to take effect on the user's existing world — as does the project-home import change, so do both in one pass.
 
 Round-trip test: import `Valeraverse.lk`, export it back, diff the two — content should be identical up to id renaming and the small handful of unsupported block types (columns) that Phase 8 flagged.
 
