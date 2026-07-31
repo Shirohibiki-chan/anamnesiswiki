@@ -5,6 +5,7 @@ import {
   checkBinding,
   formatBinding,
   formatKey,
+  isTextEntryTarget,
   matchesBinding,
   mergeBindings,
   normalizeKey,
@@ -178,6 +179,60 @@ describe("checkBinding", () => {
 
   it("lets an action keep the binding it already has", () => {
     expect(checkBinding(DEFAULT_BINDINGS.search, "search", current)).toBeNull();
+  });
+
+  // Undo and redo stand down whenever the caret is in text, so they and the
+  // editor can hold the same combination without either losing it. That
+  // exemption is the only reason app undo can live on Ctrl+Z, and it must not
+  // leak to actions that don't yield.
+  it("lets the editor-scoped actions sit on the editor's own keys", () => {
+    expect(checkBinding({ key: "z", mod: true }, "undo", current)).toBeNull();
+    expect(checkBinding({ key: "y", mod: true }, "redo", current)).toBeNull();
+    expect(checkBinding({ key: "q", mod: true, alt: true }, "undo", current)).toBeNull();
+  });
+
+  it("still refuses system keys for them", () => {
+    expect(checkBinding({ key: "c", mod: true }, "undo", current)?.reason).toBe("reservedBySystem");
+    expect(checkBinding({ key: "j" }, "undo", current)?.reason).toBe("needsModifier");
+  });
+
+  it("keeps the exemption away from actions that don't yield to the editor", () => {
+    expect(checkBinding({ key: "z", mod: true }, "newPage", current)?.reason).toBe("reservedByEditor");
+  });
+
+  it("names undo when something else reaches for its key", () => {
+    const problem = checkBinding({ key: "z", mod: true }, "undo", { ...current, save: { key: "z", mod: true } });
+    expect(problem?.reason).toBe("alreadyTaken");
+    expect(problem?.message).toContain("Save now");
+  });
+});
+
+describe("isTextEntryTarget", () => {
+  // The real one is a DOM Element; all this reads off it is `closest`.
+  function fakeTarget(matches: string[]) {
+    return { closest: (selector: string) => (matches.includes(selector) ? {} : null) };
+  }
+
+  it("is false when nothing text-like is in the ancestry", () => {
+    expect(isTextEntryTarget(fakeTarget([]) as unknown as EventTarget)).toBe(false);
+  });
+
+  it("is true inside the editor", () => {
+    expect(isTextEntryTarget(fakeTarget([".editor-shell-wrapper"]) as unknown as EventTarget)).toBe(true);
+  });
+
+  it("is true inside an input or a contenteditable", () => {
+    expect(isTextEntryTarget(fakeTarget(["input, textarea"]) as unknown as EventTarget)).toBe(true);
+    expect(isTextEntryTarget(fakeTarget(['[contenteditable="true"], [contenteditable=""]']) as unknown as EventTarget)).toBe(
+      true,
+    );
+  });
+
+  // A keypress with nothing focused arrives on document.body, so "can't answer
+  // closest" has to mean "not a text field" rather than throwing.
+  it("survives a target that isn't an element", () => {
+    expect(isTextEntryTarget(null)).toBe(false);
+    expect(isTextEntryTarget({} as EventTarget)).toBe(false);
   });
 });
 

@@ -18,12 +18,47 @@ import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import * as lkImportService from "../services/lk-import";
 import type { ImportPendingImage } from "../services/lk-import";
+import { countLabel } from "../services/history-service";
+import { useHistoryStore } from "./history-store";
 
 // Starter top-level folders for a brand-new project, matching the user's
 // actual LK structure (see docs/plan.md Phase 2).
 const STARTER_FOLDERS = ["Canon", "AUs", "Characters", "Locations", "Factions", "Worldbuilding"];
 
 export type CreateProjectResult = { ok: true; rootPath: string } | { ok: false; error: string };
+
+// ─── Undo support ───────────────────────────────────────────────────────────
+
+// Enough of Project to put the tree back the way it was, and deliberately not
+// the whole object. Selection and expanded folders are where the user is
+// looking *now* — undoing a delete from ten minutes ago shouldn't also collapse
+// the folders they've opened since.
+type OrderingSnapshot = Pick<Project, "rootOrder" | "childOrder" | "homeNodeId">;
+
+// A deleted page's picture, held in memory so undo can put it back. Nothing
+// else in the app keeps a copy: images live in the flat assets/ dir and the
+// delete removes the file, so the bytes have to be read before it happens.
+type CapturedAsset = { fileName: string; bytes: Uint8Array };
+
+/**
+ * The image and banner files belonging to `nodes`, read off disk now. One that
+ * won't read is skipped rather than failing the caller — losing the ability to
+ * restore a picture is not a reason to refuse a delete the user asked for.
+ */
+async function captureAssets(rootPath: string, nodes: Node[]): Promise<CapturedAsset[]> {
+  const captured: CapturedAsset[] = [];
+  for (const node of nodes) {
+    for (const fileName of [node.image, node.banner]) {
+      if (!fileName) continue;
+      try {
+        captured.push({ fileName, bytes: await fsService.readAssetImage(rootPath, fileName) });
+      } catch {
+        // See above.
+      }
+    }
+  }
+  return captured;
+}
 
 export type ProjectStoreState = {
   rootPath: string | null;
@@ -81,9 +116,12 @@ export type ProjectStoreState = {
   renameNode: (id: string, name: string) => void;
   moveNode: (id: string, newParentId: string | null, index?: number) => void;
   moveNodes: (ids: string[], newParentId: string | null, index?: number) => Promise<void>;
-  deleteNode: (id: string) => void;
-  deleteNodes: (ids: string[]) => void;
+  deleteNode: (id: string) => Promise<void>;
+  deleteNodes: (ids: string[]) => Promise<void>;
   duplicateNode: (id: string) => Promise<void>;
+  // Colour has its own action rather than going through updateNode, so it can
+  // be recorded as one undoable step across a whole multi-selection.
+  setNodeColor: (ids: string[], color: string | undefined) => void;
   selectNode: (id: string | null, tabId?: string) => void;
   // Cmd+S. Runs every outstanding debounced write now, then shows "Saved" —
   // including when there was nothing pending, because "Saved" is a statement
@@ -169,6 +207,64 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     void work.then(markSaved).catch(recordSaveError);
   };
 
+  const captureOrdering = (project: Project): OrderingSnapshot => ({
+    rootOrder: project.rootOrder,
+    childOrder: project.childOrder,
+    homeNodeId: project.homeNodeId,
+  });
+
+  // Hands an undoable operation to the history stack. A no-op while an undo or
+  // redo is running, so reversing something doesn't get recorded as a new
+  // thing to reverse — history-store owns that guard.
+  const record = (label: string, undo: () => Promise<void> | void, redo: () => Promise<void> | void): void => {
+    useHistoryStore.getState().record({ label, undo, redo });
+  };
+
+  /**
+   * Puts pages back: their files, their pictures, and the sibling order they
+   * sat in. Also the primitive behind redoing anything that created pages.
+   *
+   * Disk first, memory second — the opposite of every other action in this
+   * store, which updates memory immediately and lets the write catch up. That
+   * asymmetry is deliberate. An optimistic undo that then fails to write
+   * leaves the tree showing pages that aren't on disk, which is precisely the
+   * shape of the bug that cost real pages on 2026-07-31. Throwing instead
+   * lets history-store keep the entry and say it couldn't undo, so the next
+   * press retries the whole thing.
+   */
+  const restoreNodes = async (restored: Node[], assets: CapturedAsset[], ordering: OrderingSnapshot): Promise<void> => {
+    const { rootPath, project } = get();
+    if (!rootPath || !project) return;
+
+    // Pictures before the pages that point at them, so there is never a
+    // moment where a restored page references a file that isn't there yet.
+    for (const asset of assets) await fsService.saveAssetImage(rootPath, asset.fileName, asset.bytes);
+
+    const nextNodes = { ...get().nodes };
+    for (const node of restored) nextNodes[node.id] = node;
+    const nextProject: Project = { ...project, ...ordering };
+
+    if (restored.length > 0) await fsService.saveNodes(rootPath, restored, Object.values(nextNodes));
+    await fsService.saveProject(rootPath, nextProject);
+
+    set({ nodes: nextNodes, project: nextProject });
+    markSaved();
+  };
+
+  // Sibling order and nothing else — the tail end of undoing a move, where the
+  // pages are already back under the right parents but not in the right places.
+  const restoreOrdering = (ordering: OrderingSnapshot): Promise<void> => restoreNodes([], [], ordering);
+
+  // The write half of setProjectHome, split out so undo and redo can set an
+  // exact value instead of going back through the action's toggle.
+  const applyHome = (homeNodeId: string | null): void => {
+    const { rootPath, project } = get();
+    if (!rootPath || !project) return;
+    const nextProject: Project = { ...project, homeNodeId };
+    set({ project: nextProject });
+    track(fsService.saveProject(rootPath, nextProject));
+  };
+
   return {
     rootPath: null,
     project: null,
@@ -193,6 +289,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         return null;
       }
       if (!result) return null;
+
+      // Any entry still on the stack closes over the project being replaced,
+      // and running one would write pages from the old world into the new one.
+      useHistoryStore.getState().clear();
 
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
       set({
@@ -219,6 +319,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     async initializeProject(rootPath, name) {
+      useHistoryStore.getState().clear();
       const project = createProject({ name });
       await fsService.saveProject(rootPath, project);
       set({ rootPath, project, nodes: {}, isLoaded: true });
@@ -239,6 +340,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       for (const folder of STARTER_FOLDERS) {
         get().addNode({ parentId: null, templateKey: FOLDER_TEMPLATE_KEY, name: folder });
       }
+      // The starter folders are part of making the project, not six things the
+      // user did — leaving them on the stack means the first Ctrl+Z in a brand
+      // new world deletes "Worldbuilding".
+      useHistoryStore.getState().clear();
       return { ok: true, rootPath };
     },
 
@@ -272,6 +377,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         }
       }
 
+      useHistoryStore.getState().clear();
       const project = { ...createProject({ name: trimmed, rootOrder }), homeNodeId };
       const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
       set({ rootPath, project, nodes: nodesRecord, isLoaded: true });
@@ -286,6 +392,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     closeProject() {
+      useHistoryStore.getState().clear();
       set({
         rootPath: null,
         project: null,
@@ -312,6 +419,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ nodes: nextNodes, project: nextProject });
       track(fsService.saveNode(rootPath, node, Object.values(nextNodes)));
       if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
+
+      const orderingAfter = captureOrdering(nextProject);
+      record(
+        `adding "${node.name}"`,
+        () => get().deleteNodes([node.id]),
+        // The same node object, id included — creating a fresh one would leave
+        // the undo half above pointing at a page that no longer exists.
+        () => restoreNodes([node], [], orderingAfter),
+      );
       return node;
     },
 
@@ -505,10 +621,19 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (!rootPathAfter || !existingAfter) return;
 
       const allNodesBefore = Object.values(nodesAfter);
+      const previousName = existingAfter.name;
       const updated: Node = { ...existingAfter, name, updatedAt: Date.now() };
       const nextNodes = { ...nodesAfter, [id]: updated };
       set({ nodes: nextNodes });
       track(fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id));
+
+      // A rename is its own inverse, so both halves are the ordinary action —
+      // no new filesystem path is involved in undoing one.
+      record(
+        `renaming "${previousName}"`,
+        () => get().renameNode(id, previousName),
+        () => get().renameNode(id, name),
+      );
     },
 
     async moveNode(id, newParentId, index) {
@@ -586,17 +711,59 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ nodes: nextNodes, project: nextProject });
       track(fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present));
       if (nextProject !== projectAfter) track(fsService.saveProject(rootPathAfter, nextProject));
+
+      // Where each one came from. A multi-selection can be dragged out of
+      // several different folders at once, so putting them back is one move
+      // per old parent, not one move.
+      const previousParents = new Map(present.map((id) => [id, nodesAfter[id].parentId]));
+      const orderingBefore = captureOrdering(projectAfter);
+      const orderingAfter = captureOrdering(nextProject);
+      const groupsByOldParent = new Map<string | null, string[]>();
+      for (const [id, parentId] of previousParents) {
+        const group = groupsByOldParent.get(parentId);
+        if (group) group.push(id);
+        else groupsByOldParent.set(parentId, [id]);
+      }
+
+      record(
+        `moving ${countLabel(present.length, "page")}`,
+        async () => {
+          for (const [parentId, groupIds] of groupsByOldParent) await get().moveNodes(groupIds, parentId);
+          // moveNodes appends when it isn't told an index, which is rarely
+          // where they were. The recorded order is the exact answer.
+          await restoreOrdering(orderingBefore);
+        },
+        async () => {
+          await get().moveNodes(present, newParentId, index);
+          await restoreOrdering(orderingAfter);
+        },
+      );
     },
 
     deleteNode(id) {
-      get().deleteNodes([id]);
+      return get().deleteNodes([id]);
     },
 
     // The tree can hand up a whole multi-selection, and that has to be one
     // operation rather than a loop over deleteNode: each delete renumbers
     // colliding siblings on disk, so a second call would resolve its target
     // against a layout the first had already changed underneath it.
-    deleteNodes(ids) {
+    async deleteNodes(ids) {
+      // A first pass purely to know which pictures to read, because after the
+      // delete there is nothing left to read them from. State is re-read below
+      // rather than reused, since this awaits. If something changed underneath
+      // in that window the worst case is a picture captured that didn't need
+      // to be, or one missed — not a wrong delete.
+      const planning = get();
+      if (!planning.rootPath || !planning.project) return;
+      const plannedIds = new Set(
+        ids.filter((id) => planning.nodes[id]).flatMap((id) => [id, ...descendantIds(id, planning.nodes)]),
+      );
+      const capturedAssets = await captureAssets(
+        planning.rootPath,
+        [...plannedIds].map((id) => planning.nodes[id]).filter(Boolean),
+      );
+
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) return;
 
@@ -656,6 +823,19 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         if (removed?.image) track(fsService.deleteAssetImage(rootPath, removed.image));
         if (removed?.banner) track(fsService.deleteAssetImage(rootPath, removed.banner));
       }
+
+      // Descendants as well as what was selected — undoing a folder delete has
+      // to bring back everything that was inside it.
+      const removedNodes = [...toRemove].map((id) => nodes[id]).filter(Boolean);
+      const orderingBefore = captureOrdering(project);
+      record(
+        `deleting ${countLabel(existing.length, "page")}`,
+        () => restoreNodes(removedNodes, capturedAssets, orderingBefore),
+        // Redoing re-reads the pictures it's about to delete, which is wasted
+        // work — the bytes captured above are still good, since restoreNodes
+        // wrote them back under the same names. Not worth a second code path.
+        () => get().deleteNodes(existing),
+      );
     },
 
     async duplicateNode(id) {
@@ -721,6 +901,45 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // path index rather than each rebuilding it from the full graph.
       track(fsService.saveNodes(rootPath, clones, Object.values(nextNodes)));
       if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
+
+      // The clones' own copies of the pictures, read only if the user actually
+      // undoes — the undo is about to delete those files, and redo needs them
+      // back. Capturing eagerly would mean re-reading every image in a
+      // duplicated folder on the chance that it's wanted.
+      let clonedAssets: CapturedAsset[] = [];
+      const orderingBefore = captureOrdering(project);
+      const orderingAfter = captureOrdering(nextProject);
+      record(
+        `duplicating "${original.name}"`,
+        async () => {
+          const currentRootPath = get().rootPath;
+          if (currentRootPath) clonedAssets = await captureAssets(currentRootPath, clones);
+          await get().deleteNodes([cloneRootId]);
+          await restoreOrdering(orderingBefore);
+        },
+        () => restoreNodes(clones, clonedAssets, orderingAfter),
+      );
+    },
+
+    // One step for the whole selection, and its own action rather than a loop
+    // over updateNode at the call site, because a loop is several undo entries
+    // for what the user did once.
+    setNodeColor(ids, color) {
+      const { nodes } = get();
+      const targets = ids.filter((id) => nodes[id]);
+      if (targets.length === 0) return;
+
+      const previousColors = new Map(targets.map((id) => [id, nodes[id].color]));
+      const apply = (next: (id: string) => string | undefined) => {
+        for (const id of targets) get().updateNode(id, { color: next(id) });
+      };
+
+      apply(() => color);
+      record(
+        `recolouring ${countLabel(targets.length, "page")}`,
+        () => apply((id) => previousColors.get(id)),
+        () => apply(() => color),
+      );
     },
 
     // `tabId` is for callers that know which tab they mean — a search result
@@ -749,10 +968,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) return;
       if (id !== null && !nodes[id]) return;
+      const previousHomeNodeId = project.homeNodeId ?? null;
       const homeNodeId = project.homeNodeId === id ? null : id;
-      const nextProject: Project = { ...project, homeNodeId };
-      set({ project: nextProject });
-      track(fsService.saveProject(rootPath, nextProject));
+      applyHome(homeNodeId);
+      record(
+        "the home page change",
+        () => applyHome(previousHomeNodeId),
+        () => applyHome(homeNodeId),
+      );
     },
 
     setExpanded(id, isOpen) {

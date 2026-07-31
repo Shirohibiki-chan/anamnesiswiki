@@ -5,6 +5,7 @@
 // header rather than duplicating it.
 import { FolderOpen, PanelRight, Search } from "lucide-react";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
+import { HistoryIndicator } from "./HistoryIndicator";
 import { SaveIndicator } from "./SaveIndicator";
 import { SettingsButton } from "./SettingsButton";
 
@@ -25,6 +26,7 @@ export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel, onSw
         <span className="top-bar-project-name">{projectName}</span>
       </div>
       <div className="top-bar-right">
+        <HistoryIndicator />
         <SaveIndicator />
         {/* A visible way in as well as the shortcut — nothing else in the app
             advertises that Cmd+K exists. */}

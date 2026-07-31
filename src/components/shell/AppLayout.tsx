@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { useProject, useSaveNow } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useHistoryActions } from "../../hooks/use-history";
 import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
@@ -28,6 +29,7 @@ export function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNewPageOpen, setIsNewPageOpen] = useState(false);
   const saveNow = useSaveNow();
+  const { undo, redo } = useHistoryActions();
 
   useSaveOnExit();
   // Stable so the shortcut listener is attached once, not rebuilt on every
@@ -35,7 +37,7 @@ export function AppLayout() {
   const openSearch = useCallback(() => setIsSearchOpen(true), []);
   const openNewPage = useCallback(() => setIsNewPageOpen(true), []);
   const handleSave = useCallback(() => void saveNow(), [saveNow]);
-  useGlobalShortcuts({ onSearch: openSearch, onNewPage: openNewPage, onSave: handleSave });
+  useGlobalShortcuts({ onSearch: openSearch, onNewPage: openNewPage, onSave: handleSave, onUndo: undo, onRedo: redo });
 
   async function handleSwitchProject() {
     await clearLastOpenedProject();

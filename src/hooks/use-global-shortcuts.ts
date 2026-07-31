@@ -2,14 +2,16 @@
 // rather than one per shortcut, so the order things are checked in is visible
 // and two features can't quietly both claim a key.
 import { useEffect } from "react";
-import { SHORTCUT_ACTIONS, type ShortcutAction } from "../constants/shortcuts";
+import { EDITOR_SCOPED_ACTIONS, SHORTCUT_ACTIONS, type ShortcutAction } from "../constants/shortcuts";
 import { useShortcutStore } from "../state/shortcut-store";
-import { matchesBinding } from "../services/shortcut-service";
+import { isTextEntryTarget, matchesBinding } from "../services/shortcut-service";
 
 export type GlobalShortcutHandlers = {
   onSearch: () => void;
   onNewPage: () => void;
   onSave: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
 };
 
 /**
@@ -18,12 +20,14 @@ export type GlobalShortcutHandlers = {
  * on every keystroke into a page, and a fresh function each time would tear
  * the listener down and rebuild it that often.
  */
-export function useGlobalShortcuts({ onSearch, onNewPage, onSave }: GlobalShortcutHandlers): void {
+export function useGlobalShortcuts({ onSearch, onNewPage, onSave, onUndo, onRedo }: GlobalShortcutHandlers): void {
   useEffect(() => {
     const handlers: Record<ShortcutAction, () => void> = {
       search: onSearch,
       newPage: onNewPage,
       save: onSave,
+      undo: onUndo,
+      redo: onRedo,
     };
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -37,8 +41,18 @@ export function useGlobalShortcuts({ onSearch, onNewPage, onSave }: GlobalShortc
       // recorded as something else.
       if (isRecording) return;
 
+      // Answered once per keypress rather than per action, since most
+      // keypresses are someone typing and this walks up the DOM.
+      const inText = isTextEntryTarget(event.target);
+
       for (const action of SHORTCUT_ACTIONS) {
         if (!matchesBinding(event, bindings[action])) continue;
+        // Undo and redo share Ctrl+Z/Ctrl+Y with the editor. `continue`, not
+        // `return`: the key goes back to whatever else wants it — the editor's
+        // own undo, or the plain text-box undo in a rename field — rather than
+        // being swallowed here. Nothing else is bound to these, so the loop
+        // just runs out.
+        if (EDITOR_SCOPED_ACTIONS.has(action) && inText) continue;
         // Claims the keypress from the browser as well as from the page —
         // Ctrl+S would otherwise open the webview's own save dialog. See
         // docs/handoff.md §Shortcuts for the one this can't take back.
@@ -50,5 +64,5 @@ export function useGlobalShortcuts({ onSearch, onNewPage, onSave }: GlobalShortc
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSearch, onNewPage, onSave]);
+  }, [onSearch, onNewPage, onSave, onUndo, onRedo]);
 }

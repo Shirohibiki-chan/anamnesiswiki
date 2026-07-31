@@ -388,11 +388,22 @@ is below.
 
 ## Shortcuts
 
-- **BlockNote already owns `Mod-z`, `Mod-y`, `Mod-Alt-*` and `Mod-Shift-*`**
-  (verified against the installed version, not assumed). Any app-level shortcut
-  has to stay clear of those or it fights the editor for the keypress. This is
-  also the main thing standing between here and app-level undo/redo: `Mod-z` is
-  taken.
+- **What BlockNote actually owns is `EDITOR_RESERVED_BINDINGS`** in
+  `constants/shortcuts.ts` — verified by grepping the installed dist, not
+  assumed. It is narrower than the old note here claimed: of the Mod-Shift
+  space only 6/7/8/9 are taken, so the rest is available. Mod-Alt is blanket
+  reserved because headings register as `` `Mod-Alt-${level}` `` from a
+  configurable list, so there's no fixed set to enumerate.
+
+- **Undo and redo share Ctrl+Z/Ctrl+Y with the editor on purpose.** They are
+  listed in `EDITOR_SCOPED_ACTIONS`, which buys them two things: the settings
+  screen lets them sit on combinations the editor owns, and the global listener
+  `continue`s past them whenever `isTextEntryTarget(event.target)` — inside the
+  editor, an input, or anything contenteditable — so the key goes on to the
+  editor untouched. The exemption works *only* because the two mean the same
+  thing. An action that meant something different couldn't share a key without
+  the user having to know which half of the window had focus, so don't add one
+  to that set to dodge a collision.
 
 - **The "modifier or F-key" rule is an accessibility decision, not a
   formality.** A bare letter can't be a binding — this app is mostly a text
@@ -452,6 +463,54 @@ is below.
   keys, which Tauri leaves enabled and doesn't expose in `tauri.conf.json`. If
   it turns out to be stolen, the fix is a different default binding, not a
   fight with the webview. `Cmd+S` is the ordinary case and behaves.
+
+## Undo
+
+- **An entry is two closures, not a diff.** `state/history-store.ts` holds a
+  stack of `{ label, undo, redo }` and knows nothing about pages. The store
+  action performing an operation builds both halves at the point it happens,
+  where the old values are already in hand, and reverses itself by calling the
+  ordinary store actions — `renameNode` back to the old name, `moveNodes` back
+  to the old parent, `deleteNodes` on something that was just added. The
+  alternative, diffing state and reconciling disk, means a second
+  implementation of the path-relocation logic in `filesystem-service.ts`. That
+  is the one part of this app that has already lost the user's pages, and it
+  does not need a rival.
+
+- **Only `restoreNodes` in `project-store.ts` writes disk before memory.**
+  Everywhere else in that store is optimistic on purpose — the UI updates and
+  the write catches up. Undo can't be: an optimistic restore whose write then
+  fails leaves the tree showing pages that aren't on disk, which is the exact
+  shape of the 2026-07-31 data loss. It writes first and throws on failure, and
+  `history-store` keeps the entry so the next press is a retry rather than a
+  silent skip past it.
+
+- **Deleting captures the pictures before it deletes them.** Images and banners
+  live in the flat `assets/` dir and are removed with the page, so undo has
+  nothing to read afterwards — `captureAssets` reads the bytes first and the
+  entry holds them. This is why `deleteNodes` is async. It's also the only
+  reason the stack has a size limit worth having (`HISTORY_LIMIT`): entries can
+  hold whole deleted subtrees, image bytes included.
+
+- **Snapshots restore ordering only, never selection or expanded folders.**
+  `OrderingSnapshot` is `rootOrder`/`childOrder`/`homeNodeId` and deliberately
+  stops there. Undoing a delete from ten minutes ago shouldn't also collapse
+  every folder opened since, or move the user off the page they're reading.
+
+- **The stack is cleared on every project boundary** — open, close, create,
+  import. An entry closes over the project it was recorded in; running one
+  afterwards would write pages from the old world into the new one.
+
+- **Colour has its own store action** rather than the tree looping `updateNode`.
+  A loop is one undo entry per selected page for something the user did once.
+  Anything else that becomes undoable across a multi-selection needs the same
+  treatment.
+
+- **Text you type is not on this stack and shouldn't be.** BlockNote has its
+  own history for that, and the two are kept apart by the editor scoping above.
+  Property edits, tags and tab changes aren't recorded either — that's a real
+  gap rather than a decision, and the way in is a dedicated action per
+  operation, the way `setNodeColor` did it.
 
 ## Project home
 

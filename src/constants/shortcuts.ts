@@ -1,8 +1,8 @@
 // App-level keyboard shortcuts. Held here rather than at the listener so the
 // set is readable in one place — and so nothing claims a combination the
-// editor already owns. BlockNote binds Mod-z, Mod-y, Mod-Alt-* and Mod-Shift-*
-// for its own formatting and history; anything added below must stay clear of
-// those or it will fight the editor for the keypress.
+// editor already owns. EDITOR_RESERVED_BINDINGS below is that list, verified
+// against the installed BlockNote; anything added here must stay clear of it,
+// or be declared editor-scoped and stand down while the caret is in text.
 //
 // A binding is stored as the modifiers plus `event.key`, not as a display
 // string, so matching an incoming event is a field comparison rather than
@@ -21,7 +21,7 @@ export type Binding = {
 // Order matters: the listener walks this list and stops at the first match, so
 // this is the tie-break if two actions ever end up on the same combination.
 // Matching is exact — Ctrl+Shift+K is not Ctrl+K — so nothing today overlaps.
-export const SHORTCUT_ACTIONS = ["search", "newPage", "save"] as const;
+export const SHORTCUT_ACTIONS = ["search", "newPage", "save", "undo", "redo"] as const;
 
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
 
@@ -29,13 +29,28 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   search: "Search",
   newPage: "New page",
   save: "Save now",
+  undo: "Undo (sidebar)",
+  redo: "Redo (sidebar)",
 };
 
 export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   search: { key: "k", mod: true },
   newPage: { key: "n", mod: true },
   save: { key: "s", mod: true },
+  undo: { key: "z", mod: true },
+  redo: { key: "y", mod: true },
 };
+
+// Actions that stand down while the caret is in text — the editor, a rename
+// box, any input. They are allowed to sit on combinations the editor owns,
+// because the two never both want the keypress: Ctrl+Z inside a page is the
+// editor's undo, and Ctrl+Z anywhere else is the app's.
+//
+// This is the only exception to EDITOR_RESERVED_BINDINGS below, and it is a
+// narrow one. It works because these two actions mean the *same thing* as the
+// editor's — an action that meant something different couldn't share the key
+// without the user having to know which half of the window had focus.
+export const EDITOR_SCOPED_ACTIONS: ReadonlySet<ShortcutAction> = new Set<ShortcutAction>(["undo", "redo"]);
 
 // Combinations a custom binding may not take, because something else already
 // answers them and the app would be stealing the keypress.
@@ -48,9 +63,8 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
 export const EDITOR_RESERVED_BINDINGS: Binding[] = [
   { key: "z", mod: true }, // undo
   { key: "y", mod: true }, // redo
-  // Not bound by the installed version, but it's the Mac redo convention and
-  // the app-level undo/redo still to be built will want it. Reserved now so it
-  // can't be given away in the meantime.
+  // Not bound by the installed version, but it's the Mac redo convention, so
+  // an app action landing here would surprise anyone who reaches for it.
   { key: "z", mod: true, shift: true },
   { key: "6", mod: true, shift: true },
   { key: "7", mod: true, shift: true },

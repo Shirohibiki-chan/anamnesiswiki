@@ -25,7 +25,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, addNode, updateNode, setProjectHome } = useProjectActions();
+  const { duplicateNode, deleteNodes, addNode, setNodeColor, setProjectHome } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive, requestExport } = useDialogs();
@@ -186,7 +186,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             ownColor={fullNode.color}
             showInheritedHint={!isOwner && effectiveKey !== null}
             onSelect={(colorKey) => {
-              for (const id of targetIds()) updateNode(id, { color: colorKey });
+              setNodeColor(targetIds(), colorKey);
               closePopover();
             }}
           />

@@ -253,6 +253,22 @@
   }
 }
 
+/* --- HistoryIndicator --- */
+
+/* Same fade as the save indicator, held a little longer and in the muted text
+   colour rather than the accent — it's a sentence, not a one-word confirmation,
+   and it shouldn't compete with "Saved" when both land together. */
+.history-indicator {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.history-indicator-visible {
+  animation: save-indicator-fade 3200ms ease forwards;
+}
+
 /* --- ProjectPicker --- */
 
 .project-picker {
