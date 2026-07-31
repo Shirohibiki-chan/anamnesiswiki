@@ -7,49 +7,42 @@ echo   Rebuilding Anamnesis from the newest code and installing it.
 echo   This takes a few minutes. You can leave it running.
 echo.
 
-rem Same deliberately-boring cmd syntax as "Anamnesis (latest code).bat", and
-rem for the same reason -- see the note in that file and scripts/README.md.
+rem Must not use pnpm -- see the long note in "Anamnesis (latest code).bat".
+rem pnpm lives under a redirected %APPDATA% that only exists inside the Claude
+rem app's container, so it is not present when you run this yourself.
+
 set "PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.JS;.WSF;.MSC"
 
 if exist "%USERPROFILE%\.cargo\bin" set "PATH=%USERPROFILE%\.cargo\bin;%PATH%"
 if exist "%ProgramFiles%\nodejs" set "PATH=%ProgramFiles%\nodejs;%PATH%"
 if exist "%ProgramFiles%\Git\cmd" set "PATH=%ProgramFiles%\Git\cmd;%PATH%"
-if exist "%APPDATA%\npm" set "PATH=%APPDATA%\npm;%PATH%"
 
-set "PNPM="
-if exist "%APPDATA%\npm\pnpm.cmd" set "PNPM=%APPDATA%\npm\pnpm.cmd"
-if not defined PNPM if exist "%USERPROFILE%\AppData\Roaming\npm\pnpm.cmd" set "PNPM=%USERPROFILE%\AppData\Roaming\npm\pnpm.cmd"
-if not defined PNPM if exist "%LOCALAPPDATA%\pnpm\pnpm.cmd" set "PNPM=%LOCALAPPDATA%\pnpm\pnpm.cmd"
-if not defined PNPM if exist "%ProgramFiles%\nodejs\pnpm.cmd" set "PNPM=%ProgramFiles%\nodejs\pnpm.cmd"
-if defined PNPM goto haspnpm
-
-echo   Can't build -- pnpm wasn't found. Nothing was changed, so the copy you
-echo   already have still works. Looked in:
-echo     %APPDATA%\npm\pnpm.cmd
-echo     %USERPROFILE%\AppData\Roaming\npm\pnpm.cmd
-echo     %LOCALAPPDATA%\pnpm\pnpm.cmd
-echo     %ProgramFiles%\nodejs\pnpm.cmd
-echo.
-echo   What is actually in that first folder:
-dir /a /b "%APPDATA%\npm" 2>nul
+if exist "%ProgramFiles%\nodejs\node.exe" goto hasnode
+echo   Can't build -- Node isn't at "%ProgramFiles%\nodejs". Nothing changed.
 echo.
 pause
 exit /b 1
 
-:haspnpm
-
+:hasnode
 if exist "%USERPROFILE%\.cargo\bin\cargo.exe" goto hascargo
-echo   Can't build -- Rust isn't at %USERPROFILE%\.cargo\bin. Nothing changed.
+echo   Can't build -- Rust isn't at "%USERPROFILE%\.cargo\bin". Nothing changed.
 echo.
 pause
 exit /b 1
 
 :hascargo
+if exist "node_modules\.bin\tauri.cmd" goto hastauri
+echo   Can't build -- the project's dependencies aren't installed.
+echo   Expected: "%CD%\node_modules\.bin\tauri.cmd". Nothing changed.
+echo.
+pause
+exit /b 1
+
+:hastauri
 
 rem The build refuses to run when tauri.conf.json declares an updater public
 rem key and no matching private key is available, because it would otherwise
-rem produce a release no installed copy would accept. Read it from the same
-rem place `tauri signer generate` put it.
+rem produce a release no installed copy would accept.
 set "KEYFILE=%USERPROFILE%\.tauri\anamnesis-updater.key"
 if exist "%KEYFILE%" goto haskey
 echo.
@@ -65,9 +58,8 @@ set /p TAURI_SIGNING_PRIVATE_KEY=<"%KEYFILE%"
 set "TAURI_SIGNING_PRIVATE_KEY_PASSWORD="
 
 git pull --ff-only
-call "%PNPM%" install --frozen-lockfile
 
-call "%PNPM%" tauri build
+call "node_modules\.bin\tauri.cmd" build
 if not errorlevel 1 goto built
 echo.
 echo   The build failed. The message above says why. Nothing was installed,
