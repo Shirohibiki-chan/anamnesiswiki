@@ -14,7 +14,9 @@ Tauri v2 desktop app: React 19 + TypeScript + Vite renderer, Rust shell left as 
 
 Hard lines. If a feature seems to require crossing one, push back and find a local-file alternative.
 
-- **No network calls at all in Phase 1.** No telemetry, error reporting, update checks, or font CDNs — bundle everything. One exception, already shipped: LK import fetches images from LK's CDN, on explicit user confirmation only.
+- **Nothing about the user or her worlds leaves this machine.** No telemetry, no error reporting, no analytics, no crash uploads, no cloud storage. This line does not move.
+- **The app must stay fully usable with no internet at all.** Bundle fonts and assets; never put a remote fetch on a path the app needs to start, open a project, or save. A network failure may disable a feature and say so; it may never break the app.
+- **A network call is allowed only if the user pressed a button for it**, and only to a named host. Never on a timer, never at launch, never in the background. Two exist, both shipped: LK import fetching images from LK's CDN, and the update check (a static GET to this repo's releases page, carrying nothing about her). Adding a third is a decision to raise, not a judgement call to make.
 - **Never contact LegendKeeper's servers.** LK integration is file-based only — import and export of `.lk` files the user provides.
 - **No cloud sync, auth, or accounts in Phase 1.** Not "let's just add a Supabase call." Phase 2 revisits this, and only if shared-folder sync genuinely stops working for her.
 - **No LLM/AI features in the editor.** This is a writing tool for a human writer.
@@ -81,7 +83,7 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 8. **`autosave.ts` is a plain service, not a hook** — the debounce timer must survive React re-renders.
 9. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
 10. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
-11. **No backend, no database, no authentication, no network calls** — see Policy Boundary.
+11. **No backend, no database, no authentication, no unprompted network calls** — see Policy Boundary.
 12. **Template placeholder copy is not reworded without asking** — the LK-style prompts are a designed asset, deliberately shaped. Don't extract them into an editable content system either.
 
 ### Naming

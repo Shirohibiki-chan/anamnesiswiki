@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-31
+
+### Additions
+- **"Check for updates" on the start-up screen.** Anamnesis can now tell you when a newer version exists, and install it for you. It's the Obsidian arrangement: nothing happens on its own — you press the button, it asks whether there's a newer version, and if there is you get the version number, what changed in it, and a **Download and install** button. It downloads, installs, and offers to restart. If you'd rather not, **Not now** and it forgets about it. If you're offline it just says so and shrugs; nothing about the app stops working, since it never needed the internet in the first place. The button sits on the project-picker screen rather than inside a world on purpose — installing an update restarts the app, and doing that mid-sentence would be rude. Worth saying plainly: this sends nothing about you. It's a request for one small public file on the Anamnesis releases page — no account, no identifier, nothing about your worlds, and nothing at all unless you press the button. And updating only ever replaces the app itself; your project folders aren't touched.
+
+### Adjustments
+- **The "no internet, ever" rule is now written as what it actually means.** The project's own rules said the app must make no network calls at all, which lumped four unrelated things together — analytics, crash reporting, downloading fonts, and checking for updates — and banned them as one. Three of those deserve banning: they either send your data somewhere or make the app depend on a connection to work. Checking for updates does neither. The rule now says the real thing: nothing about you or your worlds ever leaves your computer, the app must stay completely usable offline, and any connection at all only ever happens because you pressed a button that asks for one. There are exactly two of those, both of which show you what they're doing: importing pictures during a LegendKeeper import, and this update check.
+
 ## 2026-07-30
 
 ### Additions

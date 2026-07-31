@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Updater signing keys. The real one lives outside this repo (see
+# docs/handoff.md -> Updates); this is insurance against one ever landing here.
+*.key
+*.key.pub

@@ -24,9 +24,16 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/Shirohibiki-chan/anamnesiswiki/releases/latest/download/latest.json"],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDczMDI1N0FFNTQ4OTgxQzkKUldUSmdZbFVybGNDYzJ4MFJRNUxuU3hxeWVjZnoycWovMmFJUTJvWEdxRWNab0N1R0t4SzNtNlcK"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -127,6 +127,39 @@ is below.
   That difference is why path building is done locally. Neither exists under
   `pnpm dev` or Vitest, which is why the separator is resolved lazily.
 
+## Updates
+
+- **The updater's signing key is free and local, and is not code signing.**
+  `pnpm tauri signer generate` made a minisign keypair; the public half is in
+  `tauri.conf.json`, the private half lives at
+  `C:\Users\shiro\.tauri\anamnesis-updater.key` and must never enter the repo —
+  it's public. This is what proves an update came from us. The separate ~$200/yr
+  Authenticode certificate buys exactly one thing, the removal of the SmartScreen
+  warning, and the user has declined it permanently. Don't conflate the two, and
+  don't claim updates require the paid one.
+
+- **Losing the private key ends updates for every copy already installed.** A new
+  keypair means a new `pubkey`, and shipped builds only trust the old one. Back it
+  up before doing anything clever.
+
+- **A release build must have `TAURI_SIGNING_PRIVATE_KEY` set**, or the bundle
+  ships without `.sig` files and every client rejects the update as unsigned.
+  `createUpdaterArtifacts: true` in `tauri.conf.json` is what produces them.
+
+- **The updater does not go through the `http:` capability**, which is why that
+  scope is still narrowed to LK's CDN alone. Widening `http:` to reach GitHub
+  would be a real policy change for no gain.
+
+- **The check runs only from the button, and only on the startup screen.**
+  Installing replaces the running executable and relaunches; the one moment
+  that's guaranteed safe is before a project is open. `useUpdates` flushes
+  pending saves before installing anyway, because "usually nothing is pending"
+  isn't a guarantee.
+
+- **A failed check must read as a non-event.** The app is offline-first; not
+  reaching GitHub costs the user nothing, and the message says so rather than
+  presenting as an error.
+
 ## React patterns
 
 - **Remount-by-`key` instead of resetting state in an effect.** `PageView` keys on
@@ -227,6 +260,9 @@ Deferred on purpose, not forgotten:
   Worth revisiting with the project-home feature, since that's what they'd point at.
 - **The Windows path-length refusal has never fired against a real project.**
   Verified by test only.
+- **No GitHub release exists yet**, so the update check has nothing to compare
+  against and correctly reports there's nothing to update to. The download and
+  install path is therefore unexercised against a real release. Not a bug.
 - Not built and not scoped: theme switcher and the five extra palettes, cloud
   sync, mobile, user-editable templates, interactive atlas, timeline views, and
   any LLM feature in the editor.
