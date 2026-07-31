@@ -142,6 +142,16 @@ is below.
   keypair means a new `pubkey`, and shipped builds only trust the old one. Back it
   up before doing anything clever.
 
+- **Keeping the key is a decision the user made with the trade-off in front of
+  her (2026-07-31), not an accident.** She raised the key as unwelcome and was
+  offered the alternative: drop download-and-install, have the button only check
+  and then open the releases page in a browser. That removes the key entirely,
+  because an app that downloads and runs nothing has nothing to verify. She chose
+  to keep auto-install. Don't re-propose removing the key as though it were an
+  oversight, and don't ship auto-install without signature verification as a
+  compromise between the two — that combination is the actual security hole the
+  key exists to close.
+
 - **A release build must have `TAURI_SIGNING_PRIVATE_KEY` set**, or the bundle
   ships without `.sig` files and every client rejects the update as unsigned.
   `createUpdaterArtifacts: true` in `tauri.conf.json` is what produces them.
