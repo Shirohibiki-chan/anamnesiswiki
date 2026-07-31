@@ -661,3 +661,11 @@ export async function deleteAssetImage(rootPath: string, fileName: string): Prom
 export async function readRawFile(path: string): Promise<Uint8Array> {
   return readFile(path);
 }
+
+// Phase 9 LK export — the mirror of the above. The user picks where the `.lk`
+// lands via a native save dialog, so this writes outside any project folder by
+// design; it's still a disk touch, so it goes through here rather than
+// lk-export.ts reaching for the fs plugin itself.
+export async function writeRawFile(path: string, data: Uint8Array): Promise<void> {
+  await writeFile(path, data);
+}

@@ -7,25 +7,49 @@
 // no home set it stays put as a plain icon rather than disappearing — the row
 // it decorates is the project itself either way.
 import { useState } from "react";
-import { Home, Plus } from "lucide-react";
+import { Home, Plus, Upload } from "lucide-react";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject, useProjectHomeId } from "../../hooks/use-project";
 import { useTemplates } from "../../hooks/use-templates";
 import { TemplatePicker } from "./TemplatePicker";
 import { TreePopover } from "./TreePopover";
 
+type OpenPopover = "add" | "menu" | null;
+
 export function ProjectHeader() {
   const { project, addNode, selectNode } = useProject();
   const { getLabel } = useTemplates();
+  const { requestExport } = useDialogs();
   const homeNodeId = useProjectHomeId();
+  const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
-  function handleAdd(templateKey: string) {
-    addNode({ parentId: null, templateKey, name: `New ${getLabel(templateKey)}` });
+  function closePopover() {
+    setOpenPopover(null);
     setAnchorRect(null);
   }
 
+  function handleAdd(templateKey: string) {
+    addNode({ parentId: null, templateKey, name: `New ${getLabel(templateKey)}` });
+    closePopover();
+  }
+
+  // Exporting the whole world means every top-level page; their descendants
+  // come along on their own (see lk-export's collectSubtree).
+  function handleExportWorld() {
+    closePopover();
+    requestExport(project?.rootOrder ?? []);
+  }
+
   return (
-    <div className="tree-project-header">
+    <div
+      className="tree-project-header"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setAnchorRect(e.currentTarget.getBoundingClientRect());
+        setOpenPopover("menu");
+      }}
+    >
       <div className="tree-project-header-name">
         {homeNodeId ? (
           <button
@@ -44,13 +68,28 @@ export function ProjectHeader() {
       <button
         type="button"
         title="Add top-level page"
-        onClick={(e) => setAnchorRect(anchorRect ? null : e.currentTarget.getBoundingClientRect())}
+        onClick={(e) => {
+          if (openPopover === "add") closePopover();
+          else {
+            setAnchorRect(e.currentTarget.getBoundingClientRect());
+            setOpenPopover("add");
+          }
+        }}
       >
         <Plus size={12} />
       </button>
-      {anchorRect && (
-        <TreePopover anchorRect={anchorRect} onClose={() => setAnchorRect(null)}>
+      {openPopover === "add" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <TemplatePicker onSelect={handleAdd} />
+        </TreePopover>
+      )}
+      {openPopover === "menu" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <div className="tree-context-menu">
+            <button type="button" onClick={handleExportWorld}>
+              <Upload size={13} /> Export world to LegendKeeper
+            </button>
+          </div>
         </TreePopover>
       )}
     </div>

@@ -90,8 +90,9 @@ const PROJECT_META_SAVE_KEY = "__project_meta__";
 // The sibling order as the tree is actually showing it right now — the stored
 // manual order where there is one, creation order for everything else. Used as
 // the base list a drop inserts into, so a never-reordered folder doesn't have
-// to be seeded separately.
-function orderedSiblingIds(
+// to be seeded separately. Exported for LK export, which needs the same "order
+// as shown" answer to write sibling positions the user will recognise.
+export function orderedSiblingIds(
   nodes: Record<string, Node>,
   project: Project,
   parentId: string | null,
