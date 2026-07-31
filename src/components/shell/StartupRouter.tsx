@@ -15,11 +15,20 @@ export function StartupRouter() {
   useEffect(() => {
     let cancelled = false;
     async function bootstrap() {
-      const lastPath = await getLastOpenedProject();
-      if (lastPath) {
-        await loadProject(lastPath);
-        // If the project is gone (moved/deleted), loadProject resolves null
-        // and isLoaded stays false — the render below falls through to the picker.
+      // Anything that goes wrong here has to end with the picker on screen.
+      // Without the catch, a settings store that won't open — or any other
+      // unexpected rejection — left `isChecking` true forever, and the app
+      // sat on "Loading..." with no error and no way forward.
+      try {
+        const lastPath = await getLastOpenedProject();
+        if (lastPath) {
+          await loadProject(lastPath);
+          // If the project is gone (moved/deleted) or can't be read,
+          // loadProject resolves null and isLoaded stays false — the render
+          // below falls through to the picker.
+        }
+      } catch {
+        // Fall through to the picker.
       }
       if (!cancelled) setIsChecking(false);
     }

@@ -35,3 +35,26 @@ export function cancelSave(key: string): void {
   clearTimeout(existing.timer);
   pending.delete(key);
 }
+
+export function hasPendingSaves(): boolean {
+  return pending.size > 0;
+}
+
+// Runs every outstanding debounced write immediately. Called when the window
+// loses focus, is hidden, or is closing (see hooks/use-save-on-exit.ts) — the
+// debounce means the last ~300ms of typing is only in memory, which is fine
+// while the app is running and not fine if the process is about to go away.
+// Failures are swallowed per-key: one unwritable node shouldn't stop the rest
+// from being flushed, and there's no UI left to report into by this point.
+export async function flushAllSaves(): Promise<void> {
+  const keys = [...pending.keys()];
+  await Promise.all(
+    keys.map(async (key) => {
+      try {
+        await flushSave(key);
+      } catch {
+        // Ignore — see comment above.
+      }
+    }),
+  );
+}

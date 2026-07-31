@@ -33,6 +33,22 @@ Multi-move plans stage through temp names before landing on their targets: renam
 
 10 new tests in `filesystem-service.test.ts` covering rename, delete, chained renumbering, collision-creating renames, cross-storage-kind non-collisions, leaf siblings, ride-along descendants, and moves out of a folder.
 
+### Fixed: a single damaged file took down the whole project
+
+Nothing in the load path had a `try`/`catch`. `JSON.parse` on a corrupt node file threw, the rejection propagated out of `StartupRouter`'s `bootstrap()`, `setIsChecking(false)` never ran, and the app sat on "Loading..." with no error and no way forward. `ProjectPicker` had the same shape (`isBusy` stuck true), as did `ImportModal.handleConfirm` (stuck on "Importing your world"). For a local-first app whose files the user syncs and can hand-edit, this is a when-not-if failure.
+
+`loadProject` now returns `{ project, nodes, skipped }`. Individual node files that fail to parse — or that parse into something without a string `id`/`name` — are collected in `skipped` rather than thrown; `project.json` itself is still fatal, since without it there's no project. A directory whose marker file is unreadable is still walked into, with its children reparented one level up, so one bad `_folder.json` costs one node instead of the whole branch.
+
+Skipping silently would be worse than the crash it replaces (pages would just quietly stop existing), so `LoadWarning.tsx` reports the skipped paths under the top bar until dismissed.
+
+**Verified in the browser**, which is a real instance of this bug: under `pnpm dev` there's no Tauri runtime, so `getLastOpenedProject()` rejects with "Cannot read properties of undefined (reading 'invoke')". On `main` the app renders "Loading..." forever; with the fix it falls through to the project picker as intended. Confirmed both ways by reverting just `StartupRouter.tsx` and reloading.
+
+### Fixed: debounced edits lost on exit
+
+`autosave.ts` held writes for 300ms and nothing flushed them on shutdown. Added `flushAllSaves()`/`hasPendingSaves()` plus `hooks/use-save-on-exit.ts`, mounted by `AppLayout`. Two nets, since neither covers everything: `blur`/`visibilitychange` (alt-tab, sleep, most deliberate closes — plain web APIs, works under `pnpm dev` too), and Tauri's `onCloseRequested` (the actual window close, which tears down the webview without a reliable DOM unload event). The close path preventDefaults, races the flush against a 2s timeout, then calls `destroy()` — losing the tail of one edit is bad, an app that can't be quit is worse. Needs `core:window:allow-destroy`, added to `capabilities/default.json`.
+
+**Not yet exercised against a real window close** — the Tauri window lifecycle can't be driven from the review environment. Worth a quick `pnpm tauri dev` sanity check (type something, close immediately, reopen) next time the desktop app is running.
+
 **Noted, not fixed:** `duplicateNode` stamps every clone in a subtree with the same `createdAt`, so cloned siblings fall back to the `id.localeCompare` tie-break — meaning a duplicated folder's children come out in an arbitrary order rather than matching the original. Ordering only, no data loss.
 
 **Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.

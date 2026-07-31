@@ -25,11 +25,10 @@ export function ProjectPicker() {
     if (!path) return;
 
     setIsBusy(true);
-    const result = await loadProject(path);
-    setIsBusy(false);
+    const result = await loadProject(path).finally(() => setIsBusy(false));
 
     if (!result) {
-      setError("That folder doesn't have an Anamnesis project in it. Try a different folder, or create a new one instead.");
+      setError("That folder doesn't have an Anamnesis project in it, or its files couldn't be read. Try a different folder, or create a new one instead.");
       return;
     }
     setError(null);
@@ -38,11 +37,10 @@ export function ProjectPicker() {
 
   async function handleOpenRecent(path: string, name: string) {
     setIsBusy(true);
-    const result = await loadProject(path);
-    setIsBusy(false);
+    const result = await loadProject(path).finally(() => setIsBusy(false));
 
     if (!result) {
-      setError(`Couldn't find "${name}" anymore — it may have moved or been deleted.`);
+      setError(`Couldn't open "${name}" — it may have moved, been deleted, or its files may be damaged.`);
       await forgetProject(path);
       return;
     }
@@ -58,9 +56,15 @@ export function ProjectPicker() {
     }
 
     setIsBusy(true);
-    const parentDir = await getDefaultProjectsDir();
-    const result = await createProjectAt(parentDir, trimmed);
-    setIsBusy(false);
+    let result: Awaited<ReturnType<typeof createProjectAt>>;
+    try {
+      const parentDir = await getDefaultProjectsDir();
+      result = await createProjectAt(parentDir, trimmed);
+    } catch {
+      result = { ok: false, error: "Couldn't create the project folder. Check that the location is writable and try again." };
+    } finally {
+      setIsBusy(false);
+    }
 
     if (!result.ok) {
       setError(result.error);
