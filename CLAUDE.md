@@ -143,7 +143,7 @@ Import shows a preview (tree + inferred template counts + a plain-language list 
 
 ## Deployment
 
-No CI/CD in Phase 1 — releases are manual `pnpm tauri build` runs until there's a rhythm worth automating.
+Pushing a `v*` tag builds, signs and drafts a release for all four platforms; `.github/workflows/ci.yml` runs lint, tests and the frontend build on every push. **`docs/releasing.md` is the procedure** — read it before changing anything about versioning. Version numbers live in four files and are set with `node scripts/set-version.mjs <version>`, never by hand.
 
 ## File Editing
 
