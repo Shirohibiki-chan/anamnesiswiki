@@ -36,10 +36,27 @@ function ImportPreviewRow({ node, depth }: { node: ImportPreviewNode; depth: num
   );
 }
 
+// What the importing screen says. Counts rather than a mood: "this can take a
+// little while" was the whole of it before, and a minute of that with no
+// number moving is indistinguishable from the app having died.
+function progressHeadline(
+  progress: { phase: "images" | "writing"; done: number; total: number } | null,
+  imageCount: number,
+): string {
+  if (!progress) {
+    return imageCount > 0 ? `Getting ready — ${imageCount} picture${imageCount === 1 ? "" : "s"} to fetch.` : "Getting ready…";
+  }
+  if (progress.phase === "images") {
+    if (progress.total === 0) return "Writing your world to disk…";
+    return `Fetching pictures — ${progress.done} of ${progress.total}.`;
+  }
+  return "Writing your world to disk…";
+}
+
 export function ImportModal({ onClose }: { onClose: () => void }) {
   const { pickLkFile, pickFolder } = useDialogs();
   const { parseLkFile, importLkProject } = useLkImport();
-  const { recordProjectOpened, projectsDir } = useAppSettings();
+  const { recordProjectOpened, projectsDir, prepareProjectsDir } = useAppSettings();
   const { getLabel } = useTemplates();
 
   const [status, setStatus] = useState<Status>("idle");
@@ -50,6 +67,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   // Settings. Deliberately not written back to the setting: overriding the
   // destination once shouldn't silently move where everything lands from now on.
   const [destinationOverride, setDestinationOverride] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ phase: "images" | "writing"; done: number; total: number } | null>(null);
 
   const destination = destinationOverride ?? projectsDir;
 
@@ -70,9 +88,10 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   }
 
   async function handleChangeDestination() {
+    const startFrom = destinationOverride ?? (await prepareProjectsDir());
     const picked = await pickFolder({
       title: "Choose where to save this imported project",
-      defaultPath: destination ?? undefined,
+      defaultPath: startFrom,
     });
     if (!picked) return;
     setDestinationOverride(picked);
@@ -88,19 +107,18 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     // No folder browser here any more — it opened with no starting point,
     // which meant it opened in whatever folder the .lk was just picked from.
     // The destination comes from Settings, and "Change" below overrides it.
-    if (!destination) {
-      setError("Still working out where to save this. Try again in a moment.");
-      return;
-    }
-    const parentDir = destination;
+    // Makes the folder if it isn't there — otherwise a fresh install's very
+    // first action can be an import into a Documents\Anamnesis nobody created.
+    const parentDir = destinationOverride ?? (await prepareProjectsDir());
 
     setStatus("importing");
+    setProgress(null);
     setError(null);
     // A failed write partway through would otherwise leave the modal stuck on
     // "Importing your world" with no error and no way back.
     let result: Awaited<ReturnType<typeof importLkProject>>;
     try {
-      result = await importLkProject(parentDir, trimmedName, plan);
+      result = await importLkProject(parentDir, trimmedName, plan, setProgress);
     } catch (e) {
       result = { ok: false, error: e instanceof Error ? e.message : "Something went wrong writing the project to disk." };
     }
@@ -127,6 +145,14 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             <button type="button" onClick={() => void handlePickFile()} disabled={status === "parsing"}>
               {status === "parsing" ? "Reading file…" : "Choose a .lk file"}
             </button>
+            {/* The button's own label was the only sign anything was happening,
+                and unpacking a large world holds the window still while it
+                runs — so it read as nothing having happened at all. */}
+            {status === "parsing" && (
+              <p className="import-modal-progress-note">
+                Unpacking your world. A big one takes a few seconds, and the window may sit still while it does.
+              </p>
+            )}
           </div>
         )}
 
@@ -188,11 +214,22 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
         {status === "importing" && (
           <div className="import-modal-pick">
-            <p>
-              Importing your world
-              {plan?.pendingImages.length ? ` and ${plan.pendingImages.length} image${plan.pendingImages.length === 1 ? "" : "s"}` : ""} —
-              this can take a little while.
-            </p>
+            <p>{progressHeadline(progress, plan?.pendingImages.length ?? 0)}</p>
+            {progress && progress.total > 0 && (
+              <div
+                className="import-modal-progress-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={progress.total}
+                aria-valuenow={progress.done}
+              >
+                <div
+                  className="import-modal-progress-fill"
+                  style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+                />
+              </div>
+            )}
+            <p className="import-modal-progress-note">Pictures come from LegendKeeper's servers, so this needs the internet.</p>
           </div>
         )}
       </div>

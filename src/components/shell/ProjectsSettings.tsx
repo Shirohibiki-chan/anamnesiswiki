@@ -7,15 +7,17 @@ import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 
 export function ProjectsSettings() {
-  const { projectsDir, isCustomProjectsDir, changeProjectsDir } = useAppSettings();
+  const { projectsDir, isCustomProjectsDir, changeProjectsDir, prepareProjectsDir } = useAppSettings();
   const { pickFolder } = useDialogs();
 
   async function handleChange() {
+    // Make the current folder before browsing from it — a native folder
+    // browser can only start somewhere that exists, so a default nobody has
+    // created yet drops you a level up to make it by hand.
+    const startFrom = await prepareProjectsDir();
     const picked = await pickFolder({
       title: "Choose where new projects are saved",
-      // Start the browser in the folder it's already set to, rather than
-      // wherever the OS happened to leave it — the whole point of this screen.
-      defaultPath: projectsDir ?? undefined,
+      defaultPath: startFrom,
     });
     if (!picked) return;
     await changeProjectsDir(picked);

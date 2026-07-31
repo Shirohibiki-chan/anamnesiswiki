@@ -11,7 +11,7 @@ import "./shell.css";
 
 export function ProjectPicker() {
   const { loadProject, createProjectAt } = useProject();
-  const { recentProjects, recordProjectOpened, forgetProject, getProjectsDir } = useAppSettings();
+  const { recentProjects, recordProjectOpened, forgetProject, prepareProjectsDir } = useAppSettings();
   const { pickFolder } = useDialogs();
 
   const [isBusy, setIsBusy] = useState(false);
@@ -58,7 +58,7 @@ export function ProjectPicker() {
     setIsBusy(true);
     let result: Awaited<ReturnType<typeof createProjectAt>>;
     try {
-      const parentDir = await getProjectsDir();
+      const parentDir = await prepareProjectsDir();
       result = await createProjectAt(parentDir, trimmed);
     } catch {
       result = { ok: false, error: "Couldn't create the project folder. Check that the location is writable and try again." };

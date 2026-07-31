@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as appSettings from "../services/app-settings-service";
 import type { RecentProject } from "../services/app-settings-service";
+import { ensureDir } from "../services/filesystem-service";
 
 export function useAppSettings() {
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
@@ -34,6 +35,12 @@ export function useAppSettings() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const prepareProjectsDir = useCallback(async () => {
+    const dir = await appSettings.getProjectsDir();
+    await ensureDir(dir);
+    return dir;
   }, []);
 
   const changeProjectsDir = useCallback(
@@ -74,6 +81,10 @@ export function useAppSettings() {
     changeProjectsDir,
     // Read on demand rather than from the state above, for the call sites that
     // need the folder *now* (creating, importing) and can't wait on a render.
-    getProjectsDir: appSettings.getProjectsDir,
+    // Makes the folder as well: it's otherwise only ever a default path that
+    // nothing creates, so the first project of a fresh install would land in a
+    // folder that doesn't exist, and a folder browser pointed at it would open
+    // in Documents instead with the user expected to make it by hand.
+    prepareProjectsDir,
   };
 }
