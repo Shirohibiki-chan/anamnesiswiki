@@ -175,18 +175,30 @@
   filter: brightness(1.1);
 }
 
-/* react-arborist puts real DOM focus on the row element (tabIndex -1, then
-   .focus() on whichever row is focused), so the browser paints its own focus
-   ring there — a hard white box against a dark sidebar. It was always there;
-   multi-selection is what made it visible as a thing separate from the teal
-   selection fill, since focus and selection can now be different rows.
+/* react-arborist renders exactly two focusable elements, and the browser paints
+   its default focus ring — a hard white box against a dark sidebar — on
+   whichever one holds focus. Both need suppressing; killing only the rows just
+   moves the box onto the container the first time focus lands there.
 
-   Suppressed on the row element and replaced with a themed ring on our own,
-   which keeps keyboard navigation legible. Dropped entirely once the row is
-   selected: the fill already says where you are, and a second box around it is
-   noise. Deliberately keyed on `:focus` rather than `:focus-visible` — the
-   focus here is programmatic, and browsers disagree about whether that counts
-   as visible after a mouse click. */
+     [role="tree"]      the list container, tabIndex 0 — how you tab into the
+                        tree, and what's focused if you click empty space below
+                        the rows. Its ring is redundant either way: the
+                        container's own onFocus immediately forwards focus to a
+                        row (focusedNode || firstNode), so the row indicator
+                        below is always the real one.
+     [role="treeitem"]  each row, tabIndex -1, explicitly .focus()ed by the
+                        library as you navigate.
+
+   The row ring is replaced with a themed one so keyboard navigation stays
+   legible, and dropped entirely once the row is selected — the teal fill
+   already says where you are, and a second box around it is noise. That's why
+   the white box only became obvious with multi-selection: before it, focus and
+   selection were always the same row.
+
+   Deliberately keyed on `:focus` rather than `:focus-visible` — the focus here
+   is programmatic, and browsers disagree about whether that counts as visible
+   after a mouse click. */
+.tree-panel [role="tree"]:focus,
 .tree-panel [role="treeitem"]:focus {
   outline: none;
 }
