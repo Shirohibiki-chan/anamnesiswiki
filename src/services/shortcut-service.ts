@@ -6,6 +6,7 @@
 import {
   DEFAULT_BINDINGS,
   EDITOR_RESERVED_BINDINGS,
+  EDITOR_SCOPED_ACTIONS,
   SHORTCUT_ACTIONS,
   SHORTCUT_LABELS,
   SYSTEM_RESERVED_BINDINGS,
@@ -90,6 +91,37 @@ export function bindingsEqual(a: Binding, b: Binding): boolean {
   );
 }
 
+// ─── Where the keypress came from ───────────────────────────────────────────
+
+// The app's own wrapper around BlockNote (components/page/Editor.tsx), used
+// rather than one of BlockNote's internal class names so an upgrade that
+// renames theirs doesn't quietly turn app undo loose inside the editor.
+const EDITOR_CONTAINER_SELECTOR = ".editor-shell-wrapper";
+
+/**
+ * Is this keypress being typed into something? True inside the editor, inside
+ * any input or textarea, and inside anything contenteditable — the rename box
+ * in the tree, a tab label, a property field.
+ *
+ * Editor-scoped actions use this to stand down. The expensive mistake is being
+ * too permissive: app undo firing while the user is mid-sentence would reverse
+ * a sidebar action they'd long stopped thinking about. So when a new kind of
+ * text field is added to the app, it belongs in this list — the default here is
+ * "not text", which is only right because a keypress with nothing focused
+ * arrives on document.body.
+ */
+export function isTextEntryTarget(target: EventTarget | null): boolean {
+  // Duck-typed rather than `instanceof Element`, which needs a DOM to exist at
+  // all — the tests run in Vitest's node environment. A keypress with nothing
+  // focused arrives on document.body, so a target that can't answer `closest`
+  // is genuinely not a text field.
+  const element = target as { closest?: (selector: string) => unknown } | null;
+  if (typeof element?.closest !== "function") return false;
+  if (element.closest(EDITOR_CONTAINER_SELECTOR)) return true;
+  if (element.closest("input, textarea")) return true;
+  return Boolean(element.closest('[contenteditable="true"], [contenteditable=""]'));
+}
+
 // ─── Recording ──────────────────────────────────────────────────────────────
 
 const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta", "CapsLock", "OS"]);
@@ -143,7 +175,7 @@ export function checkBinding(
   action: ShortcutAction,
   current: Record<ShortcutAction, Binding>,
 ): BindingProblem | null {
-  const shapeProblem = checkBindingShape(binding);
+  const shapeProblem = checkBindingShape(binding, action);
   if (shapeProblem) return shapeProblem;
 
   const clash = SHORTCUT_ACTIONS.find((other) => other !== action && bindingsEqual(current[other], binding));
@@ -161,8 +193,13 @@ export function checkBinding(
  * two actions' keys is a legitimate thing to have in the file, and checking
  * each override against the defaults would throw the swap away as a clash with
  * the key it was swapped out of.
+ *
+ * The editor's own keys are refused here for every action except the
+ * editor-scoped ones. Those stand down whenever the caret is in text, so they
+ * and the editor can share a combination without either losing it — that's the
+ * whole reason app undo can sit on Ctrl+Z. See EDITOR_SCOPED_ACTIONS.
  */
-export function checkBindingShape(binding: Binding): BindingProblem | null {
+export function checkBindingShape(binding: Binding, action: ShortcutAction): BindingProblem | null {
   if (!binding.mod && !isFunctionKey(binding.key)) {
     return {
       reason: "needsModifier",
@@ -170,16 +207,18 @@ export function checkBindingShape(binding: Binding): BindingProblem | null {
     };
   }
 
+  const yieldsToEditor = EDITOR_SCOPED_ACTIONS.has(action);
+
   // Headings are registered as `Mod-Alt-${level}` from a configurable list, so
   // there's no fixed set of them to name — the whole space is off limits.
-  if (binding.mod && binding.alt) {
+  if (!yieldsToEditor && binding.mod && binding.alt) {
     return {
       reason: "reservedByEditor",
       message: "The editor uses every Ctrl+Alt combination for headings and callouts.",
     };
   }
 
-  if (EDITOR_RESERVED_BINDINGS.some((reserved) => bindingsEqual(reserved, binding))) {
+  if (!yieldsToEditor && EDITOR_RESERVED_BINDINGS.some((reserved) => bindingsEqual(reserved, binding))) {
     return { reason: "reservedByEditor", message: "The editor already uses this while you're writing." };
   }
 
@@ -220,7 +259,7 @@ export function parseOverrides(raw: unknown): Partial<Record<ShortcutAction, Bin
   for (const action of SHORTCUT_ACTIONS) {
     const value = source[action];
     if (!isBinding(value)) continue;
-    if (checkBindingShape(value)) continue;
+    if (checkBindingShape(value, action)) continue;
     parsed[action] = value;
   }
   return parsed;

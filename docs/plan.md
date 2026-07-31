@@ -117,7 +117,7 @@ accepts it. That needs an LK account and an import attempt. See
 
 Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`) via `pnpm tauri build`. README instructions for the unsigned-installer bypass on each platform.
 
-**Partly done.** Four of this phase's items are already in:
+**Partly done.** Most of this phase's items are already in:
 
 - **Node duplication** — right-click → Duplicate, shipped in Phase 3. Still
   single-selection only; see Queued Adjustments.
@@ -149,13 +149,21 @@ Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImag
   one in `SHORTCUT_LABELS`, one in `DEFAULT_BINDINGS` — plus a handler in
   `useGlobalShortcuts`. It shows up in Settings on its own.
 
+- **App-level undo/redo**, shipped 2026-07-31. Ctrl+Z / Ctrl+Y over the sidebar
+  operations: add, delete, rename, move, duplicate, colour, project home,
+  multi-selection included. An entry is a pair of closures built where the
+  operation happens, reversing itself through the ordinary store actions rather
+  than through a second copy of the path-relocation logic. Deleting captures
+  its pictures' bytes first, so undo restores the whole page. Shares Ctrl+Z
+  with the editor by standing down whenever the caret is in text — see handoff
+  §Undo and §Shortcuts. **Not covered:** properties, tags, tab changes.
+
 **Still to do:**
 
-- **App-level undo/redo.** Not started, and not a small one — BlockNote already
-  binds Mod-z/Mod-y for editor history, and tree operations write to disk as
-  they happen, so "undo" there means reversing a filesystem change rather than
-  popping a state stack. Scope needs deciding before any of it is built.
 - **Automating releases and the other platforms.** See below.
+- **Undo for the right-hand panel** — properties, tags and tab edits are the
+  one part of the app a mistake can't be taken back in. The way in is a
+  dedicated store action per operation, the way `setNodeColor` did it.
 
 Cutting a release is currently manual: bump the version in `package.json`, `tauri.conf.json` and `Cargo.toml`, build with `TAURI_SIGNING_PRIVATE_KEY` set (or clients reject the update as unsigned), hand-write `latest.json` with the `.sig` contents inlined, then `gh release create`. **Still outstanding:** automating that as a workflow on tag push, and macOS/Linux bundles — `latest.json` currently declares `windows-x86_64` only, so a non-Windows build would find no platform entry. See `docs/handoff.md` → Updates.
 
