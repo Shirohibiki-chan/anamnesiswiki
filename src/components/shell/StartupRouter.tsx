@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
+import { useLoadShortcuts } from "../../hooks/use-shortcuts";
 import { AppLayout } from "./AppLayout";
 import { ProjectPicker } from "./ProjectPicker";
 import "./shell.css";
@@ -10,11 +11,16 @@ import "./shell.css";
 export function StartupRouter() {
   const { isLoaded, loadProject } = useProject();
   const { getLastOpenedProject } = useAppSettings();
+  const loadShortcuts = useLoadShortcuts();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     async function bootstrap() {
+      // Before either screen, since Settings — and so the shortcuts screen —
+      // is reachable from the picker as well as from inside a project. Never
+      // rejects; a settings file that won't open leaves the defaults.
+      await loadShortcuts();
       // Anything that goes wrong here has to end with the picker on screen.
       // Without the catch, a settings store that won't open — or any other
       // unexpected rejection — left `isChecking` true forever, and the app

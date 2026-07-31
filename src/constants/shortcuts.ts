@@ -36,3 +36,37 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   newPage: { key: "n", mod: true },
   save: { key: "s", mod: true },
 };
+
+// Combinations a custom binding may not take, because something else already
+// answers them and the app would be stealing the keypress.
+//
+// Verified against the installed @blocknote/core rather than assumed — the
+// list below is what a grep for `Mod-*` in its dist actually returns. Every
+// Mod-Alt combination is off limits as a rule rather than by enumeration:
+// headings register as `Mod-Alt-${level}` from a configured list of levels, so
+// there is no fixed set to name.
+export const EDITOR_RESERVED_BINDINGS: Binding[] = [
+  { key: "z", mod: true }, // undo
+  { key: "y", mod: true }, // redo
+  // Not bound by the installed version, but it's the Mac redo convention and
+  // the app-level undo/redo still to be built will want it. Reserved now so it
+  // can't be given away in the meantime.
+  { key: "z", mod: true, shift: true },
+  { key: "6", mod: true, shift: true },
+  { key: "7", mod: true, shift: true },
+  { key: "8", mod: true, shift: true },
+  { key: "9", mod: true, shift: true },
+  { key: "Enter", mod: true },
+  { key: "ArrowUp", mod: true },
+  { key: "ArrowDown", mod: true },
+];
+
+// Not the editor's, but not ours to take either — the OS and the webview
+// answer these, and rebinding one costs the user copy or paste inside every
+// text box in the app.
+export const SYSTEM_RESERVED_BINDINGS: Binding[] = [
+  { key: "a", mod: true },
+  { key: "c", mod: true },
+  { key: "v", mod: true },
+  { key: "x", mod: true },
+];

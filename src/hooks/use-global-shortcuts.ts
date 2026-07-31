@@ -2,7 +2,8 @@
 // rather than one per shortcut, so the order things are checked in is visible
 // and two features can't quietly both claim a key.
 import { useEffect } from "react";
-import { DEFAULT_BINDINGS, SHORTCUT_ACTIONS, type ShortcutAction } from "../constants/shortcuts";
+import { SHORTCUT_ACTIONS, type ShortcutAction } from "../constants/shortcuts";
+import { useShortcutStore } from "../state/shortcut-store";
 import { matchesBinding } from "../services/shortcut-service";
 
 export type GlobalShortcutHandlers = {
@@ -26,8 +27,18 @@ export function useGlobalShortcuts({ onSearch, onNewPage, onSave }: GlobalShortc
     };
 
     function handleKeyDown(event: KeyboardEvent) {
+      // Read at the keypress rather than closed over, so rebinding takes
+      // effect immediately and the listener doesn't have to be rebuilt every
+      // time a binding changes.
+      const { bindings, isRecording } = useShortcutStore.getState();
+
+      // The settings screen is waiting for a key. Pressing the one that
+      // currently opens search shouldn't open search on the way to being
+      // recorded as something else.
+      if (isRecording) return;
+
       for (const action of SHORTCUT_ACTIONS) {
-        if (!matchesBinding(event, DEFAULT_BINDINGS[action])) continue;
+        if (!matchesBinding(event, bindings[action])) continue;
         // Claims the keypress from the browser as well as from the page —
         // Ctrl+S would otherwise open the webview's own save dialog. See
         // docs/handoff.md §Shortcuts for the one this can't take back.

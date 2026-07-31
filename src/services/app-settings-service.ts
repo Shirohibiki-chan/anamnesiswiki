@@ -48,6 +48,30 @@ export async function addRecentProject(path: string, name: string): Promise<void
   await store.save();
 }
 
+/**
+ * Custom keyboard shortcuts, as whatever is actually in the file. Returned
+ * unvalidated on purpose: this module's job is reading and writing the store,
+ * and deciding whether a binding is still usable belongs with the rules that
+ * say so — see shortcut-service's `parseOverrides`.
+ *
+ * Only *changed* shortcuts are stored, never the full set, so a default that
+ * moves in a later version reaches everyone who never touched that one.
+ */
+export async function getShortcutOverrides(): Promise<unknown> {
+  const store = await getStore();
+  return (await store.get("shortcutOverrides")) ?? {};
+}
+
+export async function setShortcutOverrides(overrides: Record<string, unknown>): Promise<void> {
+  const store = await getStore();
+  if (Object.keys(overrides).length === 0) {
+    await store.delete("shortcutOverrides");
+  } else {
+    await store.set("shortcutOverrides", overrides);
+  }
+  await store.save();
+}
+
 export async function removeRecentProject(path: string): Promise<void> {
   const store = await getStore();
   const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];

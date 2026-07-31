@@ -394,6 +394,27 @@ is below.
   also the main thing standing between here and app-level undo/redo: `Mod-z` is
   taken.
 
+- **The "modifier or F-key" rule is an accessibility decision, not a
+  formality.** A bare letter can't be a binding — this app is mostly a text
+  editor and it would fire while typing. But requiring a two-key chord is
+  exactly the barrier the rebinding screen exists to remove, so a single
+  function key is legal. Tightening this to "a modifier always" takes the
+  escape hatch away; if it has to change, replace it with another one first.
+  `checkBindingShape` in `shortcut-service.ts` is where it lives.
+
+- **Stored overrides are checked for shape but never for collisions.** Both
+  halves matter. Shape, because `app-settings.json` outlives any version of the
+  app and a binding that was legal when written may since have been claimed —
+  those are dropped, falling back to the default rather than leaving a shortcut
+  that can't fire. Not collisions, because swapping two actions' keys is a
+  legitimate thing to find in the file, and checking each override against the
+  defaults would throw the swap away as a clash with the key it was swapped out
+  of. If two really do collide, the action order in `SHORTCUT_ACTIONS` settles
+  it — that's what the first-match-wins listener is for.
+
+- **Only changed shortcuts are persisted, never the whole set.** A default that
+  moves in a later version has to reach everyone who never touched that one.
+
 - **Matching is exact, not a subset.** A binding without Shift does not fire on
   a Shift-bearing press, and one without Alt does not fire when Alt is held.
   Loosening that so `Ctrl+K` also answers `Ctrl+Shift+K` swallows keypresses on
@@ -408,7 +429,14 @@ is below.
 
 - **`useShortcutLabel` is the only way a shortcut gets written on screen.**
   Hardcoding "Ctrl+K" into a button is how a rebound key ends up advertised
-  wrong, which is worse than not advertising it at all.
+  wrong, which is worse than not advertising it at all. Now that shortcuts are
+  user-changeable this isn't a style preference.
+
+- **The global listener reads bindings at the keypress, not from a closure**,
+  and sits out entirely while `isRecording` is set. Closing over the bindings
+  would mean rebuilding the listener on every change; ignoring `isRecording`
+  would mean the key being recorded also fires whatever it's currently bound
+  to, on its way to being reassigned.
 
 - **Whether the desktop build actually lets the page keep `Cmd+N` is
   unverified.** `preventDefault()` claims it from the page, and in a plain

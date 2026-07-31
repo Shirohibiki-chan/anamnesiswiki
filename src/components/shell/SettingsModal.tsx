@@ -5,6 +5,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { ShortcutSettings } from "./ShortcutSettings";
 import { UpdateCheck } from "./UpdateCheck";
 
 type SettingsModalProps = {
@@ -37,6 +38,11 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             <X size={15} />
           </button>
         </header>
+
+        <section className="settings-section">
+          <h3 className="settings-section-title">Keyboard</h3>
+          <ShortcutSettings />
+        </section>
 
         <section className="settings-section">
           <h3 className="settings-section-title">Updates</h3>
