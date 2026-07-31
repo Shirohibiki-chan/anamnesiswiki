@@ -12,10 +12,10 @@ The user builds fictional worlds — characters, locations, factions, species, e
 
 Import/export of LegendKeeper's `.lk` format is a Phase 1 must-have because the user has an existing 75-page world to migrate.
 
-**Phases 0 through 8 are built and working**: the data layer, app shell, tree,
+**Phases 0 through 9 are built and working**: the data layer, app shell, tree,
 page view, BlockNote editor with custom callouts and `@`/`[[ ]]` cross-references,
-properties panel, all templates, and LegendKeeper import. Phase 9 (LK *export*) is
-the next one up.
+properties panel, all templates, and LegendKeeper import *and* export. Phase 10
+(polish and distribution) is the next one up, and is partly done already.
 
 > **If you are a Claude reading this to plan or write code:** this summary
 > describes the shape of the project, not its current source. Code has been
@@ -41,7 +41,7 @@ the next one up.
 
 **LegendKeeper import** — a menu item opens a file picker; picking a `.lk` file shows an import wizard with a preview of the parsed tree, inferred template counts per branch, and warnings for content that will lossy-convert. Confirm imports the whole world into a new project.
 
-**LegendKeeper export** — the inverse: a checkbox tree of what to export, a file-save dialog, and a `.lk` file drops out.
+**LegendKeeper export** — the inverse, reached by right-clicking a page (or the project name, for the whole world). No checkbox tree and no options: a page always exports with everything under it, because LK's own `.lk` export works that way. A summary screen names anything that won't survive — chiefly pictures added inside Anamnesis, which have no LK address to point at — then a file-save dialog, and a `.lk` file drops out.
 
 **Publish (Phase 1.5, later)** — a modal to pick which pages to include, whether to include hidden tabs (default off), a tag filter, and an output folder. Generates a static HTML site the user hosts anywhere free.
 
@@ -149,7 +149,7 @@ Max folder depth is 3: `src/components/tree/TreeItem.tsx` is the deepest allowed
 
 ## What's Next
 
-Phase 9 — LegendKeeper export — is next. `docs/plan.md` has the remaining phases and the queued work; `docs/shipped.md` records what Phases 0–8 delivered.
+Phase 10 — polish and distribution — is next, and partly done: the update check and two published releases already landed early. What's left there is global search, keyboard shortcuts, undo/redo, and automating release builds. `docs/plan.md` has the remaining phases and the queued work; `docs/shipped.md` records what Phases 0–9 delivered.
 
 After Phase 1 is stable and shipped, the next unlock is Phase 1.5 — read-only static-site publishing. Same feature serves two use cases: sharing a world with a co-writer for read-only viewing, and eventual public release of a world (e.g. Orynthia going public). Not blocked on anything; just sequenced after Phase 1 is solid.
 

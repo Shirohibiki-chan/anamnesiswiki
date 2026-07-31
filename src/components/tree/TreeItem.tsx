@@ -28,7 +28,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const { duplicateNode, deleteNodes, addNode, updateNode, setProjectHome } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const homeNodeId = useProjectHomeId();
-  const { confirmDestructive } = useDialogs();
+  const { confirmDestructive, requestExport } = useDialogs();
   const { getLabel, canHaveChildren } = useTemplates();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -207,6 +207,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
             onToggleProjectHome={() => setProjectHome(node.id)}
+            onExport={() => requestExport(targetIds())}
             onDelete={handleDelete}
             onAddChild={() => setOpenPopover("add")}
             onClose={closePopover}

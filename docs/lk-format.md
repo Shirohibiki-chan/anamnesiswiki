@@ -2,7 +2,7 @@
 
 The field mapping and ProseMirror block translation table for `src/services/lk-import.ts`, the only file that reads `.lk` files (see `CLAUDE.md`'s architecture rules). Written after Phase 8 shipped, against the user's real 75-resource `Valeraverse.lk` export — update this doc if LK ever changes its schema version or a new export surfaces a block type not covered here.
 
-Export (still not built — Phase 9) will need its own inverse mapping table; this doc is import-only for now.
+Export (`src/services/lk-export.ts`, Phase 9) implements the inverse. Everything below is the import direction unless stated; §Export at the bottom covers what differs on the way out.
 
 ## Top-level shape
 
@@ -103,6 +103,33 @@ A failed individual image download doesn't fail the whole import — that one pa
 
 Before committing anything to disk, `ImportModal.tsx` shows: the parsed tree with inferred template icons, per-template counts, and a plain-language list of every lossy conversion that actually occurred (built from `describeLossy`) — nothing is silently dropped without being named in that list.
 
-## Deferred
+## Export
 
-- **Export (Phase 9)** — the inverse of everything above. Not started.
+`lk-export.ts` runs the table above backwards. It's a pure conversion plus one local file write — **no network access of any kind**, which is why images are the one thing that can't make the trip.
+
+**What's exported.** Whatever was right-clicked, plus its whole subtree, always. LK's own `.lk` export offers no options at all — no subpage toggle, no image toggle (its HTML export has both, which is why that's their default: it's the one meant to leave). Right-clicking the project name exports every top-level page, and so the whole world.
+
+**Structure.**
+
+- LK requires exactly one parentless resource. The designated project home page *becomes* it; if home isn't in the export, one is synthesised carrying the project's name.
+- A node's LK parent is its own parent when that parent is included, and the root when it isn't — which is what lets a nested page export without its ancestors, and what files a whole world's top-level pages under the home page.
+- `pos` is written **fixed-width, two characters** (`positionKey`). Variable-length keys don't sort under the plain string comparison import uses. See `docs/handoff.md` §LK export.
+- Folders become pages with a single empty `Main` tab — LK has no folder-only concept. Reported in the export's lossy list.
+
+**Blocks** invert the table above, with two asymmetries worth knowing:
+
+| Ours | Becomes | Note |
+|---|---|---|
+| `calloutInfo` / `calloutQuote` | `panel` `info` / `note` | Straight inverse. |
+| `calloutSecret` | `bodiedExtension` `block-secret` | **Not** a `panel`. Import folds LK's Secret block *and* `panel` warning/error into this one callout, so the return trip can't distinguish them; the Secret block is the semantic match. |
+| `quote` | `blockquote` | Stays distinct from the Quote callout, matching import's split. |
+| `toggleListItem` | `expand` | Content becomes the title, children the body. |
+| `bulletListItem` / `numberedListItem` | `bulletList` / `orderedList` | Consecutive items of the same kind gather into **one** list node — they're flat siblings here and nested there. |
+| a text run containing `"\n"` | `hardBreak` between runs | Import produced those newlines; a literal newline in a ProseMirror text node renders as nothing. |
+| anything unrecognised | `paragraph` keeping its text | Same never-silently-drop principle as import. |
+
+**Properties** go back as `TEXT_FIELD` (text, longtext, and date — LK has no date type either) and `RESOURCE_LINK` (refs, resolved through the export's own id map). Empty values are omitted rather than written as blank fields. `Node.tags` becomes `resource.tags`; the palette colour becomes `iconColor` as hex.
+
+**Images can't travel.** A `.lk` stores URLs pointing at LK's own servers, never image data, so a file added in Anamnesis has nowhere to go. Import therefore records `Node.imageSource` / `bannerSource` — the address a picture was downloaded from — purely so export can hand it back. Anything without one is left out and counted in the export's lossy list. Projects imported before this existed have no sources and need a re-import to gain them.
+
+**Round-trip status.** Import → export → import over the real 75-resource `Valeraverse.lk` returns 75 pages with identical tree shape, templates, tabs and tags. That proves the mapping is self-consistent; **nothing has yet been imported into real LegendKeeper from a file we wrote.**

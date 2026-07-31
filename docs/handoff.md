@@ -19,7 +19,9 @@ Kept short on purpose — this file is read most sessions.
 **Phase 8 shipped 2026-07-30.** LK import works against the user's real
 `Valeraverse.lk` (75 resources): tabs, formatting, cross-references, properties,
 images, banners. **Project home shipped 2026-07-31**, clearing the last thing
-queued ahead of Phase 9 — which is LK Export, designed but not started.
+queued ahead of Phase 9. **Phase 9 — LK Export — shipped 2026-07-31**, so the
+format now goes both ways; §LK export below has the constraints that govern it,
+and §Known gaps has the one thing it doesn't prove.
 
 A structural code review, a disk-I/O pass, and a documentation accuracy pass all
 ran on 2026-07-30. What they changed is in `CHANGELOG.md`; what they *concluded*
@@ -302,6 +304,37 @@ is below.
   why. Matched on the heading text, which is the part that survives their
   releases.
 
+## LK export
+
+- **`pos` keys are fixed-width, always two characters.** Import compares them
+  as plain strings, and variable-length keys don't sort under that: index 75
+  ("00") lands before index 1 ("1"), because comparison is character by
+  character and `'0' < '1'`. LK's own keys *are* variable-length, which is fine
+  to read — we only have to emit keys that sort, not keys shaped like theirs.
+
+- **A node hangs off its own parent when that parent is in the export, and off
+  the root when it isn't.** That single rule is what lets a nested page be
+  exported without dragging its ancestors along, *and* what puts a whole
+  world's top-level pages underneath the home page, which is where LK keeps
+  them. Special-casing either produced the other one's bug.
+
+- **The designated home page becomes LK's root resource** rather than getting
+  one synthesised above it — LK's format requires exactly one parentless
+  resource, and ours is a real page. A synthesised root, named for the project,
+  appears only when home isn't part of the export.
+
+- **Our Secret callout exports as LK's `bodiedExtension` Secret block, not as a
+  `panel`.** Import folds both LK's Secret block *and* `panel` warning/error
+  into that one callout, so the return trip can't tell them apart; the Secret
+  block is the semantic match, and the panel types were the lossy side of that
+  merge to begin with.
+
+- **A picture only exports if it came from LK.** `.lk` stores URLs on LK's
+  servers, never image data, so a file added in Anamnesis has nothing that can
+  go in one — hence `imageSource`/`bannerSource` on Node, recorded at import.
+  Absent means "can't export", which the export preview reports with a count.
+  Never used to fetch anything outside an explicit import.
+
 ## Editor & templates
 
 - **Don't fork BlockNote.** Extend via its documented block-spec API.
@@ -392,14 +425,22 @@ is below.
 
 Deferred on purpose, not forgotten:
 
-- **LK export (Phase 9) isn't built** — import only. No round-trip yet.
+- **Nothing has been imported into real LegendKeeper from an export we wrote.**
+  The round trip is verified through our own importer, against the real
+  75-resource `Valeraverse.lk`, which proves the mapping is self-consistent —
+  not that LK accepts the file. That needs an actual LK account and an import
+  attempt.
 - **`duplicateNode` stamps every clone in a subtree with the same `createdAt`**,
   so a duplicated folder's children come out in arbitrary order. Cosmetic.
-- **The 15 broken cross-reference links are fixed in code but not in the user's
-  copy.** They were mentions pointing at the LK project root, which now imports
-  as a real page. Her existing Valeraverse was imported before that, so it still
-  has them as plain text — they come back on a re-import, which she also needs
-  for LK image URLs (see Phase 9's plan).
+- **The "15 broken cross-reference links" were never the user's links** — that
+  entry, and the guess that they pointed at the LK project root, were both
+  wrong. Checked directly against `Valeraverse.lk` on 2026-07-31: all 15 live in
+  the root resource's own documents, are LK's stock welcome page linking to
+  *their* demo world (Wiki City, Tab Tundra, Temple of Time…), and none of their
+  targets exist in the export. Skipping that boilerplate on import removes them
+  entirely, which is the right outcome rather than a loss — the root page held
+  nothing else. Her world contains **no** cross-references at all, so the
+  mention paths in both directions are covered only by synthetic tests.
 - **The Windows path-length refusal has never fired against a real project.**
   Verified by test only.
 - **The updater's download-and-install path has never run against a real

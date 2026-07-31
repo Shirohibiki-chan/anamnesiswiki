@@ -201,6 +201,34 @@ Acceptance test: the user's actual `Valeraverse.lk` (75 resources) imports fully
 
 ---
 
+## Phase 9 — LK Export ✅ Shipped 2026-07-31
+
+`src/services/lk-export.ts` — the inverse of Phase 8, and the second of the only two files allowed to touch `.lk` format. Nodes back into LK's `resources` shape, BlockNote content back to ProseMirror JSON, gzip, save. A pure conversion plus one local file write: **no network access at all**, which is the whole reason images need the treatment described below.
+
+**End state:** user can round-trip their world through LK format cleanly.
+
+**Shipped:** `buildExportFile` builds the whole file in memory (returning the file, a page count, and a plain-language lossy list) and `packLkBytes` gzips it via the browser's native `CompressionStream` — mirroring Phase 8's `DecompressionStream`, still no extra dependency. `ExportModal.tsx` (new `src/components/export/`) shows what's about to leave, the lossy notes, and a save-location picker. Entry point is the tree's right-click menu on any node, plus the project header for the whole world — matching where LK puts it. `dialog-service.ts` gained a save-file dialog to sit alongside the existing open-file one. 41 new Vitest tests, bringing the suite to 162.
+
+**Exporting a page always takes its whole subtree, and there are no options.** Confirmed against a live LK account 2026-07-31: LK's own `.lk` export offers nothing to configure — no subpage toggle, no image toggle. (Its *HTML* export has both, which is why that one is their default; it's the export meant to leave their ecosystem.) Matching that meant the modal had no settings to design, only a destination and an honest summary.
+
+**One rule handles the whole tree shape:** a node's LK parent is its own parent when that parent is part of the export, and the root when it isn't. That single line is what lets a nested page export without dragging its ancestors along, *and* what files a whole world's top-level pages underneath the home page where LK keeps them. Both earlier attempts special-cased one of those and reintroduced the other's bug.
+
+**The designated home page becomes LK's root resource.** LK's format requires exactly one parentless resource; rather than synthesising a wrapper above the tree, the real home page *is* it. A synthesised root, carrying the project's name, appears only when home isn't in the export.
+
+**`pos` keys are emitted fixed-width.** Import compares them as plain strings, and variable-length keys don't sort under that — index 75 (`"00"`) lands before index 1 (`"1"`) because comparison runs character by character. LK's own keys *are* variable-length, which is fine to read; we only have to emit keys that sort, not keys shaped like theirs. Found by a test that generated 200 of them and checked the sort, not by inspection.
+
+**Secret callouts export as LK's own Secret block, not as a panel.** Import folds LK's `bodiedExtension: block-secret` *and* `panel` warning/error into our single Secret callout, so the way back can't tell which one it started as. The Secret block is the semantic match; the panel types were the lossy side of that merge to begin with.
+
+**Images: the one thing that genuinely can't travel, solved as far as it can be.** A `.lk` stores URLs pointing at LK's servers, never picture data, and there is nowhere to put a local file that LK could read. So import now records `Node.imageSource` / `bannerSource` — the address each picture was downloaded from — purely so export can hand it back. Anything that came from LK round-trips exactly; anything added inside Anamnesis is left out and counted in the export's lossy list rather than dropped silently. Projects imported before this existed have no sources and need one re-import to gain them.
+
+**Verification.** Beyond the unit tests, the real 75-resource `Valeraverse.lk` was run import → export → gzip → import: 75 resources in, 75 nodes, 75 resources written, 75 nodes back, with identical tree shape, templates, tabs and tags. All 33 pictures and all 20 banners came through, every URL still pointing at `assets.legendkeeper.com`, banner focus positions preserved. The only lossy note raised was the expected one — 23 folders export as pages with an empty `Main` tab, since LK has no folder-only concept. That check lives outside the suite because it reads a file from outside the repo.
+
+**What this does not prove, and the gap is real:** nothing has been imported into actual LegendKeeper from a file we wrote. The round trip runs through *our* importer, so it demonstrates the mapping is self-consistent, not that LK accepts it. Closing that needs an LK account and an import attempt. Recorded in `docs/handoff.md` §Known gaps.
+
+**A wrong entry corrected while here.** The long-standing "15 broken cross-reference links" note — and the guess that they pointed at the LK project root — were both wrong. Checked directly against `Valeraverse.lk`: all 15 live in the root resource's own documents, are LK's stock welcome page linking to *their* demo world (Wiki City, Tab Tundra, Temple of Time…), and none of their targets exist in the export at all. Skipping that boilerplate on import removes them entirely, which is the right outcome rather than a loss — the root page held nothing else. The user's world contains **no** cross-references, so the mention paths in both directions are covered by synthetic tests only.
+
+---
+
 # Session Notes by Phase
 
 What each phase actually involved, written at the time — including the bugs found

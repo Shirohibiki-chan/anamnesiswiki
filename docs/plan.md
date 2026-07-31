@@ -68,6 +68,13 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 - **More right-click menu items.** The user has been through LK's own node context menu against a live (non-read-only) account and has further items she wants; "Set as project home" was the first, built 2026-07-31 because project home depended on it. The rest aren't listed yet — ask her before designing anything.
 
+- **Valeraverse needs re-importing once, and hasn't been.** Two import changes
+  landed after her copy was brought in: the project home arriving as a real page,
+  and each picture remembering the LK address it came from (without which export
+  can't send pictures back). Both apply at import time only, so her existing
+  project has neither. One re-import picks up both — worth doing in a single
+  pass rather than twice.
+
 ---
 
 ## Known Bugs
@@ -78,7 +85,7 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 ## Shipped
 
-Phases 0–8 are complete. **`docs/shipped.md`** has what each one delivered;
+Phases 0–9 are complete. **`docs/shipped.md`** has what each one delivered;
 `CHANGELOG.md` has the same story in plain language.
 
 | Phase | | Shipped |
@@ -92,23 +99,17 @@ Phases 0–8 are complete. **`docs/shipped.md`** has what each one delivered;
 | 6 | Properties Panel | 2026-07-30 |
 | 7 | Templates | 2026-07-30 |
 | 8 | LK Import | 2026-07-30 |
+| 9 | LK Export | 2026-07-31 |
 
 Project home — the last Queued Adjustment standing before Phase 9 — shipped
 2026-07-31.
 
----
-
-## Phase 9 — LK Export
-
-`src/services/lk-export.ts` — the inverse of Phase 8. Serialize nodes back into the LK `resources` shape, translate BlockNote content back to ProseMirror JSON (including callout → panel), gzip, save.
-
-Entry point is the tree's **right-click menu**, matching LK. **Exporting a page always brings its whole subtree** — confirmed against a live LK account 2026-07-31: LK's `.lk` export offers no options at all, no subpage toggle and no image toggle (its HTML export has both, which is why that one's their default — it's the one meant to leave). Right-clicking the project name exports the whole world. `ExportModal.tsx` handles the output file location and the lossy summary.
-
-**Images can't go in a `.lk`.** The format holds URLs pointing at LK's own servers, not picture data, and we have nowhere to put a local file that LK could read. Decided 2026-07-31: import will additionally remember each picture's original LK URL, so anything that *came from* LK round-trips; pictures added inside Anamnesis can't be exported and the export screen says so plainly, with a count. This needs a re-import of Valeraverse to take effect on the user's existing world — as does the project-home import change, so do both in one pass.
-
-Round-trip test: import `Valeraverse.lk`, export it back, diff the two — content should be identical up to id renaming and the small handful of unsupported block types (columns) that Phase 8 flagged.
-
-**End state:** user can round-trip their world through LK format cleanly.
+**Phase 9 left one thing open, and it can't be closed from here:** nothing has
+been imported into real LegendKeeper from a file we wrote. The round trip is
+verified through our own importer against the real 75-resource
+`Valeraverse.lk`, which proves the mapping is self-consistent — not that LK
+accepts it. That needs an LK account and an import attempt. See
+`docs/handoff.md` §Known gaps.
 
 ---
 

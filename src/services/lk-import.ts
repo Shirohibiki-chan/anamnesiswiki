@@ -516,6 +516,10 @@ export function buildImportPlan(raw: unknown): ImportPlan {
         tags: Array.isArray(resource.tags) ? resource.tags : [],
         color: nearestPaletteKey(resource.iconColor),
         bannerFocusY,
+        // Remembered so a later export can hand the picture back to LK, which
+        // stores addresses rather than image data. See schema.ts.
+        imageSource: imageUrl,
+        bannerSource: bannerUrl,
         createdAt,
         updatedAt: createdAt,
       };

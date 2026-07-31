@@ -64,6 +64,16 @@ export type Node = {
   // draggable the same way) used as the image's CSS object-position.
   banner?: string;
   bannerFocusY?: number;
+  // Where `image`/`banner` were downloaded from, when they came in via LK
+  // import. Kept solely so export can put them back: a `.lk` file stores web
+  // addresses of pictures on LegendKeeper's servers, never picture data, so a
+  // locally-added file has nothing that can go in one. Absent for anything the
+  // user uploaded here, and absent on projects imported before this existed —
+  // both mean "this picture can't be exported", which is what the export
+  // preview reports. Never used to *fetch* anything outside an explicit
+  // import.
+  imageSource?: string;
+  bannerSource?: string;
   createdAt: number;
   updatedAt: number;
 };

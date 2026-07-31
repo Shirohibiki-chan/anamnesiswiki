@@ -3,7 +3,7 @@
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
 // earlier native window.confirm(). Positioning/portaling is handled by the
 // TreePopover wrapper.
-import { Copy, Home, Palette, PencilLine, Plus, Trash2 } from "lucide-react";
+import { Copy, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
 
 type ContextMenuProps = {
   canHaveChildren: boolean;
@@ -17,6 +17,7 @@ type ContextMenuProps = {
   onDuplicate: () => void;
   onSetColor: () => void;
   onToggleProjectHome: () => void;
+  onExport: () => void;
   onDelete: () => void;
   onAddChild: () => void;
   onClose: () => void;
@@ -30,6 +31,7 @@ export function ContextMenu({
   onDuplicate,
   onSetColor,
   onToggleProjectHome,
+  onExport,
   onDelete,
   onAddChild,
   onClose,
@@ -68,6 +70,9 @@ export function ContextMenu({
           <Home size={13} /> {isProjectHome ? "Remove as project home" : "Set as project home"}
         </button>
       )}
+      <button type="button" onClick={() => run(onExport)}>
+        <Upload size={13} /> Export to LegendKeeper
+      </button>
       <button type="button" className="tree-context-menu-danger" onClick={() => run(onDelete)}>
         <Trash2 size={13} /> Delete
       </button>
