@@ -41,6 +41,9 @@
 - **Left sidebar scrollbar flashing during window resize** — a leftover style from Phase 2 had the sidebar and the tree inside it both trying to manage scrolling at the same time, which very briefly disagreed with each other while the window was actively being resized. Fixed by letting the tree own its own scrolling, like it already does everywhere else.
 - **Scrollbars didn't match the dark theme** — they were rendering as your browser's plain default. Every scrollbar in the app is now themed to match.
 
+### Adjustments
+- **Internal tidy-up, nothing visible in the app:** the instructions file Claude reads at the start of every session had grown to where a chunk of it said the same thing three times over. Trimmed by about a third with no rules removed — purely duplication. It also pointed at a reference doc that doesn't exist and missed three that do, which is now fixed.
+
 ## 2026-07-29
 
 ### Additions

@@ -197,6 +197,51 @@ The load and save paths need the Tauri runtime; under `pnpm dev` there's no
 round-trip counts) and by confirming the app still boots clean with no console
 errors. The end-to-end "open Valeraverse and time it" check needs `pnpm tauri dev`.
 
+## CLAUDE.md Slimmed 2026-07-30
+
+244 lines to 174 (17.3KB to 11.9KB). **Nothing was removed** — every rule, every
+policy line, every token warning survives; the reduction is entirely duplication.
+All twelve architecture rules are intact, including #1 and #2, which the external
+patch that prompted this had dropped.
+
+Where the duplication was:
+
+- **Strict layer order vs Architecture Rules** restated each other almost
+  point-for-point (rules 3-8 were the layer-order bullets again). Merged into the
+  numbered list; the layer-order section keeps only the diagram and the
+  import-depth note.
+- **Don't Do This** was a third copy of the same rules. Now only the three items
+  that appear nowhere else.
+- **The LK Import/Export section** duplicated `docs/lk-format.md`, and its
+  tab-signature table had gone *stale* — it still described the exact-match rule
+  replaced by subset matching in the review pass. Replaced with a pointer, which
+  removes the chance of working from the wrong rule from memory.
+- **Project Context's "what this is"** overlapped Policy Boundary; compressed.
+
+### Two doc problems found while doing it
+
+**`docs/spec.md` §Data model is stale.** It shows characters as flat
+`Valera Jiang.json` files — it predates the directory-storage decision, so it
+describes a layout the app does not use and has no `_page.json` at all.
+`CLAUDE.md`'s Data on disk section is the only accurate written record, so it was
+kept in full and marked authoritative rather than compressed into a pointer.
+Fixing `spec.md` was explicitly out of scope for this pass; it remains a real
+trap for anyone reading it as the master spec.
+
+**`CLAUDE.md`'s reference list was wrong in both directions.** It pointed at
+`docs/data-model.md`, which does not exist, and omitted `components-reference.md`,
+`constants-and-theming.md`, and `project-summary.md`, which do. Corrected.
+
+### Deliberately not done
+
+`docs/handoff.md` (53KB) and `docs/plan.md` (45KB) are the two largest docs and
+the obvious next target, but they are read on demand rather than every session,
+so shrinking them saves nothing recurring and costs project history. The external
+patch collapsed nine "What Phase N Delivered" sections and all of Phases 0-8 into
+single headings; that was rejected. If they do get split later, the move is
+archiving completed-phase detail to a file nothing reads by default, not deleting
+it.
+
 ## Repo Snapshot
 
 Anticipated layout after Phase 0 lands:
