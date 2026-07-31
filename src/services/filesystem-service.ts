@@ -81,44 +81,85 @@ export function resolveNodePath(node: Node, allNodes: Node[]): ResolvedNodePath 
   return { dirSegments: ancestorSegments, fileName: `${ownSegment(node, allNodes)}.json` };
 }
 
-export async function loadProject(rootPath: string): Promise<{ project: Project; nodes: Node[] } | null> {
+export type LoadedProject = { project: Project; nodes: Node[]; skipped: string[] };
+
+// A project folder is plain JSON on the user's own disk, synced by whatever
+// they like and editable by hand — so a malformed file is a question of when,
+// not if (a Dropbox conflict copy, a crash mid-write, a stray edit). One bad
+// file must never cost the user the other 74 pages, so unreadable nodes are
+// skipped and reported rather than thrown. `project.json` itself is the one
+// exception: without it there's no project to open at all.
+export async function loadProject(rootPath: string): Promise<LoadedProject | null> {
   const projectPath = await join(rootPath, PROJECT_FILE);
   if (!(await exists(projectPath))) return null;
-  const project = JSON.parse(await readTextFile(projectPath)) as Project;
+
+  let project: Project;
+  try {
+    project = JSON.parse(await readTextFile(projectPath)) as Project;
+  } catch {
+    return null;
+  }
+
   const nodes: Node[] = [];
-  await walkDirectory(rootPath, null, nodes);
-  return { project, nodes };
+  const skipped: string[] = [];
+  await walkDirectory(rootPath, null, nodes, skipped);
+  return { project, nodes, skipped };
+}
+
+// A node file is only usable if it parsed *and* carries the two fields the
+// rest of the app indexes it by. A file that parses into something shapeless
+// would otherwise land in the graph as an `undefined` id and break the tree
+// far away from the actual cause.
+async function readNodeFile(path: string, skipped: string[]): Promise<Node | null> {
+  try {
+    const parsed = JSON.parse(await readTextFile(path)) as Node;
+    if (!parsed || typeof parsed.id !== "string" || typeof parsed.name !== "string") {
+      skipped.push(path);
+      return null;
+    }
+    return parsed;
+  } catch {
+    skipped.push(path);
+    return null;
+  }
 }
 
 // A directory is node-owned only if it contains one of the two reserved
 // marker files — presence of the marker is what identifies ownership, never
 // the directory's current name, so renaming a node can never orphan its
 // children on the next load.
-async function walkDirectory(dirPath: string, parentId: string | null, out: Node[]): Promise<void> {
+async function walkDirectory(dirPath: string, parentId: string | null, out: Node[], skipped: string[]): Promise<void> {
   const entries = await readDir(dirPath);
   for (const entry of entries) {
     if (entry.isDirectory) {
       const childDirPath = await join(dirPath, entry.name);
       const folderJsonPath = await join(childDirPath, FOLDER_FILE);
       const pageJsonPath = await join(childDirPath, PAGE_META_FILE);
-      if (await exists(folderJsonPath)) {
-        const folderNode = JSON.parse(await readTextFile(folderJsonPath)) as Node;
-        folderNode.parentId = parentId;
-        out.push(folderNode);
-        await walkDirectory(childDirPath, folderNode.id, out);
-      } else if (await exists(pageJsonPath)) {
-        const pageNode = JSON.parse(await readTextFile(pageJsonPath)) as Node;
-        pageNode.parentId = parentId;
-        out.push(pageNode);
-        await walkDirectory(childDirPath, pageNode.id, out);
+      const markerPath = (await exists(folderJsonPath))
+        ? folderJsonPath
+        : (await exists(pageJsonPath))
+          ? pageJsonPath
+          : null;
+      // No marker file means this isn't a node-owned directory at all (e.g.
+      // assets/) — skip it silently rather than reporting it as damaged.
+      if (!markerPath) continue;
+
+      const node = await readNodeFile(markerPath, skipped);
+      // An unreadable marker still leaves a real directory that may hold
+      // perfectly good children. Keep walking into it, reparented to this
+      // level, so a single bad `_folder.json` costs one node and not the
+      // whole branch underneath it.
+      if (node) {
+        node.parentId = parentId;
+        out.push(node);
       }
-      // else: not a node-owned directory at all (e.g. assets/) — skip.
+      await walkDirectory(childDirPath, node?.id ?? parentId, out, skipped);
     } else {
       if (entry.name === FOLDER_FILE || entry.name === PAGE_META_FILE || entry.name === PROJECT_FILE || !entry.name.endsWith(".json")) continue;
-      const pagePath = await join(dirPath, entry.name);
-      const pageNode = JSON.parse(await readTextFile(pagePath)) as Node;
-      pageNode.parentId = parentId;
-      out.push(pageNode);
+      const node = await readNodeFile(await join(dirPath, entry.name), skipped);
+      if (!node) continue;
+      node.parentId = parentId;
+      out.push(node);
     }
   }
 }

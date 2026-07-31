@@ -75,7 +75,14 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
     setStatus("importing");
     setError(null);
-    const result = await importLkProject(parentDir, trimmedName, plan.nodes, plan.rootOrder, plan.pendingImages);
+    // A failed write partway through would otherwise leave the modal stuck on
+    // "Importing your world" with no error and no way back.
+    let result: Awaited<ReturnType<typeof importLkProject>>;
+    try {
+      result = await importLkProject(parentDir, trimmedName, plan.nodes, plan.rootOrder, plan.pendingImages);
+    } catch (e) {
+      result = { ok: false, error: e instanceof Error ? e.message : "Something went wrong writing the project to disk." };
+    }
     if (!result.ok) {
       setError(result.error);
       setStatus("preview");

@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
+import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { LoadWarning } from "./LoadWarning";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
@@ -13,6 +15,8 @@ export function AppLayout() {
   const { project, closeProject } = useProject();
   const { clearLastOpenedProject } = useAppSettings();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+
+  useSaveOnExit();
 
   async function handleSwitchProject() {
     await clearLastOpenedProject();
@@ -32,6 +36,7 @@ export function AppLayout() {
           onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
           onSwitchProject={() => void handleSwitchProject()}
         />
+        <LoadWarning />
         <main className="app-layout-page">
           <PageView key={project?.selectedId ?? "none"} />
         </main>

@@ -30,7 +30,11 @@ type ProjectStoreState = {
   nodes: Record<string, Node>;
   isLoaded: boolean;
   lastSavedAt: number | null;
+  // Node files that couldn't be read on the last load (corrupt JSON, wrong
+  // shape). Surfaced once by the shell, then dismissed — see LoadWarning.tsx.
+  skippedFiles: string[];
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
+  dismissSkippedFiles: () => void;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
   createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
   importLkProject: (
@@ -85,13 +89,29 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     nodes: {},
     isLoaded: false,
     lastSavedAt: null,
+    skippedFiles: [],
 
+    // Resolves null for anything that means "this isn't an openable project"
+    // — missing or unreadable project.json, an unreadable folder — so callers
+    // have exactly one failure case to handle instead of a mix of nulls and
+    // thrown errors. Individually damaged node files don't fail the load; they
+    // come back in `skippedFiles` for the UI to report.
     async loadProject(rootPath) {
-      const result = await fsService.loadProject(rootPath);
+      let result: Awaited<ReturnType<typeof fsService.loadProject>>;
+      try {
+        result = await fsService.loadProject(rootPath);
+      } catch {
+        return null;
+      }
       if (!result) return null;
+
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
-      set({ rootPath, project: result.project, nodes, isLoaded: true });
+      set({ rootPath, project: result.project, nodes, isLoaded: true, skippedFiles: result.skipped });
       return { name: result.project.name };
+    },
+
+    dismissSkippedFiles() {
+      set({ skippedFiles: [] });
     },
 
     async initializeProject(rootPath, name) {
@@ -159,7 +179,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     closeProject() {
-      set({ rootPath: null, project: null, nodes: {}, isLoaded: false, lastSavedAt: null });
+      set({ rootPath: null, project: null, nodes: {}, isLoaded: false, lastSavedAt: null, skippedFiles: [] });
     },
 
     addNode(input) {
