@@ -1,8 +1,9 @@
 # Changelog
 
-## 2026-07-31
+## 2026-07-31 — v0.2.0
 
 ### Additions
+- **First published release.** Anamnesis is now downloadable from the project's releases page rather than only existing on the machine it was built on. This is version 0.2.0; the version number is what the update check compares against, so from here on newer releases will be found automatically when you press the button.
 - **"Check for updates" on the start-up screen.** Anamnesis can now tell you when a newer version exists, and install it for you. It's the Obsidian arrangement: nothing happens on its own — you press the button, it asks whether there's a newer version, and if there is you get the version number, what changed in it, and a **Download and install** button. It downloads, installs, and offers to restart. If you'd rather not, **Not now** and it forgets about it. If you're offline it just says so and shrugs; nothing about the app stops working, since it never needed the internet in the first place. The button sits on the project-picker screen rather than inside a world on purpose — installing an update restarts the app, and doing that mid-sentence would be rude. Worth saying plainly: this sends nothing about you. It's a request for one small public file on the Anamnesis releases page — no account, no identifier, nothing about your worlds, and nothing at all unless you press the button. And updating only ever replaces the app itself; your project folders aren't touched.
 
 ### Adjustments
