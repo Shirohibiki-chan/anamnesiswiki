@@ -16,6 +16,7 @@ import {
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
 import { canHaveChildren } from "./template-registry";
 import { ASSETS_DIR, FOLDER_META_FILE as FOLDER_FILE, PAGE_META_FILE, PROJECT_FILE } from "../constants/paths";
+import { MAX_PATH_CHARS } from "../constants/limits";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -140,7 +141,12 @@ export function buildPathIndex(allNodes: Node[]): PathIndex {
     byId.set(node.id, node);
     const baseName = sanitizeSegment(node.name);
     sanitizedById.set(node.id, baseName);
-    const groupKey = JSON.stringify([node.parentId, usesDirectoryStorage(node), baseName]);
+    // Case-folded, because Windows and macOS both default to case-insensitive
+    // filesystems: "Ruins" and "ruins" as siblings are two names to us and one
+    // file to the OS, so without folding neither gets a suffix and the second
+    // write silently lands on top of the first. The *displayed* segment keeps
+    // its original case — only the collision test ignores it.
+    const groupKey = JSON.stringify([node.parentId, usesDirectoryStorage(node), baseName.toLowerCase()]);
     const group = collisionGroups.get(groupKey);
     if (group) group.push(node);
     else collisionGroups.set(groupKey, [node]);
@@ -314,11 +320,36 @@ export async function saveProject(rootPath: string, project: Project): Promise<v
   await writeTextFile(joinPath(rootPath, PROJECT_FILE), JSON.stringify(project, null, 2));
 }
 
+// Thrown rather than returned so it travels the same route as a real fs
+// failure — every write path already has to cope with one of those, and this
+// is the same thing from the user's point of view: their page did not get
+// written. Carries the node's name because the path alone is unreadable at the
+// length that triggers this.
+export class PathTooLongError extends Error {
+  constructor(
+    readonly nodeName: string,
+    readonly path: string,
+  ) {
+    super(
+      `"${nodeName}" is nested too deeply to save — its file path is ${path.length} characters, ` +
+        `over the ${MAX_PATH_CHARS} this app allows for Windows compatibility. ` +
+        `Shorten the page name, or move it somewhere less deeply nested.`,
+    );
+    this.name = "PathTooLongError";
+  }
+}
+
 export async function saveNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
   const { dirSegments, fileName } = resolveNodePath(node, graph);
   const dirPath = joinPath(rootPath, ...dirSegments);
+  const filePath = joinPath(dirPath, fileName);
+
+  // Checked before `mkdir`, so a path we're going to refuse doesn't leave an
+  // empty directory tree behind as a souvenir.
+  if (filePath.length > MAX_PATH_CHARS) throw new PathTooLongError(node.name, filePath);
+
   await mkdir(dirPath, { recursive: true });
-  await writeTextFile(joinPath(dirPath, fileName), JSON.stringify(node, null, 2));
+  await writeTextFile(filePath, JSON.stringify(node, null, 2));
 }
 
 // Batch counterpart to saveNode for the write-many paths (an LK import, a

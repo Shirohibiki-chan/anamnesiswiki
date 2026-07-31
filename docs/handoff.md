@@ -242,6 +242,65 @@ single headings; that was rejected. If they do get split later, the move is
 archiving completed-phase detail to a file nothing reads by default, not deleting
 it.
 
+## Save Failures Made Visible 2026-07-30
+
+Two bugs logged during the doc accuracy pass, both fixed. The second turned out
+to be a symptom of something larger.
+
+### Case-insensitive sibling collisions
+
+`buildPathIndex`'s grouping key now folds case. `sanitizeSegment` output still
+carries the user's own capitalisation into the segment — only the collision test
+ignores it, so `Ruins` keeps its capital and `ruins` becomes `ruins (2)`.
+
+Worth knowing this is a *latent* fix: a project that already contains such a pair
+has one of them missing from disk, and this doesn't recover it. It prevents the
+next occurrence.
+
+### The real find: every failed save was silent
+
+`scheduleSave` ran its callback as `void save()`. A debounced write fires long
+after the action that caused it, with no caller left on the stack — so any
+rejection became an unhandled promise rejection and vanished. Path length was
+only one way to trigger it; a full disk, a permissions change, or a sync client
+holding a file open all failed exactly as quietly.
+
+What makes this worse than a crash: the user has active evidence their work is
+safe. The text is still on screen, and `SaveIndicator` flashed "Saved" the last
+time a write succeeded. Nothing ever contradicts it.
+
+`autosave.ts` now routes failures through a registered handler
+(`setSaveErrorHandler`) rather than owning any UI itself — it's a plain service
+and has to stay one. The store registers the handler and collects messages into
+`saveErrors`; `SaveWarning.tsx` renders them in red, above the page, distinct
+from `LoadWarning`'s amber. Messages are deduped and capped at 10, because a
+debounced save retries on every keystroke and a page that can't be written fails
+identically each time.
+
+`flushAllSaves` still doesn't stop on a failure — one unwritable node shouldn't
+cost the others their flush — but it now reports each one. On the window-closing
+flush there is no UI left to render into, which is exactly why the handler
+records into the store rather than drawing anything itself.
+
+### Path length
+
+`MAX_PATH_CHARS = 200`, not 260. A directory-storage node's own path is only a
+prefix — its `_page.json` and every child filed beneath it are longer still, so a
+node sitting exactly at the OS limit has nowhere to put its contents. Checked
+before `mkdir`, so a path that's going to be refused doesn't leave an empty
+directory tree behind.
+
+`docs/spec.md` offered truncation as the alternative ("truncate long names for
+the file path while keeping the full name in the JSON body"). Not taken:
+silently renaming the user's files to make them fit is worse than refusing and
+saying why.
+
+### Not verified here
+
+The banner needs a loaded project and a real write failure, so it needs
+`pnpm tauri dev`. Verified by test (122 passing, 8 new covering the reporting
+channel and the length guard) and by confirming the app boots clean.
+
 ## Repo Snapshot
 
 Anticipated layout after Phase 0 lands:

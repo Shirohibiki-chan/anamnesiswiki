@@ -1,5 +1,21 @@
-import { describe, expect, it } from "vitest";
-import { buildPathIndex, planRelocations, resolveNodePath } from "./filesystem-service";
+import { describe, expect, it, vi } from "vitest";
+// Only the pure path logic is unit-tested here; saveNode is included because
+// its length guard runs before it touches disk, and the fs plugin is mocked
+// out to nothing so nothing is written either way.
+vi.mock("@tauri-apps/api/path", () => ({ sep: () => "/" }));
+vi.mock("@tauri-apps/plugin-fs", () => ({
+  mkdir: async () => {},
+  writeTextFile: async () => {},
+  exists: async () => false,
+  readDir: async () => [],
+  readTextFile: async () => "",
+  remove: async () => {},
+  rename: async () => {},
+  readFile: async () => new Uint8Array(),
+  writeFile: async () => {},
+}));
+
+import { buildPathIndex, PathTooLongError, planRelocations, resolveNodePath, saveNode } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -234,5 +250,74 @@ describe("buildPathIndex", () => {
       dirSegments: ["AUs", "Valera Jiang"],
       fileName: "A Letter.json",
     });
+  });
+});
+
+// Regression: Windows and macOS default to case-insensitive filesystems, so two
+// siblings whose names differ only in case are distinct to us and the same file
+// to the OS. Without case-folded collision detection neither got a ` (2)`
+// suffix, both resolved to the same path, and the second write silently
+// overwrote the first.
+describe("case-insensitive sibling collisions", () => {
+  it("suffixes a leaf sibling that differs from another only in case", () => {
+    const first = node({ id: "1", name: "Ruins", parentId: null, templateKey: "note", createdAt: 1 });
+    const second = node({ id: "2", name: "ruins", parentId: null, templateKey: "note", createdAt: 2 });
+    const all = [first, second];
+    expect(resolveNodePath(first, all).fileName).toBe("Ruins.json");
+    expect(resolveNodePath(second, all).fileName).toBe("ruins (2).json");
+  });
+
+  it("suffixes a directory-storage sibling that differs only in case", () => {
+    const first = node({ id: "1", name: "Foxians", parentId: null, templateKey: "species", createdAt: 1 });
+    const second = node({ id: "2", name: "FOXIANS", parentId: null, templateKey: "species", createdAt: 2 });
+    const all = [first, second];
+    expect(resolveNodePath(first, all).dirSegments).toEqual(["Foxians"]);
+    expect(resolveNodePath(second, all).dirSegments).toEqual(["FOXIANS (2)"]);
+  });
+
+  it("keeps the node's own capitalisation in the segment it does get", () => {
+    // Only the collision *test* folds case — the name on disk still reads the
+    // way the user typed it.
+    const first = node({ id: "1", name: "ruins", parentId: null, templateKey: "note", createdAt: 1 });
+    const second = node({ id: "2", name: "RUINS", parentId: null, templateKey: "note", createdAt: 2 });
+    expect(resolveNodePath(first, [first, second]).fileName).toBe("ruins.json");
+    expect(resolveNodePath(second, [first, second]).fileName).toBe("RUINS (2).json");
+  });
+
+  it("still does not collide a directory node with a same-name leaf differing in case", () => {
+    const folder = node({ id: "f", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 1 });
+    const page = node({ id: "p", name: "canon", parentId: null, templateKey: "note", createdAt: 2 });
+    expect(resolveNodePath(folder, [folder, page]).dirSegments).toEqual(["Canon"]);
+    expect(resolveNodePath(page, [folder, page]).fileName).toBe("canon.json");
+  });
+
+  it("relocates the case-variant sibling when the first of the pair is renamed", () => {
+    const a = node({ id: "a", name: "Ruins", parentId: null, templateKey: "location", createdAt: 1 });
+    const b = node({ id: "b", name: "ruins", parentId: null, templateKey: "location", createdAt: 2 });
+    const plan = planRelocations([a, b], [{ ...a, name: "Old Ruins" }, b]);
+    expect(plan).toContainEqual({ oldSegments: ["ruins (2)"], newSegments: ["ruins"] });
+  });
+});
+
+// Regression: Windows' default MAX_PATH is 260 characters. A write over that
+// limit fails at the OS, and before the save-error channel existed it failed
+// silently — so the check is here, in front of the write, with a message that
+// says which page and what to do about it.
+describe("path length guard", () => {
+  it("refuses to save a node whose resolved path exceeds the limit", async () => {
+    const deep = node({ id: "d", name: "x".repeat(150), parentId: null, templateKey: "note" });
+    await expect(saveNode("C:/Users/shiro/Documents/Anamnesis/Valeraverse", deep, [deep])).rejects.toThrow(
+      PathTooLongError,
+    );
+  });
+
+  it("names the page in the error, since the path itself is unreadable at that length", async () => {
+    const deep = node({ id: "d", name: `A Very Long Page ${"y".repeat(200)}`, parentId: null, templateKey: "note" });
+    await expect(saveNode("C:/Projects/World", deep, [deep])).rejects.toThrow(/A Very Long Page/);
+  });
+
+  it("allows an ordinary path through untouched", async () => {
+    const ordinary = node({ id: "o", name: "Valera Jiang", parentId: null, templateKey: "character" });
+    await expect(saveNode("C:/Projects/World", ordinary, [ordinary])).resolves.toBeUndefined();
   });
 });

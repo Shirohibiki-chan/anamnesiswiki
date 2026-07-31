@@ -8,12 +8,36 @@ type PendingSave = {
 
 const pending = new Map<string, PendingSave>();
 
+// A debounced save runs long after the action that caused it, with no caller
+// left to catch anything it throws — so a rejected write used to become an
+// unhandled promise rejection and vanish. The user, meanwhile, has every
+// reason to believe their work is on disk: the app said "Saved" the last time
+// one succeeded, and nothing has contradicted it since. Whatever the cause —
+// a path the OS won't accept, a full disk, a file a sync client has locked —
+// a write that didn't happen has to be visible.
+let saveErrorHandler: ((key: string, error: unknown) => void) | null = null;
+
+export function setSaveErrorHandler(handler: ((key: string, error: unknown) => void) | null): void {
+  saveErrorHandler = handler;
+}
+
+async function runSave(key: string, save: () => Promise<void> | void): Promise<void> {
+  try {
+    await save();
+  } catch (error) {
+    saveErrorHandler?.(key, error);
+    throw error;
+  }
+}
+
 export function scheduleSave(key: string, save: () => Promise<void> | void): void {
   const existing = pending.get(key);
   if (existing) clearTimeout(existing.timer);
   const timer = setTimeout(() => {
     pending.delete(key);
-    void save();
+    // Reported through the handler above; swallowed here so a failed write
+    // doesn't surface as an unhandled rejection on top of the real message.
+    void runSave(key, save).catch(() => {});
   }, DEBOUNCE_MS);
   pending.set(key, { timer, save });
 }
@@ -26,7 +50,7 @@ export async function flushSave(key: string): Promise<void> {
   if (!existing) return;
   clearTimeout(existing.timer);
   pending.delete(key);
-  await existing.save();
+  await runSave(key, existing.save);
 }
 
 export function cancelSave(key: string): void {
@@ -44,8 +68,11 @@ export function hasPendingSaves(): boolean {
 // loses focus, is hidden, or is closing (see hooks/use-save-on-exit.ts) — the
 // debounce means the last ~300ms of typing is only in memory, which is fine
 // while the app is running and not fine if the process is about to go away.
-// Failures are swallowed per-key: one unwritable node shouldn't stop the rest
-// from being flushed, and there's no UI left to report into by this point.
+// Failures don't stop the loop — one unwritable node shouldn't cost the rest
+// their flush — but they do still go through the error handler, so a failure
+// on a window-blur flush is reported when the user comes back. On the
+// closing flush there's no UI left to report into, which is exactly why the
+// handler records into the store rather than rendering anything itself.
 export async function flushAllSaves(): Promise<void> {
   const keys = [...pending.keys()];
   await Promise.all(

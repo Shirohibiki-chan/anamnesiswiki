@@ -64,19 +64,7 @@ Currently templates live in code with the LK-style placeholder copy locked. A fu
 
 ## Known Bugs
 
-- **Sibling name collisions are compared case-sensitively.** `docs/spec.md` calls
-  for case-*insensitive* comparison, because Windows and macOS default to
-  case-insensitive filesystems. The shipped comparison in
-  `filesystem-service.ts` is case-sensitive, so two siblings named `Ruins` and
-  `ruins` are treated as distinct, neither gets a ` (2)` suffix, and on Windows
-  they then resolve to the same file — one silently overwriting the other.
-  Found during the 2026-07-30 doc accuracy pass; not reproduced against a real
-  project yet. Fix is a case-folded comparison in the collision grouping key,
-  plus a test.
-
-- **`docs/spec.md` mentions a Windows path-length warning (~260 chars) that was
-  never implemented.** Deep nesting plus long page names can exceed it. No
-  reports of hitting it; noting so it isn't mistaken for shipped behaviour.
+*(Empty. Both entries here were fixed on 2026-07-30 — see `CHANGELOG.md`.)*
 
 ---
 
