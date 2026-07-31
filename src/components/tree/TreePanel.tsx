@@ -4,20 +4,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
 import { useProject } from "../../hooks/use-project";
-import { useTreeData } from "../../hooks/use-tree-data";
+import { useSearchMatcher, useTreeData } from "../../hooks/use-tree-data";
 import { useElementSize } from "../../hooks/use-element-size";
-import { createSearchMatcher, type TreeNodeData } from "../../services/tree-service";
+import type { TreeNodeData } from "../../services/tree-service";
 import { TreeItem } from "./TreeItem";
 import { TreeSearch } from "./TreeSearch";
 
 export function TreePanel() {
-  const { project, nodes, renameNode, moveNode, setExpanded, selectNode } = useProject();
+  const { project, renameNode, moveNode, setExpanded, selectNode } = useProject();
   const { treeData, getAncestorChain } = useTreeData();
   const [searchQuery, setSearchQuery] = useState("");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
   const treeApiRef = useRef<TreeApi<TreeNodeData> | null>(null);
 
-  const searchMatcher = useMemo(() => createSearchMatcher(nodes, searchQuery), [nodes, searchQuery]);
+  const searchMatcher = useSearchMatcher(searchQuery);
 
   // Selecting a node isn't only ever a click on this tree anymore — a
   // mention/wikilink click in the editor calls `selectNode` directly (see

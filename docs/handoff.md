@@ -83,6 +83,14 @@ The last row matters most — the narrowing must not break the colour cascade, a
 
 **Not measured:** actual frame timings or render counts under load. The mechanism is verified; the felt improvement on a 75-page project is worth a look next time the desktop app is running.
 
+### Fixed: assorted review cleanups
+
+- **Two layer-rule violations.** `page/Editor.tsx` imported six modules straight out of `services/editor-blocks/`, and `tree/TreePanel.tsx` imported `createSearchMatcher` from `tree-service`. New `hooks/use-editor.ts` owns the editor's construction, wikilink wiring, change handling and both suggestion-item getters, leaving `Editor.tsx` rendering only; `useSearchMatcher` moved into `use-tree-data.ts`. `grep` for `components/**` importing `../../services/` or `../../state/` is now empty.
+- **Stale comments.** `ContextMenu.tsx` still claimed Delete used a native `window.confirm()` (replaced by `ConfirmDialog.tsx`); `TopBar.tsx` still described its breadcrumb as a Phase 3/4 placeholder, when the real trail deliberately lives on `PageTitle.tsx`.
+- **`CLAUDE.md` said "No tests configured"** — there were 96. Corrected, `pnpm test` added to the Commands list, and a line on what the testing convention actually is (services are the unit-tested layer; no jsdom/RTL setup, components untested).
+- **Banner flicker.** `useNodeImage` returned `null` both while loading and when there was nothing to load, so `PageBanner` flashed its empty prompt on every page switch. It now returns `{ url, status }` with an explicit `loading`/`error` state; the banner holds its space while reading, and a missing asset file says so in both `PageBanner` and `ImageSlot` instead of failing silently.
+- **Window size.** 800×600 → 1280×800 with a 900×600 minimum; the three-column layout never really fit the old default.
+
 **Noted, not fixed:** `duplicateNode` stamps every clone in a subtree with the same `createdAt`, so cloned siblings fall back to the `id.localeCompare` tie-break — meaning a duplicated folder's children come out in an arbitrary order rather than matching the original. Ordering only, no data loss.
 
 **Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.
