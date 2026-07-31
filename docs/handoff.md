@@ -234,6 +234,19 @@ is below.
   relaunches, and anything still inside the 300ms debounce would be gone.
   Removing that flush turns a mid-session update into silent data loss.
 
+- **The version lives in four files and they must agree**: `package.json`,
+  `tauri.conf.json`, `Cargo.toml`, `Cargo.lock`. `tauri.conf.json` is the one
+  that bites — the updater compares the *running app's* version against
+  `latest.json`, so a stale one there means every install's update button goes
+  quiet and nobody finds out for a release or two. `scripts/set-version.mjs`
+  sets all four; `scripts/check-version.mjs` fails CI and the release build if
+  they drift. Don't edit them by hand.
+
+- **Releases are a pushed tag, and the release is a draft on purpose.**
+  `latest.json` is assembled across four matrix jobs that finish at different
+  times, so publishing before they're all done would offer an update whose
+  installer for that platform doesn't exist yet. See `docs/releasing.md`.
+
 - **A failed check must read as a non-event.** The app is offline-first; not
   reaching GitHub costs the user nothing, and the message says so rather than
   presenting as an error.

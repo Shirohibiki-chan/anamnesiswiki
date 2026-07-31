@@ -1,0 +1,44 @@
+# Lint, tests and the frontend build, on every push and pull request.
+#
+# Exists mostly to keep the release workflow honest. That one only runs when a
+# tag is pushed, which is the single worst moment to discover that a clean
+# checkout doesn't install or the types don't compile — this runs the same
+# first half on every change, so by the time there's a tag the only untested
+# part left is the Rust bundle.
+#
+# Deliberately does not build the desktop app: that's a fifteen-minute Rust
+# compile per platform, and it earns its keep at release time rather than on
+# every push.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+      - run: pnpm test
+      # `pnpm build` is `tsc && vite build` — the typecheck and the exact
+      # command tauri.conf.json's beforeBuildCommand runs at release time.
+      - run: pnpm build
+
+      # Cheap, and it catches the mistake that quietly breaks the update button:
+      # a version bumped in some of the four files but not all of them.
+      - run: node scripts/check-version.mjs

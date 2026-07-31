@@ -115,9 +115,9 @@ accepts it. That needs an LK account and an import attempt. See
 
 ## Phase 10 — Polish + Distribution
 
-Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`) via `pnpm tauri build`. README instructions for the unsigned-installer bypass on each platform.
+Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`). README instructions for the unsigned-installer bypass on each platform — **still to write**, and the one thing left in this phase besides right-panel undo.
 
-**Partly done.** Most of this phase's items are already in:
+**Nearly done.** Everything below is already in:
 
 - **Node duplication** — right-click → Duplicate, shipped in Phase 3. Still
   single-selection only; see Queued Adjustments.
@@ -158,14 +158,20 @@ Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImag
   with the editor by standing down whenever the caret is in text — see handoff
   §Undo and §Shortcuts. **Not covered:** properties, tags, tab changes.
 
+- **Automated releases, all four platforms**, shipped 2026-07-31. Pushing a
+  `v*` tag builds Windows, macOS (Intel and Apple Silicon) and Linux, signs
+  them, writes `latest.json` across all four, and drafts the release. A version
+  check runs first so a tag that disagrees with the version files fails in
+  seconds rather than after twenty minutes of compiling. `docs/releasing.md` is
+  the procedure. **One thing is still manual and can't be automated from here:**
+  the signing key has to be added to the repository's Actions secrets by the
+  user, once, before the first automated release will produce a usable update.
+
 **Still to do:**
 
-- **Automating releases and the other platforms.** See below.
 - **Undo for the right-hand panel** — properties, tags and tab edits are the
   one part of the app a mistake can't be taken back in. The way in is a
   dedicated store action per operation, the way `setNodeColor` did it.
-
-Cutting a release is currently manual: bump the version in `package.json`, `tauri.conf.json` and `Cargo.toml`, build with `TAURI_SIGNING_PRIVATE_KEY` set (or clients reject the update as unsigned), hand-write `latest.json` with the `.sig` contents inlined, then `gh release create`. **Still outstanding:** automating that as a workflow on tag push, and macOS/Linux bundles — `latest.json` currently declares `windows-x86_64` only, so a non-Windows build would find no platform entry. See `docs/handoff.md` → Updates.
 
 **End state:** app is shippable. User can install it, other people can install it, everyone's data stays local.
 

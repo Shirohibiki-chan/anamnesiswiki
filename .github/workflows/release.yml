@@ -1,0 +1,114 @@
+# Builds and publishes a release when a version tag is pushed.
+#
+# The whole thing exists because cutting a release by hand meant bumping the
+# version in three files, remembering to set TAURI_SIGNING_PRIVATE_KEY (without
+# which every client rejects the update as unsigned), hand-writing latest.json
+# with the .sig contents pasted in, and doing all of it again per platform.
+# Now: `node scripts/set-version.mjs 0.3.0`, commit, tag, push.
+#
+# Nothing here touches the user or her worlds — it builds public source on
+# GitHub's runners. See CLAUDE.md's Policy Boundary; that line is about what the
+# *app* sends, and the app still sends nothing.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# The release job creates a GitHub release and uploads to it.
+permissions:
+  contents: write
+
+jobs:
+  # Fails in seconds if the tag and the three version files disagree, before
+  # anything spends twenty minutes compiling. A mismatch here is the failure
+  # that used to ship: the installer says one version, the updater compares
+  # another, and the update button goes quiet for everyone.
+  check-version:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version files must match the tag
+        run: node scripts/check-version.mjs "${GITHUB_REF_NAME#v}"
+
+  release:
+    needs: check-version
+    strategy:
+      # One platform failing shouldn't bin the others — a release with three of
+      # four bundles is worth having, and the missing one can be re-run.
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ""
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Tauri v2 on Linux needs webkit2gtk 4.1 specifically — 4.0 is what
+      # Tauri v1 used and it will not build against it.
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+
+      - run: pnpm install --frozen-lockfile
+
+      # Guards the release build with the same checks a change is held to.
+      # A tag is the worst possible moment to find out the types don't compile.
+      - run: pnpm lint
+      - run: pnpm test
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without this the bundle ships with no .sig files and every existing
+          # install rejects the update. See docs/handoff.md §Updates.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Anamnesis ${{ github.ref_name }}
+          releaseBody: See CHANGELOG.md for what changed.
+          # Published as a draft so the release can be read before anyone's
+          # update button finds it — and because latest.json is assembled
+          # across four separate jobs, so an early-published release would be
+          # offering platforms that hadn't finished building.
+          releaseDraft: true
+          prerelease: false
+          # Writes latest.json, merging this platform's entry into whatever the
+          # other matrix jobs have already uploaded. Hand-writing that file with
+          # the .sig contents inlined was the fiddliest part of the old process.
+          includeUpdaterJson: true
+          args: ${{ matrix.args }}
