@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planRelocations, resolveNodePath } from "./filesystem-service";
+import { buildPathIndex, planRelocations, resolveNodePath } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -188,5 +188,51 @@ describe("planRelocations", () => {
     const plan = planRelocations([folder, a, b], [folder, { ...a, parentId: null }, b]);
     expect(plan).toContainEqual({ oldSegments: ["Canon", "Ruins"], newSegments: ["Ruins"] });
     expect(plan).toContainEqual({ oldSegments: ["Canon", "Ruins (2)"], newSegments: ["Canon", "Ruins"] });
+  });
+});
+
+// resolveNodePath accepts either a raw node array or a prebuilt index. The two
+// must agree exactly — the array form is what most call sites use, the index
+// form is what the batch paths use, and a disagreement between them would mean
+// a node written to one location and looked for at another.
+describe("buildPathIndex", () => {
+  const aus = node({ id: "aus", name: "AUs", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 1 });
+  const valera = node({ id: "v", name: "Valera Jiang", parentId: "aus", templateKey: "character", createdAt: 2 });
+  const sampoA = node({ id: "sa", name: "Sampo Koski", parentId: "aus", templateKey: "character", createdAt: 3 });
+  const sampoB = node({ id: "sb", name: "Sampo Koski", parentId: "aus", templateKey: "character", createdAt: 4 });
+  const sampoNote = node({ id: "sn", name: "Sampo Koski", parentId: "aus", templateKey: "note", createdAt: 5 });
+  const letter = node({ id: "l", name: "A Letter", parentId: "v", templateKey: "note", createdAt: 6 });
+  const world = [aus, valera, sampoA, sampoB, sampoNote, letter];
+
+  it("resolves every node identically whether given a raw array or a prebuilt index", () => {
+    const index = buildPathIndex(world);
+    for (const n of world) {
+      expect(resolveNodePath(n, index)).toEqual(resolveNodePath(n, world));
+    }
+  });
+
+  it("assigns collision suffixes by creation order, not array order", () => {
+    const shuffled = [letter, sampoB, aus, sampoNote, sampoA, valera];
+    const index = buildPathIndex(shuffled);
+    expect(resolveNodePath(sampoA, index).dirSegments).toEqual(["AUs", "Sampo Koski"]);
+    expect(resolveNodePath(sampoB, index).dirSegments).toEqual(["AUs", "Sampo Koski (2)"]);
+  });
+
+  it("does not count a leaf page as colliding with a same-name directory page", () => {
+    // One is a directory, the other a plain .json — they coexist, so the note
+    // keeps the bare name rather than being suffixed into third place.
+    expect(resolveNodePath(sampoNote, buildPathIndex(world)).fileName).toBe("Sampo Koski.json");
+  });
+
+  it("falls back to the plain sanitized name for a node missing from the index", () => {
+    const orphan = node({ id: "orphan", name: "Not Indexed", parentId: null, templateKey: "note" });
+    expect(resolveNodePath(orphan, buildPathIndex(world)).fileName).toBe("Not Indexed.json");
+  });
+
+  it("resolves an ancestor chain through the index rather than the passed node", () => {
+    expect(resolveNodePath(letter, buildPathIndex(world))).toEqual({
+      dirSegments: ["AUs", "Valera Jiang"],
+      fileName: "A Letter.json",
+    });
   });
 });

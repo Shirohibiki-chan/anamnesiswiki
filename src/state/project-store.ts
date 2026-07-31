@@ -90,9 +90,27 @@ function orderedSiblingIds(
   return orderSiblings(siblings, stored).map((n) => n.id);
 }
 
+// Every descendant of `id`, breadth-first. Groups children by parent in one
+// pass and then walks that grouping, rather than re-scanning the whole node
+// record once per level — the recursive-filter shape this replaces re-read
+// every node in the project for every node in the subtree.
 function descendantIds(id: string, nodes: Record<string, Node>): string[] {
-  const children = Object.values(nodes).filter((n) => n.parentId === id);
-  return children.flatMap((child) => [child.id, ...descendantIds(child.id, nodes)]);
+  const childIdsByParent = new Map<string | null, string[]>();
+  for (const node of Object.values(nodes)) {
+    const siblings = childIdsByParent.get(node.parentId);
+    if (siblings) siblings.push(node.id);
+    else childIdsByParent.set(node.parentId, [node.id]);
+  }
+
+  const collected: string[] = [];
+  const queue: string[] = [id];
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+    for (const childId of childIdsByParent.get(queue[cursor]) ?? []) {
+      collected.push(childId);
+      queue.push(childId);
+    }
+  }
+  return collected;
 }
 
 export const useProjectStore = create<ProjectStoreState>((set, get) => {
@@ -187,7 +205,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ rootPath, project, nodes: nodesRecord, isLoaded: true });
 
       await fsService.saveProject(rootPath, project);
-      await Promise.all(nodes.map((node) => fsService.saveNode(rootPath, node, nodes)));
+      // One shared path index for the whole import rather than one per node —
+      // an LK world is the largest single write this app ever does.
+      await fsService.saveNodes(rootPath, nodes, nodes);
       markSaved();
 
       return { ok: true, rootPath };
@@ -219,9 +239,22 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (!rootPath || !existing) return;
 
       const updated: Node = { ...existing, ...patch, updatedAt: Date.now() };
-      const nextNodes = { ...nodes, [id]: updated };
-      set({ nodes: nextNodes });
-      scheduleSave(id, () => fsService.saveNode(rootPath, updated, Object.values(nextNodes)).then(markSaved));
+      set({ nodes: { ...nodes, [id]: updated } });
+
+      // Snapshot the graph when the debounce actually fires, not when it's
+      // scheduled. Two reasons. This runs on every keystroke via
+      // updateTabContent, so materializing the whole node array here would
+      // allocate an n-element array per character typed. And a node's path
+      // depends on its siblings, so a snapshot captured 300ms ago can resolve
+      // against a graph that no longer exists — a sibling renamed inside the
+      // debounce window shifts the collision suffixes, and the write lands at
+      // a filename that's no longer the node's own.
+      scheduleSave(id, () => {
+        const { rootPath: currentRootPath, nodes: currentNodes } = get();
+        const current = currentNodes[id];
+        if (!currentRootPath || !current) return;
+        return fsService.saveNode(currentRootPath, current, Object.values(currentNodes)).then(markSaved);
+      });
     },
 
     updateTabContent(nodeId, tabId, content) {
@@ -549,9 +582,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
           : { ...project, childOrder: { ...project.childOrder, [original.parentId]: withClone } };
 
       set({ nodes: nextNodes, project: nextProject });
-      for (const clone of clones) {
-        void fsService.saveNode(rootPath, clone, Object.values(nextNodes)).then(markSaved);
-      }
+      // Duplicating a folder writes its whole subtree, so the clones share one
+      // path index rather than each rebuilding it from the full graph.
+      void fsService.saveNodes(rootPath, clones, Object.values(nextNodes)).then(markSaved);
       if (nextProject !== project) void fsService.saveProject(rootPath, nextProject).then(markSaved);
     },
 

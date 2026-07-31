@@ -95,6 +95,108 @@ The last row matters most — the narrowing must not break the colour cascade, a
 
 **Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.
 
+## Disk I/O Pass 2026-07-30
+
+Follow-up to the code review above, prompted by a patch the user brought in that
+was written against the pre-review tree and so couldn't be applied — the ideas in
+it were sound, the base wasn't. Rebuilt on current `main` instead. Scope was
+deliberately limited to the load/save path and two hot in-memory loops; no
+behaviour changes, and every existing test kept passing untouched.
+
+### `join()` was the dominant cost, and it wasn't obvious
+
+`@tauri-apps/api/path`'s `join` is `invoke('plugin:path|join')` — a full async IPC
+round trip into Rust *per call*. `filesystem-service.ts` called it 3–4 times per
+node on both the load and the save path. `sep()` is not IPC: it reads a value the
+runtime hands the webview at startup, synchronously. So `separator()` caches it
+lazily (lazily because the global doesn't exist under `pnpm dev` or Vitest) and
+`joinPath` does the string work locally.
+
+This is only safe because every segment reaching `joinPath` is either a constant
+from `constants/paths.ts` or has been through `sanitizeSegment`, which strips
+both separators along with the other illegal characters — nothing can carry a
+`..` or a `/` through it. Worth preserving if `joinPath` ever grows a caller.
+
+### Path resolution was quadratic
+
+`ownSegment` scanned every node in the project to rank same-name siblings, and
+`resolveNodePath` called it once per ancestor plus once for the node itself. Fine
+for one node; quadratic for a whole-project write. `buildPathIndex` does the
+grouping once and `resolveNodePath` now takes either a raw array (unchanged for
+single-node callers) or a prebuilt index.
+
+The collision rule is unchanged, just relocated: the group key is
+`JSON.stringify([parentId, usesDirectoryStorage, sanitizedName])` — JSON rather
+than a joined string so no separator character inside a page name can make two
+groups collide. (A NUL delimiter was tried first and is a bad idea: it makes the
+source file read as binary to `grep` and survives round trips badly.)
+
+### The load walk
+
+`walkDirectory` listed a directory, then asked `exists` twice more per
+subdirectory to find its marker file. `walkEntries` takes the entries it was
+already given, so the listing that identifies a directory as node-owned is the
+same listing used to recurse into it. Siblings are read in parallel.
+
+The resilience added in the review above is preserved exactly — `readNodeFile`
+validation, the `skipped` list, and recursing into a folder whose own marker is
+corrupt so its children survive reparented one level up. `skipped` is now sorted
+before returning, because parallel reads make completion order nondeterministic
+and the user-facing list shouldn't reshuffle between loads.
+
+**Concurrency needs care here.** The limiter holds its permit around a single
+read only, never across the recursion into a subdirectory. A limiter that wraps
+the recursive call instead deadlocks on any tree deeper than its own limit —
+parents wait on children that can't get a permit. The patch this work came from
+had exactly that shape.
+
+### Measured
+
+Measured against `main`'s implementation running side by side over the same
+in-memory disk (scaffold deleted after; reproduce by copying `main`'s
+`filesystem-service.ts` in as a second module and counting mock calls).
+
+| | before | after |
+|---|---|---|
+| Load, 78-node world — total fs round trips | 309 | 112 |
+| ...of which `join` | 142 | 0 |
+| ...of which `exists` | 57 | 1 |
+| ...of which `readDir` | 31 | 32 |
+| Resolve 100 nodes | 1.4ms | 0.2ms |
+| Resolve 310 nodes | 9.2ms | 0.4ms |
+| Resolve 1000 nodes | 62.3ms | 1.3ms |
+
+`readDir` goes *up* by one: non-node directories like `assets/` now get listed to
+discover they have no marker, where before two `exists` probes answered that. One
+extra listing per non-node directory, against two saved probes per node directory.
+
+Path outputs were asserted identical to `main`'s for every node in a fixture that
+includes same-name directory-storage siblings and a same-name leaf, which is the
+case the suffixing exists for.
+
+### Also in this pass
+
+- **Fuse index cached** in a `WeakMap` keyed on the node record's identity. The
+  index was rebuilt from every name and tag on each keystroke. Weak so a closed
+  project's index isn't retained; keyed on identity so the store's next immutable
+  update evicts it. Name and tag queries hold separate indexes — they search
+  different fields.
+- **`descendantIds`** grouped children by parent in one pass instead of
+  re-filtering the whole record per level.
+- **`updateNode` snapshots at fire time, not schedule time.** It ran
+  `Object.values(nextNodes)` per keystroke (an n-element array per character),
+  and worse, a 300ms-old snapshot can resolve against a graph that no longer
+  exists — a sibling renamed inside the debounce window shifts collision
+  suffixes and the write lands at a stale filename. Now reads `get()` when the
+  debounce fires.
+
+### Not verified here
+
+The load and save paths need the Tauri runtime; under `pnpm dev` there's no
+`invoke`. Verified by test (109 passing, including four asserting exact fs
+round-trip counts) and by confirming the app still boots clean with no console
+errors. The end-to-end "open Valeraverse and time it" check needs `pnpm tauri dev`.
+
 ## Repo Snapshot
 
 Anticipated layout after Phase 0 lands:

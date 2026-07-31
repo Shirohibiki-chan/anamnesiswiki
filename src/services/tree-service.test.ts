@@ -142,6 +142,50 @@ describe("createSearchMatcher", () => {
   });
 });
 
+// The fuzzy index is cached against the node record's identity so it isn't
+// rebuilt on every keystroke. These cover the risk that introduces: a cache
+// that outlives the data it was built from would leave the search box matching
+// against a world the user has already changed.
+describe("createSearchMatcher index caching", () => {
+  const valera = node({ id: "1", name: "Valera Jiang", parentId: null, templateKey: "character", tags: ["hero"] });
+  const sampo = node({ id: "2", name: "Sampo Koski", parentId: null, templateKey: "character", tags: ["rival"] });
+
+  it("gives the same answers on repeated queries against the same record", () => {
+    const nodes = byId([valera, sampo]);
+    for (const query of ["Valera", "Sampo", "Valera"]) {
+      const matcher = createSearchMatcher(nodes, query);
+      expect(matcher?.("1")).toBe(query === "Valera");
+    }
+  });
+
+  it("sees a node added since the last search", () => {
+    const before = byId([valera]);
+    expect(createSearchMatcher(before, "Sampo")?.("2")).toBe(false);
+
+    // The store replaces the record rather than mutating it, which is exactly
+    // what makes the cache safe to key on identity.
+    const after = byId([valera, sampo]);
+    expect(createSearchMatcher(after, "Sampo")?.("2")).toBe(true);
+  });
+
+  it("sees a rename since the last search", () => {
+    const before = byId([valera]);
+    expect(createSearchMatcher(before, "Renamed")?.("1")).toBe(false);
+
+    const after = byId([{ ...valera, name: "Renamed Entirely" }]);
+    expect(createSearchMatcher(after, "Renamed")?.("1")).toBe(true);
+  });
+
+  it("keeps name and tag queries on separate indexes", () => {
+    const nodes = byId([valera, sampo]);
+    // Priming the name index first must not make the tag query search names.
+    expect(createSearchMatcher(nodes, "Valera")?.("1")).toBe(true);
+    expect(createSearchMatcher(nodes, "#hero")?.("1")).toBe(true);
+    expect(createSearchMatcher(nodes, "#hero")?.("2")).toBe(false);
+    expect(createSearchMatcher(nodes, "#Valera")?.("1")).toBe(false);
+  });
+});
+
 // Regression: only root-level order was ever persisted, so dragging a page
 // around inside a folder appeared to work and then snapped back to creation
 // order on the next render.
