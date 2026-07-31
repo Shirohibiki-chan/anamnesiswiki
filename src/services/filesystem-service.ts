@@ -1,13 +1,81 @@
 // The only file that reads or writes project data on disk. See CLAUDE.md's
 // architecture rules and docs/spec.md §Data model for the on-disk layout.
-import { join } from "@tauri-apps/api/path";
-import { exists, mkdir, readDir, readFile, readTextFile, remove, rename, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { sep } from "@tauri-apps/api/path";
+import {
+  exists,
+  mkdir,
+  readDir,
+  readFile,
+  readTextFile,
+  remove,
+  rename,
+  writeFile,
+  writeTextFile,
+  type DirEntry,
+} from "@tauri-apps/plugin-fs";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
 import { canHaveChildren } from "./template-registry";
 import { ASSETS_DIR, FOLDER_META_FILE as FOLDER_FILE, PAGE_META_FILE, PROJECT_FILE } from "../constants/paths";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
+
+// How many disk reads the project load keeps in flight at once. Loading is
+// worth parallelising — each file is an independent round trip into the Rust
+// side — but an unbounded fan-out over a large world asks the OS for a file
+// handle per page simultaneously, and hitting the per-process handle limit
+// fails the load rather than slowing it.
+const READ_CONCURRENCY = 16;
+
+// `@tauri-apps/api/path`'s `join` is an async round trip into Rust *per call*,
+// and the load and save paths call it several times per node. `sep` is not: it
+// reads a value the Tauri runtime hands the webview at startup, synchronously.
+// So pay for it once and do the string work here instead.
+//
+// Resolved lazily rather than at module scope because the runtime global
+// doesn't exist under `pnpm dev`'s browser-only mode or in Vitest, where only
+// the pure functions in this file are ever exercised.
+let cachedSeparator: string | null = null;
+function separator(): string {
+  cachedSeparator ??= sep();
+  return cachedSeparator;
+}
+
+// Safe as plain concatenation only because every segment reaching it is either
+// a constant defined in constants/paths.ts or has been through
+// `sanitizeSegment`, which strips both separators along with the rest of the
+// illegal characters. Nothing here can contain a `/`, `\`, or `..` to escape
+// the project folder with.
+function joinPath(base: string, ...segments: string[]): string {
+  const s = separator();
+  let path = base;
+  for (const segment of segments) {
+    if (!segment) continue;
+    path = path.endsWith(s) ? path + segment : path + s + segment;
+  }
+  return path;
+}
+
+// Caps how many disk reads run at once without capping the *structure* of the
+// walk. The permit is held only around a single read, never across the
+// recursion into a subdirectory — a parent waiting on its children while
+// holding a permit is how a limiter like this deadlocks on a tree deeper than
+// its own limit.
+function createReadLimiter(limit: number): <T>(task: () => Promise<T>) => Promise<T> {
+  let active = 0;
+  const waiting: (() => void)[] = [];
+
+  return async function limited<T>(task: () => Promise<T>): Promise<T> {
+    if (active >= limit) await new Promise<void>((resolve) => waiting.push(resolve));
+    active += 1;
+    try {
+      return await task();
+    } finally {
+      active -= 1;
+      waiting.shift()?.();
+    }
+  };
+}
 
 export function sanitizeSegment(name: string): string {
   const cleaned = name.replace(ILLEGAL_CHARS, "_").trim().replace(/[. ]+$/, "");
@@ -37,15 +105,21 @@ function ownMetaFileName(node: Node): string {
   return isFolderNode(node) ? FOLDER_FILE : PAGE_META_FILE;
 }
 
-function getAncestors(node: Node, byId: Map<string, Node>): Node[] {
-  const chain: Node[] = [];
-  let current = node.parentId ? byId.get(node.parentId) : undefined;
-  while (current) {
-    chain.unshift(current);
-    current = current.parentId ? byId.get(current.parentId) : undefined;
-  }
-  return chain;
+function byCreationOrder(a: Node, b: Node): number {
+  return a.createdAt - b.createdAt || a.id.localeCompare(b.id);
 }
+
+// A precomputed "where does each node sit on disk" lookup for one snapshot of
+// the graph. Every path question — resolve one node, plan a whole relocation,
+// save an imported world — reduces to walking a node's own ancestors against
+// this, which costs its depth rather than a fresh scan of every other node.
+//
+// Treat it as immutable: it describes the graph it was built from, so rebuild
+// it after any change rather than reusing a stale one.
+export type PathIndex = {
+  byId: Map<string, Node>;
+  segmentById: Map<string, string>;
+};
 
 // Siblings sharing a sanitized name would collide on disk, so later ones (by
 // creation order) get a " (2)", " (3)"... suffix on the filename only — the
@@ -53,15 +127,50 @@ function getAncestors(node: Node, byId: Map<string, Node>): Node[] {
 // (folder or nestable page) and a flat-file node never collide even with the
 // same name, since one's a directory and the other's a plain .json file —
 // but two directory-storage nodes with the same name do, regardless of
-// whether either is a folder or a nestable page.
-function ownSegment(node: Node, allNodes: Node[]): string {
-  const baseName = sanitizeSegment(node.name);
-  const usesDir = usesDirectoryStorage(node);
-  const colliding = allNodes
-    .filter((n) => n.parentId === node.parentId && usesDirectoryStorage(n) === usesDir && sanitizeSegment(n.name) === baseName)
-    .sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
-  const index = colliding.findIndex((n) => n.id === node.id);
-  return index <= 0 ? baseName : `${baseName} (${index + 1})`;
+// whether either is a folder or a nestable page. That rule is exactly what
+// the grouping key below encodes: parent + storage kind + sanitized name.
+// It's JSON rather than a joined string so no separator character can appear
+// inside a name and make two different groups look like the same key.
+export function buildPathIndex(allNodes: Node[]): PathIndex {
+  const byId = new Map<string, Node>();
+  const sanitizedById = new Map<string, string>();
+  const collisionGroups = new Map<string, Node[]>();
+
+  for (const node of allNodes) {
+    byId.set(node.id, node);
+    const baseName = sanitizeSegment(node.name);
+    sanitizedById.set(node.id, baseName);
+    const groupKey = JSON.stringify([node.parentId, usesDirectoryStorage(node), baseName]);
+    const group = collisionGroups.get(groupKey);
+    if (group) group.push(node);
+    else collisionGroups.set(groupKey, [node]);
+  }
+
+  const segmentById = new Map<string, string>();
+  for (const group of collisionGroups.values()) {
+    if (group.length === 1) {
+      segmentById.set(group[0].id, sanitizedById.get(group[0].id)!);
+      continue;
+    }
+    group.sort(byCreationOrder);
+    group.forEach((node, index) => {
+      const baseName = sanitizedById.get(node.id)!;
+      segmentById.set(node.id, index === 0 ? baseName : `${baseName} (${index + 1})`);
+    });
+  }
+
+  return { byId, segmentById };
+}
+
+// A node not present in the index it's resolved against still has to produce
+// *some* path — falling back to its plain sanitized name keeps that case a
+// missing collision suffix rather than a crash.
+function ownSegment(node: Node, index: PathIndex): string {
+  return index.segmentById.get(node.id) ?? sanitizeSegment(node.name);
+}
+
+function toPathIndex(graph: Node[] | PathIndex): PathIndex {
+  return Array.isArray(graph) ? buildPathIndex(graph) : graph;
 }
 
 export type ResolvedNodePath = {
@@ -72,13 +181,25 @@ export type ResolvedNodePath = {
 // Pure and deterministic: a node's on-disk location is always recomputed from
 // its position in the in-memory graph rather than stored, so a rename/reparent
 // is just "resolve before, resolve after, move if they differ."
-export function resolveNodePath(node: Node, allNodes: Node[]): ResolvedNodePath {
-  const byId = new Map(allNodes.map((n) => [n.id, n]));
-  const ancestorSegments = getAncestors(node, byId).map((a) => ownSegment(a, allNodes));
-  if (usesDirectoryStorage(node)) {
-    return { dirSegments: [...ancestorSegments, ownSegment(node, allNodes)], fileName: ownMetaFileName(node) };
+//
+// Takes either a raw node array (convenient — builds a throwaway index) or a
+// prebuilt PathIndex. Anything resolving more than one node should build the
+// index once and pass that, or the cost of building it is paid per node
+// instead of per batch.
+export function resolveNodePath(node: Node, graph: Node[] | PathIndex): ResolvedNodePath {
+  const index = toPathIndex(graph);
+
+  const ancestorSegments: string[] = [];
+  let current = node.parentId ? index.byId.get(node.parentId) : undefined;
+  while (current) {
+    ancestorSegments.unshift(ownSegment(current, index));
+    current = current.parentId ? index.byId.get(current.parentId) : undefined;
   }
-  return { dirSegments: ancestorSegments, fileName: `${ownSegment(node, allNodes)}.json` };
+
+  if (usesDirectoryStorage(node)) {
+    return { dirSegments: [...ancestorSegments, ownSegment(node, index)], fileName: ownMetaFileName(node) };
+  }
+  return { dirSegments: ancestorSegments, fileName: `${ownSegment(node, index)}.json` };
 }
 
 export type LoadedProject = { project: Project; nodes: Node[]; skipped: string[] };
@@ -90,7 +211,7 @@ export type LoadedProject = { project: Project; nodes: Node[]; skipped: string[]
 // skipped and reported rather than thrown. `project.json` itself is the one
 // exception: without it there's no project to open at all.
 export async function loadProject(rootPath: string): Promise<LoadedProject | null> {
-  const projectPath = await join(rootPath, PROJECT_FILE);
+  const projectPath = joinPath(rootPath, PROJECT_FILE);
   if (!(await exists(projectPath))) return null;
 
   let project: Project;
@@ -100,19 +221,25 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     return null;
   }
 
-  const nodes: Node[] = [];
   const skipped: string[] = [];
-  await walkDirectory(rootPath, null, nodes, skipped);
+  const limited = createReadLimiter(READ_CONCURRENCY);
+  const nodes = await walkEntries(rootPath, await limited(() => readDir(rootPath)), null, skipped, limited);
+  // Directories are read in parallel, so the order files finish in is down to
+  // timing. Sorting keeps the "couldn't read these" list the user sees stable
+  // between two loads of the same damaged project.
+  skipped.sort();
   return { project, nodes, skipped };
 }
+
+type ReadLimiter = <T>(task: () => Promise<T>) => Promise<T>;
 
 // A node file is only usable if it parsed *and* carries the two fields the
 // rest of the app indexes it by. A file that parses into something shapeless
 // would otherwise land in the graph as an `undefined` id and break the tree
 // far away from the actual cause.
-async function readNodeFile(path: string, skipped: string[]): Promise<Node | null> {
+async function readNodeFile(path: string, skipped: string[], limited: ReadLimiter): Promise<Node | null> {
   try {
-    const parsed = JSON.parse(await readTextFile(path)) as Node;
+    const parsed = JSON.parse(await limited(() => readTextFile(path))) as Node;
     if (!parsed || typeof parsed.id !== "string" || typeof parsed.name !== "string") {
       skipped.push(path);
       return null;
@@ -128,54 +255,81 @@ async function readNodeFile(path: string, skipped: string[]): Promise<Node | nul
 // marker files — presence of the marker is what identifies ownership, never
 // the directory's current name, so renaming a node can never orphan its
 // children on the next load.
-async function walkDirectory(dirPath: string, parentId: string | null, out: Node[], skipped: string[]): Promise<void> {
-  const entries = await readDir(dirPath);
-  for (const entry of entries) {
-    if (entry.isDirectory) {
-      const childDirPath = await join(dirPath, entry.name);
-      const folderJsonPath = await join(childDirPath, FOLDER_FILE);
-      const pageJsonPath = await join(childDirPath, PAGE_META_FILE);
-      const markerPath = (await exists(folderJsonPath))
-        ? folderJsonPath
-        : (await exists(pageJsonPath))
-          ? pageJsonPath
-          : null;
-      // No marker file means this isn't a node-owned directory at all (e.g.
-      // assets/) — skip it silently rather than reporting it as damaged.
-      if (!markerPath) continue;
+//
+// Takes the directory's already-read entries rather than listing it itself, so
+// each directory is listed exactly once for the whole load: the listing that
+// identifies a directory as node-owned is the same listing used to recurse
+// into it. That replaces the pair of `exists` probes that used to ask the disk
+// separately about each marker file — three round trips per folder become one.
+//
+// Sibling entries are read in parallel (they're independent files) with the
+// shared limiter capping how many are actually in flight.
+async function walkEntries(
+  dirPath: string,
+  entries: DirEntry[],
+  parentId: string | null,
+  skipped: string[],
+  limited: ReadLimiter,
+): Promise<Node[]> {
+  const perEntry = await Promise.all(
+    entries.map(async (entry): Promise<Node[]> => {
+      const entryPath = joinPath(dirPath, entry.name);
 
-      const node = await readNodeFile(markerPath, skipped);
-      // An unreadable marker still leaves a real directory that may hold
-      // perfectly good children. Keep walking into it, reparented to this
-      // level, so a single bad `_folder.json` costs one node and not the
-      // whole branch underneath it.
-      if (node) {
-        node.parentId = parentId;
-        out.push(node);
+      if (entry.isDirectory) {
+        const childEntries = await limited(() => readDir(entryPath));
+        const markerFile = childEntries.some((child) => !child.isDirectory && child.name === FOLDER_FILE)
+          ? FOLDER_FILE
+          : childEntries.some((child) => !child.isDirectory && child.name === PAGE_META_FILE)
+            ? PAGE_META_FILE
+            : null;
+        // No marker file means this isn't a node-owned directory at all (e.g.
+        // assets/) — skip it silently rather than reporting it as damaged.
+        if (!markerFile) return [];
+
+        const node = await readNodeFile(joinPath(entryPath, markerFile), skipped, limited);
+        // An unreadable marker still leaves a real directory that may hold
+        // perfectly good children. Keep walking into it, reparented to this
+        // level, so a single bad `_folder.json` costs one node and not the
+        // whole branch underneath it.
+        if (node) node.parentId = parentId;
+        const children = await walkEntries(entryPath, childEntries, node?.id ?? parentId, skipped, limited);
+        return node ? [node, ...children] : children;
       }
-      await walkDirectory(childDirPath, node?.id ?? parentId, out, skipped);
-    } else {
-      if (entry.name === FOLDER_FILE || entry.name === PAGE_META_FILE || entry.name === PROJECT_FILE || !entry.name.endsWith(".json")) continue;
-      const node = await readNodeFile(await join(dirPath, entry.name), skipped);
-      if (!node) continue;
+
+      if (entry.name === FOLDER_FILE || entry.name === PAGE_META_FILE || entry.name === PROJECT_FILE) return [];
+      if (!entry.name.endsWith(".json")) return [];
+
+      const node = await readNodeFile(entryPath, skipped, limited);
+      if (!node) return [];
       node.parentId = parentId;
-      out.push(node);
-    }
-  }
+      return [node];
+    }),
+  );
+
+  return perEntry.flat();
 }
 
 export async function saveProject(rootPath: string, project: Project): Promise<void> {
   await mkdir(rootPath, { recursive: true });
-  const projectPath = await join(rootPath, PROJECT_FILE);
-  await writeTextFile(projectPath, JSON.stringify(project, null, 2));
+  await writeTextFile(joinPath(rootPath, PROJECT_FILE), JSON.stringify(project, null, 2));
 }
 
-export async function saveNode(rootPath: string, node: Node, allNodes: Node[]): Promise<void> {
-  const { dirSegments, fileName } = resolveNodePath(node, allNodes);
-  const dirPath = await join(rootPath, ...dirSegments);
+export async function saveNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
+  const { dirSegments, fileName } = resolveNodePath(node, graph);
+  const dirPath = joinPath(rootPath, ...dirSegments);
   await mkdir(dirPath, { recursive: true });
-  const filePath = await join(dirPath, fileName);
-  await writeTextFile(filePath, JSON.stringify(node, null, 2));
+  await writeTextFile(joinPath(dirPath, fileName), JSON.stringify(node, null, 2));
+}
+
+// Batch counterpart to saveNode for the write-many paths (an LK import, a
+// subtree duplicate). Resolving every node against one shared index instead of
+// rebuilding it per node is the difference between linear and quadratic work
+// on a large world.
+export async function saveNodes(rootPath: string, nodesToSave: Node[], allNodes: Node[]): Promise<void> {
+  const index = buildPathIndex(allNodes);
+  for (const node of nodesToSave) {
+    await saveNode(rootPath, node, index);
+  }
 }
 
 // `allNodesAfter` is the graph with this node (and its descendants) already
@@ -187,23 +341,24 @@ export async function deleteNode(
   allNodesBefore: Node[],
   allNodesAfter: Node[],
 ): Promise<void> {
-  const { dirSegments, fileName } = resolveNodePath(node, allNodesBefore);
-  const dirPath = await join(rootPath, ...dirSegments);
+  const indexBefore = buildPathIndex(allNodesBefore);
+  const { dirSegments, fileName } = resolveNodePath(node, indexBefore);
+  const dirPath = joinPath(rootPath, ...dirSegments);
   if (usesDirectoryStorage(node)) {
     await remove(dirPath, { recursive: true });
   } else {
-    await remove(await join(dirPath, fileName));
+    await remove(joinPath(dirPath, fileName));
   }
 
-  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter));
+  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter, indexBefore));
 }
 
 // The single unit that actually gets moved on disk for a node: its whole own
 // directory (directory-storage nodes — children ride along for free), or its
 // single JSON file (leaf templates). `rename` handles either kind, so the
 // caller never needs to know which one it got.
-function storageUnit(node: Node, allNodes: Node[]): string[] {
-  const { dirSegments, fileName } = resolveNodePath(node, allNodes);
+function storageUnit(node: Node, index: PathIndex): string[] {
+  const { dirSegments, fileName } = resolveNodePath(node, index);
   return usesDirectoryStorage(node) ? dirSegments : [...dirSegments, fileName];
 }
 
@@ -216,26 +371,36 @@ export type Relocation = { oldSegments: string[]; newSegments: string[] };
 // "Ruins" and "Ruins (2)" now resolves to "Ruins", even though nothing about
 // that node changed. Left unhandled, the sibling's next write lands at its
 // newly-computed path while its real directory still sits at the old one —
-// two directories holding the same node id, and `walkDirectory` loads both.
+// two directories holding the same node id, and the load walk finds both.
 // So the plan is computed across the whole graph, not just the acted-on node.
-export function planRelocations(allNodesBefore: Node[], allNodesAfter: Node[]): Relocation[] {
-  const afterById = new Map(allNodesAfter.map((n) => [n.id, n]));
+//
+// Both snapshots are indexed once up front — the whole point of the scan is to
+// compare every node's before-path against its after-path, and re-deriving the
+// collision suffixes per node would make that quadratic. `indexBefore` is
+// accepted as a parameter only so deleteNode, which already built one to find
+// the file it's removing, doesn't build a second identical one.
+export function planRelocations(
+  allNodesBefore: Node[],
+  allNodesAfter: Node[],
+  indexBefore: PathIndex = buildPathIndex(allNodesBefore),
+): Relocation[] {
+  const indexAfter = buildPathIndex(allNodesAfter);
   const plan: Relocation[] = [];
 
   for (const before of allNodesBefore) {
-    const after = afterById.get(before.id);
+    const after = indexAfter.byId.get(before.id);
     if (!after) continue; // deleted — its own removal is handled by deleteNode
 
     // A node's full path also changes when an *ancestor* moves, but a
     // directory rename carries its whole subtree along with it — so those
     // descendants must not be moved a second time. Only a node whose own
     // segment or own parent changed needs a filesystem operation of its own.
-    const ownSegmentChanged = ownSegment(before, allNodesBefore) !== ownSegment(after, allNodesAfter);
+    const ownSegmentChanged = ownSegment(before, indexBefore) !== ownSegment(after, indexAfter);
     if (!ownSegmentChanged && before.parentId === after.parentId) continue;
 
     plan.push({
-      oldSegments: storageUnit(before, allNodesBefore),
-      newSegments: storageUnit(after, allNodesAfter),
+      oldSegments: storageUnit(before, indexBefore),
+      newSegments: storageUnit(after, indexAfter),
     });
   }
 
@@ -254,36 +419,38 @@ async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<v
 
   if (plan.length === 1) {
     const [only] = plan;
-    await mkdir(await join(rootPath, ...only.newSegments.slice(0, -1)), { recursive: true });
-    await rename(await join(rootPath, ...only.oldSegments), await join(rootPath, ...only.newSegments));
+    await mkdir(joinPath(rootPath, ...only.newSegments.slice(0, -1)), { recursive: true });
+    await rename(joinPath(rootPath, ...only.oldSegments), joinPath(rootPath, ...only.newSegments));
     return;
   }
 
   const staged: { tempPath: string; newSegments: string[] }[] = [];
   for (const item of plan) {
-    const tempPath = await join(rootPath, ...item.oldSegments.slice(0, -1), `.anamnesis-move-${crypto.randomUUID()}`);
-    await rename(await join(rootPath, ...item.oldSegments), tempPath);
+    const tempPath = joinPath(rootPath, ...item.oldSegments.slice(0, -1), `.anamnesis-move-${crypto.randomUUID()}`);
+    await rename(joinPath(rootPath, ...item.oldSegments), tempPath);
     staged.push({ tempPath, newSegments: item.newSegments });
   }
   for (const item of staged) {
-    await mkdir(await join(rootPath, ...item.newSegments.slice(0, -1)), { recursive: true });
-    await rename(item.tempPath, await join(rootPath, ...item.newSegments));
+    await mkdir(joinPath(rootPath, ...item.newSegments.slice(0, -1)), { recursive: true });
+    await rename(item.tempPath, joinPath(rootPath, ...item.newSegments));
   }
 }
 
 async function relocateNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
-  const before = allNodesBefore.find((n) => n.id === nodeId);
-  const after = allNodesAfter.find((n) => n.id === nodeId);
+  const indexBefore = buildPathIndex(allNodesBefore);
+  const indexAfter = buildPathIndex(allNodesAfter);
+  const before = indexBefore.byId.get(nodeId);
+  const after = indexAfter.byId.get(nodeId);
   if (!before || !after) throw new Error(`relocateNode: node ${nodeId} not found in before/after graph`);
 
-  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter));
+  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter, indexBefore));
 
   // A plain filesystem rename only relocates the path — it never touches the
   // file's own contents, which still reflect the node as it was *before*
   // this rename/reparent (the rename/reparent itself is a real field change:
   // a new `name`, a new `parentId`). Always rewrite the node's own file at
   // its resolved new location so disk exactly matches the in-memory node.
-  await saveNode(rootPath, after, allNodesAfter);
+  await saveNode(rootPath, after, indexAfter);
 }
 
 export async function renameNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
@@ -300,17 +467,17 @@ export async function moveNode(rootPath: string, allNodesBefore: Node[], allNode
 // renaming a page can't orphan its own image the way an early filesystem-path
 // scheme once orphaned children (see relocateNode's comments above).
 export async function saveAssetImage(rootPath: string, fileName: string, data: Uint8Array): Promise<void> {
-  const assetsDir = await join(rootPath, ASSETS_DIR);
+  const assetsDir = joinPath(rootPath, ASSETS_DIR);
   await mkdir(assetsDir, { recursive: true });
-  await writeFile(await join(assetsDir, fileName), data);
+  await writeFile(joinPath(assetsDir, fileName), data);
 }
 
 export async function readAssetImage(rootPath: string, fileName: string): Promise<Uint8Array> {
-  return readFile(await join(rootPath, ASSETS_DIR, fileName));
+  return readFile(joinPath(rootPath, ASSETS_DIR, fileName));
 }
 
 export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {
-  const path = await join(rootPath, ASSETS_DIR, fileName);
+  const path = joinPath(rootPath, ASSETS_DIR, fileName);
   if (await exists(path)) await remove(path);
 }
 

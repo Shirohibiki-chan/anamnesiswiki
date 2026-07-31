@@ -99,6 +99,29 @@ export function getAncestorChain(nodeId: string, nodes: Record<string, Node>): N
   return chain;
 }
 
+// Building a Fuse index means tokenizing every node's name and tags, and the
+// index depends only on the node record — which doesn't change while someone
+// is typing a query. Keyed on that record's identity so the store's next
+// immutable update naturally evicts a stale one, and held weakly so a closed
+// project's index isn't kept alive by this cache. The two query modes need
+// separate indexes because they search different fields.
+type SearchIndexes = { name?: Fuse<Node>; tags?: Fuse<Node> };
+const searchIndexCache = new WeakMap<Record<string, Node>, SearchIndexes>();
+
+function getSearchIndex(nodes: Record<string, Node>, isTagQuery: boolean): Fuse<Node> {
+  const cached = searchIndexCache.get(nodes) ?? {};
+  const mode = isTagQuery ? "tags" : "name";
+  const existing = cached[mode];
+  if (existing) return existing;
+
+  const fuse = new Fuse(Object.values(nodes), {
+    keys: isTagQuery ? ["tags"] : ["name", "tags"],
+    threshold: 0.35,
+  });
+  searchIndexCache.set(nodes, { ...cached, [mode]: fuse });
+  return fuse;
+}
+
 // Fuzzy name-and-tag search for the tree filter. A leading `#` searches tags
 // only (e.g. "#antagonist"); otherwise both name and tags are searched.
 // Returns null for an empty query, meaning "don't filter."
@@ -110,10 +133,10 @@ export function createSearchMatcher(nodes: Record<string, Node>, query: string):
   const term = isTagQuery ? trimmed.slice(1).trim() : trimmed;
   if (!term) return null;
 
-  const fuse = new Fuse(Object.values(nodes), {
-    keys: isTagQuery ? ["tags"] : ["name", "tags"],
-    threshold: 0.35,
-  });
-  const matchedIds = new Set(fuse.search(term).map((result) => result.item.id));
+  const matchedIds = new Set(
+    getSearchIndex(nodes, isTagQuery)
+      .search(term)
+      .map((result) => result.item.id),
+  );
   return (nodeId: string) => matchedIds.has(nodeId);
 }
