@@ -1,6 +1,6 @@
 # Anamnesis — Project Summary
 
-> This file is for pasting into a regular Claude chat to provide project context when planning features. Last updated: 2026-07-30 (pre-development).
+> This file is for pasting into a regular Claude chat to provide project context when planning features. Last updated: 2026-07-30 (Phases 0–8 shipped).
 
 ---
 
@@ -12,7 +12,16 @@ The user builds fictional worlds — characters, locations, factions, species, e
 
 Import/export of LegendKeeper's `.lk` format is a Phase 1 must-have because the user has an existing 75-page world to migrate.
 
-**As of this document's writing, no code exists yet.** Everything below describes the target architecture as specified. See `docs/handoff.md` for current status.
+**Phases 0 through 8 are built and working**: the data layer, app shell, tree,
+page view, BlockNote editor with custom callouts and `@`/`[[ ]]` cross-references,
+properties panel, all templates, and LegendKeeper import. Phase 9 (LK *export*) is
+the next one up.
+
+> **If you are a Claude reading this to plan or write code:** this summary
+> describes the shape of the project, not its current source. Code has been
+> written, reviewed and revised since — so anything you write from this document
+> alone will not apply cleanly to the repo. Ask for the actual files you need to
+> touch, or for a fresh `git log`, before producing a patch.
 
 ---
 
@@ -140,7 +149,7 @@ Max folder depth is 3: `src/components/tree/TreeItem.tsx` is the deepest allowed
 
 ## What's Next
 
-Phase 0 (project scaffold) hasn't started. See `docs/plan.md` for the full phase list.
+Phase 9 — LegendKeeper export — is next. `docs/plan.md` has the remaining phases and the queued work; `docs/shipped.md` records what Phases 0–8 delivered.
 
 After Phase 1 is stable and shipped, the next unlock is Phase 1.5 — read-only static-site publishing. Same feature serves two use cases: sharing a world with a co-writer for read-only viewing, and eventual public release of a world (e.g. Orynthia going public). Not blocked on anything; just sequenced after Phase 1 is solid.
 

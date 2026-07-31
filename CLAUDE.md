@@ -29,7 +29,7 @@ See `docs/plan.md`. Work phases in order, don't build ahead. `docs/spec.md` is t
 Updating these is part of completing a change, not a follow-up. Show them in the plan before executing.
 
 - **`CHANGELOG.md`** — required for all user-visible changes. New dated section at top (`## 2026-07-30`), with Additions / Fixes / Adjustments / Renames as needed. Plain-language and user-visible — not internal refactor notes. Never `[Unreleased]`.
-- **`docs/plan.md`** — mark phase items done; new in-scope work goes under its phase or the Queued section.
+- **`docs/plan.md`** — forward-looking only: remaining phases, Queued Adjustments, Known Bugs, Future Features. When a phase completes, its detail moves to `docs/shipped.md` rather than staying here.
 - **`docs/handoff.md`** — current state. Mark resolved items shipped, add newly discovered ones. Internal/architectural detail that doesn't belong in the changelog goes here.
 - **`docs/lk-format.md`** — update whenever import/export mapping changes. This is what future-us reads when LK ships a new schema version.
 
@@ -88,7 +88,7 @@ No `index.ts` barrel files. No files named `utils`, `misc`, `helpers`, or `commo
 
 ### Data on disk
 
-The user picks a project folder on first launch (default: `~/Documents/Anamnesis/`). **This section is authoritative** — `docs/spec.md` §Data model predates the directory-storage decision below and is stale on this point.
+The user picks a project folder on first launch (default: `~/Documents/Anamnesis/`). (`docs/spec.md` §Data model says the same thing; both were corrected together on 2026-07-30.)
 
 ```
 Valeraverse/
@@ -130,8 +130,9 @@ Import shows a preview (tree + inferred template counts + a plain-language list 
 
 ## Reference Docs (read only when relevant)
 
-- `docs/spec.md` — master build spec (§Data model is stale; see above)
-- `docs/plan.md` — phased roadmap, queued work, known bugs
+- `docs/spec.md` — original build spec, corrected against shipped code 2026-07-30; still the place for design intent, but the code wins on facts
+- `docs/plan.md` — remaining phases, queued work, known bugs
+- `docs/shipped.md` — what each completed phase delivered; historical, don't read by default
 - `docs/handoff.md` — current state, design decisions, known gaps
 - `docs/lk-format.md` — `.lk` mapping, ProseMirror → BlockNote translation
 - `docs/glossary.md` — domain terms
