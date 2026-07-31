@@ -72,6 +72,13 @@ export type Project = {
   version: 1;
   name: string;
   rootOrder: string[];
+  // Manual sibling order inside each parent, keyed by parent node id — the
+  // same job `rootOrder` does for the top level. Optional, and individual
+  // parents may be missing from it: projects saved before drag-to-reorder
+  // existed have neither, and a folder nobody has reordered never gets an
+  // entry. Anything unlisted falls back to creation order (see
+  // tree-service.ts's orderSiblings), so this is additive, never a migration.
+  childOrder?: Record<string, string[]>;
   expandedIds: string[];
   selectedId: string | null;
   createdAt: number;

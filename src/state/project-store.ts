@@ -15,6 +15,7 @@ import {
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushSave, scheduleSave } from "../services/autosave";
 import { getDefaultTabs } from "../services/template-registry";
+import { orderSiblings } from "../services/tree-service";
 import * as lkImportService from "../services/lk-import";
 import type { ImportPendingImage } from "../services/lk-import";
 
@@ -64,7 +65,7 @@ type ProjectStoreState = {
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
   renameNode: (id: string, name: string) => void;
-  moveNode: (id: string, newParentId: string | null, rootIndex?: number) => void;
+  moveNode: (id: string, newParentId: string | null, index?: number) => void;
   deleteNode: (id: string) => void;
   duplicateNode: (id: string) => Promise<void>;
   selectNode: (id: string | null) => void;
@@ -74,6 +75,20 @@ type ProjectStoreState = {
 // Debounce key for project.json metadata writes (selection, expanded state)
 // that aren't node edits but shouldn't hammer disk on every click either.
 const PROJECT_META_SAVE_KEY = "__project_meta__";
+
+// The sibling order as the tree is actually showing it right now — the stored
+// manual order where there is one, creation order for everything else. Used as
+// the base list a drop inserts into, so a never-reordered folder doesn't have
+// to be seeded separately.
+function orderedSiblingIds(
+  nodes: Record<string, Node>,
+  project: Project,
+  parentId: string | null,
+): string[] {
+  const siblings = Object.values(nodes).filter((n) => n.parentId === parentId);
+  const stored = parentId === null ? project.rootOrder : project.childOrder?.[parentId];
+  return orderSiblings(siblings, stored).map((n) => n.id);
+}
 
 function descendantIds(id: string, nodes: Record<string, Node>): string[] {
   const children = Object.values(nodes).filter((n) => n.parentId === id);
@@ -381,7 +396,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       void fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id).then(markSaved);
     },
 
-    async moveNode(id, newParentId, rootIndex) {
+    async moveNode(id, newParentId, index) {
       const { rootPath, project, nodes } = get();
       const existing = nodes[id];
       if (!rootPath || !project || !existing) return;
@@ -397,16 +412,36 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const updated: Node = { ...existingAfter, parentId: newParentId, updatedAt: Date.now() };
       const nextNodes = { ...nodesAfter, [id]: updated };
 
-      let nextProject = projectAfter;
-      if (newParentId === null) {
-        // Leaving root, entering root, or just reordering within root — in
-        // every case the node's final position in rootOrder is what matters.
-        const withoutId = projectAfter.rootOrder.filter((n) => n !== id);
-        const insertAt = rootIndex === undefined ? withoutId.length : Math.min(rootIndex, withoutId.length);
-        const nextRootOrder = [...withoutId.slice(0, insertAt), id, ...withoutId.slice(insertAt)];
-        nextProject = { ...projectAfter, rootOrder: nextRootOrder };
-      } else if (existingAfter.parentId === null) {
-        nextProject = { ...projectAfter, rootOrder: projectAfter.rootOrder.filter((n) => n !== id) };
+      // Every drop is "put this node at this position under this parent",
+      // whether that's the root or a folder, whether the parent changed or
+      // not. The destination list is rebuilt from the sibling order actually
+      // on screen (not from whatever partial list is stored) so a folder that
+      // has never been reordered still gets a complete, correct list the
+      // first time something is dropped into it.
+      const oldParentId = existingAfter.parentId;
+      const destinationIds = orderedSiblingIds(nextNodes, projectAfter, newParentId).filter((n) => n !== id);
+      const insertAt = index === undefined ? destinationIds.length : Math.min(Math.max(index, 0), destinationIds.length);
+      const destinationOrder = [...destinationIds.slice(0, insertAt), id, ...destinationIds.slice(insertAt)];
+
+      let nextProject: Project =
+        newParentId === null
+          ? { ...projectAfter, rootOrder: destinationOrder }
+          : { ...projectAfter, childOrder: { ...projectAfter.childOrder, [newParentId]: destinationOrder } };
+
+      // Drop it out of wherever it used to live, so a stale entry can't pull
+      // it back to an old position if it's ever moved home again.
+      if (oldParentId !== newParentId) {
+        if (oldParentId === null) {
+          nextProject = { ...nextProject, rootOrder: nextProject.rootOrder.filter((n) => n !== id) };
+        } else if (nextProject.childOrder?.[oldParentId]) {
+          nextProject = {
+            ...nextProject,
+            childOrder: {
+              ...nextProject.childOrder,
+              [oldParentId]: nextProject.childOrder[oldParentId].filter((n) => n !== id),
+            },
+          };
+        }
       }
 
       set({ nodes: nextNodes, project: nextProject });
@@ -426,7 +461,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // resurrect the file/directory that was just removed.
       for (const removedId of toRemove) cancelSave(removedId);
       const nextNodes = Object.fromEntries(Object.entries(nodes).filter(([nodeId]) => !toRemove.has(nodeId)));
-      const nextProject: Project = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
+      // Prune the manual sibling order too — both the entries *for* deleted
+      // parents and any mention *of* a deleted node inside a surviving
+      // parent's list. Stale ids sort harmlessly, but left alone they'd
+      // accumulate in project.json forever.
+      const nextChildOrder: Record<string, string[]> = {};
+      for (const [parentId, order] of Object.entries(project.childOrder ?? {})) {
+        if (toRemove.has(parentId)) continue;
+        nextChildOrder[parentId] = order.filter((nodeId) => !toRemove.has(nodeId));
+      }
+      const nextProject: Project = {
+        ...project,
+        rootOrder: project.rootOrder.filter((n) => n !== id),
+        childOrder: nextChildOrder,
+      };
 
       set({ nodes: nextNodes, project: nextProject });
       void fsService.deleteNode(rootPath, existing, allNodesBefore, Object.values(nextNodes)).then(markSaved);
@@ -486,14 +534,19 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextNodes = { ...nodes };
       for (const clone of clones) nextNodes[clone.id] = clone;
 
+      // A copy belongs directly after what it was copied from, wherever that
+      // is — at the root or inside a folder. Without the folder half, a
+      // duplicate made inside a folder jumped to the bottom of the list.
       const cloneRootId = idMap.get(id)!;
-      let nextProject = project;
-      if (original.parentId === null) {
-        const originalIndex = project.rootOrder.indexOf(id);
-        const nextRootOrder = [...project.rootOrder];
-        nextRootOrder.splice(originalIndex + 1, 0, cloneRootId);
-        nextProject = { ...project, rootOrder: nextRootOrder };
-      }
+      const siblingIds = orderedSiblingIds(nextNodes, project, original.parentId).filter((n) => n !== cloneRootId);
+      const originalIndex = siblingIds.indexOf(id);
+      const withClone = [...siblingIds];
+      withClone.splice(originalIndex === -1 ? withClone.length : originalIndex + 1, 0, cloneRootId);
+
+      const nextProject: Project =
+        original.parentId === null
+          ? { ...project, rootOrder: withClone }
+          : { ...project, childOrder: { ...project.childOrder, [original.parentId]: withClone } };
 
       set({ nodes: nextNodes, project: nextProject });
       for (const clone of clones) {

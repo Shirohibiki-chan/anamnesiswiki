@@ -16,28 +16,39 @@ function sortByCreation(a: Node, b: Node): number {
   return a.createdAt - b.createdAt || a.id.localeCompare(b.id);
 }
 
-export function buildTreeData(nodes: Record<string, Node>, rootOrder: string[]): TreeNodeData[] {
+// Sorts one sibling group by a manual order list, falling back to creation
+// order for anything the list doesn't mention. Both cases matter: a project
+// saved before drag-to-reorder existed has no list at all, and a node created
+// after the last reorder isn't in its parent's list yet — those sort to the
+// end by creation time rather than jumping to the front.
+export function orderSiblings(siblings: Node[], order: string[] | undefined): Node[] {
+  const sorted = [...siblings].sort(sortByCreation);
+  if (!order || order.length === 0) return sorted;
+
+  const position = new Map(order.map((id, index) => [id, index]));
+  return sorted.sort((a, b) => {
+    const posA = position.get(a.id);
+    const posB = position.get(b.id);
+    if (posA !== undefined && posB !== undefined) return posA - posB;
+    if (posA !== undefined) return -1;
+    if (posB !== undefined) return 1;
+    return sortByCreation(a, b);
+  });
+}
+
+export function buildTreeData(
+  nodes: Record<string, Node>,
+  rootOrder: string[],
+  childOrder: Record<string, string[]> = {},
+): TreeNodeData[] {
   const childrenByParent = new Map<string | null, Node[]>();
   for (const node of Object.values(nodes)) {
     const list = childrenByParent.get(node.parentId) ?? [];
     list.push(node);
     childrenByParent.set(node.parentId, list);
   }
-  for (const list of childrenByParent.values()) {
-    list.sort(sortByCreation);
-  }
-
-  const rootSiblings = childrenByParent.get(null);
-  if (rootSiblings) {
-    const rootPosition = new Map(rootOrder.map((id, index) => [id, index]));
-    rootSiblings.sort((a, b) => {
-      const posA = rootPosition.get(a.id);
-      const posB = rootPosition.get(b.id);
-      if (posA !== undefined && posB !== undefined) return posA - posB;
-      if (posA !== undefined) return -1;
-      if (posB !== undefined) return 1;
-      return sortByCreation(a, b);
-    });
+  for (const [parentId, list] of childrenByParent) {
+    childrenByParent.set(parentId, orderSiblings(list, parentId === null ? rootOrder : childOrder[parentId]));
   }
 
   function buildChildren(parentId: string | null): TreeNodeData[] {
