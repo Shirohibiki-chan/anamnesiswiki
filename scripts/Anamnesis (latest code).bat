@@ -10,41 +10,71 @@ echo   KEEP THIS BLACK WINDOW OPEN. Closing it closes the app.
 echo   The app window takes a few seconds to appear the first time.
 echo.
 
-rem Explorer hands a double-clicked shortcut the environment it captured when
-rem it started, which can predate anything installed since the last sign-in.
-rem So PATH here is not the PATH the registry says -- a tool can be correctly
-rem installed and correctly registered and still be invisible. Every tool is
-rem therefore located explicitly, and PATH is treated as a hint rather than
-rem the truth. Tauri's symptom for any of these missing is a low-level
-rem "program not found" that reads like a broken install.
-call :addpath cargo "%USERPROFILE%\.cargo\bin"
-call :addpath node  "%ProgramFiles%\nodejs"
-call :addpath pnpm  "%APPDATA%\npm"
-call :addpath git   "%ProgramFiles%\Git\cmd"
+rem ---------------------------------------------------------------------
+rem A double-clicked shortcut inherits the environment Explorer captured at
+rem sign-in, so PATH here can be missing tools that are installed and
+rem registered perfectly well. Two earlier versions of this script tried to
+rem repair PATH and then confirm with `where`; both still failed on this
+rem machine. So nothing is searched for by name any more -- pnpm is invoked
+rem by full path, and the directories that pnpm and Tauri themselves need on
+rem PATH (node, cargo) are added by existence check alone.
+rem ---------------------------------------------------------------------
 
-set "MISSING="
-for %%T in (cargo node pnpm) do (
-  where %%T >nul 2>&1
-  if errorlevel 1 set "MISSING=!MISSING! %%T"
-)
-if defined MISSING (
-  echo   Can't start -- these aren't installed where expected:!MISSING!
+rem PATHEXT decides which extensions Windows treats as runnable. pnpm, tauri
+rem and every other npm tool ship as .cmd, so a PATHEXT that has lost .CMD
+rem makes them invisible while they sit right there on disk -- and it breaks
+rem `where` and pnpm's own node_modules\.bin lookup identically. Pinned to
+rem the Windows default rather than trusted.
+set "PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.JS;.WSF;.MSC"
+
+if exist "%USERPROFILE%\.cargo\bin"  set "PATH=%USERPROFILE%\.cargo\bin;%PATH%"
+if exist "%ProgramFiles%\nodejs"     set "PATH=%ProgramFiles%\nodejs;%PATH%"
+if exist "%ProgramFiles%\Git\cmd"    set "PATH=%ProgramFiles%\Git\cmd;%PATH%"
+if exist "%APPDATA%\npm"             set "PATH=%APPDATA%\npm;%PATH%"
+
+set "PNPM="
+for %%P in (
+  "%APPDATA%\npm\pnpm.cmd"
+  "%USERPROFILE%\AppData\Roaming\npm\pnpm.cmd"
+  "%LOCALAPPDATA%\pnpm\pnpm.exe"
+  "%ProgramFiles%\nodejs\pnpm.cmd"
+) do if not defined PNPM if exist "%%~P" set "PNPM=%%~P"
+
+if not defined PNPM (
+  echo   Can't start -- pnpm wasn't found. Looked in:
+  echo     %APPDATA%\npm\pnpm.cmd
+  echo     %USERPROFILE%\AppData\Roaming\npm\pnpm.cmd
+  echo     %LOCALAPPDATA%\pnpm\pnpm.exe
+  echo     %ProgramFiles%\nodejs\pnpm.cmd
   echo.
-  echo   Signing out and back in often fixes this on its own, because it
-  echo   refreshes what Windows hands to programs you launch.
+  echo   Send this list to Claude -- one of those paths is wrong for this PC.
+  echo.
+  pause
+  exit /b 1
+)
+
+if not exist "%ProgramFiles%\nodejs\node.exe" (
+  echo   Can't start -- Node isn't at %ProgramFiles%\nodejs. Tell Claude.
+  echo.
+  pause
+  exit /b 1
+)
+
+if not exist "%USERPROFILE%\.cargo\bin\cargo.exe" (
+  echo   Can't start -- Rust isn't at %USERPROFILE%\.cargo\bin. Tell Claude.
   echo.
   pause
   exit /b 1
 )
 
 rem Best-effort: skipped silently with no internet, nothing to pull, or local
-rem edits that a fast-forward would overwrite. None should block the app.
+rem edits a fast-forward would overwrite. None should block the app opening.
 git pull --ff-only >nul 2>&1
 
 rem Keeps node_modules in step when dependencies changed since last launch.
-call pnpm install --frozen-lockfile --prefer-offline >nul 2>&1
+call "%PNPM%" install --frozen-lockfile --prefer-offline >nul 2>&1
 
-call pnpm tauri dev
+call "%PNPM%" tauri dev
 
 if errorlevel 1 (
   echo.
@@ -53,9 +83,3 @@ if errorlevel 1 (
   pause
 )
 exit /b 0
-
-:addpath
-rem %1 = tool to look for, %2 = folder to add if it isn't already reachable.
-where %1 >nul 2>&1
-if errorlevel 1 if exist "%~2" set "PATH=%~2;%PATH%"
-goto :eof
