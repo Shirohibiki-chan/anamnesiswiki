@@ -438,6 +438,13 @@ is below.
   would mean the key being recorded also fires whatever it's currently bound
   to, on its way to being reassigned.
 
+- **The recorder's capture-phase listener is what keeps Settings navigable.**
+  It claims the keypress before anything else in the app sees it, which is how
+  Escape cancels recording instead of closing the modal *and* how an arrow key
+  pressed while recording gets offered as a binding instead of sliding the
+  user onto the next settings tab. Moving that listener to the bubble phase
+  breaks both at once, and the second one silently.
+
 - **Whether the desktop build actually lets the page keep `Cmd+N` is
   unverified.** `preventDefault()` claims it from the page, and in a plain
   browser (`pnpm dev`) Ctrl+N is a browser-level accelerator that can't be
