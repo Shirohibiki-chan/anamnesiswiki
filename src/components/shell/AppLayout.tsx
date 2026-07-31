@@ -1,9 +1,11 @@
 // Three-column app frame — left tree / center page / right properties.
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { ExportModal } from "../export/ExportModal";
+import { SearchPalette } from "../search/SearchPalette";
+import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
 import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
@@ -22,8 +24,13 @@ export function AppLayout() {
   // owns row rendering, so there's nothing to thread a callback through.
   const { exportRequest, closeExport } = useDialogs();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useSaveOnExit();
+  // Stable so the shortcut listener is attached once, not rebuilt on every
+  // re-render of the shell — see use-global-shortcuts.ts.
+  const openSearch = useCallback(() => setIsSearchOpen(true), []);
+  useGlobalShortcuts({ onSearch: openSearch });
 
   async function handleSwitchProject() {
     await clearLastOpenedProject();
@@ -42,6 +49,7 @@ export function AppLayout() {
           isRightPanelOpen={isRightPanelOpen}
           onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
           onSwitchProject={() => void handleSwitchProject()}
+          onOpenSearch={openSearch}
         />
         <LoadWarning />
         <RecoveryNotice />
@@ -59,6 +67,7 @@ export function AppLayout() {
 
       <ConfirmDialog />
       {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
+      {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} />}
     </div>
   );
 }

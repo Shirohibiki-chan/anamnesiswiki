@@ -43,6 +43,12 @@ export type ProjectStoreState = {
   // interrupted, and silence is what made that dangerous in the first place.
   recoveredCount: number;
   dismissRecovered: () => void;
+  // Which tab to open on, when a page is being reached from somewhere that
+  // knows the answer — a search result naming the tab its match came from.
+  // Deliberately not part of Project: it's a single navigation, not state
+  // worth writing to disk. Carries the node id as well so PageView can ignore
+  // a leftover from an earlier jump instead of applying it to the wrong page.
+  pendingFocus: { nodeId: string; tabId: string } | null;
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   dismissSkippedFiles: () => void;
   dismissSaveErrors: () => void;
@@ -78,7 +84,7 @@ export type ProjectStoreState = {
   deleteNode: (id: string) => void;
   deleteNodes: (ids: string[]) => void;
   duplicateNode: (id: string) => Promise<void>;
-  selectNode: (id: string | null) => void;
+  selectNode: (id: string | null, tabId?: string) => void;
   setProjectHome: (id: string | null) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
 };
@@ -167,6 +173,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     skippedFiles: [],
     saveErrors: [],
     recoveredCount: 0,
+    pendingFocus: null,
 
     // Resolves null for anything that means "this isn't an openable project"
     // — missing or unreadable project.json, an unreadable folder — so callers
@@ -283,6 +290,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         skippedFiles: [],
         saveErrors: [],
         recoveredCount: 0,
+        pendingFocus: null,
       });
     },
 
@@ -710,11 +718,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
     },
 
-    selectNode(id) {
+    // `tabId` is for callers that know which tab they mean — a search result
+    // naming the tab its match was found in. Everything else omits it, and
+    // clearing it here is what stops one jump's tab leaking into the next.
+    // Expanding the target's ancestors is deliberately *not* done here:
+    // TreePanel already does it for every selection however it was made.
+    selectNode(id, tabId) {
       const { rootPath, project } = get();
       if (!rootPath || !project) return;
       const nextProject: Project = { ...project, selectedId: id };
-      set({ project: nextProject });
+      set({ project: nextProject, pendingFocus: id && tabId ? { nodeId: id, tabId } : null });
       scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
     },
 
