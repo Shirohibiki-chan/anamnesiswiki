@@ -1,6 +1,6 @@
 // Three-column app frame — left tree / center page / right properties.
 import { useCallback, useState } from "react";
-import { useProject } from "../../hooks/use-project";
+import { useProject, useSaveNow } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { ExportModal } from "../export/ExportModal";
@@ -12,6 +12,7 @@ import { PageView } from "../page/PageView";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { LoadWarning } from "./LoadWarning";
+import { NewPageDialog } from "./NewPageDialog";
 import { RecoveryNotice } from "./RecoveryNotice";
 import { SaveWarning } from "./SaveWarning";
 import { TopBar } from "./TopBar";
@@ -25,12 +26,16 @@ export function AppLayout() {
   const { exportRequest, closeExport } = useDialogs();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNewPageOpen, setIsNewPageOpen] = useState(false);
+  const saveNow = useSaveNow();
 
   useSaveOnExit();
   // Stable so the shortcut listener is attached once, not rebuilt on every
   // re-render of the shell — see use-global-shortcuts.ts.
   const openSearch = useCallback(() => setIsSearchOpen(true), []);
-  useGlobalShortcuts({ onSearch: openSearch });
+  const openNewPage = useCallback(() => setIsNewPageOpen(true), []);
+  const handleSave = useCallback(() => void saveNow(), [saveNow]);
+  useGlobalShortcuts({ onSearch: openSearch, onNewPage: openNewPage, onSave: handleSave });
 
   async function handleSwitchProject() {
     await clearLastOpenedProject();
@@ -68,6 +73,7 @@ export function AppLayout() {
       <ConfirmDialog />
       {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
       {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} />}
+      {isNewPageOpen && <NewPageDialog onClose={() => setIsNewPageOpen(false)} />}
     </div>
   );
 }

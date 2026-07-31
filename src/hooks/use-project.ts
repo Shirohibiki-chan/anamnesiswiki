@@ -62,6 +62,12 @@ export function useLastSavedAt(): number | null {
   return useProjectStore((state) => state.lastSavedAt);
 }
 
+// Cmd+S. A store action, so the reference is stable and the shortcut listener
+// isn't rebuilt on every keystroke — see hooks/use-global-shortcuts.ts.
+export function useSaveNow(): () => Promise<void> {
+  return useProjectStore((state) => state.saveNow);
+}
+
 // Writes that failed. Separate from skippedFiles: one is "we couldn't read
 // this when opening", the other is "we couldn't write this just now."
 export function useSaveErrors(): string[] {

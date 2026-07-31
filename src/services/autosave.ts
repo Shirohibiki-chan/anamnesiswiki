@@ -73,15 +73,23 @@ export function hasPendingSaves(): boolean {
 // on a window-blur flush is reported when the user comes back. On the
 // closing flush there's no UI left to report into, which is exactly why the
 // handler records into the store rather than rendering anything itself.
-export async function flushAllSaves(): Promise<void> {
+//
+// Returns how many writes failed, for the one caller that needs to know:
+// a manual save (Cmd+S) says "Saved" afterwards, and shouldn't when it isn't
+// true. The exit paths ignore the number — by then the error handler has
+// already recorded whatever went wrong.
+export async function flushAllSaves(): Promise<number> {
   const keys = [...pending.keys()];
-  await Promise.all(
+  const outcomes = await Promise.all(
     keys.map(async (key) => {
       try {
         await flushSave(key);
+        return true;
       } catch {
         // Ignore — see comment above.
+        return false;
       }
     }),
   );
+  return outcomes.filter((succeeded) => !succeeded).length;
 }
