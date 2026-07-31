@@ -25,7 +25,7 @@ const STARTER_FOLDERS = ["Canon", "AUs", "Characters", "Locations", "Factions", 
 
 export type CreateProjectResult = { ok: true; rootPath: string } | { ok: false; error: string };
 
-type ProjectStoreState = {
+export type ProjectStoreState = {
   rootPath: string | null;
   project: Project | null;
   nodes: Record<string, Node>;

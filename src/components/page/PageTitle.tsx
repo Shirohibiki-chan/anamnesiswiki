@@ -5,18 +5,18 @@ import { ChevronRight } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
-import { useProject } from "../../hooks/use-project";
-import { useTreeData } from "../../hooks/use-tree-data";
+import { useProjectActions, useProjectName } from "../../hooks/use-project";
+import { useAncestorChain, useEffectiveColor } from "../../hooks/use-tree-data";
 
 export function PageTitle({ node }: { node: Node }) {
-  const { project, renameNode, selectNode } = useProject();
-  const { getEffectiveColor, getAncestorChain } = useTreeData();
+  const projectName = useProjectName();
+  const { renameNode, selectNode } = useProjectActions();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { color: effectiveKey } = getEffectiveColor(node.id);
+  const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const Icon = getTemplateIcon(node.templateKey);
-  const ancestors = getAncestorChain(node.id);
+  const ancestors = useAncestorChain(node.id);
 
   function commit(value: string) {
     const trimmed = value.trim();
@@ -28,7 +28,7 @@ export function PageTitle({ node }: { node: Node }) {
     <div className="page-title">
       <div className="page-title-breadcrumb">
         <button type="button" className="page-title-breadcrumb-link" onClick={() => selectNode(null)}>
-          {project?.name}
+          {projectName}
         </button>
         {ancestors.map((ancestor) => (
           <span key={ancestor.id} className="page-title-breadcrumb-item">

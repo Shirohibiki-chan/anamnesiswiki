@@ -1,6 +1,8 @@
 // The only import path components have into tree-service.ts. See CLAUDE.md's
 // layer order — components never import services directly.
 import { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { useProjectStore } from "../state/project-store";
 import { useProject } from "./use-project";
 import {
   buildTreeData,
@@ -28,4 +30,17 @@ export function useTreeData(): {
     getEffectiveColor: (nodeId: string) => getEffectiveColor(nodeId, nodes),
     getAncestorChain: (nodeId: string) => getAncestorChain(nodeId, nodes),
   };
+}
+
+// Per-node versions of the two helpers above, for components that render once
+// per row (TreeItem) or per page (PageTitle, FolderView). Both derive from the
+// whole `nodes` map — walking up the parent chain — but shallow-comparing the
+// result means a re-render only happens when this node's own answer actually
+// changed, not every time any node anywhere is edited.
+export function useEffectiveColor(nodeId: string): EffectiveColor {
+  return useProjectStore(useShallow((state) => getEffectiveColor(nodeId, state.nodes)));
+}
+
+export function useAncestorChain(nodeId: string): Node[] {
+  return useProjectStore(useShallow((state) => getAncestorChain(nodeId, state.nodes)));
 }
