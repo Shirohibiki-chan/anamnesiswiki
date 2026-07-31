@@ -4,6 +4,10 @@
 
 *(Not in a release — these live in the repo and affect this machine only.)*
 
+### Fixes
+- **No more white flash when Anamnesis opens.** Starting the app meant a few hundred milliseconds of blank white before the dark theme appeared — which, on a dark app at night, is a camera flash to the face. Three separate things caused it, and all three are fixed: the window itself was painting white before anything was drawn in it, the page was white before the stylesheet loaded, and the window appeared before either had happened. The window now stays hidden until there's something to show, and everything behind it is already dark. It also has two independent ways to appear, so it can't get stuck invisible.
+- **The window is called "Anamnesis" now**, not "Tauri + React + Typescript" — the placeholder title from the very first scaffold, still there eight phases later.
+
 ### Additions
 - **Two shortcuts on the Desktop, so opening the current version doesn't need anyone else.** Until now the only Anamnesis you could open by yourself was the one in your Start menu, and that only changes when a release gets published — which is meant to be occasional. So the copy you could reach was always behind, and the up-to-date one needed a terminal. **Anamnesis (latest code)** fixes that: double-click it and the app opens running the newest code, no release involved. It leaves a black window open while it runs — that window is the app, so closing it closes Anamnesis. **Update installed Anamnesis** does the other version: it rebuilds and installs over your Start-menu copy, taking a few minutes but leaving you with the ordinary app, up to date, with nothing to keep open. Releases go back to being only about *other people's* copies finding an update, which is all they were ever for.
 

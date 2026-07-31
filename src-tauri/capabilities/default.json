@@ -11,6 +11,7 @@
     "fs:read-all",
     "fs:write-all",
     "core:window:allow-destroy",
+    "core:window:allow-show",
     {
       "identifier": "fs:scope",
       "allow": ["**"]
