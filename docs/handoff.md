@@ -138,9 +138,14 @@ is below.
   warning, and the user has declined it permanently. Don't conflate the two, and
   don't claim updates require the paid one.
 
-- **Losing the private key ends updates for every copy already installed.** A new
-  keypair means a new `pubkey`, and shipped builds only trust the old one. Back it
-  up before doing anything clever.
+- **Losing the private key breaks the update button, and nothing else.** A new
+  keypair means a new `pubkey`, and shipped builds only trust the one they were
+  compiled with — so existing installs would reject every future update. They keep
+  running, and no project data is involved at any point; the updater cannot reach
+  it. Recovery is a build carrying the new `pubkey` that people install by hand
+  once, after which updates resume. Back it up (it's one line of text), but don't
+  describe this as catastrophic — it isn't, and saying so once already alarmed the
+  user for no reason.
 
 - **Keeping the key is a decision the user made with the trade-off in front of
   her (2026-07-31), not an accident.** She raised the key as unwelcome and was

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-31 — v0.2.1
+
+### Additions
+- **The settings cog reaches an installed copy.** It landed in the code just after v0.2.0 was built, so it existed in the project but in no version you could actually run. This release is the one that carries it. If you're on 0.2.0, the update check will now find this — which also makes it the first time the download-and-install path has run for real rather than only in tests.
+
 ## 2026-07-31 — v0.2.0
 
 ### Additions
