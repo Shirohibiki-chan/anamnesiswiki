@@ -55,9 +55,10 @@ pnpm tauri dev       # full desktop app with hot reload
 pnpm build           # Vite production build → dist/
 pnpm tauri build     # full desktop installer → src-tauri/target/release/bundle/
 pnpm lint            # ESLint
+pnpm test            # Vitest unit tests (single run)
 ```
 
-No tests configured. When adding tests, use Vitest (already Vite-native).
+Tests are Vitest, colocated as `*.test.ts` next to what they cover. Services are the unit-tested layer — pure logic (path resolution, tree shape, LK conversion, autosave) is testable without a DOM, and that's where the bugs that cost real data have shown up. Components aren't tested; there's no jsdom/RTL setup and adding one isn't currently scoped.
 
 ## Architecture
 

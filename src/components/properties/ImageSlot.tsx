@@ -23,7 +23,7 @@ function extensionFor(file: File): string {
 
 export function ImageSlot({ nodeId, image }: ImageSlotProps) {
   const { setNodeImage, clearNodeImage } = useProject();
-  const imageUrl = useNodeImage(image);
+  const { url: imageUrl, status: imageStatus } = useNodeImage(image);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,10 +75,12 @@ export function ImageSlot({ nodeId, image }: ImageSlotProps) {
               <X size={12} />
             </button>
           </>
+        ) : imageStatus === "loading" ? (
+          <div className="property-image-empty" />
         ) : (
           <div className="property-image-empty">
             <ImageIcon size={22} />
-            <span>Drop image here</span>
+            <span>{imageStatus === "error" ? "Image file missing" : "Drop image here"}</span>
           </div>
         )}
       </div>

@@ -1,7 +1,8 @@
 // Right-click menu content: Rename / Duplicate / Set color / Delete / Add
-// child. No confirm-dialog component exists yet (that's a later phase), so
-// Delete uses a native window.confirm() as a safety net against accidental
-// data loss. Positioning/portaling is handled by the TreePopover wrapper.
+// child. Delete is confirmed before it runs — via the in-app themed dialog
+// (see shell/ConfirmDialog.tsx), which replaced an earlier native
+// window.confirm(). Positioning/portaling is handled by the TreePopover
+// wrapper.
 import { Copy, Palette, PencilLine, Plus, Trash2 } from "lucide-react";
 
 type ContextMenuProps = {

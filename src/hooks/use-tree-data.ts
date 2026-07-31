@@ -6,6 +6,7 @@ import { useProjectStore } from "../state/project-store";
 import { useProject } from "./use-project";
 import {
   buildTreeData,
+  createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
   type EffectiveColor,
@@ -43,4 +44,13 @@ export function useEffectiveColor(nodeId: string): EffectiveColor {
 
 export function useAncestorChain(nodeId: string): Node[] {
   return useProjectStore(useShallow((state) => getAncestorChain(nodeId, state.nodes)));
+}
+
+// The tree's name-and-#tag filter. Lives here rather than in TreePanel so the
+// component doesn't import tree-service directly (CLAUDE.md's layer order),
+// and so the Fuse index is only rebuilt when the nodes or the query actually
+// change rather than on every render.
+export function useSearchMatcher(query: string): ((nodeId: string) => boolean) | null {
+  const { nodes } = useProject();
+  return useMemo(() => createSearchMatcher(nodes, query), [nodes, query]);
 }
