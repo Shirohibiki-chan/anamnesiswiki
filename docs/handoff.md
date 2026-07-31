@@ -19,7 +19,9 @@ Kept short on purpose — this file is read most sessions.
 **Phase 8 shipped 2026-07-30.** LK import works against the user's real
 `Valeraverse.lk` (75 resources): tabs, formatting, cross-references, properties,
 images, banners. **Project home shipped 2026-07-31**, clearing the last thing
-queued ahead of Phase 9 — which is LK Export, designed but not started.
+queued ahead of Phase 9. **Phase 9 — LK Export — shipped 2026-07-31**, so the
+format now goes both ways; §LK export below has the constraints that govern it,
+and §Known gaps has the one thing it doesn't prove.
 
 A structural code review, a disk-I/O pass, and a documentation accuracy pass all
 ran on 2026-07-30. What they changed is in `CHANGELOG.md`; what they *concluded*
