@@ -49,6 +49,18 @@ Skipping silently would be worse than the crash it replaces (pages would just qu
 
 **Not yet exercised against a real window close** — the Tauri window lifecycle can't be driven from the review environment. Worth a quick `pnpm tauri dev` sanity check (type something, close immediately, reopen) next time the desktop app is running.
 
+### Fixed: no manual ordering inside folders
+
+`Project` only ever persisted `rootOrder`, and `TreePanel`'s `onMove` threw away react-arborist's drop index for anything below the root (`parentId === null ? index : undefined`). Everything but the top level was pinned to `sortByCreation`, so an in-folder drag rendered back in creation order the moment the store updated.
+
+`Project.childOrder?: Record<parentId, string[]>` now does for each folder what `rootOrder` does for the top level. It's optional and sparse on purpose — a project saved before this existed has no entry, and a folder nobody has reordered never gains one — so `orderSiblings` treats a missing or partial list as "these first, everything else by creation time". Additive, no migration.
+
+`orderSiblings` is the generalization of the old root-only sort and is now shared by `buildTreeData` and the store's `orderedSiblingIds`. A drop rebuilds the destination list from the order actually on screen rather than from whatever partial list is stored, so a never-reordered folder gets a complete, correct list on its first drop.
+
+`deleteNode` prunes `childOrder` (both entries *for* deleted parents and mentions *of* deleted nodes), and `duplicateNode` now places the copy directly after its original inside a folder, not just at the root.
+
+5 new tests in `tree-service.test.ts`. Note this supersedes half of the `duplicateNode` ordering note below: clone *placement* is now explicit, though clones still share a `createdAt`, so ordering *within* a duplicated subtree is still arbitrary.
+
 **Noted, not fixed:** `duplicateNode` stamps every clone in a subtree with the same `createdAt`, so cloned siblings fall back to the `id.localeCompare` tie-break — meaning a duplicated folder's children come out in an arbitrary order rather than matching the original. Ordering only, no data loss.
 
 **Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.

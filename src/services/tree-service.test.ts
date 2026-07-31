@@ -141,3 +141,43 @@ describe("createSearchMatcher", () => {
     expect(matcher?.("2")).toBe(false);
   });
 });
+
+// Regression: only root-level order was ever persisted, so dragging a page
+// around inside a folder appeared to work and then snapped back to creation
+// order on the next render.
+describe("buildTreeData childOrder", () => {
+  const folder = node({ id: "f", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 0 });
+  const a = node({ id: "a", name: "A", parentId: "f", templateKey: "note", createdAt: 1 });
+  const b = node({ id: "b", name: "B", parentId: "f", templateKey: "note", createdAt: 2 });
+  const c = node({ id: "c", name: "C", parentId: "f", templateKey: "note", createdAt: 3 });
+
+  function childNames(childOrder: Record<string, string[]>) {
+    const tree = buildTreeData(byId([folder, a, b, c]), ["f"], childOrder);
+    return tree[0].children!.map((n) => n.name);
+  }
+
+  it("falls back to creation order when a folder has no stored order", () => {
+    expect(childNames({})).toEqual(["A", "B", "C"]);
+  });
+
+  it("honours a stored order inside a folder", () => {
+    expect(childNames({ f: ["c", "a", "b"] })).toEqual(["C", "A", "B"]);
+  });
+
+  it("puts nodes missing from a stored order after the listed ones, by creation time", () => {
+    // "c" was created after the last reorder — it belongs at the end, not the front.
+    expect(childNames({ f: ["b", "a"] })).toEqual(["B", "A", "C"]);
+  });
+
+  it("ignores ids in a stored order that no longer exist", () => {
+    expect(childNames({ f: ["ghost", "c", "b", "a"] })).toEqual(["C", "B", "A"]);
+  });
+
+  it("leaves other folders on creation order", () => {
+    const other = node({ id: "g", name: "AUs", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 4 });
+    const x = node({ id: "x", name: "X", parentId: "g", templateKey: "note", createdAt: 5 });
+    const y = node({ id: "y", name: "Y", parentId: "g", templateKey: "note", createdAt: 6 });
+    const tree = buildTreeData(byId([folder, a, b, c, other, x, y]), ["f", "g"], { f: ["c", "b", "a"] });
+    expect(tree[1].children!.map((n) => n.name)).toEqual(["X", "Y"]);
+  });
+});

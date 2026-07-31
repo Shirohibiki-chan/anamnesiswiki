@@ -18,7 +18,10 @@ export function useTreeData(): {
 } {
   const { project, nodes } = useProject();
 
-  const treeData = useMemo(() => buildTreeData(nodes, project?.rootOrder ?? []), [nodes, project?.rootOrder]);
+  const treeData = useMemo(
+    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}),
+    [nodes, project?.rootOrder, project?.childOrder],
+  );
 
   return {
     treeData,

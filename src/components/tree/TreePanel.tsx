@@ -63,7 +63,11 @@ export function TreePanel() {
             disableMultiSelection
             onRename={({ id, name }) => renameNode(id, name)}
             onMove={({ dragIds, parentId, index }) => {
-              for (const id of dragIds) moveNode(id, parentId, parentId === null ? index : undefined);
+              // react-arborist reports the drop index within the destination
+              // regardless of depth. It used to be discarded for anything but
+              // the root, so dragging a page around inside a folder appeared
+              // to work and then snapped back to creation order.
+              dragIds.forEach((id, offset) => moveNode(id, parentId, index + offset));
             }}
             onToggle={(id) => setExpanded(id, treeApiRef.current?.isOpen(id) ?? false)}
             onSelect={(selected) => selectNode(selected[0]?.id ?? null)}
