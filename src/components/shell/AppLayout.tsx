@@ -8,6 +8,7 @@ import { PageView } from "../page/PageView";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { LoadWarning } from "./LoadWarning";
+import { RecoveryNotice } from "./RecoveryNotice";
 import { SaveWarning } from "./SaveWarning";
 import { TopBar } from "./TopBar";
 import "./shell.css";
@@ -38,6 +39,7 @@ export function AppLayout() {
           onSwitchProject={() => void handleSwitchProject()}
         />
         <LoadWarning />
+        <RecoveryNotice />
         <SaveWarning />
         <main className="app-layout-page">
           <PageView key={project?.selectedId ?? "none"} />

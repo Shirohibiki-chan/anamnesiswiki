@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
 import { useProject } from "../../hooks/use-project";
 import { useSearchMatcher, useTreeData } from "../../hooks/use-tree-data";
+import { useTemplates } from "../../hooks/use-templates";
 import { useElementSize } from "../../hooks/use-element-size";
 import type { TreeNodeData } from "../../services/tree-service";
 import { TreeItem } from "./TreeItem";
@@ -13,6 +14,7 @@ import { TreeSearch } from "./TreeSearch";
 export function TreePanel() {
   const { project, renameNode, moveNodes, setExpanded, selectNode } = useProject();
   const { treeData, getAncestorChain } = useTreeData();
+  const { canHaveChildren } = useTemplates();
   const [searchQuery, setSearchQuery] = useState("");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
   const treeApiRef = useRef<TreeApi<TreeNodeData> | null>(null);
@@ -65,6 +67,18 @@ export function TreePanel() {
             initialOpenState={initialOpenState}
             searchTerm={searchQuery}
             searchMatch={(node) => (searchMatcher ? searchMatcher(node.data.id) : true)}
+            // A page dropped onto a leaf template (item/event/note/blank) is a
+            // tree the storage model can't represent: a leaf has no directory
+            // of its own, so its would-be children get written into a plain
+            // directory with no marker file in it. Until this existed the drop
+            // was allowed, looked fine until the next load, and then the whole
+            // subtree disappeared — see docs/handoff.md §Loading. The root
+            // (`parentNode` is the invisible root node, id "__REACT_ARBORIST_
+            // INTERNAL_ROOT__") always accepts drops.
+            disableDrop={({ parentNode }) => {
+              const templateKey = parentNode?.data?.templateKey;
+              return templateKey ? !canHaveChildren(templateKey) : false;
+            }}
             onRename={({ id, name }) => renameNode(id, name)}
             onMove={({ dragIds, parentId, index }) => {
               // react-arborist reports the drop index within the destination

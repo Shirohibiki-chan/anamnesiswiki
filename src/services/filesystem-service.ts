@@ -15,7 +15,13 @@ import {
 } from "@tauri-apps/plugin-fs";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
 import { canHaveChildren } from "./template-registry";
-import { ASSETS_DIR, FOLDER_META_FILE as FOLDER_FILE, PAGE_META_FILE, PROJECT_FILE } from "../constants/paths";
+import {
+  ASSETS_DIR,
+  FOLDER_META_FILE as FOLDER_FILE,
+  MOVE_TEMP_PREFIX,
+  PAGE_META_FILE,
+  PROJECT_FILE,
+} from "../constants/paths";
 import { MAX_PATH_CHARS } from "../constants/limits";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
@@ -208,7 +214,13 @@ export function resolveNodePath(node: Node, graph: Node[] | PathIndex): Resolved
   return { dirSegments: ancestorSegments, fileName: `${ownSegment(node, index)}.json` };
 }
 
-export type LoadedProject = { project: Project; nodes: Node[]; skipped: string[] };
+export type LoadedProject = {
+  project: Project;
+  nodes: Node[];
+  skipped: string[];
+  /** Pages found parked under a move's temp name and put back. */
+  recoveredCount: number;
+};
 
 // A project folder is plain JSON on the user's own disk, synced by whatever
 // they like and editable by hand — so a malformed file is a question of when,
@@ -228,13 +240,47 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
   }
 
   const skipped: string[] = [];
+  const recovered: StrandedNode[] = [];
   const limited = createReadLimiter(READ_CONCURRENCY);
-  const nodes = await walkEntries(rootPath, await limited(() => readDir(rootPath)), null, skipped, limited);
+  const nodes = await walkEntries(rootPath, await limited(() => readDir(rootPath)), null, skipped, recovered, limited);
   // Directories are read in parallel, so the order files finish in is down to
   // timing. Sorting keeps the "couldn't read these" list the user sees stable
   // between two loads of the same damaged project.
   skipped.sort();
-  return { project, nodes, skipped };
+
+  const recoveredCount = await repairStrandedNodes(rootPath, nodes, recovered);
+  return { project, nodes, skipped, recoveredCount };
+}
+
+// Puts anything left parked under a move's temp name back at its real path.
+// A plain rename does it for both kinds: a stranded file becomes its proper
+// `Name.json`, and a stranded directory moves wholesale, children included —
+// which is why this can't be a save-then-delete, since that would write the
+// node's own marker at the new path and then delete its children with the old
+// directory.
+//
+// The temp name always sits in the directory the node came from, so the walk
+// has already given it the right parent and its resolved path is a sibling of
+// where it's parked. A failure here is left alone rather than reported: the
+// node is loaded and visible either way, and the next load tries again.
+async function repairStrandedNodes(rootPath: string, nodes: Node[], stranded: StrandedNode[]): Promise<number> {
+  if (stranded.length === 0) return 0;
+
+  const index = buildPathIndex(nodes);
+  let repaired = 0;
+  for (const { tempPath, nodeId } of stranded) {
+    const node = index.byId.get(nodeId);
+    if (!node) continue;
+    const segments = storageUnit(node, index);
+    try {
+      await mkdir(joinPath(rootPath, ...segments.slice(0, -1)), { recursive: true });
+      await rename(tempPath, joinPath(rootPath, ...segments));
+      repaired++;
+    } catch {
+      // Left where it is; it still loads, and the next load retries.
+    }
+  }
+  return repaired;
 }
 
 type ReadLimiter = <T>(task: () => Promise<T>) => Promise<T>;
@@ -270,11 +316,14 @@ async function readNodeFile(path: string, skipped: string[], limited: ReadLimite
 //
 // Sibling entries are read in parallel (they're independent files) with the
 // shared limiter capping how many are actually in flight.
+type StrandedNode = { tempPath: string; nodeId: string };
+
 async function walkEntries(
   dirPath: string,
   entries: DirEntry[],
   parentId: string | null,
   skipped: string[],
+  recovered: StrandedNode[],
   limited: ReadLimiter,
 ): Promise<Node[]> {
   const perEntry = await Promise.all(
@@ -282,15 +331,29 @@ async function walkEntries(
       const entryPath = joinPath(dirPath, entry.name);
 
       if (entry.isDirectory) {
+        // Ours, flat, and never node-owned — skipped by name so it isn't even
+        // listed. Every other marker-less directory *is* walked now (see
+        // below), and a world's worth of images is the one place where that
+        // would cost something for nothing.
+        if (parentId === null && entry.name === ASSETS_DIR) return [];
+
         const childEntries = await limited(() => readDir(entryPath));
         const markerFile = childEntries.some((child) => !child.isDirectory && child.name === FOLDER_FILE)
           ? FOLDER_FILE
           : childEntries.some((child) => !child.isDirectory && child.name === PAGE_META_FILE)
             ? PAGE_META_FILE
             : null;
-        // No marker file means this isn't a node-owned directory at all (e.g.
-        // assets/) — skip it silently rather than reporting it as damaged.
-        if (!markerFile) return [];
+        // No marker file means this isn't a node-owned directory (assets/, or
+        // a directory left behind by something going wrong). It contributes no
+        // node of its own — but it is still **walked**, and anything inside it
+        // is reparented to this level rather than abandoned.
+        //
+        // Returning early here instead is how the user lost a page: a page had
+        // been dropped onto a leaf-template page, which has no directory of
+        // its own, so the child was written into a plain `Name/` directory
+        // with no marker in it. The whole subtree then vanished from the tree
+        // on the next load while sitting perfectly intact on disk.
+        if (!markerFile) return walkEntries(entryPath, childEntries, parentId, skipped, recovered, limited);
 
         const node = await readNodeFile(joinPath(entryPath, markerFile), skipped, limited);
         // An unreadable marker still leaves a real directory that may hold
@@ -298,16 +361,31 @@ async function walkEntries(
         // level, so a single bad `_folder.json` costs one node and not the
         // whole branch underneath it.
         if (node) node.parentId = parentId;
-        const children = await walkEntries(entryPath, childEntries, node?.id ?? parentId, skipped, limited);
+        // A directory parked under a temp name keeps its marker, so it loads
+        // fine — but it's still sitting at the wrong path, and its odd name
+        // would survive every future save. Reported for the same repair as a
+        // stranded file.
+        if (node && entry.name.startsWith(MOVE_TEMP_PREFIX)) recovered.push({ tempPath: entryPath, nodeId: node.id });
+        const children = await walkEntries(entryPath, childEntries, node?.id ?? parentId, skipped, recovered, limited);
         return node ? [node, ...children] : children;
       }
 
       if (entry.name === FOLDER_FILE || entry.name === PAGE_META_FILE || entry.name === PROJECT_FILE) return [];
-      if (!entry.name.endsWith(".json")) return [];
+
+      // A file left under a move's temp name is a real page that a relocation
+      // didn't finish putting away. It has no `.json` suffix, so the extension
+      // check below used to skip it and the page was simply gone from the tree
+      // — that is exactly how the user lost two pages on 2026-07-31. It's read
+      // like any other node file and reported for repair; a temp name always
+      // sits in the directory the node came *from*, so this level is its right
+      // parent.
+      const isStrandedMove = entry.name.startsWith(MOVE_TEMP_PREFIX);
+      if (!isStrandedMove && !entry.name.endsWith(".json")) return [];
 
       const node = await readNodeFile(entryPath, skipped, limited);
       if (!node) return [];
       node.parentId = parentId;
+      if (isStrandedMove) recovered.push({ tempPath: entryPath, nodeId: node.id });
       return [node];
     }),
   );
@@ -478,15 +556,43 @@ async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<v
     return;
   }
 
-  const staged: { tempPath: string; newSegments: string[] }[] = [];
-  for (const item of plan) {
-    const tempPath = joinPath(rootPath, ...item.oldSegments.slice(0, -1), `.anamnesis-move-${crypto.randomUUID()}`);
-    await rename(joinPath(rootPath, ...item.oldSegments), tempPath);
-    staged.push({ tempPath, newSegments: item.newSegments });
-  }
-  for (const item of staged) {
-    await mkdir(joinPath(rootPath, ...item.newSegments.slice(0, -1)), { recursive: true });
-    await rename(item.tempPath, joinPath(rootPath, ...item.newSegments));
+  const staged: { tempPath: string; oldPath: string; newSegments: string[] }[] = [];
+
+  // If any single rename fails — and on Windows they do, transiently, when a
+  // sync client like OneDrive has a directory open — everything still sitting
+  // under a temp name has to go back where it came from. Without this the
+  // shuffle simply stops, and every file it had already staged is left under
+  // a name nothing recognises. That cost the user four pages on 2026-07-31.
+  //
+  // Items that already reached their destination are deliberately *not*
+  // reversed: each of those is at a real, valid path, and undoing them risks
+  // failing again and leaving a third state. The invariant worth protecting
+  // isn't "all or nothing", it's "no file is left under a temp name".
+  try {
+    for (const item of plan) {
+      const oldPath = joinPath(rootPath, ...item.oldSegments);
+      const tempPath = joinPath(rootPath, ...item.oldSegments.slice(0, -1), `.anamnesis-move-${crypto.randomUUID()}`);
+      await rename(oldPath, tempPath);
+      staged.push({ tempPath, oldPath, newSegments: item.newSegments });
+    }
+    while (staged.length > 0) {
+      const item = staged[0];
+      await mkdir(joinPath(rootPath, ...item.newSegments.slice(0, -1)), { recursive: true });
+      await rename(item.tempPath, joinPath(rootPath, ...item.newSegments));
+      staged.shift();
+    }
+  } catch (error) {
+    for (const item of staged) {
+      // A failed rollback leaves that one under its temp name, which the load
+      // walk now recognises and repairs (see walkEntries) — so even the
+      // worst case is recoverable rather than invisible.
+      try {
+        await rename(item.tempPath, item.oldPath);
+      } catch {
+        // Nothing useful to do here; the original error is the one to report.
+      }
+    }
+    throw error;
   }
 }
 
