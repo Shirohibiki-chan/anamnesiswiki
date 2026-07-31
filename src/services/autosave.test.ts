@@ -74,9 +74,21 @@ describe("autosave", () => {
     const good = vi.fn();
     scheduleSave("bad", () => Promise.reject(new Error("disk full")));
     scheduleSave("good", good);
-    await expect(flushAllSaves()).resolves.toBeUndefined();
+    // Resolves rather than rejecting, and reports the one failure so a manual
+    // save knows not to claim "Saved" — see project-store's saveNow.
+    await expect(flushAllSaves()).resolves.toBe(1);
     expect(good).toHaveBeenCalledTimes(1);
     expect(hasPendingSaves()).toBe(false);
+  });
+
+  it("reports no failures when everything writes", async () => {
+    vi.useFakeTimers();
+    scheduleSave("a", vi.fn());
+    await expect(flushAllSaves()).resolves.toBe(0);
+  });
+
+  it("reports no failures when there was nothing to flush", async () => {
+    await expect(flushAllSaves()).resolves.toBe(0);
   });
 });
 

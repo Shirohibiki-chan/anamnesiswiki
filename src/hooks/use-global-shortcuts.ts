@@ -2,10 +2,13 @@
 // rather than one per shortcut, so the order things are checked in is visible
 // and two features can't quietly both claim a key.
 import { useEffect } from "react";
-import { SHORTCUT_KEYS } from "../constants/shortcuts";
+import { DEFAULT_BINDINGS, SHORTCUT_ACTIONS, type ShortcutAction } from "../constants/shortcuts";
+import { matchesBinding } from "../services/shortcut-service";
 
 export type GlobalShortcutHandlers = {
   onSearch: () => void;
+  onNewPage: () => void;
+  onSave: () => void;
 };
 
 /**
@@ -14,20 +17,27 @@ export type GlobalShortcutHandlers = {
  * on every keystroke into a page, and a fresh function each time would tear
  * the listener down and rebuild it that often.
  */
-export function useGlobalShortcuts({ onSearch }: GlobalShortcutHandlers): void {
+export function useGlobalShortcuts({ onSearch, onNewPage, onSave }: GlobalShortcutHandlers): void {
   useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      // Alt is excluded rather than ignored: BlockNote's own shortcuts are
-      // Mod-Alt combinations, and matching on Mod alone would swallow them.
-      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+    const handlers: Record<ShortcutAction, () => void> = {
+      search: onSearch,
+      newPage: onNewPage,
+      save: onSave,
+    };
 
-      if (event.key.toLowerCase() === SHORTCUT_KEYS.search) {
+    function handleKeyDown(event: KeyboardEvent) {
+      for (const action of SHORTCUT_ACTIONS) {
+        if (!matchesBinding(event, DEFAULT_BINDINGS[action])) continue;
+        // Claims the keypress from the browser as well as from the page —
+        // Ctrl+S would otherwise open the webview's own save dialog. See
+        // docs/handoff.md §Shortcuts for the one this can't take back.
         event.preventDefault();
-        onSearch();
+        handlers[action]();
+        return;
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSearch]);
+  }, [onSearch, onNewPage, onSave]);
 }

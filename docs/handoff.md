@@ -379,18 +379,44 @@ is below.
   for anything returns most of the project. Folding content into the Fuse index
   "for consistency" makes the feature worse, not more consistent.
 
-- **BlockNote already owns `Mod-z`, `Mod-y`, `Mod-Alt-*` and `Mod-Shift-*`**
-  (verified against the installed version, not assumed). Any app-level shortcut
-  has to stay clear of those or it fights the editor for the keypress —
-  `use-global-shortcuts.ts` excludes Alt for exactly that reason. This is the
-  main thing standing between here and app-level undo/redo: `Mod-z` is taken.
-
 - **`pendingFocus` is transient and must be checked against the node it names.**
   It's how a search result opens a page *on a particular tab*, and it isn't
   cleared after use — PageView compares `pendingFocus.nodeId` to the node it's
   rendering. Dropping that comparison means a leftover from one jump opens the
   wrong tab on the next page visited. It's deliberately not part of `Project`:
   a single navigation isn't state worth writing to disk.
+
+## Shortcuts
+
+- **BlockNote already owns `Mod-z`, `Mod-y`, `Mod-Alt-*` and `Mod-Shift-*`**
+  (verified against the installed version, not assumed). Any app-level shortcut
+  has to stay clear of those or it fights the editor for the keypress. This is
+  also the main thing standing between here and app-level undo/redo: `Mod-z` is
+  taken.
+
+- **Matching is exact, not a subset.** A binding without Shift does not fire on
+  a Shift-bearing press, and one without Alt does not fire when Alt is held.
+  Loosening that so `Ctrl+K` also answers `Ctrl+Shift+K` swallows keypresses on
+  their way to whatever they were actually aimed at — including BlockNote's own
+  Mod-Alt formatting commands. `shortcut-service.test.ts` pins both directions.
+
+- **Bindings are stored as fields, never as a display string.** `Binding` is
+  `{ key, mod?, shift?, alt? }` where `key` is `event.key`; "Ctrl+K" is
+  something `formatBinding` produces for the screen and nothing ever parses
+  back. Storing the string would mean re-parsing it on every keystroke and
+  inventing a grammar for the settings file to disagree with later.
+
+- **`useShortcutLabel` is the only way a shortcut gets written on screen.**
+  Hardcoding "Ctrl+K" into a button is how a rebound key ends up advertised
+  wrong, which is worse than not advertising it at all.
+
+- **Whether the desktop build actually lets the page keep `Cmd+N` is
+  unverified.** `preventDefault()` claims it from the page, and in a plain
+  browser (`pnpm dev`) Ctrl+N is a browser-level accelerator that can't be
+  taken back at all. Under WebView2 the answer depends on browser accelerator
+  keys, which Tauri leaves enabled and doesn't expose in `tauri.conf.json`. If
+  it turns out to be stolen, the fix is a different default binding, not a
+  fight with the webview. `Cmd+S` is the ordinary case and behaves.
 
 ## Project home
 

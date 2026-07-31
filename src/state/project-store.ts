@@ -13,7 +13,7 @@ import {
   type Tab,
 } from "../constants/schema";
 import * as fsService from "../services/filesystem-service";
-import { cancelSave, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
+import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import * as lkImportService from "../services/lk-import";
@@ -85,6 +85,11 @@ export type ProjectStoreState = {
   deleteNodes: (ids: string[]) => void;
   duplicateNode: (id: string) => Promise<void>;
   selectNode: (id: string | null, tabId?: string) => void;
+  // Cmd+S. Runs every outstanding debounced write now, then shows "Saved" —
+  // including when there was nothing pending, because "Saved" is a statement
+  // about the state of the disk, not about a write having just happened. The
+  // one case it stays quiet is a flush that failed; SaveWarning has that.
+  saveNow: () => Promise<void>;
   setProjectHome: (id: string | null) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
 };
@@ -729,6 +734,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextProject: Project = { ...project, selectedId: id };
       set({ project: nextProject, pendingFocus: id && tabId ? { nodeId: id, tabId } : null });
       scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    },
+
+    async saveNow() {
+      const failedCount = await flushAllSaves();
+      if (failedCount === 0) markSaved();
     },
 
     // Designating a page as this world's home. Written immediately rather than
