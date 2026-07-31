@@ -8,31 +8,48 @@ echo   Rebuilding Anamnesis from the newest code and installing it.
 echo   This takes a few minutes. You can leave it running.
 echo.
 
-rem See the note in "Anamnesis (latest code).bat" -- a double-clicked shortcut
-rem inherits Explorer's cached environment, so PATH here can be missing tools
-rem that are installed and registered perfectly well.
-call :addpath cargo "%USERPROFILE%\.cargo\bin"
-call :addpath node  "%ProgramFiles%\nodejs"
-call :addpath pnpm  "%APPDATA%\npm"
-call :addpath git   "%ProgramFiles%\Git\cmd"
+rem See the long note in "Anamnesis (latest code).bat": nothing is searched
+rem for by name, because a double-clicked shortcut's PATH can't be trusted.
+rem See the note in "Anamnesis (latest code).bat" -- npm tools are .cmd files,
+rem and a PATHEXT missing .CMD hides all of them.
+set "PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.JS;.WSF;.MSC"
 
-set "MISSING="
-for %%T in (cargo node pnpm) do (
-  where %%T >nul 2>&1
-  if errorlevel 1 set "MISSING=!MISSING! %%T"
-)
-if defined MISSING (
-  echo   Can't build -- these aren't installed where expected:!MISSING!
+if exist "%USERPROFILE%\.cargo\bin"  set "PATH=%USERPROFILE%\.cargo\bin;%PATH%"
+if exist "%ProgramFiles%\nodejs"     set "PATH=%ProgramFiles%\nodejs;%PATH%"
+if exist "%ProgramFiles%\Git\cmd"    set "PATH=%ProgramFiles%\Git\cmd;%PATH%"
+if exist "%APPDATA%\npm"             set "PATH=%APPDATA%\npm;%PATH%"
+
+set "PNPM="
+for %%P in (
+  "%APPDATA%\npm\pnpm.cmd"
+  "%USERPROFILE%\AppData\Roaming\npm\pnpm.cmd"
+  "%LOCALAPPDATA%\pnpm\pnpm.exe"
+  "%ProgramFiles%\nodejs\pnpm.cmd"
+) do if not defined PNPM if exist "%%~P" set "PNPM=%%~P"
+
+if not defined PNPM (
+  echo   Can't build -- pnpm wasn't found. Looked in:
+  echo     %APPDATA%\npm\pnpm.cmd
+  echo     %USERPROFILE%\AppData\Roaming\npm\pnpm.cmd
+  echo     %LOCALAPPDATA%\pnpm\pnpm.exe
+  echo     %ProgramFiles%\nodejs\pnpm.cmd
   echo.
-  echo   Signing out and back in often fixes this on its own. Nothing was
-  echo   changed, so the copy you already have still works.
+  echo   Nothing was changed, so the copy you already have still works.
+  echo   Send this list to Claude -- one of those paths is wrong for this PC.
+  echo.
+  pause
+  exit /b 1
+)
+
+if not exist "%USERPROFILE%\.cargo\bin\cargo.exe" (
+  echo   Can't build -- Rust isn't at %USERPROFILE%\.cargo\bin. Nothing changed.
   echo.
   pause
   exit /b 1
 )
 
 git pull --ff-only
-call pnpm install --frozen-lockfile
+call "%PNPM%" install --frozen-lockfile
 
 rem The build refuses to run when tauri.conf.json declares an updater public
 rem key and no matching private key is available, because it would otherwise
@@ -51,7 +68,7 @@ if not exist "%KEYFILE%" (
 set /p TAURI_SIGNING_PRIVATE_KEY=<"%KEYFILE%"
 set "TAURI_SIGNING_PRIVATE_KEY_PASSWORD="
 
-call pnpm tauri build
+call "%PNPM%" tauri build
 if errorlevel 1 (
   echo.
   echo   The build failed. The message above says why. Nothing was installed,
@@ -82,9 +99,3 @@ echo   Done. Anamnesis in your Start menu is now up to date.
 echo.
 pause
 exit /b 0
-
-:addpath
-rem %1 = tool to look for, %2 = folder to add if it isn't already reachable.
-where %1 >nul 2>&1
-if errorlevel 1 if exist "%~2" set "PATH=%~2;%PATH%"
-goto :eof
