@@ -39,13 +39,19 @@ function ImportPreviewRow({ node, depth }: { node: ImportPreviewNode; depth: num
 export function ImportModal({ onClose }: { onClose: () => void }) {
   const { pickLkFile, pickFolder } = useDialogs();
   const { parseLkFile, importLkProject } = useLkImport();
-  const { recordProjectOpened } = useAppSettings();
+  const { recordProjectOpened, projectsDir } = useAppSettings();
   const { getLabel } = useTemplates();
 
   const [status, setStatus] = useState<Status>("idle");
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [projectName, setProjectName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Set only when this one import is going somewhere other than the folder in
+  // Settings. Deliberately not written back to the setting: overriding the
+  // destination once shouldn't silently move where everything lands from now on.
+  const [destinationOverride, setDestinationOverride] = useState<string | null>(null);
+
+  const destination = destinationOverride ?? projectsDir;
 
   async function handlePickFile() {
     const path = await pickLkFile();
@@ -63,6 +69,15 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  async function handleChangeDestination() {
+    const picked = await pickFolder({
+      title: "Choose where to save this imported project",
+      defaultPath: destination ?? undefined,
+    });
+    if (!picked) return;
+    setDestinationOverride(picked);
+  }
+
   async function handleConfirm() {
     if (!plan) return;
     const trimmedName = projectName.trim();
@@ -70,8 +85,14 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
       setError("Give your project a name.");
       return;
     }
-    const parentDir = await pickFolder({ title: "Choose where to save the imported project" });
-    if (!parentDir) return;
+    // No folder browser here any more — it opened with no starting point,
+    // which meant it opened in whatever folder the .lk was just picked from.
+    // The destination comes from Settings, and "Change" below overrides it.
+    if (!destination) {
+      setError("Still working out where to save this. Try again in a moment.");
+      return;
+    }
+    const parentDir = destination;
 
     setStatus("importing");
     setError(null);
@@ -140,6 +161,18 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
 
+            <p className="import-modal-destination">
+              Saving to <span className="import-modal-destination-path">{destination ?? "…"}</span>
+              <button
+                type="button"
+                className="import-modal-destination-change"
+                onClick={() => void handleChangeDestination()}
+                disabled={!destination}
+              >
+                Change
+              </button>
+            </p>
+
             {error && <p className="import-modal-error">{error}</p>}
 
             <div className="import-modal-actions">
@@ -147,7 +180,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 Cancel
               </button>
               <button type="button" className="import-modal-confirm" onClick={() => void handleConfirm()}>
-                Choose folder &amp; import
+                Import
               </button>
             </div>
           </div>

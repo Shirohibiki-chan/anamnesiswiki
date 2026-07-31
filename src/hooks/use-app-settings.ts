@@ -6,9 +6,19 @@ import type { RecentProject } from "../services/app-settings-service";
 
 export function useAppSettings() {
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+  // Null until the store has been read — the folder is only knowable
+  // asynchronously, so anything rendering it has to cope with "not yet".
+  const [projectsDir, setProjectsDirState] = useState<string | null>(null);
+  const [isCustomProjectsDir, setIsCustomProjectsDir] = useState(false);
 
   const refreshRecentProjects = useCallback(async () => {
     setRecentProjects(await appSettings.getRecentProjects());
+  }, []);
+
+  const refreshProjectsDir = useCallback(async () => {
+    const [dir, isCustom] = await Promise.all([appSettings.getProjectsDir(), appSettings.hasCustomProjectsDir()]);
+    setProjectsDirState(dir);
+    setIsCustomProjectsDir(isCustom);
   }, []);
 
   useEffect(() => {
@@ -16,10 +26,23 @@ export function useAppSettings() {
     appSettings.getRecentProjects().then((projects) => {
       if (!cancelled) setRecentProjects(projects);
     });
+    Promise.all([appSettings.getProjectsDir(), appSettings.hasCustomProjectsDir()]).then(([dir, isCustom]) => {
+      if (cancelled) return;
+      setProjectsDirState(dir);
+      setIsCustomProjectsDir(isCustom);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const changeProjectsDir = useCallback(
+    async (path: string | null) => {
+      await appSettings.setProjectsDir(path);
+      await refreshProjectsDir();
+    },
+    [refreshProjectsDir],
+  );
 
   const recordProjectOpened = useCallback(
     async (path: string, name: string) => {
@@ -46,5 +69,11 @@ export function useAppSettings() {
     forgetProject,
     getLastOpenedProject: appSettings.getLastOpenedProject,
     clearLastOpenedProject,
+    projectsDir,
+    isCustomProjectsDir,
+    changeProjectsDir,
+    // Read on demand rather than from the state above, for the call sites that
+    // need the folder *now* (creating, importing) and can't wait on a render.
+    getProjectsDir: appSettings.getProjectsDir,
   };
 }

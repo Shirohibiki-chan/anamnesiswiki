@@ -10,11 +10,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { ProjectsSettings } from "./ProjectsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { UpdateCheck } from "./UpdateCheck";
 
 // Adding a settings area is one entry here. Order is tab order.
 const SETTINGS_TABS = [
+  { id: "projects", label: "Projects", Panel: ProjectsSettings },
   { id: "keyboard", label: "Keyboard", Panel: ShortcutSettings },
   { id: "updates", label: "Updates", Panel: UpdateCheck },
 ] as const;

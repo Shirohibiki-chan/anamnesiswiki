@@ -3,6 +3,7 @@
 // in the app's own data dir, never inside a project folder.
 import { load, type Store } from "@tauri-apps/plugin-store";
 import { RECENT_PROJECTS_COUNT } from "../constants/limits";
+import { getDefaultProjectsDir } from "../constants/paths";
 
 const SETTINGS_FILE = "app-settings.json";
 
@@ -70,6 +71,34 @@ export async function setShortcutOverrides(overrides: Record<string, unknown>): 
     await store.set("shortcutOverrides", overrides);
   }
   await store.save();
+}
+
+/**
+ * Where new and imported projects get written. Stored only when the user has
+ * actually chosen one — an absent value means "wherever the default is now",
+ * so a default that moves in a later version follows anyone who never set it,
+ * the same reasoning as the shortcut overrides above.
+ */
+export async function getProjectsDir(): Promise<string> {
+  const store = await getStore();
+  return (await store.get<string>("projectsDir")) ?? (await getDefaultProjectsDir());
+}
+
+/** Null clears the setting, putting the folder back to the built-in default. */
+export async function setProjectsDir(path: string | null): Promise<void> {
+  const store = await getStore();
+  if (path) {
+    await store.set("projectsDir", path);
+  } else {
+    await store.delete("projectsDir");
+  }
+  await store.save();
+}
+
+/** Whether the folder above is the user's own choice rather than the default. */
+export async function hasCustomProjectsDir(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<string>("projectsDir")) != null;
 }
 
 export async function removeRecentProject(path: string): Promise<void> {

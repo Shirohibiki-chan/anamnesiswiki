@@ -1,18 +1,17 @@
 // First-launch screen — recent projects, "Open folder" (any location on
-// disk), and "New project" (name only, created under the default Anamnesis
-// projects folder). Rendered by StartupRouter when no project is loaded yet.
+// disk), and "New project" (name only, created under the projects folder from
+// Settings → Projects). Rendered by StartupRouter when no project is loaded yet.
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
-import { getDefaultProjectsDir } from "../../constants/paths";
 import { ImportModal } from "../import/ImportModal";
 import { SettingsButton } from "./SettingsButton";
 import "./shell.css";
 
 export function ProjectPicker() {
   const { loadProject, createProjectAt } = useProject();
-  const { recentProjects, recordProjectOpened, forgetProject } = useAppSettings();
+  const { recentProjects, recordProjectOpened, forgetProject, getProjectsDir } = useAppSettings();
   const { pickFolder } = useDialogs();
 
   const [isBusy, setIsBusy] = useState(false);
@@ -59,7 +58,7 @@ export function ProjectPicker() {
     setIsBusy(true);
     let result: Awaited<ReturnType<typeof createProjectAt>>;
     try {
-      const parentDir = await getDefaultProjectsDir();
+      const parentDir = await getProjectsDir();
       result = await createProjectAt(parentDir, trimmed);
     } catch {
       result = { ok: false, error: "Couldn't create the project folder. Check that the location is writable and try again." };
