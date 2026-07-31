@@ -1,0 +1,132 @@
+/* SearchPalette — Cmd+K project-wide search. See docs/plan.md Phase 10.
+   Sits high on the screen rather than centred like the import/export modals:
+   those are a task to read through, this is a box to type into and dismiss,
+   and anchoring it near the top stops the list shifting the input as it
+   grows. */
+
+.search-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 1000;
+}
+
+.search-palette {
+  width: 36rem;
+  max-width: calc(100vw - 2rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.search-palette-input {
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.search-palette-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.search-palette-hint {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.search-palette-hint code {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.search-palette-results {
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  /* Capped so a broad query doesn't grow the box off the bottom of the
+     window; the list scrolls inside instead. */
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.search-palette-result {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-palette-result:hover,
+.search-palette-result-active {
+  background: var(--color-panel-alt);
+}
+
+.search-palette-result-icon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--color-text-secondary);
+}
+
+.search-palette-result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.search-palette-result-name {
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+}
+
+.search-palette-result-path {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+.search-palette-result-snippet,
+.search-palette-result-tag {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  /* One line per result: the snippet is already clipped to a fixed width by
+     search-service, but a narrow window can still overflow it. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-palette-result-tab {
+  color: var(--color-text-muted);
+}
+
+.search-palette-result-tab::after {
+  content: " · ";
+}
+
+.search-palette-mark {
+  background: var(--color-accent-faint);
+  color: var(--color-accent-light);
+  border-radius: 0.125rem;
+}

@@ -14,13 +14,30 @@ import "./page.css";
 
 // Rendered with `key={node.id}` by AppLayout, so activeTabId's initial value
 // (the page's first tab) is recomputed fresh on every node switch without
-// needing an effect to reset it.
+// needing an effect to reset it. The same remount is what lets a search jump
+// land on a specific tab: `pendingFocus` only has to be right at mount, and
+// it's matched against this node's id so a leftover from an earlier jump
+// can't open the wrong tab on the next page opened.
 export function PageView() {
-  const { project, nodes, updateTabContent, toggleTabHidden, addTab, renameTab, deleteTab, reorderTabs } = useProject();
+  const { project, nodes, pendingFocus, updateTabContent, toggleTabHidden, addTab, renameTab, deleteTab, reorderTabs } =
+    useProject();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
 
-  const [activeTabId, setActiveTabId] = useState<string | null>(node?.tabs[0]?.id ?? null);
+  const focusedTabId = pendingFocus && pendingFocus.nodeId === node?.id ? pendingFocus.tabId : undefined;
+  const [activeTabId, setActiveTabId] = useState<string | null>(focusedTabId ?? node?.tabs[0]?.id ?? null);
+
+  // The initial value above covers a jump to a *different* page, with no frame
+  // spent on the wrong tab. This covers the case the remount can't see: a
+  // search hit on the page already open, where selectedId never changes and so
+  // nothing remounts. React's documented alternative to a syncing effect —
+  // adjust during render, keyed on the value that changed. `pendingFocus` is a
+  // fresh object per jump, so asking for the same tab twice still lands.
+  const [appliedFocus, setAppliedFocus] = useState(pendingFocus);
+  if (pendingFocus !== appliedFocus) {
+    setAppliedFocus(pendingFocus);
+    if (focusedTabId) setActiveTabId(focusedTabId);
+  }
 
   if (!node) return <EmptyPageView />;
   if (node.templateKey === FOLDER_TEMPLATE_KEY) return <FolderView node={node} />;

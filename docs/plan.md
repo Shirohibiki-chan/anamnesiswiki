@@ -115,11 +115,34 @@ accepts it. That needs an LK account and an import attempt. See
 
 ## Phase 10 — Polish + Distribution
 
-Global search across all nodes' content (Fuse.js index rebuilt on load, updated on change). Keyboard shortcuts (Cmd+K search, Cmd+N new page, Cmd+S manual save indicator). Node duplication (right-click → Duplicate). App-level undo/redo.
-
 Installer builds for macOS (`.dmg`), Windows (`.msi`), Linux (`.deb` + `.AppImage`) via `pnpm tauri build`. README instructions for the unsigned-installer bypass on each platform.
 
-**Partly done.** The in-app update check was pulled forward and shipped on 2026-07-31, and **v0.2.0 is published** — installer, signature, and `latest.json` are attached to the GitHub release, and the endpoint the app reads (`releases/latest/download/latest.json`) serves correctly.
+**Partly done.** Three of this phase's items are already in:
+
+- **Node duplication** — right-click → Duplicate, shipped in Phase 3. Still
+  single-selection only; see Queued Adjustments.
+- **The in-app update check**, pulled forward and shipped 2026-07-31.
+  **v0.2.0 is published** — installer, signature, and `latest.json` are
+  attached to the GitHub release, and the endpoint the app reads
+  (`releases/latest/download/latest.json`) serves correctly.
+- **Global search + Cmd+K**, shipped 2026-07-31. `search-service.ts` searches
+  names, tags and every tab's text; the palette jumps to the matching *tab*,
+  not just the page. One deviation from the sketch above worth knowing: it is
+  **not** a single Fuse index over content. Names and tags are fuzzy; prose is
+  exact substring, because fuzzy matching across thousands of characters
+  returns scattered letters from unrelated paragraphs. See `docs/handoff.md`
+  §Search.
+
+**Still to do:**
+
+- **The rest of the keyboard shortcuts** — Cmd+N new page, Cmd+S manual save
+  indicator. `constants/shortcuts.ts` and `use-global-shortcuts.ts` exist and
+  are the place to add them. Mind what BlockNote already owns (handoff §Search).
+- **App-level undo/redo.** Not started, and not a small one — BlockNote already
+  binds Mod-z/Mod-y for editor history, and tree operations write to disk as
+  they happen, so "undo" there means reversing a filesystem change rather than
+  popping a state stack. Scope needs deciding before any of it is built.
+- **Automating releases and the other platforms.** See below.
 
 Cutting a release is currently manual: bump the version in `package.json`, `tauri.conf.json` and `Cargo.toml`, build with `TAURI_SIGNING_PRIVATE_KEY` set (or clients reject the update as unsigned), hand-write `latest.json` with the `.sig` contents inlined, then `gh release create`. **Still outstanding:** automating that as a workflow on tag push, and macOS/Linux bundles — `latest.json` currently declares `windows-x86_64` only, so a non-Windows build would find no platform entry. See `docs/handoff.md` → Updates.
 

@@ -369,6 +369,29 @@ is below.
   underneath. Plain HTML5 DnD can't do this — browsers won't reliably start a drag
   from a nested `<button>`.
 
+## Search
+
+- **Prose is matched by exact substring, not fuzzily, and that's the design —
+  not an unfinished bit.** Names and tags go through Fuse because they're short
+  and a half-remembered spelling should still find them. Page text doesn't:
+  fuzzy matching across thousands of characters finds a scattering of the
+  query's letters in unrelated paragraphs and ranks it as a hit, so a search
+  for anything returns most of the project. Folding content into the Fuse index
+  "for consistency" makes the feature worse, not more consistent.
+
+- **BlockNote already owns `Mod-z`, `Mod-y`, `Mod-Alt-*` and `Mod-Shift-*`**
+  (verified against the installed version, not assumed). Any app-level shortcut
+  has to stay clear of those or it fights the editor for the keypress —
+  `use-global-shortcuts.ts` excludes Alt for exactly that reason. This is the
+  main thing standing between here and app-level undo/redo: `Mod-z` is taken.
+
+- **`pendingFocus` is transient and must be checked against the node it names.**
+  It's how a search result opens a page *on a particular tab*, and it isn't
+  cleared after use — PageView compares `pendingFocus.nodeId` to the node it's
+  rendering. Dropping that comparison means a leftover from one jump opens the
+  wrong tab on the next page visited. It's deliberately not part of `Project`:
+  a single navigation isn't state worth writing to disk.
+
 ## Project home
 
 - **Home is an ordinary page that's been *designated*, not a reserved node.**

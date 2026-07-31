@@ -202,6 +202,33 @@
   color: var(--color-accent-light);
 }
 
+/* Wider than the icon buttons beside it on purpose: it carries the shortcut
+   hint, which is the only place in the app that Cmd+K is written down. */
+.top-bar-search-button {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 28px;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.top-bar-search-button:hover {
+  background: var(--color-panel-edge);
+  color: var(--color-text-primary);
+}
+
+.top-bar-kbd {
+  font-family: inherit;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
 /* --- SaveIndicator --- */
 
 .save-indicator {
