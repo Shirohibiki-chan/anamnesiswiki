@@ -4,7 +4,26 @@
 
 **Phase 8 shipped 2026-07-30.** LK import: the user's real `Valeraverse.lk` (75 resources) imports as a brand-new project — tabs, formatting, cross-references, properties, images, and banners all included. Next up is Phase 9 (LK Export), though a "proper project home" feature is queued ahead of it (see Queued Adjustments in `docs/plan.md`).
 
+A full structural code review ran 2026-07-30 before starting Phase 9 — findings and their fixes are logged under "Code Review 2026-07-30" below.
+
 This doc is now the running log of what's shipped and what's next — same shape as the CharSnap-tracker handoff.
+
+## Code Review 2026-07-30
+
+Read of every file in `src/`, plus `tsc`, ESLint, and the Vitest suite (all clean at the time of review). Architecture rules from `CLAUDE.md` were being followed — sole disk-toucher intact, no barrel files, no stray template metadata. Findings below, each fixed in its own PR.
+
+### Fixed: LK import silently orphaned sub-pages
+
+`inferTemplateKey` in `lk-import.ts` matched a page's tab list **exactly** against the known signatures, so any page carrying an extra user-added tab fell through to `note`. `note` is a leaf template (`canHaveChildren: false`), which meant:
+
+- `buildTreeData` renders `children: null` for it, so its sub-pages never appear in the tree at all; and
+- `resolveNodePath` stores it as a flat `Name.json` with no directory of its own, so its children were written into a `Name/` directory with no `_folder.json`/`_page.json` marker — which `walkDirectory` skips on load. Permanent loss on the next project load, with the import preview still reporting them as imported.
+
+Two changes: signatures are now **subset** matches (ordered most-specific-first, so species beats character on a page that has both signatures' tabs), and a nestability net promotes any resource with children to `folder` if the inferred template can't hold them. The net drops that page's own text, so it's reported as a distinct lossy note rather than folded into the existing "organizing page" wording.
+
+Measured against the real `Valeraverse.lk`: 1 page affected before the fix ("Valera Jiang", tabs `[Overview|Gallery|Backstory]`, 1 child at risk). After: she classifies as `character`, all 75 nodes are reachable in the tree, 0 orphans, and the nestability net never fires — so no text is dropped.
+
+**Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.
 
 ## Repo Snapshot
 
