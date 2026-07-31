@@ -30,7 +30,15 @@ Updating these is part of completing a change, not a follow-up. Show them in the
 
 - **`CHANGELOG.md`** — required for all user-visible changes. New dated section at top (`## 2026-07-30`), with Additions / Fixes / Adjustments / Renames as needed. Plain-language and user-visible — not internal refactor notes. Never `[Unreleased]`.
 - **`docs/plan.md`** — forward-looking only: remaining phases, Queued Adjustments, Known Bugs, Future Features. When a phase completes, its detail moves to `docs/shipped.md` rather than staying here.
-- **`docs/handoff.md`** — current state. Mark resolved items shipped, add newly discovered ones. Internal/architectural detail that doesn't belong in the changelog goes here.
+- **`docs/handoff.md`** — durable reasoning only: constraints and decisions that
+  still govern the code. **Test before adding: *would reading this stop someone
+  about to change this code from making a mistake?*** If yes, here. If it's a
+  record of what was done, how it was verified, or how fast it got — that's
+  `docs/shipped.md`. This file is read most sessions; keep it short enough that it
+  stays worth reading.
+- **`docs/shipped.md`** — the log: what each phase and engineering pass did,
+  measurements, verification. **Nothing reads this by default**, so write freely —
+  but lift anything that still binds up into `handoff.md`, or it's lost.
 - **`docs/lk-format.md`** — update whenever import/export mapping changes. This is what future-us reads when LK ships a new schema version.
 
 ## Commands
@@ -112,7 +120,7 @@ Valeraverse/
 
 **Why file-per-node mirroring the tree:** the user's writing stays legible outside the app. Sync tools (Dropbox, Syncthing) only touch changed files. Git diffs are clean. If the app ever breaks, she still owns her work as plain JSON.
 
-**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` or `_page.json` — rather than as a flat sibling file. Deliberate, not incidental: a directory's ownership must never be derived from its *current* name, or a rename (or a sibling's suffix shifting) silently orphans its children on the next load. That happened once; see `docs/handoff.md` Phase 4 notes. Leaf templates (item/event/note) can never have children, so they stay a flat `Name.json`.
+**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` or `_page.json` — rather than as a flat sibling file. Deliberate, not incidental: a directory's ownership must never be derived from its *current* name, or a rename (or a sibling's suffix shifting) silently orphans its children on the next load. That happened once; see `docs/handoff.md` §Storage. Leaf templates (item/event/note) can never have children, so they stay a flat `Name.json`.
 
 **Renames and reparents** are `fs.rename` on the file, or on the whole directory so children move for free. Watch Windows path length (~260 chars) on deep nesting.
 
@@ -132,8 +140,8 @@ Import shows a preview (tree + inferred template counts + a plain-language list 
 
 - `docs/spec.md` — original build spec, corrected against shipped code 2026-07-30; still the place for design intent, but the code wins on facts
 - `docs/plan.md` — remaining phases, queued work, known bugs
-- `docs/shipped.md` — what each completed phase delivered; historical, don't read by default
-- `docs/handoff.md` — current state, design decisions, known gaps
+- `docs/shipped.md` — the historical log; don't read by default
+- `docs/handoff.md` — why the code is like this: live constraints, decisions, known gaps
 - `docs/lk-format.md` — `.lk` mapping, ProseMirror → BlockNote translation
 - `docs/glossary.md` — domain terms
 - `docs/constants-and-theming.md` — CSS token system, palette, callout tokens
