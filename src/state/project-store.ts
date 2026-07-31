@@ -409,7 +409,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextProject: Project = { ...project, rootOrder: project.rootOrder.filter((n) => n !== id) };
 
       set({ nodes: nextNodes, project: nextProject });
-      void fsService.deleteNode(rootPath, existing, allNodesBefore).then(markSaved);
+      void fsService.deleteNode(rootPath, existing, allNodesBefore, Object.values(nextNodes)).then(markSaved);
       void fsService.saveProject(rootPath, nextProject).then(markSaved);
       // A deleted node's own uploaded image/banner (see ImageSlot Phase 6,
       // PageBanner Phase 8) lives in the flat assets/ dir, not inside the

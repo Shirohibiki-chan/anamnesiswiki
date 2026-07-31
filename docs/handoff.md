@@ -23,6 +23,18 @@ Two changes: signatures are now **subset** matches (ordered most-specific-first,
 
 Measured against the real `Valeraverse.lk`: 1 page affected before the fix ("Valera Jiang", tabs `[Overview|Gallery|Backstory]`, 1 child at risk). After: she classifies as `character`, all 75 nodes are reachable in the tree, 0 orphans, and the nestability net never fires — so no text is dropped.
 
+### Fixed: same-name siblings drifted out of sync with disk
+
+`ownSegment` ranks colliding same-name, same-storage-kind siblings by creation order to assign the ` (2)`/` (3)` suffix. That rank is recomputed from the current graph on every resolve, so acting on one member of a collision group **renumbers the others** — but `relocateNode` only ever moved the one node the user acted on. The untouched sibling's computed path then pointed somewhere its real directory wasn't, and its next write created a second directory holding the same node id. `walkDirectory` loads both, so the page appears twice after a reload with edits split across the copies.
+
+`planRelocations(before, after)` now diffs the whole graph instead. A node is scheduled for its own `fs.rename` only when its **own segment or own parent** changed — a path that shifted purely because an ancestor directory moved rides along with that directory and must not be moved twice (this was a real bug in the first cut of the fix, caught by the descendant test). `deleteNode` takes the after-graph for the same reason.
+
+Multi-move plans stage through temp names before landing on their targets: renaming "Ruins" away is exactly what frees the name "Ruins (2)" is moving into, so a naive ordering hits an occupied target. Temp directories keep their `_page.json`, so a crash mid-shuffle leaves the node loadable under an odd directory name that the next save corrects, rather than lost.
+
+10 new tests in `filesystem-service.test.ts` covering rename, delete, chained renumbering, collision-creating renames, cross-storage-kind non-collisions, leaf siblings, ride-along descendants, and moves out of a folder.
+
+**Noted, not fixed:** `duplicateNode` stamps every clone in a subtree with the same `createdAt`, so cloned siblings fall back to the `id.localeCompare` tie-break — meaning a duplicated folder's children come out in an arbitrary order rather than matching the original. Ordering only, no data loss.
+
 **Noted, not fixed:** the real export also reports 15 broken cross-reference links on import. Those are mentions pointing at the LK project root, which becomes the Project itself rather than a Node (see the Phase 8 notes below). Worth revisiting alongside the queued "proper project home" feature, since that's the thing they'd naturally point at.
 
 ## Repo Snapshot
