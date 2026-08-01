@@ -35,6 +35,31 @@ export async function setLastOpenedProject(path: string | null): Promise<void> {
   await store.save();
 }
 
+/**
+ * The folder a project sits *in*, for showing under its name in the recent
+ * list. Nothing else distinguishes two projects with the same name — and two
+ * of them is normal, since importing the same world twice keeps its name both
+ * times — while the full path is a 60-character string that wraps to three
+ * lines and buries the one segment that differs.
+ *
+ * Pure string work on purpose: no disk access, so this can't fail on a project
+ * that has since been moved or deleted, which is exactly when the recent list
+ * still has to render it.
+ */
+export function describeProjectLocation(path: string): string {
+  // Reuse whichever separator the path already uses — releases build for macOS
+  // and Linux too, and backslashes in a posix path would read as damage.
+  const separator = path.includes("\\") ? "\\" : "/";
+  const segments = path.split(/[\\/]/).filter(Boolean);
+  // Drop the project's own folder — its name is already the line above this.
+  const parent = segments.slice(0, -1);
+  if (parent.length === 0) return path;
+
+  const tail = parent.slice(-2);
+  const prefix = parent.length > tail.length ? `…${separator}` : "";
+  return prefix + tail.join(separator);
+}
+
 export async function getRecentProjects(): Promise<RecentProject[]> {
   const store = await getStore();
   return (await store.get<RecentProject[]>("recentProjects")) ?? [];

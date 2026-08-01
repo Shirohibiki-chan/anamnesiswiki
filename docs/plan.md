@@ -171,9 +171,28 @@ Identity, the writing half. Also closes the only genuine legal exposure in the r
 
 ---
 
+## Phase 11.5 — The Design System
+
+The unglamorous half of the overhaul, and a hard prerequisite for Phase 12. **`docs/ui-audit.md` is the list**; this phase is that document's Part 1 and Part 2, and the file is disposable once they're crossed off.
+
+Why it goes *before* the themes rather than with them: a theme swaps token *values*, and none of what's wrong is a value. The app has a colour system and no other scale — eleven font sizes, nine radii in thirteen spellings, six `line-height` declarations in the entire codebase, five copy-pasted modal backdrops, nine hand-rolled variants of the same button. Ship themes onto that and every theme inherits it, they all look equally unfinished, and choosing between them becomes impossible because the thing that's actually wrong is identical in all of them.
+
+- **Type scale.** Collapse eleven sizes to a named ramp, and give headings a real one — six different sizes currently mean "title of this screen".
+- **Put the display font to work.** Fraunces is bundled and used in exactly one place (the start page's `<h1>`). Page titles, modal headings and folder names are all Inter. Bundle a mono for shortcuts, paths and `code` while here.
+- **Radius and spacing scales**, one spelling each. Four of the common radii are currently written two different ways.
+- **A global `line-height`**, which the app has never had.
+- **Shared control styles** — one backdrop, one modal shell, one button set, one dismiss button, one text-link. Not a component library; a stylesheet the surfaces stop reimplementing.
+- **Focus and motion.** Two `:focus-visible` rules and five transitions exist app-wide. Keyboard focus is invisible almost everywhere and nothing eases.
+- **Border hierarchy.** One border colour at one weight does structural, decorative and input duty; `--color-border-subtle` exists and is used once.
+- **Fix the audit's Part 1 defects** — the 7px top-bar/sidebar step, the jittering active sidebar tab, the doubled project name, the panels that vanish on a narrow window.
+
+**End state:** the app is consistent and boring, which is the state a visual direction can actually be judged from.
+
+---
+
 ## Phase 12 — Themes & Appearance
 
-Identity, the visual half — and the reversibility machinery that has to exist before it.
+Identity, the visual half — and the reversibility machinery that has to exist before it. Depends on Phase 11.5; don't start it early.
 
 - **Theme switcher** in a new Settings → Appearance tab. The `[data-theme]` token architecture already exists (`docs/constants-and-theming.md`); this is the UI over it.
 - **Gradient tokens.** The user has one concrete aesthetic want and it's gradients. Add them to the token system up front rather than retrofitting.

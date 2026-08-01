@@ -86,5 +86,6 @@ export function useAppSettings() {
     // folder that doesn't exist, and a folder browser pointed at it would open
     // in Documents instead with the user expected to make it by hand.
     prepareProjectsDir,
+    describeProjectLocation: appSettings.describeProjectLocation,
   };
 }
