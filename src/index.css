@@ -142,12 +142,36 @@
   }
 }
 
+/* This is a desktop window, not a web page: the document itself must never
+   scroll. Every scrollable region inside (tree, page body, properties panel,
+   a settings panel) owns its own scrolling, and nothing was constraining the
+   document around them — so anything that overflowed by a pixel put a
+   scrollbar down the side of the whole app, next to a modal that had nothing
+   to do with it. */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Themed scrollbar app-wide, so every scrollable area (tree, page body,
-   properties panel, etc.) matches the dark theme instead of the browser's
-   plain default. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+   properties panel, modals, etc.) matches the dark theme instead of the
+   browser's plain default.
+
+   The standard `scrollbar-width` / `scrollbar-color` properties are scoped to
+   engines that have no `::-webkit-scrollbar` at all, and that is not a
+   nicety: Chromium supports both, and setting either standard property on an
+   element makes it ignore every `::-webkit-scrollbar` rule for that element.
+   Applying them to `*`, as this did, silently switched the whole app back to
+   the OS scrollbar — on Windows the wide one with an arrow button at each
+   end. The rules below never applied anywhere. Don't reintroduce them
+   unscoped. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
 }
 
 *::-webkit-scrollbar {

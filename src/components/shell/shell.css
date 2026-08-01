@@ -443,11 +443,16 @@
   z-index: 1000;
 }
 
+/* Column, so the panel is the only part that scrolls. The whole modal used to
+   scroll as one, which meant a short window took the title and the tab strip
+   away with it — you'd be scrolling a settings screen with no way to see
+   which tab you were on. */
 .settings-modal {
+  display: flex;
+  flex-direction: column;
   width: 28rem;
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 4rem);
-  overflow-y: auto;
   text-align: left;
   background: var(--color-panel);
   border: 1px solid var(--color-border);
@@ -461,6 +466,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .settings-title {
@@ -495,6 +501,7 @@
   gap: 0.25rem;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 1.25rem;
+  flex-shrink: 0;
   overflow-x: auto;
 }
 
@@ -541,6 +548,9 @@
    a lake of empty space under a one-line panel. Panels grow past it freely. */
 .settings-panel {
   min-height: 7rem;
+  /* The one scrolling part. `auto` and not `scroll`, so a panel that fits —
+     which is all of them at a normal window size — shows no bar at all. */
+  overflow-y: auto;
 }
 
 /* Cmd+N's template picker — see components/shell/NewPageDialog.tsx. Borrows
