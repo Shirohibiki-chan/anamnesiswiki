@@ -218,10 +218,15 @@
   overflow: hidden;
 }
 
+/* `--color-accent-dark`, matching the update-download bar, and NOT
+   `--color-accent` — that token is the 15%-opacity hover tint (see the note on
+   it in index.css), which over this track came out barely a shade off the
+   track itself. The bar is the only thing moving during a long import; it has
+   to actually read as filled. */
 .import-modal-progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--color-accent);
+  background: var(--color-accent-dark);
   transition: width 120ms linear;
 }
 

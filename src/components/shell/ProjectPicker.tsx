@@ -11,7 +11,8 @@ import "./shell.css";
 
 export function ProjectPicker() {
   const { loadProject, createProjectAt } = useProject();
-  const { recentProjects, recordProjectOpened, forgetProject, prepareProjectsDir } = useAppSettings();
+  const { recentProjects, recordProjectOpened, forgetProject, prepareProjectsDir, describeProjectLocation } =
+    useAppSettings();
   const { pickFolder } = useDialogs();
 
   const [isBusy, setIsBusy] = useState(false);
@@ -87,9 +88,16 @@ export function ProjectPicker() {
           <ul>
             {recentProjects.map((p) => (
               <li key={p.path}>
-                <button type="button" onClick={() => void handleOpenRecent(p.path, p.name)} disabled={isBusy}>
+                <button
+                  type="button"
+                  onClick={() => void handleOpenRecent(p.path, p.name)}
+                  disabled={isBusy}
+                  // The full path is still worth having, just not worth three
+                  // wrapped lines on every row.
+                  title={p.path}
+                >
                   <span className="project-picker-recent-name">{p.name}</span>
-                  <span className="project-picker-recent-path">{p.path}</span>
+                  <span className="project-picker-recent-path">{describeProjectLocation(p.path)}</span>
                 </button>
               </li>
             ))}

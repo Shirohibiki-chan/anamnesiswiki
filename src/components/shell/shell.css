@@ -342,10 +342,16 @@
   font-size: 0.875rem;
 }
 
+/* One line, clipped — this is the containing folder rather than the full path
+   now (see describeProjectLocation), so it fits; `break-all` on the full path
+   used to wrap it mid-word across three lines on every row. */
 .project-picker-recent-path {
+  max-width: 100%;
   font-size: 0.6875rem;
   color: var(--color-text-muted);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-picker-actions {
@@ -495,6 +501,10 @@
   color: var(--color-text-primary);
 }
 
+/* `overflow-y: hidden` for the same reason as .page-tabs in page/page.css —
+   an `overflow-x` of `auto` quietly makes this a vertical scroll container as
+   well, and the active tab's underline overflowed it by a pixel. That was the
+   scrollbar down the side of the Settings tab strip. */
 .settings-tabs {
   display: flex;
   align-items: center;
@@ -503,6 +513,7 @@
   margin-bottom: 1.25rem;
   flex-shrink: 0;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .settings-tab {
@@ -530,7 +541,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   background: var(--color-accent-light);
 }
