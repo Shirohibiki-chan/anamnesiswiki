@@ -140,6 +140,81 @@
     background-color: var(--color-bg);
     color: var(--color-text-primary);
   }
+
+  /* --- Focus (Phase 11.5) ---
+     The browser's own focus ring is white, and this is a dark app, so every
+     focusable thing without a rule of its own drew a hard white box: the
+     import dialog's name field, the start screen's project name, the sidebar's
+     find box, renaming a page in the tree, the property type dropdown. The
+     sidebar rows were fixed one at a time as they were noticed; this fixes the
+     class rather than the instances.
+
+     Two steps, and both are needed. Killing the ring on :focus alone would
+     leave the app unusable from the keyboard, so it's handed straight back on
+     :focus-visible — which is the browser's own judgement about whether the
+     user is actually navigating by keyboard, and is why a clicked button
+     doesn't light up but a tabbed-to one does. Text fields match it whenever
+     they hold the caret, which is what we want: a focused field should always
+     look focused.
+
+     These live in @layer base deliberately. Every component stylesheet is
+     unlayered and therefore outranks this no matter how specific it is, so
+     anything with its own focus treatment — the tree's programmatic row
+     outline, the Settings tabs, the property value fields — keeps it without
+     needing to fight. This is the floor, not the law. */
+  :focus {
+    outline: none;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  summary:focus-visible,
+  [role="button"]:focus-visible,
+  /* contenteditable is excluded because BlockNote's editor is one: it carries a
+     tabindex, and a ring around the entire writing area every time you click
+     into a page would be worse than the white box. It has a caret to say where
+     focus is. */
+  [tabindex]:not([tabindex="-1"], [contenteditable]):focus-visible {
+    outline: 2px solid var(--color-accent-dark);
+    outline-offset: 2px;
+  }
+
+  /* Same colour and weight as the ring above, hugging the box instead of
+     standing off it — an outline held 2px off a text field reads as an error
+     state. box-shadow rather than outline so it follows the field's own
+     corner radius.
+
+     The ring is the whole signal here, and it has to be: every field in the
+     app sets its border in an unlayered stylesheet, so a `border-color` in
+     this block would lose to it even on focus and be dead code. That's the
+     cost of the layering above protecting the components, and it's the right
+     trade — but it means this ring has to be legible alone. */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent-dark);
+  }
+
+  /* --- Motion (Phase 11.5) ---
+     Before this there were five transitions in the entire app, four of them
+     progress bars. Every hover state everywhere snapped, which is most of why
+     the app felt like a form rather than something built. Only the properties
+     that hover and focus states actually change are listed — no `all`, which
+     would animate layout and cost frames on the tree's virtualized rows. */
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease,
+      box-shadow 120ms ease,
+      opacity 120ms ease,
+      filter 120ms ease;
+  }
 }
 
 /* This is a desktop window, not a web page: the document itself must never

@@ -149,6 +149,11 @@
 
 /* --- TreeItem --- */
 
+/* The most-hovered surface in the app, and a div rather than a button, so it
+   doesn't pick up the base transition in index.css. Named explicitly instead
+   of widening that selector — the tree is virtualized and rows are recycled
+   constantly, so this is the one place where what animates should be a
+   deliberate short list. */
 .tree-row {
   position: relative;
   display: flex;
@@ -160,6 +165,9 @@
   font-size: 0.8125rem;
   color: var(--color-text-secondary);
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
 .tree-row:hover {

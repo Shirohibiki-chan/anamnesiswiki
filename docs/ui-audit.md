@@ -52,15 +52,24 @@ Things that are simply wrong. No design direction needed to fix any of them.
    (`.top-bar-project-name`) and once in the sidebar header
    (`.tree-project-header-name`).
 
-7. **Keyboard focus is invisible almost everywhere.** Exactly two elements in
-   the app define a `:focus-visible` style: the Settings tabs and the new-page
-   template grid. Every button on the start page, every modal action, every
-   Settings control either shows Chromium's default ring or nothing at all.
+7. **~~Keyboard focus is invisible almost everywhere.~~** *(fixed 2026-07-31)*
+   Two elements in the app defined a `:focus-visible` style — the Settings tabs
+   and the new-page template grid. Everything else showed Chromium's default
+   ring, which is white, or nothing at all. That white ring is the "white box"
+   bug that kept resurfacing in different places: the sidebar rows, then the
+   sidebar list, then the import dialog's name field. Same defect each time,
+   fixed one instance at a time. Now handled as a class in `index.css`:
+   `:focus` clears the ring app-wide and `:focus-visible` gives back a themed
+   one. The five fields that had no focus style at all — import project name,
+   start-screen project name, sidebar find, tree rename, property type — were
+   the visible symptom.
 
-8. **Nothing animates.** Five `transition` declarations in the entire codebase,
-   and four of them are progress bars and the sidebar collapse. Every hover
-   state in the app — every button, every tree row, every tab — snaps. This is
-   a large part of why it feels like a form and not an app.
+8. **~~Nothing animates.~~** *(fixed 2026-07-31)* Five `transition`
+   declarations in the entire codebase, four of them progress bars and the
+   sidebar collapse. Every hover state — every button, every tree row, every
+   tab — snapped. A base transition now covers form controls and `[role=
+   button]`, with the tree row named separately since it's a div and gets a
+   deliberately shorter list (it's virtualized and recycled constantly).
 
 9. **`--color-accent` and `--color-accent-faint` are byte-identical**
    (`rgba(20, 184, 166, 0.15)` both). Two names, one value, and one of them is
@@ -160,7 +169,12 @@ feel cramped.
   Projects panel borrows the *Updates* panel's class, which a comment in the
   stylesheet actually admits to.
 
-### Hover means five different things
+### ~~Hover means five different things~~ *(partly addressed 2026-07-31)*
+
+The five languages below are still five languages — that's the consolidation
+work. But they all ease now instead of snapping, which was the larger part of
+why they read as unfinished.
+
 
 Depending on which screen you're on, hovering a control does one of:
 `border-color: accent-faint-border` + `background: accent-faint` · `background:
