@@ -25,7 +25,7 @@ export function SaveWarning() {
           ))}
         </ul>
       </div>
-      <button type="button" className="save-warning-dismiss" aria-label="Dismiss" onClick={dismissSaveErrors}>
+      <button type="button" className="ui-icon-btn ui-icon-btn-sm" aria-label="Dismiss" onClick={dismissSaveErrors}>
         <X size={13} />
       </button>
     </div>

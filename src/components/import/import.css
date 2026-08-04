@@ -1,31 +1,15 @@
 /* ImportModal — LegendKeeper import flow. See docs/plan.md Phase 8. */
 
-.import-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
+/* Backdrop, shell and both action buttons come from controls.css — this modal
+   and its export twin were the pair the shared set was modelled on, so most of
+   what used to be here is now the default rather than an override. */
 .import-modal {
-  width: 32rem;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 4rem);
-  display: flex;
-  flex-direction: column;
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* The preview below is the scrolling part, so the modal itself must not be. */
   overflow: hidden;
 }
 
 .import-modal-title {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-lg);
   font-family: var(--font-display);
   font-size: var(--fs-xl);
   font-weight: 500;
@@ -37,29 +21,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: var(--space-lg);
   color: var(--color-text-secondary);
   font-size: var(--fs-md);
-}
-
-.import-modal-pick > button {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-panel-alt);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: var(--fs-md);
-}
-
-.import-modal-pick > button:hover:not(:disabled) {
-  border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
-}
-
-.import-modal-pick > button:disabled {
-  cursor: default;
-  opacity: 0.6;
 }
 
 .import-modal-error {
@@ -71,7 +35,7 @@
 .import-modal-preview {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: var(--space-xl);
   min-height: 0;
   overflow-y: auto;
 }
@@ -79,13 +43,13 @@
 .import-modal-name-field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-xs);
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
 
 .import-modal-name-field input {
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
@@ -104,15 +68,15 @@
   overflow-y: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 0.5rem;
+  padding: var(--space-md);
   background: var(--color-panel-alt);
 }
 
 .import-modal-tree-row {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.1875rem 0;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) 0;
   font-size: var(--fs-sm);
   color: var(--color-text-primary);
 }
@@ -127,59 +91,24 @@
   color: var(--color-text-secondary);
 }
 
-/* Eyebrow label. Identical rules live in import.css, export.css, shell.css and
-   properties.css — one treatment now (11px/600/0.05em, muted) where there were
-   four. They become one shared class when the control set lands; until then,
-   change all four or none. */
+/* Type comes from `.ui-eyebrow`; only the margin is this heading's own. */
 .import-modal-lossy h3 {
-  margin: 0 0 0.375rem;
-  font-size: var(--fs-2xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-sm);
 }
 
 .import-modal-lossy ul {
   margin: 0;
-  padding-left: 1.125rem;
+  padding-left: var(--space-xl);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-xs);
 }
 
+/* Cancel is `.ui-btn .ui-btn-secondary`, Import is `.ui-btn .ui-btn-primary`. */
 .import-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.import-modal-actions button {
-  padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
-
-.import-modal-cancel {
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.import-modal-cancel:hover {
-  border-color: var(--color-text-muted);
-}
-
-.import-modal-confirm {
-  background: var(--color-accent-light);
-  border: 1px solid var(--color-accent-light);
-  color: var(--color-bg);
-  font-weight: 500;
-}
-
-.import-modal-confirm:hover {
-  filter: brightness(1.1);
+  gap: var(--space-md);
 }
 
 /* Where the imported world is about to land, shown before you commit to it —
@@ -187,8 +116,8 @@
 .import-modal-destination {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  margin: 0.75rem 0 0;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0 0;
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
@@ -198,20 +127,9 @@
   word-break: break-all;
 }
 
+/* "Change" is a `.ui-link`; this stops the long path squeezing it out. */
 .import-modal-destination-change {
   flex-shrink: 0;
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.import-modal-destination-change:hover {
-  color: var(--color-accent-light);
 }
 
 /* Import progress. The bar is the only thing on screen during the minute an
@@ -219,7 +137,7 @@
 .import-modal-progress-track {
   width: 100%;
   height: 6px;
-  margin-top: 0.75rem;
+  margin-top: var(--space-lg);
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
   overflow: hidden;
@@ -238,7 +156,7 @@
 }
 
 .import-modal-progress-note {
-  margin: 0.5rem 0 0;
+  margin: var(--space-md) 0 0;
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }

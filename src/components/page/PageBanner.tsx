@@ -98,7 +98,7 @@ export function PageBanner({ node }: { node: Node }) {
       <span className="page-banner-hint">Drag to reposition</span>
       <button
         type="button"
-        className="page-banner-remove"
+        className="ui-icon-btn ui-icon-btn-lg page-banner-remove"
         aria-label="Remove banner"
         onClick={(e) => {
           e.stopPropagation();

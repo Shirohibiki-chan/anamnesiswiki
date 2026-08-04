@@ -84,7 +84,7 @@ export function ProjectPicker() {
 
       {recentProjects.length > 0 && (
         <div className="project-picker-recent">
-          <h2>Recent projects</h2>
+          <h2 className="ui-eyebrow">Recent projects</h2>
           <ul>
             {recentProjects.map((p) => (
               <li key={p.path}>
@@ -106,16 +106,16 @@ export function ProjectPicker() {
       )}
 
       <div className="project-picker-actions">
-        <button type="button" onClick={() => void handleOpenFolder()} disabled={isBusy}>
+        <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={() => void handleOpenFolder()} disabled={isBusy}>
           Open folder
         </button>
 
-        <button type="button" onClick={() => setIsImportOpen(true)} disabled={isBusy}>
+        <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={() => setIsImportOpen(true)} disabled={isBusy}>
           Import from LegendKeeper
         </button>
 
         {!isCreatingOpen ? (
-          <button type="button" onClick={() => setIsCreatingOpen(true)} disabled={isBusy}>
+          <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={() => setIsCreatingOpen(true)} disabled={isBusy}>
             New project
           </button>
         ) : (
@@ -134,11 +134,12 @@ export function ProjectPicker() {
               autoFocus
               disabled={isBusy}
             />
-            <button type="submit" disabled={isBusy}>
+            <button type="submit" className="ui-btn ui-btn-lg ui-btn-secondary" disabled={isBusy}>
               Create
             </button>
             <button
               type="button"
+              className="ui-btn ui-btn-lg ui-btn-secondary"
               onClick={() => {
                 setIsCreatingOpen(false);
                 setNewProjectName("");
@@ -155,7 +156,7 @@ export function ProjectPicker() {
       {error && <p className="project-picker-error">{error}</p>}
 
       <div className="project-picker-settings">
-        <SettingsButton variant="standalone" />
+        <SettingsButton />
       </div>
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}

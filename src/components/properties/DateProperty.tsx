@@ -16,9 +16,9 @@ export function DateProperty({ label, value, placeholder, onChange, onRemove }: 
   return (
     <div className="property-field">
       <div className="property-field-label-row">
-        <div className="property-field-label">{label}</div>
+        <div className="ui-eyebrow property-field-label">{label}</div>
         {onRemove && (
-          <button type="button" className="property-field-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
+          <button type="button" className="ui-inline-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
             <X size={11} />
           </button>
         )}

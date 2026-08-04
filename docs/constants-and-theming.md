@@ -55,8 +55,10 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-panel` | `#1a1a22` | Primary panel background (tree sidebar, properties sidebar, modal bodies) |
 | `--color-panel-alt` | `#1f1f28` | Slightly elevated surface — top bar, search input backgrounds, tab strip base |
 | `--color-panel-edge` | `#252530` | Highest-contrast surface — color-picker popover background, dropdown menus |
-| `--color-border` | `#2a2a35` | Standard borders (panels, inputs, tab underlines, modal edges) |
-| `--color-border-subtle` | `#22222c` | Low-contrast dividers where a full border would be too heavy |
+| `--color-border-strong` | `#383848` | The app's frame — column dividers, the top bar, modal and popover edges |
+| `--color-border` | `#2a2a35` | Containers — cards, inputs, chips, notices. The default |
+| `--color-border-subtle` | `#22222c` | Rules inside a container — tab-strip baselines, dividers |
+| `--color-scrim` | `rgba(0,0,0,0.5)` | Behind every modal |
 | `--color-text-primary` | `#e8e8ee` | Body text, headings, active labels |
 | `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
 | `--color-text-muted` | `#6a6a78` | Quiet labels — property field labels, breadcrumb separators |
@@ -144,7 +146,55 @@ Nothing sits between 18px and 28px; the gap is intentional, not an omission.
 
 **Radius** — `--radius-sm` (4px, inputs and chips), `--radius-md` (6px, buttons and rows), `--radius-lg` (8px, panels and modals), `--radius-full` (pills). Circles stay `border-radius: 50%` — a different idea, not a scale member. Thirteen spellings across nine values before this.
 
-**Layout** — `--h-bar` (48px) is shared by the top bar and the tree sidebar's tab strip so their bottom borders form one unbroken rule; `--reading-width` (60rem) is shared by `.page-view` and `.page-banner-empty`.
+**Space** — `--space-*`. Eight steps, matched to what the app already used rather than imposed: 6px and 8px alone carried 100 of the 245 padding/margin/gap declarations, so a 4px-only grid would have meant retyping the commonest gap for the grid's sake. The tail collapsed (10 → 12, 14 → 12 or 16, 20 → 24, odd one-offs to their nearest step).
+
+| Token | Value | Use for |
+|---|---|---|
+| `--space-2xs` | 0.125rem / 2px | Hairline nudges, chip padding |
+| `--space-xs` | 0.25rem / 4px | The tightest real gap |
+| `--space-sm` | 0.375rem / 6px | Icon-to-label, dense rows |
+| `--space-md` | 0.5rem / 8px | The default gap |
+| `--space-lg` | 0.75rem / 12px | Inside a control, between fields |
+| `--space-xl` | 1rem / 16px | Between groups |
+| `--space-2xl` | 1.5rem / 24px | Panel and modal padding |
+| `--space-3xl` | 2rem / 32px | Page margins |
+
+Circles, 1px borders and optical nudges (`50%`, `translateY(-50%)`) are not scale members and stay literal. Negative margins are `calc(var(--space-md) * -1)`, not `-var(...)`, which is not valid CSS.
+
+**Elevation** — `--elev-modal` is the app's only shadow, on modals and popovers. Named `--elev-*` and not `--shadow-*` for the same reason the type scale is `--fs-*`: Tailwind owns that namespace.
+
+**Layout** — `--h-bar` (48px) is shared by the top bar and the tree sidebar's tab strip so their bottom borders form one unbroken rule; `--reading-width` (60rem) and `--page-gutter` (2.5rem) are the writing column's cap and side margin, shared by `.page-view` and `.page-banner-empty` — they have to move together or the banner row stops lining up with the text under it.
+
+### Borders
+
+Three roles, one width. Before this the app had one colour doing all three jobs and `--color-border-subtle` was used in exactly one place.
+
+| Token | Value | Use for |
+|---|---|---|
+| `--color-border-strong` | `#383848` | The frame: the two column dividers, the top bar and sidebar tab strip, modal and popover edges |
+| `--color-border` | `#2a2a35` | Containers: cards, inputs, chips, notices. The default |
+| `--color-border-subtle` | `#22222c` | Rules *inside* a container: tab-strip baselines, the menu heading, the search palette's input |
+
+The values are provisional and Phase 12 re-tunes them per theme. **The roles and which elements hold which are the part meant to last** — a theme that flattens them back to one colour has undone the fix, not restyled it.
+
+### Shared controls
+
+`src/controls.css`, imported by `index.css` as `layer(controls)`. Backdrop, modal shell, buttons, icon buttons, text link, eyebrow label, inline remove. `ui-` prefixed so it's obvious in the JSX which classes are shared.
+
+**The layer is the whole mechanism.** Every component stylesheet in the app is unlayered, and unlayered rules beat any layer regardless of specificity — so a surface that genuinely needs something different (the banner's remove button needs a scrim, the import modal manages its own inner scrolling) just says so in its own stylesheet and wins. Same arrangement the focus rules in `@layer base` rely on. **Don't move controls.css out of its layer**, and don't add `!important` to it; if a component is fighting it, the component is supposed to win.
+
+| Class | Variants |
+|---|---|
+| `.ui-backdrop` | `.ui-backdrop-top` (the search palette, anchored high) |
+| `.ui-modal` | `.ui-modal-sm` 22rem · `.ui-modal-md` 28rem · `.ui-modal-lg` 32rem |
+| `.ui-surface` | the raised-panel look without a dialog's geometry |
+| `.ui-btn` | `.ui-btn-primary` · `.ui-btn-secondary` · `.ui-btn-danger`, plus `.ui-btn-lg` for empty-state actions |
+| `.ui-icon-btn` | `.ui-icon-btn-sm` 20px · (base) 24px · `.ui-icon-btn-lg` 28px; picks up `aria-pressed` on its own |
+| `.ui-link` · `.ui-eyebrow` · `.ui-inline-remove` | — |
+
+At most one `.ui-btn-primary` per screen. Secondary hover always means the accent tint — that's the single hover language for anything that's a button. Menu rows, tree rows and the recent-projects tiles keep their own, correctly: they aren't buttons.
+
+Deliberately a stylesheet and not a component library. These are *looks*, not behaviour; a `<Button>` wrapper would add props to maintain and buy nothing the class doesn't.
 
 ### Typography
 

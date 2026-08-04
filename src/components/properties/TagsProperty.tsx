@@ -13,7 +13,7 @@ type TagsPropertyProps = {
 export function TagsProperty({ label, tags, onChange }: TagsPropertyProps) {
   return (
     <div className="property-field">
-      <div className="property-field-label">{label}</div>
+      <div className="ui-eyebrow property-field-label">{label}</div>
       <input
         type="text"
         className="property-field-input"
@@ -33,7 +33,7 @@ export function TagsProperty({ label, tags, onChange }: TagsPropertyProps) {
               {tag}
               <button
                 type="button"
-                className="property-tag-remove"
+                className="ui-inline-remove"
                 aria-label={`Remove tag ${tag}`}
                 onClick={() => onChange(tags.filter((_, idx) => idx !== i))}
               >

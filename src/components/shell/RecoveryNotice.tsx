@@ -19,7 +19,7 @@ export function RecoveryNotice() {
         {one ? "It's" : "They're"} where {one ? "it" : "they"} started out — worth a look to check{" "}
         {one ? "it's" : "they're"} where you want {one ? "it" : "them"}.
       </p>
-      <button type="button" className="recovery-notice-dismiss" aria-label="Dismiss" onClick={dismissRecovered}>
+      <button type="button" className="ui-icon-btn ui-icon-btn-sm" aria-label="Dismiss" onClick={dismissRecovered}>
         <X size={13} />
       </button>
     </div>

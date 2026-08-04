@@ -17,10 +17,12 @@
 .tree-sidebar-tabs {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-xl);
   height: var(--h-bar);
-  padding: 0 0.75rem;
-  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-lg);
+  /* `--color-border-strong`, matching the top bar it continues — see the
+     border note in index.css. These two are one rule across the window. */
+  border-bottom: 1px solid var(--color-border-strong);
   flex-shrink: 0;
 }
 
@@ -71,14 +73,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-md) var(--space-lg);
   flex-shrink: 0;
 }
 
 .tree-project-header-name {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: var(--space-sm);
   font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--color-text-primary);
@@ -110,36 +112,21 @@
   white-space: nowrap;
 }
 
-.tree-project-header > button {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.tree-project-header > button:hover {
-  background: var(--color-panel-edge);
-  color: var(--color-text-primary);
-}
+/* The "+" is a `.ui-icon-btn .ui-icon-btn-sm` now. This header is also where
+   the project name lives — the *only* place, since docs/ui-audit.md defect 6:
+   the top bar used to show it a second time about 50px away. */
 
 /* --- TreeSearch --- */
 
 .tree-search {
   position: relative;
-  padding: 0 0.5rem 0.5rem;
+  padding: 0 var(--space-md) var(--space-md);
   flex-shrink: 0;
 }
 
 .tree-search-icon {
   position: absolute;
-  left: 0.9rem;
+  left: var(--space-lg);
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-placeholder);
@@ -148,7 +135,10 @@
 
 .tree-search-input {
   width: 100%;
-  padding: 0.375rem 0.5rem 0.375rem 1.75rem;
+  /* Left padding clears the magnifier that sits inside the field: the icon
+     starts at --space-lg and is 12px wide, so the caret needs to begin one
+     --space-xl further in. The two have to move together. */
+  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-lg) + var(--space-xl));
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
@@ -172,7 +162,7 @@
 .tree-panel-body {
   flex: 1;
   min-height: 0;
-  padding: 0 0.25rem;
+  padding: 0 var(--space-xs);
 }
 
 
@@ -187,9 +177,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-xs);
   height: 24px;
-  padding: 0 0.375rem;
+  padding: 0 var(--space-sm);
   border-radius: var(--radius-md);
   font-size: var(--fs-sm);
   color: var(--color-text-secondary);
@@ -289,7 +279,7 @@
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-size: var(--fs-sm);
-  padding: 0 0.25rem;
+  padding: 0 var(--space-xs);
 }
 
 .tree-row-color-dot,
@@ -336,26 +326,29 @@
 .tree-popover {
   /* position/top/left are set inline by TreePopover.tsx (fixed, portaled to
      document.body — see that file for why). */
+  /* Not `.ui-surface`: it's the same idea one level up — a popover floats over
+     the panel a modal would sit behind, so its fill is `--color-panel-edge`
+     rather than `--color-panel`. It takes the same edge and elevation. */
   z-index: 30;
   background: var(--color-panel-edge);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  padding: 0.5rem;
+  box-shadow: var(--elev-modal);
+  padding: var(--space-md);
   cursor: default;
 }
 
 .tree-color-picker-hint {
   font-size: var(--fs-2xs);
   color: var(--color-text-muted);
-  margin-bottom: 0.375rem;
-  padding: 0 0.125rem;
+  margin-bottom: var(--space-sm);
+  padding: 0 var(--space-2xs);
 }
 
 .tree-color-picker-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 0.25rem;
+  gap: var(--space-xs);
 }
 
 .tree-color-swatch {
@@ -377,15 +370,15 @@
 .tree-template-picker {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.25rem;
+  gap: var(--space-xs);
   width: 12rem;
 }
 
 .tree-template-option {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.5rem;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   border: none;
   background: transparent;
@@ -404,15 +397,15 @@
   display: flex;
   flex-direction: column;
   min-width: 9rem;
-  gap: 0.125rem;
+  gap: var(--space-2xs);
 }
 
 /* Only shown for a multi-selection — the menu's items stop naming the row you
    right-clicked at that point, so it says what they're about to act on. */
 .tree-context-menu-heading {
-  padding: 0.25rem 0.5rem 0.375rem;
-  margin-bottom: 0.125rem;
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-xs) var(--space-md) var(--space-sm);
+  margin-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--color-border-subtle);
   font-size: var(--fs-2xs);
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -421,8 +414,8 @@
 .tree-context-menu button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.5rem;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   border: none;
   background: transparent;

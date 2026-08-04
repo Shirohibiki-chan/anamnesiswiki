@@ -30,11 +30,11 @@ export function ProjectsSettings() {
       <p className="projects-settings-path">{projectsDir ?? "Finding your folder…"}</p>
 
       <p className="projects-settings-line">
-        <button type="button" className="update-check-link" onClick={() => void handleChange()} disabled={!projectsDir}>
+        <button type="button" className="ui-link" onClick={() => void handleChange()} disabled={!projectsDir}>
           Change folder
         </button>
         {isCustomProjectsDir && (
-          <button type="button" className="update-check-link" onClick={() => void changeProjectsDir(null)}>
+          <button type="button" className="ui-link" onClick={() => void changeProjectsDir(null)}>
             Reset to default
           </button>
         )}

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* The shared control set — backdrop, modal, buttons, icon buttons, links,
+   eyebrow labels. Pulled into its own layer so that every (unlayered)
+   component stylesheet outranks it and can override a control without a
+   specificity fight; see the header comment in controls.css. */
+@import "./controls.css" layer(controls);
+
 /* @blocknote/shadcn's suggestion menu, toolbar, etc. are styled with plain
    Tailwind utility classes (hover:bg-accent, cursor-default, and so on)
    baked into its shipped JS — Tailwind only generates the CSS for a utility
@@ -66,8 +72,30 @@
   --color-panel-alt: #1f1f28;
   --color-panel-edge: #252530;
 
+  /* Three weights, not one. The app previously had a single border colour at a
+     single width doing structural, container and divider duty at once — panel
+     edges, card outlines, text-field outlines and in-content rules were all the
+     same 1px of #2a2a35, and `--color-border-subtle` existed but was used in
+     exactly one place. That's the "borders are ugly" complaint: none of them is
+     ugly on its own, there was just no hierarchy telling you which lines are
+     the building and which are the furniture.
+
+       strong  the frame — window column dividers, the top bar and tab strip
+               rules, the edge of a modal or popover. The shapes that stay put.
+       (base)  containers — cards, inputs, chips, notices. The default.
+       subtle  rules *inside* a container — a tab strip's baseline, a menu
+               heading's underline, the search palette's input.
+
+     The values are provisional and Phase 12 will re-tune them per theme; the
+     part meant to survive is the three roles and which elements hold which. */
+  --color-border-strong: #383848;
   --color-border: #2a2a35;
   --color-border-subtle: #22222c;
+
+  /* Behind every modal. Was rgba(0, 0, 0, 0.5) copy-pasted into five
+     stylesheets, which meant dimming the app slightly more or less was a
+     five-file change nobody was going to make. */
+  --color-scrim: rgba(0, 0, 0, 0.5);
 
   --color-text-primary: #e8e8ee;
   --color-text-secondary: #9a9aaa;
@@ -187,6 +215,36 @@
   --radius-lg: 0.5rem; /* 8px — panels, cards, modals */
   --radius-full: 9999px;
 
+  /* Space. Padding, gap and margin were raw rem everywhere: 245 declarations
+     across 19 distinct values, which is not a scale, it's whatever each screen
+     was typed as. Eight steps now, chosen to match what the app already leaned
+     on rather than imposed from outside — 6px and 8px alone carry 100 of those
+     245 uses, so a "clean" 4px-only grid would have meant retyping the app's
+     most common gap for the sake of the grid.
+
+     What collapsed is the tail. 10px went to 12, 14px to 12 or 16, 20px to 24,
+     and the handful of 3px/5px/7px one-offs to their nearest step. The visible
+     effect is that dense screens — Settings, the properties panel, the modals —
+     have a little more air than they did, which is the direction they needed to
+     move anyway. Modal padding in particular is now one value where it was two.
+
+     Circles, hairlines and optical nudges are not scale members: `50%`, `1px`
+     borders and `translateY(-50%)` stay literal. */
+  --space-2xs: 0.125rem; /*  2px — hairline nudges, chip padding */
+  --space-xs: 0.25rem; /*  4px — tightest real gap */
+  --space-sm: 0.375rem; /*  6px — icon-to-label, dense rows */
+  --space-md: 0.5rem; /*  8px — the default gap */
+  --space-lg: 0.75rem; /* 12px — inside a control, between fields */
+  --space-xl: 1rem; /* 16px — between groups */
+  --space-2xl: 1.5rem; /* 24px — panel and modal padding */
+  --space-3xl: 2rem; /* 32px — page margins */
+
+  /* One elevation, because the app has exactly one thing that floats: a
+     surface above the backdrop (modals, popovers). Named `--elev-*` rather
+     than `--shadow-*` for the same reason the type scale is `--fs-*`: Tailwind
+     owns the `--shadow-` namespace and a token there becomes a utility. */
+  --elev-modal: 0 8px 24px rgba(0, 0, 0, 0.4);
+
   /* Families, so the four faces are named once instead of quoted at 30 call
      sites. Mono is a system stack rather than a bundled woff2: it's only used
      for keyboard shortcuts and file paths, every desktop this ships to has a
@@ -202,6 +260,10 @@
      kind of thing that stays correct right up until someone changes one. */
   --h-bar: 48px; /* top bar and the sidebar's tab strip — see tree.css */
   --reading-width: 60rem; /* page body and the empty-banner placeholder */
+  /* The writing column's side margin. Not a spacing-scale step — it's the
+     other half of --reading-width, and the two have to move together or the
+     banner's "Add a banner" row stops lining up with the text below it. */
+  --page-gutter: 2.5rem;
 }
 
 @layer base {

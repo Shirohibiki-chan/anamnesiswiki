@@ -1,0 +1,283 @@
+/* --- Shared controls (Phase 11.5, second slice) ---
+
+   The other half of the design system. The first slice gave the app scales it
+   had never had (type, radius, line-height); this one stops each surface
+   rebuilding the same five controls by hand. Counted before the change, in
+   docs/ui-audit.md: five identical modal backdrops, six modal shells at six
+   widths with two paddings, nine near-identical secondary buttons across three
+   radii and three background colours, seven dismiss buttons at seven sizes,
+   three separately-defined text links — plus an eyebrow label already written
+   out four times, and an inline remove-X written out three.
+
+   Deliberately a stylesheet and not a component library. Every one of these is
+   a *look*, not behaviour; a <Button> wrapper would add a layer of props to
+   maintain and buy nothing the class doesn't already give. Components keep
+   rendering plain <button> elements and name the look they want.
+
+   Imported into index.css as `layer(controls)`, which is the whole reason this
+   can be a base rather than a fight: every component stylesheet in the app is
+   unlayered, and unlayered rules beat any layer regardless of specificity. So
+   a surface that genuinely needs something different — the banner's remove
+   button needs a dark scrim behind it, the import modal manages its own inner
+   scrolling — just says so in its own stylesheet and wins. Same arrangement
+   the focus rules in index.css already rely on.
+
+   Names are prefixed `ui-` so it's obvious at a glance in the JSX which
+   classes are shared and which belong to the surface you're reading. */
+
+/* --- Backdrop ---
+   One rule where there were five byte-identical copies (confirm, settings,
+   new-page, import, export) plus the search palette's near-copy. */
+
+.ui-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* The search palette sits high rather than centred — it's a box to type into
+   and dismiss, not a task to read through, and anchoring it near the top stops
+   the results list shifting the input as it grows. */
+.ui-backdrop-top {
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+
+/* --- Surfaces ---
+   `.ui-surface` is the raised-panel look on its own: fill, edge, corner,
+   shadow. `.ui-modal` is that plus the geometry a dialog needs. Split because
+   the search palette wants the look but not the geometry — it has no padding
+   of its own (its input runs to the edges) and sets its own width. */
+
+.ui-surface,
+.ui-modal {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-modal);
+}
+
+/* Six widths became three, and two paddings became one. The odd ones out were
+   the 20rem new-page dialog (now 22rem, matching the confirm dialog it's the
+   same size and shape as) and the 1.25rem padding on confirm/settings/new-page
+   against import and export's 1.5rem — the modals that looked most finished
+   were the roomier pair, so that's the one that won.
+
+   No `overflow` here on purpose: three of the five manage their own inner
+   scrolling and would fight a default. Each says what it does in its own
+   stylesheet. */
+.ui-modal {
+  display: flex;
+  flex-direction: column;
+  width: var(--ui-modal-width, 32rem);
+  max-width: calc(100vw - var(--space-3xl));
+  max-height: calc(100vh - var(--space-3xl) * 2);
+  padding: var(--space-2xl);
+  text-align: left;
+}
+
+.ui-modal-sm {
+  --ui-modal-width: 22rem;
+}
+
+.ui-modal-md {
+  --ui-modal-width: 28rem;
+}
+
+.ui-modal-lg {
+  --ui-modal-width: 32rem;
+}
+
+/* --- Buttons ---
+
+   Three roles, and the app should almost never need a fourth. Primary is the
+   teal fill and there is at most one per screen; danger is the same shape in
+   red; secondary is everything else, which is most things.
+
+   The hover treatment is the interesting decision. The audit found five hover
+   languages across the app — accent tint, panel-edge fill, panel-alt fill,
+   a border going muted, and a brightness filter — with no rule about which.
+   Secondary now always means the accent tint, because that was already the
+   most-used and it's the only one that says "this is the thing you'd click"
+   rather than just "the mouse is here". The cancel buttons in the three
+   dialogs used to darken their border instead; they don't any more. */
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-tight);
+  cursor: pointer;
+}
+
+.ui-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* The larger step, for buttons that are the only thing on their screen: the
+   start screen's three actions, the empty-page and empty-folder prompts, the
+   import dialog's file picker. Rounder as well as bigger — at this size the
+   6px corner reads as a toolbar control rather than an invitation. */
+.ui-btn-lg {
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-lg);
+  font-size: var(--fs-md);
+}
+
+.ui-btn-primary {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent-light);
+  color: var(--color-bg);
+  font-weight: 500;
+}
+
+.ui-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.ui-btn-secondary {
+  background: var(--color-panel-alt);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.ui-btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+}
+
+.ui-btn-danger {
+  background: var(--color-destructive);
+  border-color: var(--color-destructive);
+  color: var(--color-bg);
+  font-weight: 500;
+}
+
+.ui-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* --- Icon buttons ---
+
+   Square, borderless, invisible until hovered. Seven of these existed at seven
+   sizes — 18, 20, 22, 24, 26, 28 and 32px — which is not a set of sizes, it's
+   whatever each one happened to be typed as. Now three, an even 4px apart, and
+   the size is a variable rather than a re-declared width/height pair so a
+   surface that needs a fourth can set one property instead of two.
+
+   28px is the toolbar size (top bar, modal close). 24px is the default, for a
+   control sitting inside a row of text. 20px is for tight strips — page tabs,
+   the dismissable notices under the top bar. */
+
+.ui-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--ui-icon-btn-size, 1.5rem);
+  height: var(--ui-icon-btn-size, 1.5rem);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ui-icon-btn:hover:not(:disabled) {
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+}
+
+.ui-icon-btn:disabled {
+  cursor: default;
+  opacity: 0.25;
+}
+
+/* Generic rather than per-button: an icon button that toggles something says
+   so with `aria-pressed`, and the on state should look the same everywhere
+   that's true. Currently the properties-panel toggle in the top bar. */
+.ui-icon-btn[aria-pressed="true"] {
+  color: var(--color-accent-light);
+}
+
+.ui-icon-btn-sm {
+  --ui-icon-btn-size: 1.25rem;
+}
+
+.ui-icon-btn-lg {
+  --ui-icon-btn-size: 1.75rem;
+}
+
+/* The remove-X that sits *in* a line of content rather than beside it — on a
+   property label, a tag chip, a linked-page chip. No box at all, because a
+   hover fill on something this small inside a 12px chip reads as damage.
+   Three identical copies of this lived in properties.css. */
+.ui-inline-remove {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ui-inline-remove:hover {
+  color: var(--color-destructive);
+}
+
+/* --- Text link ---
+   Underlined text that's really a button. Three of these were defined
+   separately, and Settings → Projects borrowed the *Updates* panel's class to
+   get a fourth — a comment in shell.css admitted to it. Worth keeping as a
+   distinct control rather than folding into `.ui-btn`: these are asides
+   ("Change folder", "Check for updates"), and giving them button chrome would
+   make every panel look like it has three equally important actions. */
+
+.ui-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ui-link:hover:not(:disabled) {
+  color: var(--color-accent-light);
+}
+
+.ui-link:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* --- Eyebrow label ---
+   The small uppercase heading over a group: "Recent projects", "What won't
+   survive the trip", every property name in the sidebar. Had four treatments
+   (12px/500/0.03em twice, 11px/600/0.05em, 13px/500/0.03em) and then one
+   treatment written out in four stylesheets, each carrying a comment asking
+   for this class. Here it is; margins stay with the surface, since how much
+   room a heading needs depends on what's under it. */
+
+.ui-eyebrow {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

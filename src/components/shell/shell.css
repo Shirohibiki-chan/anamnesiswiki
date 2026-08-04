@@ -10,30 +10,22 @@
   background: var(--color-bg);
 }
 
-/* --- ConfirmDialog --- */
-
-.confirm-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
+/* --- ConfirmDialog ---
+   Shell, backdrop and both buttons now come from controls.css; what's left
+   here is the two things that are only true of this dialog. It still has no
+   title — a destructive confirmation that's a sentence and two buttons with no
+   heading is a real gap, but fixing it means every confirm() call site has to
+   supply one, so it stays open under Modals in docs/ui-audit.md. */
 
 .confirm-dialog {
-  width: 22rem;
-  max-width: calc(100vw - 2rem);
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* Short enough that it never scrolls in practice; this is only here so a
+     very long message in a very short window clips inside the dialog instead
+     of running off the bottom of the screen. */
+  overflow-y: auto;
 }
 
 .confirm-dialog-message {
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-xl);
   font-size: var(--fs-md);
   color: var(--color-text-primary);
 }
@@ -41,36 +33,7 @@
 .confirm-dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.confirm-dialog-cancel,
-.confirm-dialog-confirm {
-  padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
-
-.confirm-dialog-cancel {
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.confirm-dialog-cancel:hover {
-  border-color: var(--color-text-muted);
-}
-
-.confirm-dialog-confirm {
-  background: var(--color-destructive);
-  border: 1px solid var(--color-destructive);
-  color: var(--color-bg);
-  font-weight: 500;
-}
-
-.confirm-dialog-confirm:hover {
-  filter: brightness(1.1);
+  gap: var(--space-md);
 }
 
 /* --- AppLayout --- */
@@ -101,9 +64,13 @@
   background: var(--color-panel);
 }
 
+/* `--color-border-strong` here and on the tree's right edge, the top bar and
+   the sidebar's tab strip: these four lines are the app's frame, and they're
+   the one group that should read as structure rather than as another card
+   outline. See the border note in index.css. */
 .app-layout-properties {
   overflow-y: auto;
-  border-left: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border-strong);
 }
 
 .app-layout-tree {
@@ -113,7 +80,7 @@
      raced with that observer during window resizes, causing a scrollbar to
      flash in and out for a frame before the tree caught up. */
   overflow: hidden;
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border-strong);
 }
 
 /* `min-height: 0` for the same reason as the `min-width: 0` beside it, on the
@@ -141,8 +108,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  padding: 1.5rem;
+  gap: var(--space-sm);
+  padding: var(--space-2xl);
   text-align: center;
   color: var(--color-text-secondary);
 }
@@ -152,78 +119,53 @@
   font-size: var(--fs-sm);
 }
 
-@media (max-width: 700px) {
-  .app-layout {
-    grid-template-columns: 260px 1fr;
-  }
-  .app-layout-properties {
-    display: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .app-layout {
-    grid-template-columns: 1fr;
-  }
-  .app-layout-tree {
-    display: none;
-  }
-}
+/* The media queries that used to live here — hide the properties panel below
+   700px, hide the tree below 640px — are gone, and not because narrow windows
+   stopped mattering. They could never fire: tauri.conf.json sets minWidth 900,
+   so the window cannot be dragged anywhere near either breakpoint. They were
+   only ever reachable in `pnpm dev` in a browser tab, and what they did there
+   was make panels vanish with no indication and no way back short of resizing
+   — web thinking in a desktop window, and dead web thinking at that. The
+   properties panel has a real toggle in the top bar; a matching one for the
+   tree is Phase 14's resizable-sidebars work. */
 
 /* --- TopBar --- */
 
+/* `flex-end`, not `space-between`, because the left side is now empty. The
+   project name used to sit there — and also in the sidebar header about 50px
+   away, which is the doubled name in docs/ui-audit.md defect 6. The sidebar
+   won: its copy has the home button and the add-page button attached to it and
+   is the thing the tree below actually belongs to, whereas this one was a
+   label with nothing to do. What's left is deliberately empty space rather
+   than something invented to fill it — back/forward and a breadcrumb are
+   already queued for Phase 14, and this is where they go. */
 .top-bar {
   height: var(--h-bar);
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 1rem;
+  justify-content: flex-end;
+  padding: 0 var(--space-xl);
   background: var(--color-panel-alt);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.top-bar-project-name {
-  font-size: var(--fs-md);
-  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-strong);
 }
 
 .top-bar-right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.top-bar-icon-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.top-bar-icon-button:hover {
-  background: var(--color-panel-edge);
-  color: var(--color-text-primary);
-}
-
-.top-bar-icon-button[aria-pressed="true"] {
-  color: var(--color-accent-light);
+  gap: var(--space-lg);
 }
 
 /* Wider than the icon buttons beside it on purpose: it carries the shortcut
-   hint, which is the only place in the app that Cmd+K is written down. */
+   hint, which is the only place in the app that Cmd+K is written down. Not a
+   `.ui-btn` — it's a toolbar control sized to match the 28px icon buttons it
+   sits with, and it would look like a form's submit button at button padding. */
 .top-bar-search-button {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  height: 28px;
-  padding: 0 0.5rem;
+  gap: var(--space-sm);
+  height: 1.75rem;
+  padding: 0 var(--space-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: transparent;
@@ -300,8 +242,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: safe center;
-  gap: 1.5rem;
-  padding: 2rem;
+  gap: var(--space-2xl);
+  padding: var(--space-3xl);
   overflow-y: auto;
   background: var(--color-bg);
   color: var(--color-text-primary);
@@ -316,7 +258,7 @@
   font-size: var(--fs-3xl);
   font-weight: 500;
   line-height: var(--lh-tight);
-  margin: 0 0 0.375rem;
+  margin: 0 0 var(--space-sm);
 }
 
 .project-picker-intro p {
@@ -329,17 +271,9 @@
   max-width: 24rem;
 }
 
-/* Eyebrow label. Identical rules live in import.css, export.css, shell.css and
-   properties.css — one treatment now (11px/600/0.05em, muted) where there were
-   four. They become one shared class when the control set lands; until then,
-   change all four or none. */
+/* Type comes from `.ui-eyebrow` now; only the margin is this heading's own. */
 .project-picker-recent h2 {
-  font-size: var(--fs-2xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--space-md);
 }
 
 .project-picker-recent ul {
@@ -348,16 +282,18 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--space-sm);
 }
 
+/* A tile, not a `.ui-btn`: two stacked lines of different sizes, full width,
+   left-aligned. It's a list row you can click, the same shape as a tree row. */
 .project-picker-recent button {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.125rem;
-  padding: 0.625rem 0.875rem;
+  gap: var(--space-2xs);
+  padding: var(--space-lg) var(--space-lg);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-panel);
@@ -388,48 +324,29 @@
   white-space: nowrap;
 }
 
+/* All three actions are `.ui-btn .ui-btn-lg .ui-btn-secondary` now. They're
+   still identical to each other, which is the remaining half of this screen's
+   problem — for someone opening the app for the first time only one of the
+   three is the likely next step, and none of them is the primary. That's a
+   content decision rather than a token one; it stays open in Part 3 of
+   docs/ui-audit.md alongside the rest of the start screen. */
 .project-picker-actions {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.project-picker-actions > button {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-panel);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: var(--fs-md);
-}
-
-.project-picker-actions > button:hover {
-  border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
+  gap: var(--space-lg);
 }
 
 .project-picker-new-form {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-md);
 }
 
 .project-picker-new-form input {
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
   color: var(--color-text-primary);
-  font-size: var(--fs-md);
-}
-
-.project-picker-new-form button {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-panel);
-  color: var(--color-text-primary);
-  cursor: pointer;
   font-size: var(--fs-md);
 }
 
@@ -439,7 +356,7 @@
   background: var(--color-panel-edge);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-md) var(--space-lg);
   font-size: var(--fs-sm);
   margin: 0;
 }
@@ -450,62 +367,24 @@
    of its own rather than joining the row of primary actions — it isn't one. */
 .project-picker-settings {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: var(--space-xl);
+  right: var(--space-xl);
 }
 
-.settings-standalone-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.settings-standalone-button:hover {
-  border-color: var(--color-border);
-  background: var(--color-panel);
-  color: var(--color-text-primary);
-}
-
-.settings-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-/* Column, so the panel is the only part that scrolls. The whole modal used to
-   scroll as one, which meant a short window took the title and the tab strip
-   away with it — you'd be scrolling a settings screen with no way to see
-   which tab you were on. */
-.settings-modal {
-  display: flex;
-  flex-direction: column;
-  width: 28rem;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 4rem);
-  text-align: left;
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
+/* The settings modal is `.ui-modal .ui-modal-md` and has no rule of its own
+   left; the cog that opens it, on both the start screen and the top bar, is a
+   `.ui-icon-btn .ui-icon-btn-lg`. The arrangement worth not breaking is that
+   `.ui-modal` is a capped-height flex column, which is what makes
+   `.settings-panel` below the only part that scrolls. The whole modal used to
+   scroll as one, and a short window took the title and the tab strip away with
+   it — you'd be scrolling a settings screen with no way to see which tab you
+   were on. */
 
 .settings-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-xl);
   flex-shrink: 0;
 }
 
@@ -521,35 +400,20 @@
   color: var(--color-text-primary);
 }
 
-.settings-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.settings-close:hover {
-  border-color: var(--color-border);
-  background: var(--color-panel-alt);
-  color: var(--color-text-primary);
-}
-
 /* `overflow-y: hidden` for the same reason as .page-tabs in page/page.css —
    an `overflow-x` of `auto` quietly makes this a vertical scroll container as
    well, and the active tab's underline overflowed it by a pixel. That was the
-   scrollbar down the side of the Settings tab strip. */
+   scrollbar down the side of the Settings tab strip.
+
+   `--color-border-subtle` because this rule lives *inside* a container rather
+   than framing one — same call as the page tabs and the search palette's
+   input. */
 .settings-tabs {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 1.25rem;
+  gap: var(--space-xs);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-2xl);
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -560,7 +424,7 @@
   flex-shrink: 0;
   background: none;
   border: none;
-  padding: 0.5rem 0.5rem;
+  padding: var(--space-md);
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
   white-space: nowrap;
@@ -603,21 +467,16 @@
   overflow-y: auto;
 }
 
-/* Cmd+N's template picker — see components/shell/NewPageDialog.tsx. Borrows
-   the settings modal's backdrop and header, but sizes itself to the template
-   grid rather than to a settings panel. */
-.new-page-dialog {
-  width: 20rem;
-  max-width: calc(100vw - 2rem);
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
+/* Cmd+N's template picker — see components/shell/NewPageDialog.tsx. Shares the
+   settings modal's header and close button, and is `.ui-modal .ui-modal-sm`:
+   it used to be the only 20rem dialog in the app for no reason beyond being
+   typed that way, and at 22rem it matches the confirm dialog, which is the
+   other small one-decision dialog. */
 
+/* Pulled up under the title — this is a subtitle for the heading above it, not
+   a paragraph of its own. */
 .new-page-hint {
-  margin: -0.5rem 0 0.75rem;
+  margin: calc(var(--space-md) * -1) 0 var(--space-lg);
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
@@ -625,12 +484,12 @@
 /* The picker is built for a 12rem popover; here it has a dialog to fill. */
 .new-page-templates .tree-template-picker {
   width: 100%;
-  gap: 0.125rem 0.5rem;
+  gap: var(--space-2xs) var(--space-md);
 }
 
 .new-page-templates .tree-template-option {
   font-size: var(--fs-sm);
-  padding: 0.5rem;
+  padding: var(--space-md);
 }
 
 .new-page-templates .tree-template-option:focus-visible {
@@ -647,14 +506,14 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-xs);
 }
 
 .shortcut-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-md);
 }
 
 .shortcut-row-label {
@@ -662,9 +521,12 @@
   color: var(--color-text-primary);
 }
 
+/* Not a `.ui-btn`: what it shows is the current binding, and pressing it puts
+   the row into recording mode. It's a field you edit by clicking, closer to
+   the property inputs in the sidebar than to an action. */
 .shortcut-row-keys {
   min-width: 7rem;
-  padding: 0.25rem 0.5rem;
+  padding: var(--space-xs) var(--space-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
@@ -699,59 +561,25 @@
   font-style: italic;
 }
 
-.shortcut-row-reset {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.shortcut-row-reset:hover:not(:disabled) {
-  border-color: var(--color-border);
-  background: var(--color-panel-alt);
-  color: var(--color-text-primary);
-}
-
-.shortcut-row-reset:disabled {
-  opacity: 0.25;
-  cursor: default;
-}
-
 /* Reserves its line whether or not there's a message, so the rows below don't
    jump when a key is refused. */
 .shortcut-message {
   min-height: 1.25rem;
-  margin: 0.625rem 0 0;
+  margin: var(--space-lg) 0 0;
   font-size: var(--fs-xs);
   color: var(--color-accent-light);
 }
 
 .shortcut-hint {
-  margin: 0.25rem 0 0;
+  margin: var(--space-xs) 0 0;
   font-size: var(--fs-2xs);
   line-height: var(--lh-normal);
   color: var(--color-text-muted);
 }
 
+/* `.ui-link` supplies the look; this is the one thing about it that's local. */
 .shortcut-reset-all {
-  margin-top: 0.625rem;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.shortcut-reset-all:hover {
-  color: var(--color-text-primary);
+  margin-top: var(--space-lg);
 }
 
 /* Update check — see components/shell/UpdateCheck.tsx. Deliberately the
@@ -763,7 +591,7 @@
 .update-check-line {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-md);
   margin: 0;
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
@@ -773,31 +601,16 @@
   color: var(--color-text-muted);
 }
 
-.update-check-link {
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.update-check-link:hover {
-  color: var(--color-accent-light);
-}
-
 .update-check-card {
   text-align: left;
-  padding: 0.75rem 0.875rem;
+  padding: var(--space-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-panel-edge);
 }
 
 .update-check-headline {
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--space-xs);
   font-size: var(--fs-md);
   color: var(--color-text-primary);
 }
@@ -810,35 +623,24 @@
 }
 
 .update-check-reassurance {
-  margin: 0.375rem 0 0;
+  margin: var(--space-sm) 0 0;
   font-size: var(--fs-2xs);
   color: var(--color-text-muted);
 }
 
+/* All secondary, including "Download and install". This panel is deliberately
+   the quietest thing in Settings — it's a utility, not an invitation — and a
+   teal primary button would make an optional download the loudest control on
+   the screen. */
 .update-check-buttons {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.625rem;
-}
-
-.update-check-buttons > button {
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-panel);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: var(--fs-sm);
-}
-
-.update-check-buttons > button:hover {
-  border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 .update-check-progress {
   height: 4px;
-  margin: 0.5rem 0 0.375rem;
+  margin: var(--space-md) 0 var(--space-sm);
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
   overflow: hidden;
@@ -855,9 +657,9 @@
 .load-warning {
   display: flex;
   align-items: flex-start;
-  gap: 0.625rem;
-  margin: 0.75rem 1.25rem 0;
-  padding: 0.625rem 0.75rem;
+  gap: var(--space-lg);
+  margin: var(--space-lg) var(--space-2xl) 0;
+  padding: var(--space-lg);
   border: 1px solid var(--color-border);
   border-left: 2px solid var(--color-palette-amber);
   border-radius: var(--radius-lg);
@@ -866,7 +668,7 @@
 
 .load-warning-icon {
   flex-shrink: 0;
-  margin-top: 0.125rem;
+  margin-top: var(--space-2xs);
   color: var(--color-palette-amber);
 }
 
@@ -882,39 +684,25 @@
 }
 
 .load-warning-files {
-  margin: 0.375rem 0 0;
-  padding-left: 1rem;
+  margin: var(--space-sm) 0 0;
+  padding-left: var(--space-xl);
   font-size: var(--fs-xs);
   color: var(--color-text-secondary);
   word-break: break-all;
 }
 
-.load-warning-dismiss {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.125rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.load-warning-dismiss:hover {
-  background: var(--color-panel-alt);
-  color: var(--color-text-primary);
-}
+/* All three notice banners dismiss with `.ui-icon-btn .ui-icon-btn-sm`. They
+   were three separate rules at three sizes — one 20px, two sized only by their
+   padding — for three buttons that do the same job in the same place. */
 
 /* Same shape as .load-warning but red rather than amber: a failed write is a
    live risk to the user's work, not a report about something already handled. */
 .save-warning {
   display: flex;
   align-items: flex-start;
-  gap: 0.625rem;
-  margin: 0.75rem 1.25rem 0;
-  padding: 0.625rem 0.75rem;
+  gap: var(--space-lg);
+  margin: var(--space-lg) var(--space-2xl) 0;
+  padding: var(--space-lg);
   border: 1px solid var(--color-border);
   border-left: 2px solid var(--color-palette-red);
   border-radius: var(--radius-lg);
@@ -923,7 +711,7 @@
 
 .save-warning-icon {
   flex-shrink: 0;
-  margin-top: 0.125rem;
+  margin-top: var(--space-2xs);
   color: var(--color-palette-red);
 }
 
@@ -939,28 +727,10 @@
 }
 
 .save-warning-reasons {
-  margin: 0.375rem 0 0;
-  padding-left: 1rem;
+  margin: var(--space-sm) 0 0;
+  padding-left: var(--space-xl);
   font-size: var(--fs-xs);
   color: var(--color-text-secondary);
-}
-
-.save-warning-dismiss {
-  flex-shrink: 0;
-  padding: 0.125rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.save-warning-dismiss:hover {
-  background: var(--color-panel-alt);
-  color: var(--color-text-primary);
 }
 
 /* --- RecoveryNotice --- */
@@ -970,9 +740,9 @@
 .recovery-notice {
   display: flex;
   align-items: flex-start;
-  gap: 0.625rem;
-  margin: 0.75rem 1.25rem 0;
-  padding: 0.625rem 0.75rem;
+  gap: var(--space-lg);
+  margin: var(--space-lg) var(--space-2xl) 0;
+  padding: var(--space-lg);
   border: 1px solid var(--color-border);
   border-left: 2px solid var(--color-accent-light);
   border-radius: var(--radius-lg);
@@ -981,7 +751,7 @@
 
 .recovery-notice-icon {
   flex-shrink: 0;
-  margin-top: 0.125rem;
+  margin-top: var(--space-2xs);
   color: var(--color-accent-light);
 }
 
@@ -993,36 +763,18 @@
   color: var(--color-text-secondary);
 }
 
-.recovery-notice-dismiss {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.recovery-notice-dismiss:hover {
-  background: var(--color-panel-alt);
-  color: var(--color-text-primary);
-}
-
-/* Settings → Projects. Reuses .update-check-link for the two actions so the
-   settings panels keep one link style between them. */
+/* Settings → Projects. Its two actions are `.ui-link` now; they used to borrow
+   the *Updates* panel's `.update-check-link` class, which is the sort of thing
+   that works right up until Updates changes its mind. */
 .projects-settings-label {
-  margin: 0 0 0.375rem;
+  margin: 0 0 var(--space-sm);
   font-size: var(--fs-md);
   color: var(--color-text-primary);
 }
 
 .projects-settings-path {
-  margin: 0 0 0.625rem;
-  padding: 0.5rem 0.625rem;
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-panel-edge);
@@ -1036,12 +788,12 @@
 .projects-settings-line {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: var(--space-lg);
   margin: 0;
 }
 
 .projects-settings-note {
-  margin: 0.625rem 0 0;
+  margin: var(--space-lg) 0 0;
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }

@@ -2,28 +2,11 @@
    match import.css deliberately: the two are a matched pair, and an export
    dialog that didn't look like the import one would read as a different app. */
 
-.export-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
+/* Backdrop, shell and both action buttons come from controls.css. Unlike the
+   import modal this one scrolls as a whole — it has no inner list to hand the
+   scrolling to, just a short stack of paragraphs. */
 .export-modal {
-  width: 32rem;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 4rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  gap: var(--space-xl);
   overflow-y: auto;
 }
 
@@ -52,8 +35,8 @@
    explicit break rule rather than pushing the dialog wider than the window. */
 .export-modal-path {
   display: block;
-  margin-top: 0.375rem;
-  padding: 0.375rem 0.5rem;
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   background: var(--color-panel-alt);
   border: 1px solid var(--color-border);
@@ -71,62 +54,22 @@
   color: var(--color-text-secondary);
 }
 
-/* Eyebrow label. Identical rules live in import.css, export.css, shell.css and
-   properties.css — one treatment now (11px/600/0.05em, muted) where there were
-   four. They become one shared class when the control set lands; until then,
-   change all four or none. */
+/* Type comes from `.ui-eyebrow`; only the margin is this heading's own. */
 .export-modal-lossy h3 {
-  margin: 0 0 0.375rem;
-  font-size: var(--fs-2xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-sm);
 }
 
 .export-modal-lossy ul {
   margin: 0;
-  padding-left: 1.125rem;
+  padding-left: var(--space-xl);
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--space-sm);
 }
 
+/* Cancel is `.ui-btn .ui-btn-secondary`, Export is `.ui-btn .ui-btn-primary`. */
 .export-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.export-modal-actions button {
-  padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
-
-.export-modal-actions button:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.export-modal-cancel {
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.export-modal-cancel:hover:not(:disabled) {
-  border-color: var(--color-text-muted);
-}
-
-.export-modal-confirm {
-  background: var(--color-accent-light);
-  border: 1px solid var(--color-accent-light);
-  color: var(--color-bg);
-  font-weight: 500;
-}
-
-.export-modal-confirm:hover:not(:disabled) {
-  filter: brightness(1.1);
+  gap: var(--space-md);
 }

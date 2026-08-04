@@ -1,8 +1,15 @@
-// Spans the center panel — project name on the left, right-panel toggle +
-// save indicator on the right. The clickable breadcrumb trail lives on the
-// page itself (see page/PageTitle.tsx), where it sits directly above the
-// title it describes; this bar deliberately stays a fixed project-level
-// header rather than duplicating it.
+// Spans the center panel. Search, project switch, settings and the
+// right-panel toggle, all pushed right; the left half is deliberately empty.
+//
+// It used to hold the project name, which the sidebar header also shows about
+// 50px away — the doubled name in docs/ui-audit.md defect 6. The sidebar keeps
+// it: that copy has the home button and the add-page button attached and heads
+// the tree it names, while this one was a label with nothing to do. Nothing was
+// invented to fill the gap, because back/forward and a breadcrumb are already
+// queued for Phase 14 and this is where they go.
+//
+// The clickable breadcrumb trail meanwhile lives on the page itself (see
+// page/PageTitle.tsx), directly above the title it describes.
 import { FolderOpen, PanelRight, Search } from "lucide-react";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { HistoryIndicator } from "./HistoryIndicator";
@@ -10,21 +17,17 @@ import { SaveIndicator } from "./SaveIndicator";
 import { SettingsButton } from "./SettingsButton";
 
 type TopBarProps = {
-  projectName: string;
   isRightPanelOpen: boolean;
   onToggleRightPanel: () => void;
   onSwitchProject: () => void;
   onOpenSearch: () => void;
 };
 
-export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel, onSwitchProject, onOpenSearch }: TopBarProps) {
+export function TopBar({ isRightPanelOpen, onToggleRightPanel, onSwitchProject, onOpenSearch }: TopBarProps) {
   const searchShortcut = useShortcutLabel("search");
 
   return (
     <header className="top-bar">
-      <div className="top-bar-breadcrumb">
-        <span className="top-bar-project-name">{projectName}</span>
-      </div>
       <div className="top-bar-right">
         <HistoryIndicator />
         <SaveIndicator />
@@ -35,13 +38,15 @@ export function TopBar({ projectName, isRightPanelOpen, onToggleRightPanel, onSw
           <span>Search</span>
           <kbd className="top-bar-kbd">{searchShortcut}</kbd>
         </button>
-        <button type="button" className="top-bar-icon-button" aria-label="Switch project" onClick={onSwitchProject}>
+        <button type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Switch project" onClick={onSwitchProject}>
           <FolderOpen size={16} />
         </button>
         <SettingsButton />
+        {/* `.ui-icon-btn` picks the accent colour up from aria-pressed, so the
+            toggled-on look isn't a class this has to remember to pass. */}
         <button
           type="button"
-          className="top-bar-icon-button"
+          className="ui-icon-btn ui-icon-btn-lg"
           aria-pressed={isRightPanelOpen}
           aria-label={isRightPanelOpen ? "Hide properties panel" : "Show properties panel"}
           onClick={onToggleRightPanel}

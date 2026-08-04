@@ -26,7 +26,7 @@ export function LoadWarning() {
           ))}
         </ul>
       </div>
-      <button type="button" className="load-warning-dismiss" aria-label="Dismiss" onClick={dismissSkippedFiles}>
+      <button type="button" className="ui-icon-btn ui-icon-btn-sm" aria-label="Dismiss" onClick={dismissSkippedFiles}>
         <X size={13} />
       </button>
     </div>

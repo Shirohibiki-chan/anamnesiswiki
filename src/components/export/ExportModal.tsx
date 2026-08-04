@@ -43,8 +43,8 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
   }
 
   return createPortal(
-    <div className="export-modal-backdrop" onClick={status === "saving" ? undefined : onClose}>
-      <div className="export-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="ui-backdrop" onClick={status === "saving" ? undefined : onClose}>
+      <div className="ui-modal ui-modal-lg export-modal" onClick={(e) => e.stopPropagation()}>
         <h2 className="export-modal-title">Export to LegendKeeper</h2>
 
         {!plan && <p className="export-modal-error">There's nothing to export.</p>}
@@ -59,7 +59,7 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
 
             {plan.lossyNotes.length > 0 && (
               <div className="export-modal-lossy">
-                <h3>A few things won't come across:</h3>
+                <h3 className="ui-eyebrow">A few things won't come across:</h3>
                 <ul>
                   {plan.lossyNotes.map((note) => (
                     <li key={note}>{note}</li>
@@ -71,12 +71,12 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
             {error && <p className="export-modal-error">{error}</p>}
 
             <div className="export-modal-actions">
-              <button type="button" className="export-modal-cancel" onClick={onClose} disabled={status === "saving"}>
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={onClose} disabled={status === "saving"}>
                 Cancel
               </button>
               <button
                 type="button"
-                className="export-modal-confirm"
+                className="ui-btn ui-btn-primary"
                 onClick={() => void handleExport()}
                 disabled={status === "saving"}
               >
@@ -93,7 +93,7 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
               LegendKeeper.
             </p>
             <div className="export-modal-actions">
-              <button type="button" className="export-modal-confirm" onClick={onClose}>
+              <button type="button" className="ui-btn ui-btn-primary" onClick={onClose}>
                 Done
               </button>
             </div>

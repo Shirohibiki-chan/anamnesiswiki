@@ -26,7 +26,7 @@
   width: 100%;
   max-width: var(--reading-width);
   margin: 0 auto;
-  padding: 2rem 2.5rem;
+  padding: var(--space-3xl) var(--page-gutter);
 }
 
 /* --- PageBanner --- */
@@ -64,13 +64,13 @@
 
 .page-banner-hint {
   position: absolute;
-  bottom: 0.625rem;
+  bottom: var(--space-lg);
   left: 50%;
   transform: translateX(-50%);
   font-size: var(--fs-xs);
   color: var(--color-text-primary);
   background: rgba(0, 0, 0, 0.45);
-  padding: 0.25rem 0.625rem;
+  padding: var(--space-xs) var(--space-lg);
   border-radius: var(--radius-full);
   opacity: 0;
   pointer-events: none;
@@ -81,20 +81,15 @@
   opacity: 1;
 }
 
+/* A `.ui-icon-btn .ui-icon-btn-lg` sitting on a photo, so like the sidebar's
+   image remove it keeps its own scrim — a panel-coloured hover fill against an
+   arbitrary image is no fill at all. */
 .page-banner-remove {
   position: absolute;
-  top: 0.625rem;
-  right: 0.625rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: none;
-  border-radius: var(--radius-md);
+  top: var(--space-lg);
+  right: var(--space-lg);
   background: rgba(0, 0, 0, 0.45);
   color: var(--color-text-primary);
-  cursor: pointer;
   opacity: 0;
   transition: opacity 120ms ease;
 }
@@ -105,22 +100,23 @@
 
 .page-banner-remove:hover {
   background: rgba(0, 0, 0, 0.65);
+  color: var(--color-text-primary);
 }
 
 .page-banner-empty {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-lg);
   max-width: var(--reading-width);
   margin: 0 auto;
-  padding: 1.25rem 2.5rem 0;
+  padding: var(--space-2xl) var(--page-gutter) 0;
 }
 
 .page-banner-add {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-lg);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -148,16 +144,16 @@
 .page-title-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-xs);
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-xl);
 }
 
 .page-title-breadcrumb-item {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-xs);
 }
 
 .page-title-breadcrumb-current {
@@ -181,8 +177,8 @@
 .page-title-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
 }
 
 .page-title-icon {
@@ -213,9 +209,9 @@
 .page-title-home-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-xs);
   flex-shrink: 0;
-  padding: 0.15rem 0.45rem;
+  padding: var(--space-2xs) var(--space-md);
   border-radius: var(--radius-md);
   background: var(--color-accent-faint);
   border: 1px solid var(--color-accent-faint-border);
@@ -249,9 +245,10 @@
 .page-tabs {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 1.5rem;
+  gap: var(--space-xs);
+  /* `--color-border-subtle`: a rule inside the page, not part of its frame. */
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-2xl);
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -260,8 +257,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.125rem;
-  padding: 0 0.25rem;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-xs);
   flex-shrink: 0;
   cursor: grab;
   touch-action: none;
@@ -285,7 +282,7 @@
 .page-tab-label {
   background: none;
   border: none;
-  padding: 0.5rem 0.25rem;
+  padding: var(--space-md) var(--space-xs);
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
   white-space: nowrap;
@@ -314,28 +311,16 @@
   font-style: italic;
 }
 
+/* The three buttons in the tab strip — eye, delete, add — are all
+   `.ui-icon-btn .ui-icon-btn-sm`. They were 18px, 18px and 22px. */
 .page-tab-eye {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
   color: var(--color-text-muted);
-  cursor: pointer;
   opacity: 0;
 }
 
 .page-tab:hover .page-tab-eye,
 .page-tab-hidden .page-tab-eye {
   opacity: 1;
-}
-
-.page-tab-eye:hover {
-  background: var(--color-panel-edge);
-  color: var(--color-text-primary);
 }
 
 .page-tab-input {
@@ -346,21 +331,12 @@
   border: none;
   border-bottom: 1px solid var(--color-accent-light);
   outline: none;
-  padding: 0.5rem 0.25rem;
+  padding: var(--space-md) var(--space-xs);
   width: 6rem;
 }
 
 .page-tab-delete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
   color: var(--color-text-muted);
-  cursor: pointer;
   opacity: 0;
 }
 
@@ -374,22 +350,7 @@
 }
 
 .page-tab-add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
   color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.page-tab-add:hover {
-  background: var(--color-panel-edge);
-  color: var(--color-text-primary);
 }
 
 /* --- BlockNote editor (Phase 5) ---
@@ -435,8 +396,8 @@
   flex-direction: column;
   border-radius: var(--radius-md);
   border-left: 3px solid transparent;
-  padding: 0.75rem 1rem;
-  margin: 0.25rem 0;
+  padding: var(--space-lg) var(--space-xl);
+  margin: var(--space-xs) 0;
   width: 100%;
 }
 
@@ -472,15 +433,15 @@
   color: var(--color-callout-secret);
   background: rgba(0, 0, 0, 0.2);
   border-radius: var(--radius-sm);
-  padding: 0.125rem 0.375rem;
-  margin-bottom: 0.375rem;
+  padding: var(--space-2xs) var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .editor-mention {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.0625rem 0.375rem;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-sm);
   background: var(--color-accent-faint);
   border: 1px solid var(--color-accent-faint-border);
@@ -509,23 +470,11 @@
 }
 
 .page-view-no-tabs p {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-lg);
 }
 
-.page-view-add-tab {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-panel);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: var(--fs-md);
-}
-
-.page-view-add-tab:hover {
-  border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
-}
+/* "Add a tab" here and "Add a page" in the folder view below are both
+   `.ui-btn .ui-btn-lg .ui-btn-secondary` — the empty-state size. */
 
 /* --- FolderView --- */
 
@@ -535,8 +484,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 2rem;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
   text-align: center;
 }
 
@@ -558,22 +507,7 @@
 .folder-view-hint {
   color: var(--color-text-muted);
   font-size: var(--fs-md);
-  margin: 0 0 0.5rem;
-}
-
-.folder-view-add {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-panel);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: var(--fs-md);
-}
-
-.folder-view-add:hover {
-  border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
+  margin: 0 0 var(--space-md);
 }
 
 /* Holds the banner's space while its bytes are read, so switching pages
