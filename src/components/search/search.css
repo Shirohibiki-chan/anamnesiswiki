@@ -4,26 +4,16 @@
    and anchoring it near the top stops the list shifting the input as it
    grows. */
 
-.search-palette-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 12vh;
-  z-index: 1000;
-}
-
+/* `.ui-surface`, not `.ui-modal`: it wants the raised-panel look but none of a
+   dialog's geometry. Its input runs edge to edge, so the shared padding would
+   have to be undone, and it's the one surface in the app that's deliberately
+   wider than the widest dialog — a result row is a name, a path and a snippet
+   on one line each, and 32rem clips the snippet. */
 .search-palette {
   width: 36rem;
-  max-width: calc(100vw - 2rem);
+  max-width: calc(100vw - var(--space-3xl));
   display: flex;
   flex-direction: column;
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
 
@@ -31,7 +21,7 @@
   border: 0;
   border-bottom: 1px solid var(--color-border-subtle);
   background: transparent;
-  padding: 0.875rem 1rem;
+  padding: var(--space-lg) var(--space-xl);
   font-size: var(--fs-md);
   color: var(--color-text-primary);
   outline: none;
@@ -43,7 +33,7 @@
 
 .search-palette-hint {
   margin: 0;
-  padding: 1rem;
+  padding: var(--space-xl);
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
 }
@@ -55,7 +45,7 @@
 
 .search-palette-results {
   margin: 0;
-  padding: 0.25rem;
+  padding: var(--space-xs);
   list-style: none;
   /* Capped so a broad query doesn't grow the box off the bottom of the
      window; the list scrolls inside instead. */
@@ -65,10 +55,10 @@
 
 .search-palette-result {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-md);
   align-items: flex-start;
   width: 100%;
-  padding: 0.5rem;
+  padding: var(--space-md);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -83,14 +73,14 @@
 
 .search-palette-result-icon {
   flex-shrink: 0;
-  margin-top: 0.125rem;
+  margin-top: var(--space-2xs);
   color: var(--color-text-secondary);
 }
 
 .search-palette-result-body {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--space-2xs);
   min-width: 0;
 }
 

@@ -134,8 +134,8 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   const isBusy = status === "parsing" || status === "importing";
 
   return createPortal(
-    <div className="import-modal-backdrop" onClick={isBusy ? undefined : onClose}>
-      <div className="import-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="ui-backdrop" onClick={isBusy ? undefined : onClose}>
+      <div className="ui-modal ui-modal-lg import-modal" onClick={(e) => e.stopPropagation()}>
         <h2 className="import-modal-title">Import from LegendKeeper</h2>
 
         {(status === "idle" || status === "parsing" || status === "error") && (
@@ -178,7 +178,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
             {plan.lossyNotes.length > 0 && (
               <div className="import-modal-lossy">
-                <h3>A few things won't come across perfectly:</h3>
+                <h3 className="ui-eyebrow">A few things won't come across perfectly:</h3>
                 <ul>
                   {plan.lossyNotes.map((note) => (
                     <li key={note}>{note}</li>
@@ -191,7 +191,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
               Saving to <span className="import-modal-destination-path">{destination ?? "…"}</span>
               <button
                 type="button"
-                className="import-modal-destination-change"
+                className="ui-link import-modal-destination-change"
                 onClick={() => void handleChangeDestination()}
                 disabled={!destination}
               >
@@ -202,10 +202,10 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             {error && <p className="import-modal-error">{error}</p>}
 
             <div className="import-modal-actions">
-              <button type="button" className="import-modal-cancel" onClick={onClose}>
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={onClose}>
                 Cancel
               </button>
-              <button type="button" className="import-modal-confirm" onClick={() => void handleConfirm()}>
+              <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handleConfirm()}>
                 Import
               </button>
             </div>

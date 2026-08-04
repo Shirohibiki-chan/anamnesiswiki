@@ -96,7 +96,7 @@ export function ShortcutSettings() {
               </button>
               <button
                 type="button"
-                className="shortcut-row-reset"
+                className="ui-icon-btn"
                 aria-label={`Reset ${row.label} to its default`}
                 // Kept mounted and greyed rather than removed when there's
                 // nothing to reset, so the row doesn't reflow the moment a
@@ -124,7 +124,7 @@ export function ShortcutSettings() {
       </p>
 
       {hasAnyOverride && (
-        <button type="button" className="shortcut-reset-all" onClick={() => resetAll().catch(() => setProblem(SAVE_FAILED_MESSAGE))}>
+        <button type="button" className="ui-link shortcut-reset-all" onClick={() => resetAll().catch(() => setProblem(SAVE_FAILED_MESSAGE))}>
           Reset all to defaults
         </button>
       )}

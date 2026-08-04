@@ -98,8 +98,8 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
   }
 
   return createPortal(
-    <div className="search-palette-backdrop" onMouseDown={onClose}>
-      <div className="search-palette" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="ui-backdrop ui-backdrop-top" onMouseDown={onClose}>
+      <div className="ui-surface search-palette" onMouseDown={(e) => e.stopPropagation()}>
         <input
           type="text"
           className="search-palette-input"

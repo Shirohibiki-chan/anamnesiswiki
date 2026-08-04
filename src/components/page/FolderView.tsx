@@ -36,7 +36,7 @@ export function FolderView({ node }: { node: Node }) {
         {node.name}
       </h1>
       <p className="folder-view-hint">Folders hold other pages. Add one to get started.</p>
-      <button type="button" className="folder-view-add" onClick={(e) => setAnchorRect(e.currentTarget.getBoundingClientRect())}>
+      <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={(e) => setAnchorRect(e.currentTarget.getBoundingClientRect())}>
         Add a page
       </button>
       {anchorRect && (

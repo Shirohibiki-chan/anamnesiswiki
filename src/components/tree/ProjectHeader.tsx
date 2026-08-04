@@ -67,6 +67,7 @@ export function ProjectHeader() {
       </div>
       <button
         type="button"
+        className="ui-icon-btn ui-icon-btn-sm"
         title="Add top-level page"
         onClick={(e) => {
           if (openPopover === "add") closePopover();

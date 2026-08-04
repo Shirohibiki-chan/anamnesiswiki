@@ -34,9 +34,9 @@ export function RefsProperty({ label, nodeIds, excludeNodeId, nodes, onChange, o
   return (
     <div className="property-field">
       <div className="property-field-label-row">
-        <div className="property-field-label">{label}</div>
+        <div className="ui-eyebrow property-field-label">{label}</div>
         {onRemove && (
-          <button type="button" className="property-field-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
+          <button type="button" className="ui-inline-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
             <X size={11} />
           </button>
         )}
@@ -73,7 +73,7 @@ export function RefsProperty({ label, nodeIds, excludeNodeId, nodes, onChange, o
                 <span className="property-refs-chip-name">{refNode.name}</span>
                 <button
                   type="button"
-                  className="property-refs-remove"
+                  className="ui-inline-remove"
                   aria-label={`Remove ${refNode.name}`}
                   onClick={() => onChange(nodeIds.filter((refId) => refId !== id))}
                 >

@@ -39,9 +39,9 @@ export function NewPageDialog({ onClose }: NewPageDialogProps) {
   }
 
   return createPortal(
-    <div className="settings-backdrop" onClick={onClose}>
+    <div className="ui-backdrop" onClick={onClose}>
       <div
-        className="new-page-dialog"
+        className="ui-modal ui-modal-sm"
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-page-title"
@@ -51,7 +51,7 @@ export function NewPageDialog({ onClose }: NewPageDialogProps) {
           <h2 id="new-page-title" className="settings-title">
             New page
           </h2>
-          <button type="button" className="settings-close" aria-label="Cancel" onClick={onClose}>
+          <button type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Cancel" onClick={onClose}>
             <X size={15} />
           </button>
         </header>

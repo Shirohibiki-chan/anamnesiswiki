@@ -177,20 +177,18 @@ The unglamorous half of the overhaul, and a hard prerequisite for Phase 12. **`d
 
 Why it goes *before* the themes rather than with them: a theme swaps token *values*, and none of what's wrong is a value. The app has a colour system and no other scale — eleven font sizes, nine radii in thirteen spellings, six `line-height` declarations in the entire codebase, five copy-pasted modal backdrops, nine hand-rolled variants of the same button. Ship themes onto that and every theme inherits it, they all look equally unfinished, and choosing between them becomes impossible because the thing that's actually wrong is identical in all of them.
 
-**Done:**
+**Complete 2026-08-04.** Parts 1 and 2 of `docs/ui-audit.md` are fully crossed off; that file is now only Part 3, which is composition and taste rather than consolidation and doesn't block Phase 12.
 
 - ~~**Focus and motion.**~~ Shipped 2026-07-31. `:focus`/`:focus-visible` set once app-wide in `@layer base`, plus a base transition on form controls.
-- ~~**Type scale.**~~ Shipped 2026-08-04. Eight `--fs-*` tokens; the six competing heading sizes are three.
-- ~~**Put the display font to work.**~~ Shipped 2026-08-04. Fraunces on all six title surfaces; mono is a system stack, not a bundled face (reasoning in `docs/constants-and-theming.md`).
-- ~~**Radius scale**~~ and ~~**a global `line-height`**~~. Shipped 2026-08-04. Four `--radius-*` tokens, zero numeric literals left; `--lh-normal` on `body`.
+- ~~**Type scale.**~~ Eight `--fs-*` tokens; the six competing heading sizes are three.
+- ~~**Put the display font to work.**~~ Fraunces on all six title surfaces; mono is a system stack, not a bundled face (reasoning in `docs/constants-and-theming.md`).
+- ~~**Radius scale**~~ and ~~**a global `line-height`**~~. Four `--radius-*` tokens, zero numeric literals left; `--lh-normal` on `body`.
+- ~~**Spacing scale.**~~ Eight `--space-*` steps; 245 declarations across 19 values are now zero literals.
+- ~~**Shared control styles.**~~ `src/controls.css` in its own cascade layer: one backdrop where there were five, three modal widths where there were six, one button set where there were nine, three icon-button sizes where there were seven, one text link, one eyebrow label, one inline remove.
+- ~~**Border hierarchy.**~~ Three roles — `strong` for the app's frame, the base for containers, `subtle` for rules inside a container. Values are provisional; Phase 12 tunes them per theme.
+- ~~**All thirteen Part 1 defects.**~~ The last three were the doubled project name (6, dropped from the top bar), the single border colour (10), and the panels that vanished on a narrow window (13 — media queries that `minWidth: 900` made unreachable anyway).
 
-**Remaining:**
-
-- **Shared control styles** — one backdrop, one modal shell, one button set, one dismiss button, one text-link. Not a component library; a stylesheet the surfaces stop reimplementing. This is the half that needs component changes rather than find-and-replace, and it's where a **spacing scale** belongs — padding and gap are still raw rem everywhere, and they only start hurting once the controls are shared.
-- **Border hierarchy.** One border colour at one weight does structural, decorative and input duty; `--color-border-subtle` exists and is used once. Held back deliberately: unlike the other scales this needs a judgement about which borders are structural and which are decorative, so it isn't mechanical.
-- **The audit's remaining Part 1 defects** — the doubled project name (6), the single border colour (10), the panels that vanish on a narrow window (13). ~~The 7px top-bar/sidebar step (4), the jittering active sidebar tab (5), the duplicate accent token (9), the twice-declared properties panel (11), the twice-hardcoded reading width (12)~~ are done.
-
-**End state:** the app is consistent and boring, which is the state a visual direction can actually be judged from.
+**End state reached:** the app is consistent and boring, which is the state a visual direction can actually be judged from.
 
 ---
 

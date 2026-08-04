@@ -45,7 +45,7 @@ export function ImageSlot({ nodeId, image }: ImageSlotProps) {
 
   return (
     <div className="property-field">
-      <div className="property-field-label">Image</div>
+      <div className="ui-eyebrow property-field-label">Image</div>
       <div
         className={`property-image-slot${imageUrl ? " property-image-slot-filled" : ""}${isDragOver ? " property-image-slot-drag-over" : ""}`}
         onClick={() => inputRef.current?.click()}
@@ -65,7 +65,7 @@ export function ImageSlot({ nodeId, image }: ImageSlotProps) {
             <img src={imageUrl} alt="" className="property-image-preview" />
             <button
               type="button"
-              className="property-image-remove"
+              className="ui-icon-btn property-image-remove"
               aria-label="Remove image"
               onClick={(e) => {
                 e.stopPropagation();

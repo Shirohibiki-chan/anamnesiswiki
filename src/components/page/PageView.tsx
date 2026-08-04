@@ -57,7 +57,7 @@ export function PageView() {
         {node.tabs.length === 0 ? (
           <div className="page-view-no-tabs">
             <p>This page doesn't have any tabs yet.</p>
-            <button type="button" className="page-view-add-tab" onClick={handleAddTab}>
+            <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={handleAddTab}>
               Add a tab
             </button>
           </div>

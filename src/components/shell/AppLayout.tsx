@@ -52,7 +52,6 @@ export function AppLayout() {
 
       <div className="app-layout-center">
         <TopBar
-          projectName={project?.name ?? "Untitled Project"}
           isRightPanelOpen={isRightPanelOpen}
           onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
           onSwitchProject={() => void handleSwitchProject()}

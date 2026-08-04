@@ -16,6 +16,7 @@ Every count below was measured against the stylesheets, not estimated.
 ## Part 1 — Defects
 
 Things that are simply wrong. No design direction needed to fix any of them.
+**All thirteen are now crossed off.**
 
 1. **~~Scrollbars on the tab strips.~~** *(fixed 2026-07-31)* Setting
    `overflow-x` to anything but `visible` makes `overflow-y` compute to `auto`
@@ -64,9 +65,13 @@ Things that are simply wrong. No design direction needed to fix any of them.
    — three tab strips, one mechanism. Measured after: active and inactive tabs
    both 47px, label top delta 0.
 
-6. **The project name is on screen twice**, ~50px apart: once in the top bar
-   (`.top-bar-project-name`) and once in the sidebar header
-   (`.tree-project-header-name`).
+6. **~~The project name is on screen twice~~** *(fixed 2026-08-04)* It sat in
+   the top bar and again in the sidebar header, about 50px apart. The sidebar
+   keeps it: that copy has the home button and the add-page button attached and
+   heads the tree it names, while the top bar's was a label with nothing to do.
+   The top bar's left side is now deliberately empty rather than filled with
+   something invented — back/forward and a breadcrumb are Phase 14, and that's
+   where they go.
 
 7. **~~Keyboard focus is invisible almost everywhere.~~** *(fixed 2026-07-31)*
    Two elements in the app defined a `:focus-visible` style — the Settings tabs
@@ -93,12 +98,18 @@ Things that are simply wrong. No design direction needed to fix any of them.
    ambiguity is what caused defect 2. `--color-accent` is now written as
    `var(--color-accent-faint)`, so it reads as the alias it is.
 
-10. **`--color-border-subtle` is used once** in the whole app (the search
-    palette's input underline). Effectively the app has exactly one border
-    colour at exactly one weight doing structural, decorative and input duty
-    — panel edges, card outlines, text-field outlines and dividers are all the
-    same 1px of `#2a2a35`. That's the "borders are ugly" complaint: they aren't
-    ugly individually, there's just no hierarchy among them.
+10. **~~One border colour doing three jobs~~** *(fixed 2026-08-04)*
+    `--color-border-subtle` was used exactly once in the whole app (the search
+    palette's input underline), so panel edges, card outlines, text-field
+    outlines and dividers were all the same 1px of `#2a2a35`. That's the
+    "borders are ugly" complaint: none of them is ugly on its own, there was
+    just no hierarchy. Three roles now — `strong` for the frame (the two column
+    dividers, the top bar and sidebar strip, modal and popover edges), the base
+    for containers, `subtle` for rules *inside* a container (the two tab
+    strips, the menu heading, the search input). Measured after: frame lines
+    `rgb(56,56,72)`, in-content rules `rgb(34,34,44)`, inputs `rgb(42,42,53)`.
+    The values are provisional and Phase 12 re-tunes them per theme; the roles
+    are the part meant to last.
 
 11. **~~The properties panel is styled by two separate rule blocks~~**
     *(fixed 2026-08-04)* `.app-layout-properties` was declared twice in
@@ -108,10 +119,13 @@ Things that are simply wrong. No design direction needed to fix any of them.
     2026-08-04)* `.page-view` and `.page-banner-empty` both said `max-width:
     60rem`; both now say `var(--reading-width)`.
 
-13. **The window silently drops panels when narrowed.** Media queries hide the
-    properties panel below 700px and the tree below 640px, with no indication
-    and no way to get them back short of resizing. That's web thinking in a
-    desktop window.
+13. **~~The window silently drops panels when narrowed.~~** *(fixed
+    2026-08-04)* Media queries hid the properties panel below 700px and the
+    tree below 640px, with no indication and no way back short of resizing —
+    web thinking in a desktop window. They were also unreachable:
+    `tauri.conf.json` sets `minWidth: 900`, so neither breakpoint could ever
+    fire outside a browser tab. Both deleted. The properties panel has a real
+    toggle in the top bar; the tree's is Phase 14's resizable-sidebar work.
 
 ---
 
@@ -169,10 +183,19 @@ Plus `2px`, `3px` and `5px` one-offs that nobody meant, now folded into the
 nearest step. Four tokens, zero literals — verified: no numeric `border-radius`
 remains in any stylesheet except the two deliberate `50%` circles.
 
-A **spacing** scale is still missing. Padding and gap are still written as raw
-rem values everywhere, and unlike radius they aren't obviously wrong — the
-values mostly land on 0.25rem multiples already. Left for the control-set pass,
-where the duplication actually bites.
+### ~~There is no spacing scale~~ *(fixed 2026-08-04)*
+
+245 padding/margin/gap declarations across 19 distinct values. Eight steps now
+(2/4/6/8/12/16/24/32px), chosen to match what the app already leaned on rather
+than imposed from outside — 6px and 8px alone carried 100 of the 245, so a
+"clean" 4px-only grid would have meant retyping the app's commonest gap for the
+grid's sake. The tail collapsed: 10px → 12, 14px → 12 or 16, 20px → 24, and the
+3px/5px/7px one-offs to their nearest step. Verified: zero numeric `rem` values
+remain in any padding, margin or gap declaration in any stylesheet.
+
+The visible effect is that the dense screens — Settings, the properties panel,
+the modals — have more air than they did. Modal padding in particular is one
+value where it was two.
 
 ### ~~There is no line-height~~ *(fixed 2026-08-04)*
 
@@ -182,26 +205,34 @@ which is why dense areas — Settings, the properties panel, the import preview 
 felt cramped. `--lh-normal` (1.5) now sits on `body`, `--lh-tight` (1.25) on
 headings, and four of the six ad-hoc declarations were deleted as redundant.
 
-### There are no shared components, so everything is duplicated
+### ~~There are no shared components, so everything is duplicated~~ *(fixed 2026-08-04)*
 
-- **5 identical modal backdrops.** `position: fixed; inset: 0; background:
-  rgba(0,0,0,0.5); display: flex; z-index: 1000`, copy-pasted five times.
-- **6 modal shells** at 6 different widths (20 / 22 / 28 / 32 / 32 / 36rem)
-  with two different paddings (1.25rem and 1.5rem).
-- **9 near-identical secondary buttons**, across three radii and three
-  background colours, with no shared class between them.
-- **7 close/dismiss "X" buttons** at seven different sizes (18px, 20px, 22px,
-  26px, 1.5rem, 1.75rem, and one with no size at all).
-- **3 underlined text-link buttons**, defined separately — and the Settings →
-  Projects panel borrows the *Updates* panel's class, which a comment in the
-  stylesheet actually admits to.
+`src/controls.css`, imported into `index.css` as `layer(controls)` so every
+(unlayered) component stylesheet can still override it without a fight.
 
-This is the whole of the next slice, and it's the half of Phase 11.5 that needs
-component changes rather than find-and-replace. One partial exception already
-landed: the **eyebrow label** (small uppercase section heading) had four
-treatments — 12px/500/0.03em twice, 11px/600/0.05em, and 13px/500/0.03em — and
-now has one, though still written out in four stylesheets until there's a class
-to hang it on. All four carry a comment saying so.
+| Was | Now |
+|---|---|
+| 5 identical modal backdrops, copy-pasted | `.ui-backdrop` (+ `.ui-backdrop-top` for the search palette) |
+| 6 modal shells at 6 widths (20/22/28/32/32/36rem), 2 paddings | `.ui-modal` at 3 widths, one padding; `.ui-surface` for the palette |
+| 9 near-identical secondary buttons, 3 radii, 3 backgrounds | `.ui-btn` × 3 roles + one size step |
+| 7 dismiss buttons at 7 sizes (18/20/22/24/26/28/32px) | `.ui-icon-btn` at 3 sizes (20/24/28) |
+| 3 text links, one borrowed across panels | `.ui-link` |
+| 4 copies of the eyebrow label | `.ui-eyebrow` |
+| 3 identical inline remove-X rules | `.ui-inline-remove` |
+
+Measured after, on a page rendering all of them at once: 9 buttons → 4 distinct
+computed looks, 9 icon buttons → 3 sizes, links → 1, eyebrows → 1, backdrops →
+1 (the palette differing only in `align-items`, by design).
+
+Deliberately a stylesheet and not a component library: every one of these is a
+*look*, not behaviour, so a `<Button>` wrapper would add props to maintain and
+buy nothing the class doesn't. What stayed hand-rolled stayed on purpose — the
+recent-projects tile, the shortcut-recording field and the top bar's search
+button are controls of their own shape, not members of a set.
+
+The five hover languages the audit found are down to one for anything that's a
+button: secondary always means the accent tint. Menu rows and tree rows keep
+their own, which is correct — they're not buttons.
 
 ### ~~Hover means five different things~~ *(partly addressed 2026-07-31)*
 
@@ -226,9 +257,11 @@ The screen a new user meets first, and the least designed in the app.
 - ~~Title is the only Fraunces in the product~~ *(fixed — it now shares a face
   with every other title in the app)*, but it still floats above a stack of
   unrelated boxes with no shared alignment.
-- Three actions — Open folder, Import from LegendKeeper, New project — styled
-  identically, though for someone opening the app for the first time only one
-  of them is the likely next step. No primary action.
+- Three actions — Open folder, Import from LegendKeeper, New project — still
+  styled identically (all `.ui-btn .ui-btn-lg .ui-btn-secondary`), though for
+  someone opening the app for the first time only one of them is the likely
+  next step. No primary action. Which one gets promoted is a content decision,
+  not a token one, so the shared button set didn't settle it.
 - "New project" expands into an inline form *inside the button row*, which
   changes the row's height and reflows the whole centred column underneath it.
 - Recent projects is a bare list with no dates, no template counts, no icons —
@@ -249,11 +282,15 @@ The screen a new user meets first, and the least designed in the app.
 - Fixed 28rem width regardless of panel, so the Keyboard grid is cramped and
   the Updates panel is 90% empty.
 - The Projects panel's two actions are underlined text, not buttons — they read
-  as links in a desktop dialog.
+  as links in a desktop dialog. (They're `.ui-link` now rather than borrowing
+  the Updates panel's class, but whether they should be buttons at all is still
+  open.)
 
 ### Top bar and sidebar
 
-- ~~The 7px height mismatch~~ *(fixed)* and the duplicated project name (defect 6).
+- ~~The 7px height mismatch~~ and ~~the duplicated project name~~ *(both fixed)*.
+  The left half of the bar is now empty, which is honest rather than good — it's
+  reserved for Phase 14's back/forward and breadcrumb.
 - The three-column grid is fixed at `260px 1fr 300px` and can't be resized,
   which is already queued as Phase 14/21 work.
 - The top bar holds a project name and four controls in 48px and otherwise sits
@@ -268,7 +305,9 @@ The screen a new user meets first, and the least designed in the app.
   longer changes face when you click into it.)*
 - ~~Folder view names the same thing at 24px, for no reason.~~ *(fixed — same
   rule as a page title, because it is one.)*
-- Tab strip has no hover state on inactive tabs beyond a colour change.
+- Tab strip has no hover state on inactive tabs beyond a colour change. (The
+  eye/delete/add buttons *in* the strip are `.ui-icon-btn` now; the tab labels
+  themselves aren't buttons in the control-set sense.)
 
 ### Right sidebar (properties)
 
@@ -280,9 +319,10 @@ The screen a new user meets first, and the least designed in the app.
 
 ### Modals
 
-- Import and export are a deliberately matched pair and are the most coherent
-  screens in the app. They're the closest thing to a reference for what the
-  rest should look like.
+- Import and export are a deliberately matched pair and were the most coherent
+  screens in the app, which is why the shared control set was modelled on them
+  — their padding, their button shapes and their title treatment are what the
+  other four dialogs now inherit.
 - The confirm dialog has no title, so a destructive confirmation is a sentence
   and two buttons with no heading telling you what's about to happen.
 
@@ -301,3 +341,10 @@ The order that works is: consolidate to scales (mechanical, no taste required,
 mostly find-and-replace), *then* build the switcher, *then* build directions on
 top of it. That way a visual direction is a small file that can be tried and
 deleted, which is the whole point of scheduling the switcher early.
+
+**Parts 1 and 2 are now complete**, which is what Phase 12 was waiting on. What
+remains is Part 3 — surface-level composition, and taste rather than
+consolidation: the start screen's unaligned box stack and missing primary
+action, Settings' three unrelated panels at one fixed width, the confirm dialog
+having no title. None of it blocks the theme switcher, and some of it is better
+decided *with* a theme on screen than before one.

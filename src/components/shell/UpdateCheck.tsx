@@ -17,7 +17,7 @@ export function UpdateCheck() {
       {state.phase === "idle" && (
         <p className="update-check-line">
           {currentVersion && <span className="update-check-version">Anamnesis {currentVersion}</span>}
-          <button type="button" className="update-check-link" onClick={() => void check()}>
+          <button type="button" className="ui-link" onClick={() => void check()}>
             Check for updates
           </button>
         </p>
@@ -30,7 +30,7 @@ export function UpdateCheck() {
           <span className="update-check-version">
             You're on the latest version{currentVersion ? ` (${currentVersion})` : ""}.
           </span>
-          <button type="button" className="update-check-link" onClick={dismiss}>
+          <button type="button" className="ui-link" onClick={dismiss}>
             OK
           </button>
         </p>
@@ -42,10 +42,10 @@ export function UpdateCheck() {
           {state.update.notes && <p className="update-check-notes">{state.update.notes}</p>}
           <p className="update-check-reassurance">Your worlds aren't touched — updating only replaces the app itself.</p>
           <div className="update-check-buttons">
-            <button type="button" onClick={() => void install(state.update)}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void install(state.update)}>
               Download and install
             </button>
-            <button type="button" onClick={dismiss}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={dismiss}>
               Not now
             </button>
           </div>
@@ -87,7 +87,7 @@ export function UpdateCheck() {
           <p className="update-check-headline">Update installed.</p>
           <p className="update-check-notes">Restart Anamnesis to start using it.</p>
           <div className="update-check-buttons">
-            <button type="button" onClick={() => void restart()}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void restart()}>
               Restart now
             </button>
           </div>
@@ -98,10 +98,10 @@ export function UpdateCheck() {
         <div className="update-check-card">
           <p className="update-check-notes">{state.message}</p>
           <div className="update-check-buttons">
-            <button type="button" onClick={() => void check()}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void check()}>
               Try again
             </button>
-            <button type="button" onClick={dismiss}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={dismiss}>
               Close
             </button>
           </div>

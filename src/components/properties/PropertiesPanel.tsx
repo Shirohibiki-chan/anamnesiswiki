@@ -128,7 +128,11 @@ export function PropertiesPanel() {
       {node.templateKey === BLANK_TEMPLATE_KEY && (
         <div className="properties-panel-apply-template">
           <p>This page doesn't have a template yet.</p>
-          <button type="button" onClick={(e) => setAnchorRect(e.currentTarget.getBoundingClientRect())}>
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary"
+            onClick={(e) => setAnchorRect(e.currentTarget.getBoundingClientRect())}
+          >
             Apply a template
           </button>
           {anchorRect && (
@@ -163,10 +167,12 @@ export function PropertiesPanel() {
             ))}
           </select>
           <div className="property-add-actions">
-            <button type="button" onClick={() => setIsAddingProperty(false)}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setIsAddingProperty(false)}>
               Cancel
             </button>
-            <button type="submit">Add</button>
+            <button type="submit" className="ui-btn ui-btn-secondary">
+              Add
+            </button>
           </div>
         </form>
       ) : (

@@ -4,20 +4,18 @@ import { useState } from "react";
 import { Settings } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
 
-type SettingsButtonProps = {
-  // The top bar's icon buttons share a look; the start-up screen has no such
-  // strip, so it gets its own quieter treatment.
-  variant?: "top-bar" | "standalone";
-};
-
-export function SettingsButton({ variant = "top-bar" }: SettingsButtonProps) {
+export function SettingsButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
+      {/* One look in both places it appears. It used to have a `variant` prop
+          picking between a 28px top-bar button and a 32px standalone one on the
+          start screen — two sizes for the same cog, which is exactly the kind
+          of near-duplicate the shared icon button exists to end. */}
       <button
         type="button"
-        className={variant === "top-bar" ? "top-bar-icon-button" : "settings-standalone-button"}
+        className="ui-icon-btn ui-icon-btn-lg"
         aria-label="Settings"
         aria-haspopup="dialog"
         aria-expanded={isOpen}

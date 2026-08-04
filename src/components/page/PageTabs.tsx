@@ -77,7 +77,7 @@ export function PageTabs({ tabs, activeTabId, onSelect, onToggleHidden, onAdd, o
               onDelete={() => void handleDelete(tab)}
             />
           ))}
-          <button type="button" className="page-tab-add" title="Add a tab" onClick={onAdd}>
+          <button type="button" className="ui-icon-btn ui-icon-btn-sm page-tab-add" title="Add a tab" onClick={onAdd}>
             <Plus size={13} />
           </button>
         </div>
@@ -148,13 +148,13 @@ function SortableTab({ tab, isActive, isEditing, onSelect, onStartRename, onComm
       )}
       <button
         type="button"
-        className="page-tab-eye"
+        className="ui-icon-btn ui-icon-btn-sm page-tab-eye"
         title={tab.hidden ? "Hidden — click to reveal" : "Visible — click to hide"}
         onClick={onToggleHidden}
       >
         {tab.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
       </button>
-      <button type="button" className="page-tab-delete" title="Delete tab" onClick={onDelete}>
+      <button type="button" className="ui-icon-btn ui-icon-btn-sm page-tab-delete" title="Delete tab" onClick={onDelete}>
         <X size={12} />
       </button>
     </div>

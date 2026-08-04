@@ -69,9 +69,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const ActivePanel = active.Panel;
 
   return createPortal(
-    <div className="settings-backdrop" onClick={onClose}>
+    <div className="ui-backdrop" onClick={onClose}>
       <div
-        className="settings-modal"
+        className="ui-modal ui-modal-md"
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
@@ -81,7 +81,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           <h2 id="settings-title" className="settings-title">
             Settings
           </h2>
-          <button type="button" className="settings-close" aria-label="Close settings" onClick={onClose} autoFocus>
+          <button type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Close settings" onClick={onClose} autoFocus>
             <X size={15} />
           </button>
         </header>
