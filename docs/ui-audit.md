@@ -48,19 +48,21 @@ Things that are simply wrong. No design direction needed to fix any of them.
    the centre column can shrink. Worth remembering as the shape of the
    mistake: the ugly scrollbar was not decoration, it was load-bearing.
 
-4. **The sidebar tab strip and the top bar are different heights.** `.top-bar`
-   is a hard `height: 48px`. `.tree-sidebar-tabs` has no height at all — it
-   comes out ~41px from its padding. So the two bottom borders meet at the
-   sidebar's right edge 7px apart. This is the thing that reads as "the layout
-   is crazy" in the screenshot: a horizontal rule that steps down as it crosses
-   the window.
+4. **~~The sidebar tab strip and the top bar are different heights.~~**
+   *(fixed 2026-08-04)* `.top-bar` was a hard `height: 48px`; `.tree-sidebar-tabs`
+   had no height at all and came out ~41px from its padding, so the two bottom
+   borders met at the sidebar's right edge 7px apart — a horizontal rule that
+   stepped down as it crossed the window, which is the thing that reads as "the
+   layout is crazy" in the screenshot. Both now take `--h-bar`. Measured after:
+   `topBarH 48, sidebarStripH 48, step 0`.
 
-5. **The active sidebar tab is 2px taller than its neighbours.**
-   `.tree-sidebar-tab-active` adds `border-bottom: 2px` to a row that's
-   `align-items: center`, so activating a tab nudges its own label up a pixel.
-   Project/Templates/Assets jitter as you switch. The other two tab strips in
-   the app do the same underline with an `::after` and don't have this problem
-   — three tab strips, two different mechanisms.
+5. **~~The active sidebar tab is 2px taller than its neighbours.~~**
+   *(fixed 2026-08-04)* `.tree-sidebar-tab-active` added a real `border-bottom:
+   2px` to a row that's `align-items: center`, so activating a tab nudged its
+   own label up a pixel and Project/Templates/Assets jittered as you switched.
+   Now an `::after`, which is what the page tabs and Settings tabs already used
+   — three tab strips, one mechanism. Measured after: active and inactive tabs
+   both 47px, label top delta 0.
 
 6. **The project name is on screen twice**, ~50px apart: once in the top bar
    (`.top-bar-project-name`) and once in the sidebar header
@@ -85,10 +87,11 @@ Things that are simply wrong. No design direction needed to fix any of them.
    button]`, with the tree row named separately since it's a div and gets a
    deliberately shorter list (it's virtualized and recycled constantly).
 
-9. **`--color-accent` and `--color-accent-faint` are byte-identical**
-   (`rgba(20, 184, 166, 0.15)` both). Two names, one value, and one of them is
-   really a shadcn compatibility alias that only BlockNote's menus should
-   touch. That ambiguity is what caused defect 2.
+9. **~~`--color-accent` and `--color-accent-faint` are byte-identical~~**
+   *(fixed 2026-08-04)* Two names, one value, and one of them was really a
+   shadcn compatibility alias that only BlockNote's menus should touch — the
+   ambiguity is what caused defect 2. `--color-accent` is now written as
+   `var(--color-accent-faint)`, so it reads as the alias it is.
 
 10. **`--color-border-subtle` is used once** in the whole app (the search
     palette's input underline). Effectively the app has exactly one border
@@ -97,12 +100,13 @@ Things that are simply wrong. No design direction needed to fix any of them.
     same 1px of `#2a2a35`. That's the "borders are ugly" complaint: they aren't
     ugly individually, there's just no hierarchy among them.
 
-11. **The properties panel is styled by two separate rule blocks**
-    (`.app-layout-properties` is declared twice in shell.css, split by an
-    unrelated selector). Harmless today, a merge hazard later.
+11. **~~The properties panel is styled by two separate rule blocks~~**
+    *(fixed 2026-08-04)* `.app-layout-properties` was declared twice in
+    shell.css, split by an unrelated selector. Merged into one.
 
-12. **The reading column width is hardcoded in two places** — `.page-view` and
-    `.page-banner-empty` both say `max-width: 60rem`. They will drift.
+12. **~~The reading column width is hardcoded in two places~~** *(fixed
+    2026-08-04)* `.page-view` and `.page-banner-empty` both said `max-width:
+    60rem`; both now say `var(--reading-width)`.
 
 13. **The window silently drops panels when narrowed.** Media queries hide the
     properties panel below 700px and the tree below 640px, with no indication
@@ -117,57 +121,66 @@ The app has a colour token system and nothing else. Every other axis of a
 design system is missing, so each screen was styled by hand and they all landed
 slightly differently.
 
-### There is no type scale
+### ~~There is no type scale~~ *(fixed 2026-08-04)*
 
-Eleven distinct font sizes. Two of them do almost all the work (13px and 12px,
-36 uses each), and then every heading in the app is a one-off:
+Eleven distinct font sizes. Two of them did almost all the work (13px and 12px,
+36 uses each), and then every heading in the app was a one-off:
 
-| Size | Where | Uses |
-|---|---|---|
-| 2rem / 32px | start page `<h1>` | 1 |
-| 1.75rem / 28px | page title | 2 |
-| 1.5rem / 24px | folder view name | 1 |
-| 1.125rem / 18px | import and export titles | 2 |
-| 1rem / 16px | Settings title | 1 |
-| 0.9375rem / 15px | search input | 1 |
+| Size | Where | Uses | Now |
+|---|---|---|---|
+| 2rem / 32px | start page `<h1>` | 1 | `--fs-3xl` |
+| 1.75rem / 28px | page title | 2 | `--fs-2xl` |
+| 1.5rem / 24px | folder view name | 1 | `--fs-2xl` |
+| 1.125rem / 18px | import and export titles | 2 | `--fs-xl` |
+| 1rem / 16px | Settings title | 1 | `--fs-xl` |
+| 0.9375rem / 15px | search input | 1 | `--fs-md` |
 
 Six sizes for "this is the title of the thing you're looking at", no two
-surfaces agreeing. The Settings modal's title is 16px; the import modal's is
-18px; the confirm dialog has no title at all.
+surfaces agreeing — the Settings modal's title was 16px and the import modal's
+18px. Now eight tokens, three of them headings, and the three modal titles are
+one size. The confirm dialog still has no title at all; that's a content
+problem, not a scale problem, and it's still open under Modals below.
 
-### There is no display font, despite bundling one
+### ~~There is no display font, despite bundling one~~ *(fixed 2026-08-04)*
 
-**Fraunces ships in the app and is used in exactly one place** — the word
-"Anamnesis" on the start page. Newsreader is used for editor body text.
-Everything else — every page title, every modal heading, every folder name,
-the entirety of Settings — is Inter at one of five sizes. That's the "fonts are
-lame" complaint, and it's literally true: the app is a wall of one sans-serif.
+**Fraunces shipped in the app and was used in exactly one place** — the word
+"Anamnesis" on the start page. Everything else — every page title, every modal
+heading, every folder name, the entirety of Settings — was Inter at one of five
+sizes. That's the "fonts are lame" complaint, and it was literally true: a wall
+of one sans-serif. Fraunces now carries all six title surfaces at weight 500.
 
-There's also no monospace font bundled at all, so keyboard shortcuts, file
-paths and `<code>` elements render in Inter with only a size change.
+Monospace is now a system stack (`--font-mono`) on keyboard shortcuts, file
+paths and `<code>`, which previously rendered in Inter with only a size change.
+Not bundled — see the reasoning in `docs/constants-and-theming.md`.
 
-### There is no spacing or radius scale
+### ~~There is no radius scale~~ *(fixed 2026-08-04)*
 
 Thirteen different `border-radius` spellings across nine actual values. Four of
-the common ones are each written two different ways:
+the common ones were each written two different ways:
 
-| Value | Spellings | Total uses |
-|---|---|---|
-| 4px | `4px` (13) + `0.25rem` (12) | 25 |
-| 8px | `8px` (16) + `0.5rem` (6) | 22 |
-| 6px | `6px` (15) + `0.375rem` (3) | 18 |
-| pill | `999px` (3) + `9999px` (1) | 4 |
+| Value | Spellings | Total uses | Now |
+|---|---|---|---|
+| 4px | `4px` (13) + `0.25rem` (12) | 25 | `--radius-sm` |
+| 8px | `8px` (16) + `0.5rem` (6) | 22 | `--radius-lg` |
+| 6px | `6px` (15) + `0.375rem` (3) | 18 | `--radius-md` |
+| pill | `999px` (3) + `9999px` (1) | 4 | `--radius-full` |
 
-Plus `3px` and `5px` one-offs that nobody meant. The result is that a card, a
-button and an input sitting next to each other are often 8px, 6px and 4px
-respectively, and the difference reads as sloppiness rather than hierarchy.
+Plus `2px`, `3px` and `5px` one-offs that nobody meant, now folded into the
+nearest step. Four tokens, zero literals — verified: no numeric `border-radius`
+remains in any stylesheet except the two deliberate `50%` circles.
 
-### There is no line-height
+A **spacing** scale is still missing. Padding and gap are still written as raw
+rem values everywhere, and unlike radius they aren't obviously wrong — the
+values mostly land on 0.25rem multiples already. Left for the control-set pass,
+where the duplication actually bites.
+
+### ~~There is no line-height~~ *(fixed 2026-08-04)*
 
 Six `line-height` declarations in the whole app, applied ad-hoc (1.4, 1.4, 1.5,
-1.5, 1.5, 1.5). Everything else inherits the browser default of roughly 1.2,
+1.5, 1.5, 1.5). Everything else inherited the browser default of roughly 1.2,
 which is why dense areas — Settings, the properties panel, the import preview —
-feel cramped.
+felt cramped. `--lh-normal` (1.5) now sits on `body`, `--lh-tight` (1.25) on
+headings, and four of the six ad-hoc declarations were deleted as redundant.
 
 ### There are no shared components, so everything is duplicated
 
@@ -182,6 +195,13 @@ feel cramped.
 - **3 underlined text-link buttons**, defined separately — and the Settings →
   Projects panel borrows the *Updates* panel's class, which a comment in the
   stylesheet actually admits to.
+
+This is the whole of the next slice, and it's the half of Phase 11.5 that needs
+component changes rather than find-and-replace. One partial exception already
+landed: the **eyebrow label** (small uppercase section heading) had four
+treatments — 12px/500/0.03em twice, 11px/600/0.05em, and 13px/500/0.03em — and
+now has one, though still written out in four stylesheets until there's a class
+to hang it on. All four carry a comment saying so.
 
 ### ~~Hover means five different things~~ *(partly addressed 2026-07-31)*
 
@@ -203,7 +223,8 @@ brightness(1.1)`. There's no rule about which, and no transition on any of them.
 
 The screen a new user meets first, and the least designed in the app.
 
-- Title is the only Fraunces in the product, floating above a stack of
+- ~~Title is the only Fraunces in the product~~ *(fixed — it now shares a face
+  with every other title in the app)*, but it still floats above a stack of
   unrelated boxes with no shared alignment.
 - Three actions — Open folder, Import from LegendKeeper, New project — styled
   identically, though for someone opening the app for the first time only one
@@ -221,7 +242,10 @@ The screen a new user meets first, and the least designed in the app.
   a path box plus two underlined text links; Keyboard is a dense grid; Updates
   is a single muted sentence. No section headings, no dividers, no shared
   layout.
-- Four font sizes in one modal (16 / 13 / 12 / 11px).
+- ~~Four font sizes in one modal (16 / 13 / 12 / 11px).~~ *(partly fixed
+  2026-08-04 — the title is now 18px Fraunces, matching import and export, and
+  the shortcut keys are mono so the key column lines up. The panels themselves
+  are still three unrelated screens, above.)*
 - Fixed 28rem width regardless of panel, so the Keyboard grid is cramped and
   the Updates panel is 90% empty.
 - The Projects panel's two actions are underlined text, not buttons — they read
@@ -229,7 +253,7 @@ The screen a new user meets first, and the least designed in the app.
 
 ### Top bar and sidebar
 
-- The 7px height mismatch and the duplicated project name (defects 4 and 6).
+- ~~The 7px height mismatch~~ *(fixed)* and the duplicated project name (defect 6).
 - The three-column grid is fixed at `260px 1fr 300px` and can't be resized,
   which is already queued as Phase 14/21 work.
 - The top bar holds a project name and four controls in 48px and otherwise sits
@@ -238,16 +262,19 @@ The screen a new user meets first, and the least designed in the app.
 
 ### Page view
 
-- Page title is 28px Inter 600 — the same weight and family as body UI text, so
-  the most important text on screen has almost no presence.
-- Folder view names the same thing at 24px, for no reason.
+- ~~Page title is 28px Inter 600 — the same weight and family as body UI text,
+  so the most important text on screen has almost no presence.~~ *(fixed
+  2026-08-04 — 28px Fraunces 500. The rename input matches it, so the title no
+  longer changes face when you click into it.)*
+- ~~Folder view names the same thing at 24px, for no reason.~~ *(fixed — same
+  rule as a page title, because it is one.)*
 - Tab strip has no hover state on inactive tabs beyond a colour change.
 
 ### Right sidebar (properties)
 
-- Field labels are 11px uppercase; the import modal's section labels are 12px
-  uppercase; the start page's are 13px uppercase. Three treatments of the same
-  idea.
+- ~~Field labels are 11px uppercase; the import modal's section labels are 12px
+  uppercase; the start page's are 13px uppercase.~~ *(fixed 2026-08-04 — one
+  treatment, 11px/600/0.05em.)*
 - Being rebuilt in Phase 18 anyway, so it's low-value to polish now beyond
   what's already been fixed.
 

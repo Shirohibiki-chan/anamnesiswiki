@@ -81,11 +81,15 @@
      Anything that wants the bold, fully-saturated teal (a focus ring, a
      primary button) should use --color-accent-light or --color-accent-dark
      instead. */
-  --color-accent: rgba(20, 184, 166, 0.15);
   --color-accent-light: #5eead4;
   --color-accent-dark: #0d9488;
   --color-accent-faint: rgba(20, 184, 166, 0.15);
   --color-accent-faint-border: rgba(20, 184, 166, 0.3);
+  /* An alias, now written as one, because this and --color-accent-faint held
+     byte-identical values under two names and picking between them was a coin
+     flip. That ambiguity is what made the import progress bar invisible:
+     "accent" sounds like the bold teal and is in fact the 15% tint. */
+  --color-accent: var(--color-accent-faint);
 
   --color-callout-info: #60a5fa;
   --color-callout-info-bg: rgba(59, 130, 246, 0.12);
@@ -134,11 +138,78 @@
   --color-accent-foreground: var(--color-accent-light);
 }
 
+/* --- Scales (Phase 11.5) ---
+   The app had a colour system and nothing else, so every screen was sized by
+   hand and none of them agreed: eleven font sizes (six of them one-off
+   headings), nine radii spelled thirteen ways, and six line-heights in 3000
+   lines of CSS. These are the missing axes. See docs/ui-audit.md for the counts
+   and docs/constants-and-theming.md for how to use them.
+
+   Deliberately a plain `:root` and not `@theme`, unlike the colours above.
+   `@theme` is Tailwind's utility-generation table — a `--text-sm` there would
+   redefine the `text-sm` utility, and BlockNote's shadcn menus are built out of
+   exactly those utilities. This app writes no Tailwind classes of its own
+   (checked: zero utility classes in any .tsx), so it has nothing to gain from
+   that table and something to lose. Hence `--fs-*` rather than `--text-*`.
+
+   The radius names DO match Tailwind's namespace, and their values match its
+   defaults exactly (sm 0.25rem, md 0.375rem, lg 0.5rem) — so BlockNote's
+   `rounded-*` utilities land on the same pixels they always did. If you ever
+   change one of those three, check what it does to the editor menus first. */
+:root {
+  /* Type. The four small sizes carry 95 of the app's 103 sized elements and are
+     unchanged — retuning those would resize the entire UI, which is a taste
+     decision, not a consolidation. What collapsed is the tail: 10px folded up
+     to 11, 15px down to 14, and the six competing heading sizes down to three
+     (modal title, page title, start-screen title). The gap between xl and 2xl
+     is real — nothing in the app sits between 18px and 28px, and a scale step
+     that nothing uses is just a step someone will misuse later. */
+  --fs-2xs: 0.6875rem; /* 11px — property labels, meta text */
+  --fs-xs: 0.75rem; /* 12px — dense UI, secondary labels */
+  --fs-sm: 0.8125rem; /* 13px — the default UI size */
+  --fs-md: 0.875rem; /* 14px — emphasis, inputs you type into */
+  --fs-lg: 1rem; /* 16px — section headings */
+  --fs-xl: 1.125rem; /* 18px — modal titles */
+  --fs-2xl: 1.75rem; /* 28px — page and folder titles */
+  --fs-3xl: 2rem; /* 32px — start screen */
+
+  /* Line height. `--lh-normal` is set on body below; before it, everything
+     inherited the browser's ~1.2 and dense screens (Settings, properties, the
+     import preview) read as cramped. Headings take `--lh-tight` — 1.5 on 28px
+     text opens a gap you can park a car in. */
+  --lh-tight: 1.25;
+  --lh-normal: 1.5;
+
+  /* Radius. `--radius-full` covers pills; circles stay `border-radius: 50%`,
+     which is a different idea and not a scale member. */
+  --radius-sm: 0.25rem; /* 4px — inputs, small controls, chips */
+  --radius-md: 0.375rem; /* 6px — buttons, list rows, tiles */
+  --radius-lg: 0.5rem; /* 8px — panels, cards, modals */
+  --radius-full: 9999px;
+
+  /* Families, so the four faces are named once instead of quoted at 30 call
+     sites. Mono is a system stack rather than a bundled woff2: it's only used
+     for keyboard shortcuts and file paths, every desktop this ships to has a
+     good one (Cascadia on Windows, SF Mono on macOS), and it costs no bytes
+     and no offline risk. Say the word if you want a specific mono bundled. */
+  --font-ui: "Inter", sans-serif;
+  --font-display: "Fraunces", serif;
+  --font-prose: "Newsreader", serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+
+  /* Layout constants that more than one stylesheet needs to agree on. Both of
+     these were previously written as literals in two files each, which is the
+     kind of thing that stays correct right up until someone changes one. */
+  --h-bar: 48px; /* top bar and the sidebar's tab strip — see tree.css */
+  --reading-width: 60rem; /* page body and the empty-banner placeholder */
+}
+
 @layer base {
   body {
-    font-family: "Inter", sans-serif;
+    font-family: var(--font-ui);
     background-color: var(--color-bg);
     color: var(--color-text-primary);
+    line-height: var(--lh-normal);
   }
 
   /* --- Focus (Phase 11.5) ---
@@ -260,7 +331,7 @@ body,
 
 *::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -269,16 +340,6 @@ body,
 
 /* Wiki body prose — wraps every BlockNote editor instance */
 .wiki-body {
-  font-family: "Newsreader", serif;
+  font-family: var(--font-prose);
 }
 
-/* Page titles, section headings inside wiki content, modal titles */
-.font-display {
-  font-family: "Fraunces", serif;
-}
-
-/* Tabular numerals for the properties panel and small data displays */
-.num {
-  font-family: "Inter", sans-serif;
-  font-feature-settings: "tnum";
-}
