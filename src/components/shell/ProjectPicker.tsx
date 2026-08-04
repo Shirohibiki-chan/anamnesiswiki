@@ -78,7 +78,7 @@ export function ProjectPicker() {
   return (
     <main className="project-picker">
       <div className="project-picker-intro">
-        <h1 className="font-display">Anamnesis</h1>
+        <h1>Anamnesis</h1>
         <p>Pick a project to open, or start a new one.</p>
       </div>
 

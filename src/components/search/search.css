@@ -22,7 +22,7 @@
   flex-direction: column;
   background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
@@ -32,7 +32,7 @@
   border-bottom: 1px solid var(--color-border-subtle);
   background: transparent;
   padding: 0.875rem 1rem;
-  font-size: 0.9375rem;
+  font-size: var(--fs-md);
   color: var(--color-text-primary);
   outline: none;
 }
@@ -44,13 +44,12 @@
 .search-palette-hint {
   margin: 0;
   padding: 1rem;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  font-size: var(--fs-sm);
   color: var(--color-text-muted);
 }
 
 .search-palette-hint code {
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--color-text-secondary);
 }
 
@@ -71,7 +70,7 @@
   width: 100%;
   padding: 0.5rem;
   border: 0;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-sm);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -96,19 +95,19 @@
 }
 
 .search-palette-result-name {
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   color: var(--color-text-primary);
 }
 
 .search-palette-result-path {
-  font-size: 0.6875rem;
+  font-size: var(--fs-2xs);
   color: var(--color-text-muted);
 }
 
 .search-palette-result-snippet,
 .search-palette-result-tag {
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
   color: var(--color-text-secondary);
   /* One line per result: the snippet is already clipped to a fixed width by
      search-service, but a narrow window can still overflow it. */
@@ -128,5 +127,5 @@
 .search-palette-mark {
   background: var(--color-accent-faint);
   color: var(--color-accent-light);
-  border-radius: 0.125rem;
+  border-radius: var(--radius-sm);
 }

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-04 — after v0.2.1
+
+*(Not in a release — these live in the repo and affect this machine only.)*
+
+### Adjustments
+
+- **Titles are in the serif now — the one from the start screen.** Anamnesis has been shipping a second font, Fraunces, since the very first build, and using it for exactly one word: "Anamnesis" on the start screen. Every other title in the app — every page title, every folder title, the heading on every dialog — was Inter, the same font as the buttons and the sidebar and everything else, just larger. That's most of what "the fonts are lame" was pointing at, and it was literally true: the app was a wall of one sans-serif. Page titles, folder titles, and the Import / Export / Settings headings are all in Fraunces now. It's a little lighter than before, because a serif at that size carries a lot more weight than Inter does at the same number and the old setting came out shouting. **Renaming a page keeps the same look** — the title used to change font and size the moment you clicked into it, which nobody would call a feature.
+- **Everything has room to breathe.** Text in this app has been sitting at whatever spacing the browser felt like, which is tight — that's why Settings, the properties panel and the import preview all read as cramped and a bit claustrophobic. There's now one setting for it, applied everywhere, and it's roomier. This is the change you'll notice least consciously and most overall.
+- **Keyboard shortcuts and file paths are in a typewriter font.** `Ctrl+K` in the top bar, the whole shortcut list in Settings → Keyboard, and the folder paths on the start screen and in Settings → Projects. They were in Inter, which is a font where letters are all different widths — so a column of key combinations never lined up, and a path was just a grey smear. They line up now.
+- **The Settings heading matches the other dialogs.** It was the smallest title in the app despite Settings being the biggest dialog: 16px against Import's 18px. All three are the same now.
+- **Corners, text sizes and small labels stopped disagreeing.** Under the hood the app had eleven different text sizes and nine different corner roundings written thirteen different ways, so a card, a button and a text box sitting next to each other were often all rounded slightly differently — not enough to name, enough to read as sloppy. There's now one small set of each, and everything picks from it. What actually changed on screen is minor: folder titles went up a touch to match page titles, the search box came down a touch, and the little grey ALL-CAPS labels (on the start screen, in the import preview, above each property) now agree on one size instead of using three.
+
+### Fixes
+
+- **The line under the top bar is straight.** Where the top bar met the sidebar's tabs, the bar underneath them stepped down by seven pixels and then carried on — one horizontal rule across the window, broken, at the exact seam between the two halves of the app. That's the thing that looked wrong in the second screenshot and was hard to name. The two are the same height now.
+- **The sidebar tabs stop twitching.** Clicking between Project, Templates and Assets nudged the word you clicked up by a pixel, because the teal underline was being added *to* the tab rather than drawn under it, making the active one slightly taller than its neighbours. The other two tab strips in the app were already doing it the right way; all three now match.
+
 ## 2026-07-31 — after v0.2.1
 
 *(Not in a release — these live in the repo and affect this machine only.)*

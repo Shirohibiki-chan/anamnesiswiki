@@ -61,7 +61,7 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
 | `--color-text-muted` | `#6a6a78` | Quiet labels — property field labels, breadcrumb separators |
 | `--color-text-placeholder` | `#4a4a55` | Placeholder text in inputs, disabled states |
-| `--color-accent` | `rgba(20,184,166,0.15)` | Subtle selection/hover tint — same value as `--color-accent-faint`. Also doubles as shadcn/ui's "accent" role (Phase 5's menu-kit component library uses this exact name for hover/selected menu rows), so it's kept as the translucent tint rather than the bold hue. Use `--color-accent-light`/`--color-accent-dark` for anything that needs the full-saturation teal (focus rings, primary buttons). |
+| `--color-accent` | `var(--color-accent-faint)` | **An alias, not a value of its own** (Phase 11.5 — it used to be a byte-identical copy). It exists because shadcn/ui's "accent" role has that name and Phase 5's menu kit expects it; the app's own code should say `--color-accent-faint`. Note the trap in the name: this is the 15% tint, *not* the bold hue. Use `--color-accent-light`/`--color-accent-dark` for focus rings, progress bars and primary buttons. |
 | `--color-accent-light` | `#5eead4` | Accent text on dark surfaces — active tab labels, selected tree row text, save indicator |
 | `--color-accent-dark` | `#0d9488` | Hover states that need to go darker than base accent |
 | `--color-accent-faint` | `rgba(20,184,166,0.15)` | Tinted backgrounds for selected tree rows, active tabs |
@@ -119,14 +119,40 @@ The palette-hex values in `src/constants/palette.ts` must stay in sync with thes
 
 Active tabs, selected tree rows, and the top-bar Project button use a consistent three-token tint: `--color-accent-faint` background + `--color-accent-faint-border` border + `--color-accent-light` label. Inactive state is transparent background with `--color-text-secondary` label. This pattern is intentionally reused so navigation state reads the same everywhere.
 
+### Scales (Phase 11.5)
+
+Everything below lives in a **plain `:root` block** in `index.css`, deliberately *not* in `@theme`. `@theme` is Tailwind's utility-generation table: a `--text-sm` declared there redefines the `text-sm` utility, and `@blocknote/shadcn`'s menus are built entirely out of those utilities. The app writes no Tailwind classes of its own, so it gains nothing from that table and risks breaking the editor chrome. New non-colour tokens go in `:root`; colours stay in `@theme` for the shadcn bridge described above.
+
+The one exception is `--radius-*`, which does use Tailwind's namespace — its three overlapping values are set to Tailwind's own defaults (`sm` 0.25rem, `md` 0.375rem, `lg` 0.5rem) so `rounded-*` inside BlockNote lands on the pixels it always did. **If you change one of those three, check the editor menus.**
+
+**Type** — `--fs-*`. The four small sizes carry ~95 of the app's sized elements and were left alone; what collapsed was the tail (eleven sizes down to eight, six competing heading sizes down to three).
+
+| Token | Value | Use for |
+|---|---|---|
+| `--fs-2xs` | 0.6875rem / 11px | Property labels, eyebrow labels, meta text, paths |
+| `--fs-xs` | 0.75rem / 12px | Dense UI, secondary labels, hints |
+| `--fs-sm` | 0.8125rem / 13px | The default UI size |
+| `--fs-md` | 0.875rem / 14px | Emphasis, inputs you type into |
+| `--fs-lg` | 1rem / 16px | Section headings |
+| `--fs-xl` | 1.125rem / 18px | Modal titles (import, export, Settings) |
+| `--fs-2xl` | 1.75rem / 28px | Page and folder titles |
+| `--fs-3xl` | 2rem / 32px | Start screen |
+
+Nothing sits between 18px and 28px; the gap is intentional, not an omission.
+
+**Line height** — `--lh-normal` (1.5) is set on `body`, so most elements need no declaration at all. `--lh-tight` (1.25) is for headings at `--fs-xl` and above. Before this the app had six ad-hoc line-heights and everything else inherited the browser's ~1.2, which is why dense screens read as cramped.
+
+**Radius** — `--radius-sm` (4px, inputs and chips), `--radius-md` (6px, buttons and rows), `--radius-lg` (8px, panels and modals), `--radius-full` (pills). Circles stay `border-radius: 50%` — a different idea, not a scale member. Thirteen spellings across nine values before this.
+
+**Layout** — `--h-bar` (48px) is shared by the top bar and the tree sidebar's tab strip so their bottom borders form one unbroken rule; `--reading-width` (60rem) is shared by `.page-view` and `.page-banner-empty`.
+
 ### Typography
 
-Three font families, all self-hosted (bundled in `public/fonts/`) to keep the app fully offline:
+Four faces. Three are self-hosted (bundled in `public/fonts/`) to keep the app fully offline; the fourth is a system stack:
 
-- **UI text** — Inter — buttons, tree rows, sidebar labels, modal chrome. Set on `body` in `@layer base`.
-- **Wiki body prose** — Newsreader — the actual writing surface inside BlockNote. A serif tuned for long-form reading; applied via the `.wiki-body` class that wraps every editor instance.
-- **Display / page titles** — Fraunces (optical-size aware serif) — used for page titles, section headings inside wiki content (`h1`, `h2`, `h3`), and modal titles. Applied via the `.font-display` utility class.
+- **UI text** — Inter — `var(--font-ui)`. Buttons, tree rows, sidebar labels, modal chrome. Set on `body` in `@layer base`, so most things inherit it.
+- **Wiki body prose** — Newsreader — `var(--font-prose)`. The writing surface inside BlockNote; a serif tuned for long-form reading, applied via the `.wiki-body` class that wraps every editor instance.
+- **Display** — Fraunces — `var(--font-display)`. Page titles, folder titles, modal titles, the start screen. Weight 500 with `--lh-tight`; Fraunces carries far more presence than Inter at the same numbers, so 600 here reads as shouting. **Set it in the component's own rule** — the old `.font-display` utility class is gone, because having two mechanisms for "this is a heading" is how the app ended up with six heading sizes.
+- **Mono** — a system stack (`ui-monospace`, Cascadia, SF Mono, Consolas…) — `var(--font-mono)`. Keyboard shortcuts, file paths, `<code>`. Not bundled: it appears in maybe five places, every desktop this ships to has a good one, and a woff2 would cost bytes and an offline-asset to maintain for no visible gain. Bundling a specific mono later is a taste call, not a fix.
 
-Numbers in the properties panel and small data displays use Inter with `font-feature-settings: 'tnum'` (tabular numerals), applied via the `.num` utility class.
-
-The three-face setup is deliberate: UI reads clean and neutral, writing reads like writing (not like settings), and titles carry the app's personality. If a fourth face is proposed, push back — three is the ceiling.
+The split is deliberate: UI reads clean and neutral, writing reads like writing (not like settings), titles carry the app's personality, and literal strings look literal. If a *fifth* face is proposed, push back.

@@ -18,7 +18,7 @@
   flex-direction: column;
   background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
@@ -26,7 +26,10 @@
 
 .import-modal-title {
   margin: 0 0 0.75rem;
-  font-size: 1.125rem;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: var(--lh-tight);
   color: var(--color-text-primary);
 }
 
@@ -36,17 +39,17 @@
   align-items: flex-start;
   gap: 0.75rem;
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--fs-md);
 }
 
 .import-modal-pick > button {
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
   color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--fs-md);
 }
 
 .import-modal-pick > button:hover:not(:disabled) {
@@ -61,7 +64,7 @@
 
 .import-modal-error {
   color: var(--color-destructive);
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   margin: 0;
 }
 
@@ -77,22 +80,22 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
 
 .import-modal-name-field input {
   padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
   color: var(--color-text-primary);
-  font-size: 0.875rem;
+  font-size: var(--fs-md);
 }
 
 .import-modal-summary {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   color: var(--color-text-secondary);
 }
 
@@ -100,7 +103,7 @@
   max-height: 14rem;
   overflow-y: auto;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 0.5rem;
   background: var(--color-panel-alt);
 }
@@ -110,7 +113,7 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.1875rem 0;
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   color: var(--color-text-primary);
 }
 
@@ -120,17 +123,21 @@
 }
 
 .import-modal-lossy {
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   color: var(--color-text-secondary);
 }
 
+/* Eyebrow label. Identical rules live in import.css, export.css, shell.css and
+   properties.css — one treatment now (11px/600/0.05em, muted) where there were
+   four. They become one shared class when the control set lands; until then,
+   change all four or none. */
 .import-modal-lossy h3 {
   margin: 0 0 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
 }
 
 .import-modal-lossy ul {
@@ -149,8 +156,8 @@
 
 .import-modal-actions button {
   padding: 0.5rem 0.875rem;
-  border-radius: 0.25rem;
-  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
   cursor: pointer;
 }
 
@@ -182,7 +189,7 @@
   align-items: baseline;
   gap: 0.5rem;
   margin: 0.75rem 0 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
 
@@ -196,7 +203,7 @@
   border: none;
   background: none;
   padding: 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--color-text-secondary);
   cursor: pointer;
   text-decoration: underline;
@@ -213,7 +220,7 @@
   width: 100%;
   height: 6px;
   margin-top: 0.75rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-panel-alt);
   overflow: hidden;
 }
@@ -225,13 +232,13 @@
    to actually read as filled. */
 .import-modal-progress-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-accent-dark);
   transition: width 120ms linear;
 }
 
 .import-modal-progress-note {
   margin: 0.5rem 0 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }

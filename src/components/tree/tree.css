@@ -7,20 +7,35 @@
   flex-direction: column;
 }
 
+/* `--h-bar` is why this looks over-specified. This strip and the top bar sit
+   side by side and their bottom borders are meant to read as one horizontal
+   rule across the window — but the top bar was a hard 48px and this had no
+   height at all, coming out ~41px from its padding. The result was a rule that
+   visibly stepped down 7px as it crossed into the sidebar, which is most of
+   what "the layout is crazy" meant in the screenshot. Both now take their
+   height from the same token; don't give either one a literal. */
 .tree-sidebar-tabs {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 0.75rem 0.5rem;
+  height: var(--h-bar);
+  padding: 0 0.75rem;
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
+/* Stretched to the strip's full height so the `::after` underline below can sit
+   on its bottom edge, with the label centred explicitly rather than relying on
+   a button's default content centring. */
 .tree-sidebar-tab {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
   background: none;
   border: none;
-  padding: 0 0 0.375rem;
-  font-size: 0.75rem;
+  padding: 0;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
   cursor: pointer;
 }
@@ -30,9 +45,23 @@
   opacity: 0.6;
 }
 
+/* An `::after`, not a `border-bottom`. A real border made the active tab 2px
+   taller than its neighbours in an `align-items: center` row, so activating a
+   tab nudged its own label up a pixel and Project/Templates/Assets jittered as
+   you switched between them. This is also the mechanism the page tabs and the
+   Settings tabs already use — three tab strips, one underline, at last. */
 .tree-sidebar-tab-active {
   color: var(--color-text-primary);
-  border-bottom: 2px solid var(--color-accent-light);
+}
+
+.tree-sidebar-tab-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--color-accent-light);
 }
 
 /* --- ProjectHeader --- */
@@ -50,7 +79,7 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--color-text-primary);
   min-width: 0;
@@ -65,7 +94,7 @@
   justify-content: center;
   padding: 0;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-accent-light);
   cursor: pointer;
@@ -89,7 +118,7 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -120,11 +149,11 @@
 .tree-search-input {
   width: 100%;
   padding: 0.375rem 0.5rem 0.375rem 1.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
   color: var(--color-text-primary);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
 }
 
 .tree-search-input::placeholder {
@@ -161,8 +190,8 @@
   gap: 0.25rem;
   height: 24px;
   padding: 0 0.375rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
   color: var(--color-text-secondary);
   cursor: pointer;
   transition:
@@ -257,9 +286,9 @@
   min-width: 0;
   background: var(--color-panel-alt);
   border: 1px solid var(--color-accent-faint-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   padding: 0 0.25rem;
 }
 
@@ -271,7 +300,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--color-text-secondary);
@@ -310,14 +339,14 @@
   z-index: 30;
   background: var(--color-panel-edge);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   padding: 0.5rem;
   cursor: default;
 }
 
 .tree-color-picker-hint {
-  font-size: 0.625rem;
+  font-size: var(--fs-2xs);
   color: var(--color-text-muted);
   margin-bottom: 0.375rem;
   padding: 0 0.125rem;
@@ -357,11 +386,11 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   cursor: pointer;
   text-align: left;
 }
@@ -384,7 +413,7 @@
   padding: 0.25rem 0.5rem 0.375rem;
   margin-bottom: 0.125rem;
   border-bottom: 1px solid var(--color-border);
-  font-size: 0.6875rem;
+  font-size: var(--fs-2xs);
   font-weight: 500;
   color: var(--color-text-secondary);
 }
@@ -394,11 +423,11 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.375rem 0.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   cursor: pointer;
   text-align: left;
 }

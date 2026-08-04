@@ -177,14 +177,18 @@ The unglamorous half of the overhaul, and a hard prerequisite for Phase 12. **`d
 
 Why it goes *before* the themes rather than with them: a theme swaps token *values*, and none of what's wrong is a value. The app has a colour system and no other scale — eleven font sizes, nine radii in thirteen spellings, six `line-height` declarations in the entire codebase, five copy-pasted modal backdrops, nine hand-rolled variants of the same button. Ship themes onto that and every theme inherits it, they all look equally unfinished, and choosing between them becomes impossible because the thing that's actually wrong is identical in all of them.
 
-- **Type scale.** Collapse eleven sizes to a named ramp, and give headings a real one — six different sizes currently mean "title of this screen".
-- **Put the display font to work.** Fraunces is bundled and used in exactly one place (the start page's `<h1>`). Page titles, modal headings and folder names are all Inter. Bundle a mono for shortcuts, paths and `code` while here.
-- **Radius and spacing scales**, one spelling each. Four of the common radii are currently written two different ways.
-- **A global `line-height`**, which the app has never had.
-- **Shared control styles** — one backdrop, one modal shell, one button set, one dismiss button, one text-link. Not a component library; a stylesheet the surfaces stop reimplementing.
-- **Focus and motion.** Two `:focus-visible` rules and five transitions exist app-wide. Keyboard focus is invisible almost everywhere and nothing eases.
-- **Border hierarchy.** One border colour at one weight does structural, decorative and input duty; `--color-border-subtle` exists and is used once.
-- **Fix the audit's Part 1 defects** — the 7px top-bar/sidebar step, the jittering active sidebar tab, the doubled project name, the panels that vanish on a narrow window.
+**Done:**
+
+- ~~**Focus and motion.**~~ Shipped 2026-07-31. `:focus`/`:focus-visible` set once app-wide in `@layer base`, plus a base transition on form controls.
+- ~~**Type scale.**~~ Shipped 2026-08-04. Eight `--fs-*` tokens; the six competing heading sizes are three.
+- ~~**Put the display font to work.**~~ Shipped 2026-08-04. Fraunces on all six title surfaces; mono is a system stack, not a bundled face (reasoning in `docs/constants-and-theming.md`).
+- ~~**Radius scale**~~ and ~~**a global `line-height`**~~. Shipped 2026-08-04. Four `--radius-*` tokens, zero numeric literals left; `--lh-normal` on `body`.
+
+**Remaining:**
+
+- **Shared control styles** — one backdrop, one modal shell, one button set, one dismiss button, one text-link. Not a component library; a stylesheet the surfaces stop reimplementing. This is the half that needs component changes rather than find-and-replace, and it's where a **spacing scale** belongs — padding and gap are still raw rem everywhere, and they only start hurting once the controls are shared.
+- **Border hierarchy.** One border colour at one weight does structural, decorative and input duty; `--color-border-subtle` exists and is used once. Held back deliberately: unlike the other scales this needs a judgement about which borders are structural and which are decorative, so it isn't mechanical.
+- **The audit's remaining Part 1 defects** — the doubled project name (6), the single border colour (10), the panels that vanish on a narrow window (13). ~~The 7px top-bar/sidebar step (4), the jittering active sidebar tab (5), the duplicate accent token (9), the twice-declared properties panel (11), the twice-hardcoded reading width (12)~~ are done.
 
 **End state:** the app is consistent and boring, which is the state a visual direction can actually be judged from.
 
