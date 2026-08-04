@@ -75,10 +75,19 @@
 
 /* --- AppLayout --- */
 
+/* `grid-template-rows` is doing real work: without it the single implicit row
+   is content-sized, so a long page made the row taller than the 100vh grid and
+   everything below simply overflowed the window. That used to be invisible
+   because the document scrolled — which is exactly the scrollbar that got
+   nailed down in index.css, and nailing it down is what turned a cosmetic
+   problem into "the scroll wheel does nothing". `minmax(0, 1fr)` caps the row
+   at the container's height so the panels inside have a fixed box to scroll
+   within. Don't drop it back to `auto`. */
 .app-layout {
   height: 100vh;
   display: grid;
   grid-template-columns: 260px 1fr 300px;
+  grid-template-rows: minmax(0, 1fr);
   background: var(--color-bg);
   transition: grid-template-columns 150ms ease;
 }
@@ -110,10 +119,18 @@
   border-left: 1px solid var(--color-border);
 }
 
+/* `min-height: 0` for the same reason as the `min-width: 0` beside it, on the
+   other axis. A flex item's default `min-height: auto` refuses to shrink below
+   its content, so `.app-layout-page`'s `flex: 1` sized it to the whole page
+   instead of to the space available — meaning its `overflow-y: auto` had
+   nothing to overflow and never became a scroll container at all. Measured
+   before the fix: a 2000px page produced a 2056px-tall centre column inside a
+   300px window, with the page element reporting scrollHeight === clientHeight. */
 .app-layout-center {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .app-layout-page {
@@ -271,15 +288,24 @@
 
 /* --- ProjectPicker --- */
 
+/* Scrolls itself, since nothing outside it can any more — the document is
+   pinned in index.css, so a start screen taller than a short window would
+   otherwise have its bottom simply unreachable.
+
+   `safe center` rather than plain `center`: centred flex content that
+   overflows spills past *both* ends, which puts the top of the list above the
+   scrollable area where no amount of scrolling reaches it. `safe` centres
+   while it fits and falls back to top-aligned the moment it doesn't. */
 .project-picker {
   position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   gap: 1.5rem;
   padding: 2rem;
+  overflow-y: auto;
   background: var(--color-bg);
   color: var(--color-text-primary);
   text-align: center;

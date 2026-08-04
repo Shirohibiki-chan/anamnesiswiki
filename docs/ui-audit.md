@@ -34,6 +34,20 @@ Things that are simply wrong. No design direction needed to fix any of them.
    absolute path set in 11px with `word-break: break-all`, wrapping mid-word
    across three lines. Now shows the containing folder on one line.
 
+3b. **~~Nothing in the app was a scroll container.~~** *(fixed 2026-07-31,
+   regression from the scrollbar work)* The three-column grid's single row was
+   content-sized and `.app-layout-center` was a flex column without
+   `min-height: 0`, so a long page made the centre column taller than the
+   window rather than making the page area scroll. Measured: a 2000px page
+   produced a 2056px column inside a 300px window, with `.app-layout-page`
+   reporting `scrollHeight === clientHeight` — it had never been a scroll
+   container. The overflow escaped to the document, and the *document's*
+   scrollbar was doing all the scrolling in the app. Pinning the document
+   (defect 1's fix) removed the only thing that scrolled, and the scroll wheel
+   stopped working entirely. The row is now capped with `minmax(0, 1fr)` and
+   the centre column can shrink. Worth remembering as the shape of the
+   mistake: the ugly scrollbar was not decoration, it was load-bearing.
+
 4. **The sidebar tab strip and the top bar are different heights.** `.top-bar`
    is a hard `height: 48px`. `.tree-sidebar-tabs` has no height at all — it
    comes out ~41px from its padding. So the two bottom borders meet at the
