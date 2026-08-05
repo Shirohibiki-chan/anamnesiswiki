@@ -8,7 +8,7 @@ Anamnesis is a Tauri v2 desktop app for local-first worldbuilding. React 19 + Ty
 
 Work phases top-down. Do not start a phase until the previous one is complete and usable. Each phase should end with the app in a coherent, working state — not mid-refactor. Phases are sized to be reviewable as user-facing changes.
 
-See `docs/spec.md` for the full spec, `CLAUDE.md` for architecture rules, and `docs/prototype/anamnesis.jsx` for a reference React prototype that demonstrates layout, template content, and tree behavior.
+See `docs/spec.md` for the full spec, `CLAUDE.md` for architecture rules, and `docs/prototype/anamnesis.jsx` for a reference React prototype that demonstrates layout and tree behavior (its template content is filler — the real copy lives in `src/services/template-registry.ts`).
 
 ---
 
@@ -162,12 +162,12 @@ Everything below comes out of one planning session: the user brought a list of r
 
 Identity, the writing half. Also closes the only genuine legal exposure in the repo.
 
-- **Rewrite all 8 templates' placeholder copy in the user's own voice.** This overrides `CLAUDE.md`'s rule 12 for this phase only — she gave explicit approval 2026-07-31. The prompts were transcribed verbatim from LK; layout and feature ideas aren't protectable but copied strings are, and rewriting them is the cheap fix. It's also a product win: the prompts stop being someone else's.
-- **Soften the README's LK comparisons.** "The shape of LegendKeeper without the subscription" and "if you know LK, you know Anamnesis" are legal to say and exactly what attracts an angry letter. Keep the honesty, lose the invitation.
-- **Sweep for LK-derived assets** — icons, CSS, strings. Layouts stay; assets go.
-- **Naming pass** over feature nouns. No legal need (descriptive words aren't trademarks); it's for the user's sake, so the app stops sounding like a clone.
+- ~~**Rewrite all 8 templates' placeholder copy in the user's own voice.**~~ Done 2026-08-04. Every tab of all seven templates that carry content, plus the Secret block's text, which had been promising "information that only admins can see" — untrue here and untrue of the feature. `docs/prototype/anamnesis.jsx` was gutted to filler in the same pass so the LK wording doesn't survive in the repo as a second copy.
+- ~~**Soften the README's LK comparisons.**~~ Done 2026-08-04. The tagline and the "if you know LK, you know Anamnesis" line are gone; the "not affiliated" notice stays, and the format-compatibility claim stays because it's the useful, factual half.
+- ~~**Sweep for LK-derived assets** — icons, CSS, strings.~~ Done 2026-08-04, and it came back clean apart from the template copy above. Icons are lucide-react, fonts are Fraunces/Inter/Newsreader (all OFL), and nothing in `src/**/*.css` is LK-derived — the remaining LegendKeeper mentions in the source are either feature labels the import/export flow needs ("Import from LegendKeeper") or comments recording why a layout choice was made. Layouts stay, per the phase's own rule.
+- **Naming pass** over feature nouns. No legal need (descriptive words aren't trademarks); it's for the user's sake, so the app stops sounding like a clone. **Open — the one item left in this phase**, and it needs a decision from her rather than a sweep: the app says "Project" throughout for what she calls a world, and it's already inconsistent with itself (the tree's context menu says "Export world to LegendKeeper" while the start screen says "project"). Don't do this one silently.
 
-**End state:** nothing in the repo is anyone else's writing.
+**End state:** nothing in the repo is anyone else's writing. **Reached for the writing itself 2026-08-04**; the naming item above is the remaining polish.
 
 ---
 

@@ -144,7 +144,7 @@ type PropertySpec = {
 };
 ```
 
-Templates are defined in code (not user-editable in phase 1). `src/services/template-registry.ts` is the source of truth; `docs/prototype/anamnesis.jsx` holds the original placeholder copy, which is preserved verbatim in the build.
+Templates are defined in code (not user-editable in phase 1). `src/services/template-registry.ts` is the source of truth, including for the placeholder copy — Phase 11 rewrote that copy in the user's own voice and stripped the LK-transcribed original out of `docs/prototype/anamnesis.jsx`, which is now a layout reference with filler content.
 
 **Nine template keys ship**, not the seven this document says elsewhere: `folder`, `character`, `location`, `faction`, `item`, `event`, `species`, `note`, plus `blank` — added in Phase 7 for starting a page with nothing on it and applying a template later. `isFolder` was replaced by `canHaveChildren`, which is the property the storage layout actually keys off.
 

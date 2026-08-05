@@ -7,7 +7,15 @@ import {
 } from 'lucide-react';
 
 // ============================================================
-// TEMPLATES — the whole point of the exercise
+// TEMPLATES — tab and property *structure* only.
+//
+// This file is a layout and behaviour reference, not a copy source. The tab
+// content below is deliberately generic filler: the real placeholder prose
+// lives in src/services/template-registry.ts and nowhere else. Phase 11
+// (2026-08-04) rewrote that prose and gutted it here, because what this file
+// used to hold was transcribed word-for-word from LegendKeeper's templates.
+// Don't copy prompts back in from here, and don't mirror the registry's copy
+// into this file — one source, so the two can't drift.
 // ============================================================
 
 const TEMPLATES = {
@@ -26,27 +34,23 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">A brief description of your character.</div>
-<div class="cb cb-quote">"Something the character has said."</div>
-<h2>Description</h2>
-<p>Your character's physical description; things like eye color, hair color, hair style, physical mannerisms, distinguishing features, fitness, strengths, and weaknesses.</p>
-<h2>Traits and Motivations</h2>
-<p>What is their personality type? Are they funny? Do they have a temper? Are they motivated to protect a loved one? Do they have particular virtues? Bad habits? Any fears or phobias?</p>
-<h2>Routine</h2>
-<p>What does your character's normal day look like? What do they do? What do they think about?</p>
-<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Content in this block is a secret; information that only admins can see. By the way, this is an example template! Modify it to fit your needs.</div>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<div class="cb cb-quote">"An in-world quote."</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Spoiler-flagged content.</div>`
       },
       {
         id: 'backstory',
         label: 'Backstory',
         hidden: true,
-        content: `<div class="cb cb-info">Their past. What made them who they are today.</div>
-<h2>Early Life</h2>
-<p>Where were they born? What was their childhood like? Who raised them, and how did that shape them?</p>
-<h2>Formative Events</h2>
-<p>What happened to make them who they are? Loss, love, trauma, triumph — the moments that carved out their personality.</p>
-<h2>Recent Past</h2>
-<p>What have they been up to leading into the current story?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
@@ -63,34 +67,33 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">A template for a specific location. For example, a bustling marketplace, a lonely shack in the countryside, a long-forgotten dungeon, or a derelict space station — anywhere that a meaningful scene could take place.</div>
-<div class="cb cb-quote">"This is an interesting place." — Insightful Person</div>
-<h2>Description</h2>
-<p>Your location's physical description; what is this place? What's the environment like? Is it a populated or remote location? What's the local culture like? What's the first thing a visitor would notice about this place?</p>
-<h2>Origin</h2>
-<p>Why is this place here? What is its purpose? Is it naturally occurring or was it made? Why do people come here, if at all?</p>
-<h2>Routine</h2>
-<p>What does a normal day look like here?</p>
-<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Content in this block is a secret; information that only admins can see. By the way, this is an example template! Modify it to fit your needs.</div>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<div class="cb cb-quote">"An in-world quote."</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Spoiler-flagged content.</div>`
       },
       {
         id: 'map',
         label: 'Map',
         hidden: false,
-        content: `<div class="cb cb-info">A place for the location's map. Drop an image below, or leave it blank if the location doesn't need one.</div>
-<p><em>Map placeholder — in the real build, this tab would render an interactive Leaflet map with pins.</em></p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       },
       {
         id: 'history',
         label: 'History',
         hidden: true,
-        content: `<div class="cb cb-info">The location's past. Wars fought here, rulers who came and went, changes to the landscape.</div>
-<h2>Founding</h2>
-<p>How did this place come to be? Who made it, if anyone? When?</p>
-<h2>Key Events</h2>
-<p>What has happened here that matters? Battles, births, betrayals, discoveries.</p>
-<h2>Recent History</h2>
-<p>What's happened here in the last few years?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
@@ -107,27 +110,23 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">A group of people united by a shared cause, ideology, or purpose. Guilds, cults, corporations, noble houses, criminal syndicates, revolutionary cells — whatever shape it takes.</div>
-<div class="cb cb-quote">"Something a member has said, or something said about them."</div>
-<h2>Purpose</h2>
-<p>What does this faction stand for? What are their public goals? What are their private goals? How do they operate day-to-day?</p>
-<h2>Structure</h2>
-<p>How is the faction organized? Who leads it? Who's beneath them? How do you rise through the ranks?</p>
-<h2>Reputation</h2>
-<p>How is this faction perceived by the public? By other factions? By its enemies?</p>
-<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>What's the real story here? What are they actually up to?</div>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<div class="cb cb-quote">"An in-world quote."</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Spoiler-flagged content.</div>`
       },
       {
         id: 'members',
         label: 'Members',
         hidden: false,
-        content: `<div class="cb cb-info">Notable members of this faction. Reference character pages here or just list names.</div>
-<h2>Leadership</h2>
-<p></p>
-<h2>Notable Members</h2>
-<p></p>
-<h2>Former Members</h2>
-<p></p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
@@ -145,25 +144,23 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">An object of significance in your world. A weapon, an artifact, a family heirloom, a strange trinket found in a market stall.</div>
-<div class="cb cb-quote">"Something said about this item, or by whoever holds it."</div>
-<h2>Description</h2>
-<p>What does this item look like? What's it made of? How big is it? Any distinguishing features — carvings, discoloration, damage?</p>
-<h2>Function</h2>
-<p>What does it do? How does it work? Are there rules for using it? Costs, dangers, limits?</p>
-<h2>Origin</h2>
-<p>Where did it come from? Who made it, if anyone? How did it end up where it is now?</p>
-<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>What don't most people know about this item?</div>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<div class="cb cb-quote">"An in-world quote."</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Spoiler-flagged content.</div>`
       },
       {
         id: 'history',
         label: 'History',
         hidden: true,
-        content: `<div class="cb cb-info">The item's past owners and where it's been.</div>
-<h2>Previous Owners</h2>
-<p>Who has held this item before? How did it change hands?</p>
-<h2>Notable Uses</h2>
-<p>When has this item been used, and to what effect?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
@@ -180,25 +177,23 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">Something that happened, or is happening, or will happen. A battle, a coronation, a heist, a first meeting.</div>
-<div class="cb cb-quote">"Something said during or about the event."</div>
-<h2>Summary</h2>
-<p>What happened, in a sentence or two?</p>
-<h2>Context</h2>
-<p>What led up to this? What made it possible or inevitable?</p>
-<h2>Consequences</h2>
-<p>What changed because of it? Who was affected? What does the world look like after?</p>
-<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>What really happened, versus what the public knows?</div>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<div class="cb cb-quote">"An in-world quote."</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<div class="cb cb-secret"><div class="cb-secret-label">🔒 SECRET</div>Spoiler-flagged content.</div>`
       },
       {
         id: 'details',
         label: 'Details',
         hidden: true,
-        content: `<div class="cb cb-info">A blow-by-blow of the event. Timeline, participants, evidence.</div>
-<h2>Timeline</h2>
-<p>Step by step, what happened when?</p>
-<h2>Participants</h2>
-<p>Who was there? What did each of them do?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
@@ -217,9 +212,11 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">A general-purpose page for anything that doesn't fit a specific template. Worldbuilding concepts, magic systems, cultural notes, scene ideas.</div>
-<h2>Notes</h2>
-<p>Start writing.</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
@@ -234,60 +231,52 @@ const TEMPLATES = {
         id: 'overview',
         label: 'Overview',
         hidden: false,
-        content: `<div class="cb cb-info">A sapient species, a race, a lineage, an entire people. Everything about who they are and how they live.</div>
-<div class="cb cb-quote">"Something said by or about this species."</div>
-<h2>At a glance</h2>
-<p>The one-paragraph pitch. What are they? Where do they live? What sets them apart?</p>
-<h2>Origins</h2>
-<p>Where did they come from? Are they native to somewhere, or descended from something else? How long have they been around?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<div class="cb cb-quote">"An in-world quote."</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       },
       {
         id: 'biology',
         label: 'Biology',
         hidden: true,
-        content: `<div class="cb cb-info">The physical facts. Appearance, lifespan, reproduction, biological quirks.</div>
-<h2>Appearance</h2>
-<p>What do they look like? Size, coloration, distinguishing traits, variation within the species.</p>
-<h2>Lifespan &amp; Reproduction</h2>
-<p>How long do they live? How do they mate, bond, produce offspring? Any biological requirements or taboos?</p>
-<h2>Abilities &amp; Limitations</h2>
-<p>What can they do that others can't? What can't they do that others can?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       },
       {
         id: 'lifestyle',
         label: 'Lifestyle',
         hidden: false,
-        content: `<div class="cb cb-info">How they actually live day-to-day. Culture, food, work, social norms.</div>
-<h2>Daily Life</h2>
-<p>What does a typical day look like for one of them?</p>
-<h2>Social Structure</h2>
-<p>Family units, community structures, hierarchies. Who has power over whom?</p>
-<h2>Art &amp; Craft</h2>
-<p>What do they make? What do they value making?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       },
       {
         id: 'beliefs',
         label: 'Beliefs',
         hidden: false,
-        content: `<div class="cb cb-info">What they think about the world and themselves. Religion, philosophy, taboos, values.</div>
-<h2>Worldview</h2>
-<p>How do they understand the universe? What do they believe about their place in it?</p>
-<h2>Practices</h2>
-<p>Rituals, ceremonies, holidays, everyday spiritual habits.</p>
-<h2>Taboos</h2>
-<p>What is unthinkable to them? What crosses a line?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       },
       {
         id: 'relations',
         label: 'Relations',
         hidden: false,
-        content: `<div class="cb cb-info">How they relate to other peoples, species, and factions. Allies, enemies, complicated histories.</div>
-<h2>Allies &amp; Trade Partners</h2>
-<p>Who do they get along with? What's the basis of the relationship?</p>
-<h2>Rivals &amp; Enemies</h2>
-<p>Who do they clash with? Old grievances, active conflicts?</p>
-<h2>Reputation</h2>
-<p>What do outsiders think of them? Is the reputation deserved?</p>`
+        content: `<div class="cb cb-info">Intro line for this tab.</div>
+<h2>Section</h2>
+<p>A writing prompt.</p>
+<h2>Section</h2>
+<p>A writing prompt.</p>`
       }
     ],
     properties: [
