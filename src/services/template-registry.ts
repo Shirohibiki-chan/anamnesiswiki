@@ -1,9 +1,10 @@
 // The single source of truth for template definitions — default tabs,
 // property schemas, and which templates can hold child pages. See
 // CLAUDE.md's Templates section: the placeholder copy below is a designed
-// asset, transcribed verbatim (markup translated, wording untouched) from
-// docs/prototype/anamnesis.jsx's TEMPLATES object. Do not reword without
-// asking the user.
+// asset, written for this project in Phase 11 (2026-08-04). It replaced copy
+// transcribed from docs/prototype/anamnesis.jsx, which had come verbatim from
+// LegendKeeper's own templates. Don't reword it without asking the user, and
+// don't reintroduce the prototype's wording — that's what this replaced.
 import { createTab, TEMPLATE_KEYS, type Tab } from "../constants/schema";
 
 export type PropertySpec = {
@@ -32,9 +33,6 @@ function text(value: string) {
 }
 function p(value: string): BlockSeed {
   return { type: "paragraph", content: text(value) };
-}
-function em(value: string): BlockSeed {
-  return { type: "paragraph", content: value ? [{ type: "text", text: value, styles: { italic: true } }] : [] };
 }
 function h2(value: string): BlockSeed {
   return { type: "heading", props: { level: 2 }, content: text(value) };
@@ -74,15 +72,15 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("A brief description of your character."),
-          quote(`"Something the character has said."`),
+          info("Who this person is, in a couple of sentences — the version you'd give someone who's never met them."),
+          quote(`"A line they'd actually say. The one that gives them away."`),
           h2("Description"),
-          p("Your character's physical description; things like eye color, hair color, hair style, physical mannerisms, distinguishing features, fitness, strengths, and weaknesses."),
+          p("What do they look like? Face, build, how they carry themselves, what they wear when nobody's making them. Go for the detail someone would still remember a week later."),
           h2("Traits and Motivations"),
-          p("What is their personality type? Are they funny? Do they have a temper? Are they motivated to protect a loved one? Do they have particular virtues? Bad habits? Any fears or phobias?"),
+          p("What do they want, and what will they do to get it? The temper, the soft spot, the bad habit, the thing they'd never admit they're afraid of."),
           h2("Routine"),
-          p("What does your character's normal day look like? What do they do? What do they think about?"),
-          secret("Content in this block is a secret; information that only admins can see. By the way, this is an example template! Modify it to fit your needs."),
+          p("What does an ordinary day look like — the boring one, not the plot one? Where are they at three in the afternoon on a nothing Tuesday?"),
+          secret("A Secret block is a flag for you: spoilers, twists, things a reader shouldn't hit yet. It doesn't lock anything on its own — to actually hold material back, hide the whole tab."),
         ],
       },
       {
@@ -90,13 +88,13 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Backstory",
         hidden: true,
         content: [
-          info("Their past. What made them who they are today."),
+          info("How they got here. Only the parts that still show."),
           h2("Early Life"),
-          p("Where were they born? What was their childhood like? Who raised them, and how did that shape them?"),
+          p("Where did they start, and who raised them? What did that leave them with — an accent, a debt, a fear of deep water?"),
           h2("Formative Events"),
-          p("What happened to make them who they are? Loss, love, trauma, triumph — the moments that carved out their personality."),
+          p("The handful of moments that carved the person out. Losses, wins, the day everything stopped being the same."),
           h2("Recent Past"),
-          p("What have they been up to leading into the current story?"),
+          p("What have they been doing lately, right up to where your story picks them up?"),
         ],
       },
     ],
@@ -115,15 +113,15 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("A template for a specific location. For example, a bustling marketplace, a lonely shack in the countryside, a long-forgotten dungeon, or a derelict space station — anywhere that a meaningful scene could take place."),
-          quote(`"This is an interesting place." — Insightful Person`),
+          info("Somewhere a scene can happen. A market street, a shut-up house on a hill, a station nobody's docked at in years."),
+          quote(`"Something said about this place — a warning, a joke, a piece of local wisdom."`),
           h2("Description"),
-          p("Your location's physical description; what is this place? What's the environment like? Is it a populated or remote location? What's the local culture like? What's the first thing a visitor would notice about this place?"),
+          p("What's it like to stand here? The light, the noise, the smell, who's around. Start with the first thing a stranger would notice."),
           h2("Origin"),
-          p("Why is this place here? What is its purpose? Is it naturally occurring or was it made? Why do people come here, if at all?"),
+          p("Why is this place here at all? Did someone build it, or did it just happen? What's it for now, versus what it was for then?"),
           h2("Routine"),
-          p("What does a normal day look like here?"),
-          secret("Content in this block is a secret; information that only admins can see. By the way, this is an example template! Modify it to fit your needs."),
+          p("What does an ordinary day look like here? Who turns up, when, and what are they doing?"),
+          secret("A Secret block is a flag for you: spoilers, twists, things a reader shouldn't hit yet. It doesn't lock anything on its own — to actually hold material back, hide the whole tab."),
         ],
       },
       {
@@ -131,8 +129,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Map",
         hidden: false,
         content: [
-          info("A place for the location's map. Drop an image below, or leave it blank if the location doesn't need one."),
-          em("Map placeholder — in the real build, this tab would render an interactive Leaflet map with pins."),
+          info("Somewhere to keep this place's map. Drop an image in below, or delete the tab if it doesn't need one."),
         ],
       },
       {
@@ -140,13 +137,13 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "History",
         hidden: true,
         content: [
-          info("The location's past. Wars fought here, rulers who came and went, changes to the landscape."),
+          info("What's happened here before now."),
           h2("Founding"),
-          p("How did this place come to be? Who made it, if anyone? When?"),
+          p("How did this place come to be, and when? Who decided it should exist?"),
           h2("Key Events"),
-          p("What has happened here that matters? Battles, births, betrayals, discoveries."),
+          p("What happened here that people still talk about? Battles, betrayals, discoveries, and the ordinary things that turned out to matter."),
           h2("Recent History"),
-          p("What's happened here in the last few years?"),
+          p("What's changed here in the last few years?"),
         ],
       },
     ],
@@ -165,15 +162,15 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("A group of people united by a shared cause, ideology, or purpose. Guilds, cults, corporations, noble houses, criminal syndicates, revolutionary cells — whatever shape it takes."),
-          quote(`"Something a member has said, or something said about them."`),
+          info("People organized around something they all want. A guild, a cult, a company, a household, a crew that's never called itself anything."),
+          quote(`"Something a member says, or something everyone else says about them."`),
           h2("Purpose"),
-          p("What does this faction stand for? What are their public goals? What are their private goals? How do they operate day-to-day?"),
+          p("What are they for? Put the stated goal first, then the real one, then what they actually spend their days doing."),
           h2("Structure"),
-          p("How is the faction organized? Who leads it? Who's beneath them? How do you rise through the ranks?"),
+          p("Who's in charge, who's underneath, and how does anyone move up? Is it earned, bought, or inherited?"),
           h2("Reputation"),
-          p("How is this faction perceived by the public? By other factions? By its enemies?"),
-          secret("What's the real story here? What are they actually up to?"),
+          p("What do outsiders make of them? Who's afraid of them, who owes them, who's laughing at them?"),
+          secret("What are they actually up to, under the part everyone can see?"),
         ],
       },
       {
@@ -181,7 +178,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Members",
         hidden: false,
         content: [
-          info("Notable members of this faction. Reference character pages here or just list names."),
+          info("Who's in it. Type @ to link people who already have a page, or just list names for now."),
           h2("Leadership"),
           p(""),
           h2("Notable Members"),
@@ -207,15 +204,15 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("An object of significance in your world. A weapon, an artifact, a family heirloom, a strange trinket found in a market stall."),
-          quote(`"Something said about this item, or by whoever holds it."`),
+          info("A thing that matters. A weapon, an heirloom, a relic, a cheap trinket somebody won't let go of."),
+          quote(`"Something said about it, or by whoever's holding it."`),
           h2("Description"),
-          p("What does this item look like? What's it made of? How big is it? Any distinguishing features — carvings, discoloration, damage?"),
+          p("What does it look like, and what's it made of? Weight, wear, the scratch it picked up in the fight nobody talks about."),
           h2("Function"),
-          p("What does it do? How does it work? Are there rules for using it? Costs, dangers, limits?"),
+          p("What does it do, and what does it cost to use? Rules, limits, side effects."),
           h2("Origin"),
-          p("Where did it come from? Who made it, if anyone? How did it end up where it is now?"),
-          secret("What don't most people know about this item?"),
+          p("Where did it come from, who made it, and how did it end up where it is now?"),
+          secret("What's true about this one that nearly nobody knows?"),
         ],
       },
       {
@@ -223,11 +220,11 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "History",
         hidden: true,
         content: [
-          info("The item's past owners and where it's been."),
+          info("Where it's been, and whose hands it's passed through."),
           h2("Previous Owners"),
-          p("Who has held this item before? How did it change hands?"),
+          p("Who held it before? How did it change hands — sold, stolen, buried, inherited?"),
           h2("Notable Uses"),
-          p("When has this item been used, and to what effect?"),
+          p("When has it been used, and what happened afterwards?"),
         ],
       },
     ],
@@ -246,15 +243,15 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("Something that happened, or is happening, or will happen. A battle, a coronation, a heist, a first meeting."),
-          quote(`"Something said during or about the event."`),
+          info("Something that happened, is happening, or is about to. A battle, a wedding, a heist, the first time two people met."),
+          quote(`"Something said during it, or about it afterwards."`),
           h2("Summary"),
           p("What happened, in a sentence or two?"),
           h2("Context"),
-          p("What led up to this? What made it possible or inevitable?"),
+          p("What led up to it? What made it possible, or made it inevitable?"),
           h2("Consequences"),
-          p("What changed because of it? Who was affected? What does the world look like after?"),
-          secret("What really happened, versus what the public knows?"),
+          p("What was different afterwards, and for whom?"),
+          secret("What actually happened, as opposed to the version that got around?"),
         ],
       },
       {
@@ -262,11 +259,11 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Details",
         hidden: true,
         content: [
-          info("A blow-by-blow of the event. Timeline, participants, evidence."),
+          info("The blow-by-blow. Who was there, in what order, and what's left as proof."),
           h2("Timeline"),
-          p("Step by step, what happened when?"),
+          p("Step by step — what happened when?"),
           h2("Participants"),
-          p("Who was there? What did each of them do?"),
+          p("Who was there, and what did each of them do?"),
         ],
       },
     ],
@@ -287,12 +284,12 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("A sapient species, a race, a lineage, an entire people. Everything about who they are and how they live."),
-          quote(`"Something said by or about this species."`),
+          info("A people. A species, a lineage, a whole kind of person — who they are and how they live."),
+          quote(`"Something they say about themselves, or something everyone else says about them."`),
           h2("At a glance"),
-          p("The one-paragraph pitch. What are they? Where do they live? What sets them apart?"),
+          p("The one-paragraph version. What are they, where are they, and what makes them not-us?"),
           h2("Origins"),
-          p("Where did they come from? Are they native to somewhere, or descended from something else? How long have they been around?"),
+          p("Where did they come from? Native to somewhere, descended from something, made on purpose? How long have they been around?"),
         ],
       },
       {
@@ -300,13 +297,13 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Biology",
         hidden: true,
         content: [
-          info("The physical facts. Appearance, lifespan, reproduction, biological quirks."),
+          info("The physical facts. Bodies, lifespans, how new ones arrive."),
           h2("Appearance"),
-          p("What do they look like? Size, coloration, distinguishing traits, variation within the species."),
+          p("What do they look like? Size, coloration, the traits that read as theirs — and how much any two of them differ."),
           h2("Lifespan & Reproduction"),
-          p("How long do they live? How do they mate, bond, produce offspring? Any biological requirements or taboos?"),
+          p("How long do they live, and how do they pair up and have young? Anything biology forces on them that culture then has to work around?"),
           h2("Abilities & Limitations"),
-          p("What can they do that others can't? What can't they do that others can?"),
+          p("What can they do that others can't, and what can't they do that everyone else takes for granted?"),
         ],
       },
       {
@@ -314,13 +311,13 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Lifestyle",
         hidden: false,
         content: [
-          info("How they actually live day-to-day. Culture, food, work, social norms."),
+          info("How they actually live. Work, food, houses, manners."),
           h2("Daily Life"),
-          p("What does a typical day look like for one of them?"),
+          p("What does an ordinary day look like for one of them?"),
           h2("Social Structure"),
-          p("Family units, community structures, hierarchies. Who has power over whom?"),
+          p("Who lives with whom, and who has power over whom? Families, households, ranks."),
           h2("Art & Craft"),
-          p("What do they make? What do they value making?"),
+          p("What do they make, and what do they think is worth making?"),
         ],
       },
       {
@@ -328,13 +325,13 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Beliefs",
         hidden: false,
         content: [
-          info("What they think about the world and themselves. Religion, philosophy, taboos, values."),
+          info("What they hold true, and what they hold unforgivable."),
           h2("Worldview"),
-          p("How do they understand the universe? What do they believe about their place in it?"),
+          p("How do they explain the world, and their place in it?"),
           h2("Practices"),
-          p("Rituals, ceremonies, holidays, everyday spiritual habits."),
+          p("Rituals, holidays, and the small daily habits nobody there thinks of as religious."),
           h2("Taboos"),
-          p("What is unthinkable to them? What crosses a line?"),
+          p("What's unthinkable? What would get someone quietly cut off?"),
         ],
       },
       {
@@ -342,13 +339,13 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Relations",
         hidden: false,
         content: [
-          info("How they relate to other peoples, species, and factions. Allies, enemies, complicated histories."),
+          info("How they get on with everyone else. Allies, enemies, and the complicated ones."),
           h2("Allies & Trade Partners"),
-          p("Who do they get along with? What's the basis of the relationship?"),
+          p("Who do they get on with, and what's actually holding the relationship together?"),
           h2("Rivals & Enemies"),
-          p("Who do they clash with? Old grievances, active conflicts?"),
+          p("Who do they clash with? Old grudges, live conflicts, or both?"),
           h2("Reputation"),
-          p("What do outsiders think of them? Is the reputation deserved?"),
+          p("What do outsiders say about them, and how much of it is fair?"),
         ],
       },
     ],
@@ -367,7 +364,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Overview",
         hidden: false,
         content: [
-          info("A general-purpose page for anything that doesn't fit a specific template. Worldbuilding concepts, magic systems, cultural notes, scene ideas."),
+          info("For anything that doesn't fit a template. Magic systems, languages, timelines, half-formed ideas you want out of your head."),
           h2("Notes"),
           p("Start writing."),
         ],

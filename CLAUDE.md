@@ -84,7 +84,7 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 9. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
 10. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
 11. **No backend, no database, no authentication, no unprompted network calls** — see Policy Boundary.
-12. **Template placeholder copy is not reworded without asking** — the LK-style prompts are a designed asset, deliberately shaped. Don't extract them into an editable content system either.
+12. **Template placeholder copy is not reworded without asking** — the prompts are a designed asset, deliberately shaped, and written for this project in Phase 11. Don't extract them into an editable content system either.
 13. **No `index.ts` barrel files, and no files named `utils`, `misc`, `helpers`, or `common`** — naming otherwise follows what's already on disk.
 
 ### Data on disk
@@ -121,7 +121,7 @@ Valeraverse/
 
 ## Templates
 
-Templates live in `src/services/template-registry.ts` as a plain data object — default tabs (with placeholder content) plus the sidebar property schema. Not user-editable in Phase 1; that's a Phase 2+ consideration and not scoped. `docs/prototype/anamnesis.jsx` holds the canonical copy for all 8 templates (Folder, Character, Location, Faction, Item, Event, Species, Note), but see the token warning below before opening it.
+Templates live in `src/services/template-registry.ts` as a plain data object — default tabs (with placeholder content) plus the sidebar property schema. Not user-editable in Phase 1; that's a Phase 2+ consideration and not scoped. **That file is the only source of template placeholder copy.** `docs/prototype/anamnesis.jsx` demonstrates layout and tree behaviour for all 8 templates (Folder, Character, Location, Faction, Item, Event, Species, Note), but its tab content is generic filler on purpose — Phase 11 removed the LK-transcribed prose it used to hold. Don't restore prompts from it.
 
 ## LegendKeeper Import/Export
 

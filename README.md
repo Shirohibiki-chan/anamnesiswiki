@@ -1,6 +1,6 @@
 # Anamnesis
 
-A local-first worldbuilding wiki for people who want the shape of LegendKeeper without the subscription.
+A local-first worldbuilding wiki. Your world, as files on your own machine.
 
 *Anamnesis* is the ancient Greek word for the act of recollection — pulling forth what already exists in your mind. That's the pitch: your world is already in your head; this app just gives it structure and a place to live.
 
@@ -8,7 +8,7 @@ A local-first worldbuilding wiki for people who want the shape of LegendKeeper w
 
 Anamnesis is a desktop app for building fictional worlds. Characters, locations, factions, species, events, timelines — whatever you dream up, organized as a tree of pages with template-driven structure and a Notion-style block editor. Your world lives on your machine as JSON files, in a folder you own. No cloud, no accounts, no sync fees, no vendor lock-in.
 
-It's shaped like LegendKeeper, on purpose. Tree of pages, tabbed content per page (with a hidden-tab pattern for GM-only material), block editor with @mentions and wikilinks, right-sidebar properties, template scaffolding for common worldbuilding entities. If you know LK, you know Anamnesis.
+The working shape will be familiar if you've used a wiki-style worldbuilding tool before: a tree of pages, tabbed content per page (with a hidden-tab pattern for GM-only material), a block editor with @mentions and wikilinks, properties in a right sidebar, and template scaffolding for the entities you end up making over and over. It reads and writes LegendKeeper's export format, so an existing LK world comes across intact.
 
 ## Features
 
@@ -78,7 +78,7 @@ Architecture, code style, and design rules are in `CLAUDE.md`. Full spec is in `
 
 ## Not affiliated with LegendKeeper
 
-Anamnesis is an independent project with no connection to LegendKeeper or its developer, Algorific. Anamnesis reads and writes LK's export format for user convenience only — there's no shared code, no partnership, no endorsement. If you want the real thing, [go to LegendKeeper](https://legendkeeper.com); it's a great product actively maintained by a small team who deserve your money if you can spare it.
+Anamnesis is an independent project with no connection to LegendKeeper or its developer, Algorific. Anamnesis reads and writes LK's export format so people can move their own work in and out — there's no shared code, no partnership, no endorsement. LegendKeeper is a hosted, collaborative, actively developed product and a different thing to this one; if that's what you're after, [go and look at it](https://legendkeeper.com). It's maintained by a small team who deserve your money if you can spare it.
 
 ## Support
 

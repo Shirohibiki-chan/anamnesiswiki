@@ -186,7 +186,7 @@ Reference docs in the repo:
 - `docs/constants-and-theming.md` — CSS token system, palette, callout tokens
 - `CLAUDE.md` — architecture rules, naming conventions, policy boundary
 - `README.md` — user-facing project intro
-- `docs/prototype/anamnesis.jsx` — the reference React prototype demonstrating layout, templates, cascade colors, tab visibility
+- `docs/prototype/anamnesis.jsx` — the reference React prototype demonstrating layout, template structure, cascade colors, tab visibility (tab content is filler; real copy is in `src/services/template-registry.ts`)
 
 When bringing a plan into a Claude Code session, include:
 

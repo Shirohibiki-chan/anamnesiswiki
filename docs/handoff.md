@@ -376,7 +376,22 @@ is below.
   resolve silently (same principle as Obsidian). Use `@`, which lists every match.
 
 - **Template placeholder copy is a designed asset** — don't reword it, and don't
-  extract it into an editable content system.
+  extract it into an editable content system. It is also, since Phase 11, *ours*:
+  the original prompts were transcribed word-for-word from LegendKeeper's
+  templates, and that was the one real legal exposure in the repo. The copy in
+  `template-registry.ts` is now the only copy that exists —
+  `docs/prototype/anamnesis.jsx` was gutted to generic filler in the same pass,
+  so restoring a prompt "from the prototype" reintroduces LK's writing. There is
+  no second source to sync with, and adding one is how they drift.
+
+- **The Secret callout is a marker, not a mechanism.** It renders purple with a
+  lock chip and does nothing else — no gating, no exclusion from export. Hidden
+  tabs are the actual way material is held back. The template copy now says so
+  in as many words, because the old LK-transcribed text promised "information
+  that only admins can see", which was never true here and never could be in a
+  single-user app. If Publish (Phase 1.5) ever does filter Secret blocks, that
+  copy can change; until then don't write UI text that implies it hides
+  anything.
 
 - **`date` properties render as free text, not a date picker** — fictional
   calendars ("Year 872, Third Age") don't fit a real calendar widget. Reference
