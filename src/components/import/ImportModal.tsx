@@ -47,10 +47,10 @@ function progressHeadline(
     return imageCount > 0 ? `Getting ready — ${imageCount} picture${imageCount === 1 ? "" : "s"} to fetch.` : "Getting ready…";
   }
   if (progress.phase === "images") {
-    if (progress.total === 0) return "Writing your world to disk…";
+    if (progress.total === 0) return "Writing your project to disk…";
     return `Fetching pictures — ${progress.done} of ${progress.total}.`;
   }
-  return "Writing your world to disk…";
+  return "Writing your project to disk…";
 }
 
 export function ImportModal({ onClose }: { onClose: () => void }) {
@@ -115,7 +115,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     setProgress(null);
     setError(null);
     // A failed write partway through would otherwise leave the modal stuck on
-    // "Importing your world" with no error and no way back.
+    // "Importing your project" with no error and no way back.
     let result: Awaited<ReturnType<typeof importLkProject>>;
     try {
       result = await importLkProject(parentDir, trimmedName, plan, setProgress);
@@ -146,11 +146,11 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
               {status === "parsing" ? "Reading file…" : "Choose a .lk file"}
             </button>
             {/* The button's own label was the only sign anything was happening,
-                and unpacking a large world holds the window still while it
+                and unpacking a large project holds the window still while it
                 runs — so it read as nothing having happened at all. */}
             {status === "parsing" && (
               <p className="import-modal-progress-note">
-                Unpacking your world. A big one takes a few seconds, and the window may sit still while it does.
+                Unpacking your project. A big one takes a few seconds, and the window may sit still while it does.
               </p>
             )}
           </div>

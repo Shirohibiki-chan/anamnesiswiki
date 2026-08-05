@@ -597,6 +597,12 @@ is below.
   Species-shaped page (Foxians: Overview / Biology / Lifestyle / Beliefs /
   Relations).
 
+- **A project is called a "project" in UI copy, never a "world".** Her decision,
+  Phase 11: the fiction and the container shouldn't share a word, or "export your
+  world" stops being clear about what it exports. The word *world* is fine in
+  comments and docs where it means the fiction — it's user-facing strings that are
+  fixed. The two disagreed for months, so don't reintroduce it.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:

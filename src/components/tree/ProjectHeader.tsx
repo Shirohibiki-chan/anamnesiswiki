@@ -2,7 +2,7 @@
 // button to add a top-level node (opens the same type picker as any other
 // "add child" button, just targeting the root instead of a parent node).
 //
-// The home icon jumps to whichever page has been designated this world's home
+// The home icon jumps to whichever page has been designated this project's home
 // (right-click any page → "Set as project home", LK's own arrangement). With
 // no home set it stays put as a plain icon rather than disappearing — the row
 // it decorates is the project itself either way.
@@ -34,9 +34,9 @@ export function ProjectHeader() {
     closePopover();
   }
 
-  // Exporting the whole world means every top-level page; their descendants
+  // Exporting the whole project means every top-level page; their descendants
   // come along on their own (see lk-export's collectSubtree).
-  function handleExportWorld() {
+  function handleExportProject() {
     closePopover();
     requestExport(project?.rootOrder ?? []);
   }
@@ -87,8 +87,8 @@ export function ProjectHeader() {
       {openPopover === "menu" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <div className="tree-context-menu">
-            <button type="button" onClick={handleExportWorld}>
-              <Upload size={13} /> Export world to LegendKeeper
+            <button type="button" onClick={handleExportProject}>
+              <Upload size={13} /> Export project to LegendKeeper
             </button>
           </div>
         </TreePopover>

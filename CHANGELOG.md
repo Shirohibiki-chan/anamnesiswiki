@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-05 — after v0.2.1
+
+*(Not in a release — these live in the repo and affect this machine only.)*
+
+### Renames
+
+- **The app calls a world a "project" everywhere now.** It mostly did already, but not quite: the sidebar's right-click menu said "Export **world** to LegendKeeper" while the start screen right next to it said "Open an Anamnesis **project**", and the import screen said "Writing your world to disk" while the box you type the name into was labelled "Project name". Six places said world; eighty-nine said project. They all say project now — the sidebar export, the import progress messages, Settings → Projects, and the reassurance line on the update screen. Nothing moved and nothing on disk changed; the folder is still `Documents\Anamnesis\YourProjectName`, same as it was.
+- **A LegendKeeper import with no clear root is called "Imported Project"** instead of "Imported World". You'd only ever see this on a malformed `.lk`, and you can rename it before confirming either way.
+
 ## 2026-08-04 — after v0.2.1
 
 *(Not in a release — these live in the repo and affect this machine only.)*

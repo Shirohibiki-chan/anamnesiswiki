@@ -40,7 +40,7 @@ export function UpdateCheck() {
         <div className="update-check-card">
           <p className="update-check-headline">Anamnesis {state.update.version} is available.</p>
           {state.update.notes && <p className="update-check-notes">{state.update.notes}</p>}
-          <p className="update-check-reassurance">Your worlds aren't touched — updating only replaces the app itself.</p>
+          <p className="update-check-reassurance">Your projects aren't touched — updating only replaces the app itself.</p>
           <div className="update-check-buttons">
             <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void install(state.update)}>
               Download and install

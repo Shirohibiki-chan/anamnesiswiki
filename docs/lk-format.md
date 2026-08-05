@@ -28,7 +28,7 @@ LK's export always has exactly one resource with no `parentId` — this is LK's 
 - It gets an entry in `idMap` like any other resource, so `mention`s pointing at the project root resolve to the home page instead of degrading to plain text. Parent-grouping deliberately uses a separate id set — see `docs/handoff.md` §LK import for what breaks otherwise.
 - Its direct children become the project's top-level nodes, sorted by `pos`, following home in `rootOrder`.
 
-If an export doesn't have exactly one no-parent resource (malformed/unexpected), the importer falls back to treating every resource with an unresolvable `parentId` as top-level, and the project name defaults to "Imported World" (the user can rename it before confirming the import).
+If an export doesn't have exactly one no-parent resource (malformed/unexpected), the importer falls back to treating every resource with an unresolvable `parentId` as top-level, and the project name defaults to "Imported Project" (the user can rename it before confirming the import).
 
 ## Tree structure
 
