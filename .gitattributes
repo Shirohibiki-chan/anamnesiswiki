@@ -8,3 +8,5 @@
 
 # Everything else: normalise in the repo, let git decide on checkout.
 * text=auto
+sandbox/fonts.css -diff -merge
+sandbox/fonts-library.css -diff -merge
