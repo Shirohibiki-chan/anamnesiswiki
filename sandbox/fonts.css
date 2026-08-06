@@ -1,5 +1,5 @@
 /* GENERATED FILE — do not edit by hand.
-   Run `node sandbox/build-fonts.mjs` to regenerate.
+   Run `node scripts/build-fonts.mjs` to regenerate.
 
    The app's three bundled faces, inlined as data: URIs so the sandbox works
    when opened straight off disk. See build-fonts.mjs for why. */

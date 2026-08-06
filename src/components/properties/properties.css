@@ -115,7 +115,7 @@
   align-items: center;
   gap: var(--space-xs);
   font-size: var(--fs-xs);
-  background: var(--color-panel-edge);
+  background: var(--gradient-tag, none), var(--color-panel-edge);
   color: var(--color-text-secondary);
   border-radius: var(--radius-sm);
   padding: var(--space-2xs) var(--space-md);

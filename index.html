@@ -10,17 +10,29 @@
       only style that exists during the first paint: index.css arrives as a
       separate request and React later still, so without this the window shows
       the browser's default white for a few hundred milliseconds before the
-      dark theme lands. On a dark app in a dark room that reads as a camera
-      flash. Keep it in sync with --color-bg by hand; it cannot reference the
-      variable, because the file defining it is exactly what hasn't loaded yet.
-      The matching native window colour is `backgroundColor` in tauri.conf.json,
-      which covers the earlier gap before the webview paints at all.
+      theme lands. On a dark app in a dark room that reads as a camera flash.
+      It cannot reference --color-bg, because the file defining it is exactly
+      what hasn't loaded yet. The matching native window colour is
+      `backgroundColor` in tauri.conf.json, which covers the earlier gap before
+      the webview paints at all.
+
+      The literal is the *fallback*, not the value. Since Phase 12 the theme is
+      hers to choose, and a hardcoded dark here would hand a Daylight user the
+      exact flash this exists to prevent — inverted. `--boot-bg` is set from the
+      paint cache in main.tsx before anything is drawn, and kept current by the
+      theme store afterwards; see applyBootBackground in theme-service.ts. The
+      #0f0f14 is only what a machine that has never picked a theme sees, which
+      is the dark default, which is right.
+
+      This rule is unlayered and therefore outranks `@layer base`'s themed
+      `body` rule — that's why body's background goes through --boot-bg rather
+      than being fought over. Don't "simplify" it back to a literal.
     -->
     <style>
       html,
       body {
         margin: 0;
-        background: #0f0f14;
+        background: var(--boot-bg, #0f0f14);
       }
     </style>
   </head>

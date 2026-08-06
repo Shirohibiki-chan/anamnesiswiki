@@ -680,3 +680,46 @@ export async function readRawFile(path: string): Promise<Uint8Array> {
 export async function writeRawFile(path: string, data: Uint8Array): Promise<void> {
   await writeFile(path, data);
 }
+
+// --- Phase 12: themes and snippets ----------------------------------------
+// A theme is a `.css` file in a folder, so reading them is a directory listing
+// and some text reads. That is all this section is. Deciding what a stylesheet
+// is allowed to contain is theme-service's job, not this file's — it lives
+// here only because it touches disk, and rule 5 says that happens in one file.
+
+export type CssFile = { name: string; path: string; css: string };
+
+/**
+ * Every `.css` file directly inside `dir`, read. Sorted by name so the list in
+ * Settings doesn't reshuffle between scans.
+ *
+ * A missing folder returns nothing rather than throwing: neither folder exists
+ * until someone puts something in it, and "you haven't made any themes yet" is
+ * a normal state, not an error to report. A file that fails to read *is*
+ * skipped silently too, for the version of that same reason that matters — a
+ * theme half-written by an editor at the moment of the scan shouldn't take out
+ * the whole list.
+ */
+export async function readCssDir(dir: string): Promise<CssFile[]> {
+  if (!(await exists(dir))) return [];
+
+  const entries = await readDir(dir);
+  const files: CssFile[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile || !entry.name.toLowerCase().endsWith(".css")) continue;
+    const path = joinPath(dir, entry.name);
+    try {
+      files.push({ name: entry.name, path, css: await readTextFile(path) });
+    } catch {
+      // Unreadable right now; the next scan picks it up.
+    }
+  }
+  return files.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Creates the folder if it isn't there yet, and hands back its path. */
+export async function ensureCssDir(parent: string, dirName: string): Promise<string> {
+  const dir = joinPath(parent, dirName);
+  await ensureDir(dir);
+  return dir;
+}

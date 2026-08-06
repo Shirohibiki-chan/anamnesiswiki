@@ -2,6 +2,25 @@
 
 ## 2026-08-06 — after v0.2.1
 
+### Additions
+
+- **Settings → Appearance, and themes you can make yourself.** New tab in Settings. It has a theme picker, a font picker for titles / interface / writing / code, and a text size slider — but the part that matters is that **a theme is just a file**. Build one in the sandbox, press *Show me the CSS*, save it in `Documents\Anamnesis\themes` as any name you like, and it turns up in the list. No editing it first, no asking anyone. There's an **Open themes folder** button so you never have to find it yourself. Delete the file and the theme's gone; that's the whole system.
+- **Snippets.** A `.css` file in `Documents\Anamnesis\snippets` gets its own on/off switch and sits on top of whichever theme is on. For changing one thing without making a whole theme.
+- **All 98 fonts now ship inside the app.** They used to live only in the sandbox, so a theme that used one would have looked right there and wrong in the real thing. Now anything you pick renders exactly as it does in the sandbox, on any machine, with nothing to install. (Your Windows-only fonts still can't be — those are marked in the sandbox and always have been.)
+- **Three themes to start from.** *Anamnesis Dark* is what the app has always looked like and is still what you get. *Midnight* is the one you made — deep navy, teal, Domine and Lexend and Quicksand. *Daylight* is a proper light mode: light background, dark text, and its own callout colours rather than the dark ones washed out.
+- **Gradients work in the real app now, on all twelve surfaces** the sandbox offers — background, top bar, sidebar, page area, properties panel, dialogs, buttons, selected page, tags, page titles, section headings and callouts. Whatever you turn on in the sandbox is what you get.
+- **Text size slider.** Makes the writing and labels bigger or smaller without inflating the panels and spacing around them.
+
+### Adjustments
+
+- **The sandbox's exported CSS is now a finished theme file** rather than something to send back. Fonts and sizes go inside the theme instead of a separate block, and the file tells you where to save it. Text size comes out as a multiplier, so a theme's size and the Settings slider stack instead of one overriding the other.
+
+### Fixes
+
+- **Themes can't phone home.** A stylesheet can quietly load fonts and images from the internet, which would mean a downloaded theme reporting back every time you opened your wiki. Anything in a theme or snippet that points at the internet is stripped before it's used, and Settings tells you exactly what was removed. Nothing about you or your worlds leaves your machine — that hasn't changed and this is what keeps it true now that themes are files anyone could hand you.
+
+## 2026-08-06 — sandbox
+
 *(Not in a release — these live in the repo and affect this machine only.)*
 
 ### Additions

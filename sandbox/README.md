@@ -16,16 +16,27 @@ Your changes save themselves in the browser, so you can close it and come back.
   palettes queued for Phase 12 (Light, Parchment, Foxian, Belobog, Deep Space).
 - **Every colour the app uses**, grouped by what it's for rather than by name.
 - **Fonts** for titles, interface, writing and code, in three tiers:
-  - ✦ the three already bundled with the app,
-  - ~98 open-licence families sitting inside the sandbox — any of them can be
-    bundled for real, it's a small job,
-  - · Windows faces, which **can't** be redistributed and would fall back to
-    something else on another machine.
+  - ✦ the app's own four defaults,
+  - ~98 open-licence families, all of which **ship inside the app** — pick one
+    and your theme renders exactly like this on any machine,
+  - · Windows faces, which **can't** be redistributed. Anamnesis doesn't have
+    these, so a theme using one falls back to something else.
 - **Size and spacing** sliders, **gradients on twelve surfaces**, and a box for
   your own CSS.
-- **Show me the CSS** turns whatever you've made into a real theme block.
+- **Show me the CSS** turns whatever you've made into a real theme file.
 
-Send that CSS back and it becomes a theme you can switch to in the app.
+## Using what you made
+
+Save the exported CSS as `anything.css` in **`Documents\Anamnesis\themes`**,
+then open Anamnesis → **Settings → Appearance**. It's in the list. Nothing else
+needs doing to it — the export is written to be dropped in as-is.
+
+Snippets work the same way: a `.css` file in `Documents\Anamnesis\snippets` gets
+its own on/off switch and layers over whichever theme is active.
+
+Anything in either file that tries to load from the internet is stripped before
+it's used, and the app says what it removed. That's the offline promise, not a
+bug.
 
 ## Keeping it honest
 
@@ -36,15 +47,18 @@ it quietly starts lying.
 
 `fonts.css`, `fonts-library.css` and `fonts-library.js` are generated, not
 written. They inline the woff2 files as data URIs so fonts work from a
-`file://` page. Regenerate after changing anything in `public/fonts`, or after
-editing the `LIBRARY` list in the script:
+`file://` page. The same script also writes the app's copies —
+`public/fonts/library/`, `src/fonts-library.css` and
+`src/constants/font-library.ts` — from the same list, which is what stops the
+sandbox offering a font the app doesn't have. Regenerate after changing
+anything in `public/fonts`, or after editing the `LIBRARY` list:
 
 ```bash
-node sandbox/build-fonts.mjs
+node scripts/build-fonts.mjs
 ```
 
 The library families come from Google Fonts, fetched **by that script, at build
-time**, and cached in `.font-cache/`. The sandbox and the app never make a
-network call — see `docs/handoff.md`. Only add families that are OFL or Apache
-2.0 licensed; the whole point of that list is that anything in it can be
-bundled into the app for real.
+time**, and cached in `scripts/.font-cache/`. The sandbox and the app never make
+a network call — see `docs/handoff.md`. Only add families that are OFL or Apache
+2.0 licensed: everything in that list ships inside the installer, so an
+unlicensed one there is unlicensed fonts in the product.

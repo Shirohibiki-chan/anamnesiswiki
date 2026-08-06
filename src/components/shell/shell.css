@@ -51,7 +51,12 @@
   display: grid;
   grid-template-columns: 260px 1fr 300px;
   grid-template-rows: minmax(0, 1fr);
-  background: var(--color-bg);
+  /* The gradient layers over the colour rather than replacing it, here and at
+     every other `--gradient-*` site: a theme that only sets some of the twelve
+     still has a solid surface under each one, and a gradient with transparency
+     in it fades to the theme's own colour instead of to white. Undeclared
+     resolves to `none`, which is a legal first layer — see index.css. */
+  background: var(--gradient-bg, none), var(--color-bg);
   transition: grid-template-columns 150ms ease;
 }
 
@@ -59,21 +64,22 @@
   grid-template-columns: 260px 1fr;
 }
 
-.app-layout-tree,
-.app-layout-properties {
-  background: var(--color-panel);
-}
+/* These two shared a rule until Phase 12. They still share a colour, but their
+   gradient slots are separate — a theme can run the tree dark-to-light and
+   leave the properties panel flat — and one rule can't hold two of those.
 
-/* `--color-border-strong` here and on the tree's right edge, the top bar and
+   `--color-border-strong` here and on the tree's right edge, the top bar and
    the sidebar's tab strip: these four lines are the app's frame, and they're
    the one group that should read as structure rather than as another card
    outline. See the border note in index.css. */
 .app-layout-properties {
+  background: var(--gradient-props, none), var(--color-panel);
   overflow-y: auto;
   border-left: 1px solid var(--color-border-strong);
 }
 
 .app-layout-tree {
+  background: var(--gradient-sidebar, none), var(--color-panel);
   /* No overflow-y here on purpose: TreeSidebar/TreePanel size react-arborist's
      virtualized list to this container via ResizeObserver and handle their
      own internal scrolling. A second overflow:auto on this outer element
@@ -100,6 +106,11 @@
 .app-layout-page {
   flex: 1;
   overflow-y: auto;
+  /* No colour under this one. The writing area has never had a background of
+     its own — it shows `.app-layout`'s — and giving it one now would hide
+     `--gradient-bg` behind it. So the gradient is the entire declaration, and
+     with no gradient set the element stays transparent exactly as before. */
+  background: var(--gradient-page, none);
 }
 
 .app-layout-placeholder {
@@ -146,7 +157,7 @@
   align-items: center;
   justify-content: flex-end;
   padding: 0 var(--space-xl);
-  background: var(--color-panel-alt);
+  background: var(--gradient-topbar, none), var(--color-panel-alt);
   border-bottom: 1px solid var(--color-border-strong);
 }
 
@@ -796,4 +807,250 @@
   margin: var(--space-lg) 0 0;
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
+}
+
+/* --- Settings → Appearance (Phase 12) --- */
+
+.appearance-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.appearance-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.appearance-section .ui-eyebrow {
+  margin: 0;
+}
+
+.appearance-themes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.appearance-theme {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  width: 100%;
+  padding: var(--space-lg);
+  text-align: left;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.appearance-theme:hover {
+  border-color: var(--color-border-strong);
+}
+
+.appearance-theme-selected {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+}
+
+/* The dots are a live preview, not a picture of one: this element carries the
+   theme's own `data-theme`, so the `[data-theme="…"]` block in index.css
+   matches *it* and the swatches read the same tokens the app would. Nothing
+   here duplicates a colour value, which is the point — a theme retuned in
+   index.css retunes its own swatch. Custom themes can't work that way (their
+   stylesheet isn't loaded until selected) and get inline colours instead. */
+.appearance-swatch {
+  display: flex;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.appearance-swatch i {
+  width: 14px;
+  height: 22px;
+}
+
+.appearance-theme-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  flex: 1;
+}
+
+.appearance-theme-name {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.appearance-theme-note {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appearance-theme-check {
+  flex-shrink: 0;
+  color: var(--color-accent-light);
+}
+
+.appearance-font {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.appearance-font-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.appearance-font-hint {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.appearance-select {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+/* The chosen face, at reading size, in a sentence rather than a pangram — the
+   question a font picker has to answer is "what do my pages look like in it",
+   and "The quick brown fox" doesn't answer it. `min-height` so switching to a
+   shorter face doesn't move the controls below. */
+.appearance-specimen {
+  margin: 0;
+  min-height: 2.5rem;
+  padding: var(--space-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-md);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+}
+
+.appearance-scale {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.appearance-range {
+  flex: 1;
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.appearance-scale-value {
+  /* Fixed width, or the slider jumps sideways as the number gains a digit. */
+  width: 3.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.appearance-snippets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.appearance-snippet {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.appearance-snippet input {
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.appearance-snippet-name {
+  flex: 1;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.appearance-snippet-file {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.appearance-note,
+.appearance-empty {
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
+.appearance-note code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+}
+
+.appearance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-lg);
+  margin: 0;
+}
+
+/* Deliberately a notice and not a modal. Nothing is broken — a stylesheet did
+   something we don't allow, we did the rest of it, and she needs to know why
+   her background image isn't there. Interrupting her for that would be worse
+   than the missing image. */
+.appearance-blocked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin: 0;
+  padding: var(--space-lg);
+  background: var(--color-callout-secret-bg);
+  border: 1px solid var(--color-accent-faint-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+.appearance-blocked svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-callout-secret);
+}
+
+.appearance-blocked code {
+  font-family: var(--font-mono);
+  word-break: break-all;
 }

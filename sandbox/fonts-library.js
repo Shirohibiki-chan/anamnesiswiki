@@ -1,5 +1,5 @@
 /* GENERATED FILE — do not edit by hand.
-   Run `node sandbox/build-fonts.mjs` to regenerate.
+   Run `node scripts/build-fonts.mjs` to regenerate.
 
    What actually made it into fonts-library.css. theme-sandbox.html builds its
    font dropdowns from this, so the list and the faces can't drift apart. */

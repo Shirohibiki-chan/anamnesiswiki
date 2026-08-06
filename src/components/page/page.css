@@ -202,6 +202,22 @@
   line-height: var(--lh-tight);
   color: var(--color-text-primary);
   cursor: text;
+
+  /* A text gradient: paint an image behind the element, clip it to the glyph
+     shapes, and stop the glyphs painting their own colour over it. The three
+     have to move together — the fallbacks are what the element looked like
+     before, so with no `--gradient-title` set this is a no-op rather than an
+     invisible title. `-webkit-` prefixes for WKWebView; the macOS build is a
+     different engine from the Windows one. See index.css §Gradients.
+
+     Deliberately not on `.page-title-input` below, which is otherwise kept in
+     lockstep with this rule: transparent glyph fill in a field you're typing
+     into means watching a caret move through nothing. The title changing
+     colour while renaming is the better half of that trade. */
+  background-image: var(--gradient-title, none);
+  -webkit-background-clip: var(--gradient-title-clip, border-box);
+  background-clip: var(--gradient-title-clip, border-box);
+  -webkit-text-fill-color: var(--gradient-title-fill, currentColor);
 }
 
 /* Matches LegendKeeper's own "Home" chip beside the project-home page's
@@ -406,22 +422,26 @@
   min-width: 0;
 }
 
+/* `--gradient-callout` is one wash sitting on top of three different tints,
+   not a replacement for them. A single gradient can't know whether it's on an
+   Info or a Secret, so replacing the tint would collapse the three into one
+   and take the only colour-coding the callouts have. Keep it as a layer. */
 .editor-callout-info {
   border-left-color: var(--color-callout-info);
-  background: var(--color-callout-info-bg);
+  background: var(--gradient-callout, none), var(--color-callout-info-bg);
   color: var(--color-callout-info-text);
 }
 
 .editor-callout-quote {
   border-left-color: var(--color-callout-quote);
-  background: var(--color-callout-quote-bg);
+  background: var(--gradient-callout, none), var(--color-callout-quote-bg);
   color: var(--color-callout-quote-text);
   font-style: italic;
 }
 
 .editor-callout-secret {
   border-left-color: var(--color-callout-secret);
-  background: var(--color-callout-secret-bg);
+  background: var(--gradient-callout, none), var(--color-callout-secret-bg);
   color: var(--color-callout-secret-text);
 }
 

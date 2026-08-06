@@ -2,7 +2,17 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import App from "./App";
+import { FONT_SLOTS } from "./constants/themes";
+import { applyCachedAppearance } from "./services/theme-service";
 import "./index.css";
+
+// Before React, before anything is on screen. The real appearance settings
+// live in the Tauri store, and reading that is a round trip into Rust that
+// lands several frames after the window has pixels in it — long enough that
+// picking a light theme meant watching the app open dark and change every
+// launch. This replays the last applied result from localStorage, which is
+// synchronous. useThemeBootstrap corrects it a moment later if it's stale.
+applyCachedAppearance(FONT_SLOTS);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
