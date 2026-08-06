@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-06 — after v0.2.1
+
+*(Not in a release — these live in the repo and affect this machine only.)*
+
+### Additions
+
+- **98 more fonts in the theme sandbox.** The font pickers used to offer three bundled faces and whatever Windows had lying around. Now there's a proper library sitting inside the sandbox: 23 serifs built for reading, 26 sans-serifs, 29 display faces for titles (Cinzel, Uncial Antiqua, Grenze Gotisch, Bodoni Moda, Pirata One and friends), 10 handwriting faces and 10 monospaces. They're grouped, each name is shown in its own lettering so you can browse the list itself, and every slot has a sample line underneath at a size where you can actually see what the letters are doing. **Every font in those groups is free to ship** — pick one and it's a five-minute job to bundle it for real. The last group is still your Windows fonts, marked `·`, and those can't legally be shipped, so they'd turn into something else on anyone else's computer. The sandbox says which is which, and so does the CSS it hands you.
+- **Gradients on twelve things instead of three.** App background, top bar, sidebar, page area, properties panel, dialogs, main buttons, the selected page in the sidebar, tags, page titles, section headings, and a wash over callouts. Each one can be a straight line at any angle *or* a glow spreading from a point you choose, with an optional third colour blended through the middle, and every colour has a see-through slider — drag one end to 0% and the gradient fades out instead of stopping. Tick a box to turn one on, click its name to open its controls, and there's a **Turn them all off** button for when it's got away from you. Switching palette now recolours every gradient to match instead of dragging the old scheme's colours along.
+
+### Fixes
+
+- **The sandbox's "blend a third colour" now visibly does something.** On some gradients the extra colour was being seeded to a colour already in use at one end, so ticking the box changed nothing.
+
 ## 2026-08-05 — after v0.2.1
 
 *(Not in a release — these live in the repo and affect this machine only.)*

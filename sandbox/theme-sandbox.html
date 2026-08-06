@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Anamnesis — Theme Sandbox</title>
 <link rel="stylesheet" href="fonts.css" />
+<!-- The try-it-out library is ~6MB of inlined woff2. The media/onload swap
+     loads it without blocking the first paint, so the controls are usable
+     immediately; no font bytes are decoded until one is actually picked. -->
+<link rel="stylesheet" href="fonts-library.css" media="print" onload="this.media='all'" />
+<script src="fonts-library.js"></script>
 <style>
 /* ---------------------------------------------------------------------------
    SANDBOX CHROME — the control panel's own styling.
@@ -127,6 +132,47 @@ button.act.primary:hover { background: #7df0dd; }
 .warn { border-left-color: #fcd34d; }
 .bundled { color: var(--chrome-accent); }
 
+/* --- font slots ----------------------------------------------------------- */
+.fontslot { display: flex; flex-direction: column; gap: 5px; }
+.specimen {
+  border: 1px solid var(--chrome-line); border-radius: 4px; background: #101015;
+  padding: 9px 10px; line-height: 1.35; color: var(--chrome-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* A quiet marker for "this one can't actually ship" — visible while browsing,
+   not loud enough to nag. */
+.specimen[data-tier="system"] { border-left: 2px solid #fcd34d; }
+.specimen[data-tier="bundled"], .specimen[data-tier="default"] { border-left: 2px solid var(--chrome-accent); }
+
+/* --- gradient panels ------------------------------------------------------ */
+details.grad { border: 1px solid var(--chrome-line); border-radius: 5px; background: #14141a; }
+details.grad > summary {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+  cursor: pointer; list-style: none; font-size: 12px;
+}
+details.grad > summary::-webkit-details-marker { display: none; }
+details.grad > summary:hover { background: #191921; border-radius: 4px; }
+details.grad[data-on="0"] .grad-name { color: var(--chrome-dim); }
+details.grad[data-on="1"] { border-color: #3d5c58; }
+.grad-name { flex: 1; min-width: 0; }
+.grad-name .hint { white-space: normal; }
+/* Checkerboard behind the swatch, so a gradient that fades to nothing reads as
+   see-through rather than as black. */
+.grad-sw {
+  width: 40px; height: 22px; flex: 0 0 auto; border-radius: 3px;
+  border: 1px solid var(--chrome-line);
+  /* Two layers: the gradient (set as --g by JS) painted over the checks. An
+     overlay pseudo-element would have covered it instead. */
+  background-image: var(--g, none), repeating-conic-gradient(#3a3a46 0% 25%, #22222a 0% 50%);
+  background-size: auto, 8px 8px;
+}
+.grad-body {
+  padding: 8px; display: flex; flex-direction: column; gap: 7px;
+  border-top: 1px solid var(--chrome-line);
+}
+.grad-body .stop-n { width: 42px; flex: 0 0 auto; font-size: 11px; color: var(--chrome-dim); }
+.grad-body label { font-size: 11px; color: var(--chrome-dim); }
+
 /* --- Preview stage -------------------------------------------------------- */
 #stage { flex: 1; height: 100vh; overflow-y: auto; padding: 22px; }
 #stage-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
@@ -158,7 +204,7 @@ button.act.primary:hover { background: #7df0dd; }
   grid-column: 1 / -1; height: var(--h-bar);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 var(--space-lg);
-  background: var(--color-panel-alt);
+  background: var(--gradient-topbar, var(--color-panel-alt));
   border-bottom: 1px solid var(--color-border-strong);
 }
 #preview .search {
@@ -175,7 +221,7 @@ button.act.primary:hover { background: #7df0dd; }
 
 /* sidebar */
 #preview .sidebar {
-  background: var(--color-panel);
+  background: var(--gradient-sidebar, var(--color-panel));
   border-right: 1px solid var(--color-border-strong);
   display: flex; flex-direction: column;
 }
@@ -207,11 +253,11 @@ button.act.primary:hover { background: #7df0dd; }
 #preview .node .ico { width: 13px; text-align: center; flex: 0 0 auto; opacity: 0.85; }
 #preview .node.folder { color: var(--color-text-primary); }
 #preview .node.tinted { background: color-mix(in srgb, var(--tint) 12%, transparent); color: var(--tint); border-left: 2px solid var(--tint); }
-#preview .node.sel { background: var(--color-accent-faint); color: var(--color-text-primary); }
+#preview .node.sel { background: var(--gradient-sel, var(--color-accent-faint)); color: var(--color-text-primary); }
 #preview .node.indent { padding-left: calc(var(--space-md) + var(--space-xl)); }
 
 /* page */
-#preview .page { display: flex; flex-direction: column; min-width: 0; }
+#preview .page { display: flex; flex-direction: column; min-width: 0; background: var(--gradient-page, transparent); }
 #preview .page-inner { padding: var(--space-3xl) var(--page-gutter) var(--space-3xl); max-width: var(--reading-width); }
 #preview .page-title {
   font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 500;
@@ -237,6 +283,10 @@ button.act.primary:hover { background: #7df0dd; }
 #preview .prose h2 {
   font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 600;
   line-height: var(--lh-tight); margin: var(--space-2xl) 0 var(--space-md);
+  background: var(--gradient-heading, none);
+  -webkit-background-clip: var(--gradient-heading-clip, border-box);
+  background-clip: var(--gradient-heading-clip, border-box);
+  -webkit-text-fill-color: var(--gradient-heading-fill, currentColor);
 }
 #preview .prose p { margin: 0 0 var(--space-lg); }
 #preview .prose a { color: var(--color-accent-light); text-decoration: none; border-bottom: 1px solid var(--color-accent-faint-border); }
@@ -247,9 +297,12 @@ button.act.primary:hover { background: #7df0dd; }
   padding: var(--space-lg) var(--space-xl);
   margin: 0 0 var(--space-lg); font-size: var(--fs-md);
 }
-#preview .callout.info { border-color: var(--color-callout-info); background: var(--color-callout-info-bg); color: var(--color-callout-info-text); }
-#preview .callout.quote { border-color: var(--color-callout-quote); background: var(--color-callout-quote-bg); color: var(--color-callout-quote-text); font-style: italic; }
-#preview .callout.secret { border-color: var(--color-callout-secret); background: var(--color-callout-secret-bg); color: var(--color-callout-secret-text); }
+/* The callout wash is a *layer over* each callout's own tint, not a
+   replacement for it — one gradient can't know whether it's sitting on an
+   Info or a Secret, and replacing the tint would flatten the three into one. */
+#preview .callout.info { border-color: var(--color-callout-info); background: var(--gradient-callout, none), var(--color-callout-info-bg); color: var(--color-callout-info-text); }
+#preview .callout.quote { border-color: var(--color-callout-quote); background: var(--gradient-callout, none), var(--color-callout-quote-bg); color: var(--color-callout-quote-text); font-style: italic; }
+#preview .callout.secret { border-color: var(--color-callout-secret); background: var(--gradient-callout, none), var(--color-callout-secret-bg); color: var(--color-callout-secret-text); }
 #preview .lock {
   display: inline-flex; align-items: center; gap: var(--space-xs);
   font-family: var(--font-ui); font-size: var(--fs-2xs); text-transform: uppercase;
@@ -258,7 +311,7 @@ button.act.primary:hover { background: #7df0dd; }
 
 /* properties panel */
 #preview .props {
-  background: var(--color-panel); border-left: 1px solid var(--color-border-strong);
+  background: var(--gradient-props, var(--color-panel)); border-left: 1px solid var(--color-border-strong);
   padding: var(--space-2xl) var(--space-xl); display: flex; flex-direction: column; gap: var(--space-xl);
 }
 #preview .prop-label {
@@ -276,7 +329,7 @@ button.act.primary:hover { background: #7df0dd; }
 #preview .tag {
   font-size: var(--fs-2xs); padding: var(--space-2xs) var(--space-md);
   border-radius: var(--radius-full);
-  background: var(--color-accent-faint); border: 1px solid var(--color-accent-faint-border);
+  background: var(--gradient-tag, var(--color-accent-faint)); border: 1px solid var(--color-accent-faint-border);
   color: var(--color-accent-light);
 }
 
@@ -305,7 +358,7 @@ button.act.primary:hover { background: #7df0dd; }
 }
 #preview .modal {
   width: 100%; max-width: 460px;
-  background: var(--color-panel); border: 1px solid var(--color-border-strong);
+  background: var(--gradient-modal, var(--color-panel)); border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg); box-shadow: var(--elev-modal);
   padding: var(--space-2xl);
 }
@@ -350,11 +403,12 @@ button.act.primary:hover { background: #7df0dd; }
   <details class="sec" open>
     <summary>Fonts</summary>
     <div class="sec-body" id="fontControls"></div>
-    <p class="note warn"><span class="bundled">Fraunces, Inter and Newsreader</span>
-      are bundled with the app — pick those and they'll look the same on any
-      machine. The rest are fonts already on Windows; if you fall for one of
-      them, tell me and I'll bundle it properly so it works everywhere and
-      offline.</p>
+    <p class="note"><span class="bundled">✦ Fraunces, Inter, Newsreader</span> already
+      ship with the app. Everything in the big groups is a free font sitting right
+      here in the sandbox — <b>pick any of them and I can bundle it for real</b>, it's
+      a five-minute job. The last group, marked <b>·</b>, is fonts Windows gave you;
+      those can't legally be shipped, so they'd turn into something else on anyone
+      else's computer.</p>
   </details>
 
   <details class="sec" open>
@@ -364,9 +418,15 @@ button.act.primary:hover { background: #7df0dd; }
 
   <details class="sec">
     <summary>Gradients</summary>
-    <div class="sec-body" id="gradientControls"></div>
-    <p class="note">Three places a gradient can go. The page background is the
-      safe one; title text is the showy one.</p>
+    <div class="sec-body">
+      <p class="note">Twelve places one can go. Tick the box to turn it on, click
+        the name to open its controls. Backgrounds are the safe ones; the two
+        that paint <i>letters</i> are the showy ones. Dragging a colour's
+        see-through slider to 0% makes that end fade out instead of
+        stopping.</p>
+      <button class="act" id="btnGradOff">Turn them all off</button>
+      <div id="gradientControls" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </details>
 
   <details class="sec" open>
@@ -678,42 +738,78 @@ const PRESETS = {
   },
 };
 
-/* Fonts. `bundled: true` means the woff2 ships with the app; everything else
-   is a face Windows already has, and would need bundling before it could be
-   used for real. */
-const FONT_OPTIONS = [
-  { label: "Fraunces", value: '"Fraunces", serif', bundled: true },
-  { label: "Newsreader", value: '"Newsreader", serif', bundled: true },
-  { label: "Inter", value: '"Inter", sans-serif', bundled: true },
-  { label: "Georgia", value: 'Georgia, serif' },
-  { label: "Cambria", value: 'Cambria, serif' },
-  { label: "Constantia", value: 'Constantia, serif' },
-  { label: "Palatino", value: '"Palatino Linotype", Palatino, serif' },
-  { label: "Book Antiqua", value: '"Book Antiqua", serif' },
-  { label: "Garamond", value: 'Garamond, serif' },
-  { label: "Times New Roman", value: '"Times New Roman", serif' },
-  { label: "Segoe UI", value: '"Segoe UI", sans-serif' },
-  { label: "Calibri", value: 'Calibri, sans-serif' },
-  { label: "Candara", value: 'Candara, sans-serif' },
-  { label: "Corbel", value: 'Corbel, sans-serif' },
-  { label: "Verdana", value: 'Verdana, sans-serif' },
-  { label: "Trebuchet MS", value: '"Trebuchet MS", sans-serif' },
-  { label: "Tahoma", value: 'Tahoma, sans-serif' },
-  { label: "System default", value: 'system-ui, sans-serif' },
+/* ---------------------------------------------------------------------------
+   Fonts. Three tiers, and the difference between them is not cosmetic:
+
+     bundled  ships with the app already. Costs nothing, works everywhere.
+     library  open licence (OFL or Apache 2.0) — we are allowed to bundle it.
+              Picking one is a small ask, not a project.
+     system   already installed on this PC, but Microsoft's licence doesn't
+              let us redistribute it. On another machine it silently falls
+              back to something else, so it can never be a real theme.
+
+   The library list is generated: fonts-library.js is written by
+   build-fonts.mjs from what actually downloaded, so the dropdown can't offer
+   a face that isn't in fonts-library.css.
+   ------------------------------------------------------------------------ */
+const BUNDLED = [
+  { label: "Fraunces", value: '"Fraunces", serif', tier: "bundled" },
+  { label: "Newsreader", value: '"Newsreader", serif', tier: "bundled" },
+  { label: "Inter", value: '"Inter", sans-serif', tier: "bundled" },
 ];
-const MONO_OPTIONS = [
-  { label: "System mono (default)", value: 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace' },
-  { label: "Consolas", value: 'Consolas, monospace' },
-  { label: "Cascadia Mono", value: '"Cascadia Mono", monospace' },
-  { label: "Courier New", value: '"Courier New", monospace' },
-  { label: "Lucida Console", value: '"Lucida Console", monospace' },
+const SYSTEM = [
+  { label: "Georgia", value: 'Georgia, serif', tier: "system" },
+  { label: "Cambria", value: 'Cambria, serif', tier: "system" },
+  { label: "Constantia", value: 'Constantia, serif', tier: "system" },
+  { label: "Palatino", value: '"Palatino Linotype", Palatino, serif', tier: "system" },
+  { label: "Book Antiqua", value: '"Book Antiqua", serif', tier: "system" },
+  { label: "Garamond", value: 'Garamond, serif', tier: "system" },
+  { label: "Times New Roman", value: '"Times New Roman", serif', tier: "system" },
+  { label: "Segoe UI", value: '"Segoe UI", sans-serif', tier: "system" },
+  { label: "Calibri", value: 'Calibri, sans-serif', tier: "system" },
+  { label: "Candara", value: 'Candara, sans-serif', tier: "system" },
+  { label: "Corbel", value: 'Corbel, sans-serif', tier: "system" },
+  { label: "Verdana", value: 'Verdana, sans-serif', tier: "system" },
+  { label: "Trebuchet MS", value: '"Trebuchet MS", sans-serif', tier: "system" },
+  { label: "Tahoma", value: 'Tahoma, sans-serif', tier: "system" },
+  { label: "System default", value: 'system-ui, sans-serif', tier: "system" },
+];
+const SYSTEM_MONO = [
+  { label: "System mono (default)", value: 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace', tier: "system" },
+  { label: "Consolas", value: 'Consolas, monospace', tier: "system" },
+  { label: "Cascadia Mono", value: '"Cascadia Mono", monospace', tier: "system" },
+  { label: "Courier New", value: '"Courier New", monospace', tier: "system" },
+  { label: "Lucida Console", value: '"Lucida Console", monospace', tier: "system" },
 ];
 
+// Generic family to fall back to if a face somehow fails to load. Display
+// faces fall back to serif rather than cursive — a missing decorative title
+// should look plain, not like a greeting card.
+const FALLBACK = { serif: "serif", display: "serif", sans: "sans-serif", hand: "cursive", mono: "monospace" };
+const LIBRARY = (window.FONT_LIBRARY || []).map((f) => ({
+  label: f.family, value: `"${f.family}", ${FALLBACK[f.cat]}`, tier: "library", cat: f.cat,
+}));
+const lib = (cat) => LIBRARY.filter((f) => f.cat === cat).sort((a, b) => a.label.localeCompare(b.label));
+
+const FONT_GROUPS = [
+  { label: "Bundled with the app", items: BUNDLED },
+  { label: `Serif — built for reading (${lib("serif").length})`, items: lib("serif") },
+  { label: `Sans-serif (${lib("sans").length})`, items: lib("sans") },
+  { label: `Display — titles only (${lib("display").length})`, items: lib("display") },
+  { label: `Handwriting (${lib("hand").length})`, items: lib("hand") },
+  { label: "On this PC only — can't be shipped", items: SYSTEM },
+];
+const MONO_GROUPS = [
+  { label: "Built in", items: SYSTEM_MONO },
+  { label: `Monospace library (${lib("mono").length})`, items: lib("mono") },
+];
+const ALL_FONTS = [...BUNDLED, ...LIBRARY, ...SYSTEM, ...SYSTEM_MONO];
+
 const FONT_SLOTS = [
-  { k: "--font-display", label: "Titles", hint: "page titles, dialog headings", opts: FONT_OPTIONS, def: '"Fraunces", serif' },
-  { k: "--font-ui",      label: "Interface", hint: "buttons, sidebar, labels", opts: FONT_OPTIONS, def: '"Inter", sans-serif' },
-  { k: "--font-prose",   label: "Writing", hint: "the text on your pages", opts: FONT_OPTIONS, def: '"Newsreader", serif' },
-  { k: "--font-mono",    label: "Shortcuts & paths", hint: "Ctrl+K, file paths", opts: MONO_OPTIONS, def: MONO_OPTIONS[0].value },
+  { k: "--font-display", label: "Titles", hint: "page titles, dialog headings", groups: FONT_GROUPS, def: '"Fraunces", serif', specimen: "Valera Jiang", size: 26 },
+  { k: "--font-ui",      label: "Interface", hint: "buttons, sidebar, labels", groups: FONT_GROUPS, def: '"Inter", sans-serif', specimen: "Characters · Locations · Export project", size: 14 },
+  { k: "--font-prose",   label: "Writing", hint: "the text on your pages", groups: FONT_GROUPS, def: '"Newsreader", serif', specimen: "She'd been told the sword remembers, and had never once believed it.", size: 15 },
+  { k: "--font-mono",    label: "Shortcuts & paths", hint: "Ctrl+K, file paths", groups: MONO_GROUPS, def: SYSTEM_MONO[0].value, specimen: "Ctrl+K   Documents\\Anamnesis", size: 13 },
 ];
 
 /* Scale tokens. Base values from src/index.css; the sliders scale them. */
@@ -730,19 +826,71 @@ const SCALE_CONTROLS = [
   { k: "radiusScale", label: "Corner rounding", min: 0, max: 300, step: 10, def: 100, unit: "%" },
 ];
 
+/* ---------------------------------------------------------------------------
+   Gradients. One slot per place in the app a gradient can go. `a`/`b` name the
+   palette tokens each end seeds itself from, so switching palette re-colours
+   every gradient instead of dragging the old scheme's colours along — that
+   carryover is what once made Parchment's background run cream to near-black.
+   `aA`/`aB` are seed opacities; `text: true` paints the letterforms rather
+   than a background behind them.
+   ------------------------------------------------------------------------ */
+const GRADIENTS = [
+  { k: "bg",      label: "App background",   hint: "behind the whole window",       a: "--color-bg",           b: "--color-panel-alt",    angle: 160 },
+  { k: "topbar",  label: "Top bar",          hint: "search and the project path",   a: "--color-panel-alt",    b: "--color-panel",        angle: 90 },
+  { k: "sidebar", label: "Sidebar",          hint: "behind the page tree",          a: "--color-panel",        b: "--color-bg",           angle: 180 },
+  { k: "page",    label: "Page area",        hint: "behind your writing",           a: "--color-bg",           b: "--color-panel",        angle: 180 },
+  { k: "props",   label: "Properties panel", hint: "the right-hand column",         a: "--color-panel",        b: "--color-bg",           angle: 180 },
+  { k: "modal",   label: "Dialogs",          hint: "import, settings, confirms",    a: "--color-panel",        b: "--color-panel-alt",    angle: 160 },
+  { k: "accent",  label: "Main buttons",     hint: "the one button that matters",   a: "--color-accent-dark",  b: "--color-accent-light", angle: 100 },
+  { k: "sel",     label: "Selected page",    hint: "the sidebar highlight",         a: "--color-accent-light", aA: 0.30, b: "--color-accent-light", aB: 0.03, angle: 90 },
+  { k: "tag",     label: "Tags",             hint: "the little pills",              a: "--color-accent-light", aA: 0.24, b: "--color-accent-light", aB: 0.06, angle: 120 },
+  { k: "title",   label: "Page title",       hint: "the letters themselves", text: true, a: "--color-text-primary", b: "--color-accent-light", angle: 95 },
+  { k: "heading", label: "Section headings", hint: "the letters themselves", text: true, a: "--color-text-primary", b: "--color-accent-light", angle: 95 },
+  { k: "callout", label: "Callout wash",     hint: "sits over the callout's colour — keep it faint", a: "--color-text-primary", aA: 0.08, b: "--color-text-primary", aB: 0, angle: 100 },
+];
+
+const RADIAL_POS = ["center", "top", "top right", "right", "bottom right", "bottom", "bottom left", "left", "top left"];
+const POS_LABEL = { center: "Centre", top: "Top", "top right": "Top right", right: "Right",
+  "bottom right": "Bottom right", bottom: "Bottom", "bottom left": "Bottom left", left: "Left", "top left": "Top left" };
+
+/* Rebuilds every gradient's colours from a palette, keeping whatever shape
+   choices were already made (on/off, angle, radial, third colour). */
+function seedGradients(colors, prev) {
+  const stop = (token, alpha) => ({ c: parseRgba(colors[token] ?? "#000000").hex, a: alpha === undefined ? 1 : alpha });
+  // The middle stop has to be visibly different from both ends, or ticking
+  // "blend a third colour" looks like a broken checkbox. Walk a short list of
+  // candidates until one isn't already an end of this particular gradient.
+  const mid = (g) => ["--color-accent-light", "--color-accent-dark", "--color-text-primary", "--color-panel-alt"]
+    .find((t) => t !== g.a && t !== g.b) || "--color-accent-light";
+  const out = {};
+  for (const g of GRADIENTS) {
+    const p = prev?.[g.k];
+    out[g.k] = {
+      on: p ? p.on : false,
+      type: p ? p.type : "linear",
+      angle: p ? p.angle : g.angle,
+      pos: p ? p.pos : "center",
+      three: p ? p.three : false,
+      stops: [stop(g.a, g.aA), stop(g.b, g.aB), stop(mid(g), g.aA)],
+    };
+  }
+  return out;
+}
+
 const DEFAULTS = {
   preset: "dark",
   colors: { ...DARK },
   fonts: Object.fromEntries(FONT_SLOTS.map((s) => [s.k, s.def])),
   scales: Object.fromEntries(SCALE_CONTROLS.map((s) => [s.k, s.def])),
-  gradients: { bgOn: false, bgAngle: 160, bgA: DARK["--color-bg"], bgB: DARK["--color-panel-alt"],
-               accentOn: false, accentAngle: 100, accentA: DARK["--color-accent-dark"], accentB: DARK["--color-accent-light"],
-               titleOn: false, titleAngle: 95, titleA: DARK["--color-text-primary"], titleB: DARK["--color-accent-light"] },
+  gradients: seedGradients(DARK, null),
   custom: "",
   themeName: "my theme",
 };
 
-const STORE_KEY = "anamnesis-theme-sandbox-v1";
+// v2: the gradient state changed shape entirely when it went from three fixed
+// slots to twelve. Bumping the key throws the old save away rather than
+// half-merging it into something that can't be rendered.
+const STORE_KEY = "anamnesis-theme-sandbox-v2";
 let state = load();
 
 function load() {
@@ -774,7 +922,9 @@ function parseRgba(v) {
 function toRgba(hex, a) {
   const h = hex.replace("#", "");
   const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Number(a).toFixed(2).replace(/0$/, "")})`;
+  // parseFloat, not a trailing-zero strip: chopping the zeros off "0.00" by
+  // hand leaves "0.", and "1.00" leaves "1." — both invalid inside rgba().
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${parseFloat(Number(a).toFixed(3))})`;
 }
 
 /* --- Build the controls --------------------------------------------------- */
@@ -795,13 +945,7 @@ function buildPresets() {
     b.onclick = () => {
       state.preset = id;
       state.colors = { ...p.colors };
-      // Re-seed both ends of every gradient from the preset. Carrying the old
-      // second colour over is what made Parchment's background run cream into
-      // near-black — a gradient nobody chose and everybody blames on the preset.
-      state.gradients = { ...state.gradients,
-        bgA: p.colors["--color-bg"], bgB: p.colors["--color-panel-alt"],
-        accentA: p.colors["--color-accent-dark"], accentB: p.colors["--color-accent-light"],
-        titleA: p.colors["--color-text-primary"], titleB: p.colors["--color-accent-light"] };
+      state.gradients = seedGradients(p.colors, state.gradients);
       buildPresets(); buildColorControls(); buildGradientControls(); apply(); save();
     };
     wrap.appendChild(b);
@@ -866,23 +1010,54 @@ function buildColorControls() {
   }
 }
 
+const TIER_MARK = { bundled: " ✦", library: "", system: " ·" };
+
 function buildFontControls() {
   const host = document.getElementById("fontControls");
   host.innerHTML = "";
   for (const slot of FONT_SLOTS) {
     const wrap = document.createElement("div");
+    wrap.className = "fontslot";
     const label = document.createElement("label");
     label.innerHTML = `${slot.label}<span class="hint">${slot.hint}</span>`;
+
     const sel = document.createElement("select");
-    for (const o of slot.opts) {
-      const opt = document.createElement("option");
-      opt.value = o.value;
-      opt.textContent = o.bundled ? `${o.label} ✦` : o.label;
-      sel.appendChild(opt);
+    for (const group of slot.groups) {
+      if (!group.items.length) continue;
+      const og = document.createElement("optgroup");
+      og.label = group.label;
+      for (const o of group.items) {
+        const opt = document.createElement("option");
+        opt.value = o.value;
+        opt.textContent = o.label + TIER_MARK[o.tier];
+        // Renders each name in its own face, so the list is browsable without
+        // clicking through a hundred of them one at a time.
+        opt.style.fontFamily = o.value;
+        og.appendChild(opt);
+      }
+      sel.appendChild(og);
     }
+
+    // A big enough sample to judge by. The preview shows the font in place;
+    // this shows it at a size where you can see what the letters are doing.
+    const spec = document.createElement("div");
+    spec.className = "specimen";
+    spec.textContent = slot.specimen;
+    spec.style.fontSize = slot.size + "px";
+
+    const paint = () => {
+      spec.style.fontFamily = state.fonts[slot.k];
+      const opt = ALL_FONTS.find((o) => o.value === state.fonts[slot.k]);
+      // Untouched defaults are never flagged. The default mono is a system
+      // *stack* with fallbacks — that's what the app ships, so marking it
+      // "can't be shipped" would be a warning about the status quo.
+      spec.dataset.tier = state.fonts[slot.k] === slot.def ? "default" : (opt ? opt.tier : "library");
+    };
     sel.value = state.fonts[slot.k];
-    sel.onchange = () => { state.fonts[slot.k] = sel.value; apply(); save(); };
-    wrap.append(label, sel);
+    sel.onchange = () => { state.fonts[slot.k] = sel.value; paint(); apply(); save(); };
+    paint();
+
+    wrap.append(label, sel, spec);
     host.appendChild(wrap);
   }
 }
@@ -909,42 +1084,114 @@ function buildScaleControls() {
   }
 }
 
+// Which gradient panels are expanded. Kept outside the build so switching
+// palette (which rebuilds every control) doesn't collapse what you were
+// mid-way through adjusting.
+const gradOpen = new Set();
+
 function buildGradientControls() {
   const host = document.getElementById("gradientControls");
   host.innerHTML = "";
-  const defs = [
-    { on: "bgOn", a: "bgA", b: "bgB", ang: "bgAngle", label: "Page background" },
-    { on: "accentOn", a: "accentA", b: "accentB", ang: "accentAngle", label: "Main buttons" },
-    { on: "titleOn", a: "titleA", b: "titleB", ang: "titleAngle", label: "Title text" },
-  ];
-  for (const d of defs) {
-    const box = document.createElement("div");
-    const top = document.createElement("div");
-    top.className = "row";
-    const cb = document.createElement("input");
-    cb.type = "checkbox"; cb.checked = !!state.gradients[d.on];
-    const lbl = document.createElement("label");
-    lbl.textContent = d.label;
-    cb.onchange = () => { state.gradients[d.on] = cb.checked; apply(); save(); };
-    top.append(cb, lbl);
-    box.appendChild(top);
+  for (const def of GRADIENTS) {
+    const g = state.gradients[def.k];
+    const box = document.createElement("details");
+    box.className = "grad";
+    box.open = gradOpen.has(def.k);
+    box.ontoggle = () => { box.open ? gradOpen.add(def.k) : gradOpen.delete(def.k); };
 
-    const ctl = document.createElement("div");
-    ctl.className = "row"; ctl.style.paddingLeft = "20px";
-    for (const key of [d.a, d.b]) {
-      const sw = document.createElement("input");
-      sw.type = "color"; sw.value = state.gradients[key];
-      sw.oninput = () => { state.gradients[key] = sw.value; apply(); save(); };
-      ctl.appendChild(sw);
+    /* --- summary: switch, name, live swatch --- */
+    const sum = document.createElement("summary");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = g.on; cb.title = "Use a gradient here";
+    // Clicking the checkbox must not also fold the panel open or shut.
+    cb.onclick = (e) => e.stopPropagation();
+    cb.onchange = () => { g.on = cb.checked; box.dataset.on = g.on ? "1" : "0"; apply(); save(); };
+    const name = document.createElement("span");
+    name.className = "grad-name";
+    name.innerHTML = `${def.label}<span class="hint">${def.hint}</span>`;
+    const sw = document.createElement("span");
+    sw.className = "grad-sw";
+    sum.append(cb, name, sw);
+    box.dataset.on = g.on ? "1" : "0";
+
+    const body = document.createElement("div");
+    body.className = "grad-body";
+
+    const refresh = () => { sw.style.setProperty("--g", gradientCss(g)); apply(); save(); };
+
+    /* --- shape: linear or radial --- */
+    const shape = document.createElement("div");
+    shape.className = "row";
+    const type = document.createElement("select");
+    for (const [v, l] of [["linear", "Straight line"], ["radial", "Glow from a point"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = l; type.appendChild(o);
     }
+    type.value = g.type;
+    shape.append(type);
+    body.appendChild(shape);
+
+    /* --- direction: angle for linear, origin for radial --- */
+    const dir = document.createElement("div");
+    dir.className = "row";
     const ang = document.createElement("input");
-    ang.type = "range"; ang.min = "0"; ang.max = "360"; ang.step = "5"; ang.value = state.gradients[d.ang];
-    const out = document.createElement("span");
-    out.className = "val"; out.textContent = state.gradients[d.ang] + "°";
-    ang.oninput = () => { state.gradients[d.ang] = Number(ang.value); out.textContent = ang.value + "°"; apply(); save(); };
-    ctl.append(ang, out);
-    box.appendChild(ctl);
+    ang.type = "range"; ang.min = "0"; ang.max = "360"; ang.step = "5"; ang.value = g.angle;
+    const angOut = document.createElement("span");
+    angOut.className = "val"; angOut.textContent = g.angle + "°";
+    ang.oninput = () => { g.angle = Number(ang.value); angOut.textContent = ang.value + "°"; refresh(); };
+    const pos = document.createElement("select");
+    for (const p of RADIAL_POS) {
+      const o = document.createElement("option"); o.value = p; o.textContent = POS_LABEL[p]; pos.appendChild(o);
+    }
+    pos.value = g.pos;
+    pos.onchange = () => { g.pos = pos.value; refresh(); };
+    const showDir = () => {
+      const radial = g.type === "radial";
+      ang.style.display = angOut.style.display = radial ? "none" : "";
+      pos.style.display = radial ? "" : "none";
+    };
+    type.onchange = () => { g.type = type.value; showDir(); refresh(); };
+    dir.append(ang, angOut, pos);
+    showDir();
+    body.appendChild(dir);
+
+    /* --- the colour stops --- */
+    const stopRows = [];
+    for (let i = 0; i < 3; i++) {
+      const s = g.stops[i];
+      const row = document.createElement("div");
+      row.className = "row stop";
+      const lab = document.createElement("span");
+      lab.className = "stop-n"; lab.textContent = ["Start", "End", "Middle"][i];
+      const col = document.createElement("input");
+      col.type = "color"; col.value = s.c;
+      col.oninput = () => { s.c = col.value; refresh(); };
+      const alpha = document.createElement("input");
+      alpha.type = "range"; alpha.min = "0"; alpha.max = "1"; alpha.step = "0.02"; alpha.value = String(s.a);
+      alpha.title = "See-through";
+      const aOut = document.createElement("span");
+      aOut.className = "val"; aOut.textContent = Math.round(s.a * 100) + "%";
+      alpha.oninput = () => { s.a = Number(alpha.value); aOut.textContent = Math.round(s.a * 100) + "%"; refresh(); };
+      row.append(lab, col, alpha, aOut);
+      stopRows.push(row);
+      body.appendChild(row);
+    }
+
+    /* --- optional third colour, shown last but blended in the middle --- */
+    const third = document.createElement("div");
+    third.className = "row";
+    const tcb = document.createElement("input");
+    tcb.type = "checkbox"; tcb.checked = g.three; tcb.id = `three-${def.k}`;
+    const tlab = document.createElement("label");
+    tlab.setAttribute("for", tcb.id); tlab.textContent = "Blend a third colour through the middle";
+    const showThird = () => { stopRows[2].style.display = g.three ? "" : "none"; };
+    tcb.onchange = () => { g.three = tcb.checked; showThird(); refresh(); };
+    third.append(tcb, tlab);
+    showThird();
+    body.appendChild(third);
+
+    box.append(sum, body);
     host.appendChild(box);
+    sw.style.setProperty("--g", gradientCss(g));
   }
 }
 
@@ -967,17 +1214,30 @@ function computed() {
   return out;
 }
 
+function stopCss(s) { return s.a >= 1 ? s.c : toRgba(s.c, s.a); }
+
+function gradientCss(g) {
+  // The third stop is stored last but blends in the middle — it's "Middle" in
+  // the controls, so it has to sit between the ends in the CSS.
+  const stops = (g.three ? [g.stops[0], g.stops[2], g.stops[1]] : g.stops.slice(0, 2)).map(stopCss).join(", ");
+  return g.type === "radial"
+    ? `radial-gradient(circle at ${g.pos}, ${stops})`
+    : `linear-gradient(${g.angle}deg, ${stops})`;
+}
+
 function gradientVars() {
-  const g = state.gradients;
   const v = {};
-  v["--gradient-bg"] = g.bgOn ? `linear-gradient(${g.bgAngle}deg, ${g.bgA}, ${g.bgB})` : "";
-  v["--gradient-accent"] = g.accentOn ? `linear-gradient(${g.accentAngle}deg, ${g.accentA}, ${g.accentB})` : "";
-  if (g.titleOn) {
-    v["--gradient-title"] = `linear-gradient(${g.titleAngle}deg, ${g.titleA}, ${g.titleB})`;
-    v["--gradient-title-clip"] = "text";
-    v["--gradient-title-fill"] = "transparent";
-  } else {
-    v["--gradient-title"] = ""; v["--gradient-title-clip"] = ""; v["--gradient-title-fill"] = "";
+  for (const def of GRADIENTS) {
+    const g = state.gradients[def.k];
+    const on = g && g.on;
+    v[`--gradient-${def.k}`] = on ? gradientCss(g) : "";
+    if (def.text) {
+      // Painting text means clipping the gradient to the glyphs and making the
+      // text itself transparent, so both have to come off together — leaving
+      // the fill transparent with no gradient behind it means invisible text.
+      v[`--gradient-${def.k}-clip`] = on ? "text" : "";
+      v[`--gradient-${def.k}-fill`] = on ? "transparent" : "";
+    }
   }
   return v;
 }
@@ -1017,11 +1277,21 @@ function exportCss() {
     if (t.g !== group) { if (group) lines.push(""); group = t.g; }
     lines.push(`  ${t.k}: ${state.colors[t.k]};`);
   }
-  const g = gradientVars();
-  const grads = Object.entries(g).filter(([, v]) => v);
+  const grads = Object.entries(gradientVars()).filter(([, v]) => v);
   if (grads.length) {
+    const on = GRADIENTS.filter((d) => state.gradients[d.k].on);
     lines.push("");
-    lines.push("  /* Gradients — new tokens, Phase 12 adds them to the system. */");
+    lines.push("  /* Gradients — new tokens, Phase 12 adds them to the system.");
+    lines.push(`     On here: ${on.map((d) => d.label.toLowerCase()).join(", ")}.`);
+    if (on.some((d) => d.text)) {
+      lines.push("     The -clip/-fill pairs go with a text gradient; they paint the");
+      lines.push("     letters instead of a box behind them and must stay together.");
+    }
+    if (on.some((d) => d.k === "callout")) {
+      lines.push("     --gradient-callout layers over each callout's own tint rather");
+      lines.push("     than replacing it, so a solid one hides all three colours.");
+    }
+    lines.push("  */");
     for (const [k, v] of grads) lines.push(`  ${k}: ${v};`);
   }
   lines.push("}");
@@ -1046,15 +1316,24 @@ function exportCss() {
     lines.push("}");
   }
 
-  const unbundled = FONT_SLOTS.filter((s) => {
-    const opt = s.opts.find((o) => o.value === state.fonts[s.k]);
-    return opt && !opt.bundled && s.k !== "--font-mono";
-  });
-  if (unbundled.length) {
+  const tierOf = (slot) => (ALL_FONTS.find((o) => o.value === state.fonts[slot.k]) || {}).tier;
+  const named = (slots) => slots.map((s) => `${s.label} (${state.fonts[s.k].split(",")[0].replace(/"/g, "")})`).join(", ");
+  // Only slots she actually changed. The default mono is a system stack by
+  // design, and warning that the untouched default can't ship is just noise.
+  const picked = FONT_SLOTS.filter((s) => state.fonts[s.k] !== s.def);
+  const toBundle = picked.filter((s) => tierOf(s) === "library");
+  const cantShip = picked.filter((s) => tierOf(s) === "system");
+  if (toBundle.length) {
     lines.push("");
-    lines.push("/* HEADS UP: " + unbundled.map((s) => s.label).join(" and ") + " uses a font that isn't");
-    lines.push("   bundled with the app. It needs adding to public/fonts first, or it will");
-    lines.push("   fall back to something else on a machine that doesn't have it. */");
+    lines.push("/* TO DO: " + named(toBundle) + " use library fonts.");
+    lines.push("   Open licence, so they can be bundled — add the woff2 to public/fonts");
+    lines.push("   and an @font-face to src/index.css and they'll work everywhere. */");
+  }
+  if (cantShip.length) {
+    lines.push("");
+    lines.push("/* HEADS UP: " + named(cantShip) + " use fonts that are on this PC but");
+    lines.push("   can't be redistributed with the app. They'd fall back to something else");
+    lines.push("   on any other machine — pick a library font instead if that matters. */");
   }
 
   if (state.custom.trim()) {
@@ -1088,6 +1367,10 @@ document.getElementById("btnCopy").onclick = async (e) => {
   try { await navigator.clipboard.writeText(ta.value); e.target.textContent = "Copied"; }
   catch { document.execCommand("copy"); e.target.textContent = "Copied"; }
   setTimeout(() => { e.target.textContent = "Copy"; }, 1400);
+};
+document.getElementById("btnGradOff").onclick = () => {
+  for (const def of GRADIENTS) state.gradients[def.k].on = false;
+  buildGradientControls(); apply(); save();
 };
 document.getElementById("btnReset").onclick = () => {
   if (!confirm("Throw away every change and go back to the app's dark theme?")) return;
