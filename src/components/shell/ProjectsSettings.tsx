@@ -1,4 +1,4 @@
-// The Projects section of the settings panel — where new and imported worlds
+// The Projects section of the settings panel — where new and imported projects
 // get written. Exists because importing a `.lk` used to open a folder browser
 // with no starting point, which lands wherever the OS was last: the Downloads
 // folder you just took the `.lk` out of. Every import meant navigating back to
@@ -25,7 +25,7 @@ export function ProjectsSettings() {
 
   return (
     <div className="projects-settings">
-      <p className="projects-settings-label">New and imported worlds are saved here</p>
+      <p className="projects-settings-label">New and imported projects are saved here</p>
 
       <p className="projects-settings-path">{projectsDir ?? "Finding your folder…"}</p>
 
@@ -41,7 +41,7 @@ export function ProjectsSettings() {
       </p>
 
       <p className="projects-settings-note">
-        Worlds you already have stay exactly where they are — this only decides where the next one goes.
+        Projects you already have stay exactly where they are — this only decides where the next one goes.
       </p>
     </div>
   );

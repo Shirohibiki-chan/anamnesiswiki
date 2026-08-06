@@ -435,7 +435,7 @@ export function buildImportPlan(raw: unknown): ImportPlan {
   const rootCandidates = resources.filter((r) => !r.parentId);
   const rootResource = rootCandidates.length === 1 ? rootCandidates[0] : undefined;
   const importedResources = rootResource ? resources.filter((r) => r.id !== rootResource.id) : resources;
-  const projectName = rootResource?.name.trim() || "Imported World";
+  const projectName = rootResource?.name.trim() || "Imported Project";
 
   const idMap = new Map<string, string>();
   for (const resource of importedResources) idMap.set(resource.id, crypto.randomUUID());

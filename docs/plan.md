@@ -90,7 +90,7 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Shipped
 
-Phases 0–10 are complete. **`docs/shipped.md`** has what each one delivered;
+Phases 0–11.5 are complete. **`docs/shipped.md`** has what each one delivered;
 `CHANGELOG.md` has the same story in plain language.
 
 | Phase | | Shipped |
@@ -106,6 +106,8 @@ Phases 0–10 are complete. **`docs/shipped.md`** has what each one delivered;
 | 8 | LK Import | 2026-07-30 |
 | 9 | LK Export | 2026-07-31 |
 | 10 | Polish + Distribution | 2026-07-31 |
+| 11.5 | The Design System | 2026-08-04 |
+| 11 | Make It Ours | 2026-08-05 |
 
 Project home — the last Queued Adjustment standing before Phase 9 — shipped
 2026-07-31.
@@ -158,37 +160,8 @@ Everything below comes out of one planning session: the user brought a list of r
 
 ---
 
-## Phase 11 — Make It Ours
-
-Identity, the writing half. Also closes the only genuine legal exposure in the repo.
-
-- ~~**Rewrite all 8 templates' placeholder copy in the user's own voice.**~~ Done 2026-08-04. Every tab of all seven templates that carry content, plus the Secret block's text, which had been promising "information that only admins can see" — untrue here and untrue of the feature. `docs/prototype/anamnesis.jsx` was gutted to filler in the same pass so the LK wording doesn't survive in the repo as a second copy.
-- ~~**Soften the README's LK comparisons.**~~ Done 2026-08-04. The tagline and the "if you know LK, you know Anamnesis" line are gone; the "not affiliated" notice stays, and the format-compatibility claim stays because it's the useful, factual half.
-- ~~**Sweep for LK-derived assets** — icons, CSS, strings.~~ Done 2026-08-04, and it came back clean apart from the template copy above. Icons are lucide-react, fonts are Fraunces/Inter/Newsreader (all OFL), and nothing in `src/**/*.css` is LK-derived — the remaining LegendKeeper mentions in the source are either feature labels the import/export flow needs ("Import from LegendKeeper") or comments recording why a layout choice was made. Layouts stay, per the phase's own rule.
-- **Naming pass** over feature nouns. No legal need (descriptive words aren't trademarks); it's for the user's sake, so the app stops sounding like a clone. **Open — the one item left in this phase**, and it needs a decision from her rather than a sweep: the app says "Project" throughout for what she calls a world, and it's already inconsistent with itself (the tree's context menu says "Export world to LegendKeeper" while the start screen says "project"). Don't do this one silently.
-
-**End state:** nothing in the repo is anyone else's writing. **Reached for the writing itself 2026-08-04**; the naming item above is the remaining polish.
-
----
-
-## Phase 11.5 — The Design System
-
-The unglamorous half of the overhaul, and a hard prerequisite for Phase 12. **`docs/ui-audit.md` is the list**; this phase is that document's Part 1 and Part 2, and the file is disposable once they're crossed off.
-
-Why it goes *before* the themes rather than with them: a theme swaps token *values*, and none of what's wrong is a value. The app has a colour system and no other scale — eleven font sizes, nine radii in thirteen spellings, six `line-height` declarations in the entire codebase, five copy-pasted modal backdrops, nine hand-rolled variants of the same button. Ship themes onto that and every theme inherits it, they all look equally unfinished, and choosing between them becomes impossible because the thing that's actually wrong is identical in all of them.
-
-**Complete 2026-08-04.** Parts 1 and 2 of `docs/ui-audit.md` are fully crossed off; that file is now only Part 3, which is composition and taste rather than consolidation and doesn't block Phase 12.
-
-- ~~**Focus and motion.**~~ Shipped 2026-07-31. `:focus`/`:focus-visible` set once app-wide in `@layer base`, plus a base transition on form controls.
-- ~~**Type scale.**~~ Eight `--fs-*` tokens; the six competing heading sizes are three.
-- ~~**Put the display font to work.**~~ Fraunces on all six title surfaces; mono is a system stack, not a bundled face (reasoning in `docs/constants-and-theming.md`).
-- ~~**Radius scale**~~ and ~~**a global `line-height`**~~. Four `--radius-*` tokens, zero numeric literals left; `--lh-normal` on `body`.
-- ~~**Spacing scale.**~~ Eight `--space-*` steps; 245 declarations across 19 values are now zero literals.
-- ~~**Shared control styles.**~~ `src/controls.css` in its own cascade layer: one backdrop where there were five, three modal widths where there were six, one button set where there were nine, three icon-button sizes where there were seven, one text link, one eyebrow label, one inline remove.
-- ~~**Border hierarchy.**~~ Three roles — `strong` for the app's frame, the base for containers, `subtle` for rules inside a container. Values are provisional; Phase 12 tunes them per theme.
-- ~~**All thirteen Part 1 defects.**~~ The last three were the doubled project name (6, dropped from the top bar), the single border colour (10), and the panels that vanished on a narrow window (13 — media queries that `minWidth: 900` made unreachable anyway).
-
-**End state reached:** the app is consistent and boring, which is the state a visual direction can actually be judged from.
+**Phases 11 and 11.5 are done** (2026-08-05 and 2026-08-04). Their detail is in
+`docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
 
 ---
 
