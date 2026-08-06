@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anamnesis — Theme Sandbox</title>
+<link rel="stylesheet" href="fonts.css" />
+<style>
+/* ---------------------------------------------------------------------------
+   SANDBOX CHROME — the control panel's own styling.
+
+   Deliberately hard-coded and NOT built from the theme tokens. If the controls
+   were themed too, then picking a bad colour would make the controls that fix
+   it unreadable, and the only way out would be clearing browser storage. The
+   panel stays the same no matter what you do to the preview.
+   ------------------------------------------------------------------------ */
+:root {
+  --chrome-bg: #17171d;
+  --chrome-panel: #1e1e26;
+  --chrome-line: #303040;
+  --chrome-text: #e6e6ee;
+  --chrome-dim: #9494a4;
+  --chrome-accent: #5eead4;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  display: flex;
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+  font: 13px/1.5 "Inter", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* --- Control rail --------------------------------------------------------- */
+#rail {
+  width: 340px;
+  flex: 0 0 340px;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--chrome-panel);
+  border-right: 1px solid var(--chrome-line);
+  padding: 18px 16px 60px;
+}
+#rail h1 {
+  font: 600 15px/1.3 "Inter", sans-serif;
+  margin: 0 0 2px;
+}
+#rail .sub { color: var(--chrome-dim); font-size: 12px; margin: 0 0 18px; }
+
+details.sec {
+  border-top: 1px solid var(--chrome-line);
+  padding: 10px 0;
+}
+details.sec > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--chrome-dim);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary::after { content: "+"; font-size: 14px; }
+details.sec[open] > summary::after { content: "–"; }
+details.sec > summary:hover { color: var(--chrome-text); }
+.sec-body { padding: 8px 0 6px; display: flex; flex-direction: column; gap: 10px; }
+
+.row { display: flex; align-items: center; gap: 8px; }
+.row label { flex: 1; font-size: 12px; color: var(--chrome-text); }
+/* Not scoped to .row — the preset buttons and font pickers use .hint too, and
+   scoping it left them reading "Darkwhat ships today". */
+.hint { display: block; font-size: 11px; color: var(--chrome-dim); font-weight: 400; }
+
+input[type="color"] {
+  width: 30px; height: 24px; padding: 0;
+  border: 1px solid var(--chrome-line); border-radius: 4px;
+  background: none; cursor: pointer; flex: 0 0 auto;
+}
+input[type="text"], select, textarea {
+  background: #14141a;
+  color: var(--chrome-text);
+  border: 1px solid var(--chrome-line);
+  border-radius: 4px;
+  padding: 5px 6px;
+  font: inherit;
+  font-size: 12px;
+}
+input[type="text"].hex { width: 82px; font-family: ui-monospace, Consolas, monospace; flex: 0 0 auto; }
+select { width: 100%; }
+textarea { width: 100%; min-height: 120px; font-family: ui-monospace, Consolas, monospace; resize: vertical; }
+input[type="range"] { flex: 1; accent-color: var(--chrome-accent); }
+.val { width: 46px; text-align: right; font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--chrome-dim); flex: 0 0 auto; }
+
+button.act {
+  background: #26262f; color: var(--chrome-text);
+  border: 1px solid var(--chrome-line); border-radius: 5px;
+  padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer;
+}
+button.act:hover { background: #2f2f3a; border-color: #454558; }
+button.act.primary { background: var(--chrome-accent); color: #0b0b10; border-color: transparent; font-weight: 600; }
+button.act.primary:hover { background: #7df0dd; }
+
+.presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.preset {
+  text-align: left; padding: 7px 8px; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--chrome-line); background: #14141a; color: var(--chrome-text);
+  font: inherit; font-size: 12px; display: flex; align-items: center; gap: 7px;
+}
+.preset:hover { border-color: #4a4a5e; }
+.preset[aria-pressed="true"] { border-color: var(--chrome-accent); background: #14201f; }
+.chips { display: flex; gap: 2px; flex: 0 0 auto; }
+.chips i { width: 8px; height: 14px; border-radius: 2px; display: block; }
+
+.note {
+  font-size: 11px; color: var(--chrome-dim); line-height: 1.45;
+  background: #14141a; border: 1px solid var(--chrome-line);
+  border-left: 2px solid #4a4a5e; border-radius: 4px; padding: 7px 9px;
+}
+.warn { border-left-color: #fcd34d; }
+.bundled { color: var(--chrome-accent); }
+
+/* --- Preview stage -------------------------------------------------------- */
+#stage { flex: 1; height: 100vh; overflow-y: auto; padding: 22px; }
+#stage-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.stage-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--chrome-dim); margin: 4px 0 -8px;
+}
+
+/* ---------------------------------------------------------------------------
+   PREVIEW — everything below is a mirror of the real app's CSS, written
+   against the same token names so that what you see here is what those tokens
+   do in the app. It is a mock: no editor, no tree behaviour, nothing real.
+   ------------------------------------------------------------------------ */
+#preview {
+  /* Tokens are written onto this element by JS, so the sandbox chrome above
+     never inherits them. */
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--chrome-line);
+  font-family: var(--font-ui);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+  background: var(--gradient-bg, var(--color-bg));
+}
+#preview .app { display: grid; grid-template-columns: 232px 1fr 236px; min-height: 560px; }
+
+/* top bar */
+#preview .topbar {
+  grid-column: 1 / -1; height: var(--h-bar);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--space-lg);
+  background: var(--color-panel-alt);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+#preview .search {
+  display: flex; align-items: center; gap: var(--space-sm);
+  background: var(--color-panel); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); padding: var(--space-xs) var(--space-md);
+  color: var(--color-text-muted); font-size: var(--fs-xs); min-width: 210px;
+}
+#preview kbd {
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  padding: 0 var(--space-xs); color: var(--color-text-secondary);
+}
+
+/* sidebar */
+#preview .sidebar {
+  background: var(--color-panel);
+  border-right: 1px solid var(--color-border-strong);
+  display: flex; flex-direction: column;
+}
+#preview .tabstrip {
+  display: flex; height: var(--h-bar); align-items: stretch;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+#preview .tabstrip button {
+  flex: 1; background: none; border: none; cursor: pointer;
+  color: var(--color-text-secondary); font: inherit; font-size: var(--fs-xs);
+  border-bottom: 2px solid transparent;
+}
+#preview .tabstrip button[aria-selected="true"] {
+  color: var(--color-text-primary); border-bottom-color: var(--color-accent-light);
+  background: var(--color-accent-faint);
+}
+#preview .proj-header {
+  display: flex; align-items: center; gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
+  font-size: var(--fs-sm); font-weight: 500;
+}
+#preview .tree { padding: 0 var(--space-md) var(--space-lg); display: flex; flex-direction: column; gap: 1px; }
+#preview .node {
+  display: flex; align-items: center; gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md); font-size: var(--fs-sm);
+  color: var(--color-text-secondary); cursor: default;
+}
+#preview .node .ico { width: 13px; text-align: center; flex: 0 0 auto; opacity: 0.85; }
+#preview .node.folder { color: var(--color-text-primary); }
+#preview .node.tinted { background: color-mix(in srgb, var(--tint) 12%, transparent); color: var(--tint); border-left: 2px solid var(--tint); }
+#preview .node.sel { background: var(--color-accent-faint); color: var(--color-text-primary); }
+#preview .node.indent { padding-left: calc(var(--space-md) + var(--space-xl)); }
+
+/* page */
+#preview .page { display: flex; flex-direction: column; min-width: 0; }
+#preview .page-inner { padding: var(--space-3xl) var(--page-gutter) var(--space-3xl); max-width: var(--reading-width); }
+#preview .page-title {
+  font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 500;
+  line-height: var(--lh-tight); margin: 0 0 var(--space-md);
+  color: var(--color-text-primary);
+  background: var(--gradient-title, none);
+  -webkit-background-clip: var(--gradient-title-clip, border-box);
+  background-clip: var(--gradient-title-clip, border-box);
+  -webkit-text-fill-color: var(--gradient-title-fill, currentColor);
+}
+#preview .page-tabs {
+  display: flex; gap: var(--space-xl);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-2xl);
+}
+#preview .page-tabs span {
+  font-size: var(--fs-sm); color: var(--color-text-secondary);
+  padding-bottom: var(--space-md); border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+#preview .page-tabs span.on { color: var(--color-text-primary); border-bottom-color: var(--color-accent-light); }
+#preview .page-tabs span.hidden-tab { color: var(--color-text-muted); }
+#preview .prose { font-family: var(--font-prose); font-size: var(--fs-md); }
+#preview .prose h2 {
+  font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 600;
+  line-height: var(--lh-tight); margin: var(--space-2xl) 0 var(--space-md);
+}
+#preview .prose p { margin: 0 0 var(--space-lg); }
+#preview .prose a { color: var(--color-accent-light); text-decoration: none; border-bottom: 1px solid var(--color-accent-faint-border); }
+
+/* callouts — the three custom blocks */
+#preview .callout {
+  border-left: 3px solid; border-radius: var(--radius-md);
+  padding: var(--space-lg) var(--space-xl);
+  margin: 0 0 var(--space-lg); font-size: var(--fs-md);
+}
+#preview .callout.info { border-color: var(--color-callout-info); background: var(--color-callout-info-bg); color: var(--color-callout-info-text); }
+#preview .callout.quote { border-color: var(--color-callout-quote); background: var(--color-callout-quote-bg); color: var(--color-callout-quote-text); font-style: italic; }
+#preview .callout.secret { border-color: var(--color-callout-secret); background: var(--color-callout-secret-bg); color: var(--color-callout-secret-text); }
+#preview .lock {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+  font-family: var(--font-ui); font-size: var(--fs-2xs); text-transform: uppercase;
+  letter-spacing: 0.05em; opacity: 0.75; margin-bottom: var(--space-xs);
+}
+
+/* properties panel */
+#preview .props {
+  background: var(--color-panel); border-left: 1px solid var(--color-border-strong);
+  padding: var(--space-2xl) var(--space-xl); display: flex; flex-direction: column; gap: var(--space-xl);
+}
+#preview .prop-label {
+  font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--color-text-muted); margin-bottom: var(--space-xs);
+}
+#preview .prop-value { font-size: var(--fs-sm); color: var(--color-text-primary); }
+#preview .prop-value.empty { color: var(--color-text-placeholder); }
+#preview .field {
+  background: var(--color-bg); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm); color: var(--color-text-primary);
+}
+#preview .tags { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+#preview .tag {
+  font-size: var(--fs-2xs); padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-full);
+  background: var(--color-accent-faint); border: 1px solid var(--color-accent-faint-border);
+  color: var(--color-accent-light);
+}
+
+/* controls strip + modal */
+#preview .strip {
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-lg);
+  padding: var(--space-xl); border-top: 1px solid var(--color-border-strong);
+  background: var(--color-panel-alt);
+}
+#preview .ui-btn {
+  font: inherit; font-size: var(--fs-sm); cursor: pointer;
+  border-radius: var(--radius-md); padding: var(--space-md) var(--space-xl);
+  background: var(--color-panel-edge); color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+#preview .ui-btn.primary {
+  background: var(--gradient-accent, var(--color-accent-dark));
+  border-color: transparent; color: #08131a; font-weight: 600;
+}
+#preview .ui-btn.danger { color: var(--color-danger, #f87171); }
+#preview .path { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-secondary); }
+
+#preview .modal-demo {
+  grid-column: 1 / -1; padding: var(--space-2xl);
+  background: var(--color-scrim); display: flex; justify-content: center;
+}
+#preview .modal {
+  width: 100%; max-width: 460px;
+  background: var(--color-panel); border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg); box-shadow: var(--elev-modal);
+  padding: var(--space-2xl);
+}
+#preview .modal h3 {
+  font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 500;
+  margin: 0 0 var(--space-lg); line-height: var(--lh-tight);
+}
+#preview .modal p { margin: 0 0 var(--space-xl); font-size: var(--fs-sm); color: var(--color-text-secondary); }
+#preview .modal-row { display: flex; gap: var(--space-md); justify-content: flex-end; }
+
+/* export dialog */
+#exportWrap {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: none; align-items: center; justify-content: center; padding: 40px; z-index: 50;
+}
+#exportWrap.on { display: flex; }
+#exportBox {
+  background: var(--chrome-panel); border: 1px solid var(--chrome-line);
+  border-radius: 8px; padding: 18px; width: min(760px, 100%); max-height: 80vh;
+  display: flex; flex-direction: column; gap: 12px;
+}
+#exportBox h2 { margin: 0; font-size: 14px; }
+#exportBox textarea { flex: 1; min-height: 340px; font-size: 11.5px; }
+</style>
+</head>
+<body>
+
+<div id="rail">
+  <h1>Theme Sandbox</h1>
+  <p class="sub">Nothing here touches the app. Break it as much as you like.</p>
+
+  <details class="sec" open>
+    <summary>Start from</summary>
+    <div class="sec-body">
+      <div class="presets" id="presets"></div>
+      <p class="note">Pick one, then change anything you want on top of it. These
+        are the five palettes already queued for Phase 12, plus the dark theme
+        the app ships today.</p>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary>Fonts</summary>
+    <div class="sec-body" id="fontControls"></div>
+    <p class="note warn"><span class="bundled">Fraunces, Inter and Newsreader</span>
+      are bundled with the app — pick those and they'll look the same on any
+      machine. The rest are fonts already on Windows; if you fall for one of
+      them, tell me and I'll bundle it properly so it works everywhere and
+      offline.</p>
+  </details>
+
+  <details class="sec" open>
+    <summary>Size &amp; spacing</summary>
+    <div class="sec-body" id="scaleControls"></div>
+  </details>
+
+  <details class="sec">
+    <summary>Gradients</summary>
+    <div class="sec-body" id="gradientControls"></div>
+    <p class="note">Three places a gradient can go. The page background is the
+      safe one; title text is the showy one.</p>
+  </details>
+
+  <details class="sec" open>
+    <summary>Surfaces</summary>
+    <div class="sec-body" data-group="surface"></div>
+  </details>
+
+  <details class="sec">
+    <summary>Borders</summary>
+    <div class="sec-body" data-group="border"></div>
+    <p class="note">Three weights on purpose: <b>strong</b> is the app's frame,
+      the middle one is boxes and cards, <b>subtle</b> is lines inside a box.</p>
+  </details>
+
+  <details class="sec" open>
+    <summary>Text</summary>
+    <div class="sec-body" data-group="text"></div>
+  </details>
+
+  <details class="sec" open>
+    <summary>Accent</summary>
+    <div class="sec-body" data-group="accent"></div>
+  </details>
+
+  <details class="sec">
+    <summary>Callouts</summary>
+    <div class="sec-body" data-group="callout"></div>
+  </details>
+
+  <details class="sec">
+    <summary>Your own CSS</summary>
+    <div class="sec-body">
+      <textarea id="customCss" placeholder="Anything you type here is applied to the preview live.&#10;&#10;.page-title {&#10;  letter-spacing: -0.02em;&#10;}"></textarea>
+      <p class="note">Applies to the preview only. Selectors match the mock, not
+        the real app — but if something here works, I can translate it.</p>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary>When you're happy</summary>
+    <div class="sec-body">
+      <div class="row"><input type="text" id="themeName" value="my theme" style="flex:1" aria-label="Theme name" /></div>
+      <button class="act primary" id="btnExport">Show me the CSS</button>
+      <button class="act" id="btnReset">Start over</button>
+      <p class="note">Your changes save themselves in this browser, so you can
+        close the tab and come back. <b>Send me the CSS</b> and I'll turn it into
+        a real theme you can switch to in the app.</p>
+    </div>
+  </details>
+</div>
+
+<div id="stage">
+  <div id="stage-inner">
+    <p class="stage-label">Live preview — a mock of the app, not the app itself</p>
+    <div id="preview">
+      <div class="app">
+        <div class="topbar">
+          <div class="search"><span>⌕</span> Search everything <kbd>Ctrl+K</kbd></div>
+          <div class="path">Documents\Anamnesis\Valeraverse</div>
+        </div>
+
+        <div class="sidebar">
+          <div class="tabstrip">
+            <button aria-selected="true">Project</button>
+            <button>Templates</button>
+            <button>Assets</button>
+          </div>
+          <div class="proj-header"><span>⌂</span> Valeraverse <span style="margin-left:auto;opacity:.6">+</span></div>
+          <div class="tree">
+            <div class="node folder tinted" style="--tint: var(--color-palette-teal)"><span class="ico">▾</span> Canon</div>
+            <div class="node indent"><span class="ico">◆</span> Main Story</div>
+            <div class="node folder tinted" style="--tint: var(--color-palette-rose)"><span class="ico">▾</span> Characters</div>
+            <div class="node indent sel"><span class="ico">◆</span> Valera Jiang</div>
+            <div class="node indent"><span class="ico">◆</span> Sampo Koski</div>
+            <div class="node folder tinted" style="--tint: var(--color-palette-indigo)"><span class="ico">▸</span> Locations</div>
+            <div class="node folder tinted" style="--tint: var(--color-palette-amber)"><span class="ico">▸</span> Factions</div>
+            <div class="node folder"><span class="ico">▸</span> Worldbuilding</div>
+          </div>
+        </div>
+
+        <div class="page">
+          <div class="page-inner">
+            <h1 class="page-title">Valera Jiang</h1>
+            <div class="page-tabs">
+              <span class="on">Overview</span>
+              <span>Appearance</span>
+              <span>History</span>
+              <span class="hidden-tab">Secrets ⃠</span>
+            </div>
+            <div class="prose">
+              <div class="callout info">Who this person is, in a couple of sentences — the version you'd give someone who's never met them.</div>
+              <div class="callout quote">"A line they'd actually say. The one that gives them away."</div>
+              <h2>Appearance</h2>
+              <p>What do they look like? Face, build, how they carry themselves, what
+                they wear when nobody's making them. Go for the detail someone would
+                still remember a week later.</p>
+              <h2>Ties</h2>
+              <p>Who matters to them, and who they'd rather never see again. Link
+                people as you go — <a href="#">Sampo Koski</a>, the
+                <a href="#">Foxians</a> — and the mentions build themselves.</p>
+              <div class="callout secret">
+                <span class="lock">◆ Secret</span><br />
+                A Secret block is a flag for you: spoilers, twists, things a reader
+                shouldn't hit yet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="props">
+          <div>
+            <div class="prop-label">Template</div>
+            <div class="prop-value">Character</div>
+          </div>
+          <div>
+            <div class="prop-label">Species</div>
+            <div class="field">Foxian</div>
+          </div>
+          <div>
+            <div class="prop-label">Affiliation</div>
+            <div class="prop-value empty">Nothing yet</div>
+          </div>
+          <div>
+            <div class="prop-label">Tags</div>
+            <div class="tags"><span class="tag">canon</span><span class="tag">pov</span><span class="tag">arc-2</span></div>
+          </div>
+        </div>
+
+        <div class="strip">
+          <button class="ui-btn primary">Create project</button>
+          <button class="ui-btn">Open folder</button>
+          <button class="ui-btn danger">Delete page</button>
+          <span class="path">Ctrl+K · Ctrl+Z · Ctrl+Shift+F</span>
+        </div>
+
+        <div class="modal-demo">
+          <div class="modal">
+            <h3>Import from LegendKeeper</h3>
+            <p>Bring in your pages, tabs, and cross-references from a LegendKeeper .lk export.</p>
+            <div class="modal-row">
+              <button class="ui-btn">Cancel</button>
+              <button class="ui-btn primary">Choose a .lk file</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="exportWrap">
+  <div id="exportBox">
+    <h2>Your theme, as CSS</h2>
+    <textarea id="exportText" readonly spellcheck="false"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="act" id="btnCopy">Copy</button>
+      <button class="act primary" id="btnCloseExport">Done</button>
+    </div>
+  </div>
+</div>
+
+<style id="customStyle"></style>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------------------
+   Token model. Names match src/index.css exactly, so exported CSS pastes in.
+   ------------------------------------------------------------------------ */
+const TOKENS = [
+  { k: "--color-bg",             g: "surface", t: "hex",  label: "Page background" },
+  { k: "--color-panel",          g: "surface", t: "hex",  label: "Panels (sidebars, modals)" },
+  { k: "--color-panel-alt",      g: "surface", t: "hex",  label: "Raised (top bar, tab strip)" },
+  { k: "--color-panel-edge",     g: "surface", t: "hex",  label: "Popovers, plain buttons" },
+  { k: "--color-scrim",          g: "surface", t: "rgba", label: "Dimming behind a dialog" },
+
+  { k: "--color-border-strong",  g: "border",  t: "hex",  label: "Strong — the app's frame" },
+  { k: "--color-border",         g: "border",  t: "hex",  label: "Default — boxes and cards" },
+  { k: "--color-border-subtle",  g: "border",  t: "hex",  label: "Subtle — lines inside a box" },
+
+  { k: "--color-text-primary",     g: "text", t: "hex", label: "Main text" },
+  { k: "--color-text-secondary",   g: "text", t: "hex", label: "Secondary text" },
+  { k: "--color-text-muted",       g: "text", t: "hex", label: "Muted labels" },
+  { k: "--color-text-placeholder", g: "text", t: "hex", label: "Placeholder / empty" },
+
+  { k: "--color-accent-light",        g: "accent", t: "hex",  label: "Accent — bright" },
+  { k: "--color-accent-dark",         g: "accent", t: "hex",  label: "Accent — deep (buttons)" },
+  { k: "--color-accent-faint",        g: "accent", t: "rgba", label: "Accent tint (selected rows)" },
+  { k: "--color-accent-faint-border", g: "accent", t: "rgba", label: "Accent tint edge" },
+
+  { k: "--color-callout-info",        g: "callout", t: "hex",  label: "Info — bar" },
+  { k: "--color-callout-info-bg",     g: "callout", t: "rgba", label: "Info — fill" },
+  { k: "--color-callout-info-text",   g: "callout", t: "hex",  label: "Info — text" },
+  { k: "--color-callout-quote",       g: "callout", t: "hex",  label: "Quote — bar" },
+  { k: "--color-callout-quote-bg",    g: "callout", t: "rgba", label: "Quote — fill" },
+  { k: "--color-callout-quote-text",  g: "callout", t: "hex",  label: "Quote — text" },
+  { k: "--color-callout-secret",      g: "callout", t: "hex",  label: "Secret — bar" },
+  { k: "--color-callout-secret-bg",   g: "callout", t: "rgba", label: "Secret — fill" },
+  { k: "--color-callout-secret-text", g: "callout", t: "hex",  label: "Secret — text" },
+];
+
+/* Node-colour palette. Not editable here — it's data (folder tinting), not the
+   UI palette — but it has to be present or the tree renders grey. */
+const PALETTE = {
+  "--color-palette-teal": "#5eead4", "--color-palette-sky": "#7dd3fc",
+  "--color-palette-purple": "#c4b5fd", "--color-palette-rose": "#fda4af",
+  "--color-palette-amber": "#fcd34d", "--color-palette-sage": "#86efac",
+  "--color-palette-orange": "#fdba74", "--color-palette-indigo": "#a5b4fc",
+  "--color-palette-red": "#fca5a5", "--color-palette-gray": "#a1a1aa",
+};
+
+/* The shipped dark theme, verbatim from src/index.css. */
+const DARK = {
+  "--color-bg": "#0f0f14", "--color-panel": "#1a1a22", "--color-panel-alt": "#1f1f28",
+  "--color-panel-edge": "#252530", "--color-scrim": "rgba(0, 0, 0, 0.5)",
+  "--color-border-strong": "#383848", "--color-border": "#2a2a35", "--color-border-subtle": "#22222c",
+  "--color-text-primary": "#e8e8ee", "--color-text-secondary": "#9a9aaa",
+  "--color-text-muted": "#6a6a78", "--color-text-placeholder": "#4a4a55",
+  "--color-accent-light": "#5eead4", "--color-accent-dark": "#0d9488",
+  "--color-accent-faint": "rgba(20, 184, 166, 0.15)", "--color-accent-faint-border": "rgba(20, 184, 166, 0.3)",
+  "--color-callout-info": "#60a5fa", "--color-callout-info-bg": "rgba(59, 130, 246, 0.12)", "--color-callout-info-text": "#dbeafe",
+  "--color-callout-quote": "#a1a1aa", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.03)", "--color-callout-quote-text": "#d4d4d8",
+  "--color-callout-secret": "#c4b5fd", "--color-callout-secret-bg": "rgba(167, 139, 250, 0.12)", "--color-callout-secret-text": "#ede9fe",
+};
+
+/* The five queued directions, as complete starting points to react to.
+   Deliberately opinionated — rejecting one of these is more useful than
+   describing what you want from nothing. */
+const PRESETS = {
+  dark: { name: "Dark", note: "what ships today", colors: DARK },
+
+  light: {
+    name: "Light", note: "the obvious missing one",
+    colors: {
+      "--color-bg": "#fafaf9", "--color-panel": "#ffffff", "--color-panel-alt": "#f4f4f2",
+      "--color-panel-edge": "#ffffff", "--color-scrim": "rgba(24, 24, 27, 0.35)",
+      "--color-border-strong": "#c9c9c4", "--color-border": "#e0e0dc", "--color-border-subtle": "#eeeeea",
+      "--color-text-primary": "#1c1c1f", "--color-text-secondary": "#57575e",
+      "--color-text-muted": "#84848d", "--color-text-placeholder": "#a8a8b0",
+      "--color-accent-light": "#0d9488", "--color-accent-dark": "#0f766e",
+      "--color-accent-faint": "rgba(13, 148, 136, 0.10)", "--color-accent-faint-border": "rgba(13, 148, 136, 0.28)",
+      "--color-callout-info": "#2563eb", "--color-callout-info-bg": "rgba(37, 99, 235, 0.07)", "--color-callout-info-text": "#1e3a8a",
+      "--color-callout-quote": "#a1a1aa", "--color-callout-quote-bg": "rgba(0, 0, 0, 0.03)", "--color-callout-quote-text": "#3f3f46",
+      "--color-callout-secret": "#7c3aed", "--color-callout-secret-bg": "rgba(124, 58, 237, 0.07)", "--color-callout-secret-text": "#4c1d95",
+    },
+  },
+
+  parchment: {
+    name: "Parchment", note: "warm cream, ink",
+    colors: {
+      "--color-bg": "#f2e9d8", "--color-panel": "#e9dcc4", "--color-panel-alt": "#e3d3b6",
+      "--color-panel-edge": "#f6efe1", "--color-scrim": "rgba(61, 44, 24, 0.38)",
+      "--color-border-strong": "#c0a87e", "--color-border": "#d4c19b", "--color-border-subtle": "#e0d0ae",
+      "--color-text-primary": "#3b2f21", "--color-text-secondary": "#6b5843",
+      "--color-text-muted": "#907a5f", "--color-text-placeholder": "#b09a88",
+      "--color-accent-light": "#8a5a2b", "--color-accent-dark": "#6d4520",
+      "--color-accent-faint": "rgba(138, 90, 43, 0.13)", "--color-accent-faint-border": "rgba(138, 90, 43, 0.32)",
+      "--color-callout-info": "#3f6b82", "--color-callout-info-bg": "rgba(63, 107, 130, 0.10)", "--color-callout-info-text": "#2b4a5b",
+      "--color-callout-quote": "#8b7355", "--color-callout-quote-bg": "rgba(90, 70, 45, 0.06)", "--color-callout-quote-text": "#54432f",
+      "--color-callout-secret": "#7a4a6b", "--color-callout-secret-bg": "rgba(122, 74, 107, 0.10)", "--color-callout-secret-text": "#54324a",
+    },
+  },
+
+  foxian: {
+    name: "Foxian", note: "silver, deep red, cool blue",
+    colors: {
+      "--color-bg": "#101318", "--color-panel": "#171b22", "--color-panel-alt": "#1d222b",
+      "--color-panel-edge": "#232935", "--color-scrim": "rgba(4, 6, 10, 0.6)",
+      "--color-border-strong": "#3a4353", "--color-border": "#293040", "--color-border-subtle": "#212736",
+      "--color-text-primary": "#e6e9f0", "--color-text-secondary": "#9aa4b8",
+      "--color-text-muted": "#6b7488", "--color-text-placeholder": "#4a5162",
+      "--color-accent-light": "#e05263", "--color-accent-dark": "#9b2233",
+      "--color-accent-faint": "rgba(224, 82, 99, 0.14)", "--color-accent-faint-border": "rgba(224, 82, 99, 0.34)",
+      "--color-callout-info": "#7fb3d5", "--color-callout-info-bg": "rgba(127, 179, 213, 0.10)", "--color-callout-info-text": "#d6e7f3",
+      "--color-callout-quote": "#98a2b3", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.035)", "--color-callout-quote-text": "#cbd3e0",
+      "--color-callout-secret": "#c9a3d4", "--color-callout-secret-bg": "rgba(201, 163, 212, 0.11)", "--color-callout-secret-text": "#eddff2",
+    },
+  },
+
+  belobog: {
+    name: "Belobog", note: "industrial grey, firelight",
+    colors: {
+      "--color-bg": "#16161a", "--color-panel": "#1e1e22", "--color-panel-alt": "#26262b",
+      "--color-panel-edge": "#2e2e34", "--color-scrim": "rgba(0, 0, 0, 0.55)",
+      "--color-border-strong": "#45454d", "--color-border": "#33333a", "--color-border-subtle": "#292930",
+      "--color-text-primary": "#eae6df", "--color-text-secondary": "#a39d93",
+      "--color-text-muted": "#75706a", "--color-text-placeholder": "#55514c",
+      "--color-accent-light": "#f0a55e", "--color-accent-dark": "#b06a24",
+      "--color-accent-faint": "rgba(240, 165, 94, 0.13)", "--color-accent-faint-border": "rgba(240, 165, 94, 0.32)",
+      "--color-callout-info": "#8fb0c4", "--color-callout-info-bg": "rgba(143, 176, 196, 0.10)", "--color-callout-info-text": "#dceaf2",
+      "--color-callout-quote": "#9a948b", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.03)", "--color-callout-quote-text": "#cfc9c0",
+      "--color-callout-secret": "#b9a3d4", "--color-callout-secret-bg": "rgba(185, 163, 212, 0.11)", "--color-callout-secret-text": "#e8dff5",
+    },
+  },
+
+  deepspace: {
+    name: "Deep Space", note: "near-black, starfield",
+    colors: {
+      "--color-bg": "#06070d", "--color-panel": "#0d0f18", "--color-panel-alt": "#121522",
+      "--color-panel-edge": "#181c2c", "--color-scrim": "rgba(0, 0, 0, 0.7)",
+      "--color-border-strong": "#2c3145", "--color-border": "#1d2131", "--color-border-subtle": "#161927",
+      "--color-text-primary": "#dfe3f0", "--color-text-secondary": "#8f98b5",
+      "--color-text-muted": "#5f6784", "--color-text-placeholder": "#414861",
+      "--color-accent-light": "#8ab4ff", "--color-accent-dark": "#2f5fd0",
+      "--color-accent-faint": "rgba(138, 180, 255, 0.13)", "--color-accent-faint-border": "rgba(138, 180, 255, 0.32)",
+      "--color-callout-info": "#7dd3fc", "--color-callout-info-bg": "rgba(125, 211, 252, 0.10)", "--color-callout-info-text": "#d8f1fe",
+      "--color-callout-quote": "#8f98b5", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.03)", "--color-callout-quote-text": "#c3cade",
+      "--color-callout-secret": "#c4b5fd", "--color-callout-secret-bg": "rgba(167, 139, 250, 0.13)", "--color-callout-secret-text": "#ede9fe",
+    },
+  },
+};
+
+/* Fonts. `bundled: true` means the woff2 ships with the app; everything else
+   is a face Windows already has, and would need bundling before it could be
+   used for real. */
+const FONT_OPTIONS = [
+  { label: "Fraunces", value: '"Fraunces", serif', bundled: true },
+  { label: "Newsreader", value: '"Newsreader", serif', bundled: true },
+  { label: "Inter", value: '"Inter", sans-serif', bundled: true },
+  { label: "Georgia", value: 'Georgia, serif' },
+  { label: "Cambria", value: 'Cambria, serif' },
+  { label: "Constantia", value: 'Constantia, serif' },
+  { label: "Palatino", value: '"Palatino Linotype", Palatino, serif' },
+  { label: "Book Antiqua", value: '"Book Antiqua", serif' },
+  { label: "Garamond", value: 'Garamond, serif' },
+  { label: "Times New Roman", value: '"Times New Roman", serif' },
+  { label: "Segoe UI", value: '"Segoe UI", sans-serif' },
+  { label: "Calibri", value: 'Calibri, sans-serif' },
+  { label: "Candara", value: 'Candara, sans-serif' },
+  { label: "Corbel", value: 'Corbel, sans-serif' },
+  { label: "Verdana", value: 'Verdana, sans-serif' },
+  { label: "Trebuchet MS", value: '"Trebuchet MS", sans-serif' },
+  { label: "Tahoma", value: 'Tahoma, sans-serif' },
+  { label: "System default", value: 'system-ui, sans-serif' },
+];
+const MONO_OPTIONS = [
+  { label: "System mono (default)", value: 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace' },
+  { label: "Consolas", value: 'Consolas, monospace' },
+  { label: "Cascadia Mono", value: '"Cascadia Mono", monospace' },
+  { label: "Courier New", value: '"Courier New", monospace' },
+  { label: "Lucida Console", value: '"Lucida Console", monospace' },
+];
+
+const FONT_SLOTS = [
+  { k: "--font-display", label: "Titles", hint: "page titles, dialog headings", opts: FONT_OPTIONS, def: '"Fraunces", serif' },
+  { k: "--font-ui",      label: "Interface", hint: "buttons, sidebar, labels", opts: FONT_OPTIONS, def: '"Inter", sans-serif' },
+  { k: "--font-prose",   label: "Writing", hint: "the text on your pages", opts: FONT_OPTIONS, def: '"Newsreader", serif' },
+  { k: "--font-mono",    label: "Shortcuts & paths", hint: "Ctrl+K, file paths", opts: MONO_OPTIONS, def: MONO_OPTIONS[0].value },
+];
+
+/* Scale tokens. Base values from src/index.css; the sliders scale them. */
+const FS_BASE = { "--fs-2xs": 11, "--fs-xs": 12, "--fs-sm": 13, "--fs-md": 14, "--fs-lg": 16, "--fs-xl": 18 };
+const FS_TITLE = { "--fs-2xl": 28, "--fs-3xl": 32 };
+const SPACE_BASE = { "--space-2xs": 2, "--space-xs": 4, "--space-sm": 6, "--space-md": 8, "--space-lg": 12, "--space-xl": 16, "--space-2xl": 24, "--space-3xl": 32 };
+const RADIUS_BASE = { "--radius-sm": 4, "--radius-md": 6, "--radius-lg": 8 };
+
+const SCALE_CONTROLS = [
+  { k: "textScale",   label: "Text size",     min: 85,  max: 130, step: 1, def: 100, unit: "%" },
+  { k: "titleScale",  label: "Title size",    min: 70,  max: 160, step: 1, def: 100, unit: "%" },
+  { k: "lineHeight",  label: "Line spacing",  min: 120, max: 200, step: 5, def: 150, unit: "", fmt: (v) => (v / 100).toFixed(2) },
+  { k: "spaceScale",  label: "Roominess",     min: 70,  max: 160, step: 5, def: 100, unit: "%" },
+  { k: "radiusScale", label: "Corner rounding", min: 0, max: 300, step: 10, def: 100, unit: "%" },
+];
+
+const DEFAULTS = {
+  preset: "dark",
+  colors: { ...DARK },
+  fonts: Object.fromEntries(FONT_SLOTS.map((s) => [s.k, s.def])),
+  scales: Object.fromEntries(SCALE_CONTROLS.map((s) => [s.k, s.def])),
+  gradients: { bgOn: false, bgAngle: 160, bgA: DARK["--color-bg"], bgB: DARK["--color-panel-alt"],
+               accentOn: false, accentAngle: 100, accentA: DARK["--color-accent-dark"], accentB: DARK["--color-accent-light"],
+               titleOn: false, titleAngle: 95, titleA: DARK["--color-text-primary"], titleB: DARK["--color-accent-light"] },
+  custom: "",
+  themeName: "my theme",
+};
+
+const STORE_KEY = "anamnesis-theme-sandbox-v1";
+let state = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return structuredClone(DEFAULTS);
+    const saved = JSON.parse(raw);
+    return {
+      ...structuredClone(DEFAULTS), ...saved,
+      colors: { ...DARK, ...(saved.colors || {}) },
+      fonts: { ...DEFAULTS.fonts, ...(saved.fonts || {}) },
+      scales: { ...DEFAULTS.scales, ...(saved.scales || {}) },
+      gradients: { ...DEFAULTS.gradients, ...(saved.gradients || {}) },
+    };
+  } catch { return structuredClone(DEFAULTS); }
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { /* private mode; not worth surfacing */ }
+}
+
+/* --- rgba helpers: the picker is hex-only, so alpha rides alongside ------- */
+function parseRgba(v) {
+  const m = String(v).match(/rgba?\(([^)]+)\)/);
+  if (!m) return { hex: v.startsWith("#") ? v : "#000000", a: 1 };
+  const [r, g, b, a] = m[1].split(",").map((n) => parseFloat(n.trim()));
+  const hex = "#" + [r, g, b].map((n) => Math.max(0, Math.min(255, n | 0)).toString(16).padStart(2, "0")).join("");
+  return { hex, a: a === undefined ? 1 : a };
+}
+function toRgba(hex, a) {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Number(a).toFixed(2).replace(/0$/, "")})`;
+}
+
+/* --- Build the controls --------------------------------------------------- */
+const preview = document.getElementById("preview");
+
+function buildPresets() {
+  const wrap = document.getElementById("presets");
+  wrap.innerHTML = "";
+  for (const [id, p] of Object.entries(PRESETS)) {
+    const b = document.createElement("button");
+    b.className = "preset";
+    b.setAttribute("aria-pressed", String(state.preset === id));
+    b.innerHTML = `<span class="chips">
+        <i style="background:${p.colors["--color-bg"]}"></i>
+        <i style="background:${p.colors["--color-panel-alt"]}"></i>
+        <i style="background:${p.colors["--color-accent-light"]}"></i>
+      </span><span>${p.name}<span class="hint">${p.note}</span></span>`;
+    b.onclick = () => {
+      state.preset = id;
+      state.colors = { ...p.colors };
+      // Re-seed both ends of every gradient from the preset. Carrying the old
+      // second colour over is what made Parchment's background run cream into
+      // near-black — a gradient nobody chose and everybody blames on the preset.
+      state.gradients = { ...state.gradients,
+        bgA: p.colors["--color-bg"], bgB: p.colors["--color-panel-alt"],
+        accentA: p.colors["--color-accent-dark"], accentB: p.colors["--color-accent-light"],
+        titleA: p.colors["--color-text-primary"], titleB: p.colors["--color-accent-light"] };
+      buildPresets(); buildColorControls(); buildGradientControls(); apply(); save();
+    };
+    wrap.appendChild(b);
+  }
+}
+
+function buildColorControls() {
+  for (const group of ["surface", "border", "text", "accent", "callout"]) {
+    const host = document.querySelector(`[data-group="${group}"]`);
+    host.innerHTML = "";
+    for (const tok of TOKENS.filter((t) => t.g === group)) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const isRgba = tok.t === "rgba";
+      const cur = state.colors[tok.k];
+      const { hex, a } = isRgba ? parseRgba(cur) : { hex: cur, a: 1 };
+
+      const swatch = document.createElement("input");
+      swatch.type = "color"; swatch.value = hex; swatch.title = tok.k;
+
+      const label = document.createElement("label");
+      label.textContent = tok.label;
+
+      const text = document.createElement("input");
+      text.type = "text"; text.className = "hex"; text.value = cur; text.spellcheck = false;
+
+      const commit = (v) => {
+        state.colors[tok.k] = v; text.value = v;
+        state.preset = "custom"; buildPresets(); apply(); save();
+      };
+      swatch.oninput = () => commit(isRgba ? toRgba(swatch.value, alpha ? alpha.value : a) : swatch.value);
+      text.onchange = () => {
+        const v = text.value.trim();
+        state.colors[tok.k] = v;
+        const p = isRgba ? parseRgba(v) : { hex: v, a: 1 };
+        swatch.value = /^#[0-9a-f]{6}$/i.test(p.hex) ? p.hex : swatch.value;
+        state.preset = "custom"; buildPresets(); apply(); save();
+      };
+
+      row.append(swatch, label, text);
+      host.appendChild(row);
+
+      let alpha = null;
+      if (isRgba) {
+        const arow = document.createElement("div");
+        arow.className = "row";
+        arow.style.paddingLeft = "38px";
+        alpha = document.createElement("input");
+        alpha.type = "range"; alpha.min = "0"; alpha.max = "1"; alpha.step = "0.01"; alpha.value = String(a);
+        const out = document.createElement("span");
+        out.className = "val"; out.textContent = Math.round(a * 100) + "%";
+        alpha.oninput = () => {
+          out.textContent = Math.round(alpha.value * 100) + "%";
+          commit(toRgba(swatch.value, alpha.value));
+        };
+        const lbl = document.createElement("span");
+        lbl.className = "val"; lbl.style.width = "auto"; lbl.textContent = "opacity";
+        arow.append(lbl, alpha, out);
+        host.appendChild(arow);
+      }
+    }
+  }
+}
+
+function buildFontControls() {
+  const host = document.getElementById("fontControls");
+  host.innerHTML = "";
+  for (const slot of FONT_SLOTS) {
+    const wrap = document.createElement("div");
+    const label = document.createElement("label");
+    label.innerHTML = `${slot.label}<span class="hint">${slot.hint}</span>`;
+    const sel = document.createElement("select");
+    for (const o of slot.opts) {
+      const opt = document.createElement("option");
+      opt.value = o.value;
+      opt.textContent = o.bundled ? `${o.label} ✦` : o.label;
+      sel.appendChild(opt);
+    }
+    sel.value = state.fonts[slot.k];
+    sel.onchange = () => { state.fonts[slot.k] = sel.value; apply(); save(); };
+    wrap.append(label, sel);
+    host.appendChild(wrap);
+  }
+}
+
+function buildScaleControls() {
+  const host = document.getElementById("scaleControls");
+  host.innerHTML = "";
+  for (const c of SCALE_CONTROLS) {
+    const row = document.createElement("div");
+    row.className = "row";
+    const label = document.createElement("label");
+    label.textContent = c.label;
+    label.style.flex = "0 0 108px";
+    const range = document.createElement("input");
+    range.type = "range"; range.min = c.min; range.max = c.max; range.step = c.step;
+    range.value = state.scales[c.k];
+    const out = document.createElement("span");
+    out.className = "val";
+    const render = () => { out.textContent = c.fmt ? c.fmt(range.value) : range.value + c.unit; };
+    render();
+    range.oninput = () => { state.scales[c.k] = Number(range.value); render(); apply(); save(); };
+    row.append(label, range, out);
+    host.appendChild(row);
+  }
+}
+
+function buildGradientControls() {
+  const host = document.getElementById("gradientControls");
+  host.innerHTML = "";
+  const defs = [
+    { on: "bgOn", a: "bgA", b: "bgB", ang: "bgAngle", label: "Page background" },
+    { on: "accentOn", a: "accentA", b: "accentB", ang: "accentAngle", label: "Main buttons" },
+    { on: "titleOn", a: "titleA", b: "titleB", ang: "titleAngle", label: "Title text" },
+  ];
+  for (const d of defs) {
+    const box = document.createElement("div");
+    const top = document.createElement("div");
+    top.className = "row";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = !!state.gradients[d.on];
+    const lbl = document.createElement("label");
+    lbl.textContent = d.label;
+    cb.onchange = () => { state.gradients[d.on] = cb.checked; apply(); save(); };
+    top.append(cb, lbl);
+    box.appendChild(top);
+
+    const ctl = document.createElement("div");
+    ctl.className = "row"; ctl.style.paddingLeft = "20px";
+    for (const key of [d.a, d.b]) {
+      const sw = document.createElement("input");
+      sw.type = "color"; sw.value = state.gradients[key];
+      sw.oninput = () => { state.gradients[key] = sw.value; apply(); save(); };
+      ctl.appendChild(sw);
+    }
+    const ang = document.createElement("input");
+    ang.type = "range"; ang.min = "0"; ang.max = "360"; ang.step = "5"; ang.value = state.gradients[d.ang];
+    const out = document.createElement("span");
+    out.className = "val"; out.textContent = state.gradients[d.ang] + "°";
+    ang.oninput = () => { state.gradients[d.ang] = Number(ang.value); out.textContent = ang.value + "°"; apply(); save(); };
+    ctl.append(ang, out);
+    box.appendChild(ctl);
+    host.appendChild(box);
+  }
+}
+
+/* --- Apply state to the preview ------------------------------------------ */
+// px -> rem, trimmed. parseFloat rather than a trailing-zero regex: stripping
+// zeros off "1.0000" by hand leaves "1.", and `--space-xl: 1.rem` is invalid
+// CSS, so every token that landed on a whole rem silently stopped applying.
+function rem(px) { return parseFloat((px / 16).toFixed(4)) + "rem"; }
+
+function computed() {
+  const s = state.scales;
+  const out = {};
+  for (const [k, px] of Object.entries(FS_BASE)) out[k] = rem(px * s.textScale / 100);
+  for (const [k, px] of Object.entries(FS_TITLE)) out[k] = rem(px * s.titleScale / 100);
+  for (const [k, px] of Object.entries(SPACE_BASE)) out[k] = rem(px * s.spaceScale / 100);
+  for (const [k, px] of Object.entries(RADIUS_BASE)) out[k] = rem(px * s.radiusScale / 100);
+  out["--radius-full"] = "9999px";
+  out["--lh-normal"] = (s.lineHeight / 100).toFixed(2);
+  out["--lh-tight"] = Math.max(1.05, s.lineHeight / 100 - 0.25).toFixed(2);
+  return out;
+}
+
+function gradientVars() {
+  const g = state.gradients;
+  const v = {};
+  v["--gradient-bg"] = g.bgOn ? `linear-gradient(${g.bgAngle}deg, ${g.bgA}, ${g.bgB})` : "";
+  v["--gradient-accent"] = g.accentOn ? `linear-gradient(${g.accentAngle}deg, ${g.accentA}, ${g.accentB})` : "";
+  if (g.titleOn) {
+    v["--gradient-title"] = `linear-gradient(${g.titleAngle}deg, ${g.titleA}, ${g.titleB})`;
+    v["--gradient-title-clip"] = "text";
+    v["--gradient-title-fill"] = "transparent";
+  } else {
+    v["--gradient-title"] = ""; v["--gradient-title-clip"] = ""; v["--gradient-title-fill"] = "";
+  }
+  return v;
+}
+
+function apply() {
+  const all = { ...PALETTE, ...state.colors, ...state.fonts, ...computed(), ...gradientVars(),
+    "--elev-modal": "0 8px 24px rgba(0, 0, 0, 0.4)", "--h-bar": "48px",
+    "--reading-width": "60rem", "--page-gutter": "2.5rem" };
+  for (const [k, v] of Object.entries(all)) {
+    if (v === "") preview.style.removeProperty(k);
+    else preview.style.setProperty(k, v);
+  }
+  document.getElementById("customStyle").textContent = scopeCustom(state.custom);
+}
+
+/* Naively scopes the user's CSS under #preview so a stray `body { }` can't
+   wreck the controls. Good enough for a sandbox; it is not a CSS parser. */
+function scopeCustom(css) {
+  if (!css.trim()) return "";
+  return css.replace(/(^|\})\s*([^@{}]+)\{/g, (m, close, sel) => {
+    const scoped = sel.split(",").map((s) => `#preview ${s.trim()}`).join(", ");
+    return `${close} ${scoped} {`;
+  });
+}
+
+/* --- Export --------------------------------------------------------------- */
+function exportCss() {
+  const id = (state.themeName || "my theme").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-theme";
+  const today = new Date().toISOString().slice(0, 10);
+  const lines = [];
+  lines.push(`/* Anamnesis theme — "${state.themeName}"`);
+  lines.push(`   Made in sandbox/theme-sandbox.html on ${today}. */`);
+  lines.push("");
+  lines.push(`[data-theme="${id}"] {`);
+  let group = "";
+  for (const t of TOKENS) {
+    if (t.g !== group) { if (group) lines.push(""); group = t.g; }
+    lines.push(`  ${t.k}: ${state.colors[t.k]};`);
+  }
+  const g = gradientVars();
+  const grads = Object.entries(g).filter(([, v]) => v);
+  if (grads.length) {
+    lines.push("");
+    lines.push("  /* Gradients — new tokens, Phase 12 adds them to the system. */");
+    for (const [k, v] of grads) lines.push(`  ${k}: ${v};`);
+  }
+  lines.push("}");
+
+  const fontsChanged = FONT_SLOTS.filter((s) => state.fonts[s.k] !== s.def);
+  const scalesChanged = SCALE_CONTROLS.filter((c) => state.scales[c.k] !== c.def);
+  if (fontsChanged.length || scalesChanged.length) {
+    lines.push("");
+    lines.push("/* These are NOT part of a theme — fonts and scales live in :root and");
+    lines.push("   apply to every theme at once. Listed here so they don't get lost. */");
+    lines.push(":root {");
+    for (const s of fontsChanged) lines.push(`  ${s.k}: ${state.fonts[s.k]};`);
+    if (fontsChanged.length && scalesChanged.length) lines.push("");
+    const c = computed();
+    for (const s of scalesChanged) {
+      if (s.k === "textScale") for (const k of Object.keys(FS_BASE)) lines.push(`  ${k}: ${c[k]};`);
+      if (s.k === "titleScale") for (const k of Object.keys(FS_TITLE)) lines.push(`  ${k}: ${c[k]};`);
+      if (s.k === "spaceScale") for (const k of Object.keys(SPACE_BASE)) lines.push(`  ${k}: ${c[k]};`);
+      if (s.k === "radiusScale") for (const k of Object.keys(RADIUS_BASE)) lines.push(`  ${k}: ${c[k]};`);
+      if (s.k === "lineHeight") { lines.push(`  --lh-normal: ${c["--lh-normal"]};`); lines.push(`  --lh-tight: ${c["--lh-tight"]};`); }
+    }
+    lines.push("}");
+  }
+
+  const unbundled = FONT_SLOTS.filter((s) => {
+    const opt = s.opts.find((o) => o.value === state.fonts[s.k]);
+    return opt && !opt.bundled && s.k !== "--font-mono";
+  });
+  if (unbundled.length) {
+    lines.push("");
+    lines.push("/* HEADS UP: " + unbundled.map((s) => s.label).join(" and ") + " uses a font that isn't");
+    lines.push("   bundled with the app. It needs adding to public/fonts first, or it will");
+    lines.push("   fall back to something else on a machine that doesn't have it. */");
+  }
+
+  if (state.custom.trim()) {
+    lines.push("");
+    lines.push("/* Your own CSS, as typed. Selectors are from the sandbox mock and will");
+    lines.push("   need translating to the real components. */");
+    lines.push(state.custom.trim());
+  }
+  return lines.join("\n");
+}
+
+/* --- Wire up -------------------------------------------------------------- */
+const custom = document.getElementById("customCss");
+custom.value = state.custom;
+custom.oninput = () => { state.custom = custom.value; apply(); save(); };
+
+const nameInput = document.getElementById("themeName");
+nameInput.value = state.themeName;
+nameInput.oninput = () => { state.themeName = nameInput.value; save(); };
+
+document.getElementById("btnExport").onclick = () => {
+  document.getElementById("exportText").value = exportCss();
+  document.getElementById("exportWrap").classList.add("on");
+  document.getElementById("exportText").select();
+};
+document.getElementById("btnCloseExport").onclick = () => document.getElementById("exportWrap").classList.remove("on");
+document.getElementById("exportWrap").onclick = (e) => { if (e.target.id === "exportWrap") e.currentTarget.classList.remove("on"); };
+document.getElementById("btnCopy").onclick = async (e) => {
+  const ta = document.getElementById("exportText");
+  ta.select();
+  try { await navigator.clipboard.writeText(ta.value); e.target.textContent = "Copied"; }
+  catch { document.execCommand("copy"); e.target.textContent = "Copied"; }
+  setTimeout(() => { e.target.textContent = "Copy"; }, 1400);
+};
+document.getElementById("btnReset").onclick = () => {
+  if (!confirm("Throw away every change and go back to the app's dark theme?")) return;
+  state = structuredClone(DEFAULTS);
+  custom.value = ""; nameInput.value = state.themeName;
+  buildPresets(); buildColorControls(); buildFontControls(); buildScaleControls(); buildGradientControls();
+  apply(); save();
+};
+
+buildPresets();
+buildColorControls();
+buildFontControls();
+buildScaleControls();
+buildGradientControls();
+apply();
+</script>
+</body>
+</html>
