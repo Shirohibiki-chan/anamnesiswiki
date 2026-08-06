@@ -4,6 +4,10 @@
 
 *(Not in a release — these live in the repo and affect this machine only.)*
 
+### Additions
+
+- **A theme sandbox, for playing with how the app looks without touching the app.** It's a single file — `sandbox/theme-sandbox.html` — that you double-click to open. No install, no internet, nothing to start up. There's a mock of the app on the right and every dial on the left: six complete colour schemes to start from (the dark one it uses today, plus Light, Parchment, Foxian, Belobog and Deep Space), a font picker for titles / interface / your writing / shortcuts, sliders for text size, line spacing, roominess and corner rounding, gradients for the background, buttons and title text, and a box where you can type your own CSS and watch it apply live. It saves as you go, so you can close it and come back to it. When something looks right, **Show me the CSS** hands you a block to send back, and it becomes a real theme you can switch to in the app. **It can't affect your projects or the installed app** — it's a separate file that only knows how to draw a picture of one.
+
 ### Renames
 
 - **The app calls a world a "project" everywhere now.** It mostly did already, but not quite: the sidebar's right-click menu said "Export **world** to LegendKeeper" while the start screen right next to it said "Open an Anamnesis **project**", and the import screen said "Writing your world to disk" while the box you type the name into was labelled "Project name". Six places said world; eighty-nine said project. They all say project now — the sidebar export, the import progress messages, Settings → Projects, and the reassurance line on the update screen. Nothing moved and nothing on disk changed; the folder is still `Documents\Anamnesis\YourProjectName`, same as it was.

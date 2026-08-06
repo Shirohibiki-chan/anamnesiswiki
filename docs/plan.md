@@ -169,6 +169,7 @@ Everything below comes out of one planning session: the user brought a list of r
 
 Identity, the visual half — and the reversibility machinery that has to exist before it. Depends on Phase 11.5; don't start it early.
 
+- ~~**A sandbox to try directions in**~~ — shipped 2026-08-05, ahead of the phase proper, because she asked for somewhere to change fonts and colours that couldn't break the real app. `sandbox/theme-sandbox.html`, a single double-clickable file: a mock of the app driven by the real token names, the six palettes as starting points, font/size/spacing/gradient controls, a free-text CSS box, and an export that emits a `[data-theme]` block. It is **not** the theme switcher and doesn't replace the bullets below — it's the thing that makes "2–3 candidate directions" cheap to produce, and it's where her answers come from. `sandbox/README.md` covers keeping it in step with `src/index.css`.
 - **Theme switcher** in a new Settings → Appearance tab. The `[data-theme]` token architecture already exists (`docs/constants-and-theming.md`); this is the UI over it.
 - **Gradient tokens.** The user has one concrete aesthetic want and it's gradients. Add them to the token system up front rather than retrofitting.
 - **2–3 complete candidate directions**, built as real switchable themes — the running app, not mockups — for her to react to and reject.
