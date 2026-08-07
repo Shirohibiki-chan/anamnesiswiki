@@ -13,7 +13,7 @@ import {
   type FontSlotKey,
 } from "../constants/themes";
 import * as appSettings from "../services/app-settings-service";
-import { ensureCssDir, readCssDir, sanitizeSegment, writeCssFile } from "../services/filesystem-service";
+import { deleteCssFile, ensureCssDir, readCssDir, sanitizeSegment, writeCssFile } from "../services/filesystem-service";
 import { showFolder } from "../services/dialog-service";
 import type { GradientSlot } from "../constants/theme-tokens";
 import {
@@ -98,6 +98,15 @@ export type ThemeStoreState = {
    * folder named so the message appears under the button that was pressed.
    */
   folderError: { folder: "themes" | "snippets"; path: string } | null;
+  /**
+   * A delete that didn't happen — file locked, permissions, drive gone.
+   * Separate from `folderError` because it carries a different apology and a
+   * different next step, but it exists for the same reason: the "Open folder"
+   * buttons used to swallow their rejection and do nothing, twice, with no way
+   * to tell that from a slow file manager. A destructive button that silently
+   * doesn't destroy is the same failure with higher stakes.
+   */
+  deleteError: { file: string; path: string } | null;
 
   loadAppearance: () => Promise<void>;
   scanFolders: () => Promise<void>;
@@ -112,6 +121,8 @@ export type ThemeStoreState = {
 
   /** Copies whatever theme is on into a new editable file, and selects it. */
   createTheme: (name: string) => Promise<void>;
+  /** Removes a theme's file from the folder. Confirm before calling. */
+  deleteTheme: (file: string) => Promise<void>;
   setThemeColor: (token: string, hex: string) => void;
   /** Switches a gradient on with sensible starting colours, or off. */
   toggleGradient: (slot: GradientSlot, on: boolean) => void;
@@ -290,6 +301,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     snippetsDir: "",
     isScanning: false,
     folderError: null,
+    deleteError: null,
 
     async loadAppearance() {
       // Three outcomes, and they are not the same thing:
@@ -497,6 +509,34 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       await writeCssFile(state.themesDir, file, css);
       await get().scanFolders();
       await get().selectTheme(themeId, file);
+    },
+
+    async deleteTheme(file) {
+      const state = get();
+      if (!state.themesDir) return;
+
+      // Before the delete, not after. A colour picker queues a debounced write
+      // against a specific file, and a queued write landing after the file is
+      // gone recreates it — a theme you deleted reappearing on the next scan,
+      // which is worse than the delete having failed outright.
+      await flushThemeWrite();
+      set({ deleteError: null });
+      try {
+        await deleteCssFile(state.themesDir, file);
+      } catch {
+        // Locked by an editor, refused by permissions, drive unplugged. Say
+        // so and name the path — the folder is hers and she can finish the job
+        // in Explorer, which is strictly better than the button doing nothing.
+        set({ deleteError: { file, path: state.themesDir } });
+        return;
+      }
+
+      // The rescan is what actually drops it from the list, and it already
+      // knows how to fall back to the default when the selected file has gone
+      // — that path exists because the folder is hers and she can delete from
+      // Explorer too. Deleting from in here is the same event arriving sooner,
+      // so it goes through the same code rather than around it.
+      await get().scanFolders();
     },
 
     // Both editors below take the same path: rewrite the file's text, put it

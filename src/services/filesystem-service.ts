@@ -735,3 +735,23 @@ export async function ensureCssDir(parent: string, dirName: string): Promise<str
 export async function writeCssFile(dir: string, fileName: string, css: string): Promise<void> {
   await writeTextFile(joinPath(dir, fileName), css);
 }
+
+/**
+ * Deletes a theme or snippet file.
+ *
+ * Straight to `remove`, with no trash and no undo, which is the one thing here
+ * that deserves an argument. Everything else the app deletes is *hers* — a page
+ * she wrote, an image she chose — and those go through the undo stack. A theme
+ * file is a stylesheet: rebuildable from the pickers, re-exportable from the
+ * sandbox, and worth nothing if she's decided she doesn't like it. What it
+ * needs is a confirm before the call, which is where the caller comes in.
+ *
+ * A file that isn't there resolves quietly. Two windows open on the same
+ * folder, or a delete raced with a rescan, shouldn't surface an error about a
+ * file that is already in the state the caller wanted.
+ */
+export async function deleteCssFile(dir: string, fileName: string): Promise<void> {
+  const path = joinPath(dir, fileName);
+  if (!(await exists(path))) return;
+  await remove(path);
+}

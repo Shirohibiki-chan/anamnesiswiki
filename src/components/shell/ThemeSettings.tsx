@@ -4,10 +4,11 @@
 // what made Settings a page you scrolled rather than a place you went. Each of
 // those sections is now its own panel behind its own entry in the left rail —
 // see SettingsModal.tsx.
-import { Check, FolderOpen, RefreshCw } from "lucide-react";
+import { Check, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
 import { BUILT_IN_THEMES } from "../../constants/themes";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { useTheme } from "../../hooks/use-theme";
-import { BlockedNotice, FolderErrorNotice } from "./StylesheetNotices";
+import { BlockedNotice, DeleteErrorNotice, FolderErrorNotice } from "./StylesheetNotices";
 import type { ThemeSwatch } from "../../services/theme-service";
 
 /**
@@ -29,34 +30,48 @@ function ThemeSwatchDots({ themeId, swatch }: { themeId?: string; swatch?: Theme
   );
 }
 
+/**
+ * One theme in the list.
+ *
+ * The picker itself is the button and the delete is a *sibling*, not a child —
+ * a button inside a button isn't valid HTML and browsers disagree about which
+ * one a click belongs to. The wrapper carries the frame so the two still read
+ * as one row.
+ */
 function ThemeRow({
   label,
   note,
   selected,
   onSelect,
+  onDelete,
   children,
 }: {
   label: string;
   note: string;
   selected: boolean;
   onSelect: () => void;
+  onDelete?: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      className={`appearance-theme${selected ? " appearance-theme-selected" : ""}`}
-      onClick={onSelect}
-    >
-      {children}
-      <span className="appearance-theme-text">
-        <span className="appearance-theme-name">{label}</span>
-        <span className="appearance-theme-note">{note}</span>
-      </span>
-      {selected && <Check size={14} className="appearance-theme-check" />}
-    </button>
+    <div className={`appearance-theme${selected ? " appearance-theme-selected" : ""}`}>
+      <button type="button" role="radio" aria-checked={selected} className="appearance-theme-pick" onClick={onSelect}>
+        {children}
+        <span className="appearance-theme-text">
+          <span className="appearance-theme-name">{label}</span>
+          <span className="appearance-theme-note">{note}</span>
+        </span>
+        {selected && <Check size={14} className="appearance-theme-check" />}
+      </button>
+      {/* Only on themes she owns. A built-in has no file to remove — the
+          button would have to either lie or explain itself, and neither is
+          better than not being there. */}
+      {onDelete && (
+        <button type="button" className="appearance-theme-delete" aria-label={`Delete ${label}`} title="Delete this theme" onClick={onDelete}>
+          <Trash2 size={14} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -67,13 +82,24 @@ export function ThemeSettings() {
     customThemes,
     isScanning,
     folderError,
+    deleteError,
     selectTheme,
     scanFolders,
     resetAppearance,
     openThemesFolder,
+    deleteTheme,
   } = useTheme();
+  const { confirmDestructive } = useDialogs();
 
   const blocked = customThemes.filter((theme) => theme.blocked.length > 0);
+
+  // Names the file, not just the theme, because that's what's being removed and
+  // it's the thing she can go and check for afterwards. No undo to offer — the
+  // file is gone — so the sentence has to be enough on its own.
+  async function remove(label: string, file: string) {
+    const warning = `Delete "${label}"? Its file (${file}) is removed from the themes folder, and this can't be undone.`;
+    if (await confirmDestructive(warning)) await deleteTheme(file);
+  }
 
   return (
     <div className="appearance-settings">
@@ -97,6 +123,7 @@ export function ThemeSettings() {
             note={theme.file}
             selected={themeFile === theme.file}
             onSelect={() => void selectTheme(theme.themeId, theme.file)}
+            onDelete={() => void remove(theme.label, theme.file)}
           >
             <ThemeSwatchDots swatch={theme.swatch} />
           </ThemeRow>
@@ -120,6 +147,7 @@ export function ThemeSettings() {
       </p>
 
       <FolderErrorNotice error={folderError} folder="themes" />
+      <DeleteErrorNotice error={deleteError} />
       {blocked.map((sheet) => (
         <BlockedNotice key={sheet.file} sheet={sheet} />
       ))}

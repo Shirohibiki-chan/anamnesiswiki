@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-07 — deleting themes, and readable grey
+
+### Additions
+
+- **You can delete a theme from inside the app.** Every theme you've made has a bin icon on its row; it asks first, names the file it's about to remove, and then it's gone from the folder. The built-in six don't have one — they ship inside the app and there's no file to remove. If you delete the theme you're currently using, you go back to Midnight.
+
+### Fixes
+
+- **The small grey text is readable now, in every theme.** The greys used for hints, dates, counts, theme descriptions and the notes under fields were failing the standard contrast check — all six themes, between 3.1 and 3.9 where 4.5 is the bar for text that size. Midnight was the worst of them and it's the one you start on. Every theme's two quietest text colours were re-measured against both the panel and the window background and lifted until they pass.
+- **Midnight has its own text colours now**, the same way the other themes do. It had been borrowing the near-black theme's neutral greys, which is why they read as flat grey on the navy rather than as part of it.
+- **A delete that can't happen says so.** If a theme's file is locked or the folder isn't reachable, you get a note with the path instead of a button that quietly does nothing.
+- **Confirmation prompts work on the start screen.** Anything asking "are you sure?" from the screen you land on before opening a project — including the new delete button — had nothing to draw the question with, so it would have waited forever for an answer it never asked for.
+
 ## 2026-08-07 — the settings screen
 
 ### Adjustments
