@@ -1237,8 +1237,7 @@
   gap: var(--space-sm);
 }
 
-.theme-edit-group-title,
-.theme-edit-group-summary {
+.theme-edit-group-title {
   margin: 0;
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -1247,14 +1246,82 @@
   color: var(--color-text-muted);
 }
 
-.theme-edit-group-summary {
-  cursor: pointer;
-  padding: var(--space-sm) 0;
-  list-style: position outside;
+/* --- The folded colour groups ---
+   Lines and Callouts, which are rarely touched and shouldn't cost everyone a
+   screen. They were a `<summary>` wearing `.theme-edit-group-title` above,
+   which meant a group you could open looked exactly like a heading you
+   couldn't — an uppercase label with apparently nothing under it. Nothing
+   about a `<details>` shows through by default: Chrome's marker is a
+   pseudo-element that has to be turned off, and if it weren't turned off it'd
+   be a triangle in a UI with no other triangles.
+
+   So this is deliberately shaped like the gradient rows below rather than like
+   the headings above: a bordered row with a chevron that turns, a label in
+   sentence case, and a count so the fold says what's behind it. */
+
+.theme-edit-fold {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
 }
 
-.theme-edit-group-summary:hover {
-  color: var(--color-text-secondary);
+.theme-edit-fold-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  /* Both are needed: `list-style` kills Firefox's marker, the pseudo-element
+     kills Chrome's. Miss either and one browser gets a stray triangle. */
+  list-style: none;
+}
+
+.theme-edit-fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.theme-edit-fold-summary:hover {
+  background: var(--color-panel-alt);
+}
+
+.theme-edit-fold-summary:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-accent-dark);
+}
+
+.theme-edit-fold-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.theme-edit-fold-count {
+  flex-shrink: 0;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.theme-edit-fold-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  /* Points right when shut, down when open — the same rotation the gradient
+     rows use, so one open/shut idiom covers the whole panel. */
+  transform: rotate(-90deg);
+  transition: transform 120ms ease;
+}
+
+.theme-edit-fold[open] > .theme-edit-fold-summary {
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.theme-edit-fold[open] .theme-edit-fold-chevron {
+  transform: rotate(0deg);
+}
+
+.theme-edit-fold .theme-edit-colors {
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
 }
 
 .theme-edit-colors {
@@ -1405,14 +1472,17 @@
   background-repeat: no-repeat;
 }
 
+/* Right when shut, down when open — matching the folded colour groups above,
+   so the panel has one open/shut idiom rather than one per control. */
 .theme-edit-chevron {
   flex-shrink: 0;
   color: var(--color-text-muted);
+  transform: rotate(-90deg);
   transition: transform 120ms ease;
 }
 
 .theme-edit-chevron-open {
-  transform: rotate(180deg);
+  transform: rotate(0deg);
 }
 
 .theme-edit-gradient-body {

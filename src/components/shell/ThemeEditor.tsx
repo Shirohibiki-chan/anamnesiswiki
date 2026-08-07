@@ -237,8 +237,18 @@ export function ThemeEditor() {
         ));
 
         return group.advanced ? (
-          <details className="theme-edit-group" key={group.key}>
-            <summary className="theme-edit-group-summary">{group.label}</summary>
+          // The two groups nobody edits often are folded away, and they have to
+          // *look* folded. They used to be a `<summary>` styled exactly like the
+          // headings above them — same size, same uppercase, same muted grey —
+          // which made them read as sections that had come up empty. A chevron,
+          // a border and a count of what's inside; sentence case, because it's a
+          // row you press rather than a heading you read past.
+          <details className="theme-edit-fold" key={group.key}>
+            <summary className="theme-edit-fold-summary">
+              <ChevronDown size={14} className="theme-edit-fold-chevron" />
+              <span className="theme-edit-fold-label">{group.label}</span>
+              <span className="theme-edit-fold-count">{group.tokens.length} colours</span>
+            </summary>
             <div className="theme-edit-colors">{rows}</div>
           </details>
         ) : (

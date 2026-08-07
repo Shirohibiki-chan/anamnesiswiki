@@ -10,6 +10,11 @@
 - **The dialog stays the same size when you switch section**, so the list down the side doesn't shift under the pointer. On a small window it goes back to a strip across the top and everything still fits.
 - **"Put everything back to default"** now lives at the bottom of **Theme**, fenced off, and says what it covers — theme, fonts, text size and snippets. Files you've made stay in their folders.
 
+### Fixes
+
+- **"Lines" and "Callouts and warnings" look like things you can open now.** They always were — those colours are folded away because most people never touch them — but they were drawn exactly like the headings above them, so they read as sections that had come up empty. Each one now has a chevron that turns, a border around it, and says how many colours are inside.
+- The gradient rows open and shut the same way, so there's one idiom in that panel instead of two.
+
 ## 2026-08-07 — colours in the app
 
 ### Additions
