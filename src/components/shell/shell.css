@@ -1259,8 +1259,14 @@
    the headings above: a bordered row with a chevron that turns, a label in
    sentence case, and a count so the fold says what's behind it. */
 
+/* Filled, not just outlined. A 1px line is the whole shape of a row here, and
+   a theme is free to set its borders to anything — including something a
+   shade off its own panel, which is exactly what the default theme did. A
+   surface colour survives that: the row still reads as a block even when its
+   outline doesn't. Same reasoning for the gradient rows below. */
 .theme-edit-fold {
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
@@ -1280,8 +1286,10 @@
   display: none;
 }
 
-.theme-edit-fold-summary:hover {
-  background: var(--color-panel-alt);
+/* The row is already filled, so hover moves the edge instead — the same hover
+   the theme rows use, and the one hover that works on a white theme too. */
+.theme-edit-fold:hover {
+  border-color: var(--color-border-strong);
 }
 
 .theme-edit-fold-summary:focus-visible {
@@ -1403,14 +1411,20 @@
 }
 
 .theme-edit-gradient {
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: var(--space-sm) var(--space-md);
 }
 
+/* An on gradient used to be marked by a fill the off ones didn't have. Now
+   they all have one — see the note above the fold — so on has to say so some
+   other way, and it borrows the "this one is picked" tint the theme rows and
+   the settings rail already use. Twelve rows, and the ones that are doing
+   something should be findable without reading twelve checkboxes. */
 .theme-edit-gradient-on {
-  border-color: var(--color-border);
-  background: var(--color-panel-alt);
+  background: var(--color-accent-faint);
+  border-color: var(--color-accent-faint-border);
 }
 
 .theme-edit-gradient-head {

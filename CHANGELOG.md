@@ -14,6 +14,8 @@
 
 - **"Lines" and "Callouts and warnings" look like things you can open now.** They always were — those colours are folded away because most people never touch them — but they were drawn exactly like the headings above them, so they read as sections that had come up empty. Each one now has a chevron that turns, a border around it, and says how many colours are inside.
 - The gradient rows open and shut the same way, so there's one idiom in that panel instead of two.
+- **Midnight's outlines are visible now — everywhere, not just in Settings.** It was the only theme still using the near-black theme's greys for its borders, and grey on navy barely registers: the faintest of the three was two points apart from the panel behind it. All three are now navy, and pitched slightly stronger than the other dark themes' rather than matching them. You'll notice this across the whole app — card edges, input outlines, the lines between panels — and that's the point.
+- **The rows in Colours are filled in rather than just outlined**, so they hold together as blocks even under a theme whose borders are set to something faint. A gradient that's switched on is now tinted like a selected item too, so you can spot the ones doing something without reading twelve checkboxes.
 
 ## 2026-08-07 — colours in the app
 
