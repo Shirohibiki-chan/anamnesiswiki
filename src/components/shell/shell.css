@@ -1054,3 +1054,265 @@
   font-family: var(--font-mono);
   word-break: break-all;
 }
+
+/* --- Theme editor (Phase 12) ---
+   The colour and gradient pickers. Dense on purpose: sixteen colours and twelve
+   gradients is a lot of rows, and the two things that keep it navigable are
+   that every row is the same height and that the two groups nobody edits often
+   (lines, callouts) are folded away behind a <details>. */
+
+.theme-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.theme-edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.theme-edit-group-title,
+.theme-edit-group-summary {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.theme-edit-group-summary {
+  cursor: pointer;
+  padding: var(--space-sm) 0;
+  list-style: position outside;
+}
+
+.theme-edit-group-summary:hover {
+  color: var(--color-text-secondary);
+}
+
+.theme-edit-colors {
+  display: grid;
+  /* Two up when there's room, one when there isn't. The properties panel is a
+     fixed column and Settings sits inside a modal, so this can't assume width. */
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-xs) var(--space-lg);
+}
+
+.theme-edit-color {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.theme-edit-color:hover {
+  background: var(--color-panel-alt);
+}
+
+/* The swatch is the input. `appearance: none` because the native control draws
+   a bordered button around the colour on every platform, at a size nothing
+   asked for — what's wanted here is the colour itself and nothing else. */
+.theme-edit-swatch {
+  appearance: none;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.theme-edit-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.theme-edit-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1px);
+}
+
+.theme-edit-color-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.theme-edit-color-label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.theme-edit-color-hint {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.theme-edit-hex {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* --- Gradients --- */
+
+.theme-edit-gradient {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.theme-edit-gradient-on {
+  border-color: var(--color-border);
+  background: var(--color-panel-alt);
+}
+
+.theme-edit-gradient-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.theme-edit-gradient-head input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.theme-edit-gradient-name {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.theme-edit-gradient-name:disabled {
+  cursor: default;
+}
+
+.theme-edit-gradient-label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.theme-edit-gradient-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* Reads the gradient it's describing, so "what did that do" is answered in the
+   row rather than by scrolling the app behind the dialog. Sitting on the window
+   colour rather than on a chequerboard, because that's what these actually sit
+   on — a half-transparent wash should preview as the colour it will make. */
+.theme-edit-gradient-preview {
+  flex-shrink: 0;
+  width: 4rem;
+  height: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  background-repeat: no-repeat;
+}
+
+.theme-edit-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 120ms ease;
+}
+
+.theme-edit-chevron-open {
+  transform: rotate(180deg);
+}
+
+.theme-edit-gradient-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) 0 var(--space-sm);
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.theme-edit-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.theme-edit-field-label {
+  flex-shrink: 0;
+  width: 5rem;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.theme-edit-field .appearance-select {
+  width: auto;
+  flex: 1;
+  padding: var(--space-xs) var(--space-md);
+}
+
+.theme-edit-field-value {
+  flex-shrink: 0;
+  width: 3rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.theme-edit-handwritten {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
+/* --- Making one --- */
+
+.theme-edit-create {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.theme-edit-create-row {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.theme-edit-name {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.theme-edit-name::placeholder {
+  color: var(--color-text-placeholder);
+}

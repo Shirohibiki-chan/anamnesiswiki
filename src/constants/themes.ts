@@ -108,3 +108,15 @@ export const TEXT_SCALE_MIN = 0.85;
 export const TEXT_SCALE_MAX = 1.4;
 export const TEXT_SCALE_STEP = 0.05;
 export const DEFAULT_TEXT_SCALE = 1;
+
+/**
+ * The writing gets its own multiplier and a wider floor. The UI's 0.85 floor
+ * exists because the app has 11px labels in it and 9px is a smudge; the page
+ * body starts at 16px, so it can come down further before it stops being
+ * readable — and coming down is the direction she wanted (*"the contents are
+ * generally too large"*). Same ceiling: past 1.4 the reading column starts
+ * holding six words a line.
+ */
+export const CONTENT_SCALE_MIN = 0.7;
+export const CONTENT_SCALE_MAX = 1.4;
+export const DEFAULT_CONTENT_SCALE = 1;

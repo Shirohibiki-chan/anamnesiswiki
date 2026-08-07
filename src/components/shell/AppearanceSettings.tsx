@@ -1,15 +1,26 @@
-// Settings → Appearance. Picks a theme, four fonts and a text size, lists the
-// stylesheets she's written herself, and switches snippets on and off.
+// Settings → Appearance. Picks a theme, four fonts and two text sizes, edits a
+// theme's colours and gradients, lists the stylesheets she's written herself,
+// and switches snippets on and off.
 //
-// The design it's built around: the app doesn't try to be the place you *make*
-// a theme. sandbox/theme-sandbox.html is far better at that than a settings
-// panel could be — it has a live mock, five starting points and every control
-// at once. This screen is where a made theme gets used. That split is why
-// there's no colour picker here and why the themes folder button is as
-// prominent as the built-in list.
+// This screen used to stop at "pick one" on the reasoning that the sandbox is a
+// better place to *make* a theme than a settings panel could be. Half of that
+// held and half didn't: the sandbox is still better for starting from nothing,
+// but she asked the obvious question — *"why not both"* — and there wasn't an
+// answer. So ThemeEditor.tsx is here too, and the thing that keeps the two from
+// becoming two features is that neither has a format of its own. A theme is a
+// `.css` file in a folder, wherever it was made.
 import { AlertTriangle, Check, FolderOpen, RefreshCw } from "lucide-react";
-import { BUILT_IN_THEMES, TEXT_SCALE_MAX, TEXT_SCALE_MIN, TEXT_SCALE_STEP, type FontSlot } from "../../constants/themes";
+import {
+  BUILT_IN_THEMES,
+  CONTENT_SCALE_MAX,
+  CONTENT_SCALE_MIN,
+  TEXT_SCALE_MAX,
+  TEXT_SCALE_MIN,
+  TEXT_SCALE_STEP,
+  type FontSlot,
+} from "../../constants/themes";
 import { fontChoicesFor, useTheme } from "../../hooks/use-theme";
+import { ThemeEditor } from "./ThemeEditor";
 import type { CustomStylesheet, ThemeStoreState } from "../../state/theme-store";
 import type { ThemeSwatch } from "../../services/theme-service";
 
@@ -64,9 +75,21 @@ function ThemeRow({
 }
 
 function FontPicker({ slot }: { slot: FontSlot }) {
-  const { fonts, setFont, stackFor } = useTheme();
+  const { fonts, setFont, stackFor, themeFontFor } = useTheme();
   const chosen = fonts[slot.key] ?? "";
   const stack = stackFor(slot.key);
+  // Naming it matters: "whatever the theme uses" is true but useless — the
+  // themes use different faces and there was no way to find out which without
+  // reading down a list of 98 trying to spot the one already on screen.
+  //
+  // A theme that names no face isn't a gap: `--font-mono` hands the choice to
+  // the OS on purpose, so that slot gets said out loud too, differently.
+  const themeFont = themeFontFor(slot.key);
+  const leaveItLabel = themeFont.family
+    ? `Whatever the theme uses — ${themeFont.family}`
+    : themeFont.stack
+      ? "Whatever the theme uses — your system's own"
+      : "Whatever the theme uses";
 
   return (
     <div className="appearance-font">
@@ -82,8 +105,9 @@ function FontPicker({ slot }: { slot: FontSlot }) {
         onChange={(event) => void setFont(slot.key, event.target.value || null)}
       >
         {/* Empty value, not a sentinel family name — an unset slot has to mean
-            "whatever the theme says", so switching theme still changes it. */}
-        <option value="">Whatever the theme uses</option>
+            "whatever the theme says", so switching theme still changes it. The
+            label names the face; the value stays empty. */}
+        <option value="">{leaveItLabel}</option>
         {fontChoicesFor(slot).map((group) => (
           <optgroup key={group.cat} label={group.label}>
             {group.fonts.map((font) => (
@@ -100,6 +124,44 @@ function FontPicker({ slot }: { slot: FontSlot }) {
       <p className="appearance-specimen" style={stack ? { fontFamily: stack } : undefined}>
         {slot.specimen}
       </p>
+    </div>
+  );
+}
+
+function ScaleSlider({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => Promise<void>;
+}) {
+  return (
+    <div className="appearance-font">
+      <span className="appearance-font-label">
+        {label}
+        <span className="appearance-font-hint">{hint}</span>
+      </span>
+      <div className="appearance-scale">
+        <input
+          type="range"
+          className="appearance-range"
+          min={min}
+          max={max}
+          step={TEXT_SCALE_STEP}
+          value={value}
+          aria-label={`${label} text size`}
+          onChange={(event) => void onChange(Number(event.target.value))}
+        />
+        <span className="appearance-scale-value">{Math.round(value * 100)}%</span>
+      </div>
     </div>
   );
 }
@@ -147,6 +209,7 @@ export function AppearanceSettings() {
     themeId,
     themeFile,
     textScale,
+    contentScale,
     enabledSnippets,
     customThemes,
     snippets,
@@ -155,6 +218,7 @@ export function AppearanceSettings() {
     slots,
     selectTheme,
     setTextScale,
+    setContentScale,
     toggleSnippet,
     scanFolders,
     resetAppearance,
@@ -163,6 +227,9 @@ export function AppearanceSettings() {
   } = useTheme();
 
   const withBlocked = [...customThemes, ...snippets].filter((sheet) => sheet.blocked.length > 0);
+  const currentLabel =
+    (themeFile ? customThemes.find((theme) => theme.file === themeFile)?.label : BUILT_IN_THEMES.find((t) => t.id === themeId)?.label) ??
+    "Theme";
 
   return (
     <div className="appearance-settings">
@@ -214,6 +281,11 @@ export function AppearanceSettings() {
       </section>
 
       <section className="appearance-section">
+        <p className="ui-eyebrow">Colours and gradients</p>
+        <ThemeEditor currentLabel={currentLabel} />
+      </section>
+
+      <section className="appearance-section">
         <p className="ui-eyebrow">Fonts</p>
         {slots.map((slot) => (
           <FontPicker key={slot.key} slot={slot} />
@@ -226,19 +298,27 @@ export function AppearanceSettings() {
 
       <section className="appearance-section">
         <p className="ui-eyebrow">Text size</p>
-        <div className="appearance-scale">
-          <input
-            type="range"
-            className="appearance-range"
-            min={TEXT_SCALE_MIN}
-            max={TEXT_SCALE_MAX}
-            step={TEXT_SCALE_STEP}
-            value={textScale}
-            aria-label="Text size"
-            onChange={(event) => void setTextScale(Number(event.target.value))}
-          />
-          <span className="appearance-scale-value">{Math.round(textScale * 100)}%</span>
-        </div>
+
+        {/* Two, because they answer different questions — the app's labels want
+            to be as small as you can still read them and the text you write in
+            wants to be comfortable, and those aren't the same number. */}
+        <ScaleSlider
+          label="Writing"
+          hint="the text on your pages"
+          value={contentScale}
+          min={CONTENT_SCALE_MIN}
+          max={CONTENT_SCALE_MAX}
+          onChange={setContentScale}
+        />
+        <ScaleSlider
+          label="Interface"
+          hint="menus, titles, labels — everything else"
+          value={textScale}
+          min={TEXT_SCALE_MIN}
+          max={TEXT_SCALE_MAX}
+          onChange={setTextScale}
+        />
+
         <p className="appearance-note">Text only — the panels and spacing stay where they are.</p>
       </section>
 

@@ -5,7 +5,15 @@
 // job (`readCssDir`). This file decides what a stylesheet is *allowed to be*,
 // which is a separate question and the more interesting one.
 import { FONT_LIBRARY, type FontCategory } from "../constants/font-library";
-import { DEFAULT_TEXT_SCALE, TEXT_SCALE_MAX, TEXT_SCALE_MIN, type FontSlotKey } from "../constants/themes";
+import {
+  CONTENT_SCALE_MAX,
+  CONTENT_SCALE_MIN,
+  DEFAULT_CONTENT_SCALE,
+  DEFAULT_TEXT_SCALE,
+  TEXT_SCALE_MAX,
+  TEXT_SCALE_MIN,
+  type FontSlotKey,
+} from "../constants/themes";
 
 /* --- Vetting -------------------------------------------------------------- */
 
@@ -220,6 +228,12 @@ export function applyTextScale(scale: number): void {
   document.documentElement.style.setProperty("--fs-scale", String(safe));
 }
 
+/** The page body's own multiplier. Wider floor than the UI's — see constants/themes.ts. */
+export function applyContentScale(scale: number): void {
+  const safe = Number.isFinite(scale) ? Math.min(CONTENT_SCALE_MAX, Math.max(CONTENT_SCALE_MIN, scale)) : DEFAULT_CONTENT_SCALE;
+  document.documentElement.style.setProperty("--fs-scale-content", String(safe));
+}
+
 /* --- Surviving the launch ------------------------------------------------- */
 
 /**
@@ -247,6 +261,7 @@ export type AppearanceSnapshot = {
   enabledSnippets: string[];
   fonts: Partial<Record<FontSlotKey, string>>;
   textScale: number;
+  contentScale: number;
   /**
    * The theme's background colour, resolved. Stored rather than recomputed on
    * replay because replay happens before the stylesheets have loaded — reading
@@ -299,4 +314,62 @@ export function applyCachedAppearance(slots: readonly { key: FontSlotKey; token:
   if (typeof cached.snippetCss === "string") applySnippetCss(cached.snippetCss);
   if (cached.fonts && typeof cached.fonts === "object") applyFonts(cached.fonts, slots);
   if (typeof cached.textScale === "number") applyTextScale(cached.textScale);
+  if (typeof cached.contentScale === "number") applyContentScale(cached.contentScale);
+}
+
+/**
+ * What the four font tokens resolve to *without* her overrides — i.e. what the
+ * theme itself asks for.
+ *
+ * Read off the document rather than parsed out of the theme, because the theme
+ * might be one of the built-ins (whose CSS we never hold as text) or a file
+ * that inherits three of the four from the base tokens. The overrides are
+ * inline properties on the root element, so they're cleared, the resolved
+ * values read, and then the caller puts them back — which is why this is only
+ * ever called from the store's single `apply()`, in the one place that is
+ * about to reapply them anyway.
+ */
+export function readThemeFonts(slots: readonly { key: FontSlotKey; token: string }[]): Record<string, string> {
+  const style = getComputedStyle(document.documentElement);
+  const out: Record<string, string> = {};
+  for (const slot of slots) {
+    const stack = style.getPropertyValue(slot.token).trim();
+    if (stack) out[slot.key] = stack;
+  }
+  return out;
+}
+
+/**
+ * CSS's own family keywords. Not fonts — instructions to the browser to go and
+ * find one. `--font-mono` deliberately starts with `ui-monospace` so each OS
+ * contributes its own good mono, which is the right stack and a useless name:
+ * telling someone their code font is "ui-monospace" answers nothing.
+ */
+const GENERIC_FAMILIES = new Set([
+  "serif",
+  "sans-serif",
+  "monospace",
+  "cursive",
+  "fantasy",
+  "system-ui",
+  "ui-serif",
+  "ui-sans-serif",
+  "ui-monospace",
+  "ui-rounded",
+  "math",
+  "emoji",
+  "fangsong",
+]);
+
+/**
+ * `'"Quicksand", sans-serif'` → `"Quicksand"`. The first *named* face in a
+ * stack, unquoted, for saying out loud what something is actually set in.
+ *
+ * Null when the stack names none — see above. The caller says what it wants to
+ * about that; what it mustn't do is print the keyword.
+ */
+export function familyFromStack(stack: string): string | null {
+  const first = stack.split(",")[0]?.trim().replace(/^["']|["']$/g, "") ?? "";
+  if (!first || GENERIC_FAMILIES.has(first.toLowerCase())) return null;
+  return first;
 }
