@@ -1,4 +1,4 @@
-// What Settings → Appearance lets you point a colour picker at, and the twelve
+// What Settings → Colours lets you point a colour picker at, and the twelve
 // gradient slots it can fill.
 //
 // This is a *subset* of the token system in `src/index.css` on purpose. A theme

@@ -293,7 +293,7 @@ export function freeFileName(name: string, taken: readonly string[], sanitize: (
 export function serializeTheme(name: string, themeId: string, draft: ThemeDraft, today: string): string {
   const lines: string[] = [];
   lines.push(`/* Anamnesis theme — "${name}"`);
-  lines.push(`   Made in Settings → Appearance on ${today}.`);
+  lines.push(`   Made in Settings → Colours on ${today}.`);
   lines.push("");
   lines.push("   Plain CSS, so you can edit it here as well as in the app —");
   lines.push("   the pickers read this file back. Change a colour by hand and");

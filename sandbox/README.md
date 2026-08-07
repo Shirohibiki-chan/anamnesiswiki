@@ -10,11 +10,12 @@ internet. It works from anywhere on disk.
 
 Your changes save themselves in the browser, so you can close it and come back.
 
-Since 2026-08-07 the app can edit colours and gradients too, in Settings →
-Appearance. Same file format, so this and that are two ways into one thing:
+Since 2026-08-07 the app can edit colours and gradients too, in **Settings →
+Colours**. Same file format, so this and that are two ways into one thing:
 export from here, adjust in there, or the other way round. What this still has
-that Settings doesn't is fonts, spacing, a free-text CSS box and a mock you can
-wreck without touching a real project.
+that Settings doesn't is *fonts written into the theme* (Settings' font pickers
+set your own preference, which sits on top of whichever theme is on), spacing,
+a free-text CSS box, and a mock you can wreck without touching a real project.
 
 ## What's in it
 
@@ -37,7 +38,7 @@ wreck without touching a real project.
 ## Using what you made
 
 Save the exported CSS as `anything.css` in **`Documents\Anamnesis\themes`**,
-then open Anamnesis → **Settings → Appearance**. It's in the list. Nothing else
+then open Anamnesis → **Settings → Theme**. It's in the list. Nothing else
 needs doing to it — the export is written to be dropped in as-is.
 
 Snippets work the same way: a `.css` file in `Documents\Anamnesis\snippets` gets

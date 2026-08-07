@@ -92,6 +92,16 @@
   --ui-modal-width: 32rem;
 }
 
+/* The fourth width, added back deliberately after the cull above. Settings is
+   the one dialog that isn't a single decision — it's seven screens behind one
+   frame, with a nav down the side — and squeezing that into `lg` is what made
+   it a column you scrolled instead of a panel you read. Nothing else should
+   reach for this: if a dialog wants 60rem, it probably wants to not be a
+   dialog. */
+.ui-modal-xl {
+  --ui-modal-width: 60rem;
+}
+
 /* --- Buttons ---
 
    Three roles, and the app should almost never need a fourth. Primary is the

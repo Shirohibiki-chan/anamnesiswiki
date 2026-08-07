@@ -2,7 +2,7 @@
 // Run `node scripts/build-fonts.mjs` to regenerate.
 //
 // Every family bundled in src/fonts-library.css, which is every family the
-// font pickers in Settings → Appearance are allowed to offer. All of them are
+// font pickers in Settings → Fonts and text are allowed to offer. All of them are
 // SIL Open Font License or Apache 2.0 — that is the condition for being on
 // this list, and it's what makes shipping them legal.
 
