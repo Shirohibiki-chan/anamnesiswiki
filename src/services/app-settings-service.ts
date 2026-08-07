@@ -126,6 +126,39 @@ export async function hasCustomProjectsDir(): Promise<boolean> {
   return (await store.get<string>("projectsDir")) != null;
 }
 
+/**
+ * How the app looks: which theme, which fonts, how big the text. App-level and
+ * not per-project on purpose — she has one pair of eyes and several worlds.
+ *
+ * `themeFile` is the filename when the choice is one of hers, and null for a
+ * built-in. Stored beside the id rather than instead of it because a custom
+ * theme needs both: the file to load, and the id inside it to put on the
+ * document. Stored as a *name*, not a path, so moving the projects folder
+ * doesn't orphan the choice.
+ */
+export type AppearanceSettings = {
+  themeId: string;
+  themeFile: string | null;
+  fonts: Record<string, string>;
+  textScale: number;
+  /** Snippet filenames that are switched on. Absent means none are. */
+  enabledSnippets: string[];
+};
+
+export async function getAppearance(): Promise<Partial<AppearanceSettings>> {
+  const store = await getStore();
+  // Unvalidated, like the shortcut overrides above and for the same reason:
+  // this module reads and writes the file, and deciding whether a theme id
+  // still exists or a font is still bundled belongs with the code that knows.
+  return (await store.get<Partial<AppearanceSettings>>("appearance")) ?? {};
+}
+
+export async function setAppearance(appearance: AppearanceSettings): Promise<void> {
+  const store = await getStore();
+  await store.set("appearance", appearance);
+  await store.save();
+}
+
 export async function removeRecentProject(path: string): Promise<void> {
   const store = await getStore();
   const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];

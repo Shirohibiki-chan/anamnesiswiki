@@ -1,31 +1,40 @@
-// Regenerates the sandbox's font files. Two outputs, two different jobs:
+// The font pipeline. One family list (LIBRARY, below) feeds both the sandbox
+// and the shipped app, so the fonts she picks in the sandbox are guaranteed to
+// exist in the real thing. Five outputs:
 //
-//   fonts.css          the app's three real bundled faces, inlined
-//   fonts-library.css  ~90 open-licence families for trying things out
-//   fonts-library.js   the manifest the sandbox builds its dropdowns from
+//   sandbox/fonts.css          the app's own faces, inlined
+//   sandbox/fonts-library.css  the whole library, inlined
+//   sandbox/fonts-library.js   the manifest the sandbox builds its dropdowns from
+//   public/fonts/library/*     the same faces as plain woff2 files, for the app
+//   src/fonts-library.css      @font-face rules pointing at those files
+//   src/constants/font-library.ts  the manifest Settings → Appearance reads
 //
-// Why inline rather than just pointing at ../public/fonts/: the sandbox is
+// Why the sandbox gets inlined copies and the app gets files: the sandbox is
 // opened by double-clicking it, so it runs from a file:// URL, and browsers
 // refuse to load @font-face files across file:// origins. A relative <link>
 // to a stylesheet in the same folder is fine; the font bytes have to be
-// *inside* that stylesheet. The result is a sandbox that works offline, from
-// anywhere on disk, with no dev server and no install.
+// *inside* that stylesheet. The app has no such problem and shouldn't pay for
+// it — 6MB of base64 parsed at every launch, to decode maybe three faces.
+// Separate files mean the browser only ever reads the ones a theme names.
 //
 // The library families are fetched from Google Fonts *here, at build time, by
 // a developer* — never by the sandbox and never by the app. Downloads are
-// cached in sandbox/.font-cache/ (gitignored), so a rerun is offline and
+// cached in scripts/.font-cache/ (gitignored), so a rerun is offline and
 // instant. This does not put a network call anywhere near the product; see
 // CLAUDE.md §Policy Boundary.
 //
 // Run after changing anything in public/fonts, or after editing LIBRARY:
-//   node sandbox/build-fonts.mjs
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+//   node scripts/build-fonts.mjs
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fontsDir = join(here, "..", "public", "fonts");
+const root = join(here, "..");
+const fontsDir = join(root, "public", "fonts");
+const libDir = join(fontsDir, "library");
+const sandboxDir = join(root, "sandbox");
 const cacheDir = join(here, ".font-cache");
 
 /* ---------------------------------------------------------------------------
@@ -176,6 +185,23 @@ function faceBlock({ family, style, weight, base64, format = "woff2" }) {
   ].join("\n");
 }
 
+// The app's copy of the same face: a plain file reference. `swap` rather than
+// `block` because this one is on the real app's first paint — a theme naming a
+// face we somehow don't have should show fallback text, not nothing.
+function fileFaceBlock({ family, style, weight, file }) {
+  return [
+    "@font-face {",
+    `  font-family: "${family}";`,
+    `  font-style: ${style};`,
+    `  font-weight: ${weight};`,
+    "  font-display: swap;",
+    `  src: url("/fonts/library/${file}") format("woff2");`,
+    "}",
+  ].join("\n");
+}
+
+const slug = (family) => family.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 /* --- 1. the shipped three ------------------------------------------------ */
 const shippedBlocks = SHIPPED.map((face) => faceBlock({
   ...face,
@@ -183,9 +209,9 @@ const shippedBlocks = SHIPPED.map((face) => faceBlock({
   format: face.variations ? "woff2-variations" : "woff2",
 }));
 
-writeFileSync(join(here, "fonts.css"),
+writeFileSync(join(sandboxDir, "fonts.css"),
   `/* GENERATED FILE — do not edit by hand.
-   Run \`node sandbox/build-fonts.mjs\` to regenerate.
+   Run \`node scripts/build-fonts.mjs\` to regenerate.
 
    The app's three bundled faces, inlined as data: URIs so the sandbox works
    when opened straight off disk. See build-fonts.mjs for why. */\n\n` +
@@ -195,7 +221,13 @@ const shippedBytes = SHIPPED.reduce((n, f) => n + readFileSync(join(fontsDir, f.
 console.log(`fonts.css — ${SHIPPED.length} faces, ${Math.round(shippedBytes / 1024)}KB (the app's own)`);
 
 /* --- 2. the library ------------------------------------------------------ */
+// Wiped and rewritten rather than merged, so a family dropped from LIBRARY
+// stops shipping instead of lingering as an orphaned woff2 nothing references.
+rmSync(libDir, { recursive: true, force: true });
+mkdirSync(libDir, { recursive: true });
+
 const blocks = [];
+const fileBlocks = [];
 const manifest = [];
 const failed = [];
 let bytes = 0;
@@ -211,6 +243,10 @@ for (const entry of LIBRARY) {
       bytes += buf.length;
       if (face.style === "italic") hasItalic = true;
       blocks.push(faceBlock({ family: entry.family, style: face.style, weight: face.weight, base64: buf.toString("base64") }));
+
+      const file = `${slug(entry.family)}-${face.weight}${face.style === "italic" ? "i" : ""}.woff2`;
+      writeFileSync(join(libDir, file), buf);
+      fileBlocks.push(fileFaceBlock({ family: entry.family, style: face.style, weight: face.weight, file }));
     }
     manifest.push({ family: entry.family, cat: entry.cat, italic: hasItalic });
     process.stdout.write(".");
@@ -221,29 +257,74 @@ for (const entry of LIBRARY) {
 }
 process.stdout.write("\n");
 
-writeFileSync(join(here, "fonts-library.css"),
+writeFileSync(join(sandboxDir, "fonts-library.css"),
   `/* GENERATED FILE — do not edit by hand.
-   Run \`node sandbox/build-fonts.mjs\` to regenerate.
+   Run \`node scripts/build-fonts.mjs\` to regenerate.
 
-   ${manifest.length} open-licence families for trying things out in the sandbox.
-   None of these ship with the app; every one of them *could*. */\n\n` +
+   ${manifest.length} open-licence families, inlined for the sandbox. The app
+   reads the same faces as files — see src/fonts-library.css. */\n\n` +
   blocks.join("\n\n") + "\n");
+
+/* --- 3. the app's copy --------------------------------------------------- */
+writeFileSync(join(root, "src", "fonts-library.css"),
+  `/* GENERATED FILE — do not edit by hand.
+   Run \`node scripts/build-fonts.mjs\` to regenerate.
+
+   ${manifest.length} open-licence families (SIL OFL or Apache 2.0), so a theme
+   — built-in or one of hers — can name any of them and have it actually
+   render. These are declarations, not downloads: the browser reads a woff2
+   from public/fonts/library/ only when something on screen is set in it, so
+   the cost of a family nobody picks is one unused rule.
+
+   The app's own four faces stay in index.css. They're the defaults, they load
+   on every launch, and they are not part of this list. */\n\n` +
+  fileBlocks.join("\n\n") + "\n");
 
 // The manifest is generated rather than hand-listed in the HTML so the two can
 // never disagree: a family that failed to download simply isn't offered.
+const CATS = ["serif", "sans", "display", "hand", "mono"];
 const byCat = (cat) => manifest.filter((m) => m.cat === cat)
   .map((m) => `  { family: ${JSON.stringify(m.family)}, cat: ${JSON.stringify(m.cat)}, italic: ${m.italic} },`)
   .join("\n");
 
-writeFileSync(join(here, "fonts-library.js"),
+writeFileSync(join(sandboxDir, "fonts-library.js"),
   `/* GENERATED FILE — do not edit by hand.
-   Run \`node sandbox/build-fonts.mjs\` to regenerate.
+   Run \`node scripts/build-fonts.mjs\` to regenerate.
 
    What actually made it into fonts-library.css. theme-sandbox.html builds its
    font dropdowns from this, so the list and the faces can't drift apart. */
 window.FONT_LIBRARY = [
-${["serif", "sans", "display", "hand", "mono"].map(byCat).filter(Boolean).join("\n")}
+${CATS.map(byCat).filter(Boolean).join("\n")}
 ];\n`);
 
-console.log(`fonts-library.css — ${manifest.length} families, ${blocks.length} faces, ${(bytes / 1024 / 1024).toFixed(1)}MB of woff2 inlined`);
+/* --- 4. the app's manifest ----------------------------------------------- */
+// Same reasoning as the sandbox's: generated, so Settings → Appearance can
+// never offer a family that isn't in src/fonts-library.css. A hand-kept list
+// would drift the first time a family failed to download.
+writeFileSync(join(root, "src", "constants", "font-library.ts"),
+  `// GENERATED FILE — do not edit by hand.
+// Run \`node scripts/build-fonts.mjs\` to regenerate.
+//
+// Every family bundled in src/fonts-library.css, which is every family the
+// font pickers in Settings → Appearance are allowed to offer. All of them are
+// SIL Open Font License or Apache 2.0 — that is the condition for being on
+// this list, and it's what makes shipping them legal.
+
+/** Which slot a family is shaped for. Groups the pickers, nothing more. */
+export type FontCategory = ${CATS.map((c) => JSON.stringify(c)).join(" | ")};
+
+export type LibraryFont = {
+  family: string;
+  cat: FontCategory;
+  /** Whether a real italic was bundled, rather than the browser slanting it. */
+  italic: boolean;
+};
+
+export const FONT_LIBRARY: readonly LibraryFont[] = [
+${CATS.map(byCat).filter(Boolean).join("\n")}
+];
+`);
+
+console.log(`sandbox/fonts-library.css — ${manifest.length} families, ${blocks.length} faces inlined`);
+console.log(`public/fonts/library — ${blocks.length} files, ${(bytes / 1024 / 1024).toFixed(1)}MB`);
 if (failed.length) console.log(`skipped ${failed.length}: ${failed.join(", ")}`);

@@ -55,7 +55,7 @@
 
 .ui-surface,
 .ui-modal {
-  background: var(--color-panel);
+  background: var(--gradient-modal, none), var(--color-panel);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-modal);
@@ -136,7 +136,7 @@
 }
 
 .ui-btn-primary {
-  background: var(--color-accent-light);
+  background: var(--gradient-accent, none), var(--color-accent-light);
   border-color: var(--color-accent-light);
   color: var(--color-bg);
   font-weight: 500;

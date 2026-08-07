@@ -11,6 +11,18 @@ export const FOLDER_META_FILE = "_folder.json";
 export const PAGE_META_FILE = "_page.json";
 export const ASSETS_DIR = "assets";
 
+// Phase 12. Both sit *beside* the projects, in the projects folder rather than
+// inside any one of them — a theme isn't part of a world, and having to
+// re-make it for every project would be the wrong shape. They're also
+// deliberately somewhere she can find: the alternative was the app's own data
+// directory, which on Windows is a path nobody types by accident.
+//
+// Loose `.css` files rather than a registry, so making a theme is "save this
+// file here" and deleting one is "delete the file". Nothing has to stay in
+// step with anything.
+export const THEMES_DIR = "themes";
+export const SNIPPETS_DIR = "snippets";
+
 // Prefix for the temporary name a node is parked under mid-move. Several
 // nodes swapping paths have to be staged out of the way first, or one lands on
 // another's name (see filesystem-service's applyRelocations).

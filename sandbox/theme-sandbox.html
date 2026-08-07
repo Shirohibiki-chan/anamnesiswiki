@@ -375,6 +375,9 @@ details.grad[data-on="1"] { border-color: #3d5c58; }
   display: none; align-items: center; justify-content: center; padding: 40px; z-index: 50;
 }
 #exportWrap.on { display: flex; }
+#exportHow { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--chrome-dim); }
+#exportHow b { color: var(--chrome-text); font-weight: 600; }
+#exportHow code { font-family: ui-monospace, Consolas, monospace; }
 #exportBox {
   background: var(--chrome-panel); border: 1px solid var(--chrome-line);
   border-radius: 8px; padding: 18px; width: min(760px, 100%); max-height: 80vh;
@@ -580,6 +583,11 @@ details.grad[data-on="1"] { border-color: #3d5c58; }
 <div id="exportWrap">
   <div id="exportBox">
     <h2>Your theme, as CSS</h2>
+    <p id="exportHow">
+      Save this as <b>a name you like<code>.css</code></b> in your
+      <b>Documents\Anamnesis\themes</b> folder, then open Anamnesis →
+      <b>Settings → Appearance</b>. It'll be in the list.
+    </p>
     <textarea id="exportText" readonly spellcheck="false"></textarea>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="act" id="btnCopy">Copy</button>
@@ -741,12 +749,14 @@ const PRESETS = {
 /* ---------------------------------------------------------------------------
    Fonts. Three tiers, and the difference between them is not cosmetic:
 
-     bundled  ships with the app already. Costs nothing, works everywhere.
-     library  open licence (OFL or Apache 2.0) — we are allowed to bundle it.
-              Picking one is a small ask, not a project.
+     bundled  one of the app's own four defaults.
+     library  open licence (OFL or Apache 2.0), and — as of Phase 12 — shipped
+              inside the app too. Pick one here and the theme file you export
+              renders exactly like this, on any machine, with nothing to do.
      system   already installed on this PC, but Microsoft's licence doesn't
-              let us redistribute it. On another machine it silently falls
-              back to something else, so it can never be a real theme.
+              let us redistribute it. Anamnesis doesn't have these, so on any
+              machine including this one after a reinstall it silently falls
+              back to something else. Never a safe basis for a real theme.
 
    The library list is generated: fonts-library.js is written by
    build-fonts.mjs from what actually downloaded, so the dropdown can't offer
@@ -797,7 +807,7 @@ const FONT_GROUPS = [
   { label: `Sans-serif (${lib("sans").length})`, items: lib("sans") },
   { label: `Display — titles only (${lib("display").length})`, items: lib("display") },
   { label: `Handwriting (${lib("hand").length})`, items: lib("hand") },
-  { label: "On this PC only — can't be shipped", items: SYSTEM },
+  { label: "On this PC only — Anamnesis can't use these", items: SYSTEM },
 ];
 const MONO_GROUPS = [
   { label: "Built in", items: SYSTEM_MONO },
@@ -1269,7 +1279,10 @@ function exportCss() {
   const today = new Date().toISOString().slice(0, 10);
   const lines = [];
   lines.push(`/* Anamnesis theme — "${state.themeName}"`);
-  lines.push(`   Made in sandbox/theme-sandbox.html on ${today}. */`);
+  lines.push(`   Made in the theme sandbox on ${today}.`);
+  lines.push("");
+  lines.push("   Save this file in Documents\\Anamnesis\\themes and it turns up in");
+  lines.push("   Settings → Appearance. Nothing else needs doing to it. */");
   lines.push("");
   lines.push(`[data-theme="${id}"] {`);
   let group = "";
@@ -1281,7 +1294,7 @@ function exportCss() {
   if (grads.length) {
     const on = GRADIENTS.filter((d) => state.gradients[d.k].on);
     lines.push("");
-    lines.push("  /* Gradients — new tokens, Phase 12 adds them to the system.");
+    lines.push("  /* Gradients.");
     lines.push(`     On here: ${on.map((d) => d.label.toLowerCase()).join(", ")}.`);
     if (on.some((d) => d.text)) {
       lines.push("     The -clip/-fill pairs go with a text gradient; they paint the");
@@ -1294,46 +1307,50 @@ function exportCss() {
     lines.push("  */");
     for (const [k, v] of grads) lines.push(`  ${k}: ${v};`);
   }
-  lines.push("}");
 
+  /* Fonts and sizes go *inside* the theme block, not in a `:root` block of
+     their own. They used to be separate, with a note saying they weren't part
+     of a theme — that stopped being true when the app learned to load these
+     files: a theme sets `--font-display` like it sets any other token, and a
+     `:root` rule in a theme file would apply even when the theme is switched
+     off, which is not a thing anyone would expect from a file called a theme. */
   const fontsChanged = FONT_SLOTS.filter((s) => state.fonts[s.k] !== s.def);
-  const scalesChanged = SCALE_CONTROLS.filter((c) => state.scales[c.k] !== c.def);
-  if (fontsChanged.length || scalesChanged.length) {
+  if (fontsChanged.length) {
     lines.push("");
-    lines.push("/* These are NOT part of a theme — fonts and scales live in :root and");
-    lines.push("   apply to every theme at once. Listed here so they don't get lost. */");
-    lines.push(":root {");
     for (const s of fontsChanged) lines.push(`  ${s.k}: ${state.fonts[s.k]};`);
-    if (fontsChanged.length && scalesChanged.length) lines.push("");
+  }
+
+  const scalesChanged = SCALE_CONTROLS.filter((c) => state.scales[c.k] !== c.def);
+  if (scalesChanged.length) {
+    lines.push("");
     const c = computed();
     for (const s of scalesChanged) {
-      if (s.k === "textScale") for (const k of Object.keys(FS_BASE)) lines.push(`  ${k}: ${c[k]};`);
-      if (s.k === "titleScale") for (const k of Object.keys(FS_TITLE)) lines.push(`  ${k}: ${c[k]};`);
+      /* Text size is the one scale the app also has a slider for, so it's
+         emitted as the multiplier rather than as eight finished sizes —
+         `--fs-scale` is exactly what Settings → Appearance sets, so a theme
+         and her slider multiply instead of one silently winning. Title size
+         keeps the multiplier in its own calc for the same reason. */
+      if (s.k === "textScale") lines.push(`  --fs-scale: ${(state.scales.textScale / 100).toFixed(2)};`);
+      if (s.k === "titleScale") for (const [k, px] of Object.entries(FS_TITLE)) lines.push(`  ${k}: calc(${rem(px * state.scales.titleScale / 100)} * var(--fs-scale));`);
       if (s.k === "spaceScale") for (const k of Object.keys(SPACE_BASE)) lines.push(`  ${k}: ${c[k]};`);
       if (s.k === "radiusScale") for (const k of Object.keys(RADIUS_BASE)) lines.push(`  ${k}: ${c[k]};`);
       if (s.k === "lineHeight") { lines.push(`  --lh-normal: ${c["--lh-normal"]};`); lines.push(`  --lh-tight: ${c["--lh-tight"]};`); }
     }
-    lines.push("}");
   }
+  lines.push("}");
 
   const tierOf = (slot) => (ALL_FONTS.find((o) => o.value === state.fonts[slot.k]) || {}).tier;
   const named = (slots) => slots.map((s) => `${s.label} (${state.fonts[s.k].split(",")[0].replace(/"/g, "")})`).join(", ");
   // Only slots she actually changed. The default mono is a system stack by
   // design, and warning that the untouched default can't ship is just noise.
-  const picked = FONT_SLOTS.filter((s) => state.fonts[s.k] !== s.def);
-  const toBundle = picked.filter((s) => tierOf(s) === "library");
-  const cantShip = picked.filter((s) => tierOf(s) === "system");
-  if (toBundle.length) {
-    lines.push("");
-    lines.push("/* TO DO: " + named(toBundle) + " use library fonts.");
-    lines.push("   Open licence, so they can be bundled — add the woff2 to public/fonts");
-    lines.push("   and an @font-face to src/index.css and they'll work everywhere. */");
-  }
+  const cantShip = fontsChanged.filter((s) => tierOf(s) === "system");
   if (cantShip.length) {
     lines.push("");
     lines.push("/* HEADS UP: " + named(cantShip) + " use fonts that are on this PC but");
-    lines.push("   can't be redistributed with the app. They'd fall back to something else");
-    lines.push("   on any other machine — pick a library font instead if that matters. */");
+    lines.push("   can't be redistributed with the app. Anamnesis doesn't have them, so this");
+    lines.push("   theme would fall back to something else — including on your own machine if");
+    lines.push("   you ever reinstall Windows. Everything in the other groups is bundled and");
+    lines.push("   will render exactly as it does here. */");
   }
 
   if (state.custom.trim()) {

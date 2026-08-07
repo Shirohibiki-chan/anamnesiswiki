@@ -194,7 +194,7 @@
 }
 
 .tree-row-selected {
-  background: var(--color-accent-faint);
+  background: var(--gradient-sel, none), var(--color-accent-faint);
   color: var(--color-accent-light);
 }
 

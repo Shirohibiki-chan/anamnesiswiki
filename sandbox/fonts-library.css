@@ -1,8 +1,8 @@
 /* GENERATED FILE — do not edit by hand.
-   Run `node sandbox/build-fonts.mjs` to regenerate.
+   Run `node scripts/build-fonts.mjs` to regenerate.
 
-   98 open-licence families for trying things out in the sandbox.
-   None of these ship with the app; every one of them *could*. */
+   98 open-licence families, inlined for the sandbox. The app
+   reads the same faces as files — see src/fonts-library.css. */
 
 @font-face {
   font-family: "EB Garamond";

@@ -4,6 +4,20 @@
 // confirm prompts moved to an in-app themed modal instead — see
 // state/dialog-store.ts and components/shell/ConfirmDialog.tsx.
 import { open, save } from "@tauri-apps/plugin-dialog";
+import { openPath } from "@tauri-apps/plugin-opener";
+
+/**
+ * Hands a folder to the OS file manager. Phase 12's themes and snippets are
+ * loose `.css` files, and "put a file in this folder" is only a usable
+ * instruction if there's a button that goes there — otherwise it's a Windows
+ * path in a tooltip that has to be typed correctly.
+ *
+ * Not a disk touch, so it isn't in filesystem-service: nothing is read or
+ * written, Explorer is just pointed at somewhere.
+ */
+export async function showFolder(path: string): Promise<void> {
+  await openPath(path);
+}
 
 export async function pickFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null> {
   const result = await open({ directory: true, multiple: false, ...options });

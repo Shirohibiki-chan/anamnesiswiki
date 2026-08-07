@@ -41,7 +41,13 @@
 
 ### Theme architecture
 
-Anamnesis uses Tailwind v4's `@theme` block to define all semantic color tokens as CSS custom properties. There is currently one shipped theme (dark) — its token values live directly inside `@theme`. Additional themes (Light, Parchment, Foxian, Belobog, Deep Space) are planned as `[data-theme="<name>"]` selector blocks that override the same token names. No theme-switcher UI exists yet.
+Anamnesis uses Tailwind v4's `@theme` block to define all semantic color tokens as CSS custom properties. **Those values are the dark theme and also the base every other theme overrides** — a theme only has to name what it changes, so a token nobody thought about still resolves to something sane.
+
+Other themes are `[data-theme="<name>"]` blocks in `index.css`, written **unlayered**: Tailwind's `@theme` output lands in the `theme` cascade layer, and an unlayered rule beats a layered one regardless of specificity, so a theme block wins without `!important` or a doubled selector. `data-theme` is set on `<html>` by `theme-service.ts`.
+
+Three themes ship — `dark` (which has no block of its own, per the above), `midnight` and `daylight`. Adding a fourth here is *not* the only way to get a theme: since Phase 12 a `.css` file in `<projectsDir>/themes/` is loaded at runtime and does the same job. See §Custom themes below.
+
+Because `[data-theme="x"]` matches any element and not just `<html>`, putting the attribute on a swatch element makes that element resolve the theme's real tokens — which is how the Appearance picker previews built-in themes without duplicating a single colour value.
 
 New UI **must** use semantic tokens (`--color-panel`, `--color-text-primary`, etc.), never raw palette hex values or one-off color literals. The palette values below are for node coloring (folder/page tinting) — treat them as data, not as the UI palette.
 
@@ -121,6 +127,23 @@ The palette-hex values in `src/constants/palette.ts` must stay in sync with thes
 
 Active tabs, selected tree rows, and the top-bar Project button use a consistent three-token tint: `--color-accent-faint` background + `--color-accent-faint-border` border + `--color-accent-light` label. Inactive state is transparent background with `--color-text-secondary` label. This pattern is intentionally reused so navigation state reads the same everywhere.
 
+### Gradients (Phase 12)
+
+Twelve optional tokens — `--gradient-` plus `bg`, `topbar`, `sidebar`, `page`, `props`, `modal`, `accent`, `sel`, `tag`, `title`, `heading`, `callout`. Three rules govern them and all three are load-bearing:
+
+1. **They are never declared, only read.** Every use site says `var(--gradient-x, none)` and nothing gives them a default. A declared-but-empty custom property resolves to *nothing*, so `background: , var(--color-panel)` is a syntax error that drops the surface's colour entirely — "off" has to mean absent. Don't add `--gradient-bg: none` to `:root`.
+2. **They layer over a colour, not instead of one** — `background: var(--gradient-x, none), var(--color-y)`. A theme that sets only some of the twelve still has solid surfaces, and a gradient with transparency in it fades to the theme's own colour. `--gradient-callout` in particular sits over each callout's tint rather than replacing it; replacing it would flatten Info/Quote/Secret into one colour. `--gradient-page` is the exception with no colour under it, because the writing area has never had a background of its own and giving it one would hide `--gradient-bg`.
+3. **The two text gradients need three properties each.** `--gradient-title` and `--gradient-heading` come with `-clip` and `-fill` companions, set together by `gradientVars()` in the sandbox and by any theme file. The image alone paints a coloured box; the clip alone makes the text invisible. The `-clip` fallback must be `border-box` and the `-fill` fallback `currentColor`, or every theme without a title gradient loses its title.
+
+### Custom themes and snippets (Phase 12)
+
+`<projectsDir>/themes/*.css` and `<projectsDir>/snippets/*.css` — beside her projects rather than inside one, because a theme isn't part of a world. Both folders are created on scan.
+
+- A theme file's `[data-theme="…"]` id is read out of the file (`readThemeId`) and put on the document, which is what makes a sandbox export work with no editing. A file with no such block falls back to a slug of its filename.
+- Snippets are concatenated and injected *after* the theme, so a snippet adjusting a theme wins on ordering alone and needs no `!important`.
+- **All of it goes through `sanitizeCustomCss` first.** CSS can make network requests and the app ships with `"csp": null`; anything that isn't a `data:` URI or an app-bundle path is stripped and reported to the user. This is a Policy Boundary rule, not a nicety — see `docs/handoff.md`.
+- The 98 bundled families in `src/fonts-library.css` are what let a theme name a font and have it render. All OFL or Apache 2.0. Generated, along with `src/constants/font-library.ts` and the sandbox's copies, by `node scripts/build-fonts.mjs`.
+
 ### Scales (Phase 11.5)
 
 Everything below lives in a **plain `:root` block** in `index.css`, deliberately *not* in `@theme`. `@theme` is Tailwind's utility-generation table: a `--text-sm` declared there redefines the `text-sm` utility, and `@blocknote/shadcn`'s menus are built entirely out of those utilities. The app writes no Tailwind classes of its own, so it gains nothing from that table and risks breaking the editor chrome. New non-colour tokens go in `:root`; colours stay in `@theme` for the shadcn bridge described above.
@@ -128,6 +151,8 @@ Everything below lives in a **plain `:root` block** in `index.css`, deliberately
 The one exception is `--radius-*`, which does use Tailwind's namespace — its three overlapping values are set to Tailwind's own defaults (`sm` 0.25rem, `md` 0.375rem, `lg` 0.5rem) so `rounded-*` inside BlockNote lands on the pixels it always did. **If you change one of those three, check the editor menus.**
 
 **Type** — `--fs-*`. The four small sizes carry ~95 of the app's sized elements and were left alone; what collapsed was the tail (eleven sizes down to eight, six competing heading sizes down to three).
+
+Every step is `calc(<base> * var(--fs-scale))`, and `--fs-scale` (default `1`) is what Settings → Appearance's text-size slider sets. The obvious alternative — a `font-size` on the root element — moves every `rem` in the app at once, so asking for bigger text would also inflate all eight spacing steps, both sidebars and the reading column. The values in the table are at scale 1.
 
 | Token | Value | Use for |
 |---|---|---|
