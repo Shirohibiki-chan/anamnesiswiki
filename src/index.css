@@ -362,14 +362,31 @@
    already orchid, and two purples a row apart is no colour-coding at all. */
 
 /* Hers, made in the sandbox on 2026-08-06 — deep navy instead of near-black,
-   with the teal kept. The border tokens are hers too, and they're deliberately
-   the neutral greys rather than navy-tinted: she picked them against this
-   background and they read as structure rather than as more of the wash. */
+   with the teal kept.
+
+   The border tokens used to be left inherited, on the reasoning that neutral
+   greys would read as structure against the navy rather than as more of the
+   wash. That was wrong, and the numbers say why: `--color-border-subtle` was
+   #22222c against a #151e2e panel — rgb(34,34,44) on rgb(21,30,46), a blue
+   channel two points apart. Not subtle, invisible; reported from use as
+   outlines you simply can't see. Every other theme re-tunes its three borders,
+   and this was the only one still wearing the near-black theme's — while being
+   the default.
+
+   Retuned in the navy family, same three roles. It lands a little above the
+   other darks on purpose (border-vs-panel 1.44 against their 1.28) — this is
+   the theme the complaint came from, and the near miss it's replacing is the
+   argument for erring visible. If you retune the other five, bring them up to
+   this rather than pulling this down to them. */
 [data-theme="midnight"] {
   --color-bg: #0d1221;
   --color-panel: #151e2e;
   --color-panel-alt: #0f151f;
   --color-panel-edge: #292c4c;
+
+  --color-border-strong: #3a4d70;
+  --color-border: #2a3954;
+  --color-border-subtle: #1e2a3e;
 
   --font-display: "Domine", serif;
   --font-ui: "Lexend", sans-serif;
