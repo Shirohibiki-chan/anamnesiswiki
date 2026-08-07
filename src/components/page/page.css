@@ -396,7 +396,7 @@
   --bn-font-family: var(--font-prose) !important;
 }
 
-/* The two lines that make the centre pane obey Settings → Appearance.
+/* The two lines that make the centre pane obey the Settings text sliders.
    BlockNote's stylesheet puts `font-family: Inter, …` and `font-size: 16px`
    on the contenteditable element itself (`.bn-editor.bn-default-styles`).
    A declaration on the element always beats an inherited one, so neither the

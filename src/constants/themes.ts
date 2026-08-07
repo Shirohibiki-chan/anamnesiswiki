@@ -1,4 +1,4 @@
-// What Settings → Appearance offers. See docs/constants-and-theming.md.
+// What the appearance panels in Settings offer. See docs/constants-and-theming.md.
 import type { FontCategory } from "./font-library";
 
 export type BuiltInTheme = {

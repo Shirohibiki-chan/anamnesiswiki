@@ -1,4 +1,4 @@
-// The colour and gradient pickers in Settings → Appearance.
+// The colour and gradient pickers — Settings → Colours.
 //
 // This exists because of a fair question: *"i know we have css override but
 // shouldn't we enable people to change colors in-app too, or is that too
@@ -15,6 +15,7 @@
 import { useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { COLOR_GROUPS, GRADIENT_SLOTS, RADIAL_ORIGINS, type ColorToken, type GradientSlot } from "../../constants/theme-tokens";
+import { BUILT_IN_THEMES } from "../../constants/themes";
 import { useTheme } from "../../hooks/use-theme";
 import { gradientCss, type Gradient } from "../../services/theme-editor";
 
@@ -207,10 +208,17 @@ function CreateTheme({ suggestion }: { suggestion: string }) {
   );
 }
 
-export function ThemeEditor({ currentLabel }: { currentLabel: string }) {
-  const { draft, setThemeColor, toggleGradient, setGradient } = useTheme();
+export function ThemeEditor() {
+  const { draft, themeId, themeFile, customThemes, setThemeColor, toggleGradient, setGradient } = useTheme();
 
-  if (!draft) return <CreateTheme suggestion={`${currentLabel} copy`} />;
+  if (!draft) {
+    // Only reachable on a built-in, since a custom theme always has a draft —
+    // so this is the name of the theme being copied *from*.
+    const label =
+      (themeFile ? customThemes.find((theme) => theme.file === themeFile)?.label : BUILT_IN_THEMES.find((t) => t.id === themeId)?.label) ??
+      "Theme";
+    return <CreateTheme suggestion={`${label} copy`} />;
+  }
 
   return (
     <div className="theme-edit">
@@ -246,15 +254,17 @@ export function ThemeEditor({ currentLabel }: { currentLabel: string }) {
         <p className="appearance-note">
           Each one sits on top of the flat colour underneath it, so turning one off goes back to the plain surface.
         </p>
-        {GRADIENT_SLOTS.map((slot) => (
-          <GradientRow
-            key={slot.key}
-            slot={slot}
-            gradient={draft.gradients[slot.key]}
-            onToggle={(on) => toggleGradient(slot, on)}
-            onChange={(gradient) => setGradient(slot.key, gradient)}
-          />
-        ))}
+        <div className="theme-edit-gradients">
+          {GRADIENT_SLOTS.map((slot) => (
+            <GradientRow
+              key={slot.key}
+              slot={slot}
+              gradient={draft.gradients[slot.key]}
+              onToggle={(on) => toggleGradient(slot, on)}
+              onChange={(gradient) => setGradient(slot.key, gradient)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

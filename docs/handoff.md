@@ -193,7 +193,7 @@ is below.
   `opener:allow-open-path` on its own enables the command and nothing else: the
   Rust side then checks `is_path_allowed()`, which ANDs the call against an
   allow-list that a bare permission string leaves empty, so every path is
-  refused. Both "Open … folder" buttons in Settings → Appearance did nothing at
+  refused. Both "Open … folder" buttons in Settings did nothing at
   all until `capabilities/default.json` carried
   `{ "identifier": "opener:allow-open-path", "allow": [{ "path": "**" }] }`.
   The same shape applies to any other scoped plugin permission — **a permission
@@ -681,6 +681,28 @@ is below.
   don't "fix" a theme whose background image went missing by relaxing it — that
   missing image is the rule working. It's a scanner, not a CSS parser, and
   errs towards blocking on purpose.
+
+- **A settings section that doesn't fit on screen wants splitting, not a longer
+  panel.** Everything Phase 12 added went into the Appearance tab until it was
+  five stacked sections in a 28rem dialog and she called it what it was: *"why
+  is it one tiny ass column? it goes on and on and on."* Those are one fault —
+  a narrow dialog can only stack, and past a screen or two a stack stops being
+  something you read and becomes something you scroll past. The dialog is now
+  `ui-modal-xl` with a vertical rail, and Appearance is four peer panels rather
+  than one tab holding five `<section>`s. **Adding a settings area is one entry
+  in `SETTINGS_TABS`** — a new `<section>` appended to an existing panel is how
+  this happened the first time.
+
+- **Only `.settings-panel` scrolls, and the dialog is a fixed height.** Every
+  wrapper above the panel is a flex or grid box with an explicit `min-height:
+  0`; drop one and the whole dialog scrolls as one, taking the title, the rail
+  and the section heading with it — a settings screen you scroll with no way to
+  see which section you're in. The fixed height is separate and also load-
+  bearing: the modal is centred, so an auto-height dialog moves the rail by half
+  the height difference on every panel swap, and the entry you just clicked
+  jumps out from under the pointer. A `min-height` floor used to paper over
+  that; a real height removes it. Both relax deliberately under the media query
+  for short or narrow windows.
 
 - **There is one theme format, and it's a `.css` file in the themes folder.**
   Three things make themes now — the sandbox's export, the colour and gradient

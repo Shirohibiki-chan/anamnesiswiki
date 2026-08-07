@@ -22,6 +22,13 @@
 | Top bar spanning the center panel — breadcrumb trail on the left, right-panel toggle on the right, tiny fade-in "Saved" indicator after autosave commits | `src/components/shell/TopBar.tsx` |
 | First-launch project picker — grid of recent projects + "Open folder" and "New project" buttons; opens a native folder picker via Tauri dialog | `src/components/shell/ProjectPicker.tsx` |
 | Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `ProjectPicker` if none exists | `src/components/shell/StartupRouter.tsx` |
+| The settings dialog — the frame, the vertical rail of sections, and the one table (`SETTINGS_TABS`) that decides what's in it. Adding a section is one entry there. | `src/components/shell/SettingsModal.tsx` |
+| Settings → Theme — the theme list with live swatch dots, the themes-folder buttons, and "Put everything back to default" | `src/components/shell/ThemeSettings.tsx` |
+| Settings → Colours — the colour and gradient pickers, and "Make a copy I can edit" for built-in themes. Writes a `.css` file; see `docs/constants-and-theming.md`. | `src/components/shell/ThemeEditor.tsx` |
+| Settings → Fonts and text — four typeface pickers with live specimens, plus the Writing and Interface size sliders | `src/components/shell/FontSettings.tsx` |
+| Settings → Snippets — the on/off list of snippet stylesheets and the snippets-folder button | `src/components/shell/SnippetSettings.tsx` |
+| The two notices Settings shows about her own `.css` files — "we stripped some URLs" and "couldn't open that folder, here's the path" — shared by the Theme and Snippets panels | `src/components/shell/StylesheetNotices.tsx` |
+| Settings → Projects / Keyboard / Updates | `src/components/shell/ProjectsSettings.tsx`, `ShortcutSettings.tsx`, `UpdateCheck.tsx` |
 
 ### Tree (`src/components/tree/`)
 

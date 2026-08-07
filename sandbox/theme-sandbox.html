@@ -589,7 +589,7 @@ details.grad[data-on="1"] { border-color: #3d5c58; }
     <p id="exportHow">
       Save this as <b>a name you like<code>.css</code></b> in your
       <b>Documents\Anamnesis\themes</b> folder, then open Anamnesis →
-      <b>Settings → Appearance</b>. It'll be in the list.
+      <b>Settings → Theme</b>. It'll be in the list.
     </p>
     <textarea id="exportText" readonly spellcheck="false"></textarea>
     <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -1348,7 +1348,7 @@ function exportCss() {
   lines.push(`   Made in the theme sandbox on ${today}.`);
   lines.push("");
   lines.push("   Save this file in Documents\\Anamnesis\\themes and it turns up in");
-  lines.push("   Settings → Appearance. Nothing else needs doing to it. */");
+  lines.push("   Settings → Theme. Nothing else needs doing to it. */");
   lines.push("");
   lines.push(`[data-theme="${id}"] {`);
   let group = "";
@@ -1393,7 +1393,7 @@ function exportCss() {
     for (const s of scalesChanged) {
       /* Text size is the one scale the app also has a slider for, so it's
          emitted as the multiplier rather than as eight finished sizes —
-         `--fs-scale` is exactly what Settings → Appearance sets, so a theme
+         `--fs-scale` is exactly what Settings → Fonts and text sets, so a theme
          and her slider multiply instead of one silently winning. Title size
          keeps the multiplier in its own calc for the same reason. */
       if (s.k === "textScale") lines.push(`  --fs-scale: ${(state.scales.textScale / 100).toFixed(2)};`);

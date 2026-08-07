@@ -382,14 +382,31 @@
   right: var(--space-xl);
 }
 
-/* The settings modal is `.ui-modal .ui-modal-md` and has no rule of its own
-   left; the cog that opens it, on both the start screen and the top bar, is a
-   `.ui-icon-btn .ui-icon-btn-lg`. The arrangement worth not breaking is that
-   `.ui-modal` is a capped-height flex column, which is what makes
-   `.settings-panel` below the only part that scrolls. The whole modal used to
-   scroll as one, and a short window took the title and the tab strip away with
-   it — you'd be scrolling a settings screen with no way to see which tab you
-   were on. */
+/* --- The settings dialog ---
+   `.ui-modal .ui-modal-xl`; the cog that opens it, on both the start screen and
+   the top bar, is a `.ui-icon-btn .ui-icon-btn-lg`.
+
+   Two arrangements here are worth not breaking. First, only `.settings-panel`
+   scrolls — every wrapper above it is a fixed-height flex or grid box with
+   `min-height: 0`, which is the part that's easy to undo by accident. Drop one
+   of those and the whole dialog starts scrolling as one, taking the title, the
+   nav and the section heading away with it; you'd be reading a settings screen
+   with no way to see which section you were in.
+
+   Second, the dialog is a *fixed* height rather than one that fits its panel.
+   The modal is centred, so a panel swap on an auto-height dialog moves the nav
+   by half the height difference — you'd click "Snippets" and the rail would
+   jump out from under the pointer. A floor used to paper over this; a real
+   height removes it. */
+
+.settings-modal {
+  height: calc(100vh - var(--space-3xl) * 2);
+  /* Not taller than it has anything to put in — past 44rem the panels are short
+     text on a very tall page. The `min()` is not decoration: this overrides the
+     window cap `.ui-modal` sets, and a bare `44rem` sent the dialog off the top
+     of a 450px-tall window the moment the rule below let its height go auto. */
+  max-height: min(44rem, calc(100vh - var(--space-3xl) * 2));
+}
 
 .settings-header {
   display: flex;
@@ -411,71 +428,183 @@
   color: var(--color-text-primary);
 }
 
-/* `overflow-y: hidden` for the same reason as .page-tabs in page/page.css —
-   an `overflow-x` of `auto` quietly makes this a vertical scroll container as
-   well, and the active tab's underline overflowed it by a pixel. That was the
-   scrollbar down the side of the Settings tab strip.
-
-   `--color-border-subtle` because this rule lives *inside* a container rather
-   than framing one — same call as the page tabs and the search palette's
-   input. */
-.settings-tabs {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  border-bottom: 1px solid var(--color-border-subtle);
-  margin-bottom: var(--space-2xl);
-  flex-shrink: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+.settings-body {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: var(--space-2xl);
+  flex: 1;
+  /* Grid items default to a `min-height: auto` that refuses to shrink below
+     their content. Without this the panel never overflows — it just makes the
+     dialog taller than its own height. */
+  min-height: 0;
 }
 
-.settings-tab {
+/* `--color-border-subtle` because this rule lives *inside* a container rather
+   than framing one — same call as the page tabs and the search palette's
+   input. */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-right: var(--space-lg);
+  border-right: 1px solid var(--color-border-subtle);
+  overflow-y: auto;
+}
+
+.settings-nav-item {
   position: relative;
   flex-shrink: 0;
   background: none;
   border: none;
-  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
-  white-space: nowrap;
   cursor: pointer;
 }
 
-.settings-tab:hover {
+.settings-nav-item:hover {
+  background: var(--color-panel-alt);
   color: var(--color-text-secondary);
 }
 
-.settings-tab-active {
+.settings-nav-item-active,
+.settings-nav-item-active:hover {
+  background: var(--color-accent-faint);
   color: var(--color-text-primary);
 }
 
-.settings-tab-active::after {
+/* The tab strip marked the selection with an underline, which is what a strip
+   has room for. A rail can use its edge, which reads at a glance from further
+   away and doesn't compete with the hairline splitting the two groups. */
+.settings-nav-item-active::before {
   content: "";
   position: absolute;
   left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  border-radius: 1px;
   background: var(--color-accent-light);
 }
 
-.settings-tab:focus-visible {
+/* The one seam in the rail: where how the app looks stops and how it works
+   starts. A line rather than two headings — seven entries don't need sorting
+   into labelled piles to be read, and headings inside a `role="tablist"` are
+   content the pattern doesn't have a place for. Drawn in the margin so it
+   isn't caught inside the highlight when this entry is the selected one. */
+.settings-nav-item[data-group-start] {
+  margin-top: var(--space-xl);
+}
+
+.settings-nav-item[data-group-start]::after {
+  content: "";
+  position: absolute;
+  left: var(--space-lg);
+  right: var(--space-lg);
+  top: calc(var(--space-xl) / -2);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.settings-nav-item:focus-visible {
   outline: none;
   color: var(--color-text-primary);
   box-shadow: inset 0 0 0 1px var(--color-accent-dark);
-  border-radius: var(--radius-sm);
 }
 
-/* A floor, not a match to the tallest panel. The modal is centred, so a panel
-   swap moves the tab strip by half the height difference — this stops the
-   short panels collapsing far enough for that to be a lurch, without leaving
-   a lake of empty space under a one-line panel. Panels grow past it freely. */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Outside the scroller. With the nav down the side this heading is the only
+   thing naming where you are, so it can't be the first thing to scroll off. */
+.settings-panel-head {
+  flex-shrink: 0;
+  margin-bottom: var(--space-xl);
+}
+
+.settings-panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+.settings-panel-blurb {
+  margin: var(--space-xs) 0 0;
+  max-width: 44ch;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
 .settings-panel {
-  min-height: 7rem;
+  flex: 1;
+  min-height: 0;
   /* The one scrolling part. `auto` and not `scroll`, so a panel that fits —
-     which is all of them at a normal window size — shows no bar at all. */
+     which is most of them now that Appearance is four panels rather than one —
+     shows no bar at all. The padding keeps the scrollbar off the controls. */
   overflow-y: auto;
+  padding-right: var(--space-lg);
+}
+
+/* A short or narrow window can't give a rail its column, so it goes back to
+   being a strip. Both axes are checked: the height matters as much as the
+   width, since a rail is only worth the space when the panel beside it is tall
+   enough to be worth reading. The dialog stops being a fixed height here — at
+   this size the panel swap it was smoothing out is the least of it. */
+@media (max-width: 46rem), (max-height: 32rem) {
+  .settings-modal {
+    height: auto;
+  }
+
+  .settings-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xl);
+  }
+
+  .settings-nav {
+    flex-direction: row;
+    padding: 0 0 var(--space-md);
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-subtle);
+    /* `overflow-y: hidden` for the same reason as .page-tabs in page/page.css:
+       an `overflow-x` of `auto` quietly makes this a vertical scroll container
+       too, and one stray pixel then puts a scrollbar down the side of a strip
+       one row tall. */
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .settings-nav-item {
+    white-space: nowrap;
+  }
+
+  /* The edge marker was for a vertical rail; sideways it would underline one
+     entry in a row of them, which is a different signal. The fill carries it. */
+  .settings-nav-item-active::before {
+    display: none;
+  }
+
+  .settings-nav-item[data-group-start] {
+    margin-top: 0;
+    margin-left: var(--space-lg);
+  }
+
+  .settings-nav-item[data-group-start]::after {
+    top: var(--space-xs);
+    bottom: var(--space-xs);
+    left: calc(var(--space-lg) / -2);
+    right: auto;
+    border-top: none;
+    border-left: 1px solid var(--color-border-subtle);
+  }
 }
 
 /* Cmd+N's template picker — see components/shell/NewPageDialog.tsx. Shares the
@@ -809,7 +938,10 @@
   color: var(--color-text-muted);
 }
 
-/* --- Settings → Appearance (Phase 12) --- */
+/* --- Settings → the four appearance panels (Phase 12) ---
+   Theme, Colours, Fonts and text, Snippets. These were one panel with five
+   `<section>`s in it and shared this stylesheet then too, which is why the
+   class prefix outlived the component. */
 
 .appearance-settings {
   display: flex;
@@ -827,10 +959,29 @@
   margin: 0;
 }
 
+/* Every list in these panels is the same shape: as many columns as fit, one
+   when only one does. The minimums differ by what's in the cell and are set
+   per list; this is only the parts they agree on.
+
+   The panel is a modal column of unknown width — it depends on the window and
+   on whether the nav is a rail or a strip — so nothing here may assume a
+   column count. `auto-fit` and a minimum is the whole layout. */
+.appearance-grid,
+.appearance-themes,
+.theme-edit-gradients {
+  display: grid;
+  gap: var(--space-sm) var(--space-lg);
+}
+
 .appearance-themes {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+/* A font picker carries a specimen paragraph under it, so its cell needs to be
+   wide enough for a sentence to look like a sentence. */
+.appearance-grid {
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--space-xl) var(--space-2xl);
 }
 
 .appearance-theme {
@@ -1026,6 +1177,19 @@
   margin: 0;
 }
 
+/* Reaches across all four appearance panels, so it lives on the one you land
+   on — pushed to the bottom of it, and fenced off, because "put everything
+   back" sitting flush against the theme list is a thing you click by accident. */
+.appearance-reset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin: var(--space-md) 0 0;
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
 /* Deliberately a notice and not a modal. Nothing is broken — a stylesheet did
    something we don't allow, we did the rest of it, and she needs to know why
    her background image isn't there. Interrupting her for that would be worse
@@ -1056,7 +1220,7 @@
 }
 
 /* --- Theme editor (Phase 12) ---
-   The colour and gradient pickers. Dense on purpose: sixteen colours and twelve
+   The colour and gradient pickers. Dense on purpose: twenty colours and twelve
    gradients is a lot of rows, and the two things that keep it navigable are
    that every row is the same height and that the two groups nobody edits often
    (lines, callouts) are folded away behind a <details>. */
@@ -1162,7 +1326,14 @@
   color: var(--color-text-muted);
 }
 
-/* --- Gradients --- */
+/* --- Gradients ---
+   Twelve rows. `align-items: start` so an open row grows on its own instead of
+   stretching the one beside it to match. */
+
+.theme-edit-gradients {
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  align-items: start;
+}
 
 .theme-edit-gradient {
   border: 1px solid var(--color-border-subtle);

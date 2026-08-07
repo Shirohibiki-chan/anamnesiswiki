@@ -1,10 +1,20 @@
 # Changelog
 
+## 2026-08-07 — the settings screen
+
+### Adjustments
+
+- **Settings is a proper screen now, not one long column.** It was a narrow dialog with four tabs across the top, and *Appearance* alone held five sections stacked inside it — theme, colours, gradients, fonts, sizes, snippets — so the only way through it was to scroll. The dialog is now wide, the sections are down the left-hand side as their own entries, and each one is a page you can see all of.
+- **Appearance is four entries instead of one tab**: **Theme**, **Colours**, **Fonts and text**, and **Snippets**. Nothing moved out of Settings and nothing was taken away — the same controls are behind shorter walks.
+- **Everything lays out across the width now.** Themes, colour swatches, gradients and font pickers all sit two across when there's room instead of in one narrow stack, and each section says at the top what it's for.
+- **The dialog stays the same size when you switch section**, so the list down the side doesn't shift under the pointer. On a small window it goes back to a strip across the top and everything still fits.
+- **"Put everything back to default"** now lives at the bottom of **Theme**, fenced off, and says what it covers — theme, fonts, text size and snippets. Files you've made stay in their folders.
+
 ## 2026-08-07 — colours in the app
 
 ### Additions
 
-- **You can change a theme's colours and gradients in the app now.** Settings → Appearance has pickers for sixteen colours and all twelve gradients — background, top bar, sidebar, page area, properties panel, dialogs, buttons, selected page, tags, page titles, section headings and the callout wash. Each gradient can be a straight line at any angle or a glow from a point, with a see-through slider on each end. Changes land as you make them; there's nothing to save.
+- **You can change a theme's colours and gradients in the app now.** Settings → Appearance has pickers for twenty colours and all twelve gradients — background, top bar, sidebar, page area, properties panel, dialogs, buttons, selected page, tags, page titles, section headings and the callout wash. Each gradient can be a straight line at any angle or a glow from a point, with a see-through slider on each end. Changes land as you make them; there's nothing to save.
 - **"Make a copy I can edit."** The six built-in themes ship with the app and can't be changed, so this takes a copy of whatever you're looking at and drops it in your themes folder as a normal `.css` file. Then everything's editable.
 - **It's the same file either way.** A theme you build with the pickers is an ordinary stylesheet you can open in Notepad; a theme you wrote by hand, or exported from the sandbox, opens in the pickers. Nothing is locked to the place you made it. If you've hand-written a gradient too fancy for the controls, they say so and leave it exactly alone rather than mangling it.
 

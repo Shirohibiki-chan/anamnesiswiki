@@ -141,7 +141,7 @@ describe("a sandbox export, unedited", () => {
    Made in the theme sandbox on 2026-08-06.
 
    Save this file in Documents\\Anamnesis\\themes and it turns up in
-   Settings → Appearance. Nothing else needs doing to it. */
+   Settings → Theme. Nothing else needs doing to it. */
 
 [data-theme="sea-glass"] {
   --color-bg: #0f0f14;

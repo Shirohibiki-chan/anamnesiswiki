@@ -201,7 +201,7 @@
      is real — nothing in the app sits between 18px and 28px, and a scale step
      that nothing uses is just a step someone will misuse later.
 
-     Every step is multiplied by `--fs-scale`, which Settings → Appearance sets
+     Every step is multiplied by `--fs-scale`, which Settings → Fonts and text sets
      and nothing else touches. Text size had to scale *text*: the alternative
      everyone reaches for first — a `font-size` on the root element — moves
      every rem in the app at once, so asking for slightly bigger text also
