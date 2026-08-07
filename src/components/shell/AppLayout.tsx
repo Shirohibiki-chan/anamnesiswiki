@@ -11,7 +11,6 @@ import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
-import { ConfirmDialog } from "./ConfirmDialog";
 import { LoadWarning } from "./LoadWarning";
 import { NewPageDialog } from "./NewPageDialog";
 import { RecoveryNotice } from "./RecoveryNotice";
@@ -71,7 +70,6 @@ export function AppLayout() {
         </aside>
       )}
 
-      <ConfirmDialog />
       {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
       {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} />}
       {isNewPageOpen && <NewPageDialog onClose={() => setIsNewPageOpen(false)} />}

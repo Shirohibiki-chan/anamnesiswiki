@@ -27,6 +27,24 @@ export function BlockedNotice({ sheet }: { sheet: CustomStylesheet }) {
 }
 
 /**
+ * Shown when a theme's file wouldn't delete — locked, refused, or on a drive
+ * that isn't there. Same shape as the folder notice and for the same reason:
+ * the path is what she needs, because the folder is hers and she can finish
+ * the job in Explorer.
+ */
+export function DeleteErrorNotice({ error }: { error: ThemeStoreState["deleteError"] }) {
+  if (!error) return null;
+  return (
+    <p className="appearance-blocked">
+      <AlertTriangle size={12} />
+      <span>
+        Couldn't delete <strong>{error.file}</strong> — something else may have it open. It's still in <code>{error.path}</code>.
+      </span>
+    </p>
+  );
+}
+
+/**
  * Shown when "Open … folder" couldn't hand the folder to the file manager.
  * The path is the point: a button that silently does nothing leaves her with
  * no way to reach the folder at all, and this at least gives her something to

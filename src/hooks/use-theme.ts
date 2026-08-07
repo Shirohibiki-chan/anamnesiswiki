@@ -54,6 +54,7 @@ export function useTheme() {
   const themesDir = useThemeStore((state) => state.themesDir);
   const isScanning = useThemeStore((state) => state.isScanning);
   const folderError = useThemeStore((state) => state.folderError);
+  const deleteError = useThemeStore((state) => state.deleteError);
 
   const selectTheme = useThemeStore((state) => state.selectTheme);
   const setFont = useThemeStore((state) => state.setFont);
@@ -65,6 +66,7 @@ export function useTheme() {
   const openThemesFolder = useThemeStore((state) => state.openThemesFolder);
   const openSnippetsFolder = useThemeStore((state) => state.openSnippetsFolder);
   const createTheme = useThemeStore((state) => state.createTheme);
+  const deleteTheme = useThemeStore((state) => state.deleteTheme);
   const setThemeColor = useThemeStore((state) => state.setThemeColor);
   const toggleGradient = useThemeStore((state) => state.toggleGradient);
   const setGradient = useThemeStore((state) => state.setGradient);
@@ -82,6 +84,7 @@ export function useTheme() {
     themesDir,
     isScanning,
     folderError,
+    deleteError,
     slots: FONT_SLOTS,
     /**
      * The stack a slot is actually rendering in — hers if she picked one,
@@ -109,6 +112,7 @@ export function useTheme() {
     openThemesFolder,
     openSnippetsFolder,
     createTheme,
+    deleteTheme,
     setThemeColor,
     toggleGradient,
     setGradient,

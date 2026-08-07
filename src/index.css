@@ -103,10 +103,25 @@
      five-file change nobody was going to make. */
   --color-scrim: rgba(0, 0, 0, 0.5);
 
+  /* Four steps, and the bottom two carry a floor: **`--color-text-muted` must
+     clear 4.5:1 against both `--color-panel` and `--color-bg`** in every theme,
+     because it is not decoration. It writes the theme notes in the picker, the
+     hint under every field, dates, counts and the tree's own metadata — real
+     information at 11–13px, which is WCAG AA small-text territory. All six
+     themes were under it (3.14 to 3.94) until they were measured; the values
+     had been picked by eye, and by eye is how a whole palette ends up failing
+     the same check.
+
+     `--color-text-placeholder` is held at 3:1 rather than 4.5:1, deliberately:
+     it labels a field you're about to type over, so it has to be readable and
+     then get out of the way. Legible, not equal.
+
+     If you retune a theme, re-measure. `docs/constants-and-theming.md` has the
+     numbers and the two backdrops to check against. */
   --color-text-primary: #e8e8ee;
   --color-text-secondary: #9a9aaa;
-  --color-text-muted: #6a6a78;
-  --color-text-placeholder: #4a4a55;
+  --color-text-muted: #84848f;
+  --color-text-placeholder: #686871;
 
   /* Also doubles as shadcn/ui's "accent" role (the shadcn component library
      bundled with BlockNote's menus uses --color-accent for hover/selected
@@ -388,6 +403,15 @@
   --color-border: #2a3954;
   --color-border-subtle: #1e2a3e;
 
+  /* Same oversight as the borders, found the same way: the text ramp was
+     inherited too, so navy panels were carrying neutral greys. `muted` came to
+     3.14:1 against this panel — the worst of the six, on the default theme.
+     Navy-tinted and re-measured; see the floor documented at :root. */
+  --color-text-primary: #e9edf6;
+  --color-text-secondary: #a3adc2;
+  --color-text-muted: #838ea6;
+  --color-text-placeholder: #616c82;
+
   --font-display: "Domine", serif;
   --font-ui: "Lexend", sans-serif;
   --font-prose: "Quicksand", sans-serif;
@@ -411,8 +435,8 @@
 
   --color-text-primary: #f2e9dd;
   --color-text-secondary: #b5a390;
-  --color-text-muted: #85715f;
-  --color-text-placeholder: #5c4c3f;
+  --color-text-muted: #93816f;
+  --color-text-placeholder: #726459;
 
   --color-accent-light: #f0a868;
   --color-accent-dark: #b9651f;
@@ -450,8 +474,8 @@
 
   --color-text-primary: #e6ede8;
   --color-text-secondary: #9aaea2;
-  --color-text-muted: #6b7d72;
-  --color-text-placeholder: #4a584f;
+  --color-text-muted: #78897e;
+  --color-text-placeholder: #5f6b63;
 
   --color-accent-light: #e3c26d;
   --color-accent-dark: #a8801f;
@@ -488,8 +512,8 @@
 
   --color-text-primary: #f0e8f5;
   --color-text-secondary: #ac9db8;
-  --color-text-muted: #7b6b87;
-  --color-text-placeholder: #564a60;
+  --color-text-muted: #8b7d96;
+  --color-text-placeholder: #6d6275;
 
   --color-accent-light: #e9a8f0;
   --color-accent-dark: #a021b0;
@@ -533,8 +557,8 @@
 
   --color-text-primary: #1c1c1f;
   --color-text-secondary: #57575e;
-  --color-text-muted: #84848d;
-  --color-text-placeholder: #a8a8b0;
+  --color-text-muted: #717179;
+  --color-text-placeholder: #8e8e95;
 
   --color-accent-light: #0d9488;
   --color-accent-dark: #0f766e;

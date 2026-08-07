@@ -704,6 +704,40 @@ is below.
   that; a real height removes it. Both relax deliberately under the media query
   for short or narrow windows.
 
+- **`--color-text-muted` has a contrast floor of 4.5:1 against both
+  `--color-panel` and `--color-bg`, in every theme.** It carries real
+  information at 11–13px — theme notes, field hints, dates, counts, tree
+  metadata — so it is AA small-text, not decoration. All six themes were under
+  it (3.14 to 3.94) until they were measured on 2026-08-07, the default worst of
+  all; nothing had ever been checked, which is how a whole palette fails one
+  test together. `--color-text-placeholder` sits at 3:1 on purpose — it labels a
+  field you're about to type over. **A new or retuned theme isn't finished until
+  both are measured against both backdrops.** Figures per theme are in
+  `docs/constants-and-theming.md`.
+
+- **A theme is a file she owns, so the app must be able to delete one.** The
+  folder was always hers to manage from Explorer, and that was quietly the whole
+  answer for a while — but a list of themes with no way to remove one from
+  inside the list reads as a bug, and is. `deleteTheme` flushes the pending
+  debounced write *first* (a queued write landing after the delete recreates the
+  file), removes it, then re-scans — the re-scan already knows how to fall back
+  to the default when the selected theme's file has gone, because Explorer
+  deletes had to work anyway. Don't add a second fallback path beside it.
+
+- **Anything destructive must report a failure it couldn't perform.** The two
+  "Open folder" buttons swallowed their rejection and did nothing, twice, with
+  no way to tell that from a slow file manager; the theme delete would have been
+  the same failure with a file's worth of stakes. `deleteError` names the file
+  and the path, so the folder she owns is still reachable by hand.
+
+- **`ConfirmDialog` is mounted at the app root, not in `AppLayout`.** It lived
+  in `AppLayout` for a long time, which only renders once a project is open —
+  so `confirmDestructive` called from the start screen set a pending confirm
+  nothing was rendering and awaited a promise nothing would resolve. Settings is
+  reachable from that screen and now has a delete button in it. It portals to
+  `document.body` regardless of where it sits, so root costs nothing. Don't move
+  it back down.
+
 - **There is one theme format, and it's a `.css` file in the themes folder.**
   Three things make themes now — the sandbox's export, the colour and gradient
   pickers in Settings, and a text editor — and none of them has a state of its

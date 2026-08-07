@@ -72,8 +72,8 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-scrim` | `rgba(0,0,0,0.5)` | Behind every modal |
 | `--color-text-primary` | `#e8e8ee` | Body text, headings, active labels |
 | `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
-| `--color-text-muted` | `#6a6a78` | Quiet labels — property field labels, breadcrumb separators |
-| `--color-text-placeholder` | `#4a4a55` | Placeholder text in inputs, disabled states |
+| `--color-text-muted` | `#84848f` | Quiet labels — property field labels, breadcrumb separators. **Has a contrast floor — see below** |
+| `--color-text-placeholder` | `#686871` | Placeholder text in inputs, disabled states. **Has a contrast floor — see below** |
 | `--color-accent` | `var(--color-accent-faint)` | **An alias, not a value of its own** (Phase 11.5 — it used to be a byte-identical copy). It exists because shadcn/ui's "accent" role has that name and Phase 5's menu kit expects it; the app's own code should say `--color-accent-faint`. Note the trap in the name: this is the 15% tint, *not* the bold hue. Use `--color-accent-light`/`--color-accent-dark` for focus rings, progress bars and primary buttons. |
 | `--color-accent-light` | `#5eead4` | Accent text on dark surfaces — active tab labels, selected tree row text, save indicator |
 | `--color-accent-dark` | `#0d9488` | Hover states that need to go darker than base accent |
@@ -100,6 +100,36 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-palette-gray` | `#a1a1aa` | Node-coloring palette — gray |
 
 > New UI must use semantic tokens, not raw palette vars or hex literals. Palette tokens are for node/folder color assignment only.
+
+#### The contrast floor on the two quiet greys
+
+**`--color-text-muted` must clear 4.5:1 against both `--color-panel` and
+`--color-bg`, in every theme.** It is not decoration: it writes the theme notes
+in the picker, the hint under every field, dates, counts, and the tree's own
+metadata — real information at 11–13px, which is WCAG AA small-text territory.
+
+**`--color-text-placeholder` is held at 3:1**, deliberately lower. It labels a
+field you are about to type over, so it has to be legible and then get out of
+the way.
+
+All six themes were under the muted floor until 2026-08-07 — between 3.14 and
+3.94 — with Midnight, the default, the worst of them. Nothing had been measured;
+the ramps were picked by eye, which is how a whole palette fails one check
+together. Current worst-case figures, against whichever of the two backdrops is
+harder for that theme:
+
+| Theme | primary | secondary | muted | placeholder |
+|---|---|---|---|---|
+| Midnight | 14.25 | 7.41 | 5.08 | 3.16 |
+| Anamnesis Dark | 14.17 | 6.24 | 4.67 | 3.13 |
+| Ember | 14.62 | 7.20 | 4.69 | 3.08 |
+| Grove | 14.49 | 7.35 | 4.66 | 3.10 |
+| Nightbloom | 14.86 | 7.00 | 4.63 | 3.09 |
+| Daylight | 16.28 | 6.86 | 4.63 | 3.12 |
+
+**If you retune a theme's text or surfaces, re-measure both.** A new theme is
+not finished until its muted grey clears 4.5 on its panel *and* its background
+— the two differ, and the darker one is not always the harder.
 
 ### Callout blocks
 
