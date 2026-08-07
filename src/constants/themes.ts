@@ -15,18 +15,33 @@ export type BuiltInTheme = {
  * block restating them would be a second copy to keep in step. It's in this
  * list because it still needs a name and a row to click.
  *
- * Three is deliberate, not a placeholder for a shipped palette set. Making a
- * theme is now a thing the user does in the sandbox and drops in a folder, so
- * the ones that ship should be the ones that have to: the original, hers, and
- * a light mode for people who can't read light-on-dark.
+ * Order is the picker's order, and it's a recommendation: the default first,
+ * then the four other darks, then light. Deliberately not alphabetical — the
+ * first row is what someone who never opens this screen ends up with.
+ *
+ * The four darks are meant to be four *different* rooms, not four shades of
+ * the same one: navy, neutral, warm brown, green, plum. If a fifth is ever
+ * added, the bar is that it's recognisably somewhere else — a sixth grey isn't
+ * a theme, it's a rounding error.
  */
 export const BUILT_IN_THEMES: readonly BuiltInTheme[] = [
-  { id: "dark", label: "Anamnesis Dark", note: "what the app has always looked like" },
   { id: "midnight", label: "Midnight", note: "deep navy and teal, rounded type" },
+  { id: "dark", label: "Anamnesis Dark", note: "near-black and teal — the original" },
+  { id: "ember", label: "Ember", note: "warm charcoal, copper and lamplight" },
+  { id: "grove", label: "Grove", note: "deep forest green, old gold" },
+  { id: "nightbloom", label: "Nightbloom", note: "dark plum, orchid and cyan" },
   { id: "daylight", label: "Daylight", note: "light background, dark text" },
 ];
 
-export const DEFAULT_THEME_ID = "dark";
+/**
+ * Her pick, on seeing the first three: *"the midnight theme is BiS as far as
+ * what you did add, so make that default."* It also sets three fonts, so this
+ * one line changes the app's default typeface as well as its colours.
+ *
+ * Only affects someone who has never chosen — a saved `themeId` wins, so
+ * anyone already on `dark` stays on `dark`.
+ */
+export const DEFAULT_THEME_ID = "midnight";
 
 export type FontSlotKey = "display" | "ui" | "prose" | "mono";
 

@@ -397,9 +397,12 @@ details.grad[data-on="1"] { border-color: #3d5c58; }
     <summary>Start from</summary>
     <div class="sec-body">
       <div class="presets" id="presets"></div>
-      <p class="note">Pick one, then change anything you want on top of it. These
-        are the five palettes already queued for Phase 12, plus the dark theme
-        the app ships today.</p>
+      <p class="note">Pick one, then change anything you want on top of it. The
+        first six are the themes the app actually ships, so you can reopen one
+        and adjust it. The last four are sketches that never got built —
+        <em>Parchment</em>, <em>Foxian</em>, <em>Belobog</em> and
+        <em>Deep Space</em>. Fonts aren't part of a starting point; set those
+        below.</p>
     </div>
   </details>
 
@@ -659,14 +662,77 @@ const DARK = {
   "--color-callout-secret": "#c4b5fd", "--color-callout-secret-bg": "rgba(167, 139, 250, 0.12)", "--color-callout-secret-text": "#ede9fe",
 };
 
-/* The five queued directions, as complete starting points to react to.
-   Deliberately opinionated — rejecting one of these is more useful than
-   describing what you want from nothing. */
+/* Starting points to react to. Deliberately opinionated — rejecting one of
+   these is more useful than describing what you want from nothing.
+
+   Two kinds, and the order says which: everything down to `nightbloom` is a
+   theme the app actually ships, so picking one here gives you the real thing
+   to tweak. Below those are directions that were only ever sketches. Keep the
+   shipped half in step with the `[data-theme]` blocks in `src/index.css` — a
+   theme you can't reopen and adjust is a theme you can't change your mind
+   about. */
 const PRESETS = {
-  dark: { name: "Dark", note: "what ships today", colors: DARK },
+  midnight: {
+    name: "Midnight", note: "ships — the default",
+    colors: {
+      ...DARK,
+      "--color-bg": "#0d1221", "--color-panel": "#151e2e", "--color-panel-alt": "#0f151f",
+      "--color-panel-edge": "#292c4c",
+    },
+  },
+
+  dark: { name: "Anamnesis Dark", note: "ships — the original", colors: DARK },
+
+  ember: {
+    name: "Ember", note: "ships — charcoal, copper",
+    colors: {
+      "--color-bg": "#14100c", "--color-panel": "#1e1813", "--color-panel-alt": "#241c16",
+      "--color-panel-edge": "#2e241b", "--color-scrim": "rgba(0, 0, 0, 0.5)",
+      "--color-border-strong": "#4a3a2c", "--color-border": "#362b21", "--color-border-subtle": "#2a221a",
+      "--color-text-primary": "#f2e9dd", "--color-text-secondary": "#b5a390",
+      "--color-text-muted": "#85715f", "--color-text-placeholder": "#5c4c3f",
+      "--color-accent-light": "#f0a868", "--color-accent-dark": "#b9651f",
+      "--color-accent-faint": "rgba(217, 119, 38, 0.16)", "--color-accent-faint-border": "rgba(217, 119, 38, 0.34)",
+      "--color-callout-info": "#7fbfe8", "--color-callout-info-bg": "rgba(96, 165, 250, 0.12)", "--color-callout-info-text": "#d8ecfb",
+      "--color-callout-quote": "#b09c88", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.035)", "--color-callout-quote-text": "#ded0bf",
+      "--color-callout-secret": "#d3b2f5", "--color-callout-secret-bg": "rgba(168, 132, 240, 0.13)", "--color-callout-secret-text": "#efe3fd",
+    },
+  },
+
+  grove: {
+    name: "Grove", note: "ships — forest, old gold",
+    colors: {
+      "--color-bg": "#0b120e", "--color-panel": "#141d17", "--color-panel-alt": "#18231b",
+      "--color-panel-edge": "#1e2b22", "--color-scrim": "rgba(0, 0, 0, 0.5)",
+      "--color-border-strong": "#2f4437", "--color-border": "#23322a", "--color-border-subtle": "#1b271f",
+      "--color-text-primary": "#e6ede8", "--color-text-secondary": "#9aaea2",
+      "--color-text-muted": "#6b7d72", "--color-text-placeholder": "#4a584f",
+      "--color-accent-light": "#e3c26d", "--color-accent-dark": "#a8801f",
+      "--color-accent-faint": "rgba(202, 152, 43, 0.15)", "--color-accent-faint-border": "rgba(202, 152, 43, 0.32)",
+      "--color-callout-info": "#7dbde8", "--color-callout-info-bg": "rgba(96, 165, 250, 0.12)", "--color-callout-info-text": "#d7eafa",
+      "--color-callout-quote": "#9fb2a7", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.035)", "--color-callout-quote-text": "#cfdcd4",
+      "--color-callout-secret": "#c9b3f7", "--color-callout-secret-bg": "rgba(167, 139, 250, 0.12)", "--color-callout-secret-text": "#ece4fe",
+    },
+  },
+
+  nightbloom: {
+    name: "Nightbloom", note: "ships — plum, orchid",
+    colors: {
+      "--color-bg": "#120d18", "--color-panel": "#1c1524", "--color-panel-alt": "#211a2a",
+      "--color-panel-edge": "#2a2035", "--color-scrim": "rgba(0, 0, 0, 0.5)",
+      "--color-border-strong": "#4a3559", "--color-border": "#352741", "--color-border-subtle": "#291f33",
+      "--color-text-primary": "#f0e8f5", "--color-text-secondary": "#ac9db8",
+      "--color-text-muted": "#7b6b87", "--color-text-placeholder": "#564a60",
+      "--color-accent-light": "#e9a8f0", "--color-accent-dark": "#a021b0",
+      "--color-accent-faint": "rgba(216, 90, 232, 0.15)", "--color-accent-faint-border": "rgba(216, 90, 232, 0.32)",
+      "--color-callout-info": "#67e8f9", "--color-callout-info-bg": "rgba(34, 211, 238, 0.12)", "--color-callout-info-text": "#cffafe",
+      "--color-callout-quote": "#ab9fb5", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.035)", "--color-callout-quote-text": "#d9cfe0",
+      "--color-callout-secret": "#a5b4fc", "--color-callout-secret-bg": "rgba(129, 140, 248, 0.13)", "--color-callout-secret-text": "#e0e7ff",
+    },
+  },
 
   light: {
-    name: "Light", note: "the obvious missing one",
+    name: "Daylight", note: "ships — light background",
     colors: {
       "--color-bg": "#fafaf9", "--color-panel": "#ffffff", "--color-panel-alt": "#f4f4f2",
       "--color-panel-edge": "#ffffff", "--color-scrim": "rgba(24, 24, 27, 0.35)",

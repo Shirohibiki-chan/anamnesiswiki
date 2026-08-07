@@ -12,8 +12,11 @@ Your changes save themselves in the browser, so you can close it and come back.
 
 ## What's in it
 
-- **Six starting points** — the dark theme the app ships today, plus the five
-  palettes queued for Phase 12 (Light, Parchment, Foxian, Belobog, Deep Space).
+- **Ten starting points** — the six themes the app ships (Midnight, Anamnesis
+  Dark, Ember, Grove, Nightbloom, Daylight), then the four that stayed sketches
+  (Parchment, Foxian, Belobog, Deep Space). **Keep the shipped six in step with
+  the `[data-theme]` blocks in `src/index.css`** — a theme you can't reopen here
+  is a theme you can't adjust.
 - **Every colour the app uses**, grouped by what it's for rather than by name.
 - **Fonts** for titles, interface, writing and code, in three tiers:
   - ✦ the app's own four defaults,

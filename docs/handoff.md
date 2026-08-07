@@ -189,6 +189,16 @@ is below.
   explicit user confirmation). Widening that scope crosses the policy boundary in
   `CLAUDE.md`.
 
+- **The opener plugin's `open_path` needs a *scope*, not just the permission.**
+  `opener:allow-open-path` on its own enables the command and nothing else: the
+  Rust side then checks `is_path_allowed()`, which ANDs the call against an
+  allow-list that a bare permission string leaves empty, so every path is
+  refused. Both "Open … folder" buttons in Settings → Appearance did nothing at
+  all until `capabilities/default.json` carried
+  `{ "identifier": "opener:allow-open-path", "allow": [{ "path": "**" }] }`.
+  The same shape applies to any other scoped plugin permission — **a permission
+  that appears granted and still fails is the scope, every time.**
+
 - **`sep()` is synchronous; `join()` is an IPC round trip into Rust per call.**
   That difference is why path building is done locally. Neither exists under
   `pnpm dev` or Vitest, which is why the separator is resolved lazily.
@@ -363,6 +373,17 @@ is below.
   block onto shadcn's expected token names. `--color-accent` is deliberately the
   translucent tint, not the bold teal — shadcn uses "accent" for menu-row hover,
   where solid teal is illegibly bright.
+
+- **BlockNote sets `font-family` and `font-size` on the contenteditable element
+  itself**, in `.bn-editor.bn-default-styles` — a hardcoded Inter stack and a
+  hardcoded `16px`. A declaration *on* an element beats an inherited one however
+  specific the ancestor rule is, so `--bn-font-family` (which BlockNote applies
+  at `.bn-root`), `.wiki-body`'s `--font-prose`, and every `--fs-*` step all lost
+  to it silently: the editor body ignored the text-size slider and the Writing
+  font picker completely, while every other label in the app obeyed both.
+  `page.css`'s `.editor-shell .bn-editor` rule is what fixes it. **If theming the
+  editor ever stops working, check whether the token is being set on an ancestor
+  and overridden on the element.**
 
 - **`applyTemplate` merges only the tabs a page doesn't already have, by id.** It
   must never overwrite existing content.
