@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fontStackFor, labelForFile, readSwatch, readThemeId, sanitizeCustomCss, themeIdForFile } from "./theme-service";
+import { familyFromStack, fontStackFor, labelForFile, readSwatch, readThemeId, sanitizeCustomCss, themeIdForFile } from "./theme-service";
 
 // The DOM half of theme-service isn't covered here — there's no jsdom setup in
 // this project (see CLAUDE.md §Commands) and `document.head.append` is not
@@ -193,6 +193,27 @@ describe("a sandbox export, unedited", () => {
     const family = /--font-display:\s*"([^"]+)"/.exec(EXPORT)?.[1];
     expect(family).toBe("Cinzel");
     expect(fontStackFor(family!)).toBe('"Cinzel", serif');
+  });
+});
+
+describe("familyFromStack", () => {
+  it.each([
+    ['"Quicksand", sans-serif', "Quicksand"],
+    ["'Domine', serif", "Domine"],
+    ["  Lexend , sans-serif ", "Lexend"],
+  ])("%s → %s", (stack, expected) => {
+    expect(familyFromStack(stack)).toBe(expected);
+  });
+
+  // These are instructions to the browser, not fonts. `--font-mono` starts
+  // with one on purpose so each OS supplies its own good mono — printing the
+  // keyword back at someone tells them nothing.
+  it.each([
+    ["the mono default", 'ui-monospace, "Cascadia Mono", Consolas, monospace'],
+    ["a bare generic", "serif"],
+    ["nothing at all", ""],
+  ])("gives no name for %s", (_label, stack) => {
+    expect(familyFromStack(stack)).toBeNull();
   });
 });
 

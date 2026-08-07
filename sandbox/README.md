@@ -10,6 +10,12 @@ internet. It works from anywhere on disk.
 
 Your changes save themselves in the browser, so you can close it and come back.
 
+Since 2026-08-07 the app can edit colours and gradients too, in Settings →
+Appearance. Same file format, so this and that are two ways into one thing:
+export from here, adjust in there, or the other way round. What this still has
+that Settings doesn't is fonts, spacing, a free-text CSS box and a mock you can
+wreck without touching a real project.
+
 ## What's in it
 
 - **Ten starting points** — the six themes the app ships (Midnight, Anamnesis

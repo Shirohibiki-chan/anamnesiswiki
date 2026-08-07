@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { FONT_LIBRARY, type LibraryFont } from "../constants/font-library";
 import { FONT_SLOTS, type FontSlot, type FontSlotKey } from "../constants/themes";
 import { useThemeStore } from "../state/theme-store";
-import { fontStackFor } from "../services/theme-service";
+import { familyFromStack, fontStackFor } from "../services/theme-service";
 
 /**
  * Reads the saved appearance and applies it, once, at startup.
@@ -44,42 +44,73 @@ export function useTheme() {
   const themeId = useThemeStore((state) => state.themeId);
   const themeFile = useThemeStore((state) => state.themeFile);
   const fonts = useThemeStore((state) => state.fonts);
+  const themeFonts = useThemeStore((state) => state.themeFonts);
   const textScale = useThemeStore((state) => state.textScale);
+  const contentScale = useThemeStore((state) => state.contentScale);
   const enabledSnippets = useThemeStore((state) => state.enabledSnippets);
   const customThemes = useThemeStore((state) => state.customThemes);
   const snippets = useThemeStore((state) => state.snippets);
+  const draft = useThemeStore((state) => state.draft);
+  const themesDir = useThemeStore((state) => state.themesDir);
   const isScanning = useThemeStore((state) => state.isScanning);
   const folderError = useThemeStore((state) => state.folderError);
 
   const selectTheme = useThemeStore((state) => state.selectTheme);
   const setFont = useThemeStore((state) => state.setFont);
   const setTextScale = useThemeStore((state) => state.setTextScale);
+  const setContentScale = useThemeStore((state) => state.setContentScale);
   const toggleSnippet = useThemeStore((state) => state.toggleSnippet);
   const scanFolders = useThemeStore((state) => state.scanFolders);
   const resetAppearance = useThemeStore((state) => state.resetAppearance);
   const openThemesFolder = useThemeStore((state) => state.openThemesFolder);
   const openSnippetsFolder = useThemeStore((state) => state.openSnippetsFolder);
+  const createTheme = useThemeStore((state) => state.createTheme);
+  const setThemeColor = useThemeStore((state) => state.setThemeColor);
+  const toggleGradient = useThemeStore((state) => state.toggleGradient);
+  const setGradient = useThemeStore((state) => state.setGradient);
 
   return {
     themeId,
     themeFile,
     fonts,
     textScale,
+    contentScale,
     enabledSnippets,
     customThemes,
     snippets,
+    draft,
+    themesDir,
     isScanning,
     folderError,
     slots: FONT_SLOTS,
-    /** The CSS stack for a slot's current family, for previewing it in place. */
-    stackFor: (slot: FontSlotKey) => (fonts[slot] ? fontStackFor(fonts[slot]) : null),
+    /**
+     * The stack a slot is actually rendering in — hers if she picked one,
+     * otherwise the theme's own. Used both to preview the face in place and to
+     * name it, so "whatever the theme uses" can say which font that is.
+     */
+    stackFor: (slot: FontSlotKey) => (fonts[slot] ? fontStackFor(fonts[slot]) : null) ?? themeFonts[slot] ?? null,
+    /**
+     * What the theme itself asks for in a slot, for labelling the "leave it
+     * alone" option. `family` is null when the theme names no face and hands
+     * the choice to the OS — `--font-mono` does that on purpose — so the two
+     * cases can be worded differently instead of printing "ui-monospace".
+     */
+    themeFontFor: (slot: FontSlotKey) => ({
+      stack: themeFonts[slot] ?? null,
+      family: themeFonts[slot] ? familyFromStack(themeFonts[slot]) : null,
+    }),
     selectTheme,
     setFont,
     setTextScale,
+    setContentScale,
     toggleSnippet,
     scanFolders,
     resetAppearance,
     openThemesFolder,
     openSnippetsFolder,
+    createTheme,
+    setThemeColor,
+    toggleGradient,
+    setGradient,
   };
 }

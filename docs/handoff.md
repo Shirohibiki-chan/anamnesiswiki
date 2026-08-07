@@ -385,6 +385,12 @@ is below.
   editor ever stops working, check whether the token is being set on an ancestor
   and overridden on the element.**
 
+- **`--fs-content` has exactly one user**, `.editor-shell .bn-editor`. It's the
+  "Writing" slider, and that slider means the text on a page — the moment a
+  second element takes the token, the control stops being predictable and
+  starts being "some things, sort of". Page titles, tab strips and callout
+  labels are interface and belong on `--fs-scale`.
+
 - **`applyTemplate` merges only the tabs a page doesn't already have, by id.** It
   must never overwrite existing content.
 
@@ -675,6 +681,29 @@ is below.
   don't "fix" a theme whose background image went missing by relaxing it — that
   missing image is the rule working. It's a scanner, not a CSS parser, and
   errs towards blocking on purpose.
+
+- **There is one theme format, and it's a `.css` file in the themes folder.**
+  Three things make themes now — the sandbox's export, the colour and gradient
+  pickers in Settings, and a text editor — and none of them has a state of its
+  own. The pickers serialize to a stylesheet on every change (`theme-editor.ts`)
+  and parse one back when a theme is selected; the file is what's true and the
+  controls are a view of it. **Don't give the editor its own JSON.** The moment
+  it has one, a hand-written theme becomes something the app can only partly
+  understand, and the round trip that lets her build in the sandbox and adjust
+  in Settings stops working. `theme-editor.test.ts` guards both directions.
+
+- **A gradient that's off must not be written at all.** `--gradient-x: ;` is not
+  the same as absent: every surface reads it as `var(--gradient-x, none)`, and a
+  declared-but-empty custom property resolves to *nothing*, which turns
+  `background: , var(--color-panel)` into a syntax error and drops the surface's
+  colour entirely. `serializeTheme` omits the declaration; keep it that way.
+
+- **Seed a gradient from the document, not from the theme file.** A theme only
+  has to name what it changes, so a file that sets four tokens still renders a
+  complete-looking app off the base values. Seeding a new gradient from the
+  file's own colours gave `#000000` for anything it hadn't declared — a black
+  wash over a surface that was plainly some other colour on screen.
+  `toggleGradient` in the store resolves through `getComputedStyle` first.
 
 - **Gradient tokens are undefined by default, not empty.** All twelve are read
   as `var(--gradient-x, none)` at their use sites and declared nowhere. A

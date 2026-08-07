@@ -405,11 +405,15 @@
    label in the app except the page body, and the "Writing" font picker
    changed nothing at all. Two classes deep, so no `!important` is needed.
 
-   `--fs-lg` is 1rem, i.e. the same 16px it has always been at scale 1; the
-   headings inside are sized in `em` off this, so they follow for free. */
+   `--fs-content` is 1rem, i.e. the same 16px it has always been at scale 1;
+   the headings inside are sized in `em` off this, so they follow for free.
+
+   This is the *only* rule allowed to use `--fs-content` — that token is the
+   "Writing" slider and this element is what "writing" means. Everything else
+   on the page, titles and tabs included, is UI and takes `--fs-scale`. */
 .editor-shell .bn-editor {
   font-family: var(--font-prose);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-content);
 }
 
 /* BlockNote's own editable region shrink-wraps to its content and won't

@@ -140,7 +140,10 @@ export type AppearanceSettings = {
   themeId: string;
   themeFile: string | null;
   fonts: Record<string, string>;
+  /** The interface. Absent on settings written before the two were split. */
   textScale: number;
+  /** The page body. Absent on settings written before the two were split — see theme-store. */
+  contentScale: number;
   /** Snippet filenames that are switched on. Absent means none are. */
   enabledSnippets: string[];
 };

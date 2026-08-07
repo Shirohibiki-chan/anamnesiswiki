@@ -6,16 +6,28 @@ import { create } from "zustand";
 import { SNIPPETS_DIR, THEMES_DIR } from "../constants/paths";
 import {
   BUILT_IN_THEMES,
+  DEFAULT_CONTENT_SCALE,
   DEFAULT_TEXT_SCALE,
   DEFAULT_THEME_ID,
   FONT_SLOTS,
   type FontSlotKey,
 } from "../constants/themes";
 import * as appSettings from "../services/app-settings-service";
-import { ensureCssDir, readCssDir } from "../services/filesystem-service";
+import { ensureCssDir, readCssDir, sanitizeSegment, writeCssFile } from "../services/filesystem-service";
 import { showFolder } from "../services/dialog-service";
+import type { GradientSlot } from "../constants/theme-tokens";
+import {
+  freeFileName,
+  readThemeDraft,
+  seedFromDocument,
+  seedGradient,
+  serializeTheme,
+  type Gradient,
+  type ThemeDraft,
+} from "../services/theme-editor";
 import {
   applyBootBackground,
+  applyContentScale,
   applyCustomThemeCss,
   applyFonts,
   applySnippetCss,
@@ -25,6 +37,7 @@ import {
   labelForFile,
   readCachedAppearance,
   readSwatch,
+  readThemeFonts,
   readThemeId,
   sanitizeCustomCss,
   themeIdForFile,
@@ -50,11 +63,30 @@ export type ThemeStoreState = {
   /** Filename when the current theme is one of hers; null for a built-in. */
   themeFile: string | null;
   fonts: Partial<Record<FontSlotKey, string>>;
+  /**
+   * What each font token resolves to with her overrides taken off — i.e. what
+   * the current theme itself asks for. Derived, never saved: it's here so the
+   * picker can say *which* font "whatever the theme uses" means, which it
+   * couldn't before and which made the other themes' faces unnameable without
+   * hunting through the list.
+   */
+  themeFonts: Record<string, string>;
   textScale: number;
+  contentScale: number;
   enabledSnippets: string[];
 
   customThemes: CustomStylesheet[];
   snippets: CustomStylesheet[];
+  /**
+   * The selected custom theme's editable values, for the colour and gradient
+   * pickers. Null whenever a built-in is selected — those aren't files, so
+   * there's nothing to write and nothing to edit.
+   *
+   * Kept beside `customThemes` rather than derived per render because a colour
+   * picker is a controlled input and reparsing the file on every drag frame is
+   * both wasteful and lossy for a value mid-edit.
+   */
+  draft: ThemeDraft | null;
   /** Absolute paths, for the two "open folder" buttons. Empty until scanned. */
   themesDir: string;
   snippetsDir: string;
@@ -72,10 +104,18 @@ export type ThemeStoreState = {
   selectTheme: (themeId: string, themeFile: string | null) => Promise<void>;
   setFont: (slot: FontSlotKey, family: string | null) => Promise<void>;
   setTextScale: (scale: number) => Promise<void>;
+  setContentScale: (scale: number) => Promise<void>;
   toggleSnippet: (file: string) => Promise<void>;
   resetAppearance: () => Promise<void>;
   openThemesFolder: () => Promise<void>;
   openSnippetsFolder: () => Promise<void>;
+
+  /** Copies whatever theme is on into a new editable file, and selects it. */
+  createTheme: (name: string) => Promise<void>;
+  setThemeColor: (token: string, hex: string) => void;
+  /** Switches a gradient on with sensible starting colours, or off. */
+  toggleGradient: (slot: GradientSlot, on: boolean) => void;
+  setGradient: (key: string, gradient: Gradient | null) => void;
 };
 
 function toStylesheet(file: { name: string; css: string }): CustomStylesheet {
@@ -96,6 +136,36 @@ function toStylesheet(file: { name: string; css: string }): CustomStylesheet {
 
 const isBuiltIn = (id: string) => BUILT_IN_THEMES.some((theme) => theme.id === id);
 
+/**
+ * The pending disk write for the theme being edited.
+ *
+ * Module-level rather than store state for the same reason autosave.ts is a
+ * plain service (CLAUDE.md rule 8): the timer has to survive re-renders, and a
+ * colour picker dragged across a gradient fires dozens of changes a second.
+ * The document is updated on every one of those; the file is written once the
+ * hand stops moving.
+ */
+let pendingWrite: { dir: string; file: string; css: string } | null = null;
+let writeTimer: ReturnType<typeof setTimeout> | null = null;
+const WRITE_DELAY_MS = 400;
+
+async function flushThemeWrite(): Promise<void> {
+  if (writeTimer) {
+    clearTimeout(writeTimer);
+    writeTimer = null;
+  }
+  const pending = pendingWrite;
+  pendingWrite = null;
+  if (pending) await writeCssFile(pending.dir, pending.file, pending.css).catch(() => {});
+}
+
+function queueThemeWrite(dir: string, file: string, css: string): void {
+  pendingWrite = { dir, file, css };
+  if (writeTimer) clearTimeout(writeTimer);
+  writeTimer = setTimeout(() => void flushThemeWrite(), WRITE_DELAY_MS);
+}
+
+
 export const useThemeStore = create<ThemeStoreState>((set, get) => {
   /**
    * Pushes the whole current state at the document in one go, and photographs
@@ -115,11 +185,25 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     applyThemeId(state.themeId);
     applyCustomThemeCss(themeCss);
     applySnippetCss(snippetCss);
+
+    // Two passes over the fonts, and the order is the point. With the theme on
+    // the document but her overrides cleared, the four tokens resolve to what
+    // the *theme* asks for — which is the only moment that's readable, since
+    // an override is an inline property on the same element and masks it. Then
+    // the overrides go back on. Costs one extra style recalc, on a path that
+    // runs when something changes and never per frame.
+    applyFonts({}, FONT_SLOTS);
+    const themeFonts = readThemeFonts(FONT_SLOTS);
     applyFonts(state.fonts, FONT_SLOTS);
+
     applyTextScale(state.textScale);
+    applyContentScale(state.contentScale);
     // After the theme is on the document, not before — it reads the resolved
     // background back out, which is only right once the rules above have landed.
     const bootBg = applyBootBackground();
+
+    if (JSON.stringify(themeFonts) !== JSON.stringify(state.themeFonts)) set({ themeFonts });
+
     cacheAppearance({
       themeId: state.themeId,
       themeFile: state.themeFile,
@@ -128,8 +212,49 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       enabledSnippets: state.enabledSnippets,
       fonts: state.fonts,
       textScale: state.textScale,
+      contentScale: state.contentScale,
       bootBg,
     });
+  }
+
+  /**
+   * The whole edit path, in one place: turn the draft back into a stylesheet,
+   * swap that text into the theme it belongs to, put it on the document, and
+   * queue the disk write.
+   *
+   * The in-memory `customThemes` entry is updated rather than waiting for a
+   * rescan, so a dragged colour picker moves the app under your hand. The file
+   * is still what's true — the next scan reads it back, and this wrote it.
+   */
+  function writeDraft(draft: ThemeDraft): void {
+    const state = get();
+    const theme = state.customThemes.find((t) => t.file === state.themeFile);
+    if (!theme || !state.themesDir) return;
+
+    const css = serializeTheme(theme.label, theme.themeId, draft, new Date().toISOString().slice(0, 10));
+    set({
+      // `resolved` moves with the edit, so a picker she just dragged shows the
+      // colour she picked rather than what the token used to inherit.
+      draft: { ...draft, resolved: { ...draft.resolved, ...draft.colors } },
+      customThemes: state.customThemes.map((t) => (t.file === theme.file ? { ...t, css, swatch: readSwatch(css) } : t)),
+    });
+    apply();
+    queueThemeWrite(state.themesDir, theme.file, css);
+  }
+
+  /**
+   * Reparses the pickers' values out of whichever theme is selected now.
+   *
+   * Must run *after* `apply()`, not before: it resolves every token it can't
+   * find in the file against the document, and before the theme is applied the
+   * document is still showing the previous one.
+   */
+  function syncDraft(): void {
+    const state = get();
+    const theme = state.themeFile ? state.customThemes.find((t) => t.file === state.themeFile) : null;
+    if (!theme) return set({ draft: null });
+    const style = getComputedStyle(document.documentElement);
+    set({ draft: readThemeDraft(theme.css, (token) => style.getPropertyValue(token)) });
   }
 
   async function persist(): Promise<void> {
@@ -144,6 +269,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         themeFile: state.themeFile,
         fonts: state.fonts as Record<string, string>,
         textScale: state.textScale,
+        contentScale: state.contentScale,
         enabledSnippets: state.enabledSnippets,
       })
       .catch(() => {});
@@ -153,10 +279,13 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     themeId: DEFAULT_THEME_ID,
     themeFile: null,
     fonts: {},
+    themeFonts: {},
     textScale: DEFAULT_TEXT_SCALE,
+    contentScale: DEFAULT_CONTENT_SCALE,
     enabledSnippets: [],
     customThemes: [],
     snippets: [],
+    draft: null,
     themesDir: "",
     snippetsDir: "",
     isScanning: false,
@@ -185,6 +314,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
           themeFile: cached.themeFile ?? null,
           fonts: cached.fonts as Record<string, string> | undefined,
           textScale: cached.textScale,
+          contentScale: cached.contentScale,
           enabledSnippets: cached.enabledSnippets,
         };
       };
@@ -201,11 +331,18 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         if (typeof family === "string" && family) fonts[slot.key] = family;
       }
 
+      const textScale = typeof saved.textScale === "number" ? saved.textScale : DEFAULT_TEXT_SCALE;
+
       set({
         themeId: typeof saved.themeId === "string" && saved.themeId ? saved.themeId : DEFAULT_THEME_ID,
         themeFile: typeof saved.themeFile === "string" ? saved.themeFile : null,
         fonts,
-        textScale: typeof saved.textScale === "number" ? saved.textScale : DEFAULT_TEXT_SCALE,
+        textScale,
+        // Falls back to the UI's scale, not to 1. Before these were split there
+        // was one slider driving both, so someone who had set it to 120% wants
+        // 120% of each — landing the writing back on 100% would be the app
+        // resizing their pages on upgrade for no reason they asked for.
+        contentScale: typeof saved.contentScale === "number" ? saved.contentScale : textScale,
         enabledSnippets: Array.isArray(saved.enabledSnippets) ? saved.enabledSnippets.filter((f) => typeof f === "string") : [],
       });
 
@@ -219,6 +356,10 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
 
     async scanFolders() {
       set({ isScanning: true });
+      // Any edit still sitting in the debounce goes to disk first. Otherwise a
+      // scan reads the file as it was before the last few colour changes and
+      // hands them straight back, which looks like the pickers snapping back.
+      await flushThemeWrite();
       try {
         const parent = await appSettings.getProjectsDir();
         // Created rather than merely looked for. An empty folder that exists
@@ -251,6 +392,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
           enabledSnippets: state.enabledSnippets.filter((file) => snippets.some((s) => s.file === file)),
         });
         apply();
+        syncDraft();
         if (lost) await persist();
       } catch {
         // A projects folder that has moved or a drive that isn't mounted. The
@@ -260,8 +402,12 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     },
 
     async selectTheme(themeId, themeFile) {
+      // Whatever was half-typed into the last theme's pickers goes to its own
+      // file before the selection moves, or it's written to the new one.
+      await flushThemeWrite();
       set({ themeId, themeFile: isBuiltIn(themeId) && !themeFile ? null : themeFile });
       apply();
+      syncDraft();
       await persist();
     },
 
@@ -282,6 +428,12 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       await persist();
     },
 
+    async setContentScale(scale) {
+      set({ contentScale: scale });
+      apply();
+      await persist();
+    },
+
     async toggleSnippet(file) {
       const enabled = get().enabledSnippets;
       set({ enabledSnippets: enabled.includes(file) ? enabled.filter((f) => f !== file) : [...enabled, file] });
@@ -290,7 +442,14 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     },
 
     async resetAppearance() {
-      set({ themeId: DEFAULT_THEME_ID, themeFile: null, fonts: {}, textScale: DEFAULT_TEXT_SCALE, enabledSnippets: [] });
+      set({
+        themeId: DEFAULT_THEME_ID,
+        themeFile: null,
+        fonts: {},
+        textScale: DEFAULT_TEXT_SCALE,
+        contentScale: DEFAULT_CONTENT_SCALE,
+        enabledSnippets: [],
+      });
       apply();
       await persist();
     },
@@ -312,6 +471,68 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       if (!snippetsDir) return;
       set({ folderError: null });
       await showFolder(snippetsDir).catch(() => set({ folderError: { folder: "snippets", path: snippetsDir } }));
+    },
+
+    async createTheme(name) {
+      const state = get();
+      if (!state.themesDir) return;
+
+      // Seeded from what's on screen, not from a file — the theme being copied
+      // is usually a built-in, whose CSS the app never holds as text, and "make
+      // a copy of this" plainly means the thing you're looking at.
+      const style = getComputedStyle(document.documentElement);
+      const colors = seedFromDocument((token) => style.getPropertyValue(token));
+      const file = freeFileName(
+        name,
+        state.customThemes.map((theme) => theme.file),
+        sanitizeSegment,
+      );
+      const themeId = themeIdForFile(file);
+      const label = labelForFile(file);
+      // Seeded from the document, so every token is already declared — a theme
+      // made here is complete rather than half-inherited, which is what "a copy
+      // of this one" has to mean.
+      const css = serializeTheme(label, themeId, { colors, resolved: colors, gradients: {} }, new Date().toISOString().slice(0, 10));
+
+      await writeCssFile(state.themesDir, file, css);
+      await get().scanFolders();
+      await get().selectTheme(themeId, file);
+    },
+
+    // Both editors below take the same path: rewrite the file's text, put it
+    // straight on the document so the change is instant, and let the disk catch
+    // up. The file stays the source of truth — reopen Settings, or open the
+    // file in Notepad, and it says the same thing.
+    setThemeColor(token, hex) {
+      const { draft } = get();
+      if (!draft) return;
+      writeDraft({ ...draft, colors: { ...draft.colors, [token]: hex } });
+    },
+
+    toggleGradient(slot, on) {
+      const { draft } = get();
+      if (!draft) return;
+      if (!on) return get().setGradient(slot.key, null);
+
+      // Seeded from what the app is *showing*, not from what this file happens
+      // to declare. A theme file only has to name what it changes — a
+      // hand-written one might set four tokens and inherit the rest — and
+      // seeding a gradient from a token the file doesn't mention gave black,
+      // in a slot whose surface was plainly some other colour on screen.
+      const style = getComputedStyle(document.documentElement);
+      const resolved = new Proxy(draft.colors, {
+        get: (colors, token: string) => colors[token] ?? style.getPropertyValue(token).trim(),
+      });
+      get().setGradient(slot.key, seedGradient(slot, resolved));
+    },
+
+    setGradient(key, gradient) {
+      const { draft } = get();
+      if (!draft) return;
+      const gradients = { ...draft.gradients };
+      if (gradient) gradients[key] = gradient;
+      else delete gradients[key];
+      writeDraft({ ...draft, gradients });
     },
   };
 });

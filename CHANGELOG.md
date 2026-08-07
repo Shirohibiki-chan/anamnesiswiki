@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-07 — colours in the app
+
+### Additions
+
+- **You can change a theme's colours and gradients in the app now.** Settings → Appearance has pickers for sixteen colours and all twelve gradients — background, top bar, sidebar, page area, properties panel, dialogs, buttons, selected page, tags, page titles, section headings and the callout wash. Each gradient can be a straight line at any angle or a glow from a point, with a see-through slider on each end. Changes land as you make them; there's nothing to save.
+- **"Make a copy I can edit."** The six built-in themes ship with the app and can't be changed, so this takes a copy of whatever you're looking at and drops it in your themes folder as a normal `.css` file. Then everything's editable.
+- **It's the same file either way.** A theme you build with the pickers is an ordinary stylesheet you can open in Notepad; a theme you wrote by hand, or exported from the sandbox, opens in the pickers. Nothing is locked to the place you made it. If you've hand-written a gradient too fancy for the controls, they say so and leave it exactly alone rather than mangling it.
+
+### Adjustments
+
+- **Two text-size sliders instead of one — Writing and Interface.** They were the same control, so getting your pages to a comfortable size dragged the menus down with them. Writing also goes further down now (70%, where the interface stops at 85%), since page text starts bigger.
+- **The font pickers now tell you what the theme is using.** "Whatever the theme uses" was true and useless — you couldn't tell what Midnight's titles were set in without hunting down a list of 98. It now says *Whatever the theme uses — Domine*, and follows along when you switch theme. The code slot says "your system's own", because that one deliberately asks your computer for its own best monospace rather than naming a face.
+
 ## 2026-08-06 — themes, second pass
 
 ### Additions

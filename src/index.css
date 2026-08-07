@@ -218,6 +218,22 @@
   --fs-2xl: calc(1.75rem * var(--fs-scale)); /* 28px — page and folder titles */
   --fs-3xl: calc(2rem * var(--fs-scale)); /* 32px — start screen */
 
+  /* The writing on a page, and only that. A second multiplier because the two
+     sizes are answering different questions: the app's labels want to be as
+     small as you can still read, and the text you're writing wants to be
+     whatever's comfortable to write in — and those don't land on the same
+     number. Her words: *"the contents are generally too large but getting it
+     to a more normal size makes the ui a bit small."*
+
+     Used by exactly one rule, `.editor-shell .bn-editor` in page.css. Nothing
+     else may take it: the moment a second element uses it, "writing" stops
+     meaning the page body and the slider stops being predictable. Page titles,
+     tab strips and callout labels are UI and stay on `--fs-scale`.
+
+     1rem, i.e. the 16px the editor has always been, so scale 1 is unchanged. */
+  --fs-scale-content: 1;
+  --fs-content: calc(1rem * var(--fs-scale-content));
+
   /* Line height. `--lh-normal` is set on body below; before it, everything
      inherited the browser's ~1.2 and dense screens (Settings, properties, the
      import preview) read as cramped. Headings take `--lh-tight` — 1.5 on 28px

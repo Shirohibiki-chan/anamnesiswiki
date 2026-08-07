@@ -723,3 +723,15 @@ export async function ensureCssDir(parent: string, dirName: string): Promise<str
   await ensureDir(dir);
   return dir;
 }
+
+/**
+ * Writes a theme or snippet file.
+ *
+ * Whole-file, not a patch, because a theme file is small and generated — the
+ * editor holds the complete set of values and rewriting is simpler than
+ * reconciling. Callers debounce: a colour picker fires continuously while
+ * you're dragging it, and that is not a rate to write a file at.
+ */
+export async function writeCssFile(dir: string, fileName: string, css: string): Promise<void> {
+  await writeTextFile(joinPath(dir, fileName), css);
+}
