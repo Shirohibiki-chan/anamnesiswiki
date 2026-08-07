@@ -332,7 +332,18 @@
 
    Adding one here is not the only way to get a theme: a `.css` file in the
    themes folder is loaded at runtime and does the same job (theme-service.ts).
-   These three are here because they ship. */
+   These are here because they ship.
+
+   The four darks are four different rooms, not four shades of one: navy,
+   near-black, warm brown, green, plum. That's the bar for adding another —
+   another grey wouldn't be a theme, and the picker is a list she has to read.
+
+   Each dark below re-tunes its callouts rather than inheriting them, for the
+   same reason `daylight` did: the base Info is a blue tint chosen against
+   #0f0f14, and on a warm brown or a green it reads as a bruise. The accent and
+   the callout hues also have to stay apart from each other — Nightbloom's
+   Secret is indigo rather than the base violet precisely because its accent is
+   already orchid, and two purples a row apart is no colour-coding at all. */
 
 /* Hers, made in the sandbox on 2026-08-06 — deep navy instead of near-black,
    with the teal kept. The border tokens are hers too, and they're deliberately
@@ -349,6 +360,122 @@
   --font-prose: "Quicksand", sans-serif;
 
   --gradient-accent: linear-gradient(100deg, #0d9488, #5eead4);
+}
+
+/* Warm charcoal and lamplight — the brown end of dark, where Anamnesis Dark is
+   the blue-grey end. The panels carry real red in them rather than being grey
+   with a warm accent bolted on, which is the difference between "a dark theme
+   with an orange highlight" and a room with a fire in it. */
+[data-theme="ember"] {
+  --color-bg: #14100c;
+  --color-panel: #1e1813;
+  --color-panel-alt: #241c16;
+  --color-panel-edge: #2e241b;
+
+  --color-border-strong: #4a3a2c;
+  --color-border: #362b21;
+  --color-border-subtle: #2a221a;
+
+  --color-text-primary: #f2e9dd;
+  --color-text-secondary: #b5a390;
+  --color-text-muted: #85715f;
+  --color-text-placeholder: #5c4c3f;
+
+  --color-accent-light: #f0a868;
+  --color-accent-dark: #b9651f;
+  --color-accent-faint: rgba(217, 119, 38, 0.16);
+  --color-accent-faint-border: rgba(217, 119, 38, 0.34);
+
+  --color-callout-info: #7fbfe8;
+  --color-callout-info-bg: rgba(96, 165, 250, 0.12);
+  --color-callout-info-text: #d8ecfb;
+
+  --color-callout-quote: #b09c88;
+  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-text: #ded0bf;
+
+  --color-callout-secret: #d3b2f5;
+  --color-callout-secret-bg: rgba(168, 132, 240, 0.13);
+  --color-callout-secret-text: #efe3fd;
+
+  --gradient-accent: linear-gradient(100deg, #b9651f, #f0a868);
+}
+
+/* Forest floor: green dark enough to still read as neutral at a glance, with
+   old gold rather than another green for the accent. A green theme with a
+   green accent is a monochrome, and monochromes are where "which of these is
+   the button" stops having an answer. */
+[data-theme="grove"] {
+  --color-bg: #0b120e;
+  --color-panel: #141d17;
+  --color-panel-alt: #18231b;
+  --color-panel-edge: #1e2b22;
+
+  --color-border-strong: #2f4437;
+  --color-border: #23322a;
+  --color-border-subtle: #1b271f;
+
+  --color-text-primary: #e6ede8;
+  --color-text-secondary: #9aaea2;
+  --color-text-muted: #6b7d72;
+  --color-text-placeholder: #4a584f;
+
+  --color-accent-light: #e3c26d;
+  --color-accent-dark: #a8801f;
+  --color-accent-faint: rgba(202, 152, 43, 0.15);
+  --color-accent-faint-border: rgba(202, 152, 43, 0.32);
+
+  --color-callout-info: #7dbde8;
+  --color-callout-info-bg: rgba(96, 165, 250, 0.12);
+  --color-callout-info-text: #d7eafa;
+
+  --color-callout-quote: #9fb2a7;
+  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-text: #cfdcd4;
+
+  --color-callout-secret: #c9b3f7;
+  --color-callout-secret-bg: rgba(167, 139, 250, 0.12);
+  --color-callout-secret-text: #ece4fe;
+
+  --gradient-accent: linear-gradient(100deg, #a8801f, #e3c26d);
+}
+
+/* Plum and orchid — the one that's obviously *coloured* rather than a tinted
+   dark. It gets a cyan Info and an indigo Secret because its accent has taken
+   the purple; see the note above the block above. */
+[data-theme="nightbloom"] {
+  --color-bg: #120d18;
+  --color-panel: #1c1524;
+  --color-panel-alt: #211a2a;
+  --color-panel-edge: #2a2035;
+
+  --color-border-strong: #4a3559;
+  --color-border: #352741;
+  --color-border-subtle: #291f33;
+
+  --color-text-primary: #f0e8f5;
+  --color-text-secondary: #ac9db8;
+  --color-text-muted: #7b6b87;
+  --color-text-placeholder: #564a60;
+
+  --color-accent-light: #e9a8f0;
+  --color-accent-dark: #a021b0;
+  --color-accent-faint: rgba(216, 90, 232, 0.15);
+  --color-accent-faint-border: rgba(216, 90, 232, 0.32);
+
+  --color-callout-info: #67e8f9;
+  --color-callout-info-bg: rgba(34, 211, 238, 0.12);
+  --color-callout-info-text: #cffafe;
+
+  --color-callout-quote: #ab9fb5;
+  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-text: #d9cfe0;
+
+  --color-callout-secret: #a5b4fc;
+  --color-callout-secret-bg: rgba(129, 140, 248, 0.13);
+  --color-callout-secret-text: #e0e7ff;
+
+  --gradient-accent: linear-gradient(100deg, #a021b0, #e9a8f0);
 }
 
 /* The one theme that isn't a taste call — some people can't read light text on
@@ -528,6 +655,17 @@ body,
 
 *::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
+}
+
+/* The little square where a vertical and a horizontal scrollbar meet, and the
+   drag handle a resizable element gets in the same spot. Neither inherits
+   anything from the rules above, and both default to *white* — which on a
+   dark theme is a bright chip in the bottom-right of the page tree, sitting
+   there looking like a rendering fault. Nothing in this app is resizable in
+   that sense, so `::-webkit-resizer` is belt and braces. */
+*::-webkit-scrollbar-corner,
+*::-webkit-resizer {
+  background: transparent;
 }
 
 /* Wiki body prose — wraps every BlockNote editor instance */

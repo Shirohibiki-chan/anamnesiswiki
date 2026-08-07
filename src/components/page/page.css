@@ -396,6 +396,22 @@
   --bn-font-family: var(--font-prose) !important;
 }
 
+/* The two lines that make the centre pane obey Settings → Appearance.
+   BlockNote's stylesheet puts `font-family: Inter, …` and `font-size: 16px`
+   on the contenteditable element itself (`.bn-editor.bn-default-styles`).
+   A declaration on the element always beats an inherited one, so neither the
+   `--font-prose` coming down from `.wiki-body` nor any `--fs-*` step ever
+   reached the text she actually writes in — the size slider moved every
+   label in the app except the page body, and the "Writing" font picker
+   changed nothing at all. Two classes deep, so no `!important` is needed.
+
+   `--fs-lg` is 1rem, i.e. the same 16px it has always been at scale 1; the
+   headings inside are sized in `em` off this, so they follow for free. */
+.editor-shell .bn-editor {
+  font-family: var(--font-prose);
+  font-size: var(--fs-lg);
+}
+
 /* BlockNote's own editable region shrink-wraps to its content and won't
    stretch to fill this wrapper no matter what's asked of .bn-editor here —
    so the "click anywhere in this box to focus" behavior is instead handled

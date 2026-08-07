@@ -10,7 +10,7 @@
 import { AlertTriangle, Check, FolderOpen, RefreshCw } from "lucide-react";
 import { BUILT_IN_THEMES, TEXT_SCALE_MAX, TEXT_SCALE_MIN, TEXT_SCALE_STEP, type FontSlot } from "../../constants/themes";
 import { fontChoicesFor, useTheme } from "../../hooks/use-theme";
-import type { CustomStylesheet } from "../../state/theme-store";
+import type { CustomStylesheet, ThemeStoreState } from "../../state/theme-store";
 import type { ThemeSwatch } from "../../services/theme-service";
 
 /**
@@ -124,6 +124,24 @@ function BlockedNotice({ sheet }: { sheet: CustomStylesheet }) {
   );
 }
 
+/**
+ * Shown when "Open … folder" couldn't hand the folder to the file manager.
+ * The path is the point: a button that silently does nothing leaves her with
+ * no way to reach the folder at all, and this at least gives her something to
+ * paste into Explorer.
+ */
+function FolderErrorNotice({ error, folder }: { error: ThemeStoreState["folderError"]; folder: "themes" | "snippets" }) {
+  if (!error || error.folder !== folder) return null;
+  return (
+    <p className="appearance-blocked">
+      <AlertTriangle size={12} />
+      <span>
+        Couldn't open that folder. It's here: <code>{error.path}</code>
+      </span>
+    </p>
+  );
+}
+
 export function AppearanceSettings() {
   const {
     themeId,
@@ -133,6 +151,7 @@ export function AppearanceSettings() {
     customThemes,
     snippets,
     isScanning,
+    folderError,
     slots,
     selectTheme,
     setTextScale,
@@ -190,6 +209,8 @@ export function AppearanceSettings() {
             {isScanning ? "Looking…" : "Check for new ones"}
           </button>
         </p>
+
+        <FolderErrorNotice error={folderError} folder="themes" />
       </section>
 
       <section className="appearance-section">
@@ -254,6 +275,8 @@ export function AppearanceSettings() {
             Open snippets folder
           </button>
         </p>
+
+        <FolderErrorNotice error={folderError} folder="snippets" />
       </section>
 
       {withBlocked.length > 0 && (

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-06 — themes, second pass
+
+### Additions
+
+- **Three more dark themes, and none of them is another grey.** *Ember* is warm charcoal with copper and lamplight. *Grove* is deep forest green with old gold. *Nightbloom* is dark plum with orchid and cyan. Each one has its own callout colours rather than the near-black theme's washed over the top, so Info, Quote and Secret still read as three different things.
+
+### Adjustments
+
+- **Midnight is now the theme you start on**, and *Anamnesis Dark* is the other dark one in the list rather than the default. If you've already picked a theme, nothing changes for you — this only affects a fresh install.
+
+### Fixes
+
+- **The text size slider now moves the writing.** It was resizing every label in the app except the one thing you actually look at: the text on the page. The editor was pinned at 16px and to Inter no matter what, which also meant the **Writing** font picker did nothing. Both now do what they say.
+- **The white square in the bottom corner of the page tree is gone.** It was the little patch where the two scrollbars meet, which nothing had ever been told to colour, so it came out white on a dark app.
+- **Open themes folder / Open snippets folder work.** They were being refused permission and failing silently, so the buttons did nothing at all. If one ever does fail now, it says so and shows you the path so you can paste it into Explorer.
+
 ## 2026-08-06 — after v0.2.1
 
 ### Additions

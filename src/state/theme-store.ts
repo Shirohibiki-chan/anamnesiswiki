@@ -59,6 +59,13 @@ export type ThemeStoreState = {
   themesDir: string;
   snippetsDir: string;
   isScanning: boolean;
+  /**
+   * Set when handing a folder to the OS file manager didn't work, so the
+   * button can say so and show the path instead of doing nothing at all. One
+   * field for both buttons — only one can be pressed at a time — with the
+   * folder named so the message appears under the button that was pressed.
+   */
+  folderError: { folder: "themes" | "snippets"; path: string } | null;
 
   loadAppearance: () => Promise<void>;
   scanFolders: () => Promise<void>;
@@ -153,6 +160,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     themesDir: "",
     snippetsDir: "",
     isScanning: false,
+    folderError: null,
 
     async loadAppearance() {
       // Three outcomes, and they are not the same thing:
@@ -287,14 +295,23 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       await persist();
     },
 
+    // Both of these used to be a bare `await showFolder(dir)`, and when the
+    // call was refused the rejection went nowhere: the button did nothing,
+    // every time, with no way to tell that from a slow file manager. Now the
+    // failure names the folder, which is also the thing she needed from the
+    // button in the first place.
     async openThemesFolder() {
       const { themesDir } = get();
-      if (themesDir) await showFolder(themesDir);
+      if (!themesDir) return;
+      set({ folderError: null });
+      await showFolder(themesDir).catch(() => set({ folderError: { folder: "themes", path: themesDir } }));
     },
 
     async openSnippetsFolder() {
       const { snippetsDir } = get();
-      if (snippetsDir) await showFolder(snippetsDir);
+      if (!snippetsDir) return;
+      set({ folderError: null });
+      await showFolder(snippetsDir).catch(() => set({ folderError: { folder: "snippets", path: snippetsDir } }));
     },
   };
 });

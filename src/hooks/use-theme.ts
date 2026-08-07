@@ -49,6 +49,7 @@ export function useTheme() {
   const customThemes = useThemeStore((state) => state.customThemes);
   const snippets = useThemeStore((state) => state.snippets);
   const isScanning = useThemeStore((state) => state.isScanning);
+  const folderError = useThemeStore((state) => state.folderError);
 
   const selectTheme = useThemeStore((state) => state.selectTheme);
   const setFont = useThemeStore((state) => state.setFont);
@@ -68,6 +69,7 @@ export function useTheme() {
     customThemes,
     snippets,
     isScanning,
+    folderError,
     slots: FONT_SLOTS,
     /** The CSS stack for a slot's current family, for previewing it in place. */
     stackFor: (slot: FontSlotKey) => (fonts[slot] ? fontStackFor(fonts[slot]) : null),
