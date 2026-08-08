@@ -33,10 +33,18 @@ export const COLOR_GROUPS: readonly ColorGroup[] = [
     key: "surfaces",
     label: "Backgrounds",
     tokens: [
+      // These four are the whole background of the app between them, and the
+      // hints are the only thing saying which is which. They were written from
+      // the token names rather than from the code and two of them were wrong:
+      // `--color-panel-alt` said "the top bar, inputs" while actually painting
+      // 24 different things, most of them boxes inside a dialog — so changing
+      // "Panels" and finding the boxes in Settings unchanged looked like the
+      // picker was broken. It wasn't; it was this line. **If you point a token
+      // at something new, the hint is part of the change.**
       { token: "--color-bg", label: "Window", hint: "behind everything" },
-      { token: "--color-panel", label: "Panels", hint: "sidebar, properties, dialogs" },
-      { token: "--color-panel-alt", label: "Panels, second shade", hint: "the top bar, inputs" },
-      { token: "--color-panel-edge", label: "Menus", hint: "popovers and dropdowns" },
+      { token: "--color-panel", label: "Panels", hint: "the big surfaces — sidebar, properties, dialogs, the page" },
+      { token: "--color-panel-alt", label: "Boxes on a panel", hint: "grouped settings, input fields, the top bar" },
+      { token: "--color-panel-edge", label: "Menus and chips", hint: "popovers, dropdowns, tags" },
     ],
   },
   {
