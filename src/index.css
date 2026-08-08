@@ -155,12 +155,32 @@
 
      **These are mixes, not fixed colours, and that's the point.** A hover has
      to move *away* from the surface it sits on — lighter on a dark theme,
-     darker on a light one — so it can't be one value. Mixing the surface
-     toward the text colour gets the direction right automatically, because
-     text is by definition the far end of the theme's own contrast. So a theme
-     that never mentions hover still gets a correct one, including a
-     hand-written one, and one that retunes its panels later can't drift out of
-     step. Override any of them and the override wins as usual.
+     darker on a light one — so it can't be one value. A theme that never
+     mentions hover still gets a correct one, including a hand-written one, and
+     one that retunes its panels later can't drift out of step. Override any of
+     them and the override wins as usual.
+
+     **What they mix *toward* is the whole design, and the first attempt got it
+     wrong.** That version mixed the panel toward `--color-text-primary`, on the
+     reasoning that text is by definition the far end of a theme's contrast. It
+     isn't — that's true of a *well-formed* theme, and a theme being edited is
+     not well-formed halfway through. She set a panel to pale pink on a theme
+     whose text was pale cyan, and the mix of two pale colours is a pale colour:
+     hover moved by a measured distance of **6**, which is invisible. The rule
+     it broke is that a derivation must not depend on a token it isn't
+     derived from.
+
+     So the direction comes from the panel's *own lightness* instead, via
+     `--color-hover-pole`: white when the panel is dark, black when it's light,
+     decided by `sign()` on the oklch lightness channel. Nothing else can drag
+     it off course, because nothing else is in it. Same pink panel now moves 43.
+
+     The 0.62 threshold is a light/dark cutoff and the `sign()` is why the pole
+     is written this way rather than as a conditional: at exactly 0.62 `sign()`
+     returns 0, which makes the pole `oklch(0 0 0)` — black. That's a real
+     direction rather than a no-op, so the one input that could have produced
+     "no change at all" produces a normal hover instead. A mid-grey panel is the
+     weakest case at 17, still plainly visible.
 
      `in oklab` rather than the default sRGB so the mix keeps the theme's hue:
      Ember's warm charcoal stays warm and Grove's green stays green, where an
@@ -176,9 +196,14 @@
                      the selected nav row. Stronger than `--color-accent-faint`
                      on purpose: hovering a *selected* row used to land on the
                      same tint it already had, which is the white-on-white bug
-                     wearing a different colour. */
-  --color-hover: color-mix(in oklab, var(--color-panel) 92%, var(--color-text-primary));
-  --color-hover-strong: color-mix(in oklab, var(--color-panel) 84%, var(--color-text-primary));
+                     wearing a different colour. This one keeps mixing from the
+                     accent, which is sound for the reason the text version
+                     wasn't: an accent that doesn't contrast with the panel
+                     isn't an accent, so there's no halfway-edited state where
+                     it collapses. */
+  --color-hover-pole: oklch(from var(--color-panel) sign(0.62 - l) 0 0);
+  --color-hover: color-mix(in oklab, var(--color-panel) 92%, var(--color-hover-pole));
+  --color-hover-strong: color-mix(in oklab, var(--color-panel) 84%, var(--color-hover-pole));
   --color-accent-hover: color-mix(in oklab, var(--color-accent-light) 24%, transparent);
 
   /* The fourth one is a film, not a fill, for the things a fill can't touch: a
@@ -188,10 +213,15 @@
      white and the hover quietly disappeared, the same failure as above.
 
      Laid over the top as an inset shadow instead, so whatever is underneath
-     keeps its gradient or its tint and just gets darker or lighter — and
-     because it's mixed from the text colour, which way it goes is decided by
-     the theme rather than by this line. */
-  --color-hover-wash: color-mix(in oklab, var(--color-text-primary) 10%, transparent);
+     keeps its gradient or its tint and just gets darker or lighter.
+
+     It's the pole at low opacity, for the same reason the three above are —
+     this one used to mix from the text colour too, and inherited the same
+     failure. It's the case with the least to go on: what's underneath is a
+     gradient or a colour the user picked for one row, so there's nothing local
+     to derive from. The panel is the best available stand-in for "is this
+     theme light or dark", and that question is all this needs answered. */
+  --color-hover-wash: color-mix(in oklab, var(--color-hover-pole) 10%, transparent);
 
   /* Over a user's own image — the banner's hint and remove button, the
      portrait's remove button. These stay dark in every theme rather than

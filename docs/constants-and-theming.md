@@ -120,20 +120,38 @@ sits on. `daylight` does exactly that (`--color-panel` and `--color-panel-edge`
 are both `#ffffff`), so hovering a page in the sidebar painted white on white
 and did nothing at all. Measured: a colour distance of **0**.
 
-The four hover tokens are `color-mix(in oklab, …)` of colours the theme already
-sets — the panel mixed toward the text for the neutral ones, the accent for the
-accented one. Two consequences worth understanding before changing them:
+The hover tokens are `color-mix(in oklab, …)` built on `--color-hover-pole`,
+which is white when `--color-panel` is dark and black when it's light —
+`oklch(from var(--color-panel) sign(0.62 - l) 0 0)`. Three consequences worth
+understanding before changing them:
 
-- **They pick their own direction.** Text is by definition the far end of a
-  theme's contrast, so mixing toward it lightens a dark theme and darkens a
-  light one. That's why a theme never has to declare hover, including one
-  hand-written in Notepad, and why `filter: brightness()` was the wrong tool —
-  it only knows one direction and quietly vanished on `daylight`.
+- **They pick their own direction**, from the panel's own lightness. That's why
+  a theme never has to declare hover, including one hand-written in Notepad, and
+  why `filter: brightness()` was the wrong tool — it only lifts, and quietly
+  vanished on `daylight`.
+- **They derive only from what they're derived from.** The first version mixed
+  the panel toward `--color-text-primary`, reasoning that text is the far end of
+  a theme's contrast. That holds for a *finished* theme and not for one being
+  edited: a pale pink panel on a theme with pale cyan text moved hover by a
+  measured **6**, i.e. invisibly. Pulling the direction out of the panel alone
+  removed the dependency; the same theme now moves 43. **Don't reintroduce a
+  second token into these mixes.**
 - **They can't drift.** Retune a theme's backgrounds and hover moves with them.
   This is why the three editable ones are in `AUTO_TOKENS`
   (`constants/theme-tokens.ts`) and are skipped by `seedFromDocument`: copying a
   theme writes out every colour it resolves to, and doing that to hover would
   pin it to the panel colour at the moment of the copy.
+
+`sign()` returns 0 when the panel's lightness is exactly 0.62, which makes the
+pole `oklch(0 0 0)` — black. That's deliberate: the one input that could have
+produced "no change at all" produces an ordinary darkening instead. Measured
+step by panel: 26 on the dark themes, 43–47 on light ones, 17 on a mid-grey,
+which is the weakest case and still plainly visible.
+
+`draft.resolved` is a snapshot, so the store re-reads the auto tokens off the
+document after any colour changes (`withAutoTokens` in `state/theme-store.ts`).
+Without that the Hover swatches keep showing the hover of the *previous* panel
+colour — the app was right and the pickers were stale.
 
 They're still offered as pickers under Settings → Colours → Hover, and a value
 chosen there is written and kept. Automatic until asked; hers after.

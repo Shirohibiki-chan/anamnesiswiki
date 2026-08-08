@@ -724,20 +724,45 @@ is below.
   page in the sidebar was **white on white, a measured distance of 0**. Use
   `--color-hover`, `--color-hover-strong`, `--color-accent-hover`, or
   `--color-hover-wash` for a gradient or a user-tinted row. They're
-  `color-mix(in oklab, …)` of tokens the theme already sets, so they pick their
-  own direction (lighter on dark, darker on light) and follow along when
-  backgrounds are retuned. **Don't "simplify" them into fixed values** — fixed
-  is what broke, and `filter: brightness()` is the same mistake in another
-  spelling, since it only lifts. Reasoning in `docs/constants-and-theming.md`
-  §Hover is a mix.
+  `color-mix(in oklab, …)` over `--color-hover-pole`, which is white or black
+  depending on the panel's own lightness, so they pick their own direction and
+  follow along when backgrounds are retuned. **Don't "simplify" them into fixed
+  values** — fixed is what broke, and `filter: brightness()` is the same mistake
+  in another spelling, since it only lifts. Reasoning in
+  `docs/constants-and-theming.md` §Hover is a mix.
+
+- **A hover mix takes the panel and nothing else.** The first version of the
+  above mixed the panel toward `--color-text-primary`, on the reasoning that
+  text is the far end of a theme's contrast. That's a property of a *finished*
+  theme, and a theme halfway through being edited doesn't have it: a pale pink
+  panel on a theme whose text was pale cyan moved hover by a measured **6** —
+  invisible, and reported as such within an hour of shipping. The general rule
+  it broke is worth more than the fix: **a derivation must not depend on a token
+  it isn't derived from**, because the user can move that token independently
+  and will. The pole reads the panel's own lightness, so there's nothing else to
+  drag it off course.
 
 - **The three editable hover tokens are in `AUTO_TOKENS` and must stay out of
-  `seedFromDocument`.** Copying a theme deliberately writes out every colour it
+  `seedFromDocument`, and must be refreshed by `withAutoTokens` on every edit.**
+  Copying a theme deliberately writes out every colour it
   resolves to, so the copy is complete and independent of its source. Applied to
   hover that's backwards: it pins hover to whatever the panel colour was at the
   moment of the copy, and the next change to the backgrounds leaves it stranded
   — the exact drift the mixes exist to prevent. They're still offered as pickers,
-  so a value she actually chooses is written and kept.
+  so a value she actually chooses is written and kept. The refresh is the other
+  half: `draft.resolved` is a snapshot taken when the theme was opened, so
+  without re-reading them after a colour change the three Hover swatches keep
+  showing the hover of the panel colour from *before* the edit. The app is right
+  either way — the mixes recompute in CSS — so this is a bug you can only see in
+  the pickers, which is where it was found.
+
+- **`resolveTokenColor` returns `""` for a token that doesn't resolve, and the
+  sentinel is what makes that true.** An unresolvable `var()` makes `color`
+  invalid at computed-value time, and an invalid `color` *inherits* — so the
+  obvious implementation hands back whatever text colour the document happened
+  to be using, and its callers write what they're given into her theme file. A
+  plausible wrong answer is worse here than no answer, since the callers already
+  know how to skip an empty one. Don't remove the sentinel to "simplify" it.
 
 - **`--color-on-scrim` is fixed light in every theme, and that's not an
   oversight.** The three controls sitting on a user's image — the banner hint,
