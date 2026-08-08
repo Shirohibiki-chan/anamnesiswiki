@@ -58,6 +58,16 @@ export const COLOR_GROUPS: readonly ColorGroup[] = [
     ],
   },
   {
+    key: "hover",
+    label: "Hover",
+    advanced: true,
+    tokens: [
+      { token: "--color-hover", label: "Rows and buttons", hint: "what the mouse is over" },
+      { token: "--color-hover-strong", label: "Inside menus", hint: "the same, on a popover" },
+      { token: "--color-accent-hover", label: "Highlighted things", hint: "the selected page, main buttons" },
+    ],
+  },
+  {
     key: "lines",
     label: "Lines",
     advanced: true,
@@ -85,6 +95,25 @@ export const COLOR_GROUPS: readonly ColorGroup[] = [
 
 /** Every token a picker writes, flat. */
 export const COLOR_TOKENS: readonly string[] = COLOR_GROUPS.flatMap((group) => group.tokens.map((t) => t.token));
+
+/**
+ * Tokens that work themselves out from the others unless a theme says
+ * otherwise, and so must **not** be written into a file just because a theme
+ * was copied.
+ *
+ * The hover three are mixes of the panel and text colours (see the §Hover note
+ * in `index.css`), which is what makes hover follow along when the backgrounds
+ * are retuned — including in a theme nobody wrote a hover line for. Copying a
+ * theme writes out every colour it resolves to, deliberately, so that a copy is
+ * complete and doesn't depend on the theme it came from. Applied to these it
+ * does the opposite: it pins hover to whatever the panel colour happened to be
+ * at the moment of the copy, and the next change to the backgrounds leaves it
+ * behind — which is the drift this whole arrangement exists to stop.
+ *
+ * They're still in `COLOR_GROUPS`, so the pickers offer them and a value she
+ * actually chooses is written and kept. Automatic until asked; hers after.
+ */
+export const AUTO_TOKENS: readonly string[] = ["--color-hover", "--color-hover-strong", "--color-accent-hover"];
 
 export type GradientSlot = {
   key: string;

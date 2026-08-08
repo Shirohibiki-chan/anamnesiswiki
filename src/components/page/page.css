@@ -68,8 +68,8 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: var(--fs-xs);
-  color: var(--color-text-primary);
-  background: rgba(0, 0, 0, 0.45);
+  color: var(--color-on-scrim);
+  background: var(--color-scrim-soft);
   padding: var(--space-xs) var(--space-lg);
   border-radius: var(--radius-full);
   opacity: 0;
@@ -88,8 +88,8 @@
   position: absolute;
   top: var(--space-lg);
   right: var(--space-lg);
-  background: rgba(0, 0, 0, 0.45);
-  color: var(--color-text-primary);
+  background: var(--color-scrim-soft);
+  color: var(--color-on-scrim);
   opacity: 0;
   transition: opacity 120ms ease;
 }
@@ -99,8 +99,8 @@
 }
 
 .page-banner-remove:hover {
-  background: rgba(0, 0, 0, 0.65);
-  color: var(--color-text-primary);
+  background: var(--color-scrim-solid);
+  color: var(--color-on-scrim);
 }
 
 .page-banner-empty {
@@ -126,7 +126,7 @@
 }
 
 .page-banner-add:hover {
-  background: var(--color-panel-edge);
+  background: var(--color-hover);
   color: var(--color-text-primary);
 }
 
@@ -361,7 +361,7 @@
 }
 
 .page-tab-delete:hover {
-  background: var(--color-panel-edge);
+  background: var(--color-hover-strong);
   color: var(--color-destructive);
 }
 
@@ -493,7 +493,7 @@
 }
 
 .editor-mention:hover {
-  background: var(--color-accent-faint-border);
+  background: var(--color-accent-hover);
 }
 
 .editor-mention-broken {

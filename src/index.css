@@ -140,6 +140,87 @@
      "accent" sounds like the bold teal and is in fact the 15% tint. */
   --color-accent: var(--color-accent-faint);
 
+  /* Hover — the one state in the app that had no token of its own.
+     ------------------------------------------------------------------
+     Every hover in the app used to borrow a surface colour: tree rows and the
+     top-bar search took `--color-panel-edge`, icon buttons and menu rows took
+     `--color-panel-alt`, and the accented ones took `--color-accent-faint`.
+     Three different answers to one question, and none of them named "hover",
+     so nothing in Settings could offer to change it.
+
+     It was also outright broken in Daylight, which sets `--color-panel` and
+     `--color-panel-edge` to the same `#ffffff`: hovering a page in the sidebar
+     painted white on white and did *nothing*. That's not a shade being wrong,
+     that's the state not existing, and it's why this is a token now.
+
+     **These are mixes, not fixed colours, and that's the point.** A hover has
+     to move *away* from the surface it sits on — lighter on a dark theme,
+     darker on a light one — so it can't be one value. Mixing the surface
+     toward the text colour gets the direction right automatically, because
+     text is by definition the far end of the theme's own contrast. So a theme
+     that never mentions hover still gets a correct one, including a
+     hand-written one, and one that retunes its panels later can't drift out of
+     step. Override any of them and the override wins as usual.
+
+     `in oklab` rather than the default sRGB so the mix keeps the theme's hue:
+     Ember's warm charcoal stays warm and Grove's green stays green, where an
+     sRGB mix washes both toward the same grey. The trade is that these resolve
+     to `oklab(...)` rather than a hex, which is why `toHex` in
+     services/theme-editor.ts learned to read it — see the note there.
+
+       hover         rows, icon buttons, menu items — anything on a panel.
+       hover-strong  the same, for something already on a raised surface (a
+                     popover, a context menu), which needs a bigger step to
+                     read against its own lifted background.
+       accent-hover  hover on something already accented — a secondary button,
+                     the selected nav row. Stronger than `--color-accent-faint`
+                     on purpose: hovering a *selected* row used to land on the
+                     same tint it already had, which is the white-on-white bug
+                     wearing a different colour. */
+  --color-hover: color-mix(in oklab, var(--color-panel) 92%, var(--color-text-primary));
+  --color-hover-strong: color-mix(in oklab, var(--color-panel) 84%, var(--color-text-primary));
+  --color-accent-hover: color-mix(in oklab, var(--color-accent-light) 24%, transparent);
+
+  /* The fourth one is a film, not a fill, for the things a fill can't touch: a
+     button whose background is a gradient, and a tree row tinted with a colour
+     the user picked. Those used `filter: brightness(1.1)`, which only knows one
+     direction — it lifts, so on Daylight it walked an already-pale row toward
+     white and the hover quietly disappeared, the same failure as above.
+
+     Laid over the top as an inset shadow instead, so whatever is underneath
+     keeps its gradient or its tint and just gets darker or lighter — and
+     because it's mixed from the text colour, which way it goes is decided by
+     the theme rather than by this line. */
+  --color-hover-wash: color-mix(in oklab, var(--color-text-primary) 10%, transparent);
+
+  /* Over a user's own image — the banner's hint and remove button, the
+     portrait's remove button. These stay dark in every theme rather than
+     following the surface, because a photo is not a surface: a light-theme wash
+     over a bright picture leaves a white × on white sky.
+
+     Tokens all the same, because they were five hardcoded literals
+     (`rgba(0,0,0,0.45)` twice, `0.65`, and `rgba(15,15,20,0.7)`/`0.85`) that no
+     theme could reach and that disagreed with each other for no reason.
+
+     `--color-on-scrim` is the one that was actually broken. All three controls
+     drew their icon in `--color-text-primary`, which is near-white on the dark
+     themes and reads fine — and `#1c1c1f` on Daylight, i.e. a black × on a
+     dark wash. Measured against three backdrops, Daylight's contrast was 4.39
+     over a bright photo but **1.11 over a dark one and 1.74 over a mid-tone**:
+     invisible on anything but a bright picture. Text over these washes isn't
+     theme text; it's always light, because what's under it is always dark.
+
+     The soft wash went 0.45 → 0.55 at the same time, which is what makes that
+     a straight win rather than a trade. At 0.45 the light icon scored 3.47 over
+     a bright photo — passable for a control, but *worse* than the old 4.39 in
+     the one case the old way handled. 0.55 puts it at 4.60, so the new
+     arrangement is better than the old one on every backdrop rather than
+     better on two and slightly worse on the third. Going further hides more of
+     her artwork for contrast she doesn't need. */
+  --color-scrim-soft: rgba(12, 12, 16, 0.55);
+  --color-scrim-solid: rgba(12, 12, 16, 0.72);
+  --color-on-scrim: #f2f2f5;
+
   --color-callout-info: #60a5fa;
   --color-callout-info-bg: rgba(59, 130, 246, 0.12);
   --color-callout-info-text: #dbeafe;

@@ -186,7 +186,7 @@
 }
 
 .top-bar-search-button:hover {
-  background: var(--color-panel-edge);
+  background: var(--color-hover);
   color: var(--color-text-primary);
 }
 
@@ -315,7 +315,7 @@
 
 .project-picker-recent button:hover {
   border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
+  background: var(--color-accent-hover);
 }
 
 .project-picker-recent-name {
@@ -465,13 +465,13 @@
 }
 
 .settings-nav-item:hover {
-  background: var(--color-panel-alt);
+  background: var(--color-hover);
   color: var(--color-text-secondary);
 }
 
 .settings-nav-item-active,
 .settings-nav-item-active:hover {
-  background: var(--color-accent-faint);
+  background: var(--color-accent-hover);
   color: var(--color-text-primary);
 }
 
@@ -632,9 +632,11 @@
   padding: var(--space-md);
 }
 
+/* Matched to the hover above it — arriving here by keyboard should look like
+   arriving by mouse, plus the ring that says which one you did. */
 .new-page-templates .tree-template-option:focus-visible {
   outline: none;
-  background: var(--color-accent-faint);
+  background: var(--color-accent-hover);
   color: var(--color-accent-light);
   box-shadow: inset 0 0 0 1px var(--color-accent-dark);
 }
@@ -1414,7 +1416,7 @@
 }
 
 .theme-edit-color:hover {
-  background: var(--color-panel-alt);
+  background: var(--color-hover);
 }
 
 /* The swatch is the input. `appearance: none` because the native control draws

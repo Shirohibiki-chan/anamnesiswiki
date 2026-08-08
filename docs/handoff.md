@@ -715,6 +715,38 @@ is below.
   both are measured against both backdrops.** Figures per theme are in
   `docs/constants-and-theming.md`.
 
+- **A `:hover` block names a hover token, never a surface token.** Hover had no
+  token of its own until 2026-08-08 and borrowed whatever surface looked close —
+  `--color-panel-edge` for tree rows, `--color-panel-alt` for icon buttons and
+  menu rows, `--color-accent-faint` for accented ones. A borrowed surface is one
+  a theme is allowed to set equal to the thing it sits on, and `daylight` does:
+  its `--color-panel` and `--color-panel-edge` are both `#ffffff`, so hovering a
+  page in the sidebar was **white on white, a measured distance of 0**. Use
+  `--color-hover`, `--color-hover-strong`, `--color-accent-hover`, or
+  `--color-hover-wash` for a gradient or a user-tinted row. They're
+  `color-mix(in oklab, …)` of tokens the theme already sets, so they pick their
+  own direction (lighter on dark, darker on light) and follow along when
+  backgrounds are retuned. **Don't "simplify" them into fixed values** — fixed
+  is what broke, and `filter: brightness()` is the same mistake in another
+  spelling, since it only lifts. Reasoning in `docs/constants-and-theming.md`
+  §Hover is a mix.
+
+- **The three editable hover tokens are in `AUTO_TOKENS` and must stay out of
+  `seedFromDocument`.** Copying a theme deliberately writes out every colour it
+  resolves to, so the copy is complete and independent of its source. Applied to
+  hover that's backwards: it pins hover to whatever the panel colour was at the
+  moment of the copy, and the next change to the backgrounds leaves it stranded
+  — the exact drift the mixes exist to prevent. They're still offered as pickers,
+  so a value she actually chooses is written and kept.
+
+- **`--color-on-scrim` is fixed light in every theme, and that's not an
+  oversight.** The three controls sitting on a user's image — the banner hint,
+  the banner's remove ×, the portrait's remove × — drew themselves in
+  `--color-text-primary`, which is `#1c1c1f` on `daylight`: a black icon on a
+  dark wash. Measured there at **1.11:1 over a dark photo and 1.74:1 over a
+  mid-tone**, against 4.39:1 over a bright one. A photo doesn't follow the theme,
+  so what's drawn on it can't either.
+
 - **A theme is a file she owns, so the app must be able to delete one.** The
   folder was always hers to manage from Explorer, and that was quietly the whole
   answer for a while — but a list of themes with no way to remove one from

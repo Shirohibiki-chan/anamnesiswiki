@@ -58,7 +58,9 @@ New UI **must** use semantic tokens (`--color-panel`, `--color-text-primary`, et
 
 ### Semantic color tokens
 
-All values below are from the dark theme (the only shipped theme).
+All values below are from the `dark` theme, which is the one whose values *are*
+the base tokens — the other six ship as `[data-theme]` blocks over the top (see
+`BUILT_IN_THEMES`). So this table is the defaults, not the only answer.
 
 | Token | Hex (dark) | Use for |
 |-------|-----------|---------|
@@ -70,6 +72,13 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-border` | `#2a2a35` | Containers — cards, inputs, chips, notices. The default |
 | `--color-border-subtle` | `#22222c` | Rules inside a container — tab-strip baselines, dividers |
 | `--color-scrim` | `rgba(0,0,0,0.5)` | Behind every modal |
+| `--color-scrim-soft` | `rgba(12,12,16,0.55)` | Resting wash under a control that sits on a user's image — the banner hint and its remove ×, the portrait's remove × |
+| `--color-scrim-solid` | `rgba(12,12,16,0.72)` | The same three on hover |
+| `--color-on-scrim` | `#f2f2f5` | Icon/text on either scrim. **Not `--color-text-primary`** — see below |
+| `--color-hover` | *mix* | Hover on anything sitting on a panel — tree rows, icon buttons, nav items. **See below** |
+| `--color-hover-strong` | *mix* | Hover on something already raised — a popover, a context menu row |
+| `--color-accent-hover` | *mix* | Hover on something already accented — secondary buttons, the selected nav row |
+| `--color-hover-wash` | *mix* | A film laid over a gradient or a user-tinted row, where a background can't be replaced |
 | `--color-text-primary` | `#e8e8ee` | Body text, headings, active labels |
 | `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
 | `--color-text-muted` | `#84848f` | Quiet labels — property field labels, breadcrumb separators. **Has a contrast floor — see below** |
@@ -100,6 +109,49 @@ All values below are from the dark theme (the only shipped theme).
 | `--color-palette-gray` | `#a1a1aa` | Node-coloring palette — gray |
 
 > New UI must use semantic tokens, not raw palette vars or hex literals. Palette tokens are for node/folder color assignment only.
+
+#### Hover is a mix, not a colour
+
+**Never write a surface token into a `:hover` block.** That was how every hover
+in the app worked until 2026-08-08 — tree rows took `--color-panel-edge`, icon
+buttons took `--color-panel-alt`, accented things took `--color-accent-faint` —
+and it fails the moment a theme sets the borrowed token equal to the surface it
+sits on. `daylight` does exactly that (`--color-panel` and `--color-panel-edge`
+are both `#ffffff`), so hovering a page in the sidebar painted white on white
+and did nothing at all. Measured: a colour distance of **0**.
+
+The four hover tokens are `color-mix(in oklab, …)` of colours the theme already
+sets — the panel mixed toward the text for the neutral ones, the accent for the
+accented one. Two consequences worth understanding before changing them:
+
+- **They pick their own direction.** Text is by definition the far end of a
+  theme's contrast, so mixing toward it lightens a dark theme and darkens a
+  light one. That's why a theme never has to declare hover, including one
+  hand-written in Notepad, and why `filter: brightness()` was the wrong tool —
+  it only knows one direction and quietly vanished on `daylight`.
+- **They can't drift.** Retune a theme's backgrounds and hover moves with them.
+  This is why the three editable ones are in `AUTO_TOKENS`
+  (`constants/theme-tokens.ts`) and are skipped by `seedFromDocument`: copying a
+  theme writes out every colour it resolves to, and doing that to hover would
+  pin it to the panel colour at the moment of the copy.
+
+They're still offered as pickers under Settings → Colours → Hover, and a value
+chosen there is written and kept. Automatic until asked; hers after.
+
+The mixes resolve to `oklab(…)` rather than a hex, which is why `toHex` in
+`services/theme-editor.ts` reads that notation — without it every hover swatch
+in Settings came up black. It reads `oklch()` too, so a hand-written theme using
+modern CSS colours now shows its real colours in the pickers instead of black
+squares.
+
+#### Text on a scrim is not theme text
+
+`--color-on-scrim` is fixed light in every theme on purpose. The three controls
+that sit on a user's own image used `--color-text-primary`, which is near-white
+on the dark themes and `#1c1c1f` on `daylight` — a black × on a dark wash.
+Measured on `daylight`: 4.39:1 over a bright photo, but **1.11:1 over a dark one
+and 1.74:1 over a mid-tone**. A photo isn't a surface and doesn't follow the
+theme, so neither should what's drawn on top of it.
 
 #### The contrast floor on the two quiet greys
 

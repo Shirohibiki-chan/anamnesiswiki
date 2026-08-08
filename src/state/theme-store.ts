@@ -55,6 +55,7 @@ import {
   readSwatch,
   readThemeFonts,
   readThemeId,
+  resolveTokenColor,
   sanitizeCustomCss,
   themeIdForFile,
   type ThemeSwatch,
@@ -446,8 +447,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     const state = get();
     const theme = state.themeFile ? state.customThemes.find((t) => t.file === state.themeFile) : null;
     if (!theme) return set({ draft: null });
-    const style = getComputedStyle(document.documentElement);
-    set({ draft: readThemeDraft(theme.raw, (token) => style.getPropertyValue(token)) });
+    set({ draft: readThemeDraft(theme.raw, resolveTokenColor) });
   }
 
   async function persist(): Promise<void> {
@@ -696,8 +696,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       // Seeded from what's on screen, not from a file — the theme being copied
       // is usually a built-in, whose CSS the app never holds as text, and "make
       // a copy of this" plainly means the thing you're looking at.
-      const style = getComputedStyle(document.documentElement);
-      const colors = seedFromDocument((token) => style.getPropertyValue(token));
+      const colors = seedFromDocument(resolveTokenColor);
       const file = freeFileName(
         name,
         state.customThemes.map((theme) => theme.file),
@@ -875,9 +874,8 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       // hand-written one might set four tokens and inherit the rest — and
       // seeding a gradient from a token the file doesn't mention gave black,
       // in a slot whose surface was plainly some other colour on screen.
-      const style = getComputedStyle(document.documentElement);
       const resolved = new Proxy(draft.colors, {
-        get: (colors, token: string) => colors[token] ?? style.getPropertyValue(token).trim(),
+        get: (colors, token: string) => colors[token] ?? resolveTokenColor(token),
       });
       get().setGradient(slot.key, seedGradient(slot, resolved));
     },

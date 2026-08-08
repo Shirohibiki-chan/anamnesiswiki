@@ -190,7 +190,7 @@
 }
 
 .tree-row:hover {
-  background: var(--color-panel-edge);
+  background: var(--color-hover);
 }
 
 .tree-row-selected {
@@ -198,8 +198,11 @@
   color: var(--color-accent-light);
 }
 
+/* A tinted row carries a colour the user chose, so the hover has to sit over
+   it rather than replace it — and `filter: brightness()` only lifts, which on a
+   light theme walks a pale tint toward white and loses the hover entirely. */
 .tree-row-tinted:hover {
-  filter: brightness(1.1);
+  box-shadow: inset 0 0 0 999px var(--color-hover-wash);
 }
 
 /* react-arborist renders exactly two focusable elements, and the browser paints
@@ -316,8 +319,10 @@
   color: var(--color-accent-light);
 }
 
+/* Sits inside a row that's already hovered, so it needs the bigger step to
+   read against it rather than the same one. */
 .tree-row-add:hover {
-  background: var(--color-panel-edge);
+  background: var(--color-hover-strong);
   color: var(--color-text-primary);
 }
 
@@ -389,7 +394,7 @@
 }
 
 .tree-template-option:hover {
-  background: var(--color-accent-faint);
+  background: var(--color-accent-hover);
   color: var(--color-accent-light);
 }
 
@@ -425,8 +430,9 @@
   text-align: left;
 }
 
+/* A context menu is a raised surface, so its rows take the bigger step. */
 .tree-context-menu button:hover {
-  background: var(--color-panel-alt);
+  background: var(--color-hover-strong);
   color: var(--color-text-primary);
 }
 

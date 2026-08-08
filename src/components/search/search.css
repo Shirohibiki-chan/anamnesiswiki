@@ -68,7 +68,7 @@
 
 .search-palette-result:hover,
 .search-palette-result-active {
-  background: var(--color-panel-alt);
+  background: var(--color-hover-strong);
 }
 
 .search-palette-result-icon {

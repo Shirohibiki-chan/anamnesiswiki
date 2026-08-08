@@ -2,6 +2,24 @@
 
 ## 2026-08-08
 
+### Hover now follows your theme, instead of ignoring it
+
+- **The colour things go when you hover them is finally part of the theme.** It never was. Every hover in the app quietly borrowed some other colour — the sidebar took the menu colour, buttons took the top-bar colour, highlighted things took the selected-page tint — so nothing in Settings could change hover, because as far as the app was concerned there was no such thing.
+- **On Daylight it wasn't just a wrong shade — it was nothing at all.** That theme uses white for both panels and menus, so hovering a page in the sidebar painted white on white. Measured difference: zero. Every other theme got a hover that happened to work by luck, and the size of the step ranged from barely-there to obvious depending on which theme you were on.
+- **Hover is now worked out from your own colours** — your panel colour moved a step toward your text colour. That means it goes lighter on a dark theme and darker on a light one without being told which it is, it's the same *visible* amount of change in every theme, and it keeps your theme's character: Ember's hover stays warm, Grove's stays green, Abyssal's stays blue.
+- **It can't fall out of step.** Change your background colours later and hover moves with them. This is true for themes you write by hand in Notepad too — a theme that never mentions hover still gets a correct one.
+- **You can still set it yourself.** Settings → Colours → Hover has three swatches: rows and buttons, inside menus, and highlighted things. Pick a colour there and it's yours and stays yours; leave them alone and they keep working themselves out.
+- Buttons and coloured sidebar rows are handled too. Those used to brighten on hover, which only knows one direction — on a light theme it walked an already-pale row toward white and the hover disappeared. They now take a film over the top that darkens or lightens depending on the theme.
+
+### The × on your pictures is visible again on light themes
+
+- **The buttons that sit on top of an image** — the banner's hint and its remove ×, and the portrait's remove × — **drew themselves in your theme's text colour**, which on Daylight is nearly black. On a dark photo that was a black × on a dark background. Measured contrast: 1.1 to 1, which is another way of saying invisible.
+- They're now always light, because what's behind them is always darkened, whatever theme you're on. The darkening was strengthened slightly at the same time, so they're now easier to see on every kind of picture than they were before — including bright ones, which was the one case that used to work.
+
+### Themes written in modern CSS show their real colours in Settings
+
+- If a theme file used `oklch()` or `color-mix()` — how anyone writing CSS by hand picks colours these days — the colour pickers in Settings showed **black squares** instead of what the theme actually looked like. They now read those properly.
+
 ### Reopening a shipped theme in the sandbox gives you the real thing again
 
 - **The sandbox's copies of the built-in themes were out of date.** Picking Midnight, Dark, Ember, Grove, Nightbloom or Daylight as a starting point handed you the *old* quieter greys — the ones from before yesterday's readability pass — so anything you built on top of one started out harder to read than the theme it was named after.

@@ -86,7 +86,7 @@
 
 .property-value-input:hover,
 .property-value-textarea:hover {
-  background: var(--color-panel-alt);
+  background: var(--color-hover);
   border-color: var(--color-border);
 }
 
@@ -178,7 +178,7 @@
 }
 
 .property-refs-candidate:hover {
-  background: var(--color-panel-edge);
+  background: var(--color-hover-strong);
 }
 
 /* --- Image slot --- */
@@ -235,12 +235,12 @@
   top: var(--space-sm);
   right: var(--space-sm);
   border-radius: var(--radius-full);
-  background: rgba(15, 15, 20, 0.7);
-  color: var(--color-text-primary);
+  background: var(--color-scrim-soft);
+  color: var(--color-on-scrim);
 }
 
 .property-image-remove:hover {
-  background: rgba(15, 15, 20, 0.85);
+  background: var(--color-scrim-solid);
   color: var(--color-destructive);
 }
 
