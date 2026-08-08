@@ -55,6 +55,8 @@ export function useTheme() {
   const isScanning = useThemeStore((state) => state.isScanning);
   const folderError = useThemeStore((state) => state.folderError);
   const deleteError = useThemeStore((state) => state.deleteError);
+  const backupFolder = useThemeStore((state) => state.backupFolder);
+  const backupFailed = useThemeStore((state) => state.backupFailed);
 
   const selectTheme = useThemeStore((state) => state.selectTheme);
   const setFont = useThemeStore((state) => state.setFont);
@@ -85,6 +87,8 @@ export function useTheme() {
     isScanning,
     folderError,
     deleteError,
+    backupFolder,
+    backupFailed,
     slots: FONT_SLOTS,
     /**
      * The stack a slot is actually rendering in — hers if she picked one,

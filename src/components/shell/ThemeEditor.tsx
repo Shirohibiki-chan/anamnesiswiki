@@ -5,15 +5,18 @@
 // complicated? ... Idk i get that CSS is more robust but why not both."* The
 // answer was that there's no reason not to have both, as long as they're the
 // same both — so these controls don't have a format of their own. Every change
-// here rewrites a `.css` file in the themes folder, and every one of those
-// files reads back into these controls. Build a theme with the pickers and
-// open it in Notepad; write one in Notepad and open it here. Same file.
+// here edits a `.css` file in the themes folder, and every one of those files
+// reads back into these controls. Build a theme with the pickers and open it in
+// Notepad; write one in Notepad and open it here. Same file.
+//
+// *Edits*, note — not rewrites. That distinction is load-bearing and it cost
+// somebody's work to learn: see `patchTheme` in services/theme-editor.ts.
 //
 // What's deliberately *not* here is a live preview pane. The app is the
 // preview — the window behind this panel is already showing every change as
 // it's made, at full size, on real content.
 import { useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, FileText, Plus } from "lucide-react";
 import { COLOR_GROUPS, GRADIENT_SLOTS, RADIAL_ORIGINS, type ColorToken, type GradientSlot } from "../../constants/theme-tokens";
 import { BUILT_IN_THEMES } from "../../constants/themes";
 import { useTheme } from "../../hooks/use-theme";
@@ -208,8 +211,35 @@ function CreateTheme({ suggestion }: { suggestion: string }) {
   );
 }
 
+/**
+ * What these controls will and won't do to her file.
+ *
+ * Here because the pickers used to rebuild the whole stylesheet from the
+ * twenty-odd tokens they know about, so one click on a swatch replaced a
+ * hand-written theme with the app's version of it — rules, comments and all.
+ * That's fixed in `patchTheme`, but a promise about someone's work is worth
+ * making out loud rather than leaving them to find out by risking it.
+ */
+function EditingNote({ folder, failed }: { folder: string | null; failed: boolean }) {
+  return (
+    <p className="theme-edit-note">
+      <FileText size={12} />
+      <span>
+        These change the colours in your theme file and leave the rest of it exactly as it is — anything you wrote by hand stays.{" "}
+        {failed ? (
+          <>A spare copy couldn't be saved, so keep your own if the file matters.</>
+        ) : (
+          <>
+            A copy of it from before this session's first change is kept in {folder ? <code>{folder}</code> : <code>themes/backups</code>}.
+          </>
+        )}
+      </span>
+    </p>
+  );
+}
+
 export function ThemeEditor() {
-  const { draft, themeId, themeFile, customThemes, setThemeColor, toggleGradient, setGradient } = useTheme();
+  const { draft, themeId, themeFile, customThemes, backupFolder, backupFailed, setThemeColor, toggleGradient, setGradient } = useTheme();
 
   if (!draft) {
     // Only reachable on a built-in, since a custom theme always has a draft —
@@ -222,6 +252,7 @@ export function ThemeEditor() {
 
   return (
     <div className="theme-edit">
+      <EditingNote folder={backupFolder} failed={backupFailed} />
       {COLOR_GROUPS.map((group) => {
         const rows = group.tokens.map((token) => (
           <ColorRow

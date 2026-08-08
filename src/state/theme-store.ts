@@ -13,11 +13,12 @@ import {
   type FontSlotKey,
 } from "../constants/themes";
 import * as appSettings from "../services/app-settings-service";
-import { deleteCssFile, ensureCssDir, readCssDir, sanitizeSegment, writeCssFile } from "../services/filesystem-service";
+import { backupCssFile, deleteCssFile, ensureCssDir, readCssDir, sanitizeSegment, writeCssFile } from "../services/filesystem-service";
 import { showFolder } from "../services/dialog-service";
 import type { GradientSlot } from "../constants/theme-tokens";
 import {
   freeFileName,
+  patchTheme,
   readThemeDraft,
   seedFromDocument,
   seedGradient,
@@ -51,7 +52,19 @@ export type CustomStylesheet = {
   label: string;
   /** The id its rules are written against, for `data-theme`. */
   themeId: string;
+  /** What's applied to the document: the file with remote references stripped. */
   css: string;
+  /**
+   * The file exactly as it is on disk, vetting and all still in it.
+   *
+   * Kept alongside the vetted copy because this is what an edit is written
+   * back to. Patching the vetted one and saving that would quietly bake the
+   * vetting into her file — a `url(…)` the app declined to fetch would come
+   * back as `none` in her own stylesheet, permanently, the first time she
+   * touched a colour picker. What the app refuses to *load* and what it's
+   * entitled to *change* are different questions.
+   */
+  raw: string;
   /** Remote references that were stripped, for telling the user about. */
   blocked: string[];
   /** Three colours for the picker, or null if the file didn't set them. */
@@ -107,6 +120,13 @@ export type ThemeStoreState = {
    * doesn't destroy is the same failure with higher stakes.
    */
   deleteError: { file: string; path: string } | null;
+  /**
+   * Where the copy of a theme file taken before this session's first edit went,
+   * so the Colours panel can point at it rather than describe it.
+   */
+  backupFolder: string | null;
+  /** Set when that copy couldn't be made, so the panel stops promising one. */
+  backupFailed: boolean;
 
   loadAppearance: () => Promise<void>;
   scanFolders: () => Promise<void>;
@@ -140,6 +160,7 @@ function toStylesheet(file: { name: string; css: string }): CustomStylesheet {
     // cleanly instead of leaving the document on the previous theme's id.
     themeId: readThemeId(css) ?? themeIdForFile(file.name),
     css,
+    raw: file.css,
     blocked,
     swatch: readSwatch(css),
   };
@@ -160,24 +181,52 @@ let pendingWrite: { dir: string; file: string; css: string } | null = null;
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 const WRITE_DELAY_MS = 400;
 
-async function flushThemeWrite(): Promise<void> {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
-  const pending = pendingWrite;
-  pendingWrite = null;
-  if (pending) await writeCssFile(pending.dir, pending.file, pending.css).catch(() => {});
-}
-
-function queueThemeWrite(dir: string, file: string, css: string): void {
-  pendingWrite = { dir, file, css };
-  if (writeTimer) clearTimeout(writeTimer);
-  writeTimer = setTimeout(() => void flushThemeWrite(), WRITE_DELAY_MS);
-}
+/**
+ * Files this run of the app has already kept a copy of.
+ *
+ * Module-level for the same reason as the timer, and per *session* rather than
+ * per edit: the copy worth having is the one from before she started changing
+ * things today, not the one from thirty seconds ago.
+ */
+const backedUp = new Set<string>();
 
 
 export const useThemeStore = create<ThemeStoreState>((set, get) => {
+  /**
+   * The queued edit, written.
+   *
+   * The copy is taken here rather than when the edit was made, and that timing
+   * is the whole point: nothing has touched the file yet at this moment, so
+   * what gets copied is what she wrote. Awaited before the write for the same
+   * reason — a backup that lands after the change has backed up the change.
+   */
+  async function flushThemeWrite(): Promise<void> {
+    if (writeTimer) {
+      clearTimeout(writeTimer);
+      writeTimer = null;
+    }
+    const pending = pendingWrite;
+    pendingWrite = null;
+    if (!pending) return;
+
+    if (!backedUp.has(pending.file)) {
+      backedUp.add(pending.file);
+      const folder = await backupCssFile(pending.dir, pending.file);
+      // A backup that couldn't be made is worth saying out loud, because the
+      // panel is about to promise her there's a copy. Not a reason to refuse
+      // the edit she asked for, though.
+      set(folder ? { backupFolder: folder, backupFailed: false } : { backupFailed: true });
+    }
+
+    await writeCssFile(pending.dir, pending.file, pending.css).catch(() => {});
+  }
+
+  function queueThemeWrite(dir: string, file: string, css: string): void {
+    pendingWrite = { dir, file, css };
+    if (writeTimer) clearTimeout(writeTimer);
+    writeTimer = setTimeout(() => void flushThemeWrite(), WRITE_DELAY_MS);
+  }
+
   /**
    * Pushes the whole current state at the document in one go, and photographs
    * it for the next launch. Every action ends here rather than applying its
@@ -242,15 +291,20 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     const theme = state.customThemes.find((t) => t.file === state.themeFile);
     if (!theme || !state.themesDir) return;
 
-    const css = serializeTheme(theme.label, theme.themeId, draft, new Date().toISOString().slice(0, 10));
+    // Patched, not regenerated, and patched against `raw` — see the note on
+    // `patchTheme`, and on `raw` in CustomStylesheet. Between them these two
+    // are the difference between the pickers editing her file and the pickers
+    // replacing it.
+    const raw = patchTheme(theme.raw, theme.label, theme.themeId, draft, new Date().toISOString().slice(0, 10));
+    const { css, blocked } = sanitizeCustomCss(raw);
     set({
       // `resolved` moves with the edit, so a picker she just dragged shows the
       // colour she picked rather than what the token used to inherit.
       draft: { ...draft, resolved: { ...draft.resolved, ...draft.colors } },
-      customThemes: state.customThemes.map((t) => (t.file === theme.file ? { ...t, css, swatch: readSwatch(css) } : t)),
+      customThemes: state.customThemes.map((t) => (t.file === theme.file ? { ...t, raw, css, blocked, swatch: readSwatch(css) } : t)),
     });
     apply();
-    queueThemeWrite(state.themesDir, theme.file, css);
+    queueThemeWrite(state.themesDir, theme.file, raw);
   }
 
   /**
@@ -265,7 +319,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     const theme = state.themeFile ? state.customThemes.find((t) => t.file === state.themeFile) : null;
     if (!theme) return set({ draft: null });
     const style = getComputedStyle(document.documentElement);
-    set({ draft: readThemeDraft(theme.css, (token) => style.getPropertyValue(token)) });
+    set({ draft: readThemeDraft(theme.raw, (token) => style.getPropertyValue(token)) });
   }
 
   async function persist(): Promise<void> {
@@ -302,6 +356,8 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     isScanning: false,
     folderError: null,
     deleteError: null,
+    backupFolder: null,
+    backupFailed: false,
 
     async loadAppearance() {
       // Three outcomes, and they are not the same thing:

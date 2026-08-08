@@ -748,6 +748,28 @@ is below.
   understand, and the round trip that lets her build in the sandbox and adjust
   in Settings stops working. `theme-editor.test.ts` guards both directions.
 
+- **An edit changes the values it was asked to and nothing else. Never
+  regenerate a theme file.** The pickers originally called `serializeTheme` on
+  every change, which builds a file out of the twenty-odd tokens this app knows
+  about — so one click on a swatch replaced a hand-written theme with the app's
+  rendering of it. Rules, comments, selectors, custom properties: gone, with no
+  warning and no undo, on a file the user had written by hand. `patchTheme`
+  replaced it: locate the declaration, change the value, put the file back.
+  `serializeTheme` is now only for a file that doesn't exist yet.
+  - **Patch `raw`, not `css`.** `CustomStylesheet` carries both because
+    `sanitizeCustomCss` runs on load — writing the vetted copy back would bake
+    the vetting into her file, turning a `url(…)` the app declined to fetch
+    into a permanent `none` in her own stylesheet. What the app refuses to
+    *load* and what it may *change* are different questions.
+  - **The derived tints follow the same rule**: rewritten only when the file's
+    current value is still the one `deriveTokens` would have produced for the
+    colour that was there before. Anything else is a value somebody chose.
+  - `backupCssFile` keeps one copy per file per session under
+    `themes/backups`, taken inside `flushThemeWrite` *before* the write —
+    that's the last moment the on-disk file is still hers. Nothing about a
+    failed backup may block an edit she asked for; it sets `backupFailed` and
+    the panel stops promising a copy.
+
 - **A gradient that's off must not be written at all.** `--gradient-x: ;` is not
   the same as absent: every surface reads it as `var(--gradient-x, none)`, and a
   declared-but-empty custom property resolves to *nothing*, which turns

@@ -1,44 +1,44 @@
 # Changelog
 
-## 2026-08-07 — deleting themes, and readable grey
+## 2026-08-07
 
-### Additions
+### Your own CSS survives the colour pickers
+
+- **Editing a colour in the app no longer rewrites your theme file.** If you'd hand-written a theme — your own rules, your own comments, anything beyond the twenty-odd colours the pickers know about — touching a single swatch replaced the whole file with the app's version of it. No warning, no undo, and it looked like it had worked. The pickers now change the values they were asked to change and leave every other byte of the file exactly as it was.
+- **A spare copy is kept, just in case.** The first time the app is about to change one of your theme files in a session, it puts a copy of what was there in `themesackups`. One copy per theme, replaced next time — it's a safety net, not a history.
+- **The app no longer bakes its own vetting into your file.** If a theme tried to load something from the internet, the app declines to fetch it — but it was writing that refusal back into your stylesheet the moment you touched a picker. What it won't load and what it's allowed to change are two different things.
+- The Colours panel now says all of this up front, rather than leaving you to find out by risking a file.
+
+### Deleting themes
 
 - **You can delete a theme from inside the app.** Every theme you've made has a bin icon on its row; it asks first, names the file it's about to remove, and then it's gone from the folder. The built-in six don't have one — they ship inside the app and there's no file to remove. If you delete the theme you're currently using, you go back to Midnight.
 
-### Fixes
+### Readable grey text, in every theme
 
 - **The small grey text is readable now, in every theme.** The greys used for hints, dates, counts, theme descriptions and the notes under fields were failing the standard contrast check — all six themes, between 3.1 and 3.9 where 4.5 is the bar for text that size. Midnight was the worst of them and it's the one you start on. Every theme's two quietest text colours were re-measured against both the panel and the window background and lifted until they pass.
 - **Midnight has its own text colours now**, the same way the other themes do. It had been borrowing the near-black theme's neutral greys, which is why they read as flat grey on the navy rather than as part of it.
 - **A delete that can't happen says so.** If a theme's file is locked or the folder isn't reachable, you get a note with the path instead of a button that quietly does nothing.
 - **Confirmation prompts work on the start screen.** Anything asking "are you sure?" from the screen you land on before opening a project — including the new delete button — had nothing to draw the question with, so it would have waited forever for an answer it never asked for.
 
-## 2026-08-07 — the settings screen
-
-### Adjustments
+### The settings screen
 
 - **Settings is a proper screen now, not one long column.** It was a narrow dialog with four tabs across the top, and *Appearance* alone held five sections stacked inside it — theme, colours, gradients, fonts, sizes, snippets — so the only way through it was to scroll. The dialog is now wide, the sections are down the left-hand side as their own entries, and each one is a page you can see all of.
 - **Appearance is four entries instead of one tab**: **Theme**, **Colours**, **Fonts and text**, and **Snippets**. Nothing moved out of Settings and nothing was taken away — the same controls are behind shorter walks.
 - **Everything lays out across the width now.** Themes, colour swatches, gradients and font pickers all sit two across when there's room instead of in one narrow stack, and each section says at the top what it's for.
 - **The dialog stays the same size when you switch section**, so the list down the side doesn't shift under the pointer. On a small window it goes back to a strip across the top and everything still fits.
 - **"Put everything back to default"** now lives at the bottom of **Theme**, fenced off, and says what it covers — theme, fonts, text size and snippets. Files you've made stay in their folders.
-
-### Fixes
-
 - **"Lines" and "Callouts and warnings" look like things you can open now.** They always were — those colours are folded away because most people never touch them — but they were drawn exactly like the headings above them, so they read as sections that had come up empty. Each one now has a chevron that turns, a border around it, and says how many colours are inside.
 - The gradient rows open and shut the same way, so there's one idiom in that panel instead of two.
 - **Midnight's outlines are visible now — everywhere, not just in Settings.** It was the only theme still using the near-black theme's greys for its borders, and grey on navy barely registers: the faintest of the three was two points apart from the panel behind it. All three are now navy, and pitched slightly stronger than the other dark themes' rather than matching them. You'll notice this across the whole app — card edges, input outlines, the lines between panels — and that's the point.
 - **The rows in Colours are filled in rather than just outlined**, so they hold together as blocks even under a theme whose borders are set to something faint. A gradient that's switched on is now tinted like a selected item too, so you can spot the ones doing something without reading twelve checkboxes.
 
-## 2026-08-07 — colours in the app
-
-### Additions
+### Colours and gradients in the app
 
 - **You can change a theme's colours and gradients in the app now.** Settings → Appearance has pickers for twenty colours and all twelve gradients — background, top bar, sidebar, page area, properties panel, dialogs, buttons, selected page, tags, page titles, section headings and the callout wash. Each gradient can be a straight line at any angle or a glow from a point, with a see-through slider on each end. Changes land as you make them; there's nothing to save.
 - **"Make a copy I can edit."** The six built-in themes ship with the app and can't be changed, so this takes a copy of whatever you're looking at and drops it in your themes folder as a normal `.css` file. Then everything's editable.
 - **It's the same file either way.** A theme you build with the pickers is an ordinary stylesheet you can open in Notepad; a theme you wrote by hand, or exported from the sandbox, opens in the pickers. Nothing is locked to the place you made it. If you've hand-written a gradient too fancy for the controls, they say so and leave it exactly alone rather than mangling it.
 
-### Adjustments
+### Text size and font names
 
 - **Two text-size sliders instead of one — Writing and Interface.** They were the same control, so getting your pages to a comfortable size dragged the menus down with them. Writing also goes further down now (70%, where the interface stops at 85%), since page text starts bigger.
 - **The font pickers now tell you what the theme is using.** "Whatever the theme uses" was true and useless — you couldn't tell what Midnight's titles were set in without hunting down a list of 98. It now says *Whatever the theme uses — Domine*, and follows along when you switch theme. The code slot says "your system's own", because that one deliberately asks your computer for its own best monospace rather than naming a face.
