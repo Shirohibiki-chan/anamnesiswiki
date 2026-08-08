@@ -20,9 +20,29 @@ LK's atlas — nested image maps with clickable pins that link to wiki pages —
 
 ---
 
-**Timeline visualization**
+**Timeline visualization (calendar-based)**
 
-A view that lays out Event-template nodes on a chronological axis, with per-event pins that open the underlying page. **Parked by the user 2026-07-31** — not cut, just not now. The blocker is unchanged: Events have no reliable date data. `when` is a free string like "Year 872, Third Age," which nothing can sort. A proper date schema has to land first, and that schema is the real design work, not the chart.
+A view that lays out Event-template nodes on a chronological axis, with per-event pins that open the underlying page. **Superseded 2026-08-08, not cut.** The user's answer to "what happened when" is now **Phase 24 — Storylines**, which orders events by what leads to what instead of by date. That's a deliberate choice rather than a workaround: she doesn't think in calendar years, and a date field she can't fill is the thing that stops the writing.
+
+The original blocker still stands if a calendar view is ever wanted anyway: Events have no reliable date data. `when` is a free string like "Year 872, Third Age," which nothing can sort, and a real date schema — one that copes with invented calendars — is the design work, not the chart. Storylines are the cheaper answer precisely because they need no such schema. Revisit only if she starts asking for years.
+
+---
+
+**Alternate universes**
+
+Raised by the user 2026-08-08, and she's unsure of it herself. The idea: AUs (Canon, Demonic AU, Merfolk AU) become top-level contexts rather than folders, with a global switcher that filters the whole interface — tree, relationship webs, storylines — to whichever one you're in. Underneath, each character would have one base profile plus per-AU overrides, so there's no maintaining five copies of the same person.
+
+**Recommendation: take the first half, leave the second.**
+
+The context switcher is worth building. It's a filter over the folder structure that already exists (`AUs/Demonic AU/…`), it changes no data, and it delivers most of what she described — pick an AU and the tree, search, collections, graphs and storylines only show that world.
+
+The base-profile-plus-overrides half is the risky part, and it argues against her own use case:
+
+- **Overrides pay off when the variants are mostly the same.** A demonic Valera and a merfolk Valera differ in species, appearance, history, relationships and most of the prose. When the override set approaches "everything," the base profile is pure indirection. The data-drift argument assumes she wants the copies in sync — in AUs, divergence is usually the whole point.
+- **It puts a question in front of every keystroke:** am I editing the base or this AU's version? That's easy to get wrong mid-sentence, and getting it wrong quietly edits canon. It also breaks the promise that her writing stays legible outside the app — a character stops being one readable file and becomes a base plus a stack of patches.
+- **It's a schema change that touches every read and every write in the app.** Nothing else on this list costs that much.
+
+**The hedge, if she wants one:** a plain "variant of" link between pages — demonic Valera points at canon Valera. That buys cross-AU navigation and somewhere to hang a compare view later, with no inheritance and no resolution logic anywhere. If she ever does find herself retyping the same fields across five copies, inheritance can be built on top of that link — the link is the prerequisite either way, so it isn't wasted work.
 
 ---
 
@@ -334,6 +354,22 @@ Both, per the user's decision 2026-07-31, and in this order:
 2. **Global graph** — the whole world as a force-directed network. Worth an honest expectation: this is the feature people screenshot constantly and use rarely. It's a poster more than a tool, and it's second for that reason.
 
 Both run on the reference index built in Phase 18, so neither starts from nothing. D3-force is the likely library.
+
+---
+
+## Phase 24 — Storylines
+
+Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer to "what happened next," and it replaces the calendar timeline** rather than sitting beside it — see Future Features → Timeline visualization.
+
+**The distinction that drives the design:** a timeline is date-locked and linear; a storyline is sequence-driven and date-optional. Nodes connect by what leads to what, not by year. Dates are the reason the timeline never got built — a blank the user can't fill and won't guess at stops the writing. Storylines have no such field. Where a date happens to be known it's just another property on the page.
+
+**The view** is a zoomable, pannable, drag-and-drop graph. Each node is a scene or an event; edges run in narrative order. The tree branches for parallel plot threads or alternate viewpoints and reconverges at shared events — so it's a DAG, not a strict tree, and a node can have two parents. Nothing else in the app has that shape; the sidebar tree's model does not fit it.
+
+**Every node is also a page.** Opening a node opens a full editor where the whole scene gets written — a storyline is somewhere she writes, not just a map of writing kept elsewhere. Creating a node makes a lightweight page for it by default; pointing a node at an existing page is the other option, and both are first-class, because half the nodes in a real storyline are events that already have pages.
+
+**Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
+
+**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom/node/edge rendering from Phase 23. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. If AUs ever land, a storyline belongs to one — a fork in reality has its own sequence of events by definition.
 
 ---
 
