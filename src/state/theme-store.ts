@@ -445,8 +445,18 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         // defines, which renders as the base tokens plus whichever of her
         // fonts were inline — recognisably broken, and hard to explain.
         const state = get();
-        const stillThere = state.themeFile && customThemes.some((theme) => theme.file === state.themeFile);
-        const lost = state.themeFile && !stillThere;
+        const selected = state.themeFile ? customThemes.find((theme) => theme.file === state.themeFile) : null;
+        const lost = Boolean(state.themeFile) && !selected;
+
+        // A theme file can change its own id — add a `[data-theme="…"]` block
+        // where there wasn't one, or paste in a sandbox export that declares a
+        // different name. The id lives on the document, and only `selectTheme`
+        // was ever setting it, so after a rescan the app was still wearing the
+        // *old* id while the file's rules were written against the new one.
+        // Anything unscoped in the file applied and everything scoped didn't,
+        // which reads as a reload that only half worked — and looked fixed the
+        // moment you switched theme and back, because that path re-reads the id.
+        const renamed = selected && selected.themeId !== state.themeId ? selected.themeId : null;
 
         set({
           customThemes,
@@ -455,13 +465,17 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
           snippetsDir,
           isScanning: false,
           ...(lost ? { themeId: DEFAULT_THEME_ID, themeFile: null } : {}),
+          ...(renamed ? { themeId: renamed } : {}),
           // Snippets that have gone are dropped from the enabled list, but
           // only once they're confirmed missing by a completed scan.
           enabledSnippets: state.enabledSnippets.filter((file) => snippets.some((s) => s.file === file)),
         });
         apply();
         syncDraft();
-        if (lost) await persist();
+        // Persisted for the same reason as `lost`: the settings file records
+        // the id as well as the filename, so a rescan that corrects one and
+        // doesn't save it hands the stale one straight back on next launch.
+        if (lost || renamed) await persist();
       } catch {
         // A projects folder that has moved or a drive that isn't mounted. The
         // built-in themes still work, so this is a smaller list, not a failure.

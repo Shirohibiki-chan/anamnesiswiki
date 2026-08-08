@@ -9,6 +9,10 @@
 - **The app no longer bakes its own vetting into your file.** If a theme tried to load something from the internet, the app declines to fetch it — but it was writing that refusal back into your stylesheet the moment you touched a picker. What it won't load and what it's allowed to change are two different things.
 - The Colours panel now says all of this up front, rather than leaving you to find out by risking a file.
 
+### Editing a theme file by hand
+
+- **"Check for new ones" applies the whole file now.** If you edited a theme's `.css` by hand and the file named itself something different from what the app had on record — you added a `[data-theme="…"]` line, or pasted in an export from the sandbox — only part of your changes showed up. The app kept using the old name, so every rule written against the new one simply didn't match, and switching to another theme and back was the only thing that fixed it. A rescan now picks up the name out of the file, the same way selecting a theme always did.
+
 ### Deleting themes
 
 - **You can delete a theme from inside the app.** Every theme you've made has a bin icon on its row; it asks first, names the file it's about to remove, and then it's gone from the folder. The built-in six don't have one — they ship inside the app and there's no file to remove. If you delete the theme you're currently using, you go back to Midnight.

@@ -770,6 +770,15 @@ is below.
     failed backup may block an edit she asked for; it sets `backupFailed` and
     the panel stops promising a copy.
 
+- **A theme file owns its own id, so every path that loads one has to re-read
+  it.** `[data-theme="…"]` is parsed out of the file (`toStylesheet`), but the
+  id also lives on the document, and for a while only `selectTheme` set it. A
+  rescan therefore left the app wearing the previous id while the file's rules
+  were written against a new one — unscoped declarations applied, scoped ones
+  didn't, and it presented as a reload that only half worked. `scanFolders` now
+  reconciles `themeId` against the selected file and persists the correction,
+  because the settings file stores the id too.
+
 - **A gradient that's off must not be written at all.** `--gradient-x: ;` is not
   the same as absent: every surface reads it as `var(--gradient-x, none)`, and a
   declared-but-empty custom property resolves to *nothing*, which turns
