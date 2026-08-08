@@ -72,6 +72,7 @@ export function useTheme() {
   const importTheme = useThemeStore((state) => state.importTheme);
   const deleteTheme = useThemeStore((state) => state.deleteTheme);
   const setThemeColor = useThemeStore((state) => state.setThemeColor);
+  const matchBackgroundsToPanel = useThemeStore((state) => state.matchBackgroundsToPanel);
   const toggleGradient = useThemeStore((state) => state.toggleGradient);
   const setGradient = useThemeStore((state) => state.setGradient);
 
@@ -122,6 +123,7 @@ export function useTheme() {
     importTheme,
     deleteTheme,
     setThemeColor,
+    matchBackgroundsToPanel,
     toggleGradient,
     setGradient,
   };

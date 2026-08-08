@@ -4,6 +4,7 @@ import {
   deriveTokens,
   freeFileName,
   gradientCss,
+  matchedBackgrounds,
   parseGradient,
   patchTheme,
   readThemeDraft,
@@ -11,6 +12,7 @@ import {
   seedFromDocument,
   seedGradient,
   serializeTheme,
+  stepLightness,
   toHex,
   type ThemeDraft,
 } from "./theme-editor";
@@ -118,6 +120,82 @@ describe("deriveTokens", () => {
 
   it("derives nothing from a colour that isn't set", () => {
     expect(deriveTokens({})).toEqual({});
+  });
+});
+
+describe("matching the other backgrounds to the panel", () => {
+  const L = (hex: string) => {
+    // Relative luminance is enough to assert an ordering, and doesn't require
+    // exporting the Oklab internals just to test them.
+    const [r, g, b] = [1, 3, 5].map((i) => {
+      const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+
+  it("puts the window below the panel and the raised surfaces above it, on a dark panel", () => {
+    const m = matchedBackgrounds("#151e2e"); // midnight
+    expect(L(m["--color-bg"])).toBeLessThan(L("#151e2e"));
+    expect(L(m["--color-panel-alt"])).toBeGreaterThan(L("#151e2e"));
+    expect(L(m["--color-panel-edge"])).toBeGreaterThan(L(m["--color-panel-alt"]));
+  });
+
+  // A light panel is usually near white and has no headroom to climb into, so
+  // everything sits at or below it — which is what the shipped Daylight does by
+  // hand: panel ≥ menus > window > boxes.
+  it("puts everything at or below a light panel, boxes lowest", () => {
+    const m = matchedBackgrounds("#ffffff");
+    expect(L(m["--color-panel-edge"])).toBeLessThan(L("#ffffff"));
+    expect(L(m["--color-bg"])).toBeLessThan(L(m["--color-panel-edge"]));
+    expect(L(m["--color-panel-alt"])).toBeLessThan(L(m["--color-bg"]));
+  });
+
+  // The reported bug: she set a pale panel and the other three stayed navy.
+  it("gives a pale panel three pale siblings", () => {
+    const m = matchedBackgrounds("#fee1e1");
+    for (const hex of Object.values(m)) expect(L(hex)).toBeGreaterThan(0.5);
+  });
+
+  // Daylight's own --color-panel-edge is #ffffff, the same as its panel, which
+  // is the collision that made hover invisible there. Matching must not
+  // reproduce it.
+  it("never returns a surface equal to the panel it came from", () => {
+    for (const panel of ["#ffffff", "#000000", "#151e2e", "#fee1e1", "#9a9a9a"]) {
+      for (const hex of Object.values(matchedBackgrounds(panel))) expect(hex).not.toBe(panel);
+    }
+  });
+
+  it("keeps the panel's hue rather than walking it toward grey", () => {
+    const m = matchedBackgrounds("#151e2e");
+    // Blue stays the largest channel in every one of them.
+    for (const hex of Object.values(m)) {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      expect(b).toBeGreaterThan(r);
+      expect(b).toBeGreaterThan(g);
+    }
+  });
+
+  it("stays in gamut at both ends instead of overflowing", () => {
+    for (const panel of ["#ffffff", "#000000"]) {
+      for (const hex of Object.values(matchedBackgrounds(panel))) expect(hex).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+});
+
+describe("stepLightness", () => {
+  it("moves in the direction asked and reverses cleanly", () => {
+    expect(stepLightness("#808080", 0.1)).not.toBe("#808080");
+    // A step up then the same step down lands back within rounding.
+    const there = stepLightness("#3b5a7a", 0.08);
+    const back = stepLightness(there, -0.08);
+    const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    channels(back).forEach((v, i) => expect(Math.abs(v - channels("#3b5a7a")[i])).toBeLessThanOrEqual(1));
+  });
+
+  it("clamps rather than wrapping past white or black", () => {
+    expect(stepLightness("#ffffff", 0.5)).toBe("#ffffff");
+    expect(stepLightness("#000000", -0.5)).toBe("#000000");
   });
 });
 
