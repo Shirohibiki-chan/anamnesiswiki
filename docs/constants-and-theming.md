@@ -182,13 +182,23 @@ Twelve optional tokens — `--gradient-` plus `bg`, `topbar`, `sidebar`, `page`,
 
 ### Editing a theme in the app (Phase 12)
 
-Three things make themes — the sandbox's export, the pickers in Settings → Colours (`components/shell/ThemeEditor.tsx`), and any text editor — and **all three produce the same `.css` file**. There is no second format. `services/theme-editor.ts` is the whole conversion: `readThemeDraft` parses a stylesheet into picker values, `serializeTheme` writes them back, and `theme-editor.test.ts` guards the round trip in both directions.
+Four things make themes — the sandbox's export, the pickers in Settings → Colours (`components/shell/ThemeEditor.tsx`), the import button in Settings → Theme, and any text editor — and **all four produce the same `.css` file**. There is no second format. `services/theme-editor.ts` is the whole conversion: `readThemeDraft` parses a stylesheet into picker values, `serializeTheme` writes them back, and `theme-editor.test.ts` guards the round trip in both directions.
 
-- **The controls are a view of the file, not a state beside it.** Every change reserializes the whole theme, swaps the text into the store's `customThemes` entry, applies it to the document, and queues a debounced (400ms) disk write. The file is authoritative; a rescan reads it back.
+- **The controls are a view of the file, not a state beside it.** A change shows immediately as an inline custom property on the root element and is written to the file on a 400ms debounce (`previewDraft` / `flushThemeEdit` in `state/theme-store.ts`); the commit `patchTheme`s the existing text rather than regenerating it. The file is authoritative; a rescan reads it back.
 - **`constants/theme-tokens.ts` decides what's editable** — twenty colours in five groups, plus the twelve gradient slots. It's deliberately a subset of the token system: a theme file can set anything, but a panel offering all forty would be unnavigable.
 - **Five tokens are derived, not offered.** The two accent tints and the three callout washes are alpha versions of colours already in the picker (`deriveTokens`). They're still written into the file, so it stays a plain stylesheet — but keeping them in step by hand is how you get a theme whose selected tree row is a different hue from its buttons.
 - **A gradient the controls can't express is kept verbatim.** `parseGradient` matches only the two shapes `gradientCss` writes; anything richer (three stops, a conic, named colours) comes back as `raw`, is shown as read-only, and is re-emitted byte for byte. The alternative — flattening someone's hand-tuned gradient into two stops on the next keystroke — is data loss.
 - **A gradient that's off is omitted entirely**, never written empty. See `docs/handoff.md` for why that distinction matters.
+
+### Importing a theme or a palette (Phase 12)
+
+`importTheme` in `state/theme-store.ts`, via `pickThemeFile` (native picker, `.css` and `.json` in one filter). Both kinds end as a file in the themes folder, which is then scanned and selected like any other.
+
+- A `.css` is **copied verbatim**. Re-serializing it would reflow a hand-written file and drop everything the pickers don't model.
+- A `.json` goes through `services/palette-import.ts`, the only file that knows about foreign palette formats. It reads `name: "#hex"` pairs (nested up to four levels), scores each colour for a role, and writes the result out with `serializeTheme`'s `origin` parameter — which replaces the "Made in Settings → Colours" header line and lists the guesses as comments above the block.
+- **Roles are decided by measurement, with names only scoring.** Chroma and luminance pick the accent; the callout edges are aimed at fixed hues (violet first, then blue) and kept ≥25° apart; every text and border step binary-searches to a contrast target against both the window and the panel. The contrast floors are the same ones in the section above — see `docs/handoff.md`.
+- A `fooStart`/`fooEnd` pair in the palette becomes the accent and title gradients.
+- Three failure states, told apart in `importError` and worded in `StylesheetNotices.tsx`: unreadable, no colours found, couldn't save.
 
 ### Scales (Phase 11.5)
 

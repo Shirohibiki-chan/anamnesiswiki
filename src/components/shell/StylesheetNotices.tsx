@@ -45,6 +45,32 @@ export function DeleteErrorNotice({ error }: { error: ThemeStoreState["deleteErr
 }
 
 /**
+ * Shown when an import didn't turn into a theme.
+ *
+ * Three sentences rather than one, because the three failures need three
+ * different next moves and "couldn't import that" tells her none of them. The
+ * middle one is the interesting case: a `.json` full of colours is a palette
+ * and a `.json` full of anything else is a settings file somebody grabbed by
+ * mistake, and only the second is worth going back to the picker for.
+ */
+export function ImportErrorNotice({ error }: { error: ThemeStoreState["importError"] }) {
+  if (!error) return null;
+  const said = {
+    unreadable: "couldn't be opened — it may have moved, or be on a drive that isn't plugged in.",
+    "no-colours": "doesn't have colours in it that could be read as a palette. A palette file is a list of names and hex codes.",
+    unwritable: "was read fine, but the copy couldn't be saved into your themes folder.",
+  }[error.reason];
+  return (
+    <p className="appearance-blocked">
+      <AlertTriangle size={12} />
+      <span>
+        <strong>{error.file}</strong> {said}
+      </span>
+    </p>
+  );
+}
+
+/**
  * Shown when "Open … folder" couldn't hand the folder to the file manager.
  * The path is the point: a button that silently does nothing leaves her with
  * no way to reach the folder at all, and this at least gives her something to

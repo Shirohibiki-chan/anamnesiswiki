@@ -4,11 +4,11 @@
 // what made Settings a page you scrolled rather than a place you went. Each of
 // those sections is now its own panel behind its own entry in the left rail —
 // see SettingsModal.tsx.
-import { Check, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
+import { Check, FolderOpen, Import, RefreshCw, Trash2 } from "lucide-react";
 import { BUILT_IN_THEMES } from "../../constants/themes";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTheme } from "../../hooks/use-theme";
-import { BlockedNotice, DeleteErrorNotice, FolderErrorNotice } from "./StylesheetNotices";
+import { BlockedNotice, DeleteErrorNotice, FolderErrorNotice, ImportErrorNotice } from "./StylesheetNotices";
 import type { ThemeSwatch } from "../../services/theme-service";
 
 /**
@@ -83,7 +83,9 @@ export function ThemeSettings() {
     isScanning,
     folderError,
     deleteError,
+    importError,
     selectTheme,
+    importTheme,
     scanFolders,
     resetAppearance,
     openThemesFolder,
@@ -136,7 +138,13 @@ export function ThemeSettings() {
         time you save.
       </p>
 
+      {/* First of the three, because it's the one that needs no explaining and
+          the other two are both "the manual way". */}
       <p className="appearance-actions">
+        <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void importTheme()}>
+          <Import size={14} />
+          Import a theme
+        </button>
         <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void openThemesFolder()}>
           <FolderOpen size={14} />
           Open themes folder
@@ -147,8 +155,15 @@ export function ThemeSettings() {
         </button>
       </p>
 
+      <p className="appearance-note">
+        <em>Import</em> takes a <code>.css</code> theme and copies it into the folder for you. It also takes a <code>.json</code> palette
+        — a list of colours exported from somewhere else — and works out which colour does what here, checking every one for readability
+        as it goes. Either way you get a normal theme file you can then edit.
+      </p>
+
       <FolderErrorNotice error={folderError} folder="themes" />
       <DeleteErrorNotice error={deleteError} />
+      <ImportErrorNotice error={importError} />
       {blocked.map((sheet) => (
         <BlockedNotice key={sheet.file} sheet={sheet} />
       ))}

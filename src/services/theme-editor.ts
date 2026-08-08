@@ -282,6 +282,20 @@ export function freeFileName(name: string, taken: readonly string[], sanitize: (
 }
 
 /**
+ * Where a generated theme file came from, when it wasn't the colour pickers.
+ *
+ * Only the importer passes this. A file that says it was made in Settings →
+ * Colours when it was actually mapped out of somebody else's palette is a small
+ * lie in the one place she'd go looking for the truth.
+ */
+export type ThemeOrigin = {
+  /** Replaces the "Made in Settings → Colours" line under the theme's name. */
+  made: string;
+  /** Plain-language lines about anything that had to be guessed. */
+  notes?: readonly string[];
+};
+
+/**
  * A theme file, from nothing.
  *
  * **Only for a file that doesn't exist yet.** Editing one that does goes
@@ -310,14 +324,24 @@ export function serializeTheme(
    * out — the theme it was copied from is not in the cascade behind it.
    */
   fonts: Record<string, string> = {},
+  origin?: ThemeOrigin,
 ): string {
   const lines: string[] = [];
   lines.push(`/* Anamnesis theme — "${name}"`);
-  lines.push(`   Made in Settings → Colours on ${today}.`);
+  lines.push(`   ${origin?.made ?? `Made in Settings → Colours on ${today}.`}`);
   lines.push("");
   lines.push("   Plain CSS, so you can edit it here as well as in the app —");
   lines.push("   the pickers read this file back. Save it and the app follows");
   lines.push("   straight away; nothing needs pressing. */");
+  // In the header, not buried beside the tokens they explain, because these are
+  // guesses and the moment to read them is before deciding whether the theme is
+  // any good — not after hunting for why one line is the colour it is.
+  for (const note of origin?.notes ?? []) {
+    lines.push("");
+    // A note quotes key names out of somebody else's file, and a key holding
+    // `*/` would end the comment early and spill the rest into the stylesheet.
+    lines.push(`/* ${note.replace(/\*\//g, "*\\/")} */`);
+  }
   lines.push("");
   lines.push(`[data-theme="${themeId}"] {`);
 

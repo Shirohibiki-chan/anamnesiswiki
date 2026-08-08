@@ -35,6 +35,23 @@ export async function pickLkSavePath(defaultName: string): Promise<string | null
   });
 }
 
+/**
+ * Phase 12 theme import. Two extensions in one filter on purpose: from where
+ * she's standing, "a theme somebody sent me" and "the colours out of my other
+ * project" are the same errand, and two menu entries that both mean *import a
+ * look* would be a distinction the app cares about and she doesn't. What the
+ * file turns out to be is worked out from it afterwards.
+ */
+export async function pickThemeFile(): Promise<string | null> {
+  const result = await open({
+    directory: false,
+    multiple: false,
+    title: "Import a theme or palette",
+    filters: [{ name: "Theme or palette", extensions: ["css", "json"] }],
+  });
+  return typeof result === "string" ? result : null;
+}
+
 export async function pickLkFile(): Promise<string | null> {
   const result = await open({
     directory: false,
