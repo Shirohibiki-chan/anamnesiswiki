@@ -722,14 +722,36 @@ is below.
   a theme is allowed to set equal to the thing it sits on, and `daylight` does:
   its `--color-panel` and `--color-panel-edge` are both `#ffffff`, so hovering a
   page in the sidebar was **white on white, a measured distance of 0**. Use
-  `--color-hover`, `--color-hover-strong`, `--color-accent-hover`, or
-  `--color-hover-wash` for a gradient or a user-tinted row. They're
+  `--color-hover`, `--color-hover-strong` or `--color-accent-hover`. They're
   `color-mix(in oklab, …)` over `--color-hover-pole`, which is white or black
   depending on the panel's own lightness, so they pick their own direction and
   follow along when backgrounds are retuned. **Don't "simplify" them into fixed
   values** — fixed is what broke, and `filter: brightness()` is the same mistake
   in another spelling, since it only lifts. Reasoning in
-  `docs/constants-and-theming.md` §Hover is a mix.
+  `docs/constants-and-theming.md` §Hover is a film.
+
+- **A hover token is translucent, and must stay that way.** Hover is painted on
+  four different surfaces — `--color-panel` for a tree row, `--color-panel-alt`
+  for a settings row, `--color-panel-edge` for a menu row. Any *opaque* value
+  computed from one of them is wrong on the other three by however far apart
+  they happen to be, which is a bug that hides until a theme puts them close.
+  "Match the others to Panels" does precisely that: on a yellow theme it left a
+  settings row's hover at a measured **19**, and the shipped `dark`, `ember`,
+  `grove` and `nightbloom` were already at 11–16 on `--color-panel-edge` without
+  anyone noticing. A film composites over whatever it lands on, so the step is
+  the same size by construction: **67–97 across every shipped theme and
+  surface.** If you find yourself making a hover token opaque so a swatch reads
+  nicely, fix the swatch — `flatten` exists for that — not the token.
+
+- **`--color-hover-strong` means emphasis, not "on a raised surface".** That was
+  its old meaning and it only made sense while hover was opaque and computed
+  from the panel, so a popover needed a bigger step to make up the deficit. A
+  film has no deficit: plain `--color-hover` lands at 79–87 on
+  `--color-panel-edge`, where the old strong managed 60–78. `-strong` is now for
+  something stacked on an already-hovered row, or marking the keyboard
+  selection. Repointing every old site at 20% would have doubled the weight of
+  every context menu in every dark theme — a redesign smuggled inside a bug fix,
+  which is the actual thing to avoid here.
 
 - **A hover mix takes the panel and nothing else.** The first version of the
   above mixed the panel toward `--color-text-primary`, on the reasoning that

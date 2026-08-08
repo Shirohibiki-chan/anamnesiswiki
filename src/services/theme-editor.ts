@@ -71,8 +71,9 @@ function fromOklab(text: string): string | null {
   const match = /^(oklab|oklch)\(([^)]+)\)$/i.exec(text);
   if (!match) return null;
 
-  // Alpha is dropped: these feed `<input type="color">`, which has no alpha
-  // channel. The value written back keeps whatever the picker produced.
+  // Alpha is dropped here and read separately by `alphaOf`: these feed
+  // `<input type="color">`, which has no alpha channel. The value written back
+  // keeps whatever the picker produced.
   const parts = match[2]
     .split("/")[0]
     .trim()
@@ -131,6 +132,78 @@ function oklabToHex(L: number, a: number, b: number): string {
   });
 
   return rgbToHex({ r, g, b: bb });
+}
+
+/**
+ * How see-through a value is, 0–1. Anything without an alpha is 1.
+ *
+ * Reads the two shapes a token can carry one in: the slash form
+ * (`oklab(0 0 0 / 0.1)`, `rgb(0 0 0 / 10%)`) and the legacy comma form
+ * (`rgba(94, 234, 212, 0.15)`).
+ */
+export function alphaOf(value: string): number {
+  const text = value.trim();
+
+  const fn = /^(?:oklab|oklch|rgba?|hsla?)\(([^)]+)\)$/i.exec(text);
+  if (!fn) return 1;
+
+  const slash = fn[1].split("/");
+  const raw =
+    slash.length > 1
+      ? slash[1]
+      : // Only the comma form has a fourth component; `oklab(L a b)` has three
+        // and no alpha, so a fourth is what distinguishes them.
+        (fn[1].split(/[\s,]+/).filter(Boolean)[3] ?? "");
+
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.toLowerCase() === "none") return 1;
+
+  const n = Number.parseFloat(trimmed);
+  if (!Number.isFinite(n)) return 1;
+
+  const a = trimmed.endsWith("%") ? n / 100 : n;
+  return Math.max(0, Math.min(1, a));
+}
+
+/**
+ * A translucent value laid over an opaque one → the `#rrggbb` you'd actually
+ * see.
+ *
+ * Exists for the swatches. The hover tokens are films — the pole at 10% and
+ * 22% — so what `toHex` gets out of one on its own is the pole: a picker
+ * showing pure black on every light theme and pure white on every dark one,
+ * which tells you nothing and looks broken. Composited over the panel it shows
+ * what hovering a row on a panel actually looks like, which is the question the
+ * swatch is answering.
+ *
+ * Straight sRGB, not oklab, because that's where the browser composites: a 10%
+ * black film over `#ffe047` paints `#e5c93f`, which is `255 × 0.9` per channel
+ * and nothing cleverer. Matching it is the point — this is a preview of a real
+ * pixel, so agreeing with the compositor beats being more principled than it.
+ *
+ * Display only. Nothing flattened here is ever written to a theme file; the
+ * auto tokens are kept out of what gets serialized on purpose, and AUTO_TOKENS
+ * in constants/theme-tokens.ts says why.
+ */
+export function flatten(value: string, backdrop: string): string | null {
+  const top = toHex(value);
+  if (!top) return null;
+
+  const alpha = alphaOf(value);
+  if (alpha >= 1) return top;
+
+  const under = toHex(backdrop);
+  if (!under) return null;
+
+  const front = hexToRgb(top);
+  const back = hexToRgb(under);
+  const mix = (f: number, b: number) => b + (f - b) * alpha;
+
+  return rgbToHex({
+    r: mix(front.r, back.r),
+    g: mix(front.g, back.g),
+    b: mix(front.b, back.b),
+  });
 }
 
 export function hexToRgb(hex: string): Rgb {

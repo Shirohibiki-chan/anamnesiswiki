@@ -160,6 +160,33 @@
      one that retunes its panels later can't drift out of step. Override any of
      them and the override wins as usual.
 
+     **They are films, not fills, and that's the second thing the design got
+     wrong.** The first version mixed the *panel* toward the pole and painted
+     the result as a solid background. That works on a panel and nowhere else,
+     because hover is painted on four different surfaces: a tree row sits on
+     `--color-panel`, a settings row sits on `--color-panel-alt`, a menu row on
+     `--color-panel-edge`. One colour computed from one of them has to be wrong
+     on the other three, and how wrong depends on how far apart they are.
+
+     Which is fine until they're deliberately close. "Match the others to
+     Panels" sets all four a small step apart, and on a yellow theme it put
+     `--color-panel-alt` almost exactly where hover had landed: measured
+     distance from the surface underneath it, **19**. Reported as hover being
+     hard to see on the darker colours, which is precisely what it was.
+
+     So the hover colours are the pole at low opacity now, and they composite
+     over whatever they're laid on instead of trying to predict it. That makes
+     the step the same size everywhere by construction rather than by luck —
+     across seven themes and all four surfaces, measured 40–191 where the solid
+     version ranged 19–191. Every site that uses them was already transparent in
+     its resting state, so this changed no rule, only these three lines.
+
+     It also folded in `--color-hover-wash`, which was this idea already, kept
+     apart for the three cases a fill couldn't touch (a gradient button, a tinted
+     tree row). Those needed a film because a fill would have blotted out what
+     was underneath. That turned out to be true of hover generally, and two
+     tokens holding the same value for the same reason is one token.
+
      **What they mix *toward* is the whole design, and the first attempt got it
      wrong.** That version mixed the panel toward `--color-text-primary`, on the
      reasoning that text is by definition the far end of a theme's contrast. It
@@ -179,19 +206,47 @@
      is written this way rather than as a conditional: at exactly 0.62 `sign()`
      returns 0, which makes the pole `oklch(0 0 0)` — black. That's a real
      direction rather than a no-op, so the one input that could have produced
-     "no change at all" produces a normal hover instead. A mid-grey panel is the
-     weakest case at 17, still plainly visible.
+     "no change at all" produces a normal hover instead. A mid-grey panel is
+     still the weakest case, now 40 rather than 17.
+
+     The panel decides the *direction* even though the film lands on all four
+     surfaces, and that's sound where deriving the colour from it wasn't:
+     "is this theme light or dark" is a property of the theme, not of one
+     surface, and the four backgrounds are the same family by definition. The
+     amount is what had to stop depending on any single surface, and does.
+
+     10% is measured, not chosen: it's where the film lands at the distance the
+     solid version reached on the surfaces where it looked right, so nothing
+     that already worked changes appearance.
+
+     **`hover-strong` changed meaning, and most of its sites gave it up.** It
+     used to mean "on a raised surface" — a bigger step, because a hover
+     computed from the panel arrives at a popover already too close to it. A
+     film has no such deficit to make up: 10% over `--color-panel-edge` moves
+     79–87, the same as it moves anywhere else, and the shipped dark themes
+     measured 60–78 for the old strong on that surface. So a plain menu row is
+     a plain hover now, and `-strong` kept only the two jobs that are about
+     *emphasis* rather than compensation: something stacked on top of an
+     already-hovered row, and something marking a selection. Left at 22% on
+     every old site it would have doubled the weight of every context menu in
+     every dark theme — a change nobody asked for, hiding inside a bug fix.
 
      `in oklab` rather than the default sRGB so the mix keeps the theme's hue:
      Ember's warm charcoal stays warm and Grove's green stays green, where an
      sRGB mix washes both toward the same grey. The trade is that these resolve
-     to `oklab(...)` rather than a hex, which is why `toHex` in
-     services/theme-editor.ts learned to read it — see the note there.
+     to `oklab(...)` rather than a hex — with an alpha now — which is why
+     `toHex` in services/theme-editor.ts learned to read it and `flatten` had to
+     exist at all. See the note there.
 
-       hover         rows, icon buttons, menu items — anything on a panel.
-       hover-strong  the same, for something already on a raised surface (a
-                     popover, a context menu), which needs a bigger step to
-                     read against its own lifted background.
+       hover         rows, icon buttons, menu items — anything the mouse is
+                     over, on any surface, plus the gradient and tinted-row
+                     cases that take it as an inset shadow rather than a
+                     background.
+       hover-strong  emphasis, not compensation: something stacked on an
+                     already-hovered row, or a row marking the current
+                     selection. If you're reaching for it because the surface
+                     underneath is a raised one, reach for `--color-hover` —
+                     that's the thing this no longer means.
        accent-hover  hover on something already accented — a secondary button,
                      the selected nav row. Stronger than `--color-accent-faint`
                      on purpose: hovering a *selected* row used to land on the
@@ -202,26 +257,9 @@
                      isn't an accent, so there's no halfway-edited state where
                      it collapses. */
   --color-hover-pole: oklch(from var(--color-panel) sign(0.62 - l) 0 0);
-  --color-hover: color-mix(in oklab, var(--color-panel) 92%, var(--color-hover-pole));
-  --color-hover-strong: color-mix(in oklab, var(--color-panel) 84%, var(--color-hover-pole));
+  --color-hover: color-mix(in oklab, var(--color-hover-pole) 10%, transparent);
+  --color-hover-strong: color-mix(in oklab, var(--color-hover-pole) 20%, transparent);
   --color-accent-hover: color-mix(in oklab, var(--color-accent-light) 24%, transparent);
-
-  /* The fourth one is a film, not a fill, for the things a fill can't touch: a
-     button whose background is a gradient, and a tree row tinted with a colour
-     the user picked. Those used `filter: brightness(1.1)`, which only knows one
-     direction — it lifts, so on Daylight it walked an already-pale row toward
-     white and the hover quietly disappeared, the same failure as above.
-
-     Laid over the top as an inset shadow instead, so whatever is underneath
-     keeps its gradient or its tint and just gets darker or lighter.
-
-     It's the pole at low opacity, for the same reason the three above are —
-     this one used to mix from the text colour too, and inherited the same
-     failure. It's the case with the least to go on: what's underneath is a
-     gradient or a colour the user picked for one row, so there's nothing local
-     to derive from. The panel is the best available stand-in for "is this
-     theme light or dark", and that question is all this needs answered. */
-  --color-hover-wash: color-mix(in oklab, var(--color-hover-pole) 10%, transparent);
 
   /* Over a user's own image — the banner's hint and remove button, the
      portrait's remove button. These stay dark in every theme rather than

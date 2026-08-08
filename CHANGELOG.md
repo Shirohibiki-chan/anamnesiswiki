@@ -2,6 +2,16 @@
 
 ## 2026-08-08
 
+### Hover is the same strength on every surface now, not just on panels
+
+- **Hover was hard to see on the darker background colours**, most obviously after using *Match the others to Panels*, which is what turned this up. Fixed.
+- **The cause was that hover was one solid colour worked out from your Panels colour** — but hover doesn't only happen on panels. A page in the sidebar sits on Panels, a settings row sits on Boxes, a menu row sits on Menus. One colour worked out from one of those three is wrong on the other two, and *how* wrong depends on how far apart you've set them. Match the others to Panels deliberately sets them close together, which is exactly when it broke: on a yellow theme, a hovered settings row was a measured **19** away from the box behind it. Near enough to invisible.
+- **Hover is now a thin film laid over whatever it's on**, rather than a colour guessed in advance. It darkens or lightens what's actually underneath, so it's the same strength everywhere by construction instead of by luck. Across every built-in theme and every surface it now measures **67–97**, where before it ranged from 11 to 102.
+- **This was quietly wrong in the built-in themes too.** Hovering a row in a right-click menu measured 11–16 on Dark, Ember, Grove and Nightbloom — technically not zero, but not something you'd see. Those are fixed by the same change.
+- **Where hover already looked right, it still looks the same.** The strength was picked by measuring against the old one on the surfaces where it worked, not chosen by eye.
+- **In a search, the row your arrow keys are on now looks different from the row your mouse is over.** They used to be painted identically, so if the pointer happened to be resting in the list you couldn't tell which one Enter would open.
+- The two Hover swatches in Settings show the colour a hovered row actually goes on your panel. Rows and buttons is unchanged; the second one is now **Keyboard selection**, because that's what it does.
+
 ### One button fills in the other three background colours
 
 - **Settings → Colours → Backgrounds has a *Match the others to Panels* button.** Pick the background colour you want, press it, and Window, Boxes and Menus are filled in as matching shades of it.

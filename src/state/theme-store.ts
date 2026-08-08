@@ -29,6 +29,7 @@ import { pickThemeFile, showFolder } from "../services/dialog-service";
 import { readPalette, themeFromPalette } from "../services/palette-import";
 import { AUTO_TOKENS, type GradientSlot } from "../constants/theme-tokens";
 import {
+  flatten,
   freeFileName,
   gradientCss,
   matchedBackgrounds,
@@ -454,12 +455,25 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
    * Only the ones the file doesn't declare: a hover she actually chose is in
    * `draft.colors`, isn't derived from anything, and must not be overwritten by
    * what the document happens to be showing.
+   *
+   * Flattened over the panel because all three are films rather than colours —
+   * a 10% black one on a light theme, a 24% accent one. `toHex` alone drops the
+   * alpha and hands back the pole, so the swatches would be pure black on every
+   * light theme and pure white on every dark one. `flatten` is display only;
+   * this writes to `resolved`, which never reaches a file.
+   *
+   * Reading the panel off the document rather than the draft matters: this runs
+   * after `previewToken` has already put the in-flight value on the root, so
+   * mid-drag the swatch flattens over the panel she can currently see, not the
+   * one she started from. That was the whole complaint the last time round.
    */
   function withAutoTokens(draft: ThemeDraft): ThemeDraft {
     const resolved = { ...draft.resolved };
+    const panel = toHex(resolveTokenColor("--color-panel"));
     for (const token of AUTO_TOKENS) {
       if (draft.colors[token]) continue;
-      const hex = toHex(resolveTokenColor(token));
+      const value = resolveTokenColor(token);
+      const hex = panel ? flatten(value, panel) : toHex(value);
       if (hex) resolved[token] = hex;
     }
     return { ...draft, resolved };

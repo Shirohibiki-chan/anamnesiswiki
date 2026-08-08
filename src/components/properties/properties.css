@@ -178,7 +178,7 @@
 }
 
 .property-refs-candidate:hover {
-  background: var(--color-hover-strong);
+  background: var(--color-hover);
 }
 
 /* --- Image slot --- */
