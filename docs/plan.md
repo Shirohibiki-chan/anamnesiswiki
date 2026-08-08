@@ -202,6 +202,24 @@ Cheaper than it looks: `customProperties` on the node and the "+ Add a property"
 - **Default property suggestions per template**, mined selectively from World Anvil's Person field list (see Future Features → World Anvil import). A dozen or so per template. Resist the full list.
 - **Reorderable properties.**
 
+### One place that lists every property and every tag
+
+Taken from Obsidian 1.13's All Properties view, and asked for 2026-08-08. **Two views, one mechanism** — the user asked for the tag half unprompted after seeing the property half, which is the tell that they're the same feature over two fields.
+
+The problem both solve is the one you only get after a project is big: you can see the tags and properties on *this* page, and nowhere can you see the set you've actually accumulated. So `pov` and `POV` and `point-of-view` coexist for months, and the only way to find out is to trip over it.
+
+- **A list of every property name in the project, with a count of how many pages use each.** Same for tags.
+- **Rename across the whole project from that list.** This is the point of the feature — renaming a tag on 40 pages one page at a time is why the typo survives instead of getting fixed. Merging is what rename already does when the new name is one that exists; say so in the confirmation rather than building a separate merge.
+- **Delete across the project**, with the count shown, behind a confirmation that names it.
+- **Click through to the pages using one.** `#tag` already works in both the tree filter (`TreeSearch.tsx`) and the search palette (`search-service.ts` §tag mode), so for tags this is a jump into machinery that exists. Properties have no equivalent yet and need one.
+- Case-insensitive grouping, so `POV` and `pov` land next to each other and can be seen. **Don't auto-merge them** — they're the user's words and she may mean both.
+
+**Sequencing.** Do this *after* the new types above, not before. `select`/`multi-select`/`status` come with a set of allowed values per property, and a values list is the second thing anyone wants to rename in bulk. Building the view first means building it twice.
+
+**Where it lives is open.** Settings is wrong — this is about a project's contents, not the app's configuration. Likeliest a panel off the search palette, or its own view. Decide when the rest of the phase is in place and the shape is clearer.
+
+**Not in scope:** property types on tags (a tag is a bare string and should stay one), and tag hierarchies (`#char/valera`). Both are their own features, and neither was asked for.
+
 ---
 
 ## Phase 14 — Everyday Navigation
