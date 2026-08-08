@@ -28,8 +28,6 @@ The original blocker still stands if a calendar view is ever wanted anyway: Even
 
 ---
 
----
-
 **Canvas / board / whiteboard**
 
 Freeform spatial planning surface — LK ships one as "Board." Kept on the list at the user's request 2026-07-31, with eyes open: this is the largest single build anywhere in this document, larger than the atlas. Nothing else in the plan depends on it, so it can wait indefinitely without blocking anything.

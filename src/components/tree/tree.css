@@ -165,6 +165,33 @@
   padding: 0 var(--space-xs);
 }
 
+/* The sidebar never scrolls sideways, however deep the nesting goes.
+   react-arborist gives every row `min-width: max-content` on purpose (its
+   issue #10) so that a selected row's highlight spans the full scrollable
+   width of a wide tree. That trade is wrong for a sidebar: it means a few
+   levels of folders make the whole panel scroll horizontally, which nothing
+   else in this category does — Obsidian shortens the name and stays put.
+   Holding rows to the panel width instead also removes the library's reason
+   for the rule, since there is no scrollable width left to span, and
+   `.tree-row-name` already ellipsises so a deep or long name shortens rather
+   than pushing the panel wider.
+
+   `!important` because react-arborist sets that min-width as an inline style
+   in `row-container.js`, and nothing else reaches an inline style. Without it
+   this rule silently loses and the row still overflows — measured at 370px
+   inside a 280px panel, six levels deep. */
+.tree-panel [role="treeitem"] {
+  min-width: 0 !important;
+}
+
+/* Belt and braces. The row rule above is what actually stops the scrolling;
+   this makes it impossible for anything added later to bring it back.
+   react-window sets `overflow: auto` inline on its scroll container, so again
+   `!important` is the only thing that reaches it. */
+.tree-panel [role="tree"] > div {
+  overflow-x: hidden !important;
+}
+
 
 /* --- TreeItem --- */
 
