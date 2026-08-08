@@ -2,6 +2,12 @@
 
 ## 2026-08-08
 
+### Reopening a shipped theme in the sandbox gives you the real thing again
+
+- **The sandbox's copies of the built-in themes were out of date.** Picking Midnight, Dark, Ember, Grove, Nightbloom or Daylight as a starting point handed you the *old* quieter greys — the ones from before yesterday's readability pass — so anything you built on top of one started out harder to read than the theme it was named after.
+- Only the muted labels and placeholder text were wrong, and Midnight was missing its navy-tinted text as well. Everything else already matched.
+- The themes in the app never changed; this was the sandbox alone. Abyssal was already correct.
+
 ### A new theme: Abyssal
 
 - **Deep ocean blue, cyan and violet** — a seventh theme in the picker, and the first one that didn't come out of the sandbox. It's your CharSnap palette run through the new importer and then tuned by hand.
