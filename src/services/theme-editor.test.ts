@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readThemeId, sanitizeCustomCss, readSwatch } from "./theme-service";
 import {
+  alphaOf,
   deriveTokens,
+  flatten,
   freeFileName,
   gradientCss,
   matchedBackgrounds,
@@ -82,6 +84,87 @@ describe("toHex", () => {
     it.each(["oklab(0.5 0)", "oklab(a b c)", "oklab()"])("still refuses %s", (input) => {
       expect(toHex(input)).toBeNull();
     });
+  });
+});
+
+describe("alphaOf", () => {
+  it.each([
+    ["#5eead4", 1],
+    ["rgb(94, 234, 212)", 1],
+    ["oklab(0 0 0)", 1],
+    ["oklch(0.5 0.1 200)", 1],
+  ])("calls %s opaque", (input, expected) => {
+    expect(alphaOf(input)).toBe(expected);
+  });
+
+  it.each([
+    ["oklab(0 0 0 / 0.1)", 0.1],
+    ["oklab(1 0 0 / 0.22)", 0.22],
+    ["oklch(0.85 0.13 180 / 24%)", 0.24],
+    ["rgba(94, 234, 212, 0.15)", 0.15],
+    ["rgb(0 0 0 / 10%)", 0.1],
+  ])("reads %s as %s", (input, expected) => {
+    expect(alphaOf(input)).toBeCloseTo(expected, 5);
+  });
+
+  // `oklab(L a b)` has three components and no alpha; `rgba(r, g, b, a)` has
+  // four and the last one is the alpha. Telling them apart is the only reason
+  // this doesn't just take the fourth thing it finds.
+  it("does not mistake the third component of an oklab for an alpha", () => {
+    expect(alphaOf("oklab(0.5 0.1 0.2)")).toBe(1);
+  });
+
+  it("assumes opaque rather than guessing at something it can't read", () => {
+    expect(alphaOf("rebeccapurple")).toBe(1);
+    expect(alphaOf("oklab(0 0 0 / none)")).toBe(1);
+    expect(alphaOf("")).toBe(1);
+  });
+});
+
+describe("flatten", () => {
+  // Every expected value here was painted by a real browser and read back off a
+  // canvas, so they pin the compositing to the engine's answer rather than
+  // ours. Within one code point, because `rgbToHex` rounds a channel Chrome
+  // truncates — invisible at swatch size, and not worth matching exactly.
+  const near = (actual: string | null, expected: string) => {
+    expect(actual).not.toBeNull();
+    const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    channels(actual as string).forEach((n, i) => {
+      expect(Math.abs(n - channels(expected)[i])).toBeLessThanOrEqual(1);
+    });
+  };
+
+  it("lays the light-theme hover film over her yellow panel", () => {
+    near(flatten("oklab(0 0 0 / 0.1)", "#ffe047"), "#e5c93f");
+  });
+
+  it("lays the stronger film over the same panel", () => {
+    near(flatten("oklab(0 0 0 / 0.22)", "#ffe047"), "#c7af37");
+  });
+
+  it("lifts rather than darkens when the theme is dark", () => {
+    near(flatten("oklab(1 0 0 / 0.1)", "#151e2e"), "#2c3543");
+    near(flatten("oklab(1 0 0 / 0.22)", "#151e2e"), "#48505c");
+  });
+
+  it("keeps the accent hover recognisably the accent", () => {
+    near(flatten("oklab(0.854872 -0.125014 -0.00232285 / 0.24)", "#ffe047"), "#d8e269");
+  });
+
+  it("passes an opaque value straight through", () => {
+    expect(flatten("#5eead4", "#ffe047")).toBe("#5eead4");
+  });
+
+  // The failure this whole arrangement exists to prevent: a swatch showing the
+  // pole instead of the hover. Black on a light theme is what she'd have seen.
+  it("does not hand back the pole", () => {
+    expect(flatten("oklab(0 0 0 / 0.1)", "#ffe047")).not.toBe("#000000");
+    expect(flatten("oklab(1 0 0 / 0.1)", "#151e2e")).not.toBe("#ffffff");
+  });
+
+  it("returns null rather than a guess when either side is unreadable", () => {
+    expect(flatten("rebeccapurple", "#ffe047")).toBeNull();
+    expect(flatten("oklab(0 0 0 / 0.1)", "rebeccapurple")).toBeNull();
   });
 });
 

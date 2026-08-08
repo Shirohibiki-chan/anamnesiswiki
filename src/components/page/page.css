@@ -361,7 +361,7 @@
 }
 
 .page-tab-delete:hover {
-  background: var(--color-hover-strong);
+  background: var(--color-hover);
   color: var(--color-destructive);
 }
 

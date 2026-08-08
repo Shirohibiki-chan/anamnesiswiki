@@ -120,10 +120,16 @@
    settled on were still spelled as surface colours borrowed from elsewhere —
    and a borrowed surface colour is one a theme can set equal to the thing it
    sits on. Daylight did exactly that and hover vanished. The tokens are in
-   index.css now (`--color-hover`, `-strong`, `--color-accent-hover`,
-   `--color-hover-wash`) and the rule is: **a hover names a hover token.** If
-   you find yourself reaching for `--color-panel-alt` in a `:hover` block,
-   that's the bug this comment is about. */
+   index.css now (`--color-hover`, `-strong`, `--color-accent-hover`) and the
+   rule is: **a hover names a hover token.** If you find yourself reaching for
+   `--color-panel-alt` in a `:hover` block, that's the bug this comment is
+   about.
+
+   The hover tokens are translucent, so they take either form: `background` on
+   something transparent at rest, or `box-shadow: inset 0 0 0 999px` on
+   something already filled — a gradient button, a tinted tree row — where
+   replacing the background would throw away what's underneath. Same token
+   either way; pick by whether the element has a fill to keep. */
 
 .ui-btn {
   display: inline-flex;
@@ -164,7 +170,7 @@
 /* The wash rather than a fill, because the background here is a gradient slot
    and a `background` on hover would drop it. */
 .ui-btn-primary:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 999px var(--color-hover-wash);
+  box-shadow: inset 0 0 0 999px var(--color-hover);
 }
 
 .ui-btn-secondary {
@@ -186,7 +192,7 @@
 }
 
 .ui-btn-danger:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 999px var(--color-hover-wash);
+  box-shadow: inset 0 0 0 999px var(--color-hover);
 }
 
 /* --- Icon buttons ---

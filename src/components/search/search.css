@@ -66,7 +66,16 @@
   cursor: pointer;
 }
 
-.search-palette-result:hover,
+.search-palette-result:hover {
+  background: var(--color-hover);
+}
+
+/* The one the arrow keys are on, and the one Enter will open — so it outranks
+   whatever the mouse happens to be resting over. These shared a rule while
+   hover was a solid colour, which made the two indistinguishable: arrowing down
+   a list with the pointer sitting somewhere in it showed two identical rows and
+   no way to tell which one Enter meant. Written second so it wins on a row
+   that's both. */
 .search-palette-result-active {
   background: var(--color-hover-strong);
 }

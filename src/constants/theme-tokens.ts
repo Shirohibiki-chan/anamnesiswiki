@@ -71,7 +71,7 @@ export const COLOR_GROUPS: readonly ColorGroup[] = [
     advanced: true,
     tokens: [
       { token: "--color-hover", label: "Rows and buttons", hint: "what the mouse is over" },
-      { token: "--color-hover-strong", label: "Inside menus", hint: "the same, on a popover" },
+      { token: "--color-hover-strong", label: "Keyboard selection", hint: "the search result Enter would open" },
       { token: "--color-accent-hover", label: "Highlighted things", hint: "the selected page, main buttons" },
     ],
   },

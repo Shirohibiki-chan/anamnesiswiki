@@ -75,10 +75,9 @@ the base tokens — the other six ship as `[data-theme]` blocks over the top (se
 | `--color-scrim-soft` | `rgba(12,12,16,0.55)` | Resting wash under a control that sits on a user's image — the banner hint and its remove ×, the portrait's remove × |
 | `--color-scrim-solid` | `rgba(12,12,16,0.72)` | The same three on hover |
 | `--color-on-scrim` | `#f2f2f5` | Icon/text on either scrim. **Not `--color-text-primary`** — see below |
-| `--color-hover` | *mix* | Hover on anything sitting on a panel — tree rows, icon buttons, nav items. **See below** |
-| `--color-hover-strong` | *mix* | Hover on something already raised — a popover, a context menu row |
-| `--color-accent-hover` | *mix* | Hover on something already accented — secondary buttons, the selected nav row |
-| `--color-hover-wash` | *mix* | A film laid over a gradient or a user-tinted row, where a background can't be replaced |
+| `--color-hover` | *film* | Hover on anything, on any surface — tree rows, icon buttons, nav items, menu rows. Translucent, so it composites over what it lands on. **See below** |
+| `--color-hover-strong` | *film* | Emphasis, **not** "on a raised surface" — stacked on an already-hovered row, or marking the keyboard selection |
+| `--color-accent-hover` | *film* | Hover on something already accented — secondary buttons, the selected nav row |
 | `--color-text-primary` | `#e8e8ee` | Body text, headings, active labels |
 | `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
 | `--color-text-muted` | `#84848f` | Quiet labels — property field labels, breadcrumb separators. **Has a contrast floor — see below** |
@@ -142,7 +141,7 @@ equal to the panel: near white a step clamps, and near black a step smaller than
 one 8-bit code point rounds away. Both would recreate the `daylight`
 `--color-panel-edge` collision described below.
 
-#### Hover is a mix, not a colour
+#### Hover is a film, not a colour
 
 **Never write a surface token into a `:hover` block.** That was how every hover
 in the app worked until 2026-08-08 — tree rows took `--color-panel-edge`, icon
@@ -173,12 +172,43 @@ understanding before changing them:
   (`constants/theme-tokens.ts`) and are skipped by `seedFromDocument`: copying a
   theme writes out every colour it resolves to, and doing that to hover would
   pin it to the panel colour at the moment of the copy.
+- **They are translucent, and that's what makes them work on more than one
+  surface.** The first version mixed the *panel* toward the pole and painted the
+  result as an opaque background — correct on a panel and wrong everywhere else,
+  because hover lands on four surfaces: a tree row on `--color-panel`, a
+  settings row on `--color-panel-alt`, a menu row on `--color-panel-edge`. How
+  wrong depended on how far apart those happened to be, so it looked fine until
+  a theme put them close. "Match the others to Panels" does exactly that, and on
+  a yellow theme it dropped a settings row's hover to a measured **19**. The
+  shipped themes were quietly affected too: hover on `--color-panel-edge`
+  measured 11–16 on `dark`, `ember`, `grove` and `nightbloom`. The pole at 10%
+  opacity composites over whatever it's laid on, so the step is the same size by
+  construction. Now **67–97** across every shipped theme and surface.
 
 `sign()` returns 0 when the panel's lightness is exactly 0.62, which makes the
 pole `oklch(0 0 0)` — black. That's deliberate: the one input that could have
-produced "no change at all" produces an ordinary darkening instead. Measured
-step by panel: 26 on the dark themes, 43–47 on light ones, 17 on a mid-grey,
-which is the weakest case and still plainly visible.
+produced "no change at all" produces an ordinary darkening instead. A mid-grey
+panel is still the weakest case, now 40 rather than 17.
+
+`--color-hover-strong` **is not "hover, on a raised surface"** — it used to be,
+and that meaning died with the opaque version, which needed a bigger step on a
+popover only to make up for being computed from the panel. A film has no deficit
+to make up. It now means *emphasis*: something stacked on an already-hovered row
+(`.tree-row-add`), or a row marking the current selection
+(`.search-palette-result-active`). Everything else that used it — context menu
+rows, reference candidates, the tab close button — takes plain `--color-hover`,
+which lands at 79–87 on `--color-panel-edge` where the old strong managed 60–78.
+If you reach for `-strong` because the surface underneath is raised, that's the
+mistake this paragraph exists to stop.
+
+Because they're films, a hover token can be applied two ways: as a `background`
+on something transparent at rest, or as `box-shadow: inset 0 0 0 999px` on
+something already filled — a gradient button, a user-tinted tree row — where
+replacing the background would throw away what's underneath. Same token; pick by
+whether the element has a fill worth keeping. (This is what `--color-hover-wash`
+used to be. It was this idea already, kept separate for those three cases; once
+hover generally became a film, two tokens held the same value for the same
+reason and it folded into `--color-hover`.)
 
 `draft.resolved` is a snapshot, so the store re-reads the auto tokens off the
 document after any colour changes (`withAutoTokens` in `state/theme-store.ts`).
@@ -193,6 +223,17 @@ The mixes resolve to `oklab(…)` rather than a hex, which is why `toHex` in
 in Settings came up black. It reads `oklch()` too, so a hand-written theme using
 modern CSS colours now shows its real colours in the pickers instead of black
 squares.
+
+Once they became films they resolve to `oklab(… / 0.1)`, and `toHex` drops the
+alpha — so a swatch would show the *pole*: pure black on every light theme,
+pure white on every dark one. `withAutoTokens` runs them through `flatten`
+(`services/theme-editor.ts`) over the current panel first, so the picker shows
+what hovering a row on a panel actually looks like. `flatten` composites in
+plain sRGB rather than oklab because that's where the browser composites — a
+10% black film over `#ffe047` paints `#e5c93f`, which is `255 × 0.9` per channel
+and nothing cleverer. It's a preview of a real pixel, so agreeing with the
+compositor beats being more principled than it. **Display only** — flattened
+values live in `draft.resolved`, which `serializeTheme` never writes.
 
 #### Text on a scrim is not theme text
 
