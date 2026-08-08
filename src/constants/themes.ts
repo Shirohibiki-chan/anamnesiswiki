@@ -19,10 +19,11 @@ export type BuiltInTheme = {
  * then the four other darks, then light. Deliberately not alphabetical — the
  * first row is what someone who never opens this screen ends up with.
  *
- * The four darks are meant to be four *different* rooms, not four shades of
- * the same one: navy, neutral, warm brown, green, plum. If a fifth is ever
- * added, the bar is that it's recognisably somewhere else — a sixth grey isn't
- * a theme, it's a rounding error.
+ * The darks are meant to be *different rooms*, not shades of the same one:
+ * navy, neutral, warm brown, green, plum, and now a lit blue. The bar for
+ * adding another is that it's recognisably somewhere else — a seventh grey
+ * isn't a theme, it's a rounding error. Abyssal passes it on luminance as much
+ * as hue; see the note above its block in `index.css`.
  */
 export const BUILT_IN_THEMES: readonly BuiltInTheme[] = [
   { id: "midnight", label: "Midnight", note: "deep navy and teal, rounded type" },
@@ -30,6 +31,7 @@ export const BUILT_IN_THEMES: readonly BuiltInTheme[] = [
   { id: "ember", label: "Ember", note: "warm charcoal, copper and lamplight" },
   { id: "grove", label: "Grove", note: "deep forest green, old gold" },
   { id: "nightbloom", label: "Nightbloom", note: "dark plum, orchid and cyan" },
+  { id: "abyssal", label: "Abyssal", note: "deep ocean blue, cyan and violet" },
   { id: "daylight", label: "Daylight", note: "light background, dark text" },
 ];
 
