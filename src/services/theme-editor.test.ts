@@ -197,6 +197,23 @@ describe("a theme made with the pickers", () => {
     expect(css).toContain("--gradient-title-fill: transparent;");
   });
 
+  // Only one built-in sets its own faces, so a copy of that one used to come
+  // out in the base tokens' fonts — visibly not the theme it was copied from.
+  // A copy is complete or it isn't a copy: the original isn't in the cascade
+  // behind it.
+  it("writes the faces a copied theme was using", () => {
+    const withFonts = serializeTheme("Sea glass", "sea-glass", draft, "2026-08-07", {
+      "--font-display": '"Domine", serif',
+      "--font-ui": '"Lexend", sans-serif',
+    });
+    expect(withFonts).toContain('--font-display: "Domine", serif;');
+    expect(withFonts).toContain('--font-ui: "Lexend", sans-serif;');
+  });
+
+  it("says nothing about fonts when it wasn't given any", () => {
+    expect(css).not.toContain("--font-");
+  });
+
   it("doesn't emit gradients that are switched off", () => {
     expect(css).not.toContain("--gradient-sidebar");
   });
