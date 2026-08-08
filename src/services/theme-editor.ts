@@ -10,7 +10,7 @@
 //
 // Nothing here touches disk (filesystem-service does) or the document
 // (theme-service does). This is the text ↔ values conversion and nothing else.
-import { COLOR_TOKENS, GRADIENT_SLOTS, type GradientSlot } from "../constants/theme-tokens";
+import { AUTO_TOKENS, COLOR_TOKENS, GRADIENT_SLOTS, type GradientSlot } from "../constants/theme-tokens";
 
 /* --- Colours -------------------------------------------------------------- */
 
@@ -43,7 +43,88 @@ export function toHex(value: string): string | null {
     }
   }
 
+  const ok = fromOklab(text);
+  if (ok) return ok;
+
   return null;
+}
+
+/**
+ * `oklab(…)` / `oklch(…)` → `#rrggbb`.
+ *
+ * Here because the hover tokens are `color-mix(in oklab, …)`, and a browser
+ * resolves a mix to `oklab(0.278 0.0039 -0.0144)` — not to a hex. Without this,
+ * every hover swatch in Settings → Colours came up black while the app plainly
+ * wasn't, which is the exact failure the `resolved` field in `ThemeDraft`
+ * exists to prevent.
+ *
+ * It pays for itself twice over, because it isn't only our tokens: a
+ * hand-written theme using `oklch()` — which is how anyone writing CSS in 2026
+ * picks colours — used to read as black squares too, and "one theme format"
+ * doesn't hold if the pickers can only see the half of CSS we happen to emit.
+ *
+ * Still deliberately narrow. Named colours and `color()` are left alone for the
+ * reason in `toHex`: a value this can't read is one somebody wrote on purpose,
+ * and the honest answer is to leave it rather than approximate it.
+ */
+function fromOklab(text: string): string | null {
+  const match = /^(oklab|oklch)\(([^)]+)\)$/i.exec(text);
+  if (!match) return null;
+
+  // Alpha is dropped: these feed `<input type="color">`, which has no alpha
+  // channel. The value written back keeps whatever the picker produced.
+  const parts = match[2]
+    .split("/")[0]
+    .trim()
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  if (parts.length < 3) return null;
+
+  // `none` is a real component value (a powerless hue, say) and means zero here.
+  const num = (raw: string, pct: number): number => {
+    if (raw.toLowerCase() === "none") return 0;
+    const n = Number.parseFloat(raw);
+    if (!Number.isFinite(n)) return NaN;
+    return raw.trim().endsWith("%") ? (n / 100) * pct : n;
+  };
+
+  const L = num(parts[0], 1);
+  let a: number;
+  let b: number;
+  if (match[1].toLowerCase() === "oklch") {
+    // Chroma's percentage reference is 0.4; hue is degrees.
+    const c = num(parts[1], 0.4);
+    const h = (num(parts[2], 1) * Math.PI) / 180;
+    a = c * Math.cos(h);
+    b = c * Math.sin(h);
+  } else {
+    a = num(parts[1], 0.4);
+    b = num(parts[2], 0.4);
+  }
+  if (![L, a, b].every(Number.isFinite)) return null;
+
+  // Oklab → LMS → linear sRGB, the standard matrices from Björn Ottosson's
+  // definition. Kept inline rather than pulled in as a dependency: it's nine
+  // constants and a cube, and this app bundles nothing it can write once.
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+
+  const linear = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+
+  // Out-of-gamut components are clamped rather than gamut-mapped. These are
+  // theme surfaces, not photographs; the difference is invisible at swatch size
+  // and a proper mapping is a lot of maths for a 20px square.
+  const [r, g, bb] = linear.map((c) => {
+    const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.max(c, 0) ** (1 / 2.4) - 0.055;
+    return Math.max(0, Math.min(1, v)) * 255;
+  });
+
+  return rgbToHex({ r, g, b: bb });
 }
 
 export function hexToRgb(hex: string): Rgb {
@@ -255,6 +336,9 @@ export function readThemeDraft(css: string, resolve: (token: string) => string =
 export function seedFromDocument(read: (token: string) => string): Record<string, string> {
   const colors: Record<string, string> = {};
   for (const token of COLOR_TOKENS) {
+    // The auto tokens are the exception to "a copy has to be complete", and
+    // AUTO_TOKENS says why: writing them out is what would break them.
+    if (AUTO_TOKENS.includes(token)) continue;
     const hex = toHex(read(token));
     if (hex) colors[token] = hex;
   }

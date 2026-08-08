@@ -114,7 +114,16 @@
    Secondary now always means the accent tint, because that was already the
    most-used and it's the only one that says "this is the thing you'd click"
    rather than just "the mouse is here". The cancel buttons in the three
-   dialogs used to darken their border instead; they don't any more. */
+   dialogs used to darken their border instead; they don't any more.
+
+   What that pass didn't do was give hover a *token*, so the languages it
+   settled on were still spelled as surface colours borrowed from elsewhere —
+   and a borrowed surface colour is one a theme can set equal to the thing it
+   sits on. Daylight did exactly that and hover vanished. The tokens are in
+   index.css now (`--color-hover`, `-strong`, `--color-accent-hover`,
+   `--color-hover-wash`) and the rule is: **a hover names a hover token.** If
+   you find yourself reaching for `--color-panel-alt` in a `:hover` block,
+   that's the bug this comment is about. */
 
 .ui-btn {
   display: inline-flex;
@@ -152,8 +161,10 @@
   font-weight: 500;
 }
 
+/* The wash rather than a fill, because the background here is a gradient slot
+   and a `background` on hover would drop it. */
 .ui-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.1);
+  box-shadow: inset 0 0 0 999px var(--color-hover-wash);
 }
 
 .ui-btn-secondary {
@@ -164,7 +175,7 @@
 
 .ui-btn-secondary:hover:not(:disabled) {
   border-color: var(--color-accent-faint-border);
-  background: var(--color-accent-faint);
+  background: var(--color-accent-hover);
 }
 
 .ui-btn-danger {
@@ -175,7 +186,7 @@
 }
 
 .ui-btn-danger:hover:not(:disabled) {
-  filter: brightness(1.1);
+  box-shadow: inset 0 0 0 999px var(--color-hover-wash);
 }
 
 /* --- Icon buttons ---
@@ -206,7 +217,7 @@
 }
 
 .ui-icon-btn:hover:not(:disabled) {
-  background: var(--color-panel-alt);
+  background: var(--color-hover);
   color: var(--color-text-primary);
 }
 

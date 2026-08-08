@@ -185,6 +185,7 @@ Identity, the visual half — and the reversibility machinery that has to exist 
 - ~~**Import a theme, or a palette from another app**~~ — 2026-08-08, from two asks in one breath — a button so a theme file doesn't have to be dragged into a folder by hand, and some way to bring her other project's palette across without picking through it. Both are the same button. A `.css` is copied into the themes folder as-is; a `.json` goes through `palette-import.ts`, which works the roles out and writes what it guessed into the file's header. **The rule this one is built on is the contrast rule from two bullets up, applied to input nobody vetted: every text and border step is *solved* for a ratio against both surfaces rather than picked, so a file from outside can't land below the floor the built-ins are held to.** The second rule — names are a hint, not an instruction — is in `docs/handoff.md` with the case that forced it. - ~~**Abyssal, a seventh built-in**~~ — 2026-08-08, the other half of the ask above: her CharSnap palette, run through the importer and then hand-tuned where the numbers said to. It clears the "different room, not a different shade" bar on luminance as much as hue — `#00253d` is a lit ocean, not another dark. **The rule the tuning pass produced: the importer solves for a *floor* and a built-in is held to the *band* the other six sit in** — four values moved for that reason and each one is justified in the comment above its block in `index.css`. It also turned up a real defect in the importer, now fixed: callout text was mixed toward the body text, so all three callouts converged on one hue. The contrast rule is now **enforced by a test** (`palette-import.test.ts` parses `index.css`) rather than only written down, which is what should have happened when all six themes failed it at once.
 - **Bundle the app's *default* fonts if she changes them.** The 98-family library ships, so nothing else is blocked on bundling — but `--font-ui`/`--font-display`/`--font-prose`'s defaults are still Inter/Fraunces/Newsreader in `index.css`, and moving those is a separate decision from her picking fonts for herself.
 - **Changelog viewer** in Settings, plus an **About** dialog. `CHANGELOG.md` renders via a Vite raw import.
+- **Search in Settings.** Taken from Obsidian 1.13, which added it because their settings panel got too big to scan — ours is going the same way and is most of the reason why: Appearance alone now holds themes, the theme editor, 98 fonts, sixteen colours, twelve gradients and two text sliders, and Phase 18 will add block settings on top. Cheaper to build now, while there are few enough settings to test it against. Arrow-key navigation between results comes with it; their `Ctrl/Cmd-F`-to-refocus is worth copying too.
 
 **Answered 2026-08-06:** the default was hers to decide and she decided — `midnight` leads the list, `dark` is the alternate. Her earlier worry (*"im afraid of making the default insane because i dont want ppl to be turned off by it"*) resolved by seeing it running rather than by discussing it, which is the pattern: build it switchable, let her look at it.
 
@@ -214,6 +215,13 @@ Small things, felt daily. Independent of each other; safe to ship piecemeal.
 - **Hover previews** on wikilinks and mentions. The README already claims these exist; they don't.
 - **"Create new" landing page** — a blank untitled page that offers the template picker inline, so pages can be spammed out and typed later.
 - **Bookmarks rail** — pinned pages as icon tiles under the tree search, fed by "Set as shortcut" from Phase 15.
+- **The small-friction batch**, lifted from Obsidian 1.13's own list. Each is a line or two, none depends on the others, and they're the kind of thing that's only ever felt as vague clumsiness rather than reported as a bug — which is why they're written down rather than left to be noticed:
+  - `Escape` cancels a rename and **leaves the tree focused** (today focus escapes with it);
+  - `Escape` clears the current selection;
+  - auto-reveal doesn't fire while a file or folder is being renamed;
+  - `Shift`-arrow extends a multi-selection from the keyboard;
+  - `Ctrl-N`/`Ctrl-P` move through suggestion lists — the wikilink autocomplete, the quick switcher — on every platform, not just macOS;
+  - closing the quick switcher or command palette with `Escape` restores the selection that was there before it opened.
 
 ---
 
@@ -232,6 +240,11 @@ Fold in the queued **duplicate-on-multi-selection** fix while in here; it's the 
 ## Phase 16 — Images & Tags
 
 - **Image slot buttons**, per the user's screenshot: change image, reposition, expand to lightbox, ALT text, Set cover. The remove **×** becomes hover-only. Note the *banner* already has upload, drag-to-reposition and hover-× (`PageBanner.tsx`) — this phase is about the sidebar portrait, which doesn't.
+- **What the lightbox actually does**, taken from Obsidian 1.13/1.14 rather than designed from nothing — the bullet above said "expand to lightbox" and stopped there. Three details, and they're what separates a big picture from something usable on a character page with six portraits on it:
+  - **the file name of the current image is shown**;
+  - **arrow between every image embedded in the current page**, not just the one clicked;
+  - **click and drag to pan** within a zoomed image.
+- **Keyboard control of images in the editor**, same source. Select an image with the keyboard; `+`/`-` resize it, `0` resets, backspace deletes it, `Enter` edits, `Ctrl/Cmd-C`/`X` copy or cut. Paired with a change worth copying for its own sake: Obsidian *stopped* auto-expanding an image to reveal its filename when the cursor moves near it. That flicker is cheaper never to build than to remove later, so **don't build the auto-expand**.
 - **Tag picker** — a search box over a checkbox list of every tag in the project, reached from a **+** next to the existing chips.
 
 ---
@@ -265,7 +278,7 @@ Keep the distinction sharp — **properties** are labelled facts (`Age: 26`); **
 
 Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
 
-- **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else.
+- **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else. **Obsidian's "File Recovery" is the shape to copy**, rather than designing one: automatic periodic snapshots kept on disk, a per-file list of past versions you can browse and restore, and arrow-key navigation through that list (the keyboard part is new in 1.13). Copying a known-good model matters more here than anywhere else in this document, because this is the feature that exists to catch the failure that already happened once (`docs/handoff.md` §Storage) and a half-designed version of it is worse than none — it would be trusted.
 - **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
 
 ---
@@ -273,6 +286,8 @@ Unglamorous and probably the highest-value work in this document. This app has a
 ## Phase 20 — Markdown & Folder Import
 
 **Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
+
+**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
 
 JSON and HTML are separate and lower priority. World Anvil is dropped (see Future Features).
 

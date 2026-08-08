@@ -14,7 +14,7 @@ import {
   toHex,
   type ThemeDraft,
 } from "./theme-editor";
-import { GRADIENT_SLOTS } from "../constants/theme-tokens";
+import { AUTO_TOKENS, GRADIENT_SLOTS } from "../constants/theme-tokens";
 
 describe("toHex", () => {
   it.each([
@@ -32,6 +32,54 @@ describe("toHex", () => {
   // Null lets the caller leave it alone instead of replacing it with a guess.
   it.each(["rebeccapurple", "color-mix(in srgb, red, blue)", "var(--color-bg)", ""])("leaves %s alone", (input) => {
     expect(toHex(input)).toBeNull();
+  });
+
+  // The hover tokens are `color-mix(in oklab, …)`, and a browser hands back the
+  // *resolved* mix — `oklab(…)`, never a hex. Reading it is what stops every
+  // hover swatch in Settings coming up black. See fromOklab in theme-editor.ts.
+  describe("oklab and oklch", () => {
+    it.each([
+      ["oklab(0 0 0)", "#000000"],
+      ["oklab(1 0 0)", "#ffffff"],
+      ["oklch(0 0 0)", "#000000"],
+      ["oklch(1 0 0)", "#ffffff"],
+    ])("%s → %s", (input, expected) => {
+      expect(toHex(input)).toBe(expected);
+    });
+
+    // Both values below were read out of a real browser — the oklab string is
+    // what Chrome resolves the token to, and the hex is what Chrome paints for
+    // that string. So these pin the conversion to the engine's own answer
+    // rather than to ours, and they fail if it drifts.
+    it("matches the browser on --color-hover for the dark theme", () => {
+      // color-mix(in oklab, #1a1a22 92%, #e8e8ee)
+      expect(toHex("oklab(0.27835 0.0039016 -0.0143933)")).toBe("#272830");
+    });
+
+    it("returns the accent exactly when the mix is a no-op", () => {
+      // color-mix(in oklab, #5eead4 24%, transparent) keeps the hue and drops
+      // only the alpha, so this has to land back on the accent to the byte.
+      expect(toHex("oklab(0.854872 -0.125014 -0.00232285)")).toBe("#5eead4");
+    });
+
+    it("reads percentages and slash alpha, and ignores the alpha", () => {
+      expect(toHex("oklab(50% 0 0)")).toBe(toHex("oklab(0.5 0 0)"));
+      expect(toHex("oklab(0.5 0 0 / 0.24)")).toBe(toHex("oklab(0.5 0 0)"));
+      expect(toHex("oklch(0.5 0 0 / 24%)")).toBe(toHex("oklch(0.5 0 0)"));
+    });
+
+    it("treats a powerless component as zero rather than giving up", () => {
+      expect(toHex("oklch(0.5 0 none)")).toBe(toHex("oklch(0.5 0 0)"));
+    });
+
+    it("clamps rather than returning something out of gamut", () => {
+      const hex = toHex("oklch(0.9 0.4 140)");
+      expect(hex).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it.each(["oklab(0.5 0)", "oklab(a b c)", "oklab()"])("still refuses %s", (input) => {
+      expect(toHex(input)).toBeNull();
+    });
   });
 });
 
@@ -146,6 +194,16 @@ describe("seedFromDocument", () => {
 
   it("skips a token the document doesn't resolve", () => {
     expect(seedFromDocument(() => "")).toEqual({});
+  });
+
+  // The one deliberate hole in "a copy has to be complete". Writing hover out
+  // would pin it to the panel colour at the moment of the copy, so the next
+  // change to the backgrounds would leave it behind — which is the drift the
+  // mixes exist to stop. See AUTO_TOKENS in constants/theme-tokens.ts.
+  it("leaves the auto tokens out so a copy's hover keeps following its panels", () => {
+    const colors = seedFromDocument(() => "#151e2e");
+    for (const token of AUTO_TOKENS) expect(colors).not.toHaveProperty(token);
+    expect(colors["--color-panel"]).toBe("#151e2e");
   });
 });
 

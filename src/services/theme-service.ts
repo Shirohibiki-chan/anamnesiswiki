@@ -263,6 +263,42 @@ export function applyBootBackground(): string {
   return bg;
 }
 
+/**
+ * What a token *paints as*, which is not the same question as what it's set to.
+ *
+ * `getComputedStyle(root).getPropertyValue("--x")` hands back a custom
+ * property's token stream with `var()`s substituted and nothing else evaluated.
+ * For a plain hex that's the same string either way, which is why every caller
+ * used it happily until the hover tokens arrived. Those are
+ * `color-mix(in oklab, …)`, and the raw read returns exactly that text —
+ * `toHex` can't read it, so every hover swatch in Settings came up black while
+ * the app was plainly showing a colour.
+ *
+ * Painting it onto a throwaway element and reading the colour back makes the
+ * engine do the arithmetic, so a mix arrives as `oklab(…)` and `toHex` can
+ * take it from there. Works for anything CSS can evaluate — a mix, a relative
+ * colour, a named colour, a hand-written `oklch()` — which is the point: this
+ * is the read for "show me what's on screen", and what's on screen is decided
+ * by the engine, not by our parser.
+ *
+ * Kept here rather than in theme-editor.ts because that module is pure text ↔
+ * values and deliberately touches neither disk nor document; this needs the
+ * document. Callers that want the *declared* value still read the property
+ * directly — the two questions are different and both get asked.
+ */
+export function resolveTokenColor(token: string): string {
+  const probe = document.createElement("div");
+  // Out of the layout and out of the way; it never paints, it's only measured.
+  probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none";
+  probe.style.color = `var(${token})`;
+  document.documentElement.append(probe);
+  try {
+    return getComputedStyle(probe).color;
+  } finally {
+    probe.remove();
+  }
+}
+
 /** Clamped here rather than trusted, since it round-trips through a settings file. */
 export function applyTextScale(scale: number): void {
   const safe = Number.isFinite(scale) ? Math.min(TEXT_SCALE_MAX, Math.max(TEXT_SCALE_MIN, scale)) : DEFAULT_TEXT_SCALE;
