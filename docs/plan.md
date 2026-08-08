@@ -229,6 +229,12 @@ The problem both solve is the one you only get after a project is big: you can s
 Small things, felt daily. Independent of each other; safe to ship piecemeal.
 
 - **Back / forward / home buttons.** Needs a navigation history stack — a separate thing from Phase 10's undo history, which reverses *edits*, not *location*.
+
+- **Focus a folder as the top of the tree**, with a path bar above it to climb back out. Right-click → *Focus here*, and that folder's contents sit at the root; the path bar is the way back. This is the answer to nesting that has gone too deep to read — the user hit it at nine levels, where the names are gone entirely and only indent is left. It's the same move the universe selector makes (Phase 22), one level down, and the two compose: focus inside whichever universe you're in.
+
+  **Three cheaper things already take the pressure off**, which is why this is one Phase 14 line and not its own phase. Indent guides and an 18px indent shipped 2026-08-08 and buy back most of a name at eight levels. The universe selector removes two levels from the AU tree on its own. Focus is for what's left.
+
+  **Obsidian's Breadcrumbs plugin is not this.** Raised by the user 2026-08-08 and checked: it never touches the file explorer. It builds note-to-note hierarchies out of frontmatter and gives trail, matrix, prev/next and diagram views over them. Most of what it does is already in this plan under other names — the trail is the clickable breadcrumb already sitting above every page title (`page/PageTitle.tsx`), its tree and matrix views are Phase 18's Subpage Index and Backlinks blocks, prev/next chains are Phase 25's storylines, and its diagrams are Phase 24's graphs. Nothing left to lift from it.
 - **Double-click expands a folder**, and rename moves to the right-click menu. Note this is a *swap*: `TreeItem.tsx` already renames on double-click (react-arborist's default). Ships with a setting to put it back.
 - **Resizable sidebars.**
 - **Show in system explorer.**
