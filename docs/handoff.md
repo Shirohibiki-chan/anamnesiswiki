@@ -765,7 +765,7 @@ is below.
     current value is still the one `deriveTokens` would have produced for the
     colour that was there before. Anything else is a value somebody chose.
   - `backupCssFile` keeps one copy per file per session under
-    `themes/backups`, taken inside `flushThemeWrite` *before* the write —
+    `themes/backups`, taken inside `flushThemeEdit` *before* the write —
     that's the last moment the on-disk file is still hers. Nothing about a
     failed backup may block an edit she asked for; it sets `backupFailed` and
     the panel stops promising a copy.
@@ -778,6 +778,21 @@ is below.
   didn't, and it presented as a reload that only half worked. `scanFolders` now
   reconciles `themeId` against the selected file and persists the correction,
   because the settings file stores the id too.
+
+- **A picker being dragged shows its change with an inline custom property, and
+  writes nothing until the hand stops.** `previewDraft` sets the changed token
+  on the root element and moves the draft; `flushThemeEdit` — on the same 400ms
+  debounce that always guarded the disk write — does the file text, the vetting,
+  `apply()` and the save. The split exists because the old path ran *all* of
+  that per `input` event: two stylesheet reparses, two forced style recalcs
+  (`readThemeFonts` and `applyBootBackground` both read the document back), and
+  a synchronous `localStorage` write, at drag frequency. **`apply()` must call
+  `clearPreviewedTokens()` first** — an inline property outranks every
+  stylesheet, so anything measuring the document while previews are up measures
+  the preview. Two things deliberately aren't previewed: `deriveTokens`' tints,
+  because guessing whether one is app-written or hand-tuned would make it snap
+  back on release, and a gradient being switched on or off, because that adds or
+  removes declarations rather than changing a value — those commit immediately.
 
 - **"Make a copy I can edit" has to write out everything the theme was using,
   not just the colours.** The theme being copied is not in the cascade behind

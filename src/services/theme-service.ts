@@ -185,6 +185,47 @@ export function applySnippetCss(css: string): void {
 }
 
 /**
+ * Tokens currently held on the root element for a control that's being dragged.
+ *
+ * Module-level for the same reason the store's write timer is (CLAUDE.md rule
+ * 8): a drag spans hundreds of events and the set of what's overridden has to
+ * survive all of them.
+ */
+const previewing = new Set<string>();
+
+/**
+ * One token, straight onto the root element, for the length of a drag.
+ *
+ * The slow way to show a colour change is the honest one: rewrite the theme's
+ * file text, vet it, and replace the `<style>` element's contents. That reparses
+ * a stylesheet and restyles the document, and it was happening on every `input`
+ * event a colour swatch or an opacity slider produced — which is why dragging
+ * one felt like wading.
+ *
+ * An inline custom property is one declaration on one element. It's also the
+ * highest-priority place to put it, which is what makes it a *preview* and not
+ * a change: nothing in any stylesheet can contradict it, so the window shows
+ * exactly the value under the cursor. `clearPreviewedTokens` takes them all
+ * back off the moment the real stylesheet lands.
+ *
+ * The one thing it can't preview is a token something else was overriding — a
+ * snippet that sets `--color-bg`, say. During the drag the picker wins; when
+ * the edit commits, the snippet does. Rare enough to accept, and the file is
+ * still correct either way.
+ */
+export function previewToken(token: string, value: string): void {
+  document.documentElement.style.setProperty(token, value);
+  previewing.add(token);
+}
+
+/** Every previewed token, removed. Called at the top of the store's `apply`. */
+export function clearPreviewedTokens(): void {
+  if (previewing.size === 0) return;
+  for (const token of previewing) document.documentElement.style.removeProperty(token);
+  previewing.clear();
+}
+
+/**
  * Her font choices, as inline properties on the root element — so they beat
  * both the base tokens and any theme's, which is right: a font she picked in
  * Settings shouldn't be undone by switching theme. An unset slot is removed
