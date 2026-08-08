@@ -779,6 +779,19 @@ is below.
   reconciles `themeId` against the selected file and persists the correction,
   because the settings file stores the id too.
 
+- **The themes and snippets folders are watched, and the watch has two rules
+  that aren't optional.** `watchCssDirs` is non-recursive, because `backups`
+  lives *inside* the themes folder and the app writes to it — a recursive watch
+  reloads off the back of its own safety copy. And the store ignores events
+  inside `SELF_WRITE_QUIET_MS` of its own write (`lastSelfWrite`), because the
+  watcher can't tell her save from ours: without it, every debounced write from
+  a dragged colour picker fires a rescan, and `scanFolders` starts by flushing
+  the pending write, so the debounce stops debouncing. The `watch` feature on
+  `tauri-plugin-fs` is off by default — it's enabled in `src-tauri/Cargo.toml`,
+  with `fs:allow-watch`/`fs:allow-unwatch` in the capability. A watch that can't
+  be started is caught and dropped silently on purpose; "Check for new ones"
+  is the fallback, so the failure costs a step rather than the feature.
+
 - **A gradient that's off must not be written at all.** `--gradient-x: ;` is not
   the same as absent: every surface reads it as `var(--gradient-x, none)`, and a
   declared-but-empty custom property resolves to *nothing*, which turns

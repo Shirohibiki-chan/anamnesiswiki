@@ -20,7 +20,12 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
-tauri-plugin-fs = "2"
+# `watch` is off by default and pulls in `notify`. It's on because the themes
+# and snippets folders are hers to edit in any text editor, and an app that
+# only notices a change when you remember to press a button isn't a live
+# preview — it's a reload button with extra steps. Local filesystem events
+# only; nothing here leaves the machine.
+tauri-plugin-fs = { version = "2", features = ["watch"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-store = "2"
 tauri-plugin-http = "2"

@@ -13,7 +13,16 @@ import {
   type FontSlotKey,
 } from "../constants/themes";
 import * as appSettings from "../services/app-settings-service";
-import { backupCssFile, deleteCssFile, ensureCssDir, readCssDir, sanitizeSegment, writeCssFile } from "../services/filesystem-service";
+import {
+  backupCssFile,
+  deleteCssFile,
+  ensureCssDir,
+  readCssDir,
+  sanitizeSegment,
+  watchCssDirs,
+  writeCssFile,
+  type StopWatching,
+} from "../services/filesystem-service";
 import { showFolder } from "../services/dialog-service";
 import type { GradientSlot } from "../constants/theme-tokens";
 import {
@@ -190,6 +199,27 @@ const WRITE_DELAY_MS = 400;
  */
 const backedUp = new Set<string>();
 
+/**
+ * The live watch on the themes and snippets folders, and which two folders it
+ * covers. Module-level for the same reason as the timer above: there must only
+ * ever be one, and it has to outlive every render of the settings screen —
+ * hand-editing a theme with Settings closed still has to move the window.
+ */
+let stopWatching: StopWatching | null = null;
+let watchedFolders = "";
+
+/**
+ * When the app itself last wrote a theme file.
+ *
+ * The watcher can't tell her save from ours, and ours arrive in bursts — a
+ * colour picker being dragged writes every time the hand pauses. Reacting to
+ * our own write would make every one of those trigger a rescan, and a rescan
+ * flushes the pending write, which is precisely what the debounce exists to
+ * avoid. So changes landing in the moment after the app wrote are treated as
+ * the echo they almost always are.
+ */
+let lastSelfWrite = 0;
+const SELF_WRITE_QUIET_MS = 800;
 
 export const useThemeStore = create<ThemeStoreState>((set, get) => {
   /**
@@ -218,7 +248,38 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       set(folder ? { backupFolder: folder, backupFailed: false } : { backupFailed: true });
     }
 
+    // Stamped either side of the write: the watcher's clock starts when the
+    // file changes, and the change is somewhere inside this await.
+    lastSelfWrite = Date.now();
     await writeCssFile(pending.dir, pending.file, pending.css).catch(() => {});
+    lastSelfWrite = Date.now();
+  }
+
+  /**
+   * Keeps one watch running over the current pair of folders.
+   *
+   * Torn down and rebuilt only when the folders themselves change, which
+   * happens when the projects folder is moved in Settings.
+   */
+  async function ensureWatching(themesDir: string, snippetsDir: string): Promise<void> {
+    const folders = `${themesDir} ${snippetsDir}`;
+    if (stopWatching && watchedFolders === folders) return;
+
+    stopWatching?.();
+    stopWatching = null;
+    watchedFolders = "";
+    try {
+      stopWatching = await watchCssDirs([themesDir, snippetsDir], () => {
+        if (Date.now() - lastSelfWrite < SELF_WRITE_QUIET_MS) return;
+        void get().scanFolders();
+      });
+      watchedFolders = folders;
+    } catch {
+      // No Tauri side to ask (`pnpm dev`), or the OS declined a watch on this
+      // folder — a network drive, most likely. "Check for new ones" is still
+      // there and still does the whole job, which is why this can be quiet:
+      // the watcher removes a step rather than being the only way through.
+    }
   }
 
   function queueThemeWrite(dir: string, file: string, css: string): void {
@@ -472,6 +533,11 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         });
         apply();
         syncDraft();
+        // Started from here rather than from `loadAppearance`, because this is
+        // the only place that knows the folders exist — `ensureCssDir` above
+        // has just created them, and a watch on a folder that isn't there yet
+        // fails rather than waiting for it.
+        void ensureWatching(themesDir, snippetsDir);
         // Persisted for the same reason as `lost`: the settings file records
         // the id as well as the filename, so a rescan that corrects one and
         // doesn't save it hands the stale one straight back on next launch.
@@ -576,7 +642,12 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       // of this one" has to mean.
       const css = serializeTheme(label, themeId, { colors, resolved: colors, gradients: {} }, new Date().toISOString().slice(0, 10));
 
+      // Same echo suppression as the edit path: this scans deliberately on the
+      // next line, and the watcher reporting the same event a moment later
+      // would only do it again.
+      lastSelfWrite = Date.now();
       await writeCssFile(state.themesDir, file, css);
+      lastSelfWrite = Date.now();
       await get().scanFolders();
       await get().selectTheme(themeId, file);
     },
@@ -592,7 +663,9 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       await flushThemeWrite();
       set({ deleteError: null });
       try {
+        lastSelfWrite = Date.now();
         await deleteCssFile(state.themesDir, file);
+        lastSelfWrite = Date.now();
       } catch {
         // Locked by an editor, refused by permissions, drive unplugged. Say
         // so and name the path — the folder is hers and she can finish the job

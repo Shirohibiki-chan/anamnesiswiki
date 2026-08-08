@@ -1,11 +1,20 @@
 # Changelog
 
+## 2026-08-08
+
+### Theme files reload themselves
+
+- **Save a theme in a text editor and the window changes with it.** No button, no switching away to another theme and back. The app now watches the themes and snippets folders and picks up anything that appears, changes or disappears in them, so a `.css` file open in Notepad on one monitor and the app on the other behaves the way it looks like it should.
+- **Same for snippets** — turning one on, editing it, and saving now shows up straight away.
+- **"Check for new ones" is still there.** It's a fallback rather than the way through: watching a folder can be refused, most likely on a network drive, and if that happens the button does the whole job the way it always did.
+- Fixed a stray character in the note about where spare copies of theme files are kept — it read `themes` followed by nonsense instead of `themes/backups`.
+
 ## 2026-08-07
 
 ### Your own CSS survives the colour pickers
 
 - **Editing a colour in the app no longer rewrites your theme file.** If you'd hand-written a theme — your own rules, your own comments, anything beyond the twenty-odd colours the pickers know about — touching a single swatch replaced the whole file with the app's version of it. No warning, no undo, and it looked like it had worked. The pickers now change the values they were asked to change and leave every other byte of the file exactly as it was.
-- **A spare copy is kept, just in case.** The first time the app is about to change one of your theme files in a session, it puts a copy of what was there in `themesackups`. One copy per theme, replaced next time — it's a safety net, not a history.
+- **A spare copy is kept, just in case.** The first time the app is about to change one of your theme files in a session, it puts a copy of what was there in `themes/backups`. One copy per theme, replaced next time — it's a safety net, not a history.
 - **The app no longer bakes its own vetting into your file.** If a theme tried to load something from the internet, the app declines to fetch it — but it was writing that refusal back into your stylesheet the moment you touched a picker. What it won't load and what it's allowed to change are two different things.
 - The Colours panel now says all of this up front, rather than leaving you to find out by risking a file.
 
