@@ -22,27 +22,11 @@ LK's atlas — nested image maps with clickable pins that link to wiki pages —
 
 **Timeline visualization (calendar-based)**
 
-A view that lays out Event-template nodes on a chronological axis, with per-event pins that open the underlying page. **Superseded 2026-08-08, not cut.** The user's answer to "what happened when" is now **Phase 24 — Storylines**, which orders events by what leads to what instead of by date. That's a deliberate choice rather than a workaround: she doesn't think in calendar years, and a date field she can't fill is the thing that stops the writing.
+A view that lays out Event-template nodes on a chronological axis, with per-event pins that open the underlying page. **Superseded 2026-08-08, not cut.** The user's answer to "what happened when" is now **Phase 25 — Storylines**, which orders events by what leads to what instead of by date. That's a deliberate choice rather than a workaround: she doesn't think in calendar years, and a date field she can't fill is the thing that stops the writing.
 
 The original blocker still stands if a calendar view is ever wanted anyway: Events have no reliable date data. `when` is a free string like "Year 872, Third Age," which nothing can sort, and a real date schema — one that copes with invented calendars — is the design work, not the chart. Storylines are the cheaper answer precisely because they need no such schema. Revisit only if she starts asking for years.
 
 ---
-
-**Alternate universes**
-
-Raised by the user 2026-08-08, and she's unsure of it herself. The idea: AUs (Canon, Demonic AU, Merfolk AU) become top-level contexts rather than folders, with a global switcher that filters the whole interface — tree, relationship webs, storylines — to whichever one you're in. Underneath, each character would have one base profile plus per-AU overrides, so there's no maintaining five copies of the same person.
-
-**Recommendation: take the first half, leave the second.**
-
-The context switcher is worth building. It's a filter over the folder structure that already exists (`AUs/Demonic AU/…`), it changes no data, and it delivers most of what she described — pick an AU and the tree, search, collections, graphs and storylines only show that world.
-
-The base-profile-plus-overrides half is the risky part, and it argues against her own use case:
-
-- **Overrides pay off when the variants are mostly the same.** A demonic Valera and a merfolk Valera differ in species, appearance, history, relationships and most of the prose. When the override set approaches "everything," the base profile is pure indirection. The data-drift argument assumes she wants the copies in sync — in AUs, divergence is usually the whole point.
-- **It puts a question in front of every keystroke:** am I editing the base or this AU's version? That's easy to get wrong mid-sentence, and getting it wrong quietly edits canon. It also breaks the promise that her writing stays legible outside the app — a character stops being one readable file and becomes a base plus a stack of patches.
-- **It's a schema change that touches every read and every write in the app.** Nothing else on this list costs that much.
-
-**The hedge, if she wants one:** a plain "variant of" link between pages — demonic Valera points at canon Valera. That buys cross-AU navigation and somewhere to hang a compare view later, with no inheritance and no resolution logic anywhere. If she ever does find herself retyping the same fields across five copies, inheritance can be built on top of that link — the link is the prerequisite either way, so it isn't wasted work.
 
 ---
 
@@ -306,7 +290,7 @@ Keep the distinction sharp — **properties** are labelled facts (`Age: 26`); **
 - Per-block context menu: title / no-title, colour, duplicate, move, remove.
 - **Blocks:** Text Box · Tags · Alias · Link Block · Tag Index · Subpage Index · Backlinks · Image.
 - **Meters:** Progress Bar · Circle · Semi-circle · Gauge · Token Pool · Rating.
-- **Backlinks, Tag Index and Subpage Index are one job underneath** — an index of what points at what. Build that service once; it serves all three blocks and is the same data Phase 23's graphs need.
+- **Backlinks, Tag Index and Subpage Index are one job underneath** — an index of what points at what. Build that service once; it serves all three blocks and is the same data Phase 24's graphs need.
 - **Alias** punches above its weight — alternate names that feed search and `[[wikilinks]]`, so "Val" finds Valera Jiang.
 - **No YouTube or Spotify embeds.** The user's reason, 2026-07-31, was aesthetic — LK's are ugly — not the offline policy, which she has never personally agreed with. If embeds come back, that's a policy conversation to have with her, and she'll likely wave it through; ask anyway, because the boundary is still written strict in `CLAUDE.md` at her request.
 
@@ -340,13 +324,33 @@ The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` an
 
 ---
 
-## Phase 22 — Collections
+## Phase 22 — Universes
+
+Decided 2026-08-08. A universe is a top-level container for one version of the world — Canon, Demonic AU, Merfolk AU, Pokemon AU, Timeswap AU — plus a switcher that says which one you're working in.
+
+**A universe is its own kind of node, not a folder.** That's the whole point, and it's the user's word for the problem: folders get crazybonkers. A folder can sit anywhere, nest inside anything, and means nothing in particular, so today an AU character is `AUs / Demonic AU / Characters / Valera Jiang` — four levels of indent before a name, and a wrapper folder whose only job is holding the other folders. Universes are pinned directly under the project, can't nest inside each other, and can't be dragged into anything. The `AUs/` wrapper stops existing.
+
+**The switcher is what buys back the indent.** Pick a universe and the sidebar shows *its* contents at the root rather than nested beneath it — in Demonic AU, that character is `Characters / Valera Jiang`. Two levels gone without deleting anything. Search, collections, graphs and storylines scope to the same choice, with an "all universes" setting for when she wants the whole project at once.
+
+**Following a link out of the current universe switches to it** rather than refusing to open the page. Blocking would be worse than moving, and silently showing a page from a universe you aren't in is how you edit the wrong Valera.
+
+**Cheap on disk, which is the point.** Each universe stays a directory of its own; the container's JSON just gets a template key marking it a universe. `template-registry.ts` already carries `canHaveChildren` per template, so this is a ninth template plus a root-only rule in the reparent guard (`project-store.ts`) and the drop-target check (`TreePanel.tsx`). Nothing about how a page is read or written changes. Existing projects need a one-time migration that lifts each AU out of the `AUs/` folder and marks it.
+
+**Explicitly not building: base profiles with per-AU overrides.** Proposed and rejected by the user the same day, and worth not re-opening. Overrides only pay off when the variants are mostly identical, and hers diverge on species, appearance, history, relationships and most of the prose — the base profile would be pure indirection. It would also put "am I editing canon or this AU?" in front of every keystroke, and turn a character on disk into a base plus a stack of patches, which cuts against the plain-JSON promise. If cross-universe navigation is ever wanted, the cheap version is a plain "variant of" link between pages, no inheritance.
+
+**Sequenced before the three big views** so Collections, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. It's small enough to pull much earlier if the daily navigation win is worth more than the ordering; it doesn't need anything from Phase 21.
+
+**Open:** where pages true in every universe live — a species, a map, a magic system. Either a shared universe that's always visible, or pages allowed to sit at the project root outside any universe. Not yet decided; ask before building.
+
+---
+
+## Phase 23 — Collections
 
 A filtered table or gallery view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
 
 ---
 
-## Phase 23 — Graphs
+## Phase 24 — Graphs
 
 Both, per the user's decision 2026-07-31, and in this order:
 
@@ -357,7 +361,7 @@ Both run on the reference index built in Phase 18, so neither starts from nothin
 
 ---
 
-## Phase 24 — Storylines
+## Phase 25 — Storylines
 
 Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer to "what happened next," and it replaces the calendar timeline** rather than sitting beside it — see Future Features → Timeline visualization.
 
@@ -369,7 +373,7 @@ Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer
 
 **Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
 
-**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom/node/edge rendering from Phase 23. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. If AUs ever land, a storyline belongs to one — a fork in reality has its own sequence of events by definition.
+**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom/node/edge rendering from Phase 24. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
 
 ---
 
