@@ -27,7 +27,7 @@ import {
 } from "../services/filesystem-service";
 import { pickThemeFile, showFolder } from "../services/dialog-service";
 import { readPalette, themeFromPalette } from "../services/palette-import";
-import type { GradientSlot } from "../constants/theme-tokens";
+import { AUTO_TOKENS, type GradientSlot } from "../constants/theme-tokens";
 import {
   freeFileName,
   gradientCss,
@@ -36,6 +36,7 @@ import {
   seedFromDocument,
   seedGradient,
   serializeTheme,
+  toHex,
   type Gradient,
   type ThemeDraft,
 } from "../services/theme-editor";
@@ -432,8 +433,33 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     if (!state.themesDir || !state.customThemes.some((t) => t.file === state.themeFile)) return;
 
     for (const [token, value] of Object.entries(previews)) previewToken(token, value);
-    set({ draft });
+    set({ draft: withAutoTokens(draft) });
     queueThemeEdit(draft);
+  }
+
+  /**
+   * Re-reads the auto tokens off the document after something they derive from
+   * has changed.
+   *
+   * The mixes recompute themselves in CSS the moment `--color-panel` changes,
+   * so the *app* was always right. `draft.resolved` is a snapshot taken when
+   * the theme was opened, and nothing was refreshing it — so changing Panels
+   * left the three Hover swatches showing the hover of the panel colour from
+   * before the edit. Reported as the pickers "keeping" the old colour, which is
+   * exactly what they were doing.
+   *
+   * Only the ones the file doesn't declare: a hover she actually chose is in
+   * `draft.colors`, isn't derived from anything, and must not be overwritten by
+   * what the document happens to be showing.
+   */
+  function withAutoTokens(draft: ThemeDraft): ThemeDraft {
+    const resolved = { ...draft.resolved };
+    for (const token of AUTO_TOKENS) {
+      if (draft.colors[token]) continue;
+      const hex = toHex(resolveTokenColor(token));
+      if (hex) resolved[token] = hex;
+    }
+    return { ...draft, resolved };
   }
 
   /**

@@ -2,6 +2,15 @@
 
 ## 2026-08-08
 
+### Hover works on light themes now, and the Hover swatches stop showing the old colour
+
+Two things wrong with this morning's hover change, both found by setting a theme's Panels colour to a pale pink.
+
+- **Hover was still invisible if your theme's text isn't dark.** Hover was worked out by moving your panel colour toward your *text* colour, which is only a sensible direction on a theme that's already finished. Set a pale panel on a theme with pale text and the two cancel out — hover moved by a barely-there amount and looked identical to the box it was on. It's now worked out from the panel colour on its own: light panels get a darker hover, dark panels a lighter one, and nothing else can pull it off course. On the pink theme that took the change from **6 to 43** — from invisible to obvious. Dark themes are unchanged, on purpose.
+- **The three Hover swatches in Settings kept showing the previous colour.** Change Panels and the app hovered correctly straight away, but the swatches went on displaying the hover of the colour you'd just replaced. They now keep up.
+
+Hover still keeps your theme's character — a pink panel gets a deeper pink, not a grey.
+
 ### Hover now follows your theme, instead of ignoring it
 
 - **The colour things go when you hover them is finally part of the theme.** It never was. Every hover in the app quietly borrowed some other colour — the sidebar took the menu colour, buttons took the top-bar colour, highlighted things took the selected-page tint — so nothing in Settings could change hover, because as far as the app was concerned there was no such thing.

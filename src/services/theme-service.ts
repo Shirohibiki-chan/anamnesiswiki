@@ -290,10 +290,23 @@ export function resolveTokenColor(token: string): string {
   const probe = document.createElement("div");
   // Out of the layout and out of the way; it never paints, it's only measured.
   probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none";
-  probe.style.color = `var(${token})`;
+  // A colour no theme would land on, used as both the `var()` fallback and the
+  // probe's own starting value, so that "this token resolves to nothing"
+  // arrives as itself rather than as a plausible wrong answer.
+  //
+  // Worth the two lines: an unresolvable `var()` makes `color` invalid at
+  // computed-value time, and an invalid `color` *inherits*. Without the
+  // sentinel this would quietly hand back whatever text colour the document
+  // happened to be using — and its callers write what they're given into her
+  // theme file. The old `getPropertyValue` read returned `""` there, and the
+  // callers already know to skip that, so `""` is what they get.
+  const sentinel = "rgb(1, 2, 3)";
+  probe.style.color = sentinel;
+  probe.style.color = `var(${token}, ${sentinel})`;
   document.documentElement.append(probe);
   try {
-    return getComputedStyle(probe).color;
+    const resolved = getComputedStyle(probe).color;
+    return resolved === sentinel ? "" : resolved;
   } finally {
     probe.remove();
   }
