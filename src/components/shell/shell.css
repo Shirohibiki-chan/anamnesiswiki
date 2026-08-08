@@ -1260,6 +1260,29 @@
   word-break: break-all;
 }
 
+/* The "what these controls will do to your file" line at the top of Colours.
+   Quieter than .appearance-blocked — it's a reassurance, not a warning, and
+   the two must not look alike or neither gets read. */
+.theme-edit-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
+.theme-edit-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.theme-edit-note code {
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
 /* --- Theme editor (Phase 12) ---
    The colour and gradient pickers. Dense on purpose: twenty colours and twelve
    gradients is a lot of rows, and the two things that keep it navigable are

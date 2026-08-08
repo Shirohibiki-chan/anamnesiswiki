@@ -5,6 +5,7 @@ import {
   freeFileName,
   gradientCss,
   parseGradient,
+  patchTheme,
   readThemeDraft,
   rgba,
   seedFromDocument,
@@ -292,5 +293,128 @@ describe("declared versus resolved", () => {
 
   it("falls back to black only when nothing resolves it either", () => {
     expect(readThemeDraft("").resolved["--color-bg"]).toBe("#000000");
+  });
+});
+
+/**
+ * The rule these all exist to hold: **an edit changes the values it was asked
+ * to change and nothing else.** The pickers used to call `serializeTheme` for
+ * every edit, which rebuilds a file from the tokens this module knows about —
+ * so one click on a swatch replaced a hand-written theme with the app's version
+ * of it. No warning, no undo. That must not be able to happen again quietly, so
+ * it's pinned here rather than left to a comment.
+ */
+describe("patchTheme", () => {
+  const HAND_WRITTEN = `/* Sea Glass — written by hand, don't @ me */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; }
+}
+
+[data-theme="sea-glass"] {
+  /* the good blue */
+  --color-bg: #071a1c;
+  --color-accent-light: #5eead4;
+  --font-display: "Cormorant", serif;
+  --my-own-thing: 4px;
+}
+
+[data-theme="sea-glass"] .ui-btn {
+  letter-spacing: 0.04em;
+}
+`;
+
+  const draftOf = (colors: Record<string, string>, gradients: ThemeDraft["gradients"] = {}): ThemeDraft => ({
+    colors,
+    resolved: colors,
+    gradients,
+  });
+
+  it("changes the value it was asked to and leaves every other byte alone", () => {
+    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({ "--color-bg": "#101820" }), "2026-08-07");
+
+    expect(out).toContain("--color-bg: #101820;");
+    expect(out).not.toContain("#071a1c");
+    // The things a rebuild would have thrown away.
+    expect(out).toContain("/* Sea Glass — written by hand, don't @ me */");
+    expect(out).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(out).toContain('--font-display: "Cormorant", serif;');
+    expect(out).toContain("--my-own-thing: 4px;");
+    expect(out).toContain("letter-spacing: 0.04em;");
+    expect(out).toContain("/* the good blue */");
+  });
+
+  it("adds a token the file never mentioned, at the file's own indentation", () => {
+    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({ "--color-panel": "#0d2325" }), "2026-08-07");
+    expect(out).toContain("\n  --color-panel: #0d2325;");
+    expect(out).toContain("--color-bg: #071a1c;");
+  });
+
+  it("writes into the theme's own block, not a later rule that shares the name", () => {
+    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({ "--color-bg": "#101820" }), "2026-08-07");
+    const block = /\[data-theme="sea-glass"\] \{([\s\S]*?)\}/.exec(out)?.[1] ?? "";
+    expect(block).toContain("--color-bg: #101820;");
+    expect(out.indexOf("--color-bg")).toBeLessThan(out.indexOf(".ui-btn"));
+  });
+
+  it("edits a theme written on :root", () => {
+    const css = ":root {\n\t--color-bg: #000000;\n}\n";
+    const out = patchTheme(css, "Plain", "plain", draftOf({ "--color-bg": "#111111" }), "2026-08-07");
+    expect(out).toBe(":root {\n\t--color-bg: #111111;\n}\n");
+  });
+
+  it("appends a block rather than replacing a file it can't find one in", () => {
+    const css = "/* nothing but a note to self */\n";
+    const out = patchTheme(css, "Note", "note", draftOf({ "--color-bg": "#111111" }), "2026-08-07");
+    expect(out).toContain("/* nothing but a note to self */");
+    expect(out).toContain('[data-theme="note"] {');
+    expect(out).toContain("--color-bg: #111111;");
+  });
+
+  it("takes a gradient's lines out when it's switched off, and only those", () => {
+    const withGradients = `[data-theme="x"] {
+  --color-bg: #000000;
+  --gradient-title: linear-gradient(95deg, #fff, #000);
+  --gradient-title-clip: text;
+  --gradient-title-fill: transparent;
+  --gradient-accent: linear-gradient(100deg, #111, #222);
+}
+`;
+    const out = patchTheme(withGradients, "X", "x", draftOf({ "--color-bg": "#000000" }), "2026-08-07");
+    expect(out).not.toContain("--gradient-title");
+    expect(out).not.toContain("--gradient-accent");
+    expect(out).toContain("--color-bg: #000000;");
+  });
+
+  it("keeps a hand-tuned tint but updates one the app itself wrote", () => {
+    // `--color-accent-faint` here is the app's own derivation of #5eead4;
+    // `--color-callout-info-bg` is not — somebody chose that alpha.
+    const css = `[data-theme="x"] {
+  --color-accent-light: #5eead4;
+  --color-accent-faint: ${rgba("#5eead4", 0.15)};
+  --color-callout-info: #60a5fa;
+  --color-callout-info-bg: rgba(96, 165, 250, 0.5);
+}
+`;
+    const out = patchTheme(
+      css,
+      "X",
+      "x",
+      draftOf({ "--color-accent-light": "#f0a868", "--color-callout-info": "#60a5fa" }),
+      "2026-08-07",
+    );
+    expect(out).toContain(`--color-accent-faint: ${rgba("#f0a868", 0.15)};`);
+    expect(out).toContain("--color-callout-info-bg: rgba(96, 165, 250, 0.5);");
+  });
+
+  it("survives being run over its own output", () => {
+    const once = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({ "--color-bg": "#101820" }), "2026-08-07");
+    const twice = patchTheme(once, "Sea Glass", "sea-glass", draftOf({ "--color-bg": "#101820" }), "2026-08-07");
+    expect(twice).toBe(once);
+  });
+
+  it("changes the last declaration when a token is set more than once", () => {
+    const css = '[data-theme="x"] {\n  --color-bg: #aaaaaa;\n  --color-bg: #bbbbbb;\n}\n';
+    const out = patchTheme(css, "X", "x", draftOf({ "--color-bg": "#cccccc" }), "2026-08-07");
+    expect(out).toBe('[data-theme="x"] {\n  --color-bg: #aaaaaa;\n  --color-bg: #cccccc;\n}\n');
   });
 });

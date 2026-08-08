@@ -23,6 +23,11 @@ export const ASSETS_DIR = "assets";
 export const THEMES_DIR = "themes";
 export const SNIPPETS_DIR = "snippets";
 
+// Where the app parks a copy of a stylesheet before it edits one. A subfolder
+// of whichever folder the file lives in, because `readCssDir` only lists files
+// directly inside a folder — so a backup can never come back as a theme.
+export const BACKUPS_DIR = "backups";
+
 // Prefix for the temporary name a node is parked under mid-move. Several
 // nodes swapping paths have to be staged out of the way first, or one lands on
 // another's name (see filesystem-service's applyRelocations).

@@ -17,6 +17,7 @@ import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schem
 import { canHaveChildren } from "./template-registry";
 import {
   ASSETS_DIR,
+  BACKUPS_DIR,
   FOLDER_META_FILE as FOLDER_FILE,
   MOVE_TEMP_PREFIX,
   PAGE_META_FILE,
@@ -754,4 +755,34 @@ export async function deleteCssFile(dir: string, fileName: string): Promise<void
   const path = joinPath(dir, fileName);
   if (!(await exists(path))) return;
   await remove(path);
+}
+
+/**
+ * Puts a copy of a file in a `backups` subfolder beside it, and says where.
+ *
+ * The safety net under the colour pickers. They edit her file in place and are
+ * careful about it, but careful is not the same as recoverable — there is no
+ * undo on a stylesheet and no version history in a plain folder, so the first
+ * time the app is about to change a file, what was there is kept.
+ *
+ * One copy per file, overwritten by the next session's first edit rather than
+ * accumulating: a folder filling with timestamped near-duplicates is its own
+ * kind of mess, and the copy worth having is the one from before today's
+ * changes. `backups` is a subfolder, and `readCssDir` only looks at files
+ * directly inside a folder, so these never appear in the themes list.
+ *
+ * Returns null if the copy couldn't be made — nothing here may stop an edit she
+ * asked for, so the caller's job is to note it, not to abort.
+ */
+export async function backupCssFile(dir: string, fileName: string): Promise<string | null> {
+  try {
+    const source = joinPath(dir, fileName);
+    if (!(await exists(source))) return null;
+    const folder = joinPath(dir, BACKUPS_DIR);
+    await ensureDir(folder);
+    await writeTextFile(joinPath(folder, fileName), await readTextFile(source));
+    return folder;
+  } catch {
+    return null;
+  }
 }

@@ -282,7 +282,11 @@ export function freeFileName(name: string, taken: readonly string[], sanitize: (
 }
 
 /**
- * The theme file itself.
+ * A theme file, from nothing.
+ *
+ * **Only for a file that doesn't exist yet.** Editing one that does goes
+ * through `patchTheme` below — see the note there, which is the more important
+ * of the two.
  *
  * Shaped to match what the sandbox's "Show me the CSS" produces, down to the
  * header comment, because the two have to be interchangeable. Grouped and
@@ -335,4 +339,127 @@ export function serializeTheme(name: string, themeId: string, draft: ThemeDraft,
   lines.push("}");
   lines.push("");
   return lines.join("\n");
+}
+
+/* --- Editing a file that already exists ----------------------------------- */
+
+const escapeForRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Where a theme's own declarations live inside a file, as offsets into it.
+ *
+ * The named block first, `:root` second. A file that sets its colours on
+ * `:root` is a perfectly ordinary hand-written theme — the app scopes it when
+ * it loads it — and it would be absurd to refuse to edit one.
+ */
+function findBlock(css: string, themeId: string): { open: number; close: number } | null {
+  const patterns = [new RegExp(`\\[data-theme\\s*=\\s*["']?${escapeForRegex(themeId)}["']?\\][^{}]*\\{`, "i"), /:root[^{}]*\{/i];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(css);
+    if (!match) continue;
+    const open = match.index + match[0].length;
+    // Counted rather than matched to the next `}`, so a nested rule — a media
+    // query, a `&:hover` — inside the block doesn't end it early.
+    let depth = 1;
+    for (let i = open; i < css.length; i += 1) {
+      if (css[i] === "{") depth += 1;
+      else if (css[i] === "}") {
+        depth -= 1;
+        if (depth === 0) return { open, close: i };
+      }
+    }
+  }
+  return null;
+}
+
+/** Changes a declaration's value where it already is, or adds it at the end. */
+function setInBlock(block: string, token: string, value: string): string {
+  const pattern = new RegExp(`(^|[;{\\s])(${escapeForRegex(token)})(\\s*:\\s*)([^;}]*)`, "g");
+  // The last one, not the first: later declarations win in CSS, so the last is
+  // the one on screen and therefore the one the picker was showing.
+  let last: RegExpExecArray | null = null;
+  for (let found = pattern.exec(block); found; found = pattern.exec(block)) last = found;
+
+  if (last) {
+    const at = last.index + last[1].length + last[2].length + last[3].length;
+    return block.slice(0, at) + value + block.slice(at + last[4].length);
+  }
+
+  // New to this file. Matched to the indentation of whatever else is in there,
+  // because she reads these files.
+  const indent = /\n([ \t]+)\S/.exec(block)?.[1] ?? "  ";
+  const body = block.replace(/\s+$/, "");
+  const tail = /\s+$/.exec(block)?.[0] ?? "\n";
+  return `${body}\n${indent}${token}: ${value};${tail}`;
+}
+
+/** Takes a declaration out, and its line with it. */
+function removeFromBlock(block: string, token: string): string {
+  return block.replace(new RegExp(`[ \\t]*${escapeForRegex(token)}\\s*:\\s*[^;}]*;?[ \\t]*\\r?\\n?`, "g"), "");
+}
+
+/**
+ * Puts the pickers' values into the file that's already on disk, and changes
+ * nothing else in it.
+ *
+ * **This is the important function in this module.** The editor used to call
+ * `serializeTheme` for every edit, which builds a file from the twenty-odd
+ * tokens the pickers know about — so touching one colour in a theme somebody
+ * had hand-written replaced the whole thing. Their rules, their comments, their
+ * selectors, gone. No warning, no undo, and the app looked like it had worked.
+ *
+ * A theme file is allowed to be anything. The only safe assumption is that
+ * every byte in it was put there on purpose, so the edit is surgical: find the
+ * declaration, change its value, put the file back. What was never mentioned is
+ * never touched, and nothing is removed except a gradient that was switched off
+ * — which is the one case where removing the line *is* the edit.
+ *
+ * The derived tints get the same treatment for the same reason. They're
+ * rewritten only when the file's current value is still the one this module
+ * would have written for the colour that was there before; a value that doesn't
+ * match is one somebody chose, and it stays. The cost is a theme whose
+ * hand-tuned tint no longer matches its accent, which is visible, reversible
+ * and hers. The alternative silently discards it.
+ */
+export function patchTheme(css: string, name: string, themeId: string, draft: ThemeDraft, today: string): string {
+  const range = findBlock(css, themeId);
+  // Nothing in here we can recognise as this theme's declarations — an empty
+  // file, or one that's all comments. Appending a block is additive; replacing
+  // the file is the bug this function exists to fix.
+  if (!range) return `${css.replace(/\s+$/, "")}\n\n${serializeTheme(name, themeId, draft, today)}`.replace(/^\n+/, "");
+
+  let block = css.slice(range.open, range.close);
+
+  // What the file says right now, so the derived tints can tell "the app wrote
+  // this" from "somebody chose this".
+  const before: Record<string, string> = {};
+  for (const token of COLOR_TOKENS) {
+    const hex = toHex(declaration(token, block) ?? "");
+    if (hex) before[token] = hex;
+  }
+  const ours = deriveTokens(before);
+
+  for (const [token, value] of Object.entries(draft.colors)) block = setInBlock(block, token, value);
+
+  for (const [token, value] of Object.entries(deriveTokens(draft.colors))) {
+    const current = declaration(token, block)?.trim();
+    if (current === undefined || current === ours[token]) block = setInBlock(block, token, value);
+  }
+
+  for (const slot of GRADIENT_SLOTS) {
+    const gradient = draft.gradients[slot.key];
+    const extras = slot.text ? [`--gradient-${slot.key}-clip`, `--gradient-${slot.key}-fill`] : [];
+    if (gradient?.on) {
+      block = setInBlock(block, `--gradient-${slot.key}`, gradient.raw ?? gradientCss(gradient));
+      if (slot.text) {
+        block = setInBlock(block, extras[0], "text");
+        block = setInBlock(block, extras[1], "transparent");
+      }
+    } else {
+      for (const token of [`--gradient-${slot.key}`, ...extras]) block = removeFromBlock(block, token);
+    }
+  }
+
+  return css.slice(0, range.open) + block + css.slice(range.close);
 }
