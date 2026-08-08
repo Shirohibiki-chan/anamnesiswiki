@@ -55,6 +55,7 @@ export function useTheme() {
   const isScanning = useThemeStore((state) => state.isScanning);
   const folderError = useThemeStore((state) => state.folderError);
   const deleteError = useThemeStore((state) => state.deleteError);
+  const importError = useThemeStore((state) => state.importError);
   const backupFolder = useThemeStore((state) => state.backupFolder);
   const backupFailed = useThemeStore((state) => state.backupFailed);
 
@@ -68,6 +69,7 @@ export function useTheme() {
   const openThemesFolder = useThemeStore((state) => state.openThemesFolder);
   const openSnippetsFolder = useThemeStore((state) => state.openSnippetsFolder);
   const createTheme = useThemeStore((state) => state.createTheme);
+  const importTheme = useThemeStore((state) => state.importTheme);
   const deleteTheme = useThemeStore((state) => state.deleteTheme);
   const setThemeColor = useThemeStore((state) => state.setThemeColor);
   const toggleGradient = useThemeStore((state) => state.toggleGradient);
@@ -87,6 +89,7 @@ export function useTheme() {
     isScanning,
     folderError,
     deleteError,
+    importError,
     backupFolder,
     backupFailed,
     slots: FONT_SLOTS,
@@ -116,6 +119,7 @@ export function useTheme() {
     openThemesFolder,
     openSnippetsFolder,
     createTheme,
+    importTheme,
     deleteTheme,
     setThemeColor,
     toggleGradient,

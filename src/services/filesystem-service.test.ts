@@ -25,6 +25,7 @@ vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 import {
   buildPathIndex,
   deleteNodes,
+  fileNameFromPath,
   moveNodes,
   PathTooLongError,
   planRelocations,
@@ -464,5 +465,20 @@ describe("watchCssDirs", () => {
     (await watchCssDirs(["/p/themes"], () => {}))();
 
     expect(stop).toHaveBeenCalled();
+  });
+});
+
+describe("fileNameFromPath", () => {
+  it("takes the last segment, whichever slash the path was built with", () => {
+    expect(fileNameFromPath(String.raw`C:\Users\shiro\Downloads\Abyssal.css`)).toBe("Abyssal.css");
+    expect(fileNameFromPath("/home/shiro/palettes/charsnap.json")).toBe("charsnap.json");
+    // Native pickers on Windows hand back backslashes and the app's own
+    // joinPath uses forward slashes, so a path can be either or both.
+    expect(fileNameFromPath(String.raw`C:\Projects/Anamnesis\themes/Grove.css`)).toBe("Grove.css");
+  });
+
+  it("hands back a bare name unchanged, and an empty string for a trailing slash", () => {
+    expect(fileNameFromPath("Abyssal.css")).toBe("Abyssal.css");
+    expect(fileNameFromPath("/p/themes/")).toBe("");
   });
 });

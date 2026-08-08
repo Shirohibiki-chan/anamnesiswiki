@@ -2,6 +2,15 @@
 
 ## 2026-08-08
 
+### Import a theme, or a palette from another app
+
+- **There's an *Import a theme* button in Settings → Theme.** Point it at a `.css` theme somebody sent you and it copies the file into your themes folder and switches to it. That's the "drag it into a folder" step, done for you.
+- **It also takes a `.json` palette** — the list of names and hex codes that palette tools and other apps export. A palette knows it has a colour in it; it doesn't know that colour is a window background, and its names are about the app it came from rather than this one. The importer works the roles out: which one is the window, which is the accent, which is the delete-button red.
+- **Every text and border colour is solved for readability rather than guessed.** The quieter greys, the placeholder text and the three line weights are calculated against both the window and the panels, so an imported theme can't come out less readable than the floor the built-in six are held to — whatever the file said.
+- **A gradient the palette already had gets used.** If the file has a pair like `somethingStart` / `somethingEnd`, that pair goes on the main buttons and the page title. Two colours someone deliberately put together beat anything the app would pick, and it's one line to delete if you disagree.
+- **The guesses are written into the file, in plain English, at the top.** Which key it took the window colour from, which one became the accent, whether it found a gradient. It's a normal theme file after that — open it in Notepad, or keep going in *Colours*.
+- Importing the same file twice gives you two themes rather than overwriting the first, and if the file can't be opened, has no colours in it, or won't save, the panel says which of those happened.
+
 ### The colour pickers keep up now
 
 - **Dragging a colour or an opacity slider isn't laggy any more.** Every tiny movement of a picker was making the app rebuild your theme file, re-check it, swap the whole stylesheet out, measure the fonts and background back off the screen, and save a copy of the lot — a few dozen times a second. It now just changes the one colour while you're dragging, and does the rest once you stop.

@@ -748,6 +748,33 @@ is below.
   understand, and the round trip that lets her build in the sandbox and adjust
   in Settings stops working. `theme-editor.test.ts` guards both directions.
 
+- **Import is a fourth maker of themes and it obeys the same rule: it produces a
+  file in the folder and then gets out of the way.** A `.css` is *copied*, byte
+  for byte — running somebody's hand-written theme back through `serializeTheme`
+  would reflow their file on the way in and lose everything the pickers don't
+  model, which is the same bug `patchTheme` exists to prevent. A `.json` palette
+  is mapped by `palette-import.ts` and written out once; after that it is an
+  ordinary theme file with no memory of having been imported. The id comes from
+  the *scan after the write*, not from the filename — an imported `.css` may
+  declare its own `[data-theme]`, and selecting a guessed id leaves the document
+  wearing a name none of the file's rules match.
+
+- **A palette carries colours but no roles, and its names are a hint rather than
+  an instruction.** The case that settled it is in the test fixture: her
+  CharSnap export calls a near-white `primary`, which is body text, while the
+  colour that behaves like an accent is called `secondary`. So in
+  `palette-import.ts` a matching name only *scores*, and what a colour measures
+  — chroma, luminance, contrast against the window — decides the role. Don't
+  turn the hint lists into a lookup table; the next palette names things
+  differently again.
+
+- **Everything derived in the importer is solved for a ratio, never chosen.**
+  The four text steps and the three border weights binary-search to a target
+  contrast against *both* the window and the panel — see the contrast floor rule
+  above, which this is the same rule applied to input nobody vetted. A theme
+  arriving from outside cannot land below the floor the built-ins are held to,
+  whatever the file said. If a new token needs deriving, derive it the same way.
+
 - **An edit changes the values it was asked to and nothing else. Never
   regenerate a theme file.** The pickers originally called `serializeTheme` on
   every change, which builds a file out of the twenty-odd tokens this app knows

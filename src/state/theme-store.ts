@@ -17,13 +17,16 @@ import {
   backupCssFile,
   deleteCssFile,
   ensureCssDir,
+  fileNameFromPath,
   readCssDir,
+  readTextFileAt,
   sanitizeSegment,
   watchCssDirs,
   writeCssFile,
   type StopWatching,
 } from "../services/filesystem-service";
-import { showFolder } from "../services/dialog-service";
+import { pickThemeFile, showFolder } from "../services/dialog-service";
+import { readPalette, themeFromPalette } from "../services/palette-import";
 import type { GradientSlot } from "../constants/theme-tokens";
 import {
   freeFileName,
@@ -133,6 +136,13 @@ export type ThemeStoreState = {
    */
   deleteError: { file: string; path: string } | null;
   /**
+   * An import that didn't produce a theme, and why. Three outcomes worth
+   * telling apart, because each one has a different next move: a file that
+   * couldn't be opened, a file with no colours in it, and a themes folder that
+   * wouldn't take the copy.
+   */
+  importError: { file: string; reason: "unreadable" | "no-colours" | "unwritable" } | null;
+  /**
    * Where the copy of a theme file taken before this session's first edit went,
    * so the Colours panel can point at it rather than describe it.
    */
@@ -153,6 +163,8 @@ export type ThemeStoreState = {
 
   /** Copies whatever theme is on into a new editable file, and selects it. */
   createTheme: (name: string) => Promise<void>;
+  /** Asks for a `.css` or `.json`, turns it into a theme, and selects it. */
+  importTheme: () => Promise<void>;
   /** Removes a theme's file from the folder. Confirm before calling. */
   deleteTheme: (file: string) => Promise<void>;
   setThemeColor: (token: string, hex: string) => void;
@@ -472,6 +484,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     isScanning: false,
     folderError: null,
     deleteError: null,
+    importError: null,
     backupFolder: null,
     backupFailed: false,
 
@@ -726,6 +739,87 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       lastSelfWrite = Date.now();
       await get().scanFolders();
       await get().selectTheme(themeId, file);
+    },
+
+    /**
+     * A file from anywhere on disk, brought in as a theme.
+     *
+     * Two kinds of file arrive here and only one of them is a theme. A `.css`
+     * is copied across as it is — the format is already the format, and
+     * rewriting it through the serializer would reflow somebody's hand-written
+     * file for no reason. A `.json` is a palette: colours with no idea what any
+     * of them are for, which `themeFromPalette` works out and writes down in
+     * the file so the guesses are visible rather than mysterious.
+     *
+     * Copied into the themes folder rather than read from where it sits,
+     * because a theme is a file in that folder — everything else in Phase 12
+     * assumes it, and a theme that lived somewhere else would break the moment
+     * she moved the original. This *is* the "drag it into a folder" step; the
+     * button just does it for her.
+     */
+    async importTheme() {
+      const state = get();
+      if (!state.themesDir) return;
+      set({ importError: null });
+
+      const path = await pickThemeFile().catch(() => null);
+      if (!path) return;
+      const source = fileNameFromPath(path);
+
+      let text: string;
+      try {
+        text = await readTextFileAt(path);
+      } catch {
+        set({ importError: { file: source, reason: "unreadable" } });
+        return;
+      }
+
+      // Numbered rather than overwritten if the name is taken, same as "Make a
+      // copy I can edit" — importing twice means two themes, and silently
+      // replacing the first would throw away anything she'd since changed.
+      const file = freeFileName(
+        source.replace(/\.(css|json)$/i, ""),
+        state.customThemes.map((theme) => theme.file),
+        sanitizeSegment,
+      );
+
+      let css: string;
+      if (source.toLowerCase().endsWith(".css")) {
+        css = text;
+      } else {
+        const built = themeFromPalette(readPalette(text));
+        if (!built) {
+          set({ importError: { file: source, reason: "no-colours" } });
+          return;
+        }
+        css = serializeTheme(
+          labelForFile(file),
+          themeIdForFile(file),
+          { colors: built.colors, resolved: built.colors, gradients: built.gradients },
+          new Date().toISOString().slice(0, 10),
+          {},
+          { made: `Worked out from ${source} on ${new Date().toISOString().slice(0, 10)}.`, notes: built.notes },
+        );
+      }
+
+      // Same echo suppression as every other write here: the scan on the next
+      // line is deliberate, and the watcher reporting it would only repeat it.
+      try {
+        lastSelfWrite = Date.now();
+        await writeCssFile(state.themesDir, file, css);
+        lastSelfWrite = Date.now();
+      } catch {
+        set({ importError: { file: source, reason: "unwritable" } });
+        return;
+      }
+
+      await get().scanFolders();
+      // The id comes from the scan rather than from here, because a `.css` she
+      // imported may declare its own `[data-theme]` block and that's the id its
+      // rules are written against — guessing one from the filename would select
+      // a theme whose rules then match nothing.
+      const imported = get().customThemes.find((theme) => theme.file === file);
+      if (imported) await get().selectTheme(imported.themeId, file);
     },
 
     async deleteTheme(file) {

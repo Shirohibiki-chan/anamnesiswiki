@@ -97,6 +97,19 @@ export function sanitizeSegment(name: string): string {
   return cleaned.length > 0 ? cleaned : "Untitled";
 }
 
+/**
+ * The last segment of a path, whichever slash it was built with.
+ *
+ * Both separators, always, and not because Windows might hand back either one:
+ * a path can also arrive from a native file picker, and the app's own
+ * `joinPath` uses `/` on every platform. Pure string work, here rather than in
+ * a caller because path shape is this file's subject.
+ */
+export function fileNameFromPath(path: string): string {
+  const segments = path.split(/[\\/]/);
+  return segments[segments.length - 1] ?? "";
+}
+
 export async function pathExists(path: string): Promise<boolean> {
   return exists(path);
 }
@@ -723,6 +736,19 @@ export async function readCssDir(dir: string): Promise<CssFile[]> {
     }
   }
   return files.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * One text file, from anywhere on disk.
+ *
+ * For the theme importer, which points a native file picker at a `.css` or a
+ * `.json` sitting wherever she keeps it — a downloads folder, another project.
+ * Outside any folder the app owns, which is the point of it and the reason it
+ * can't reuse `readCssDir`. Throws if the file can't be read; the caller has
+ * something to say about that.
+ */
+export async function readTextFileAt(path: string): Promise<string> {
+  return readTextFile(path);
 }
 
 /** Ends a watch started by `watchCssDirs`. Safe to call more than once. */

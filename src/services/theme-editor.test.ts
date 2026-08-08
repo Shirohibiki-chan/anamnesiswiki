@@ -214,6 +214,25 @@ describe("a theme made with the pickers", () => {
     expect(css).not.toContain("--font-");
   });
 
+  // The importer's file has to say where it came from and what it guessed. A
+  // header claiming it was made in Settings → Colours would be wrong in the one
+  // place she'd look to find out.
+  it("names a different origin, and carries its notes, when it wasn't made in the pickers", () => {
+    const imported = serializeTheme("Charsnap", "charsnap", draft, "2026-08-07", {}, {
+      made: "Worked out from charsnap.json on 2026-08-07.",
+      notes: ["Window colour taken from \"background\".", "Accent taken from \"secondary\"."],
+    });
+    expect(imported).toContain("Worked out from charsnap.json on 2026-08-07.");
+    expect(imported).not.toContain("Made in Settings");
+    expect(imported).toContain('/* Accent taken from "secondary". */');
+  });
+
+  it("won't let a note close the comment early", () => {
+    const nasty = serializeTheme("X", "x", draft, "2026-08-07", {}, { made: "m", notes: ["key */ body { display: none }"] });
+    // One `*/` in the whole note line: the one that ends it.
+    expect(nasty.split("\n").find((line) => line.includes("display: none"))?.match(/\*\//g)).toHaveLength(1);
+  });
+
   it("doesn't emit gradients that are switched off", () => {
     expect(css).not.toContain("--gradient-sidebar");
   });
