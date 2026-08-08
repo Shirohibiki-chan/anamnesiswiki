@@ -2,6 +2,19 @@
 
 ## 2026-08-08
 
+### A new theme: Abyssal
+
+- **Deep ocean blue, cyan and violet** — a seventh theme in the picker, and the first one that didn't come out of the sandbox. It's your CharSnap palette run through the new importer and then tuned by hand.
+- It's a *lit* blue rather than another dark room — nearly three times as bright as Midnight's navy — so it sits apart from the other five darks instead of being a sixth variation on them.
+- The Info callout is mint here, because the cyan is already doing the accent's job and two blues side by side wouldn't tell you anything. Same reason Nightbloom's Secret is indigo.
+- The buttons and page titles carry the cyan-to-violet gradient the palette already had in it.
+- Four things were changed from what the importer produced, all of them because a built-in is held to a tighter standard than the readability floor: the Secret stripe was too dim to see at 3px, the Quote stripe was a touch under, the borders were re-spaced to match Midnight's, and the palette's red was dropped in favour of the app's own — it's a red for light backgrounds and it disappeared on this one.
+
+### Callout text now stays its own colour
+
+- **A fix to the importer, found by looking hard at the theme above.** When a palette was turned into a theme, the writing inside a callout was being tinted toward the theme's body text — so on a theme with pale cyan text, the *violet* Secret callout got pale cyan words. The stripe was the only thing telling the three callouts apart. Their text now stays in the same colour family as their own stripe.
+- Only affects themes made by importing a palette; nothing that already exists changes.
+
 ### Import a theme, or a palette from another app
 
 - **There's an *Import a theme* button in Settings → Theme.** Point it at a `.css` theme somebody sent you and it copies the file into your themes folder and switches to it. That's the "drag it into a folder" step, done for you.

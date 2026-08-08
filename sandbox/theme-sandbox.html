@@ -665,9 +665,9 @@ const DARK = {
 /* Starting points to react to. Deliberately opinionated — rejecting one of
    these is more useful than describing what you want from nothing.
 
-   Two kinds, and the order says which: everything down to `nightbloom` is a
-   theme the app actually ships, so picking one here gives you the real thing
-   to tweak. Below those are directions that were only ever sketches. Keep the
+   Two kinds, and the order says which: everything down to `light` is a theme
+   the app actually ships, so picking one here gives you the real thing to
+   tweak. Below those are directions that were only ever sketches. Keep the
    shipped half in step with the `[data-theme]` blocks in `src/index.css` — a
    theme you can't reopen and adjust is a theme you can't change your mind
    about. */
@@ -729,6 +729,22 @@ const PRESETS = {
       "--color-callout-info": "#67e8f9", "--color-callout-info-bg": "rgba(34, 211, 238, 0.12)", "--color-callout-info-text": "#cffafe",
       "--color-callout-quote": "#ab9fb5", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.035)", "--color-callout-quote-text": "#d9cfe0",
       "--color-callout-secret": "#a5b4fc", "--color-callout-secret-bg": "rgba(129, 140, 248, 0.13)", "--color-callout-secret-text": "#e0e7ff",
+    },
+  },
+
+  abyssal: {
+    name: "Abyssal", note: "ships — deep ocean, cyan and violet",
+    colors: {
+      "--color-bg": "#00253d", "--color-panel": "#002b54", "--color-panel-alt": "#002746",
+      "--color-panel-edge": "#024459", "--color-scrim": "rgba(0, 0, 0, 0.5)",
+      "--color-border-strong": "#2d5d74", "--color-border": "#1c475e", "--color-border-subtle": "#123a52",
+      "--color-text-primary": "#b5f9ff", "--color-text-secondary": "#84c0ca",
+      "--color-text-muted": "#649ba9", "--color-text-placeholder": "#497b8c",
+      "--color-accent-light": "#66d2ff", "--color-accent-dark": "#045c8c",
+      "--color-accent-faint": "rgba(102, 210, 255, 0.15)", "--color-accent-faint-border": "rgba(102, 210, 255, 0.32)",
+      "--color-callout-info": "#6bffa4", "--color-callout-info-bg": "rgba(107, 255, 164, 0.12)", "--color-callout-info-text": "#b6ffd2",
+      "--color-callout-quote": "#86bcc8", "--color-callout-quote-bg": "rgba(255, 255, 255, 0.035)", "--color-callout-quote-text": "#d3e6ea",
+      "--color-callout-secret": "#b09cfc", "--color-callout-secret-bg": "rgba(127, 96, 249, 0.14)", "--color-callout-secret-text": "#e7e0ff",
     },
   },
 

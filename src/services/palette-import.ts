@@ -325,9 +325,17 @@ export function themeFromPalette(entries: PaletteEntry[]): PaletteTheme | null {
   // A callout's words, as opposed to its edge. Always paler than the edge —
   // the stripe is a label and the text is text, and the built-in themes all
   // run the two several steps apart.
+  //
+  // Toward the far end of the theme rather than toward the body text, which is
+  // the correction: mixing toward `textPrimary` dragged all three callouts to
+  // that one hue, so a theme with pale cyan body text gave its *violet* Secret
+  // pale cyan words. Colour-coding you can only see on the 3px stripe isn't
+  // colour-coding. The step is taken up front as well as in the loop, or a
+  // bright edge clears the floor on its own and the words come out the same
+  // colour as the stripe.
   const calloutText = (edge: string): string => {
-    let step = mix(edge, textPrimary, 0.25);
-    for (let i = 0; i < 20 && contrast(step, panel) < 10; i += 1) step = mix(step, textPrimary, 0.15);
+    let step = mix(edge, away, 0.35);
+    for (let i = 0; i < 20 && contrast(step, panel) < 10; i += 1) step = mix(step, away, 0.15);
     return step;
   };
 

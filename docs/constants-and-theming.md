@@ -45,12 +45,12 @@ Anamnesis uses Tailwind v4's `@theme` block to define all semantic color tokens 
 
 Other themes are `[data-theme="<name>"]` blocks in `index.css`, written **unlayered**: Tailwind's `@theme` output lands in the `theme` cascade layer, and an unlayered rule beats a layered one regardless of specificity, so a theme block wins without `!important` or a doubled selector. `data-theme` is set on `<html>` by `theme-service.ts`.
 
-Six themes ship, in the order the picker lists them: `midnight` (the default — hers, and the only one that also sets fonts), `dark` (which has no block of its own, per the above), `ember`, `grove`, `nightbloom` and `daylight`. Adding a seventh here is *not* the only way to get a theme: since Phase 12 a `.css` file in `<projectsDir>/themes/` is loaded at runtime and does the same job. See §Custom themes below.
+Seven themes ship, in the order the picker lists them: `midnight` (the default — hers, and the only one that also sets fonts), `dark` (which has no block of its own, per the above), `ember`, `grove`, `nightbloom`, `abyssal` and `daylight`. Adding an eighth here is *not* the only way to get a theme: since Phase 12 a `.css` file in `<projectsDir>/themes/` is loaded at runtime and does the same job. See §Custom themes below.
 
 Two rules for anything added to that list:
 
-- **A new theme has to be a different room, not a different shade.** The five darks are navy, near-black, warm brown, green and plum precisely so the picker is worth reading; a sixth grey would be a row that costs attention and returns nothing.
-- **Re-tune the callouts, don't inherit them.** The base Info/Quote/Secret tints were chosen against `#0f0f14`. On a warm brown or a green background the same translucent blue reads as a bruise, and the three stop being distinguishable from each other — which is the only colour-coding callouts have. Watch the accent too: `nightbloom` moves Secret from violet to indigo because its accent is already orchid.
+- **A new theme has to be a different room, not a different shade.** The six darks are navy, near-black, warm brown, green, plum and a lit ocean blue precisely so the picker is worth reading; a seventh grey would be a row that costs attention and returns nothing. `abyssal` passes on luminance as much as hue — `#00253d` is nearly three times the luminance of Midnight's `#0d1221`, so it reads as a lit room rather than a dark one.
+- **Re-tune the callouts, don't inherit them.** The base Info/Quote/Secret tints were chosen against `#0f0f14`. On a warm brown or a green background the same translucent blue reads as a bruise, and the three stop being distinguishable from each other — which is the only colour-coding callouts have. Watch the accent too: `nightbloom` moves Secret from violet to indigo because its accent is already orchid, and `abyssal` moves *Info* to mint because its accent has taken the blue end. **The callout that has to be told apart from the accent is the one that moves — never the accent.**
 
 Because `[data-theme="x"]` matches any element and not just `<html>`, putting the attribute on a swatch element makes that element resolve the theme's real tokens — which is how the Appearance picker previews built-in themes without duplicating a single colour value.
 
@@ -125,11 +125,21 @@ harder for that theme:
 | Ember | 14.62 | 7.20 | 4.69 | 3.08 |
 | Grove | 14.49 | 7.35 | 4.66 | 3.10 |
 | Nightbloom | 14.86 | 7.00 | 4.63 | 3.09 |
+| Abyssal | 12.19 | 7.04 | 4.62 | 3.05 |
 | Daylight | 16.28 | 6.86 | 4.63 | 3.12 |
 
 **If you retune a theme's text or surfaces, re-measure both.** A new theme is
 not finished until its muted grey clears 4.5 on its panel *and* its background
 — the two differ, and the darker one is not always the harder.
+
+**This is now a test, not just a rule.** `services/palette-import.test.ts` parses
+every `[data-theme]` block out of `index.css`, merges it over the `@theme` base,
+and asserts both floors against both surfaces — plus that each theme's three
+border weights stay in order. It lives in that file rather than beside the
+constants because `contrast` is a service and constants may not import one. The
+one recorded exception is `dark`'s `--color-border-subtle` at 1.097:1 against its
+panel, the faintest in the app; it's held as a ratchet that may not get fainter
+rather than quietly retuned, since changing the original palette is a decision.
 
 ### Callout blocks
 

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+// @ts-expect-error node:fs is untyped here — same suppression as themes.test.ts
+import { readFileSync } from "node:fs";
 import { contrast, readPalette, relativeLuminance, themeFromPalette } from "./palette-import";
+import { hexToRgb } from "./theme-editor";
 
 /**
  * A real export from the user's other project (CharSnap), which is what
@@ -131,11 +134,119 @@ describe("themeFromPalette", () => {
     expect(built?.gradients).toEqual({});
   });
 
+  // A theme with pale cyan body text was giving its *violet* Secret callout
+  // pale cyan words, because the words were mixed toward the body text rather
+  // than toward the light end of the theme. Colour-coding you can only see on
+  // the 3px stripe isn't colour-coding.
+  it("keeps a callout's words in its own edge's colour, not the body text's", () => {
+    const { colors } = theme();
+    const channels = (hex: string) => hexToRgb(colors[hex]);
+
+    // Secret is violet: more blue than green, and the words have to agree.
+    expect(channels("--color-callout-secret").b).toBeGreaterThan(channels("--color-callout-secret").g);
+    expect(channels("--color-callout-secret-text").b).toBeGreaterThan(channels("--color-callout-secret-text").g);
+    // Info is mint here: more green than blue, both on the edge and in the text.
+    expect(channels("--color-callout-info").g).toBeGreaterThan(channels("--color-callout-info").b);
+    expect(channels("--color-callout-info-text").g).toBeGreaterThan(channels("--color-callout-info-text").b);
+  });
+
+  it("keeps a callout's words a clear step off its edge", () => {
+    const { colors } = theme();
+    for (const kind of ["info", "quote", "secret"]) {
+      const edge = colors[`--color-callout-${kind}`];
+      const text = colors[`--color-callout-${kind}-text`];
+      expect(edge).not.toBe(text);
+      expect(contrast(text, colors["--color-panel"])).toBeGreaterThanOrEqual(10);
+    }
+  });
+
   it("reads a light palette as a light theme", () => {
     const built = themeFromPalette(readPalette('{"background":"#fbf8f2","ink":"#20242c","accent":"#8a5a2b","line":"#e3ddd2"}'));
     const colors = built?.colors ?? {};
     expect(relativeLuminance(colors["--color-bg"])).toBeGreaterThan(0.7);
     expect(relativeLuminance(colors["--color-text-primary"])).toBeLessThan(0.2);
     expect(contrast(colors["--color-text-muted"], colors["--color-bg"])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+/**
+ * The floor the importer solves for, checked against the themes that ship.
+ *
+ * Here rather than in `constants/themes.test.ts` because `contrast` lives in
+ * this file's subject and constants must not import a service (CLAUDE.md's
+ * layer order). What it guards is `docs/handoff.md`'s rule: `--color-text-muted`
+ * clears 4.5:1 and `--color-text-placeholder` 3:1, against *both* the window
+ * and the panel, in every theme. All six were under it at once in 2026-08-07
+ * because every one had been picked by eye and none had been measured — this is
+ * the check that stops a seventh joining them.
+ */
+describe("the themes in index.css hold that same floor", () => {
+  const CSS = String(readFileSync("src/index.css", "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
+
+  const declarations = (block: string): Record<string, string> => {
+    const found: Record<string, string> = {};
+    for (const [, token, value] of block.matchAll(/(--[\w-]+)\s*:\s*(#[0-9a-f]{6})\s*;/gi)) found[token] = value.toLowerCase();
+    return found;
+  };
+
+  const blockAfter = (opening: RegExp): string => {
+    const at = opening.exec(CSS);
+    if (!at) throw new Error(`no block for ${String(opening)}`);
+    const start = at.index + at[0].length;
+    return CSS.slice(start, CSS.indexOf("}", start));
+  };
+
+  // `dark` has no block of its own — the base values in `@theme` are the dark
+  // theme — so it's tested as the base alone, which is also what every other
+  // theme inherits anything it doesn't restate.
+  const base = declarations(blockAfter(/@theme\s*\{/));
+  const ids = [...CSS.matchAll(/\[data-theme="([\w-]+)"\]\s*\{/g)].map((match) => match[1]);
+
+  /** Everything a theme resolves to: the base, with its own block over the top. */
+  const tokensFor = (id: string): Record<string, string> =>
+    id === "dark" ? base : { ...base, ...declarations(blockAfter(new RegExp(String.raw`\[data-theme="${id}"\]\s*\{`))) };
+
+  it("finds every theme's block, including the base", () => {
+    expect(Object.keys(base).length).toBeGreaterThan(10);
+    expect(ids).toContain("abyssal");
+    expect(ids.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it.each(["dark", ...ids])("%s keeps quiet text readable on both surfaces", (id) => {
+    const theme = tokensFor(id);
+    const surfaces = [theme["--color-bg"], theme["--color-panel"]];
+    const worst = (token: string) => Math.min(...surfaces.map((surface) => contrast(theme[token], surface)));
+
+    expect(worst("--color-text-muted")).toBeGreaterThanOrEqual(4.5);
+    expect(worst("--color-text-placeholder")).toBeGreaterThanOrEqual(3);
+    expect(worst("--color-text-secondary")).toBeGreaterThanOrEqual(4.5);
+    expect(worst("--color-text-primary")).toBeGreaterThanOrEqual(7);
+  });
+
+  it.each(["dark", ...ids])("%s keeps its three border weights in order", (id) => {
+    const theme = tokensFor(id);
+    const step = (token: string) => contrast(theme[token], theme["--color-panel"]);
+
+    expect(step("--color-border-subtle")).toBeLessThan(step("--color-border"));
+    expect(step("--color-border")).toBeLessThan(step("--color-border-strong"));
+  });
+
+  it.each(ids)("%s keeps its faintest border visible", (id) => {
+    const theme = tokensFor(id);
+    expect(contrast(theme["--color-border-subtle"], theme["--color-panel"])).toBeGreaterThan(1.1);
+  });
+
+  /**
+   * `dark` is the one theme under that bar, at 1.097, and it's left there
+   * rather than quietly retuned — it's the original palette and changing it is
+   * a decision, not a tidy-up. This is a ratchet, not a pass: it may not get
+   * fainter. Midnight's borders were the same kind of near-miss and were
+   * reported from use as outlines you can't see; if this one ever is, the note
+   * above Midnight's block in index.css says what to raise it to.
+   */
+  it("dark is the known-faintest, and may not get fainter", () => {
+    const step = contrast(base["--color-border-subtle"], base["--color-panel"]);
+    expect(step).toBeGreaterThan(1.09);
+    expect(step).toBeLessThan(1.1);
   });
 });

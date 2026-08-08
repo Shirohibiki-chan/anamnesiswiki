@@ -535,6 +535,74 @@
   --gradient-accent: linear-gradient(100deg, #a021b0, #e9a8f0);
 }
 
+/* Deep water. The first built-in that didn't come out of the sandbox — it was
+   mapped from a palette out of her other project by `palette-import.ts`, then
+   tuned by hand where the numbers said to.
+
+   It clears the bar the list in constants/themes.ts sets for a fifth dark: the
+   other four are dark rooms, and this one is a lit blue. #00253d is a real
+   saturated ocean rather than a navy tending to black — nearly three times the
+   luminance of Midnight's #0d1221 — and where Midnight puts one teal on navy,
+   this runs cyan against violet, with the Info callout landing in mint because
+   the accent has taken the blue end. Same reasoning as Nightbloom's note above:
+   the callout that has to be *told apart* from the accent moves, not the accent.
+
+   Four values are hand-tuned away from what the importer produced, all for the
+   same reason — the importer solves for a floor, and a built-in is held to the
+   band the other six actually sit in:
+
+     Secret     #7f60f9 → #b09cfc   3.35:1 on the panel, against 6.1–9.6 for the
+                                    other four darks. Her violet is a *fill*
+                                    colour in the app it came from; as a 3px
+                                    stripe it needed lifting. The original is
+                                    still here, in the gradient and the wash.
+     Quote      #78b2be → #86bcc8   6.05 → 6.81, into the 6.6–7.7 band.
+     Borders                        Re-laddered to Midnight's spacing, not the
+                                    other darks' — see the note above Midnight
+                                    for why that's the one to match.
+     Red                            Dropped. The palette's #dc2626 is a
+                                    light-mode red and manages 2.95 here; the
+                                    base #f87171 gets 5.15, so this inherits.
+
+   The gradient is the palette's own — a `circularsStart`/`circularsEnd` pair
+   the importer found sitting next to each other in the file. Violet first, cyan
+   second, because a primary button's label is --color-bg and the violet end is
+   the darker of the two (3.71:1 against the label, above Nightbloom's 3.05). */
+[data-theme="abyssal"] {
+  --color-bg: #00253d;
+  --color-panel: #002b54;
+  --color-panel-alt: #002746;
+  --color-panel-edge: #024459;
+
+  --color-border-strong: #2d5d74;
+  --color-border: #1c475e;
+  --color-border-subtle: #123a52;
+
+  --color-text-primary: #b5f9ff;
+  --color-text-secondary: #84c0ca;
+  --color-text-muted: #649ba9;
+  --color-text-placeholder: #497b8c;
+
+  --color-accent-light: #66d2ff;
+  --color-accent-dark: #045c8c;
+  --color-accent-faint: rgba(102, 210, 255, 0.15);
+  --color-accent-faint-border: rgba(102, 210, 255, 0.32);
+
+  --color-callout-info: #6bffa4;
+  --color-callout-info-bg: rgba(107, 255, 164, 0.12);
+  --color-callout-info-text: #b6ffd2;
+
+  --color-callout-quote: #86bcc8;
+  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-text: #d3e6ea;
+
+  --color-callout-secret: #b09cfc;
+  --color-callout-secret-bg: rgba(127, 96, 249, 0.14);
+  --color-callout-secret-text: #e7e0ff;
+
+  --gradient-accent: linear-gradient(100deg, #7f60f9, #6ddcff);
+}
+
 /* The one theme that isn't a taste call — some people can't read light text on
    dark, and until now the app had no answer for them.
 

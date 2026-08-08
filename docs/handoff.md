@@ -774,6 +774,27 @@ is below.
   above, which this is the same rule applied to input nobody vetted. A theme
   arriving from outside cannot land below the floor the built-ins are held to,
   whatever the file said. If a new token needs deriving, derive it the same way.
+  **Derive toward the theme's light (or dark) end, not toward its body text** —
+  mixing callout text toward `textPrimary` pulled all three callouts onto one
+  hue, so a violet Secret came out with pale cyan words on a cyan-texted theme.
+
+- **The contrast floor is a test now, not just a rule.** `palette-import.test.ts`
+  parses every `[data-theme]` block out of `index.css`, merges it over the
+  `@theme` base, and checks both quiet greys against both surfaces plus the
+  three border weights' ordering. It lives in that file because `contrast` is a
+  service and `constants/` may not import one. `dark`'s `--color-border-subtle`
+  is a *recorded* exception at 1.097:1 — held as a ratchet that may not get
+  fainter rather than silently retuned, because changing the original palette is
+  a decision and not a tidy-up. Add a theme, and this catches you.
+
+- **The importer solves for a floor; a built-in is held to the band.** Abyssal
+  is the first theme that came out of `palette-import.ts` rather than the
+  sandbox, and four of its values are hand-tuned away from what the importer
+  produced — a Secret stripe at 3.35:1 clears the importer's ≥3 and is still
+  invisible next to the other darks' 6.1–9.6. **A generated theme is a starting
+  point for a built-in, not the built-in.** Every deviation is justified in the
+  comment above its block; keep it that way, or the next person "fixes" them
+  back to what the tool said.
 
 - **An edit changes the values it was asked to and nothing else. Never
   regenerate a theme file.** The pickers originally called `serializeTheme` on
