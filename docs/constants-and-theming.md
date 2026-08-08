@@ -110,6 +110,38 @@ the base tokens — the other six ship as `[data-theme]` blocks over the top (se
 
 > New UI must use semantic tokens, not raw palette vars or hex literals. Palette tokens are for node/folder color assignment only.
 
+#### The four backgrounds, and matching them
+
+`--color-bg`, `--color-panel`, `--color-panel-alt` and `--color-panel-edge` are
+four independent colours, and between them they are the entire background of the
+app. That independence is deliberate — the built-in themes hand-tune the
+relationship — but it made a light theme tedious to build and easy to get
+half-done: change only `--color-panel` and you get a pale dialog full of dark
+boxes, which reads as the picker being broken.
+
+**Settings → Colours → Backgrounds → "Match the others to Panels"** fills the
+other three in from the panel (`matchedBackgrounds` in
+`services/theme-editor.ts`). It is a plain edit, not a binding: it writes
+ordinary values that are then hers to change, and nothing keeps following. That
+was chosen over making them derive permanently, because deriving would mean
+copying a built-in no longer reproduced its hand-tuned surfaces.
+
+The offsets are read off the shipped themes rather than picked by taste, and the
+light and dark cases genuinely differ rather than mirroring:
+
+| | dark panel | light panel |
+|---|---|---|
+| `--color-bg` | below the panel | just below the panel |
+| `--color-panel-alt` | above | lowest of the four |
+| `--color-panel-edge` | highest | hard against the panel, so popovers still read white |
+
+Steps are taken in Oklab so a saturated panel keeps its hue — a navy lightened
+in sRGB walks toward grey, which is how a "matching" set ends up looking like
+three different themes. `separated()` guarantees no generated surface comes back
+equal to the panel: near white a step clamps, and near black a step smaller than
+one 8-bit code point rounds away. Both would recreate the `daylight`
+`--color-panel-edge` collision described below.
+
 #### Hover is a mix, not a colour
 
 **Never write a surface token into a `:hover` block.** That was how every hover

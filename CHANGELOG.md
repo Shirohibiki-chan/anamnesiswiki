@@ -2,6 +2,13 @@
 
 ## 2026-08-08
 
+### One button fills in the other three background colours
+
+- **Settings → Colours → Backgrounds has a *Match the others to Panels* button.** Pick the background colour you want, press it, and Window, Boxes and Menus are filled in as matching shades of it.
+- This is the fix for the thing that made a light theme so annoying to build: the app has **four** background colours, and changing only one left you with (say) a pink dialog full of navy boxes. Nothing said there were four, or that they were related.
+- **It's a normal edit, not a mode.** It writes ordinary colours you can then change one at a time, and nothing keeps following Panels afterwards. Press it again whenever you want.
+- The shades follow the same arrangement the built-in themes use by hand: on a dark theme the window sits below the panel and boxes and menus sit above it; on a light theme everything sits at or below the panel, so menus still read as white. Your panel's colour is kept, so a pink panel gets pink siblings rather than grey ones.
+
 ### Hover works on light themes now, and the Hover swatches stop showing the old colour
 
 Two things wrong with this morning's hover change, both found by setting a theme's Panels colour to a pale pink.

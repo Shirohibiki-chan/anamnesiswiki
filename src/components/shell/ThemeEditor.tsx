@@ -239,7 +239,18 @@ function EditingNote({ folder, failed }: { folder: string | null; failed: boolea
 }
 
 export function ThemeEditor() {
-  const { draft, themeId, themeFile, customThemes, backupFolder, backupFailed, setThemeColor, toggleGradient, setGradient } = useTheme();
+  const {
+    draft,
+    themeId,
+    themeFile,
+    customThemes,
+    backupFolder,
+    backupFailed,
+    setThemeColor,
+    matchBackgroundsToPanel,
+    toggleGradient,
+    setGradient,
+  } = useTheme();
 
   if (!draft) {
     // Only reachable on a built-in, since a custom theme always has a draft —
@@ -286,6 +297,15 @@ export function ThemeEditor() {
           <div className="theme-edit-group" key={group.key}>
             <p className="theme-edit-group-title">{group.label}</p>
             <div className="theme-edit-colors">{rows}</div>
+            {/* Only under Backgrounds, and only because those four are the one
+                group where changing a single swatch leaves the app looking
+                broken rather than looking different — a pink panel behind navy
+                boxes. The other groups are independent of each other. */}
+            {group.key === "surfaces" && (
+              <button type="button" className="ui-btn ui-btn-secondary theme-edit-match" onClick={matchBackgroundsToPanel}>
+                Match the others to Panels
+              </button>
+            )}
           </div>
         );
       })}

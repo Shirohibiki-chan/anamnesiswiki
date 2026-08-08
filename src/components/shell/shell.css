@@ -1303,6 +1303,15 @@
   gap: var(--space-sm);
 }
 
+/* Sits under the four background swatches, not beside them — it acts on the
+   whole group rather than on any one row. Left-aligned and only as wide as its
+   own label, so it reads as an offer rather than as the group's main control:
+   setting the four by hand is still the ordinary way to do this. */
+.theme-edit-match {
+  align-self: flex-start;
+  margin-top: var(--space-xs);
+}
+
 .theme-edit-group-title {
   margin: 0;
   font-size: var(--fs-xs);

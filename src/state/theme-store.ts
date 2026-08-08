@@ -31,6 +31,7 @@ import { AUTO_TOKENS, type GradientSlot } from "../constants/theme-tokens";
 import {
   freeFileName,
   gradientCss,
+  matchedBackgrounds,
   patchTheme,
   readThemeDraft,
   seedFromDocument,
@@ -170,6 +171,8 @@ export type ThemeStoreState = {
   /** Removes a theme's file from the folder. Confirm before calling. */
   deleteTheme: (file: string) => Promise<void>;
   setThemeColor: (token: string, hex: string) => void;
+  /** Fills Window, Boxes and Menus in from the Panels colour, in one press. */
+  matchBackgroundsToPanel: () => void;
   /** Switches a gradient on with sensible starting colours, or off. */
   toggleGradient: (slot: GradientSlot, on: boolean) => void;
   setGradient: (key: string, gradient: Gradient | null) => void;
@@ -888,6 +891,29 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         { ...draft, colors: { ...draft.colors, [token]: hex }, resolved: { ...draft.resolved, [token]: hex } },
         { [token]: hex },
       );
+    },
+
+    /**
+     * Fills the other three backgrounds in from the panel colour, in one press.
+     *
+     * Goes through `previewDraft` like a picker edit rather than around it, so
+     * it's one write, one backup and one undo-by-editing — three separate
+     * `setThemeColor` calls would queue three debounced writes and land in the
+     * file as three steps.
+     *
+     * A plain edit afterwards, not a mode: it writes ordinary values she can
+     * then change one at a time, and nothing keeps following the panel. That's
+     * what she chose it to be — the alternative on the table was making these
+     * derive themselves permanently, which would have meant copying a built-in
+     * no longer reproduced its hand-tuned surfaces.
+     */
+    matchBackgroundsToPanel() {
+      const { draft } = get();
+      if (!draft) return;
+      const panel = draft.colors["--color-panel"] ?? draft.resolved["--color-panel"];
+      if (!panel) return;
+      const matched = matchedBackgrounds(panel);
+      previewDraft({ ...draft, colors: { ...draft.colors, ...matched }, resolved: { ...draft.resolved, ...matched } }, matched);
     },
 
     toggleGradient(slot, on) {

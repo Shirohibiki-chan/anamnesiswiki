@@ -103,23 +103,29 @@ function fromOklab(text: string): string | null {
   }
   if (![L, a, b].every(Number.isFinite)) return null;
 
-  // Oklab → LMS → linear sRGB, the standard matrices from Björn Ottosson's
-  // definition. Kept inline rather than pulled in as a dependency: it's nine
-  // constants and a cube, and this app bundles nothing it can write once.
+  return oklabToHex(L, a, b);
+}
+
+/**
+ * Oklab → LMS → linear sRGB → `#rrggbb`, the standard matrices from Björn
+ * Ottosson's definition. Kept inline rather than pulled in as a dependency:
+ * it's nine constants and a cube, and this app bundles nothing it can write
+ * once.
+ *
+ * Out-of-gamut components are clamped rather than gamut-mapped. These are theme
+ * surfaces, not photographs; the difference is invisible at swatch size and a
+ * proper mapping is a lot of maths for a 20px square.
+ */
+function oklabToHex(L: number, a: number, b: number): string {
   const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
   const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
   const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
 
-  const linear = [
+  const [r, g, bb] = [
     4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
     -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
     -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-  ];
-
-  // Out-of-gamut components are clamped rather than gamut-mapped. These are
-  // theme surfaces, not photographs; the difference is invisible at swatch size
-  // and a proper mapping is a lot of maths for a 20px square.
-  const [r, g, bb] = linear.map((c) => {
+  ].map((c) => {
     const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.max(c, 0) ** (1 / 2.4) - 0.055;
     return Math.max(0, Math.min(1, v)) * 255;
   });
@@ -175,6 +181,109 @@ export function deriveTokens(colors: Record<string, string>): Record<string, str
     if (edge) out[`--color-callout-${kind}-bg`] = kind === "quote" ? "rgba(255, 255, 255, 0.035)" : rgba(edge, 0.12);
   }
   return out;
+}
+
+/* --- Matching the other backgrounds to the panel -------------------------- */
+
+/** sRGB hex → Oklab. The inverse of the conversion in `fromOklab`. */
+function toOklab(hex: string): { L: number; a: number; b: number } {
+  const { r, g, b } = hexToRgb(hex);
+  // Undo the sRGB transfer function; the matrices below work in light, not in
+  // the gamma-encoded numbers a hex actually holds.
+  const lin = [r, g, b].map((n) => {
+    const v = n / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * lin[0] + 0.5363325363 * lin[1] + 0.0514459929 * lin[2]);
+  const m = Math.cbrt(0.2119034982 * lin[0] + 0.6806995451 * lin[1] + 0.1073969566 * lin[2]);
+  const s = Math.cbrt(0.0883024619 * lin[0] + 0.2817188376 * lin[1] + 0.6299787005 * lin[2]);
+  return {
+    L: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    a: 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    b: 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  };
+}
+
+/**
+ * The same hue and colourfulness, moved up or down in lightness.
+ *
+ * Oklab rather than a naive `#rrggbb` nudge so a step off a saturated colour
+ * stays that colour — lightening a navy in sRGB by adding to each channel walks
+ * it toward grey, which is how a "matching" set of surfaces ends up looking
+ * like it came from three different themes.
+ */
+export function stepLightness(hex: string, delta: number): string {
+  const { L, a, b } = toOklab(hex);
+  return oklabToHex(Math.max(0, Math.min(1, L + delta)), a, b);
+}
+
+/** Whether a colour reads as light, on the same 0.62 line `--color-hover-pole` uses. */
+export function isLight(hex: string): boolean {
+  return toOklab(hex).L > 0.62;
+}
+
+/**
+ * The other three backgrounds, worked out from the panel colour.
+ *
+ * **This is a starting point, not a rule.** It runs when she presses "Match the
+ * others to Panels" and writes ordinary values she can then edit; nothing keeps
+ * following afterwards. That was the point of choosing a button over automatic
+ * derivation — the four backgrounds stay four independent colours, and this is
+ * a way to fill three of them in at once rather than a fifth thing deciding
+ * what they are.
+ *
+ * The offsets come from the shipped themes rather than from taste. Across all
+ * six darks the ordering is the same: the window sits *below* the panel, a box
+ * on a panel sits slightly above it, and a menu sits above that. So the three
+ * are steps along one axis, and which way that axis points is decided by
+ * whether the panel is light or dark — the same question, and the same 0.62
+ * line, that `--color-hover-pole` asks in `index.css`.
+ *
+ * Inverted for a light panel this gives what Daylight already does by hand: a
+ * window slightly off-white behind panels that are lighter than it, and boxes a
+ * touch darker than the panel they sit on. It also fixes what Daylight gets
+ * wrong — its `--color-panel-edge` is the same `#ffffff` as its panel, which is
+ * the collision that made hover invisible there in the first place.
+ */
+export function matchedBackgrounds(panel: string): Record<string, string> {
+  // The two cases are written out rather than folded into one signed step,
+  // because they genuinely differ rather than mirroring. On a dark theme
+  // "raised" means lighter, so a box and a menu climb away from the panel and
+  // the window sits below it. On a light theme the panel is usually near white
+  // and there's no headroom to climb into: the shipped Daylight puts its window
+  // *and* its boxes below the panel, boxes lower than window, and keeps menus
+  // hard against the panel so a popover still reads as white. These offsets are
+  // that arrangement, and its dark equivalent, written down.
+  const steps = isLight(panel)
+    ? { "--color-bg": -0.035, "--color-panel-alt": -0.06, "--color-panel-edge": -0.012 }
+    : { "--color-bg": -0.06, "--color-panel-alt": 0.035, "--color-panel-edge": 0.075 };
+
+  return Object.fromEntries(Object.entries(steps).map(([token, delta]) => [token, separated(panel, delta)]));
+}
+
+/**
+ * A step that is guaranteed to land somewhere else, by turning round and then
+ * by reaching further when it can't go any further the way it was pointed.
+ *
+ * Two ways a step lands back where it started. A pure white panel has no
+ * headroom above it, so anything that wants to be lighter clamps and comes back
+ * identical. And near black, a step of 0.035 in lightness is smaller than one
+ * 8-bit code point, so it rounds away to nothing.
+ *
+ * Either is the collision this whole run of work started with — Daylight's own
+ * `--color-panel-edge` is the same `#ffffff` as its panel, and a surface equal
+ * to the surface beneath it is a surface that isn't there. Generating a fresh
+ * one would have been the same bug arriving from a new direction, so this
+ * function's only job is to make that impossible.
+ */
+function separated(panel: string, delta: number): string {
+  for (const d of [delta, -delta, delta * 2, -delta * 2, delta * 4, -delta * 4]) {
+    const stepped = stepLightness(panel, d);
+    if (stepped !== panel) return stepped;
+  }
+  // Only reachable from pure black or pure white, where every small step
+  // rounds away. A visible surface beats a faithful one.
+  return isLight(panel) ? stepLightness(panel, -0.08) : stepLightness(panel, 0.08);
 }
 
 /* --- Gradients ------------------------------------------------------------ */
