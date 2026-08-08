@@ -195,6 +195,29 @@
 
 /* --- TreeItem --- */
 
+/* Holds the indent guides. react-arborist puts the row's `padding-left` on
+   this element, so a guide's `left` is measured from the outer edge of the
+   indent rather than from the row's text. */
+.tree-node {
+  position: relative;
+}
+
+/* A guide runs the full height of its row so consecutive rows join up into an
+   unbroken line. `left` comes from TreeItem as a multiple of TREE_INDENT; the
+   offset here walks in to where that ancestor's chevron sits — past the row's
+   2px colour border and its own horizontal padding, then half the 14px toggle.
+   Written as a calc so it follows --space-sm rather than needing to be
+   re-measured whenever the row's padding is retuned. */
+.tree-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  margin-left: calc(2px + var(--space-sm) + 7px);
+  background: var(--color-border);
+  pointer-events: none;
+}
+
 /* The most-hovered surface in the app, and a div rather than a button, so it
    doesn't pick up the base transition in index.css. Named explicitly instead
    of widening that selector — the tree is virtualized and rows are recycled

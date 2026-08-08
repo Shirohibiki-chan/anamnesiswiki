@@ -5,6 +5,7 @@
 import { useState, type CSSProperties } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { ChevronDown, ChevronRight, Home, Plus } from "lucide-react";
+import { TREE_INDENT } from "../../constants/layout";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
@@ -101,7 +102,16 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   }
 
   return (
-    <div style={style} ref={dragHandle}>
+    <div className="tree-node" style={style} ref={dragHandle}>
+      {/* One vertical line per level of nesting above this row, drawn where
+          that ancestor's chevron sits. Every row draws its own segment and the
+          rows are flush, so the segments read as continuous lines down the
+          tree. Decoration only — hidden from screen readers, which already get
+          the depth from react-arborist's aria-level. */}
+      {node.level > 0 &&
+        Array.from({ length: node.level }, (_, level) => (
+          <span key={level} className="tree-guide" style={{ left: level * TREE_INDENT }} aria-hidden="true" />
+        ))}
       <div
         className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}`}
         style={rowStyle}
