@@ -779,6 +779,18 @@ is below.
   reconciles `themeId` against the selected file and persists the correction,
   because the settings file stores the id too.
 
+- **"Make a copy I can edit" has to write out everything the theme was using,
+  not just the colours.** The theme being copied is not in the cascade behind
+  the copy — the copy is a new `[data-theme]` id, so anything it doesn't declare
+  falls to the *base* tokens in `index.css`, not to the original. That's how a
+  copy of Midnight came out in Inter/Fraunces/Newsreader: it's the only built-in
+  that sets `--font-*`, and `seedFromDocument` only walks `COLOR_TOKENS`. Fonts
+  come from the store's `themeFonts` rather than from `getComputedStyle`
+  alongside the colours, because a font she chose in Settings is an inline
+  property on the same element and reading the document would bake her override
+  into the copy as if the theme had asked for it. **Adding a new per-theme token
+  family means adding it here too**, or copies quietly lose it.
+
 - **The themes and snippets folders are watched, and the watch has two rules
   that aren't optional.** `watchCssDirs` is non-recursive, because `backups`
   lives *inside* the themes folder and the app writes to it — a recursive watch

@@ -206,7 +206,11 @@ const backedUp = new Set<string>();
  * hand-editing a theme with Settings closed still has to move the window.
  */
 let stopWatching: StopWatching | null = null;
-let watchedFolders = "";
+// Two fields rather than one joined key, because there is no separator a path
+// can't contain — and the first attempt reached for `\0`, which is true of
+// paths and also makes git call this file binary.
+let watchedThemesDir = "";
+let watchedSnippetsDir = "";
 
 /**
  * When the app itself last wrote a theme file.
@@ -262,18 +266,19 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
    * happens when the projects folder is moved in Settings.
    */
   async function ensureWatching(themesDir: string, snippetsDir: string): Promise<void> {
-    const folders = `${themesDir} ${snippetsDir}`;
-    if (stopWatching && watchedFolders === folders) return;
+    if (stopWatching && watchedThemesDir === themesDir && watchedSnippetsDir === snippetsDir) return;
 
     stopWatching?.();
     stopWatching = null;
-    watchedFolders = "";
+    watchedThemesDir = "";
+    watchedSnippetsDir = "";
     try {
       stopWatching = await watchCssDirs([themesDir, snippetsDir], () => {
         if (Date.now() - lastSelfWrite < SELF_WRITE_QUIET_MS) return;
         void get().scanFolders();
       });
-      watchedFolders = folders;
+      watchedThemesDir = themesDir;
+      watchedSnippetsDir = snippetsDir;
     } catch {
       // No Tauri side to ask (`pnpm dev`), or the OS declined a watch on this
       // folder — a network drive, most likely. "Check for new ones" is still
@@ -637,10 +642,31 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       );
       const themeId = themeIdForFile(file);
       const label = labelForFile(file);
+
+      // From `themeFonts`, not from the computed style beside it, and the
+      // difference is the point: a font she picked in Settings is an inline
+      // property on the same element, so reading the document here would bake
+      // *her override* into the copy as if the theme had asked for it.
+      // `themeFonts` is what the theme itself asks for, measured in `apply()`
+      // with the overrides taken off.
+      const fonts: Record<string, string> = {};
+      for (const slot of FONT_SLOTS) {
+        const stack = state.themeFonts[slot.key];
+        if (stack) fonts[slot.token] = stack;
+      }
+
       // Seeded from the document, so every token is already declared — a theme
       // made here is complete rather than half-inherited, which is what "a copy
-      // of this one" has to mean.
-      const css = serializeTheme(label, themeId, { colors, resolved: colors, gradients: {} }, new Date().toISOString().slice(0, 10));
+      // of this one" has to mean. That has to include the faces: only Midnight
+      // sets its own, so a copy of it used to come out in the base tokens'
+      // fonts and visibly wasn't the theme it was copied from.
+      const css = serializeTheme(
+        label,
+        themeId,
+        { colors, resolved: colors, gradients: {} },
+        new Date().toISOString().slice(0, 10),
+        fonts,
+      );
 
       // Same echo suppression as the edit path: this scans deliberately on the
       // next line, and the watcher reporting the same event a moment later

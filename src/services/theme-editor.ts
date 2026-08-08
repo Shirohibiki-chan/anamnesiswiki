@@ -294,14 +294,30 @@ export function freeFileName(name: string, taken: readonly string[], sanitize: (
  * and a wall of forty undifferentiated custom properties is not something
  * anyone edits twice.
  */
-export function serializeTheme(name: string, themeId: string, draft: ThemeDraft, today: string): string {
+export function serializeTheme(
+  name: string,
+  themeId: string,
+  draft: ThemeDraft,
+  today: string,
+  /**
+   * `--font-*` → the stack the theme being copied asks for.
+   *
+   * Written out rather than left to inherit, and that's the whole point of the
+   * parameter: only *one* built-in sets its own faces, so a copy of that one
+   * came out in the base tokens' Inter/Fraunces/Newsreader instead of its own,
+   * and "make a copy of this" produced something that didn't look like this.
+   * A copy has to be complete for the same reason the colours are all written
+   * out — the theme it was copied from is not in the cascade behind it.
+   */
+  fonts: Record<string, string> = {},
+): string {
   const lines: string[] = [];
   lines.push(`/* Anamnesis theme — "${name}"`);
   lines.push(`   Made in Settings → Colours on ${today}.`);
   lines.push("");
   lines.push("   Plain CSS, so you can edit it here as well as in the app —");
-  lines.push("   the pickers read this file back. Change a colour by hand and");
-  lines.push("   press \"Check for new ones\" in Settings to see it. */");
+  lines.push("   the pickers read this file back. Save it and the app follows");
+  lines.push("   straight away; nothing needs pressing. */");
   lines.push("");
   lines.push(`[data-theme="${themeId}"] {`);
 
@@ -316,6 +332,15 @@ export function serializeTheme(name: string, themeId: string, draft: ThemeDraft,
     lines.push("     opacity. Change these if you want, but they're what keeps a");
     lines.push("     selected page the same colour as the buttons. */");
     for (const [token, value] of Object.entries(derived)) write(token, value);
+  }
+
+  const faces = Object.entries(fonts);
+  if (faces.length > 0) {
+    lines.push("");
+    lines.push("  /* The faces this theme asks for. A font chosen in Settings →");
+    lines.push("     Fonts and text still wins over these — they're what it");
+    lines.push("     goes back to when you clear one. */");
+    for (const [token, stack] of faces) write(token, stack);
   }
 
   const on = GRADIENT_SLOTS.filter((slot) => draft.gradients[slot.key]?.on);

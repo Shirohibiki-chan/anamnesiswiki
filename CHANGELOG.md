@@ -2,6 +2,11 @@
 
 ## 2026-08-08
 
+### A copied theme keeps its fonts
+
+- **"Make a copy I can edit" no longer changes the fonts.** Midnight is the only theme that picks its own faces — Domine, Lexend and Quicksand — and a copy of it was only carrying the colours across, so it came out in the app's default Inter/Fraunces/Newsreader and didn't look like the theme it was copied from. A copy now writes the faces out too. Copies of the other five are unaffected, since those were already using the defaults.
+- The fonts land in the file as three ordinary lines you can change or delete, and picking a font in *Fonts and text* still overrides them the same way it always did.
+
 ### Theme files reload themselves
 
 - **Save a theme in a text editor and the window changes with it.** No button, no switching away to another theme and back. The app now watches the themes and snippets folders and picks up anything that appears, changes or disappears in them, so a `.css` file open in Notepad on one monitor and the app on the other behaves the way it looks like it should.
