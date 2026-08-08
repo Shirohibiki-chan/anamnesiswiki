@@ -2,6 +2,12 @@
 
 ## 2026-08-08
 
+### The colour pickers keep up now
+
+- **Dragging a colour or an opacity slider isn't laggy any more.** Every tiny movement of a picker was making the app rebuild your theme file, re-check it, swap the whole stylesheet out, measure the fonts and background back off the screen, and save a copy of the lot — a few dozen times a second. It now just changes the one colour while you're dragging, and does the rest once you stop.
+- Nothing about the result changes: the file gets written the same way, still only touching the values you changed.
+- One small thing you might notice: the faded versions of a colour — the wash behind a selected page, the tint inside a callout — catch up a moment after you let go rather than tracking your hand. That's deliberate, so the app doesn't overwrite one you've tuned by hand and then snap it back.
+
 ### A copied theme keeps its fonts
 
 - **"Make a copy I can edit" no longer changes the fonts.** Midnight is the only theme that picks its own faces — Domine, Lexend and Quicksand — and a copy of it was only carrying the colours across, so it came out in the app's default Inter/Fraunces/Newsreader and didn't look like the theme it was copied from. A copy now writes the faces out too. Copies of the other five are unaffected, since those were already using the defaults.

@@ -27,6 +27,7 @@ import { showFolder } from "../services/dialog-service";
 import type { GradientSlot } from "../constants/theme-tokens";
 import {
   freeFileName,
+  gradientCss,
   patchTheme,
   readThemeDraft,
   seedFromDocument,
@@ -44,7 +45,9 @@ import {
   applyTextScale,
   applyThemeId,
   cacheAppearance,
+  clearPreviewedTokens,
   labelForFile,
+  previewToken,
   readCachedAppearance,
   readSwatch,
   readThemeFonts,
@@ -178,17 +181,25 @@ function toStylesheet(file: { name: string; css: string }): CustomStylesheet {
 const isBuiltIn = (id: string) => BUILT_IN_THEMES.some((theme) => theme.id === id);
 
 /**
- * The pending disk write for the theme being edited.
+ * The pending edit for the theme being edited: the last draft a picker
+ * produced, waiting to be turned into file text, put on the document and
+ * saved.
  *
  * Module-level rather than store state for the same reason autosave.ts is a
  * plain service (CLAUDE.md rule 8): the timer has to survive re-renders, and a
  * colour picker dragged across a gradient fires dozens of changes a second.
- * The document is updated on every one of those; the file is written once the
- * hand stops moving.
+ *
+ * It used to be only the *disk* write that waited here, and everything else ran
+ * per event — rebuild the file text, vet it, replace the stylesheet, re-read
+ * the fonts and the background off the document, and photograph the lot into
+ * localStorage. That is four forced style recalculations, two stylesheet
+ * reparses and a synchronous storage write per frame of a drag, and it dragged
+ * like it. Now the whole lot waits; see `previewToken` for what happens
+ * instead.
  */
-let pendingWrite: { dir: string; file: string; css: string } | null = null;
-let writeTimer: ReturnType<typeof setTimeout> | null = null;
-const WRITE_DELAY_MS = 400;
+let pendingEdit: ThemeDraft | null = null;
+let editTimer: ReturnType<typeof setTimeout> | null = null;
+const EDIT_DELAY_MS = 400;
 
 /**
  * Files this run of the app has already kept a copy of.
@@ -227,25 +238,50 @@ const SELF_WRITE_QUIET_MS = 800;
 
 export const useThemeStore = create<ThemeStoreState>((set, get) => {
   /**
-   * The queued edit, written.
+   * The queued edit: turned into file text, put on the document, and saved.
    *
-   * The copy is taken here rather than when the edit was made, and that timing
-   * is the whole point: nothing has touched the file yet at this moment, so
-   * what gets copied is what she wrote. Awaited before the write for the same
-   * reason — a backup that lands after the change has backed up the change.
+   * Everything expensive about editing a theme happens here and nowhere else,
+   * which is the point — this runs when the hand stops moving, not per frame.
+   *
+   * The backup copy is taken here rather than when the edit was made, and that
+   * timing is the whole point: nothing has touched the file yet at this moment,
+   * so what gets copied is what she wrote. Awaited before the write for the
+   * same reason — a backup that lands after the change has backed up the
+   * change.
    */
-  async function flushThemeWrite(): Promise<void> {
-    if (writeTimer) {
-      clearTimeout(writeTimer);
-      writeTimer = null;
+  async function flushThemeEdit(): Promise<void> {
+    if (editTimer) {
+      clearTimeout(editTimer);
+      editTimer = null;
     }
-    const pending = pendingWrite;
-    pendingWrite = null;
-    if (!pending) return;
+    const draft = pendingEdit;
+    pendingEdit = null;
+    if (!draft) return;
 
-    if (!backedUp.has(pending.file)) {
-      backedUp.add(pending.file);
-      const folder = await backupCssFile(pending.dir, pending.file);
+    const state = get();
+    const theme = state.customThemes.find((t) => t.file === state.themeFile);
+    if (!theme || !state.themesDir) return;
+
+    // Patched, not regenerated, and patched against `raw` — see the note on
+    // `patchTheme`, and on `raw` in CustomStylesheet. Between them these two
+    // are the difference between the pickers editing her file and the pickers
+    // replacing it.
+    const raw = patchTheme(theme.raw, theme.label, theme.themeId, draft, new Date().toISOString().slice(0, 10));
+    const { css, blocked } = sanitizeCustomCss(raw);
+    set({
+      // `resolved` moves with the edit, so a picker she just dragged shows the
+      // colour she picked rather than what the token used to inherit.
+      draft: { ...draft, resolved: { ...draft.resolved, ...draft.colors } },
+      customThemes: state.customThemes.map((t) => (t.file === theme.file ? { ...t, raw, css, blocked, swatch: readSwatch(css) } : t)),
+    });
+    // Drops the inline previews and puts the real stylesheet on. The values are
+    // the same ones already on screen, so there's nothing to see — what changes
+    // is that they're now coming from the file.
+    apply();
+
+    if (!backedUp.has(theme.file)) {
+      backedUp.add(theme.file);
+      const folder = await backupCssFile(state.themesDir, theme.file);
       // A backup that couldn't be made is worth saying out loud, because the
       // panel is about to promise her there's a copy. Not a reason to refuse
       // the edit she asked for, though.
@@ -255,7 +291,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     // Stamped either side of the write: the watcher's clock starts when the
     // file changes, and the change is somewhere inside this await.
     lastSelfWrite = Date.now();
-    await writeCssFile(pending.dir, pending.file, pending.css).catch(() => {});
+    await writeCssFile(state.themesDir, theme.file, raw).catch(() => {});
     lastSelfWrite = Date.now();
   }
 
@@ -287,10 +323,22 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     }
   }
 
-  function queueThemeWrite(dir: string, file: string, css: string): void {
-    pendingWrite = { dir, file, css };
-    if (writeTimer) clearTimeout(writeTimer);
-    writeTimer = setTimeout(() => void flushThemeWrite(), WRITE_DELAY_MS);
+  function queueThemeEdit(draft: ThemeDraft): void {
+    pendingEdit = draft;
+    if (editTimer) clearTimeout(editTimer);
+    editTimer = setTimeout(() => void flushThemeEdit(), EDIT_DELAY_MS);
+  }
+
+  /**
+   * An edit that isn't part of a drag: done now rather than in 400ms.
+   *
+   * Switching a gradient on or off changes *which* declarations the file has
+   * rather than the value of one, so there's nothing an inline property can
+   * preview — and it's a single click, so there's nothing to debounce either.
+   */
+  function commitThemeEdit(draft: ThemeDraft): void {
+    pendingEdit = draft;
+    void flushThemeEdit();
   }
 
   /**
@@ -300,6 +348,11 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
    * so assembling it once is both simpler and the only correct order.
    */
   function apply(): void {
+    // First, before anything reads the document back: a drag leaves tokens
+    // pinned to the root element, and every measurement below — the fonts, the
+    // boot background — has to see the stylesheet, not the preview on top of it.
+    clearPreviewedTokens();
+
     const state = get();
     const theme = state.themeFile ? state.customThemes.find((t) => t.file === state.themeFile) : null;
     const themeCss = theme?.css ?? "";
@@ -344,33 +397,30 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
   }
 
   /**
-   * The whole edit path, in one place: turn the draft back into a stylesheet,
-   * swap that text into the theme it belongs to, put it on the document, and
-   * queue the disk write.
+   * The fast half of an edit: what the window shows while a control is being
+   * dragged.
    *
-   * The in-memory `customThemes` entry is updated rather than waiting for a
-   * rescan, so a dragged colour picker moves the app under your hand. The file
-   * is still what's true — the next scan reads it back, and this wrote it.
+   * The draft moves so the input stays controlled and the hex beside it reads
+   * right, and the changed tokens go straight onto the root element. That's the
+   * whole frame's work — no file text, no stylesheet, no measuring the document
+   * back. `flushThemeEdit` does the rest once the hand stops.
+   *
+   * What isn't previewed is the handful of tints `deriveTokens` works out from
+   * these — the selection wash, the callout backgrounds. Those are the same
+   * hues at 12–15% opacity, so they lag by the length of the debounce and it
+   * doesn't read as anything; previewing them would mean guessing whether each
+   * one is the app's or hand-tuned, and guessing wrong shows her a colour that
+   * snaps back when she lets go.
    */
-  function writeDraft(draft: ThemeDraft): void {
+  function previewDraft(draft: ThemeDraft, previews: Record<string, string>): void {
+    // The same guard the commit runs, up front: a preview nothing can be
+    // written back from is a control that appears to work and doesn't.
     const state = get();
-    const theme = state.customThemes.find((t) => t.file === state.themeFile);
-    if (!theme || !state.themesDir) return;
+    if (!state.themesDir || !state.customThemes.some((t) => t.file === state.themeFile)) return;
 
-    // Patched, not regenerated, and patched against `raw` — see the note on
-    // `patchTheme`, and on `raw` in CustomStylesheet. Between them these two
-    // are the difference between the pickers editing her file and the pickers
-    // replacing it.
-    const raw = patchTheme(theme.raw, theme.label, theme.themeId, draft, new Date().toISOString().slice(0, 10));
-    const { css, blocked } = sanitizeCustomCss(raw);
-    set({
-      // `resolved` moves with the edit, so a picker she just dragged shows the
-      // colour she picked rather than what the token used to inherit.
-      draft: { ...draft, resolved: { ...draft.resolved, ...draft.colors } },
-      customThemes: state.customThemes.map((t) => (t.file === theme.file ? { ...t, raw, css, blocked, swatch: readSwatch(css) } : t)),
-    });
-    apply();
-    queueThemeWrite(state.themesDir, theme.file, raw);
+    for (const [token, value] of Object.entries(previews)) previewToken(token, value);
+    set({ draft });
+    queueThemeEdit(draft);
   }
 
   /**
@@ -493,7 +543,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       // Any edit still sitting in the debounce goes to disk first. Otherwise a
       // scan reads the file as it was before the last few colour changes and
       // hands them straight back, which looks like the pickers snapping back.
-      await flushThemeWrite();
+      await flushThemeEdit();
       try {
         const parent = await appSettings.getProjectsDir();
         // Created rather than merely looked for. An empty folder that exists
@@ -557,7 +607,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     async selectTheme(themeId, themeFile) {
       // Whatever was half-typed into the last theme's pickers goes to its own
       // file before the selection moves, or it's written to the new one.
-      await flushThemeWrite();
+      await flushThemeEdit();
       set({ themeId, themeFile: isBuiltIn(themeId) && !themeFile ? null : themeFile });
       apply();
       syncDraft();
@@ -686,7 +736,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       // against a specific file, and a queued write landing after the file is
       // gone recreates it — a theme you deleted reappearing on the next scan,
       // which is worse than the delete having failed outright.
-      await flushThemeWrite();
+      await flushThemeEdit();
       set({ deleteError: null });
       try {
         lastSelfWrite = Date.now();
@@ -708,14 +758,17 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       await get().scanFolders();
     },
 
-    // Both editors below take the same path: rewrite the file's text, put it
-    // straight on the document so the change is instant, and let the disk catch
-    // up. The file stays the source of truth — reopen Settings, or open the
-    // file in Notepad, and it says the same thing.
+    // Both editors below split the same way: show it now with an inline
+    // property, write it to the file when the hand stops. The file stays the
+    // source of truth — reopen Settings, or open the file in Notepad, and it
+    // says the same thing.
     setThemeColor(token, hex) {
       const { draft } = get();
       if (!draft) return;
-      writeDraft({ ...draft, colors: { ...draft.colors, [token]: hex } });
+      previewDraft(
+        { ...draft, colors: { ...draft.colors, [token]: hex }, resolved: { ...draft.resolved, [token]: hex } },
+        { [token]: hex },
+      );
     },
 
     toggleGradient(slot, on) {
@@ -738,10 +791,22 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     setGradient(key, gradient) {
       const { draft } = get();
       if (!draft) return;
+      const was = draft.gradients[key];
       const gradients = { ...draft.gradients };
       if (gradient) gradients[key] = gradient;
       else delete gradients[key];
-      writeDraft({ ...draft, gradients });
+      const next = { ...draft, gradients };
+
+      // Switching one on or off adds or removes declarations — for a text
+      // gradient, three of them — so there's nothing one inline property can
+      // preview. It's also a single click, so there's nothing to debounce.
+      if (!gradient || !was || was.on !== gradient.on) return commitThemeEdit(next);
+
+      // Everything else here is a drag: the angle, either end's colour, either
+      // end's opacity. A hand-written gradient keeps its own text — the
+      // controls that would rewrite it are disabled, so `raw` is what's on
+      // screen and what stays in the file.
+      previewDraft(next, { [`--gradient-${key}`]: gradient.raw ?? gradientCss(gradient) });
     },
   };
 });
