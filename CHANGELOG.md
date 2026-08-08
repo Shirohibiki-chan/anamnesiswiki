@@ -2,6 +2,12 @@
 
 ## 2026-08-08
 
+### The sidebar draws lines showing what's inside what
+
+- **Each level of nesting now has a faint vertical line running down it**, so you can follow a row back up to the folder it lives in instead of counting indents by eye.
+- The lines sit under the folder's arrow and join up from row to row, the way Obsidian's do.
+- **Nesting is also a bit tighter — 18 pixels a level instead of 24.** Eight levels deep that's 48 pixels handed back to the names, which is most of a word. The lines are what make the tighter spacing still easy to read, which is why the two changed together.
+
 ### The sidebar doesn't scroll sideways any more
 
 - **Nesting a few folders deep used to give the sidebar a horizontal scrollbar** and push everything wider than the panel. Fixed — the sidebar now stays exactly as wide as it is, however deep the tree goes.

@@ -3,6 +3,7 @@
 // its own pixel sizing (react-arborist doesn't auto-size itself).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
+import { TREE_INDENT } from "../../constants/layout";
 import { useProject } from "../../hooks/use-project";
 import { useSearchMatcher, useTreeData } from "../../hooks/use-tree-data";
 import { useTemplates } from "../../hooks/use-templates";
@@ -63,6 +64,7 @@ export function TreePanel() {
             data={treeData}
             width={size.width}
             height={size.height}
+            indent={TREE_INDENT}
             openByDefault={false}
             initialOpenState={initialOpenState}
             searchTerm={searchQuery}
