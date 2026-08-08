@@ -9,6 +9,7 @@ import {
   readTextFile,
   remove,
   rename,
+  watch,
   writeFile,
   writeTextFile,
   type DirEntry,
@@ -34,6 +35,12 @@ const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
 // handle per page simultaneously, and hitting the per-process handle limit
 // fails the load rather than slowing it.
 const READ_CONCURRENCY = 16;
+
+// How long the themes/snippets watcher waits for the writing to stop before it
+// reports. Saving a file is rarely one filesystem event — editors truncate and
+// rewrite, or write a temp file and rename over the original — and reloading a
+// stylesheet halfway through that shows her a file that never existed.
+const WATCH_DELAY_MS = 300;
 
 // `@tauri-apps/api/path`'s `join` is an async round trip into Rust *per call*,
 // and the load and save paths call it several times per node. `sep` is not: it
@@ -716,6 +723,47 @@ export async function readCssDir(dir: string): Promise<CssFile[]> {
     }
   }
   return files.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Ends a watch started by `watchCssDirs`. Safe to call more than once. */
+export type StopWatching = () => void;
+
+/**
+ * Calls back whenever a `.css` file in one of these folders appears, changes or
+ * goes away. Resolves to a function that stops watching.
+ *
+ * These two folders are hers, and a text editor is a supported way to work in
+ * them — the whole design of a theme is "a CSS file you can open in Notepad".
+ * Without this the app only looked when it was asked to, so hand-editing meant
+ * save, alt-tab, find the button, press it. The file reads as the live source;
+ * this makes it behave like one.
+ *
+ * Deliberately *not* recursive. `backups` sits inside the themes folder and the
+ * app writes to it, so a recursive watch would report the app's own safety copy
+ * as a change to her theme and reload on its own tail.
+ *
+ * Rejects when there's no Tauri side to ask — `pnpm dev` in a browser — which
+ * the caller should read as "no live reload here", not as a failure.
+ */
+export async function watchCssDirs(dirs: readonly string[], onChange: () => void): Promise<StopWatching> {
+  // notify errors on a path that isn't there, and one missing folder shouldn't
+  // cost the other its watch.
+  const present: string[] = [];
+  for (const dir of dirs) {
+    if (await exists(dir)) present.push(dir);
+  }
+  if (present.length === 0) throw new Error("nothing to watch");
+
+  return watch(
+    present,
+    (event) => {
+      // A folder is also where editors leave swap files, `.tmp` renames and
+      // lock files, and none of those are a theme.
+      const paths: string[] = Array.isArray(event.paths) ? event.paths : [];
+      if (paths.some((path) => path.toLowerCase().endsWith(".css"))) onChange();
+    },
+    { delayMs: WATCH_DELAY_MS, recursive: false },
+  );
 }
 
 /** Creates the folder if it isn't there yet, and hands back its path. */

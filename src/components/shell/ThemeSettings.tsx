@@ -132,7 +132,8 @@ export function ThemeSettings() {
 
       <p className="appearance-note">
         Themes you make go in a folder as plain <code>.css</code> files. Build one in the sandbox, press <em>Show me the CSS</em>, save
-        it there, and it turns up in this list — or use <em>Colours</em> next door.
+        it there, and it turns up in this list — or use <em>Colours</em> next door. Open one in a text editor and the window follows every
+        time you save.
       </p>
 
       <p className="appearance-actions">

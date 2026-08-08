@@ -16,6 +16,9 @@ const fsMock = vi.hoisted(() => ({
   rename: vi.fn<(from: string, to: string) => Promise<void>>(async () => {}),
   readFile: vi.fn<(path: string) => Promise<Uint8Array>>(async () => new Uint8Array()),
   writeFile: vi.fn<(path: string, data: Uint8Array) => Promise<void>>(async () => {}),
+  watch: vi.fn<(paths: string[], cb: (event: { paths: string[] }) => void, options?: unknown) => Promise<() => void>>(
+    async () => () => {},
+  ),
 }));
 vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 
@@ -27,6 +30,7 @@ import {
   planRelocations,
   resolveNodePath,
   saveNode,
+  watchCssDirs,
 } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
@@ -398,5 +402,67 @@ describe("batch delete and move", () => {
       "/root/Canon/Sampo.json",
       "/root/Canon/Valera.json",
     ]);
+  });
+});
+
+describe("watchCssDirs", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fsMock.watch.mockImplementation(async () => () => {});
+  });
+
+  it("watches the folders that exist and skips the ones that don't", async () => {
+    fsMock.exists.mockImplementation(async (path: string) => path === "/p/themes");
+
+    await watchCssDirs(["/p/themes", "/p/snippets"], () => {});
+
+    expect(fsMock.watch.mock.calls[0][0]).toEqual(["/p/themes"]);
+  });
+
+  it("refuses when neither folder is there, rather than watching nothing", async () => {
+    fsMock.exists.mockImplementation(async () => false);
+
+    await expect(watchCssDirs(["/p/themes", "/p/snippets"], () => {})).rejects.toThrow();
+    expect(fsMock.watch).not.toHaveBeenCalled();
+  });
+
+  // Non-recursive is load-bearing: `themes/backups` is inside the folder being
+  // watched and the app writes to it, so a recursive watch reloads off its own
+  // safety copy. Debounced because saving a file is rarely one event.
+  it("asks for a debounced, non-recursive watch", async () => {
+    fsMock.exists.mockImplementation(async () => true);
+
+    await watchCssDirs(["/p/themes"], () => {});
+
+    expect(fsMock.watch.mock.calls[0][2]).toMatchObject({ recursive: false });
+    expect((fsMock.watch.mock.calls[0][2] as { delayMs: number }).delayMs).toBeGreaterThan(0);
+  });
+
+  it("reports a stylesheet changing, and ignores an editor's swap files", async () => {
+    fsMock.exists.mockImplementation(async () => true);
+    const onChange = vi.fn();
+    await watchCssDirs(["/p/themes"], onChange);
+    const notify = fsMock.watch.mock.calls[0][1];
+
+    notify({ paths: ["/p/themes/Abyssal.css"] });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    notify({ paths: ["/p/themes/.Abyssal.css.swp", "/p/themes/4913"] });
+    notify({ paths: [] });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // A rename over the original reports both paths; one of them is the theme.
+    notify({ paths: ["/p/themes/Abyssal.css.tmp", "/p/themes/Abyssal.css"] });
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("hands back the plugin's own way of stopping", async () => {
+    fsMock.exists.mockImplementation(async () => true);
+    const stop = vi.fn();
+    fsMock.watch.mockImplementation(async () => stop);
+
+    (await watchCssDirs(["/p/themes"], () => {}))();
+
+    expect(stop).toHaveBeenCalled();
   });
 });
