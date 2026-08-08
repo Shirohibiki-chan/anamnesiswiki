@@ -2,6 +2,12 @@
 
 ## 2026-08-08
 
+### The sidebar doesn't scroll sideways any more
+
+- **Nesting a few folders deep used to give the sidebar a horizontal scrollbar** and push everything wider than the panel. Fixed — the sidebar now stays exactly as wide as it is, however deep the tree goes.
+- **Long or deeply nested names shorten with a `…` instead**, the way they do in Obsidian and every other app of this kind. Six levels deep, a row that used to run **413** pixels wide inside a **272** pixel panel now stops at the edge, with the name trimmed to fit.
+- **The colour dot and the + button stay reachable on deep rows.** They sit at the right-hand end of a row, so when the row ran off the side of the panel they went with it.
+
 ### Hover is the same strength on every surface now, not just on panels
 
 - **Hover was hard to see on the darker background colours**, most obviously after using *Match the others to Panels*, which is what turned this up. Fixed.
