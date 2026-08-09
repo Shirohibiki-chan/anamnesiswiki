@@ -249,4 +249,44 @@ describe("the themes in index.css hold that same floor", () => {
     expect(step).toBeGreaterThan(1.09);
     expect(step).toBeLessThan(1.1);
   });
+
+  /**
+   * The same floor `themeFromPalette` is held to, applied to the themes that
+   * ship. Midnight failed this by inheriting the near-black theme's callouts —
+   * the third token group it was caught inheriting, after the borders and the
+   * text ramp, and the third time it was found by using the app rather than by
+   * looking. A theme that doesn't restate these now has to mean it.
+   */
+  it.each(["dark", ...ids])("%s keeps its three callouts apart and readable", (id) => {
+    const theme = tokensFor(id);
+    const edges = ["info", "quote", "secret"].map((kind) => theme[`--color-callout-${kind}`]);
+    expect(new Set(edges).size).toBe(3);
+
+    for (const kind of ["info", "quote", "secret"]) {
+      const edge = theme[`--color-callout-${kind}`];
+      const text = theme[`--color-callout-${kind}-text`];
+      expect(contrast(edge, theme["--color-panel"])).toBeGreaterThanOrEqual(3);
+      expect(contrast(text, theme["--color-panel"])).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  /**
+   * Quote's tint is the one that was wrong everywhere: flat white at 3% where
+   * Info and Secret were their own hue at 12%, so the box wasn't faint, it was
+   * absent. Alpha isn't a hex so `declarations` can't see these — matched out
+   * of the raw CSS instead, and what's being asserted is the thing that was
+   * broken: no callout tint may be a wash of undiluted white or black.
+   */
+  it("gives every quote callout a real tint rather than a wash of white", () => {
+    const tints = [...CSS.matchAll(/--color-callout-quote-bg:\s*rgba\(([^)]+)\)/g)].map((match) =>
+      match[1].split(",").map((part) => Number(part.trim())),
+    );
+    expect(tints.length).toBeGreaterThanOrEqual(6);
+
+    for (const [r, g, b, alpha] of tints) {
+      const neutralExtreme = (r === g && g === b && (r === 0 || r === 255));
+      expect(neutralExtreme).toBe(false);
+      expect(alpha).toBeGreaterThanOrEqual(0.1);
+    }
+  });
 });

@@ -293,8 +293,14 @@
   --color-callout-info-bg: rgba(59, 130, 246, 0.12);
   --color-callout-info-text: #dbeafe;
 
+  /* Quote's tint is its own edge colour like the other two, not a wash of flat
+     white. It used to be `rgba(255,255,255,0.03)` against their 0.12, which on
+     any dark panel is not a faint box — it's no box, and the block read as
+     stray italic text. Reported from use, 2026-08-08. A neutral takes 0.14
+     where the coloured two take 0.12: they get read partly by hue, and grey
+     has none to be read by. */
   --color-callout-quote: #a1a1aa;
-  --color-callout-quote-bg: rgba(255, 255, 255, 0.03);
+  --color-callout-quote-bg: rgba(161, 161, 170, 0.14);
   --color-callout-quote-text: #d4d4d8;
 
   --color-callout-secret: #c4b5fd;
@@ -561,6 +567,30 @@
   --color-text-muted: #838ea6;
   --color-text-placeholder: #616c82;
 
+  /* The third time this theme has been caught inheriting the near-black
+     theme's tokens — borders, then the text ramp, now the callouts. The note
+     20 lines up says every dark re-tunes its callouts "for the same reason
+     daylight did"; Midnight was the one that never did, while being the
+     default. Base Info is a blue picked against #0f0f14, and on navy a blue
+     tint at 12% is the panel with the lights slightly up.
+
+     Three hues that can't be confused with the panel, with each other, or with
+     the teal accent: azure, violet, and a warm sand for Quote — the neutral
+     grey it inherited had nothing to separate it from navy at all. Measured
+     against #151e2e: edges 7.5 / 8.3 / 8.2, words 13.5 / 13.4 / 12.4, against
+     floors of 3 and 10. */
+  --color-callout-info: #6fb3f2;
+  --color-callout-info-bg: rgba(111, 179, 242, 0.13);
+  --color-callout-info-text: #d7e9fc;
+
+  --color-callout-quote: #c2b49c;
+  --color-callout-quote-bg: rgba(194, 180, 156, 0.13);
+  --color-callout-quote-text: #e6ddcd;
+
+  --color-callout-secret: #c3a9fa;
+  --color-callout-secret-bg: rgba(195, 169, 250, 0.13);
+  --color-callout-secret-text: #ece2fe;
+
   --font-display: "Domine", serif;
   --font-ui: "Lexend", sans-serif;
   --font-prose: "Quicksand", sans-serif;
@@ -597,7 +627,7 @@
   --color-callout-info-text: #d8ecfb;
 
   --color-callout-quote: #b09c88;
-  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-bg: rgba(176, 156, 136, 0.13);
   --color-callout-quote-text: #ded0bf;
 
   --color-callout-secret: #d3b2f5;
@@ -636,7 +666,7 @@
   --color-callout-info-text: #d7eafa;
 
   --color-callout-quote: #9fb2a7;
-  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-bg: rgba(159, 178, 167, 0.13);
   --color-callout-quote-text: #cfdcd4;
 
   --color-callout-secret: #c9b3f7;
@@ -674,7 +704,7 @@
   --color-callout-info-text: #cffafe;
 
   --color-callout-quote: #ab9fb5;
-  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-bg: rgba(171, 159, 181, 0.13);
   --color-callout-quote-text: #d9cfe0;
 
   --color-callout-secret: #a5b4fc;
@@ -742,7 +772,7 @@
   --color-callout-info-text: #b6ffd2;
 
   --color-callout-quote: #86bcc8;
-  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);
+  --color-callout-quote-bg: rgba(134, 188, 200, 0.13);
   --color-callout-quote-text: #d3e6ea;
 
   --color-callout-secret: #b09cfc;
@@ -786,9 +816,16 @@
   --color-callout-info-bg: rgba(37, 99, 235, 0.07);
   --color-callout-info-text: #1e3a8a;
 
-  --color-callout-quote: #a1a1aa;
-  --color-callout-quote-bg: rgba(0, 0, 0, 0.03);
-  --color-callout-quote-text: #3f3f46;
+  /* The other half of the same inheritance: Daylight restated Quote, but
+     restated it as the dark themes' grey — #a1a1aa is chosen to sit on a dark
+     panel and comes to 2.56 against this white one, under the 3 the other two
+     edges clear comfortably. Warm stone instead, which reads on white and
+     pairs with Midnight's sand; the words follow it rather than staying
+     neutral, for the reason in the importer's own test above. Edge 3.9,
+     words 10.3. */
+  --color-callout-quote: #8a7f6b;
+  --color-callout-quote-bg: rgba(138, 127, 107, 0.13);
+  --color-callout-quote-text: #45403a;
 
   --color-callout-secret: #7c3aed;
   --color-callout-secret-bg: rgba(124, 58, 237, 0.07);

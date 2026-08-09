@@ -195,10 +195,13 @@ describe("deriveTokens", () => {
     expect(derived["--color-callout-secret-bg"]).toBe("rgba(196, 181, 253, 0.12)");
   });
 
-  // Quote is the "no particular meaning" callout and its wash has always been a
-  // neutral film. Tinting it would make it look like it meant something.
-  it("leaves quote neutral", () => {
-    expect(deriveTokens({ "--color-callout-quote": "#a1a1aa" })["--color-callout-quote-bg"]).toBe("rgba(255, 255, 255, 0.035)");
+  // Quote was special-cased to a flat white film here, so that whatever a theme
+  // chose for its Quote edge, the box behind it was the same near-invisible
+  // wash — one that at 0.035 against the other two's 0.12 wasn't a quiet box
+  // but no box. It takes its own edge like they do, a step stronger because a
+  // neutral has no hue helping it off the panel.
+  it("tints quote from its own edge, a step above the other two", () => {
+    expect(deriveTokens({ "--color-callout-quote": "#a1a1aa" })["--color-callout-quote-bg"]).toBe("rgba(161, 161, 170, 0.14)");
   });
 
   it("derives nothing from a colour that isn't set", () => {
@@ -618,6 +621,32 @@ describe("patchTheme", () => {
     expect(out).toContain("--my-own-thing: 4px;");
     expect(out).toContain("letter-spacing: 0.04em;");
     expect(out).toContain("/* the good blue */");
+  });
+
+  // "Leave it alone unless the app wrote it" is decided by re-deriving from the
+  // file's own colours — so the day a formula changes, every theme written
+  // under the old one starts reading as hand-chosen, and the fix never reaches
+  // them. Quote's old white film is the first value that had to be named as
+  // ours-retired rather than inferred.
+  it("replaces a derived value the app used to write but no longer would", () => {
+    const stale = HAND_WRITTEN.replace(
+      '--color-accent-light: #5eead4;',
+      '--color-accent-light: #5eead4;\n  --color-callout-quote: #a1a1aa;\n  --color-callout-quote-bg: rgba(255, 255, 255, 0.035);',
+    );
+    const out = patchTheme(stale, "Sea Glass", "sea-glass", draftOf({ "--color-callout-quote": "#a1a1aa" }, {}, asRead), "2026-08-07");
+
+    expect(out).toContain("--color-callout-quote-bg: rgba(161, 161, 170, 0.14);");
+    expect(out).not.toContain("rgba(255, 255, 255, 0.035)");
+  });
+
+  it("still leaves a wash somebody actually chose alone", () => {
+    const chosen = HAND_WRITTEN.replace(
+      '--color-accent-light: #5eead4;',
+      '--color-accent-light: #5eead4;\n  --color-callout-quote: #a1a1aa;\n  --color-callout-quote-bg: rgba(94, 234, 212, 0.2);',
+    );
+    const out = patchTheme(chosen, "Sea Glass", "sea-glass", draftOf({ "--color-callout-quote": "#a1a1aa" }, {}, asRead), "2026-08-07");
+
+    expect(out).toContain("--color-callout-quote-bg: rgba(94, 234, 212, 0.2);");
   });
 
   it("changes a face where the file already declares one", () => {
