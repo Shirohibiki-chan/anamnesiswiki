@@ -27,10 +27,28 @@ jobs:
   # another, and the update button goes quiet for everyone.
   check-version:
     runs-on: ubuntu-22.04
+    # Read once here rather than per platform: four jobs each parsing the same
+    # file could disagree, and the body has to be identical in all four because
+    # whichever finishes last is the one that sticks.
+    outputs:
+      notes: ${{ steps.notes.outputs.body }}
     steps:
       - uses: actions/checkout@v4
       - name: Version files must match the tag
         run: node scripts/check-version.mjs "${GITHUB_REF_NAME#v}"
+      # Fails here, in seconds, if this version has no section written for it.
+      # A release with no notes is worth stopping for: the body it would carry
+      # is baked into latest.json at build time and can't be corrected on the
+      # web page afterwards — see scripts/release-notes.mjs.
+      - name: Release notes must exist for this version
+        id: notes
+        run: |
+          {
+            echo 'body<<RELEASE_NOTES_EOF'
+            node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}"
+            echo
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
 
   release:
     needs: check-version
@@ -100,7 +118,15 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Anamnesis ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md for what changed.
+          # This version's section of RELEASES.md, read by the job above. It is
+          # not only what the releases page shows: tauri-action copies it into
+          # latest.json's `notes`, and that is what Settings → Updates puts in
+          # front of someone deciding whether to install. It used to be a
+          # placeholder pointing at CHANGELOG.md, on the assumption the real
+          # notes could be pasted in afterwards — they can't, because the copy
+          # in latest.json is written now and editing the release later doesn't
+          # touch it.
+          releaseBody: ${{ needs.check-version.outputs.notes }}
           # Published as a draft so the release can be read before anyone's
           # update button finds it — and because latest.json is assembled
           # across four separate jobs, so an early-published release would be

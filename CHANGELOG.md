@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-09 — releases carry their own notes
+
+### Fixes
+
+- **The update panel will show the real release notes from now on.** It reads them from `latest.json`, a small file built and uploaded alongside the installers — not from the release description on the web page, which is what everyone including this changelog assumed. The description could be filled in afterwards; `latest.json` couldn't, because its copy is written while the build runs. So the notes it carried were the workflow's placeholder, *See CHANGELOG.md for what changed*, which is both a dead end and the wrong file. The build now reads the version's section out of [RELEASES.md](RELEASES.md) and uses that for both. v0.3.0's was corrected by hand before publishing.
+- **A release with no notes written for it stops the build** in the first few seconds, rather than producing installers whose update panel has nothing to say. Same idea as the check that the version files match the tag, and for the same reason — the expensive failures here are the quiet ones.
+
+### Adjustments
+
+- **[docs/releasing.md](docs/releasing.md) no longer says to paste the notes in by hand**, since the draft now arrives with its description already written. It explains what actually feeds the update panel, and records the one-command repair if a release ever goes out with the wrong notes again.
+
 ## 2026-08-08 — v0.3.0 release notes cover the fonts change
 
 ### Adjustments
