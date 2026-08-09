@@ -27,6 +27,7 @@ import { ProjectsSettings } from "./ProjectsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { SnippetSettings } from "./SnippetSettings";
 import { ThemeEditor } from "./ThemeEditor";
+import { PatchNotes } from "./PatchNotes";
 import { ThemeSettings } from "./ThemeSettings";
 import { UpdateCheck } from "./UpdateCheck";
 
@@ -82,6 +83,13 @@ const SETTINGS_TABS = [
     label: "Updates",
     blurb: "Check for a new version. Only ever when you press the button.",
     Panel: UpdateCheck,
+  },
+  {
+    id: "patch-notes",
+    group: "app",
+    label: "Patch Notes",
+    blurb: "What changed in the last few versions of Anamnesis.",
+    Panel: PatchNotes,
   },
 ] as const;
 

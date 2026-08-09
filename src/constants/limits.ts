@@ -24,6 +24,11 @@ export const SEARCH_SNIPPET_CHARS = 100;
 // left to put its contents.
 export const MAX_PATH_CHARS = 200;
 
+// How many versions Settings → Patch Notes offers. Three is enough to cover
+// "what changed recently" without the panel becoming an archive — the whole
+// history is on the releases page, one link away from every tab.
+export const PATCH_NOTES_VERSION_COUNT = 3;
+
 // How many LK pictures an import downloads at once. Strictly one at a time
 // made a 53-picture world take about a minute with the window looking frozen;
 // a small pool cuts that without leaning on someone else's server.

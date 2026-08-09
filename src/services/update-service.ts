@@ -10,7 +10,7 @@
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { RELEASES_PAGE_URL } from "../constants/links";
+import { RELEASES_PAGE_URL, releaseTagUrl } from "../constants/links";
 import { parseReleaseNotes, type ReleaseNoteBlock } from "./release-notes";
 
 export type PendingUpdate = {
@@ -102,4 +102,12 @@ export async function restartApp(): Promise<void> {
 // OS to open a link, and only ever this one.
 export async function openReleasesPage(): Promise<void> {
   await openUrl(RELEASES_PAGE_URL);
+}
+
+// The same, for one named version — Settings → Patch Notes links each release
+// it shows. Lives here beside its sibling because this is the file that owns
+// handing a releases URL to the OS; nothing about it belongs to the updater's
+// state machine above.
+export async function openReleaseTag(version: string): Promise<void> {
+  await openUrl(releaseTagUrl(version));
 }
