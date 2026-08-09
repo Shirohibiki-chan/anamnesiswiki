@@ -40,6 +40,20 @@
   outline: none;
 }
 
+/* The global field ring in index.css assumes a bordered box sitting among
+   other controls. This input is neither: it's borderless and runs edge to
+   edge inside the ruled row, so the ring traced the input's own rectangle
+   rather than the field it reads as — a green box floating over the border,
+   not around it. And the palette opens focused every time with nothing else
+   in the dialog to focus, so it never turned off. A permanent focus ring is
+   not a focus ring. Reported from use, 2026-08-09.
+
+   Nothing replaces it on purpose: the caret is already in the only field
+   there is. */
+.search-palette-input:focus-visible {
+  box-shadow: none;
+}
+
 .search-palette-input::placeholder {
   color: var(--color-text-placeholder);
 }
