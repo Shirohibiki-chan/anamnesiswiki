@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-08 — fonts belong to themes
+
+### Adjustments
+
+- **A font is part of the theme now, the way its colours are.** Pick one in *Fonts and text* and it's written into the selected theme's `.css` file, alongside its colours — so switching theme switches the fonts with it, and a copy of a theme keeps the faces it had when you copied it. Before, a font was one setting that sat over the top of every theme at once, which is the opposite rule to the one the *Colours* panel next door teaches, with nothing on either screen saying so. The way that showed up was a copy of a theme appearing to have picked up a font change made before the copy existed — the copy was fine; the override was on top of it.
+- **A switch at the top of the panel for the other way round.** *Use one set of fonts in every theme* does what fonts used to do: your faces win over every theme, built-in ones included. It's off by default, and on for anyone who already had a font set — nothing changes underfoot on upgrade. Turning it off puts each theme back on its own fonts and remembers yours in case you want them back.
+- **Setting a font on a built-in theme now offers you a copy**, exactly as changing its colours does, since the built-ins ship with the app and their files can't be edited. The alternative is the switch above.
+- **Font choices per slot are still per slot.** In every-theme mode, leaving one on *whatever the theme uses* still lets that one follow the theme — so a reading face can stay put while titles change with the theme.
+
+### Additions
+
+- **A *New theme* button in Settings → Themes.** It copies the theme you're on into a file of your own and selects it, which is the one way a theme gets made and was previously only reachable from the *Colours* panel — a screen there's no reason to open unless you already have a theme of your own to edit. The named version with a text box is still in *Colours*, and *Fonts and text* offers it too when there's nothing it can edit.
+
 ## 2026-08-08 — release notes bullets
 
 ### Fixes

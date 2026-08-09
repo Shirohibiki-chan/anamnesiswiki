@@ -11,6 +11,7 @@
 // Nothing here touches disk (filesystem-service does) or the document
 // (theme-service does). This is the text ↔ values conversion and nothing else.
 import { AUTO_TOKENS, COLOR_TOKENS, GRADIENT_SLOTS, type GradientSlot } from "../constants/theme-tokens";
+import { FONT_SLOTS } from "../constants/themes";
 
 /* --- Colours -------------------------------------------------------------- */
 
@@ -475,6 +476,16 @@ export type ThemeDraft = {
    */
   resolved: Record<string, string>;
   gradients: Record<string, Gradient>;
+  /**
+   * `--font-*` → the stack the file declares, for the slots it declares at all.
+   *
+   * Same rule as `colors`: only what the file actually says. A slot missing
+   * here means the theme doesn't ask for a face and the base tokens decide,
+   * which is a different statement from "this theme uses Inter" and has to
+   * stay tellable apart — clearing a slot writes the *absence* back, the way
+   * switching a gradient off removes its line.
+   */
+  fonts: Record<string, string>;
 };
 
 const declaration = (token: string, css: string): string | undefined =>
@@ -503,7 +514,18 @@ export function readThemeDraft(css: string, resolve: (token: string) => string =
     if (value) gradients[slot.key] = parseGradient(value);
   }
 
-  return { colors, resolved, gradients };
+  // Not resolved against the document like the colours are, on purpose. An
+  // undeclared colour still has to show the picker *something*, but an
+  // undeclared face is exactly the state the "the app's own" option means, and
+  // filling it in from what the document happens to be showing would make
+  // every theme look like it had chosen a font it never mentions.
+  const fonts: Record<string, string> = {};
+  for (const slot of FONT_SLOTS) {
+    const value = declaration(slot.token, css);
+    if (value) fonts[slot.token] = value;
+  }
+
+  return { colors, resolved, gradients, fonts };
 }
 
 /**
@@ -624,12 +646,14 @@ export function serializeTheme(
     for (const [token, value] of Object.entries(derived)) write(token, value);
   }
 
-  const faces = Object.entries(fonts);
+  // The draft wins where both name a slot: the parameter is the theme this one
+  // was copied from, the draft is what the pickers have since been told.
+  const faces = Object.entries({ ...fonts, ...draft.fonts });
   if (faces.length > 0) {
     lines.push("");
-    lines.push("  /* The faces this theme asks for. A font chosen in Settings →");
-    lines.push("     Fonts and text still wins over these — they're what it");
-    lines.push("     goes back to when you clear one. */");
+    lines.push("  /* The faces this theme asks for. Settings → Fonts and text");
+    lines.push("     edits these lines, unless you've asked it to use one set of");
+    lines.push("     fonts everywhere — then that choice wins over these. */");
     for (const [token, stack] of faces) write(token, stack);
   }
 
@@ -760,6 +784,15 @@ export function patchTheme(css: string, name: string, themeId: string, draft: Th
   for (const [token, value] of Object.entries(deriveTokens(draft.colors))) {
     const current = declaration(token, block)?.trim();
     if (current === undefined || current === ours[token]) block = setInBlock(block, token, value);
+  }
+
+  // Written where named, removed where not — the same shape as a gradient
+  // being switched off, and for the same reason: "this theme asks for no
+  // particular face" is a real choice, and the only way to write it down is to
+  // take the line out. Nothing else in the file is disturbed either way.
+  for (const slot of FONT_SLOTS) {
+    const stack = draft.fonts[slot.token];
+    block = stack ? setInBlock(block, slot.token, stack) : removeFromBlock(block, slot.token);
   }
 
   for (const slot of GRADIENT_SLOTS) {

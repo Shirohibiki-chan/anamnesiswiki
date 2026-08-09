@@ -52,6 +52,7 @@ import {
   applyThemeId,
   cacheAppearance,
   clearPreviewedTokens,
+  fontStackFor,
   labelForFile,
   previewToken,
   readCachedAppearance,
@@ -94,7 +95,27 @@ export type ThemeStoreState = {
   themeId: string;
   /** Filename when the current theme is one of hers; null for a built-in. */
   themeFile: string | null;
+  /**
+   * The faces that outrank every theme. Only in force when `fontsEveryTheme`
+   * is on — kept when it isn't, so switching back restores the set she had
+   * rather than an empty one.
+   */
   fonts: Partial<Record<FontSlotKey, string>>;
+  /**
+   * Which of the two ways of choosing a face is in use.
+   *
+   * Off — the normal one — means a face is part of the theme: the picker
+   * writes it into the selected theme's `.css`, exactly as the colour pickers
+   * do, and switching theme changes the fonts with it. On means one set of
+   * faces everywhere, ignoring what any theme asks for.
+   *
+   * It exists because both are reasonable and they contradict each other. The
+   * app shipped only the second, in a panel sitting next to Colours, which
+   * does the first — two identical-looking panels teaching opposite rules,
+   * and the way that surfaced was a copy of a theme appearing to have caught
+   * a font change made before the copy was taken.
+   */
+  fontsEveryTheme: boolean;
   /**
    * What each font token resolves to with her overrides taken off — i.e. what
    * the current theme itself asks for. Derived, never saved: it's here so the
@@ -157,7 +178,13 @@ export type ThemeStoreState = {
   loadAppearance: () => Promise<void>;
   scanFolders: () => Promise<void>;
   selectTheme: (themeId: string, themeFile: string | null) => Promise<void>;
+  /**
+   * Sets a face. Which of the two places it lands in depends on
+   * `fontsEveryTheme` — the theme's own file, or the everywhere-override.
+   * One entry point rather than two so the picker doesn't have to know.
+   */
   setFont: (slot: FontSlotKey, family: string | null) => Promise<void>;
+  setFontsEveryTheme: (on: boolean) => Promise<void>;
   setTextScale: (scale: number) => Promise<void>;
   setContentScale: (scale: number) => Promise<void>;
   toggleSnippet: (file: string) => Promise<void>;
@@ -389,9 +416,14 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     // an override is an inline property on the same element and masks it. Then
     // the overrides go back on. Costs one extra style recalc, on a path that
     // runs when something changes and never per frame.
+    //
+    // Which set goes back on is the switch: with faces left to the themes,
+    // there is no override to reapply and the second pass puts nothing on. Her
+    // choices stay in `fonts` either way, so turning it back on restores them.
+    const overrides = state.fontsEveryTheme ? state.fonts : {};
     applyFonts({}, FONT_SLOTS);
     const themeFonts = readThemeFonts(FONT_SLOTS);
-    applyFonts(state.fonts, FONT_SLOTS);
+    applyFonts(overrides, FONT_SLOTS);
 
     applyTextScale(state.textScale);
     applyContentScale(state.contentScale);
@@ -407,7 +439,10 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       themeCss,
       snippetCss,
       enabledSnippets: state.enabledSnippets,
-      fonts: state.fonts,
+      // The effective set, not the saved one — the cache exists to reproduce
+      // the first paint, and painting overrides that aren't in force would
+      // flash her everywhere-fonts over a theme that isn't using them.
+      fonts: overrides,
       textScale: state.textScale,
       contentScale: state.contentScale,
       bootBg,
@@ -504,6 +539,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         themeId: state.themeId,
         themeFile: state.themeFile,
         fonts: state.fonts as Record<string, string>,
+        fontsEveryTheme: state.fontsEveryTheme,
         textScale: state.textScale,
         contentScale: state.contentScale,
         enabledSnippets: state.enabledSnippets,
@@ -515,6 +551,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     themeId: DEFAULT_THEME_ID,
     themeFile: null,
     fonts: {},
+    fontsEveryTheme: false,
     themeFonts: {},
     textScale: DEFAULT_TEXT_SCALE,
     contentScale: DEFAULT_CONTENT_SCALE,
@@ -553,6 +590,9 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
           themeId: cached.themeId,
           themeFile: cached.themeFile ?? null,
           fonts: cached.fonts as Record<string, string> | undefined,
+          // Not in the snapshot — the snapshot holds the faces that were
+          // actually on the document, so "there are some" and "they were in
+          // force everywhere" are the same statement. The line below infers it.
           textScale: cached.textScale,
           contentScale: cached.contentScale,
           enabledSnippets: cached.enabledSnippets,
@@ -573,10 +613,19 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
 
       const textScale = typeof saved.textScale === "number" ? saved.textScale : DEFAULT_TEXT_SCALE;
 
+      // Off for anyone new, and *on* for anyone whose settings predate the
+      // switch and have a face saved in them. Faces used to be nothing but an
+      // everywhere-override, so someone who had picked one had picked exactly
+      // what this now describes — reading it as off would take a font they
+      // chose off the screen on upgrade to make a point about the new model.
+      const fontsEveryTheme =
+        typeof saved.fontsEveryTheme === "boolean" ? saved.fontsEveryTheme : Object.keys(fonts).length > 0;
+
       set({
         themeId: typeof saved.themeId === "string" && saved.themeId ? saved.themeId : DEFAULT_THEME_ID,
         themeFile: typeof saved.themeFile === "string" ? saved.themeFile : null,
         fonts,
+        fontsEveryTheme,
         textScale,
         // Falls back to the UI's scale, not to 1. Before these were split there
         // was one slider driving both, so someone who had set it to 120% wants
@@ -671,13 +720,55 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     },
 
     async setFont(slot, family) {
-      const fonts = { ...get().fonts };
+      const state = get();
+      const token = FONT_SLOTS.find((s) => s.key === slot)?.token;
+
+      // The theme's own file, when faces belong to themes and there's a file to
+      // write to. Committed rather than queued: this is one click on a menu,
+      // not a picker being dragged, so there's nothing to debounce and waiting
+      // 400ms to see a font change would just read as the app being slow.
+      if (!state.fontsEveryTheme && state.draft && token) {
+        const fonts = { ...state.draft.fonts };
+        const stack = family ? fontStackFor(family) : null;
+        // Deleted, not blanked. An absent declaration is what "the app's own"
+        // means, and `patchTheme` takes the line out when it sees one missing.
+        if (stack) fonts[token] = stack;
+        else delete fonts[token];
+        commitThemeEdit({ ...state.draft, fonts });
+        return;
+      }
+
+      // The everywhere-set. Also where a call lands with the switch off and no
+      // theme file to write to — a built-in — which the panel doesn't offer a
+      // picker for at all, so it isn't reachable from the UI. Recording the
+      // choice is still the least surprising thing to do with it: it's there
+      // when the switch goes on. What must not happen is it appearing to take
+      // effect, and it can't, since `apply` ignores this set while it's off.
+      const fonts = { ...state.fonts };
       // Removed rather than set to a marker value, so "back to the theme's
       // own choice" and "never touched" are the same state.
       if (family) fonts[slot] = family;
       else delete fonts[slot];
       set({ fonts });
       apply();
+      await persist();
+    },
+
+    /**
+     * Flips between the two models.
+     *
+     * Neither set is thrown away: turning it off leaves her everywhere-faces
+     * saved and stops applying them, so the themes' own come back through and
+     * turning it on again restores exactly what she had. Nothing is written to
+     * any theme file here — the switch changes what wins, not what the files
+     * say.
+     */
+    async setFontsEveryTheme(on) {
+      set({ fontsEveryTheme: on });
+      apply();
+      // The faces on the document have just changed underneath the pickers, and
+      // `themeFonts` is what they read to name them.
+      syncDraft();
       await persist();
     },
 
@@ -705,6 +796,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         themeId: DEFAULT_THEME_ID,
         themeFile: null,
         fonts: {},
+        fontsEveryTheme: false,
         textScale: DEFAULT_TEXT_SCALE,
         contentScale: DEFAULT_CONTENT_SCALE,
         enabledSnippets: [],
@@ -768,7 +860,9 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       const css = serializeTheme(
         label,
         themeId,
-        { colors, resolved: colors, gradients: {} },
+        // The faces go in through the parameter below, not the draft: this is
+        // what the theme being copied asks for, not an edit to it.
+        { colors, resolved: colors, gradients: {}, fonts: {} },
         new Date().toISOString().slice(0, 10),
         fonts,
       );
@@ -837,7 +931,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         css = serializeTheme(
           labelForFile(file),
           themeIdForFile(file),
-          { colors: built.colors, resolved: built.colors, gradients: built.gradients },
+          { colors: built.colors, resolved: built.colors, gradients: built.gradients, fonts: {} },
           new Date().toISOString().slice(0, 10),
           {},
           { made: `Worked out from ${source} on ${new Date().toISOString().slice(0, 10)}.`, notes: built.notes },

@@ -8,6 +8,7 @@ import { Check, FolderOpen, Import, RefreshCw, Trash2 } from "lucide-react";
 import { BUILT_IN_THEMES } from "../../constants/themes";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTheme } from "../../hooks/use-theme";
+import { NewThemeButton } from "./CreateTheme";
 import { BlockedNotice, DeleteErrorNotice, FolderErrorNotice, ImportErrorNotice } from "./StylesheetNotices";
 import type { ThemeSwatch } from "../../services/theme-service";
 
@@ -133,14 +134,18 @@ export function ThemeSettings() {
       </div>
 
       <p className="appearance-note">
-        Themes you make go in a folder as plain <code>.css</code> files. Build one in the sandbox, press <em>Show me the CSS</em>, save
-        it there, and it turns up in this list — or use <em>Colours</em> next door. Open one in a text editor and the window follows every
-        time you save.
+        <em>New theme</em> copies the one you're on into a file of your own, and everything about it becomes editable — colours and
+        fonts, in the two panels next door. Themes you make go in a folder as plain <code>.css</code> files, so you can also build one
+        in the sandbox, press <em>Show me the CSS</em> and save it there. Open one in a text editor and the window follows every time
+        you save.
       </p>
 
-      {/* First of the three, because it's the one that needs no explaining and
-          the other two are both "the manual way". */}
+      {/* Making one comes first: it's the only button here that produces a
+          theme rather than finding one, and it used to be reachable only from
+          the Colours panel — which you'd have no reason to open unless you
+          already had a theme of your own to edit. */}
       <p className="appearance-actions">
+        <NewThemeButton />
         <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void importTheme()}>
           <Import size={14} />
           Import a theme

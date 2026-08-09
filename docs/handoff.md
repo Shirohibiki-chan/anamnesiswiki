@@ -891,6 +891,37 @@ is below.
   understand, and the round trip that lets her build in the sandbox and adjust
   in Settings stops working. `theme-editor.test.ts` guards both directions.
 
+- **A face belongs to the theme, and there is one deliberate exception.**
+  `--font-*` is written into the theme's own file by the same `patchTheme` path
+  the colours use, so switching theme switches the fonts. The exception is
+  `fontsEveryTheme` in `theme-store.ts`: with it on, `state.fonts` is applied
+  as an inline override that outranks every theme, which is what fonts used to
+  do unconditionally. **Both halves are load-bearing — don't delete one to
+  simplify the panel.** They exist because a title face is part of a theme's
+  look while a reading face is a readability preference, and shipping only the
+  second put two identically-shaped panels next to each other teaching opposite
+  rules, with nothing on screen distinguishing them. The bug that surfaced it
+  looked like a theme copy inheriting a later font change; it was the override
+  sitting on top of a copy that was fine.
+
+- **An absent `--font-*` in `draft.fonts` is a statement, not a gap.** It means
+  the theme asks for no face there and the base tokens decide, so `patchTheme`
+  *removes* the declaration — the same shape as a gradient being switched off,
+  and the only way "back to the app's own" can be written down. Two consequences
+  to keep: `readThemeDraft` must not resolve fonts against the document the way
+  it resolves colours (every theme would look like it had chosen a face it never
+  names), and any code building a `ThemeDraft` by hand has to carry the fonts it
+  read or it will silently strip them on the next write.
+
+- **Two things about `fontsEveryTheme` will look wrong and aren't.** Settings
+  written before it existed have no flag, so it's inferred as *on* when any font
+  is saved — anyone who had picked a face had picked exactly what it now
+  describes, and defaulting them to off would take a font off their screen on
+  upgrade to make a point. And `cacheAppearance` stores the *effective* set, not
+  `state.fonts`: the paint cache reproduces the first frame, so caching
+  overrides that aren't in force would flash them over a theme not using them.
+  That's also why the cache can't record the flag and doesn't need to.
+
 - **Import is a fourth maker of themes and it obeys the same rule: it produces a
   file in the folder and then gets out of the way.** A `.css` is *copied*, byte
   for byte — running somebody's hand-written theme back through `serializeTheme`

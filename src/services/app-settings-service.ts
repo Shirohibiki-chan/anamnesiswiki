@@ -140,6 +140,17 @@ export type AppearanceSettings = {
   themeId: string;
   themeFile: string | null;
   fonts: Record<string, string>;
+  /**
+   * Whether `fonts` above applies at all.
+   *
+   * Faces normally belong to the theme, the way colours do, and the pickers
+   * write them into its file. This switch is the other way of working — one
+   * set of faces that outranks every theme — and it exists because that's a
+   * legitimate thing to want for a reading font and used to be the only
+   * behaviour. Absent means off, except for settings written before the switch
+   * existed; theme-store's `loadAppearance` says how those are read.
+   */
+  fontsEveryTheme: boolean;
   /** The interface. Absent on settings written before the two were split. */
   textScale: number;
   /** The page body. Absent on settings written before the two were split — see theme-store. */
