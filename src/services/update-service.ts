@@ -11,15 +11,15 @@ import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { RELEASES_PAGE_URL } from "../constants/links";
-import { summariseReleaseNotes } from "./release-notes";
+import { parseReleaseNotes, type ReleaseNoteBlock } from "./release-notes";
 
 export type PendingUpdate = {
   version: string;
-  // The opening paragraph of the GitHub release body, flattened to plain text,
-  // or null if the release had no notes. Deliberately not the whole body —
-  // that's markdown written for the releases page, and release-notes.ts
-  // explains why the panel takes one paragraph of it instead.
-  notes: string | null;
+  // The release notes as blocks to render — headings, paragraphs and lists —
+  // or empty if the release had none. Parsed rather than passed through as
+  // markdown, and parsed into data rather than markup; release-notes.ts says
+  // why that distinction is the important one.
+  notes: ReleaseNoteBlock[];
   // Kept opaque to callers — it's the plugin's handle for the actual download.
   handle: Update;
 };
@@ -52,7 +52,7 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
     if (!update) return { status: "up-to-date" };
     return {
       status: "available",
-      update: { version: update.version, notes: summariseReleaseNotes(update.body), handle: update },
+      update: { version: update.version, notes: parseReleaseNotes(update.body), handle: update },
     };
   } catch (error) {
     return { status: "error", message: describeFailure(error) };

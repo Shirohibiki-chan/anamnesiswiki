@@ -13,11 +13,12 @@
 
 ## 2026-08-08
 
-### Release notes in the update panel read like writing again
+### Release notes in the update panel look like release notes now
 
-- **The "what's new" text in Settings → Updates used to arrive as a wall of raw formatting** — `###` and `-` and `**stars**` showing as themselves, the whole release run together in one block. It's now the release's opening paragraph, as ordinary text.
-- **There's a *See everything in this release* link under it**, which opens the releases page in your browser. That's where the full notes live and where they've always looked right.
-- **This is a decision about what the panel is for.** It's answering *is this worth installing right now*, and a page and a half of headings and bullets is the wrong shape for that question. The first paragraph is the answer; the rest is one click away.
+- **The "what's new" text in Settings → Updates used to arrive as a wall of raw formatting** — `###` and `-` and `**stars**` showing as themselves, the whole release run together in one block. It reads properly now: headings as headings, bullets as bullets, bold as bold.
+- **The version heading is skipped if you paste it in**, since the line above it already says which version is available.
+- **Long notes scroll inside the panel** rather than pushing *Download and install* down the screen.
+- **There's a *Read this on GitHub* link underneath**, if you'd rather read them in a browser window.
 - Nothing new goes out over the network. The text was already being fetched as part of checking for updates — it just wasn't readable.
 
 ### The sidebar draws lines showing what's inside what

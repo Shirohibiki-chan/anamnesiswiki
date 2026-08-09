@@ -3,6 +3,7 @@
 // running program and restarts it, so `useUpdates` flushes pending saves
 // first — that flush is what makes it safe to reach this mid-project.
 import { useUpdates } from "../../hooks/use-updates";
+import { ReleaseNotes } from "./ReleaseNotes";
 
 function formatSize(bytes: number): string {
   const mb = bytes / (1024 * 1024);
@@ -39,13 +40,10 @@ export function UpdateCheck() {
       {state.phase === "available" && (
         <div className="update-check-card">
           <p className="update-check-headline">Anamnesis {state.update.version} is available.</p>
-          {/* One paragraph, not the whole release body — see
-              services/release-notes.ts. The rest of it is a click away, and
-              reads properly there. */}
-          {state.update.notes && <p className="update-check-notes">{state.update.notes}</p>}
+          <ReleaseNotes blocks={state.update.notes} />
           <p className="update-check-notes-more">
             <button type="button" className="ui-link" onClick={() => void viewReleaseNotes()}>
-              See everything in this release
+              Read this on GitHub
             </button>
           </p>
           <p className="update-check-reassurance">Your projects aren't touched — updating only replaces the app itself.</p>

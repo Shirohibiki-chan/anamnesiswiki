@@ -1,103 +1,152 @@
 import { describe, expect, it } from "vitest";
-import { summariseReleaseNotes } from "./release-notes";
+import { parseReleaseNotes, plainText, type ReleaseNoteBlock } from "./release-notes";
 
-describe("summariseReleaseNotes", () => {
-  it("returns null when the release had no notes", () => {
-    expect(summariseReleaseNotes(null)).toBeNull();
-    expect(summariseReleaseNotes(undefined)).toBeNull();
-    expect(summariseReleaseNotes("   \n\n  ")).toBeNull();
+// Most assertions here only care about shape and words, not which span carried
+// which. These two keep the tests readable when that's the case.
+function shape(blocks: ReleaseNoteBlock[]): string[] {
+  return blocks.map((block) =>
+    block.kind === "list" ? `${block.ordered ? "ol" : "ul"}(${block.items.length})` : block.kind,
+  );
+}
+
+function words(block: ReleaseNoteBlock): string | string[] {
+  return block.kind === "list" ? block.items.map(plainText) : plainText(block.spans);
+}
+
+describe("parseReleaseNotes", () => {
+  it("returns nothing for a release with no notes", () => {
+    expect(parseReleaseNotes(null)).toEqual([]);
+    expect(parseReleaseNotes(undefined)).toEqual([]);
+    expect(parseReleaseNotes("  \n\n ")).toEqual([]);
   });
 
-  it("stops at the first blank line", () => {
-    const body = "Anamnesis looks however you want it to now.\n\n### Themes\n\n- Seven themes.";
-    expect(summariseReleaseNotes(body)).toBe("Anamnesis looks however you want it to now.");
+  it("keeps headings, paragraphs and lists as separate blocks", () => {
+    const blocks = parseReleaseNotes("Intro line.\n\n### Themes\n\n- One thing\n- Another thing");
+    expect(shape(blocks)).toEqual(["paragraph", "heading", "ul(2)"]);
+    expect(words(blocks[0])).toBe("Intro line.");
+    expect(words(blocks[1])).toBe("Themes");
+    expect(words(blocks[2])).toEqual(["One thing", "Another thing"]);
   });
 
-  // RELEASES.md hard-wraps its prose at ~78 characters, so the paragraph
-  // arrives as several lines that were written as one sentence.
-  it("rejoins a hard-wrapped paragraph into one line", () => {
-    const body = "There are seven themes instead of\none, and you can build your own\nfrom inside Settings.";
-    expect(summariseReleaseNotes(body)).toBe(
-      "There are seven themes instead of one, and you can build your own from inside Settings.",
+  // RELEASES.md hard-wraps at ~78 characters. Both of these arrive as several
+  // lines that were written as one.
+  it("rejoins a hard-wrapped paragraph", () => {
+    const blocks = parseReleaseNotes("There are seven themes instead of\none, and you can build\nyour own.");
+    expect(shape(blocks)).toEqual(["paragraph"]);
+    expect(words(blocks[0])).toBe("There are seven themes instead of one, and you can build your own.");
+  });
+
+  it("rejoins a bullet that runs over several lines", () => {
+    const blocks = parseReleaseNotes(
+      "- **Seven themes.** Midnight is what you\n  start on now. Anamnesis Dark is what\n  the app used to look like.\n- Change any colour.",
     );
+    expect(shape(blocks)).toEqual(["ul(2)"]);
+    expect(words(blocks[0])).toEqual([
+      "Seven themes. Midnight is what you start on now. Anamnesis Dark is what the app used to look like.",
+      "Change any colour.",
+    ]);
   });
 
-  // Whether the `## v0.3.0 — 2026-08-08` line gets pasted into the release
-  // along with the section is a coin flip, and it must not become the summary.
-  it("skips a heading above the paragraph", () => {
-    expect(summariseReleaseNotes("## v0.3.0 — 2026-08-08\n\nSearch reads your writing now.")).toBe(
-      "Search reads your writing now.",
-    );
+  it("separates a heading that has no blank line under it", () => {
+    expect(shape(parseReleaseNotes("### Undo\nYou can undo in the sidebar now."))).toEqual(["heading", "paragraph"]);
   });
 
-  it("skips a heading that isn't separated from the paragraph by a blank line", () => {
-    expect(summariseReleaseNotes("# What's new\nSearch reads your writing now.")).toBe(
-      "Search reads your writing now.",
-    );
+  it("starts a new list after a blank line", () => {
+    expect(shape(parseReleaseNotes("- One\n\n- Two"))).toEqual(["ul(1)", "ul(1)"]);
   });
 
-  it("skips a horizontal rule in any spelling", () => {
-    expect(summariseReleaseNotes("---\n\nFirst words.")).toBe("First words.");
-    expect(summariseReleaseNotes("***\n\nFirst words.")).toBe("First words.");
-    expect(summariseReleaseNotes("___\n\nFirst words.")).toBe("First words.");
+  it("reads numbered lists as ordered", () => {
+    const blocks = parseReleaseNotes("1. First\n2) Second");
+    expect(shape(blocks)).toEqual(["ol(2)"]);
+    expect(words(blocks[0])).toEqual(["First", "Second"]);
   });
 
-  it("returns null when the body is nothing but structure", () => {
-    expect(summariseReleaseNotes("## v0.3.0\n\n---")).toBeNull();
+  it("drops horizontal rules", () => {
+    expect(shape(parseReleaseNotes("First.\n\n---\n\nSecond."))).toEqual(["paragraph", "paragraph"]);
   });
 
-  describe("inline markdown", () => {
-    it("unwraps bold, emphasis and code", () => {
-      expect(summariseReleaseNotes("**Seven themes**, all *yours*, from a `.css` file.")).toBe(
-        "Seven themes, all yours, from a .css file.",
-      );
-      expect(summariseReleaseNotes("__Bold__ and _emphasised_ too.")).toBe("Bold and emphasised too.");
+  it("copes with Windows line endings", () => {
+    expect(shape(parseReleaseNotes("Intro.\r\n\r\n### Themes\r\n\r\n- One"))).toEqual([
+      "paragraph",
+      "heading",
+      "ul(1)",
+    ]);
+  });
+
+  // The panel's own headline already reads "Anamnesis 0.3.0 is available", so a
+  // pasted-in version heading would say it twice.
+  describe("the version heading", () => {
+    it("drops it when the whole section was pasted in", () => {
+      const blocks = parseReleaseNotes("## v0.3.0 — 2026-08-08\n\nAnamnesis looks however you want.");
+      expect(shape(blocks)).toEqual(["paragraph"]);
     });
 
-    it("keeps a link's words and drops its address", () => {
-      expect(summariseReleaseNotes("Read the [full notes](https://example.com/x) for more.")).toBe(
-        "Read the full notes for more.",
-      );
+    it("drops it without the v too", () => {
+      expect(shape(parseReleaseNotes("## 0.3.0\n\nText."))).toEqual(["paragraph"]);
     });
 
-    it("drops images entirely — there's nothing to show for one", () => {
-      expect(summariseReleaseNotes("![a screenshot](https://example.com/a.png) Themes are here.")).toBe(
+    it("keeps a real heading that happens to lead", () => {
+      expect(shape(parseReleaseNotes("### Themes, and making your own\n\n- One"))).toEqual(["heading", "ul(1)"]);
+    });
+  });
+
+  describe("inline formatting", () => {
+    it("marks bold, emphasis and code", () => {
+      const blocks = parseReleaseNotes("**Seven themes**, all *yours*, from a `.css` file.");
+      expect(blocks[0].kind === "paragraph" && blocks[0].spans).toEqual([
+        { kind: "strong", text: "Seven themes" },
+        { kind: "text", text: ", all " },
+        { kind: "em", text: "yours" },
+        { kind: "text", text: ", from a " },
+        { kind: "code", text: ".css" },
+        { kind: "text", text: " file." },
+      ]);
+    });
+
+    it("formats inside a bullet and a heading too", () => {
+      const blocks = parseReleaseNotes("### *Midnight*\n\n- **Bold** start");
+      expect(blocks[0].kind === "heading" && blocks[0].spans).toEqual([{ kind: "em", text: "Midnight" }]);
+      expect(blocks[1].kind === "list" && blocks[1].items[0][0]).toEqual({ kind: "strong", text: "Bold" });
+    });
+
+    // Links keep their words and lose their address — nothing in a release
+    // body should be able to send someone anywhere.
+    it("reduces a link to its words", () => {
+      const blocks = parseReleaseNotes("Read the [full notes](https://example.com/x) for more.");
+      expect(words(blocks[0])).toBe("Read the full notes for more.");
+      expect(JSON.stringify(blocks)).not.toContain("example.com");
+    });
+
+    it("drops images — there's nothing to show for one", () => {
+      expect(words(parseReleaseNotes("![shot](https://example.com/a.png) Themes are here.")[0])).toBe(
         "Themes are here.",
       );
     });
 
-    it("leaves snake_case alone", () => {
-      expect(summariseReleaseNotes("The setting is called project_home now.")).toBe(
-        "The setting is called project_home now.",
+    // Underscores aren't emphasis here on purpose: these notes are full of
+    // `_folder.json` and `snake_case`, and nobody writing them uses `_this_`.
+    it("leaves underscores alone", () => {
+      expect(words(parseReleaseNotes("A folder now holds _folder.json and project_home.")[0])).toBe(
+        "A folder now holds _folder.json and project_home.",
       );
     });
 
-    it("unescapes a deliberately escaped marker", () => {
-      expect(summariseReleaseNotes("A literal \\*star\\* stays a star.")).toBe("A literal *star* stays a star.");
+    it("keeps an escaped marker as the character itself", () => {
+      expect(words(parseReleaseNotes("A literal \\*star\\* stays a star.")[0])).toBe("A literal *star* stays a star.");
     });
 
-    it("never emits markup, whatever the body contains", () => {
-      const summary = summariseReleaseNotes('<script>alert(1)</script> and <b>bold</b>');
-      // Passed through as characters, unchanged — the panel renders this as a
-      // text node, so it can only ever be read, never run.
-      expect(summary).toBe('<script>alert(1)</script> and <b>bold</b>');
-    });
-  });
-
-  // A body that opens with bullets rather than prose still has to read.
-  describe("a body that opens with a list", () => {
-    it("keeps one item per line and swaps the marker for a bullet", () => {
-      expect(summariseReleaseNotes("- **Seven themes.**\n- Search reads your writing.")).toBe(
-        "• Seven themes.\n• Search reads your writing.",
-      );
+    it("keeps a sentence in one span rather than splitting it at an escape", () => {
+      const blocks = parseReleaseNotes("Cost \\$5 and \\*that\\* is all.");
+      expect(blocks[0].kind === "paragraph" && blocks[0].spans).toHaveLength(1);
     });
 
-    it("handles numbered lists the same way", () => {
-      expect(summariseReleaseNotes("1. First thing\n2. Second thing")).toBe("• First thing\n• Second thing");
+    // The whole safety argument in one test: what comes back is data, and its
+    // text is carried verbatim. The component renders spans as elements, so
+    // characters like these can only ever be read.
+    it("never turns anything into markup", () => {
+      const blocks = parseReleaseNotes("<script>alert(1)</script> and <b>bold</b>");
+      expect(words(blocks[0])).toBe("<script>alert(1)</script> and <b>bold</b>");
+      expect(blocks.every((block) => block.kind === "paragraph" || block.kind === "heading")).toBe(true);
     });
-  });
-
-  it("copes with Windows line endings", () => {
-    expect(summariseReleaseNotes("First paragraph.\r\n\r\n### Later\r\n\r\n- A bullet")).toBe("First paragraph.");
   });
 });

@@ -1,88 +1,175 @@
-// Turns a GitHub release body into the one paragraph the update panel shows.
+// Parses a GitHub release body into blocks the update panel can render.
 //
-// The body is whatever was written on the release, which since v0.3.0 is a
-// section pasted out of `RELEASES.md`: a paragraph of prose, then `###`
-// headings and dozens of `-` bullets. All of that is written for the releases
-// page, where it renders. The panel is answering a narrower question — *is
-// this worth installing right now* — and the opening paragraph is the answer
-// to it. The rest is a link away.
+// The body is a section pasted out of `RELEASES.md` — the notes written for
+// people rather than the changelog written for us. That document is already
+// the short version: v0.3.0 is ~1,500 words cut down from ~280 changelog
+// lines. It doesn't want cutting down again on the way to the screen, it wants
+// showing, so this keeps the headings, the bullets and the emphasis it was
+// written with.
 //
-// Plain really is plain here. Nothing in this file produces markup, and the
-// caller renders the result as a text node, so no release body can turn into
-// an element in the app. That matters because this text arrives over the
-// network: it is the only text in Anamnesis that didn't come off the user's
-// own disk, and the panel it lands in is not a place worth inventing an HTML
-// path for. See docs/handoff.md → Updates.
+// **This produces data, never markup.** The result is plain objects; the
+// component turns them into React elements. There is no HTML string anywhere
+// in between, and nothing here is passed to `dangerouslySetInnerHTML`. That
+// rule is what makes it safe to render text the app fetched over the network —
+// the only text in Anamnesis that didn't come off the user's own disk. Adding
+// a markdown library that emits HTML would undo it. See docs/handoff.md →
+// Updates.
+//
+// The grammar is deliberately only what RELEASES.md actually uses: `###`
+// headings, `-`/`1.` bullets, `**bold**`, `*emphasis*`, `` `code` ``, and
+// links reduced to their words. Underscores are left alone as ordinary
+// characters — nobody writing these uses `_emphasis_`, and `snake_case` and
+// `_folder.json` turn up in them constantly.
 
-// A line that is only structure, with no words of its own to show: an ATX
-// heading, or a horizontal rule in any of the three spellings.
-const STRUCTURE_ONLY = /^(?:#{1,6}(?:\s|$)|-{3,}$|\*{3,}$|_{3,}$)/;
+export type ReleaseNoteSpan =
+  | { kind: "text"; text: string }
+  | { kind: "strong"; text: string }
+  | { kind: "em"; text: string }
+  | { kind: "code"; text: string };
 
-// Bullet or numbered list markers, as GitHub accepts them.
-const LIST_MARKER = /^(?:[-*+]|\d+[.)])\s+/;
+export type ReleaseNoteBlock =
+  | { kind: "heading"; spans: ReleaseNoteSpan[] }
+  | { kind: "paragraph"; spans: ReleaseNoteSpan[] }
+  | { kind: "list"; ordered: boolean; items: ReleaseNoteSpan[][] };
 
-// A backslash in front of one of markdown's markers means the writer wanted
-// the character itself. Splitting on this keeps the capture group in the
-// output, so the pieces alternate text, literal, text, literal…
-const ESCAPED_MARKER = /\\([\\`*_{}[\]()#+\-.!])/;
+const HEADING = /^#{1,6}(?:\s+(.*))?$/;
+const HORIZONTAL_RULE = /^(?:-{3,}|\*{3,}|_{3,})$/;
+const LIST_ITEM = /^([-*+]|\d+[.)])\s+(.*)$/;
 
-// Markdown's inline markers, removed rather than rendered. Order matters:
-// images before links (an image is a link with a `!`), and `**bold**` before
-// `*emphasis*` so the doubled markers aren't eaten one at a time.
-function stripSegment(segment: string): string {
-  return segment
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/(\*\*|__)(.+?)\1/g, "$2")
-    .replace(/\*([^*]+)\*/g, "$1")
-    // Underscores only count as emphasis at a word boundary, or `snake_case`
-    // in a release note would come out mangled.
-    .replace(/(^|[\s([{])_([^_]+)_(?=$|[\s)\]},.;:!?])/g, "$1$2");
-}
+// The version line at the top of a RELEASES.md section — `## v0.3.0 — date`.
+// Dropped when it leads, because the panel's own headline directly above the
+// notes already says which version this is.
+const VERSION_HEADING = /^v?\d+\.\d+/;
 
-function stripInlineMarkdown(line: string): string {
-  // The escaped characters are held out of the strippers entirely rather than
-  // unescaped afterwards. Left in the text, `\*star\*` reads as emphasis to
-  // the pass above and comes back as `\star\` — the stars gone and the
-  // backslashes kept, which is exactly backwards.
-  return line
-    .split(ESCAPED_MARKER)
-    .map((piece, index) => (index % 2 === 1 ? piece : stripSegment(piece)))
-    .join("")
-    .replace(/[ \t]+/g, " ")
-    .trim();
+// One pass, longest-form-first so `**bold**` is matched before `*emphasis*`
+// and an image before the link it looks like. No lookbehind anywhere: older
+// WKWebView builds don't have it, and this runs in the system webview.
+const INLINE = /!\[[^\]]*\]\([^)]*\)|\[([^\]]*)\]\([^)]*\)|`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*|\\([\\`*_{}[\]()#+\-.!])/g;
+
+function parseSpans(text: string): ReleaseNoteSpan[] {
+  const spans: ReleaseNoteSpan[] = [];
+  let plain = "";
+
+  // Runs of ordinary characters accumulate here and land as one span, so an
+  // escaped marker doesn't split a sentence into three.
+  function flush() {
+    if (plain) spans.push({ kind: "text", text: plain });
+    plain = "";
+  }
+
+  INLINE.lastIndex = 0;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = INLINE.exec(text)) !== null) {
+    plain += text.slice(cursor, match.index);
+    cursor = match.index + match[0].length;
+
+    const [, link, code, strong, em, escaped] = match;
+    if (escaped !== undefined) plain += escaped;
+    else if (link !== undefined) plain += link;
+    else if (code !== undefined) {
+      flush();
+      spans.push({ kind: "code", text: code });
+    } else if (strong !== undefined) {
+      flush();
+      spans.push({ kind: "strong", text: strong });
+    } else if (em !== undefined) {
+      flush();
+      spans.push({ kind: "em", text: em });
+    }
+    // An image is the remaining case: dropped, since there's nothing to show.
+  }
+
+  plain += text.slice(cursor);
+  flush();
+
+  // A dropped image leaves the space that separated it from the next word, so
+  // the run is tidied at both ends before it goes out.
+  const first = spans[0];
+  if (first?.kind === "text") first.text = first.text.replace(/^\s+/, "");
+  const last = spans[spans.length - 1];
+  if (last?.kind === "text") last.text = last.text.replace(/\s+$/, "");
+
+  return spans.filter((span) => span.kind !== "text" || span.text !== "");
 }
 
 /**
- * The opening paragraph of a release body as plain text, or null if there
- * isn't one. Headings above the paragraph are skipped, so it doesn't matter
- * whether the `## v0.3.0` line was pasted in along with the section.
+ * The release body as blocks, or an empty array if it had none worth showing.
  */
-export function summariseReleaseNotes(body: string | null | undefined): string | null {
-  if (!body) return null;
+export function parseReleaseNotes(body: string | null | undefined): ReleaseNoteBlock[] {
+  if (!body) return [];
 
-  const blocks = body
-    .replace(/\r\n?/g, "\n")
-    .split(/\n\s*\n/)
-    .map((block) =>
-      block
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line && !STRUCTURE_ONLY.test(line)),
-    )
-    .filter((lines) => lines.length > 0);
+  const blocks: ReleaseNoteBlock[] = [];
+  let prose: string[] = [];
+  let list: { ordered: boolean; items: string[] } | null = null;
+
+  function endProse() {
+    if (prose.length === 0) return;
+    // RELEASES.md hard-wraps at ~78 characters, so the lines of a paragraph
+    // are rejoined into the one paragraph they were written as.
+    blocks.push({ kind: "paragraph", spans: parseSpans(prose.join(" ")) });
+    prose = [];
+  }
+
+  function endList() {
+    if (!list) return;
+    blocks.push({ kind: "list", ordered: list.ordered, items: list.items.map(parseSpans) });
+    list = null;
+  }
+
+  for (const raw of body.replace(/\r\n?/g, "\n").split("\n")) {
+    const line = raw.trim().replace(/[ \t]+/g, " ");
+
+    if (!line) {
+      endProse();
+      endList();
+      continue;
+    }
+
+    if (HORIZONTAL_RULE.test(line)) {
+      endProse();
+      endList();
+      continue;
+    }
+
+    const heading = HEADING.exec(line);
+    if (heading) {
+      endProse();
+      endList();
+      const spans = parseSpans(heading[1]?.trim() ?? "");
+      if (spans.length > 0) blocks.push({ kind: "heading", spans });
+      continue;
+    }
+
+    const item = LIST_ITEM.exec(line);
+    if (item) {
+      endProse();
+      const ordered = /\d/.test(item[1]);
+      // A list that changes marker style is still one list; the panel has no
+      // way to show the difference and doesn't need one.
+      if (!list) list = { ordered, items: [] };
+      list.items.push(item[2]);
+      continue;
+    }
+
+    // Not blank, not a marker — so it's the rest of whatever came before.
+    // Bullets in RELEASES.md routinely run five or six lines, and each of
+    // those continuation lines lands here.
+    if (list) list.items[list.items.length - 1] += ` ${line}`;
+    else prose.push(line);
+  }
+
+  endProse();
+  endList();
 
   const first = blocks[0];
-  if (!first) return null;
+  if (first?.kind === "heading" && VERSION_HEADING.test(plainText(first.spans))) blocks.shift();
 
-  // Prose is hard-wrapped in RELEASES.md, so its lines are rejoined into the
-  // single paragraph they were written as. A body that opens with bullets
-  // instead keeps one item per line — running those together would splice
-  // sentences mid-thought — and `.update-check-notes` is already `pre-wrap`.
-  const summary = first.every((line) => LIST_MARKER.test(line))
-    ? first.map((line) => `• ${stripInlineMarkdown(line.replace(LIST_MARKER, ""))}`).join("\n")
-    : stripInlineMarkdown(first.join(" "));
+  return blocks;
+}
 
-  return summary || null;
+/** The words of a run of spans, with the formatting dropped. */
+export function plainText(spans: ReleaseNoteSpan[]): string {
+  return spans.map((span) => span.text).join("");
 }

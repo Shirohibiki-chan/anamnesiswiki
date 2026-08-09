@@ -30,21 +30,27 @@ describe("checkForUpdate", () => {
     expect(result.status).toBe("available");
     if (result.status !== "available") return;
     expect(result.update.version).toBe("0.2.0");
-    expect(result.update.notes).toBe("Adds LK export.");
+    expect(result.update.notes).toEqual([
+      { kind: "paragraph", spans: [{ kind: "text", text: "Adds LK export." }] },
+    ]);
   });
 
-  // The full body is markdown written for the releases page; the panel gets
-  // its opening paragraph as plain text. See release-notes.ts.
-  it("reduces a markdown body to its opening paragraph", async () => {
-    mockedCheck.mockResolvedValue(fakeUpdate("0.3.0", "## v0.3.0\n\n**Themes** are here.\n\n### Details\n\n- One\n- Two"));
+  // The body arrives as markdown and reaches the panel as blocks to render.
+  // See release-notes.ts.
+  it("hands the panel the whole body as blocks, not a string", async () => {
+    mockedCheck.mockResolvedValue(fakeUpdate("0.3.0", "## v0.3.0\n\nThemes are here.\n\n### Details\n\n- One\n- Two"));
     const result = await checkForUpdate();
-    expect(result.status === "available" && result.update.notes).toBe("Themes are here.");
+    expect(result.status === "available" && result.update.notes.map((block) => block.kind)).toEqual([
+      "paragraph",
+      "heading",
+      "list",
+    ]);
   });
 
-  it("treats missing release notes as absent rather than empty", async () => {
+  it("treats missing release notes as nothing to render", async () => {
     mockedCheck.mockResolvedValue(fakeUpdate("0.2.0"));
     const result = await checkForUpdate();
-    expect(result.status === "available" && result.update.notes).toBeNull();
+    expect(result.status === "available" && result.update.notes).toEqual([]);
   });
 
   // A failed check is never allowed to reach the UI as a raw error — the app
@@ -80,7 +86,7 @@ describe("installUpdate", () => {
   function pending(handler: (emit: (event: unknown) => void) => void): PendingUpdate {
     return {
       version: "0.2.0",
-      notes: null,
+      notes: [],
       handle: {
         downloadAndInstall: async (onEvent: (event: unknown) => void) => handler(onEvent),
       },

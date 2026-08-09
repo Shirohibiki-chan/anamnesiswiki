@@ -29,6 +29,7 @@
 | Settings → Snippets — the on/off list of snippet stylesheets and the snippets-folder button | `src/components/shell/SnippetSettings.tsx` |
 | The two notices Settings shows about her own `.css` files — "we stripped some URLs" and "couldn't open that folder, here's the path" — shared by the Theme and Snippets panels | `src/components/shell/StylesheetNotices.tsx` |
 | Settings → Projects / Keyboard / Updates | `src/components/shell/ProjectsSettings.tsx`, `ShortcutSettings.tsx`, `UpdateCheck.tsx` |
+| The release notes shown inside the Updates panel, rendered from the GitHub release body | `src/components/shell/ReleaseNotes.tsx` |
 
 ### Tree (`src/components/tree/`)
 

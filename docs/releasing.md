@@ -73,25 +73,36 @@ installer for their platform hadn't been built yet.
 
 ## What the update panel shows
 
-Not the whole thing. The panel inside the app shows the **first paragraph** of
-what you wrote, and a *See everything in this release* link that opens the
-releases page for the rest.
+All of it, the way you wrote it. When someone's update button finds a new
+version, the panel shows that release's notes with your `###` headings as
+headings, your `-` bullets as bullets, and `**bold**`, `*italic*` and `` `code` ``
+looking like what they are. So write the section in `RELEASES.md` the way you'd
+want it read — that's the thing people actually read before deciding to install,
+and nothing gets trimmed on the way to the screen.
 
-That's deliberate. What you write for a release is a page-length read; the panel
-is answering one much smaller question — *is this worth installing right now* —
-and the opening paragraph is the answer to it. So that paragraph is the one that
-has to stand on its own. Everything below it is for the releases page, where it
-renders properly, and you can write it however you like: headings, bullets,
-bold, links. None of it reaches the panel, so nothing down there can look wrong
-in the app.
+Paste the section in whole. If you copy the `## v0.3.0 — 2026-08-08` heading
+along with it, the panel skips it, because its own headline directly above
+already says *Anamnesis 0.3.0 is available*.
 
-Write however reads best in the paragraph too. Markdown in it is *unwrapped*
-rather than shown raw — `**bold**` arrives as the words without the stars, a
-`[link](url)` keeps its words and drops the address, `` `code` `` loses its
-backticks. A `##` heading pasted in above the paragraph is skipped, so it
-doesn't matter whether you copy the version heading along with the section. The
-one thing that doesn't survive is formatting itself: the panel is flat text, so
-don't lean on bold or a list to carry a distinction there.
+There's also a **Read this on GitHub** link under the notes, for reading them in
+a browser window instead. Same text, more room.
+
+A few things don't carry across, none of which you're likely to hit:
+
+- **Links become their words.** `[the docs](https://…)` shows as *the docs*,
+  not as something clickable — nothing in a release should be able to send
+  someone off somewhere from inside the app. Put the address in the notes as
+  plain text if it matters, or leave it to the GitHub link.
+- **Images are dropped.** There's nowhere sensible to put one in a panel that
+  size.
+- **Underscores aren't italics.** `_like this_` shows as-is. Use `*stars*`.
+  That's on purpose: these notes are full of `_folder.json`, `snake_case` and
+  `project_home`, and having those come out mangled would be much worse than
+  losing a way of writing italics you weren't using anyway.
+- **Nested bullets flatten** to one level.
+
+Long notes scroll inside the panel rather than pushing *Download and install*
+down the screen, so length isn't something you have to write around.
 
 ## What can go wrong
 
