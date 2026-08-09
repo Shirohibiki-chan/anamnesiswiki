@@ -99,42 +99,69 @@ export function getAncestorChain(nodeId: string, nodes: Record<string, Node>): N
   return chain;
 }
 
+/**
+ * What the tree filter is looking at. `all` is both fields, which is the
+ * default and what a plain query has always done.
+ *
+ * `name` exists because the two halves of `all` interfere in both directions,
+ * not just one: a project with a `character` tag *and* folders called
+ * Characters can't isolate either from the other. Tag mode answered half of
+ * that from the start; this is the other half.
+ */
+export const TREE_SEARCH_MODES = ["all", "name", "tag"] as const;
+export type TreeSearchMode = (typeof TREE_SEARCH_MODES)[number];
+
 // Building a Fuse index means tokenizing every node's name and tags, and the
 // index depends only on the node record — which doesn't change while someone
 // is typing a query. Keyed on that record's identity so the store's next
 // immutable update naturally evicts a stale one, and held weakly so a closed
-// project's index isn't kept alive by this cache. The two query modes need
-// separate indexes because they search different fields.
-type SearchIndexes = { name?: Fuse<Node>; tags?: Fuse<Node> };
+// project's index isn't kept alive by this cache. Each mode needs its own
+// index because they search different fields.
+type SearchIndexes = Partial<Record<TreeSearchMode, Fuse<Node>>>;
 const searchIndexCache = new WeakMap<Record<string, Node>, SearchIndexes>();
 
-function getSearchIndex(nodes: Record<string, Node>, isTagQuery: boolean): Fuse<Node> {
+const SEARCH_KEYS: Record<TreeSearchMode, string[]> = {
+  all: ["name", "tags"],
+  name: ["name"],
+  tag: ["tags"],
+};
+
+function getSearchIndex(nodes: Record<string, Node>, mode: TreeSearchMode): Fuse<Node> {
   const cached = searchIndexCache.get(nodes) ?? {};
-  const mode = isTagQuery ? "tags" : "name";
   const existing = cached[mode];
   if (existing) return existing;
 
-  const fuse = new Fuse(Object.values(nodes), {
-    keys: isTagQuery ? ["tags"] : ["name", "tags"],
-    threshold: 0.35,
-  });
+  const fuse = new Fuse(Object.values(nodes), { keys: SEARCH_KEYS[mode], threshold: 0.35 });
   searchIndexCache.set(nodes, { ...cached, [mode]: fuse });
   return fuse;
 }
 
-// Fuzzy name-and-tag search for the tree filter. A leading `#` searches tags
-// only (e.g. "#antagonist"); otherwise both name and tags are searched.
-// Returns null for an empty query, meaning "don't filter."
-export function createSearchMatcher(nodes: Record<string, Node>, query: string): ((nodeId: string) => boolean) | null {
+/**
+ * Fuzzy name-and-tag search for the tree filter. Returns null for an empty
+ * query, meaning "don't filter."
+ *
+ * A leading `#` still forces tag mode whatever `mode` says. The field strips
+ * that character and moves the mode control instead, so nobody typing here
+ * reaches this path — but the convention predates the control, it's what a
+ * pasted query or a link carrying `#antagonist` will contain, and honouring it
+ * costs one line. What it must not do is *fight* the control: `#` only ever
+ * narrows to tags, and the control is what put the query in that state.
+ */
+export function createSearchMatcher(
+  nodes: Record<string, Node>,
+  query: string,
+  mode: TreeSearchMode = "all",
+): ((nodeId: string) => boolean) | null {
   const trimmed = query.trim();
   if (!trimmed) return null;
 
-  const isTagQuery = trimmed.startsWith("#");
-  const term = isTagQuery ? trimmed.slice(1).trim() : trimmed;
+  const hashed = trimmed.startsWith("#");
+  const resolved: TreeSearchMode = hashed ? "tag" : mode;
+  const term = hashed ? trimmed.slice(1).trim() : trimmed;
   if (!term) return null;
 
   const matchedIds = new Set(
-    getSearchIndex(nodes, isTagQuery)
+    getSearchIndex(nodes, resolved)
       .search(term)
       .map((result) => result.item.id),
   );

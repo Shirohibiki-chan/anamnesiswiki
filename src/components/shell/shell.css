@@ -411,9 +411,131 @@
 .settings-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-lg);
   margin-bottom: var(--space-xl);
   flex-shrink: 0;
+}
+
+/* Takes the slack the header used to hand to `space-between`, which is why
+   that's gone — with three children instead of two it would have put the
+   search box in the middle of a gap rather than filling one. */
+.settings-search {
+  position: relative;
+  flex: 1;
+  max-width: 22rem;
+  margin-left: auto;
+}
+
+.settings-search-icon {
+  position: absolute;
+  left: var(--space-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-placeholder);
+  pointer-events: none;
+}
+
+.settings-search-input {
+  width: 100%;
+  /* Same arithmetic as the tree's field: the icon starts at --space-md and is
+     13px wide, so the caret begins one --space-xl further in. */
+  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-md) + var(--space-xl));
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-xs);
+}
+
+.settings-search-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* --- Settings search results --- */
+
+.settings-results {
+  overflow-y: auto;
+  gap: var(--space-xl);
+}
+
+.settings-result {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  width: 100%;
+  margin-top: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-result-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  flex: 1;
+}
+
+/* Which section the row lives in, on the row. Right-aligned so the labels line
+   up as a column you can read down — the section is the second question you
+   ask of a result, never the first. */
+.settings-result-tab {
+  flex-shrink: 0;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-placeholder);
+}
+
+/* One highlight, driven by state rather than by `:hover` — the mouse sets the
+   same index the arrow keys do, so there is never a hovered row and a selected
+   row disagreeing about what Enter would open. */
+.settings-result-active {
+  background: var(--color-accent-faint);
+  border-color: var(--color-accent-faint-border);
+}
+
+.settings-result-label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.settings-result-hint {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* The row a result landed on, for a beat after arriving. A panel can be twenty
+   controls long and "it's on this screen somewhere" is not an answer — this is
+   the difference between being taken to a section and being taken to a
+   setting. It fades rather than switching off so the eye follows it; the class
+   comes off on a timer in SettingsModal. */
+@keyframes settings-found {
+  from {
+    background: var(--color-accent-faint);
+    box-shadow: 0 0 0 2px var(--color-accent-faint-border);
+  }
+  to {
+    background: transparent;
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+.settings-found {
+  border-radius: var(--radius-md);
+  animation: settings-found 1.6s ease-out;
+}
+
+/* Someone who has asked not to be moved by the interface still needs to know
+   which row they were sent to — so the motion goes and the marker stays. */
+@media (prefers-reduced-motion: reduce) {
+  .settings-found {
+    animation: none;
+    background: var(--color-accent-faint);
+    box-shadow: 0 0 0 2px var(--color-accent-faint-border);
+  }
 }
 
 /* Was 16px Inter — the smallest modal title in the app, though Settings is the

@@ -17,9 +17,22 @@
   overflow: hidden;
 }
 
-.search-palette-input {
-  border: 0;
+/* Holds the input, the scope chip and the menu that drops from it. The border
+   moved here off the input so the chip sits inside the same ruled row rather
+   than under the line. */
+.search-palette-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding-right: var(--space-xl);
   border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.search-palette-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
   background: transparent;
   padding: var(--space-lg) var(--space-xl);
   font-size: var(--fs-md);
@@ -127,4 +140,86 @@
   background: var(--color-accent-faint);
   color: var(--color-accent-light);
   border-radius: var(--radius-sm);
+}
+
+/* --- Scope menu (shared with the tree's filter — SearchScopeMenu.tsx) ---
+
+   Absolutely positioned against whichever field it belongs to, so both
+   surfaces get it by marking that field `position: relative`. No portal:
+   neither field sits inside a virtualized row, which is the thing TreePopover
+   exists to escape. */
+.search-scope-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 14rem;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-edge);
+  box-shadow: 0 8px 24px var(--color-shadow, rgba(0, 0, 0, 0.4));
+}
+
+.search-scope-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-scope-option:hover {
+  background: var(--color-hover);
+}
+
+.search-scope-option-active {
+  background: var(--color-accent-faint);
+}
+
+/* The tick keeps its space when it isn't the chosen row, so the labels line up
+   in one column instead of shuffling sideways as the selection moves. */
+.search-scope-check {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-accent-light);
+}
+
+.search-scope-option:not(.search-scope-option-active) .search-scope-check {
+  visibility: hidden;
+}
+
+.search-scope-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.search-scope-label {
+  font-size: var(--fs-xs);
+  color: var(--color-text-primary);
+}
+
+.search-scope-hint {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* Shown only when the scope isn't the default one — see SearchScopeChip. */
+.search-scope-chip {
+  flex-shrink: 0;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-accent-faint-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-faint);
+  color: var(--color-accent-light);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
 }

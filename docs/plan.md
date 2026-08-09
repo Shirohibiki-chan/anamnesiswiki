@@ -86,7 +86,32 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Known Bugs
 
-*(Empty. Both entries here were fixed on 2026-07-30 — see `CHANGELOG.md`.)*
+- **The AppImage won't start on some older Linux systems.** Reported 2026-08-09
+  from the first install by someone who isn't the user: it ran on his new
+  laptop and failed on an older Fedora one. His diagnosis, verbatim — *"the GTK
+  libraries the ones bundled in the appimage were failing to talk to EGL and I
+  had to use the system's own libwayland-client myself."* He got it running; a
+  person installing the app could not have.
+
+  **This is the standard AppImage bundling mistake and it has a known shape.**
+  Graphics and display libraries — `libwayland-client`, `libEGL`, `libGL`,
+  `libgbm`, `libdrm`, driver shims — are bound to the host's kernel and GPU
+  stack and must come *from the host*, never from the bundle. AppImage's own
+  project publishes an excludelist saying exactly this, and `linuxdeploy`
+  honours it; Tauri's bundler copies webkit2gtk's dependency tree without
+  consulting it, which is how the wrong `libwayland-client` ends up inside.
+  The build is on `ubuntu-22.04` (`.github/workflows/release.yml`), so the
+  bundled copies are Ubuntu 22.04's — newer than what an older Fedora carries,
+  which is why the new laptop was fine and the old one wasn't.
+
+  **Don't fix this blind.** The fix is to stop bundling those libraries, and
+  the way to know it worked is a machine that reproduces the failure — this
+  repo has none, and CI runs the same Ubuntu that produces the bad bundle. Ask
+  him to confirm the exact library and error before changing the workflow;
+  guessing produces an AppImage that's differently broken on a machine nobody
+  here can boot. The `.deb` is unaffected, since it resolves against the
+  system's own packages, and is the better thing to point Fedora/RPM users at
+  in the meantime (or `.rpm`, which `targets: "all"` already builds).
 
 ---
 
@@ -185,9 +210,20 @@ Identity, the visual half — and the reversibility machinery that has to exist 
 - ~~**A copy of Midnight comes out in Midnight's fonts**~~ — 2026-08-08, reported from use. `createTheme` seeded from `COLOR_TOKENS` only, and Midnight is the one built-in that sets `--font-*`, so its copy fell back to the base tokens' faces and visibly wasn't the theme it copied. **The rule, and it generalises past fonts: the copy is a new `[data-theme]` id, so the original is not in the cascade behind it — anything a copy doesn't declare falls to the base tokens.** Detail in `docs/handoff.md`, including why the faces come from `themeFonts` and not from the document beside the colours.
 - ~~**The colour pickers were laggy**~~ — 2026-08-08, reported from use and the last of the four things that came out of actually living in the Colours panel. Every `input` event ran the entire commit: patch the file text, vet it, replace the `<style>` contents, clear and re-read the fonts, read the background back, and `JSON.stringify` the lot into `localStorage`. Two stylesheet reparses and two forced style recalculations per frame of a drag. **The rule: the thing that shows a change and the thing that records it are different jobs, and only one of them belongs in the event handler.** The preview is one inline custom property on the root element; the commit rides the debounce that was already there for the disk write. Detail, and the two cases that deliberately don't preview, in `docs/handoff.md`.
 - ~~**Import a theme, or a palette from another app**~~ — 2026-08-08, from two asks in one breath — a button so a theme file doesn't have to be dragged into a folder by hand, and some way to bring her other project's palette across without picking through it. Both are the same button. A `.css` is copied into the themes folder as-is; a `.json` goes through `palette-import.ts`, which works the roles out and writes what it guessed into the file's header. **The rule this one is built on is the contrast rule from two bullets up, applied to input nobody vetted: every text and border step is *solved* for a ratio against both surfaces rather than picked, so a file from outside can't land below the floor the built-ins are held to.** The second rule — names are a hint, not an instruction — is in `docs/handoff.md` with the case that forced it. - ~~**Abyssal, a seventh built-in**~~ — 2026-08-08, the other half of the ask above: her CharSnap palette, run through the importer and then hand-tuned where the numbers said to. It clears the "different room, not a different shade" bar on luminance as much as hue — `#00253d` is a lit ocean, not another dark. **The rule the tuning pass produced: the importer solves for a *floor* and a built-in is held to the *band* the other six sit in** — four values moved for that reason and each one is justified in the comment above its block in `index.css`. It also turned up a real defect in the importer, now fixed: callout text was mixed toward the body text, so all three callouts converged on one hue. The contrast rule is now **enforced by a test** (`palette-import.test.ts` parses `index.css`) rather than only written down, which is what should have happened when all six themes failed it at once.
+- ~~**The Quote callout wasn't a box, and Midnight's callouts were never its own**~~ — 2026-08-08, reported from use: *"the default theme's quote box isn't even a box and it looks terrible."* Two faults under one complaint. Quote's tint was flat white at 0.035 against Info and Secret's 0.12 of their own hue — and it was hardcoded that way in `deriveTokens`, so no theme could have fixed it from the picker either. Separately, Midnight is the one dark that never re-tuned its callouts despite the note above its block saying every dark does; it was wearing blues picked against `#0f0f14` and a neutral grey edge with nothing to separate it from navy. **The rule is the one this theme has now produced three times — borders, text ramp, callouts: a token group Midnight doesn't restate is a token group tuned for a different theme, and each was found by using the app rather than by looking.** So the third one is a test: `palette-import.test.ts` holds every shipped theme's callouts to the floor the importer already solves for, which is what caught Daylight's Quote edge at 2.56 in the same pass.
 - **Bundle the app's *default* fonts if she changes them.** The 98-family library ships, so nothing else is blocked on bundling — but `--font-ui`/`--font-display`/`--font-prose`'s defaults are still Inter/Fraunces/Newsreader in `index.css`, and moving those is a separate decision from her picking fonts for herself.
 - **Changelog viewer** in Settings, plus an **About** dialog. `CHANGELOG.md` renders via a Vite raw import.
-- **Search in Settings.** Taken from Obsidian 1.13, which added it because their settings panel got too big to scan — ours is going the same way and is most of the reason why: Appearance alone now holds themes, the theme editor, 98 fonts, sixteen colours, twelve gradients and two text sliders, and Phase 18 will add block settings on top. Cheaper to build now, while there are few enough settings to test it against. Arrow-key navigation between results comes with it; their `Ctrl/Cmd-F`-to-refocus is worth copying too.
+- ~~**Search in Settings**~~ — 2026-08-09, built when she said to: *"we're already in phase12, we're almost done it, so yeah we can do search in settings."* Taken from Obsidian 1.13, which added one because their settings panel got too big to scan; ours had gone the same way for the same reason. Arrow keys, Enter and `Ctrl/Cmd-F` all came with it as planned, and a result flashes the individual row rather than only opening its section.
+
+  **Most of the index builds itself** — colour rows from `COLOR_GROUPS`, typefaces from `FONT_SLOTS`, shortcuts from `SHORTCUT_LABELS` — so a derived entry can't describe a control that isn't there. `DECLARED_SETTINGS` is only the controls with no data behind them. **The rule: index from what the panel renders from, not from a list of what it renders.**
+
+  Two things were found by running it rather than by reading it, and both are in `docs/handoff.md`. Fuse matches a query as one string, so *"where are my files saved"* — the query the box exists for — returned nothing at all until each word was scored separately and rows ranked on **how much of the question they account for**. And grouping results by section, which seemed obviously right, sorts by section: it put the correct answer nineteenth and made Enter open a different row than the highlighted one. **The rank is the feature; the section rides on the row.**
+
+- ~~**The search scopes were invisible, then they were ugly**~~ — 2026-08-09, two rounds in one conversation. `#tag` filtering had shipped, the placeholder mentioned it, and she'd never found it: *"i didnt realize i had to actually type the hashtag. I thought some UI selection would show up or something."* **The rule from round one: a capability reachable only by typing a character is one most people don't have.** `#` now sets the scope and deletes itself from the field, so using the shortcut once shows you the control it stands for.
+
+  Round two was the control itself. Three pills under the field — *"i kind of hate the buttons. they feel unprofessional and lame? No idk i just thought they'd be inside a menu."* She was right and the reason generalises: **permanent furniture for a control nobody touches is a cost paid every time you look at the screen, to expose a choice made once a month.** It's a menu now, in `SearchScopeMenu.tsx`, shared by the tree and the palette so there's one answer to "what am I searching" rather than two. Nothing shows when it's closed except a chip when the scope isn't the default — *"Absolutley do not make them always visible."*
+
+  Searching names *only* came with it, since the collision cuts every way, and the palette got page-text-only at the same time. Where the menu opens from differs by surface and that's deliberate: the tree's field is clicked into, so focusing an empty one opens it; the palette opens already focused and empty, so a menu on mount would sit over the results before there were any — `Tab` opens it there instead.
 
 **Answered 2026-08-06:** the default was hers to decide and she decided — `midnight` leads the list, `dark` is the alternate. Her earlier worry (*"im afraid of making the default insane because i dont want ppl to be turned off by it"*) resolved by seeing it running rather than by discussing it, which is the pattern: build it switchable, let her look at it.
 

@@ -416,6 +416,26 @@
   font-size: var(--fs-content);
 }
 
+/* The ＋ and the drag dots to the left of every block. BlockNote's shadcn
+   stylesheet does `svg:not([class*=size-]) { width: revert; height: revert }`,
+   which hands the lucide icons back their intrinsic 24px — so two 24px icons
+   sit beside 16px prose, which is the largest thing on the line and reads as a
+   toolbar rather than a handle. 16px is the size of the text they belong to.
+
+   The height comes down with them: `.bn-side-menu .bn-button` is a fixed 24px
+   in that same stylesheet, and leaving it there would just centre a smaller
+   icon in the same block of empty space. Both are `!important` for the reason
+   given above — BlockNote's rules are two classes deep and land after ours. */
+.editor-shell .bn-side-menu .bn-button {
+  height: 20px !important;
+  width: 20px !important;
+}
+
+.editor-shell .bn-side-menu .bn-button svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
 /* BlockNote's own editable region shrink-wraps to its content and won't
    stretch to fill this wrapper no matter what's asked of .bn-editor here —
    so the "click anywhere in this box to focus" behavior is instead handled

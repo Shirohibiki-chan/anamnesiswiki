@@ -106,7 +106,9 @@ export function ThemeSettings() {
 
   return (
     <div className="appearance-settings">
-      <div className="appearance-themes" role="radiogroup" aria-label="Theme">
+      {/* See ThemeEditor's ColorRow for what `data-setting` is — the id
+          Settings search scrolls to and flashes. */}
+      <div className="appearance-themes" role="radiogroup" aria-label="Theme" data-setting="theme-pick">
         {BUILT_IN_THEMES.map((theme) => (
           <ThemeRow
             key={theme.id}
@@ -145,12 +147,14 @@ export function ThemeSettings() {
           the Colours panel — which you'd have no reason to open unless you
           already had a theme of your own to edit. */}
       <p className="appearance-actions">
-        <NewThemeButton />
-        <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void importTheme()}>
+        <span data-setting="theme-new">
+          <NewThemeButton />
+        </span>
+        <button type="button" className="ui-btn ui-btn-secondary" data-setting="theme-import" onClick={() => void importTheme()}>
           <Import size={14} />
           Import a theme
         </button>
-        <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void openThemesFolder()}>
+        <button type="button" className="ui-btn ui-btn-secondary" data-setting="theme-folder" onClick={() => void openThemesFolder()}>
           <FolderOpen size={14} />
           Open themes folder
         </button>

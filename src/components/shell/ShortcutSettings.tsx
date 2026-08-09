@@ -82,7 +82,8 @@ export function ShortcutSettings() {
         {rows.map((row) => {
           const isRecording = recordingAction === row.action;
           return (
-            <li key={row.action} className="shortcut-row">
+            // See ThemeEditor's ColorRow for what `data-setting` is.
+            <li key={row.action} className="shortcut-row" data-setting={`shortcut-${row.action}`}>
               <span className="shortcut-row-label">{row.label}</span>
               <button
                 type="button"

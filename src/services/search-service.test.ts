@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { documentText, searchProject, snippetAround } from "./search-service";
+import { documentText, searchProject, snippetAround, type SearchScopeMode } from "./search-service";
 import { MAX_SEARCH_RESULTS } from "../constants/limits";
 import type { BlockNoteDocument, Node, Tab } from "../constants/schema";
 
@@ -189,5 +189,71 @@ describe("searchProject", () => {
       ),
     );
     expect(searchProject(many, "sword")).toHaveLength(MAX_SEARCH_RESULTS);
+  });
+});
+
+// The scope menu on the palette. `all` is what every test above exercises;
+// these are the three that narrow it, and the case that matters for each is
+// the *other* field going quiet — a scope that still returns the thing it
+// excluded is a scope that does nothing.
+describe("searchProject scopes", () => {
+  const tagged = node({
+    id: "tagged",
+    name: "Sampo Koski",
+    tags: ["character"],
+    tabs: [tab({ id: "s1", label: "Overview", content: [paragraph("A merchant of some repute.")] })],
+  });
+  const named = node({
+    id: "named",
+    name: "Characters",
+    templateKey: "folder",
+    tabs: [tab({ id: "f1", label: "Overview", content: [paragraph("Everyone lives here.")] })],
+  });
+  const written = node({
+    id: "written",
+    name: "Her Sword",
+    tabs: [tab({ id: "w1", label: "Overview", content: [paragraph("The character of the blade is cruel.")] })],
+  });
+  const scoped = byId([tagged, named, written]);
+  const ids = (query: string, mode: SearchScopeMode) => searchProject(scoped, query, mode).map((result) => result.nodeId);
+
+  it("searches names, tags and text when nothing is narrowed", () => {
+    expect(ids("character", "all")).toEqual(expect.arrayContaining(["tagged", "named", "written"]));
+  });
+
+  it("in name scope, ignores a tag and the page text", () => {
+    expect(ids("character", "name")).toEqual(["named"]);
+  });
+
+  it("in tag scope, ignores a name and the page text", () => {
+    expect(ids("character", "tag")).toEqual(["tagged"]);
+  });
+
+  it("in text scope, ignores names and tags", () => {
+    expect(ids("character", "text")).toEqual(["written"]);
+  });
+
+  // In name scope a page that also carries a matching tag must still say
+  // "name" — labelling the row with the one field the scope excluded would
+  // have it explain itself using evidence it wasn't allowed to look at.
+  it("labels a name-scope hit as a name even when a tag matched too", () => {
+    const both = node({ id: "both", name: "Character Sheet", tags: ["character"] });
+    const results = searchProject(byId([both]), "character", "name");
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ nodeId: "both", kind: "name" });
+  });
+
+  // The convention predates the menu and has to keep working for a pasted
+  // query. It may only ever narrow to tags, never widen a chosen scope.
+  it("lets a leading # force tag scope over whatever the menu says", () => {
+    expect(ids("#character", "name")).toEqual(["tagged"]);
+    expect(ids("#character", "text")).toEqual(["tagged"]);
+  });
+
+  it("keeps each scope's index apart when the same nodes are searched every way", () => {
+    expect(ids("character", "all").length).toBeGreaterThan(1);
+    expect(ids("character", "name")).toEqual(["named"]);
+    expect(ids("character", "tag")).toEqual(["tagged"]);
+    expect(ids("character", "all").length).toBeGreaterThan(1);
   });
 });

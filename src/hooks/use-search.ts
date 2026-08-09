@@ -3,7 +3,11 @@
 import { useMemo } from "react";
 import { useProjectStore } from "../state/project-store";
 import { getAncestorChain } from "../services/tree-service";
-import { searchProject, type SearchResult } from "../services/search-service";
+import { searchProject, type SearchResult, type SearchScopeMode } from "../services/search-service";
+
+// Re-exported because the palette needs it and a component may not reach into
+// services. See CLAUDE.md's layer order.
+export type { SearchScopeMode };
 
 export type SearchRow = SearchResult & {
   name: string;
@@ -20,12 +24,12 @@ export type SearchRow = SearchResult & {
  * keystroke *into a page*, but stands still while someone types into the search
  * box, which is the only time this runs.
  */
-export function useSearchResults(query: string): SearchRow[] {
+export function useSearchResults(query: string, mode: SearchScopeMode = "all"): SearchRow[] {
   const nodes = useProjectStore((state) => state.nodes);
 
   return useMemo(
     () =>
-      searchProject(nodes, query).map((result) => {
+      searchProject(nodes, query, mode).map((result) => {
         const node = nodes[result.nodeId];
         return {
           ...result,
@@ -34,6 +38,6 @@ export function useSearchResults(query: string): SearchRow[] {
           path: getAncestorChain(result.nodeId, nodes).map((ancestor) => ancestor.name),
         };
       }),
-    [nodes, query],
+    [nodes, query, mode],
   );
 }

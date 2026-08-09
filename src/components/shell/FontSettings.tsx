@@ -89,7 +89,9 @@ function FontSlotField({
   const unlisted = chosen && !fontChoicesFor(slot).some((group) => group.fonts.some((font) => font.family === chosen)) ? chosen : null;
 
   return (
-    <div className="appearance-font">
+    // See ThemeEditor's ColorRow for what `data-setting` is — the id Settings
+    // search scrolls to. A typeface slot's id is its token, both sides.
+    <div className="appearance-font" data-setting={slot.token}>
       <label className="appearance-font-label" htmlFor={`font-${slot.key}`}>
         {slot.label}
         <span className="appearance-font-hint">{slot.hint}</span>
@@ -135,6 +137,7 @@ function FontSlotField({
 function ScaleSlider({
   label,
   hint,
+  settingId,
   value,
   min,
   max,
@@ -142,13 +145,15 @@ function ScaleSlider({
 }: {
   label: string;
   hint: string;
+  /** The settings-search entry this slider answers to. */
+  settingId: string;
   value: number;
   min: number;
   max: number;
   onChange: (value: number) => Promise<void>;
 }) {
   return (
-    <div className="appearance-font">
+    <div className="appearance-font" data-setting={settingId}>
       <span className="appearance-font-label">
         {label}
         <span className="appearance-font-hint">{hint}</span>
@@ -269,6 +274,7 @@ export function FontSettings() {
           <ScaleSlider
             label="Writing"
             hint="the text on your pages"
+            settingId="text-size-writing"
             value={contentScale}
             min={CONTENT_SCALE_MIN}
             max={CONTENT_SCALE_MAX}
@@ -277,6 +283,7 @@ export function FontSettings() {
           <ScaleSlider
             label="Interface"
             hint="menus, titles, labels — everything else"
+            settingId="text-size-interface"
             value={textScale}
             min={TEXT_SCALE_MIN}
             max={TEXT_SCALE_MAX}

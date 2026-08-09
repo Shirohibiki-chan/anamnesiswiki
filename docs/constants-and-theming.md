@@ -50,7 +50,7 @@ Seven themes ship, in the order the picker lists them: `midnight` (the default �
 Two rules for anything added to that list:
 
 - **A new theme has to be a different room, not a different shade.** The six darks are navy, near-black, warm brown, green, plum and a lit ocean blue precisely so the picker is worth reading; a seventh grey would be a row that costs attention and returns nothing. `abyssal` passes on luminance as much as hue — `#00253d` is nearly three times the luminance of Midnight's `#0d1221`, so it reads as a lit room rather than a dark one.
-- **Re-tune the callouts, don't inherit them.** The base Info/Quote/Secret tints were chosen against `#0f0f14`. On a warm brown or a green background the same translucent blue reads as a bruise, and the three stop being distinguishable from each other — which is the only colour-coding callouts have. Watch the accent too: `nightbloom` moves Secret from violet to indigo because its accent is already orchid, and `abyssal` moves *Info* to mint because its accent has taken the blue end. **The callout that has to be told apart from the accent is the one that moves — never the accent.**
+- **Re-tune the callouts, don't inherit them.** The base Info/Quote/Secret tints were chosen against `#0f0f14`. On a warm brown or a green background the same translucent blue reads as a bruise, and the three stop being distinguishable from each other — which is the only colour-coding callouts have. Watch the accent too: `nightbloom` moves Secret from violet to indigo because its accent is already orchid, and `abyssal` moves *Info* to mint because its accent has taken the blue end. **The callout that has to be told apart from the accent is the one that moves — never the accent.** This is now checked rather than remembered — `palette-import.test.ts` holds every shipped theme to the edges being three distinct hues at ≥3 against the panel and the words at ≥10. Midnight, the default, silently failed it for months by not restating this group at all, and it's the third token group that theme was caught inheriting.
 
 Because `[data-theme="x"]` matches any element and not just `<html>`, putting the attribute on a swatch element makes that element resolve the theme's real tokens — which is how the Appearance picker previews built-in themes without duplicating a single colour value.
 
@@ -91,7 +91,7 @@ the base tokens — the other six ship as `[data-theme]` blocks over the top (se
 | `--color-callout-info-bg` | `rgba(59,130,246,0.12)` | Info callout background tint |
 | `--color-callout-info-text` | `#dbeafe` | Info callout body text |
 | `--color-callout-quote` | `#a1a1aa` | Quote callout left border |
-| `--color-callout-quote-bg` | `rgba(255,255,255,0.03)` | Quote callout background tint |
+| `--color-callout-quote-bg` | `rgba(161,161,170,0.14)` | Quote callout background tint — its own edge, like the other two, at a step more alpha because a neutral has no hue helping it off the panel |
 | `--color-callout-quote-text` | `#d4d4d8` | Quote callout body text (rendered italic) |
 | `--color-callout-secret` | `#c4b5fd` | Secret callout border and label text |
 | `--color-callout-secret-bg` | `rgba(167,139,250,0.12)` | Secret callout background tint |
@@ -339,7 +339,7 @@ Four things make themes — the sandbox's export, the pickers in Settings → Co
 
 - **The controls are a view of the file, not a state beside it.** A change shows immediately as an inline custom property on the root element and is written to the file on a 400ms debounce (`previewDraft` / `flushThemeEdit` in `state/theme-store.ts`); the commit `patchTheme`s the existing text rather than regenerating it. The file is authoritative; a rescan reads it back.
 - **`constants/theme-tokens.ts` decides what's editable** — twenty colours in five groups, plus the twelve gradient slots. It's deliberately a subset of the token system: a theme file can set anything, but a panel offering all forty would be unnavigable.
-- **Five tokens are derived, not offered.** The two accent tints and the three callout washes are alpha versions of colours already in the picker (`deriveTokens`). They're still written into the file, so it stays a plain stylesheet — but keeping them in step by hand is how you get a theme whose selected tree row is a different hue from its buttons.
+- **Five tokens are derived, not offered.** The two accent tints and the three callout washes are alpha versions of colours already in the picker (`deriveTokens`). They're still written into the file, so it stays a plain stylesheet — but keeping them in step by hand is how you get a theme whose selected tree row is a different hue from its buttons. **All three callout washes now come from their own edge**; Quote used to be special-cased to a flat white film at 0.035, which meant no theme could give its Quote a visible box, however it set the edge.
 - **A gradient the controls can't express is kept verbatim.** `parseGradient` matches only the two shapes `gradientCss` writes; anything richer (three stops, a conic, named colours) comes back as `raw`, is shown as read-only, and is re-emitted byte for byte. The alternative — flattening someone's hand-tuned gradient into two stops on the next keystroke — is data loss.
 - **A gradient that's off is omitted entirely**, never written empty. See `docs/handoff.md` for why that distinction matters.
 

@@ -93,17 +93,31 @@ function tabTextsFor(nodes: Record<string, Node>, node: Node): TabText[] {
   return texts;
 }
 
+/**
+ * What the palette is looking at. `all` is everything and is the default.
+ *
+ * `text` is the one the tree has no equivalent of, because the tree filter has
+ * never read page content — it decides which rows stay visible, and a folder
+ * doesn't become relevant because a sentence inside it mentions something.
+ */
+export const SEARCH_SCOPES = ["all", "name", "tag", "text"] as const;
+export type SearchScopeMode = (typeof SEARCH_SCOPES)[number];
+
 // Names and tags get fuzzy matching — she may half-remember a spelling, and
 // they're short enough that a near miss is still obviously the right page.
 // Prose deliberately does not: fuzzy matching across a few thousand characters
 // finds a scattering of letters in unrelated paragraphs and calls it a hit.
-const nameIndexCache = new WeakMap<Record<string, Node>, Fuse<Node>>();
+type NameIndexes = { all?: Fuse<Node>; name?: Fuse<Node>; tag?: Fuse<Node> };
+const nameIndexCache = new WeakMap<Record<string, Node>, NameIndexes>();
 
-function nameIndex(nodes: Record<string, Node>): Fuse<Node> {
-  const cached = nameIndexCache.get(nodes);
-  if (cached) return cached;
-  const fuse = new Fuse(Object.values(nodes), { keys: ["name", "tags"], threshold: 0.35 });
-  nameIndexCache.set(nodes, fuse);
+const NAME_KEYS = { all: ["name", "tags"], name: ["name"], tag: ["tags"] } as const;
+
+function nameIndex(nodes: Record<string, Node>, mode: "all" | "name" | "tag"): Fuse<Node> {
+  const cached = nameIndexCache.get(nodes) ?? {};
+  const existing = cached[mode];
+  if (existing) return existing;
+  const fuse = new Fuse(Object.values(nodes), { keys: [...NAME_KEYS[mode]], threshold: 0.35 });
+  nameIndexCache.set(nodes, { ...cached, [mode]: fuse });
   return fuse;
 }
 
@@ -141,40 +155,49 @@ export function snippetAround(text: string, matchStart: number, matchLength: num
  * matches doesn't also get listed for each tab that mentions it. Name and tag
  * hits come first because they're the strongest signal, then prose hits.
  *
- * A leading `#` searches tags only, the same convention the tree filter uses.
+ * A leading `#` forces tag scope whatever `mode` says — the convention predates
+ * the scope menu, and it's what a pasted query will contain. It may only ever
+ * narrow, never widen a scope the menu has set.
+ *
  * An empty query returns nothing rather than everything — this is a jump-to
  * list, and a list of the entire project isn't one.
  */
-export function searchProject(nodes: Record<string, Node>, query: string): SearchResult[] {
+export function searchProject(nodes: Record<string, Node>, query: string, mode: SearchScopeMode = "all"): SearchResult[] {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const isTagQuery = trimmed.startsWith("#");
-  const term = isTagQuery ? trimmed.slice(1).trim() : trimmed;
+  const hashed = trimmed.startsWith("#");
+  const scope: SearchScopeMode = hashed ? "tag" : mode;
+  const term = hashed ? trimmed.slice(1).trim() : trimmed;
   if (!term) return [];
 
   const lowered = term.toLowerCase();
   const results: SearchResult[] = [];
   const claimed = new Set<string>();
 
-  for (const { item } of nameIndex(nodes).search(term)) {
-    const tagHit = item.tags.find((tag) => tag.toLowerCase().includes(lowered));
-    // In tag mode a page only qualifies through its tags, so a fuzzy hit that
-    // was really about the name doesn't belong in the list.
-    if (isTagQuery && !tagHit) continue;
+  if (scope !== "text") {
+    for (const { item } of nameIndex(nodes, scope).search(term)) {
+      const tagHit = item.tags.find((tag) => tag.toLowerCase().includes(lowered));
+      // In tag scope a page only qualifies through its tags, so a fuzzy hit
+      // that was really about the name doesn't belong in the list.
+      if (scope === "tag" && !tagHit) continue;
 
-    const nameHit = !isTagQuery && item.name.toLowerCase().includes(lowered);
-    claimed.add(item.id);
-    if (tagHit && !nameHit) {
-      const at = tagHit.toLowerCase().indexOf(lowered);
-      results.push({ nodeId: item.id, kind: "tag", snippet: tagHit, matchStart: at, matchEnd: at + lowered.length });
-    } else {
-      results.push({ nodeId: item.id, kind: "name", snippet: "", matchStart: 0, matchEnd: 0 });
+      // In name scope the row says "name" even where a tag also matched:
+      // showing the tag would be the row explaining itself with the one field
+      // that was deliberately excluded.
+      const nameHit = scope === "name" || item.name.toLowerCase().includes(lowered);
+      claimed.add(item.id);
+      if (tagHit && !nameHit) {
+        const at = tagHit.toLowerCase().indexOf(lowered);
+        results.push({ nodeId: item.id, kind: "tag", snippet: tagHit, matchStart: at, matchEnd: at + lowered.length });
+      } else {
+        results.push({ nodeId: item.id, kind: "name", snippet: "", matchStart: 0, matchEnd: 0 });
+      }
+      if (results.length >= MAX_SEARCH_RESULTS) return results;
     }
-    if (results.length >= MAX_SEARCH_RESULTS) return results;
   }
 
-  if (isTagQuery) return results;
+  if (scope === "tag" || scope === "name") return results;
 
   // Prose, in the page's own tab order — so a match in Overview wins over the
   // same word buried in Relations, which is the order she reads them in.

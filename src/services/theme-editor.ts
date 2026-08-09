@@ -249,12 +249,42 @@ export function deriveTokens(colors: Record<string, string>): Record<string, str
   }
   for (const kind of ["info", "quote", "secret"] as const) {
     const edge = colors[`--color-callout-${kind}`];
-    // Quote is the neutral one and its wash has always been a plain white
-    // film rather than a tint of its own grey — tinting it makes the "just a
-    // quote" callout look like it means something.
-    if (edge) out[`--color-callout-${kind}-bg`] = kind === "quote" ? "rgba(255, 255, 255, 0.035)" : rgba(edge, 0.12);
+    // Quote used to be special-cased to a flat white film at 0.035, on the
+    // reasoning that tinting the neutral callout would make it look like it
+    // meant something. It went the other way: at under a third the strength of
+    // the other two, in a colour belonging to no theme, the box didn't read as
+    // understated — it didn't read at all, and a Quote was a stray line of
+    // italics. Reported from use, 2026-08-08. It's a tint of its own edge like
+    // the other two now, a little stronger because a neutral has no hue doing
+    // half the work of separating it from the panel.
+    if (edge) out[`--color-callout-${kind}-bg`] = rgba(edge, kind === "quote" ? 0.14 : 0.12);
   }
   return out;
+}
+
+/**
+ * Values `deriveTokens` used to write and doesn't any more.
+ *
+ * The guard below only overwrites a derived token when the file still holds
+ * exactly what the app would have put there — anything else is somebody's own
+ * choice and is left alone. That's right, but it's computed from the *current*
+ * formula, so a theme written before a formula changed reads as hand-chosen
+ * forever, and the fix never reaches the files that need it most.
+ *
+ * The only entry so far is Quote's old flat-white film. Nobody typed that: it
+ * was written by every theme the app has ever saved, and it's the value the
+ * whole change is about. Add to this list when a derived formula changes;
+ * don't add a value a person might plausibly have picked, because this is the
+ * one thing that overrules "leave it alone".
+ */
+const RETIRED_DERIVED: Record<string, readonly string[]> = {
+  "--color-callout-quote-bg": ["rgba(255, 255, 255, 0.035)", "rgba(0, 0, 0, 0.03)", "rgba(255, 255, 255, 0.03)"],
+};
+
+function isRetiredDerived(token: string, current: string | undefined): boolean {
+  if (current === undefined) return false;
+  const retired = RETIRED_DERIVED[token];
+  return retired !== undefined && retired.includes(current.replace(/\s+/g, " ").toLowerCase());
 }
 
 /* --- Matching the other backgrounds to the panel -------------------------- */
@@ -783,7 +813,7 @@ export function patchTheme(css: string, name: string, themeId: string, draft: Th
 
   for (const [token, value] of Object.entries(deriveTokens(draft.colors))) {
     const current = declaration(token, block)?.trim();
-    if (current === undefined || current === ours[token]) block = setInBlock(block, token, value);
+    if (current === undefined || current === ours[token] || isRetiredDerived(token, current)) block = setInBlock(block, token, value);
   }
 
   // Written where named, removed where not — the same shape as a gradient

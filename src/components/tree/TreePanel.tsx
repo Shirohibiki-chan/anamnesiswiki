@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
 import { TREE_INDENT } from "../../constants/layout";
 import { useProject } from "../../hooks/use-project";
-import { useSearchMatcher, useTreeData } from "../../hooks/use-tree-data";
+import { useSearchMatcher, useTreeData, type TreeSearchMode } from "../../hooks/use-tree-data";
 import { useTemplates } from "../../hooks/use-templates";
 import { useElementSize } from "../../hooks/use-element-size";
 import type { TreeNodeData } from "../../services/tree-service";
@@ -17,10 +17,11 @@ export function TreePanel() {
   const { treeData, getAncestorChain } = useTreeData();
   const { canHaveChildren } = useTemplates();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<TreeSearchMode>("all");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
   const treeApiRef = useRef<TreeApi<TreeNodeData> | null>(null);
 
-  const searchMatcher = useSearchMatcher(searchQuery);
+  const searchMatcher = useSearchMatcher(searchQuery, searchMode);
 
   // Selecting a node isn't only ever a click on this tree anymore — a
   // mention/wikilink click in the editor calls `selectNode` directly (see
@@ -56,7 +57,7 @@ export function TreePanel() {
 
   return (
     <div className="tree-panel">
-      <TreeSearch value={searchQuery} onChange={setSearchQuery} />
+      <TreeSearch value={searchQuery} onChange={setSearchQuery} mode={searchMode} onModeChange={setSearchMode} />
       <div className="tree-panel-body" ref={containerRef}>
         {size.height > 0 && (
           <Tree<TreeNodeData>

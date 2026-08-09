@@ -1,6 +1,30 @@
 # Changelog
 
-## 2026-08-09 — the update button comes before the release notes
+## 2026-08-09 — you can see what the search is searching, and Settings has a search of its own
+
+### Additions
+
+- **Settings has a search box.** Type what you're after and it finds the setting, whichever of the eight sections it's buried in — then takes you there and flashes the actual row, not just the panel. It's built to answer the question you'd really ask rather than the one you'd ask if you already knew the answer: *"where are my files saved"* finds the Projects folder, *"make the text bigger"* finds the size sliders, *"changelog"* finds the patch notes. Arrow keys walk the results, Enter opens one, and Ctrl-F puts the cursor back in the box from anywhere in the dialog. Escape clears the search first and only closes Settings on the second press.
+- **Both search boxes now let you say what you're searching** — everything, names only, tags only, and on Ctrl-K, the text written on pages. It's a menu, not a row of buttons: in the tree it opens when you click into an empty search field, and on Ctrl-K you open it with Tab. Nothing sits on screen when it's closed, except a small chip when you've narrowed it — so you can tell at a glance that the tree is hiding rows on purpose.
+  - **Searching names only is new,** and so is searching page text only. Tags-only was always there. Having all of them is what you need when a tag and a folder share a word, and it cuts every way — a `character` tag and folders called Characters couldn't be told apart in any direction before.
+  - Typing `#` still works, and now **sets the menu to Tags and disappears from the field** rather than sitting in the text. So the one time you use it, it shows you the menu it stands for.
+
+### Adjustments
+
+- **Both search placeholders say what will actually be searched** rather than always naming everything.
+
+## 2026-08-09 — the quote block is a box again, and the block handles shrink
+
+### Fixes
+
+- **Quote callouts actually look like callouts now, on every theme.** Their background was a 3% wash of flat white while Info and Secret got 12% of their own colour, so on a dark panel a Quote wasn't a faint box — it was no box, and the block read as a stray line of italics. Each theme's Quote now takes a tint of its own edge colour at the same strength the other two use.
+- **Midnight — the default theme — had never been given its own callout colours.** It was still wearing the ones tuned for the near-black theme, so its Info was a blue picked against near-black sitting on navy, and its Quote was a neutral grey with nothing to separate it from a navy panel. It now has three of its own: azure, violet, and a warm sand for Quote. (This is the third group of colours Midnight was found to be inheriting, after the outlines and the text shades — and all three were noticed by using the app, so there's now a test that checks every theme's callouts the way the outlines and text are already checked.)
+- **Daylight's Quote edge was too pale to see**, at 2.6 against a white panel where its Info and Secret clear 3 comfortably — the same grey, meant for dark panels. It's warm stone now, with the words warmed to match.
+- **Themes you've made yourself pick the fix up too.** The white wash wasn't just in the built-in themes — it was written into every theme file the app has ever saved, so no theme could have been given a visible quote box from the Colours panel either. Changing any colour in a theme of yours now replaces that one line; a wash you picked yourself is still left exactly as you set it.
+
+### Adjustments
+
+- **The ＋ and the drag handle beside each block are smaller.** They were rendering at 24px next to 16px prose, which made the two biggest things on the line a pair of handles. They're 16px now, sized to the text they belong to.
 
 ### Adjustments
 
