@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-08 — v0.3.0
+
+### Additions
+
+- **Release notes live in their own file now.** [RELEASES.md](RELEASES.md) is the plain-language version — what changed in each published release, written for someone using Anamnesis rather than building it. It's what goes on the releases page and what the update button shows you before you install. This changelog stays what it's always been: everything, in the order it happened. The release notes are a read of it, not a replacement.
+- **v0.3.0 is the first release built for Mac and Linux** as well as Windows. Nothing in the app changed for this — the release automation that landed in July builds all four, and this is the first time it's been used to publish.
+
+### Adjustments
+
+- **Everything since v0.2.1 is in a release now.** The sections below dated 31 July, 4 August and 5 August were marked as living only in the repo, which was true at the time and isn't any more. They say which release carries them instead. The theme sandbox is the exception and still says so — it's a file in the repo you open by double-clicking, not part of the installed app.
+
 ## 2026-08-08
 
 ### The sidebar draws lines showing what's inside what
@@ -201,7 +212,7 @@ Hover still keeps your theme's character — a pink panel gets a deeper pink, no
 
 ## 2026-08-05 — after v0.2.1
 
-*(Not in a release — these live in the repo and affect this machine only.)*
+*(Shipped in v0.3.0, apart from the theme sandbox — that's a file in the repo you open by double-clicking, not part of the installed app.)*
 
 ### Additions
 
@@ -214,7 +225,7 @@ Hover still keeps your theme's character — a pink panel gets a deeper pink, no
 
 ## 2026-08-04 — after v0.2.1
 
-*(Not in a release — these live in the repo and affect this machine only.)*
+*(Shipped in v0.3.0.)*
 
 ### Adjustments
 
@@ -243,7 +254,7 @@ Hover still keeps your theme's character — a pink panel gets a deeper pink, no
 
 ## 2026-07-31 — after v0.2.1
 
-*(Not in a release — these live in the repo and affect this machine only.)*
+*(Shipped in v0.3.0, apart from the two Desktop shortcuts — those are scripts in the repo for this machine.)*
 
 ### Fixes
 - **The scroll wheel works again. That one was my fault.** Pinning the window down so it couldn't scroll — from the scrollbar fix below — turned out to break scrolling entirely, and the reason is embarrassing in a useful way: **no part of the app was actually scrolling on its own.** Not the page, not the right-hand panel. The three-column layout had nothing telling it to stop at the height of the window, so a long page just made the whole layout taller than the window and spilled out the bottom — and the thing quietly rescuing that was the *window's own* scrollbar. The ugly scrollbar wasn't decoration. It was doing all the work. So removing it removed the only scrolling in the app. Now the layout is properly told to stop at the window's edge, and the page and the properties panel each scroll inside their own box, which is what should have been happening all along. The start screen scrolls too if your window is short enough to need it — same bug waiting to happen, fixed at the same time.
