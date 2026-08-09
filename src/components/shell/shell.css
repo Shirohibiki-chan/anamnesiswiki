@@ -819,6 +819,75 @@ ol.release-notes-list {
   font-size: 0.92em;
 }
 
+/* Settings → Patch Notes. A strip of versions over the notes for whichever is
+   selected, reusing the update panel's renderer underneath. */
+.patch-notes-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.patch-notes-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: none;
+  /* The underline sits *on* the strip's bottom edge rather than a pixel past
+     it — a pixel of overflow is enough to earn a scrollbar. Same reason the
+     other two strips in the app are built this way. */
+  border-bottom: 2px solid transparent;
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.patch-notes-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+.patch-notes-tab-active,
+.patch-notes-tab-active:hover {
+  border-bottom-color: var(--color-accent-light);
+  color: var(--color-text-primary);
+}
+
+.patch-notes-tab-version {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+}
+
+.patch-notes-tab-date {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* The renderer caps itself at 20rem and scrolls, which is right in the update
+   panel — the notes sit directly above *Download and install* there and can't
+   push it off screen. Here there's nothing underneath and the settings panel
+   already scrolls, so an inner scroller would just be a second bar inside the
+   first. Let the notes run their full length instead. */
+.patch-notes .release-notes {
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
+}
+
+.patch-notes-link-line {
+  margin: var(--space-lg) 0 0;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--fs-xs);
+}
+
+.patch-notes-empty {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
 /* The way out to the same notes on the releases page, for reading them in a
    real browser window rather than a panel. */
 .update-check-notes-more {

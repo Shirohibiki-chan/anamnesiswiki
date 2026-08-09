@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-08 — patch notes in Settings
+
+### Additions
+
+- **Settings → Patch Notes.** A permanent screen showing what changed in the last three versions of Anamnesis, each on its own tab with its date. It's the same writing that goes on the releases page — the plain-language version, not the changelog — and each tab has a **Read this on GitHub** link for reading it in a browser or going further back than three.
+- **It works offline and opens instantly**, because the notes are built into the app rather than fetched. Nothing new reaches the internet; Anamnesis still makes exactly two network calls, both of which need you to press something first.
+- **It shows the versions up to the one you're running**, which is the point of it — it's what's in the copy you have. If there's a *newer* version than yours, that's Settings → Updates, which fetches those notes when you press the button. The two panels answer opposite questions and sit next to each other in the list.
+
 ## 2026-08-08 — v0.3.0
 
 ### Additions

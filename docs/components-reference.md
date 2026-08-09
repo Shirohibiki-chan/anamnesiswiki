@@ -30,6 +30,7 @@
 | The two notices Settings shows about her own `.css` files — "we stripped some URLs" and "couldn't open that folder, here's the path" — shared by the Theme and Snippets panels | `src/components/shell/StylesheetNotices.tsx` |
 | Settings → Projects / Keyboard / Updates | `src/components/shell/ProjectsSettings.tsx`, `ShortcutSettings.tsx`, `UpdateCheck.tsx` |
 | The release notes shown inside the Updates panel, rendered from the GitHub release body | `src/components/shell/ReleaseNotes.tsx` |
+| Settings → Patch Notes — a strip of the last few versions over the notes for whichever is selected, read from the bundled `RELEASES.md` rather than fetched | `src/components/shell/PatchNotes.tsx` |
 
 ### Tree (`src/components/tree/`)
 

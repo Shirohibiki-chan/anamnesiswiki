@@ -304,6 +304,32 @@ is below.
   `opener:default` already scopes `https://*`, so no capability change was
   needed for it.
 
+- **Settings → Patch Notes reads a bundled `RELEASES.md`, and must not be
+  "fixed" by fetching it.** `services/release-history.ts` imports the file with
+  Vite's `?raw`, so the panel has its content at build time: it opens instantly,
+  works offline, and adds no third network call to an app that deliberately has
+  only two. The cost is that it can only show versions up to the installed one.
+  **That's correct, not a limitation to route around** — it's the "what's in the
+  copy you're running" screen, and the Updates panel already covers the other
+  direction by fetching the notes for a version you don't have. Making this one
+  fetch the releases API would need the `http:` capability widened to GitHub,
+  which the bullet above exists to avoid, and would trade an instant panel for
+  a spinner and an offline failure state.
+
+- **A built `v{version}` tag URL is safe here in a way it isn't for the
+  updater.** `releaseTagUrl` in `constants/links.ts` is fed versions parsed out
+  of `RELEASES.md` headings — the same numbers the tags are cut from, and every
+  one of them is published by the time a build carrying it exists. The
+  `/releases/latest` reasoning above applies to the *update on offer*, which is
+  a different question.
+
+- **The renderer's `max-height` is overridden inside Patch Notes.**
+  `.release-notes` caps itself at `20rem` and scrolls, which is right in the
+  update panel — the notes sit directly above *Download and install* there. In
+  the settings panel there's nothing underneath and the panel already scrolls,
+  so the cap is lifted rather than nesting one scrollbar inside another. If the
+  cap ever moves, check both places.
+
 ## React patterns
 
 - **Remount-by-`key` instead of resetting state in an effect.** `PageView` keys on

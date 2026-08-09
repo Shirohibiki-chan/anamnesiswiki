@@ -9,3 +9,12 @@
 // `releases/latest/download/latest.json` — and a guessed tag can 404 if the
 // tag naming ever shifts.
 export const RELEASES_PAGE_URL = "https://github.com/Shirohibiki-chan/anamnesiswiki/releases/latest";
+
+// Where a single version's "Read this on GitHub" goes, from Settings → Patch
+// Notes. A built tag URL is safe here in a way it isn't for the updater: these
+// versions come from RELEASES.md headings, which are the same numbers the tags
+// are cut from, and every one of them is already published by the time a build
+// carrying it exists. The `v` prefix matches how the tags are named.
+export function releaseTagUrl(version: string): string {
+  return `https://github.com/Shirohibiki-chan/anamnesiswiki/releases/tag/v${version}`;
+}
