@@ -71,6 +71,28 @@ the draft — the release is assembled by four separate machines finishing at
 different times, and publishing early would offer people an update whose
 installer for their platform hadn't been built yet.
 
+## What the update panel shows
+
+Not the whole thing. The panel inside the app shows the **first paragraph** of
+what you wrote, and a *See everything in this release* link that opens the
+releases page for the rest.
+
+That's deliberate. What you write for a release is a page-length read; the panel
+is answering one much smaller question — *is this worth installing right now* —
+and the opening paragraph is the answer to it. So that paragraph is the one that
+has to stand on its own. Everything below it is for the releases page, where it
+renders properly, and you can write it however you like: headings, bullets,
+bold, links. None of it reaches the panel, so nothing down there can look wrong
+in the app.
+
+Write however reads best in the paragraph too. Markdown in it is *unwrapped*
+rather than shown raw — `**bold**` arrives as the words without the stars, a
+`[link](url)` keeps its words and drops the address, `` `code` `` loses its
+backticks. A `##` heading pasted in above the paragraph is skipped, so it
+doesn't matter whether you copy the version heading along with the section. The
+one thing that doesn't survive is formatting itself: the panel is flat text, so
+don't lean on bold or a list to carry a distinction there.
+
 ## What can go wrong
 
 **"Expected 0.3.0, but: package.json: 0.2.1…"** — the tag and the version files

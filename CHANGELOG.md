@@ -13,6 +13,13 @@
 
 ## 2026-08-08
 
+### Release notes in the update panel read like writing again
+
+- **The "what's new" text in Settings → Updates used to arrive as a wall of raw formatting** — `###` and `-` and `**stars**` showing as themselves, the whole release run together in one block. It's now the release's opening paragraph, as ordinary text.
+- **There's a *See everything in this release* link under it**, which opens the releases page in your browser. That's where the full notes live and where they've always looked right.
+- **This is a decision about what the panel is for.** It's answering *is this worth installing right now*, and a page and a half of headings and bullets is the wrong shape for that question. The first paragraph is the answer; the rest is one click away.
+- Nothing new goes out over the network. The text was already being fetched as part of checking for updates — it just wasn't readable.
+
 ### The sidebar draws lines showing what's inside what
 
 - **Each level of nesting now has a faint vertical line running down it**, so you can follow a row back up to the folder it lives in instead of counting indents by eye.

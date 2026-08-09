@@ -4,6 +4,7 @@ import { check } from "@tauri-apps/plugin-updater";
 
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: vi.fn() }));
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: vi.fn() }));
+vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn() }));
 
 const mockedCheck = vi.mocked(check);
 
@@ -30,6 +31,14 @@ describe("checkForUpdate", () => {
     if (result.status !== "available") return;
     expect(result.update.version).toBe("0.2.0");
     expect(result.update.notes).toBe("Adds LK export.");
+  });
+
+  // The full body is markdown written for the releases page; the panel gets
+  // its opening paragraph as plain text. See release-notes.ts.
+  it("reduces a markdown body to its opening paragraph", async () => {
+    mockedCheck.mockResolvedValue(fakeUpdate("0.3.0", "## v0.3.0\n\n**Themes** are here.\n\n### Details\n\n- One\n- Two"));
+    const result = await checkForUpdate();
+    expect(result.status === "available" && result.update.notes).toBe("Themes are here.");
   });
 
   it("treats missing release notes as absent rather than empty", async () => {

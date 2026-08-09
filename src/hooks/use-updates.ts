@@ -6,6 +6,7 @@ import { flushAllSaves } from "../services/autosave";
 import {
   checkForUpdate,
   installUpdate,
+  openReleasesPage,
   restartApp,
   type DownloadProgress,
   type PendingUpdate,
@@ -86,5 +87,13 @@ export function useUpdates() {
 
   const dismiss = useCallback(() => setState({ phase: "idle" }), []);
 
-  return { state, currentVersion, check, install, restart: restartApp, dismiss };
+  return {
+    state,
+    currentVersion,
+    check,
+    install,
+    restart: restartApp,
+    dismiss,
+    viewReleaseNotes: openReleasesPage,
+  };
 }

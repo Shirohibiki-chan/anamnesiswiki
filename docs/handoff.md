@@ -266,6 +266,26 @@ is below.
   reaching GitHub costs the user nothing, and the message says so rather than
   presenting as an error.
 
+- **The release body is the only text in the app that didn't come off the
+  user's disk, and it is never rendered as HTML.** `services/release-notes.ts`
+  reduces it to its opening paragraph as plain text and the panel renders that
+  as a text node. The obvious "improvement" here is a markdown library and
+  `dangerouslySetInnerHTML`, which would put remote-sourced markup on a screen
+  the user reaches from a cog — don't. If the panel ever needs real formatting,
+  the shape is React elements built from a parse, never an HTML string. The
+  panel showing one paragraph is also a product decision, not a limitation:
+  a release body is a page-length document written for the releases page, and
+  the panel is answering *is this worth installing right now*. The rest is
+  behind the link out to the releases page.
+
+- **`RELEASES_PAGE_URL` points at `/releases/latest`, not a tag built from the
+  version string.** The updater only ever reads `releases/latest/download/
+  latest.json`, so the update on offer *is* the latest release, and a guessed
+  `v{version}` tag would 404 if tag naming ever shifted. Opening it is
+  `openUrl` — the OS launches a browser, the app makes no request — and
+  `opener:default` already scopes `https://*`, so no capability change was
+  needed for it.
+
 ## React patterns
 
 - **Remount-by-`key` instead of resetting state in an effect.** `PageView` keys on
