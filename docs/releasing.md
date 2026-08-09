@@ -52,8 +52,19 @@ Pushing the tag is what starts it. Watch it on the
 takes roughly twenty minutes, most of which is four machines compiling.
 
 When it finishes there's a **draft release** on the releases page with the
-installers attached. Add a few lines about what changed (the top section of
-`CHANGELOG.md` is written for exactly this), then press **Publish release**.
+installers attached. Paste in that version's section from
+[`RELEASES.md`](../RELEASES.md) — it's written for exactly this — then press
+**Publish release**.
+
+Write the section in `RELEASES.md` *before* tagging, so it goes out with the
+release rather than being remembered afterwards. It's the plain-language read of
+what changed; `CHANGELOG.md` stays the full log and is what you write it from.
+
+**Keep the first paragraph plain.** The app's update panel shows the release body
+as unformatted text in a single block — headings, bullets and `**bold**` arrive
+as literal characters — so the opening paragraph is what people actually read
+before deciding to install. Everything below it is for the releases page, where
+it renders properly.
 
 Nothing reaches anyone's update button until you press that. That's the point of
 the draft — the release is assembled by four separate machines finishing at

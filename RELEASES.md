@@ -1,0 +1,187 @@
+# Release notes
+
+What's new in each published version of Anamnesis, written for the people
+using it. Each section here is the text that goes on that version's
+[releases page](https://github.com/Shirohibiki-chan/anamnesiswiki/releases), and
+it's what the update button shows you before you install.
+
+This is the short version on purpose. `CHANGELOG.md` is the full log — every
+fix, every adjustment, in the order it happened. If you want to know what
+changed, read this. If you want to know *everything* that changed, read that.
+
+---
+
+## v0.3.0 — 2026-08-08
+
+Anamnesis looks however you want it to now. There are seven themes instead of
+one, you can build your own from inside Settings without touching a file, and a
+theme is just a `.css` file you can hand to someone else. Alongside that:
+search that reads your writing and not just page titles, undo in the sidebar,
+export back out to LegendKeeper, and shortcuts you can change. This is also the
+first version built for Mac and Linux as well as Windows.
+
+### Themes, and making your own
+
+- **Seven themes.** *Midnight* — deep navy, teal, and its own set of fonts — is
+  what you start on now. *Anamnesis Dark* is what the app used to look like.
+  *Daylight* is a real light mode. *Ember* is warm charcoal and copper, *Grove*
+  is forest green and old gold, *Nightbloom* is dark plum and orchid, and
+  *Abyssal* is deep ocean blue, cyan and violet. Each one has its own callout
+  colours, so Info, Quote and Secret still read as three different things
+  wherever you are.
+- **Change any colour, in Settings → Colours.** Twenty colours and all twelve
+  gradients — backgrounds, top bar, sidebar, buttons, selected page, tags, page
+  titles, headings, the callout wash. Gradients can be a straight line at any
+  angle or a glow from a point, with a see-through slider on each end. Changes
+  land as you make them; there's nothing to save.
+- **One button fills in the other three background colours.** The app has four
+  of them, which is the thing that made building a light theme annoying —
+  changing one left you with a pink dialog full of navy boxes. Pick the colour
+  you want and press *Match the others to Panels*.
+- **A theme is a file.** Drop a `.css` into `Documents\Anamnesis\themes` and it
+  turns up in the list. Edit it in Notepad with the app open and the window
+  changes as you save. Copy one of the built-in seven with *Make a copy I can
+  edit* and it becomes an ordinary file too — nothing is locked to the place you
+  made it.
+- **Import a theme, or a palette from another app.** Point it at a `.css`
+  somebody sent you, or at a `.json` palette exported from a palette tool, and
+  it works out which colour is the window, which is the accent, which is the
+  delete-button red. Every text and border colour is solved for readability
+  rather than guessed, so an imported theme can't come out harder to read than
+  the built-in ones.
+- **Snippets.** A `.css` file in `Documents\Anamnesis\snippets` gets its own
+  on/off switch and sits on top of whichever theme is on — for changing one
+  thing without building a whole theme.
+- **98 fonts ship inside the app**, so anything you pick renders the same on any
+  machine with nothing to install. Titles are in a serif now rather than the
+  same sans-serif as everything else.
+- **Two text-size sliders, Writing and Interface.** They used to be one control,
+  so getting your pages comfortable dragged the menus along with them.
+- **Small grey text is readable in every theme.** The greys used for hints,
+  dates, counts and field notes were failing the standard contrast check in all
+  of them. Hover was worse — on Daylight, hovering a page in the sidebar painted
+  white on white and changed nothing at all. Both are fixed everywhere.
+
+### Finding things
+
+- **Search everything you've written, with Ctrl+K.** Not just page names — tags
+  and the actual text on every tab. Results show which folder a page lives in
+  and the sentence the match came from, and opening one takes you to the tab it
+  was found on rather than dumping you on Overview. It searches hidden tabs too,
+  and says so when a result comes from one.
+
+### Undo
+
+- **Ctrl+Z undoes what you did to the sidebar**, and Ctrl+Y does it again.
+  Adding, deleting, renaming, moving, duplicating, colouring and setting your
+  home page, including when you did any of those to several pages at once. It
+  goes back 25 steps and starts fresh each time you open a project. Deleting a
+  page keeps its picture aside, so undo brings back the whole page rather than
+  one with a hole in it. While your cursor is in a page's writing, Ctrl+Z
+  belongs to the writing, the same as in any other app.
+
+### Keyboard
+
+- **Every shortcut can be changed, in Settings → Keyboard.** Click the keys,
+  press what you'd rather use. It turns down a key that's already busy and says
+  what has it. Shortcuts need Ctrl held down, except F1–F12, which are allowed
+  on their own if you'd rather have one-key options.
+- **Ctrl+N makes a page** next to the one you're on — the thing the sidebar's
+  **+** couldn't do, since that always meant "inside this".
+- **Ctrl+S** writes anything still waiting and flashes *Saved*. Anamnesis
+  already saves as you type; this is for when you want to see it happen.
+
+### LegendKeeper
+
+- **You can export back out.** Right-click a page for a `.lk` of it and
+  everything under it, or your project's name for the whole thing. You get a
+  preview of what's going and anything that won't survive the trip before it
+  writes. Pictures are the one real limit and it's LegendKeeper's: a `.lk` holds
+  web addresses rather than the pictures themselves, so a picture that came from
+  LK goes home fine and one you added here gets left out, with a count.
+- **Importing brings your LK home page across** as a real page, already set as
+  your project home, with cross-references to it working.
+- **Importing is much faster and tells you what it's doing.** Pictures come down
+  six at a time instead of one, which is most of a minute back on a world with
+  53 of them, and the screen counts them as they arrive instead of sitting
+  still.
+- **It stops making you find a folder.** The preview says where the project is
+  about to land, and Import puts it there. Settings → Projects is where you
+  change that for good; there's a *Change* next to the folder for a one-off.
+
+### The sidebar
+
+- **Select more than one page at a time.** Ctrl-click to add, shift-click for a
+  run — then drag, colour or delete them all at once.
+- **Your project can have a home page.** Right-click any page and set it; it
+  gets a house next to its name and the house at the top of the sidebar becomes
+  a button that goes there.
+- **Lines showing what's inside what.** Each level of nesting has a faint
+  vertical line running down it, so you can follow a row back up to its folder
+  instead of counting indents.
+- **It doesn't scroll sideways any more.** Nesting a few folders deep used to
+  push everything wider than the panel and take the colour dot and **+** button
+  off the edge with it. Long names shorten with a `…` instead.
+
+### Settings
+
+- **Settings is a proper screen now**, not a narrow dialog with everything
+  stacked in one scrolling column. Sections are down the left-hand side and each
+  one fits on screen. Nothing was taken away — the same controls are behind
+  shorter walks.
+
+### Your work staying where you put it
+
+- **A move that gets interrupted puts everything back** rather than leaving
+  pages under a temporary name where the app walks past them. Anything already
+  left in that state is found and restored next time you open the project, and
+  you're told rather than it happening quietly.
+- **Any failed save shows the warning now**, not just failures while typing.
+  That was the real reason this could bite: the app knew and said nothing.
+- **A page dropped onto a page that can't hold pages is refused** at the point
+  of dropping, instead of looking like it worked and being gone next time you
+  opened the project.
+
+### Everything else you'll notice
+
+- **No white flash when Anamnesis opens.** The window stays hidden until there's
+  something dark to show.
+- **The scroll wheel, and the scrollbars.** The page and the properties panel
+  each scroll inside their own box now, and the app's scrollbars are the thin
+  dark ones they were always meant to be rather than the Windows default.
+- **No more white boxes** around whatever you last clicked. Nothing gets the
+  white ring anywhere; things you reach with the keyboard get a teal one.
+- **Hovering fades instead of snapping**, and buttons, dialogs, spacing, corners
+  and text sizes agree with each other across the app instead of each screen
+  having built its own.
+- **The window is called Anamnesis**, not the placeholder title it shipped with.
+- **New writing prompts in all eight templates** — shorter, more specific, and
+  none of them anyone else's writing. Pages you've already made don't change;
+  templates only fill a page in when it's first created.
+
+### Installing it
+
+- **Mac and Linux builds.** Windows, macOS (Intel and Apple Silicon) and Linux
+  are all built and signed now. Before this, a Mac looking for an update found
+  no entry for itself at all.
+
+---
+
+## v0.2.1 — 2026-07-31
+
+- **The settings cog reaches an installed copy.** It landed just after v0.2.0
+  was built, so it existed in the project but in no version you could run. This
+  release is the one that carries it — and the first time the
+  download-and-install path ran for real rather than only in tests.
+
+## v0.2.0 — 2026-07-31
+
+- **First published release.** Anamnesis became something you download from the
+  releases page rather than something that only existed on the machine it was
+  built on.
+- **A settings cog**, reachable from the start screen and from the top bar once
+  you're inside a project.
+- **The update button.** Anamnesis can tell you when a newer version exists and
+  install it for you. Nothing happens on its own — you press the button. It
+  sends nothing about you or your worlds, and updating only ever replaces the
+  app itself.
