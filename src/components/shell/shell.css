@@ -1360,6 +1360,37 @@ ol.release-notes-list {
   color: var(--color-text-muted);
 }
 
+/* The one control in Fonts and text that decides what the rest of the panel
+   means, so it's boxed off above them rather than sitting in the flow as a
+   fifth row — a switch that changes where four other controls write has to
+   read as being about them, not beside them. */
+.appearance-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.appearance-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  cursor: pointer;
+}
+
+.appearance-toggle-row input {
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.appearance-toggle-label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
 .appearance-note,
 .appearance-empty {
   margin: 0;

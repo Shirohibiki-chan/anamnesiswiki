@@ -16,10 +16,10 @@
 // preview — the window behind this panel is already showing every change as
 // it's made, at full size, on real content.
 import { useState } from "react";
-import { ChevronDown, FileText, Plus } from "lucide-react";
+import { ChevronDown, FileText } from "lucide-react";
 import { COLOR_GROUPS, GRADIENT_SLOTS, RADIAL_ORIGINS, type ColorToken, type GradientSlot } from "../../constants/theme-tokens";
-import { BUILT_IN_THEMES } from "../../constants/themes";
 import { useTheme } from "../../hooks/use-theme";
+import { CreateTheme } from "./CreateTheme";
 import { gradientCss, type Gradient } from "../../services/theme-editor";
 
 function ColorRow({ token, value, onChange }: { token: ColorToken; value: string; onChange: (hex: string) => void }) {
@@ -168,49 +168,6 @@ function GradientRow({
   );
 }
 
-/** The "copy what's on screen into a file I can edit" control. */
-function CreateTheme({ suggestion }: { suggestion: string }) {
-  const { createTheme, themesDir } = useTheme();
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const create = async () => {
-    setBusy(true);
-    try {
-      await createTheme(name.trim() || suggestion);
-      setName("");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="theme-edit-create">
-      <p className="appearance-note">
-        The built-in themes can't be edited — they ship with the app. Take a copy of this one and you can change anything in it.
-      </p>
-      <div className="theme-edit-create-row">
-        <input
-          type="text"
-          className="theme-edit-name"
-          value={name}
-          placeholder={suggestion}
-          aria-label="Name for the new theme"
-          disabled={!themesDir || busy}
-          onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") void create();
-          }}
-        />
-        <button type="button" className="ui-btn ui-btn-secondary" disabled={!themesDir || busy} onClick={() => void create()}>
-          <Plus size={14} />
-          Make a copy I can edit
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /**
  * What these controls will and won't do to her file.
  *
@@ -241,9 +198,6 @@ function EditingNote({ folder, failed }: { folder: string | null; failed: boolea
 export function ThemeEditor() {
   const {
     draft,
-    themeId,
-    themeFile,
-    customThemes,
     backupFolder,
     backupFailed,
     setThemeColor,
@@ -252,13 +206,9 @@ export function ThemeEditor() {
     setGradient,
   } = useTheme();
 
+  // Only reachable on a built-in, since a custom theme always has a draft.
   if (!draft) {
-    // Only reachable on a built-in, since a custom theme always has a draft —
-    // so this is the name of the theme being copied *from*.
-    const label =
-      (themeFile ? customThemes.find((theme) => theme.file === themeFile)?.label : BUILT_IN_THEMES.find((t) => t.id === themeId)?.label) ??
-      "Theme";
-    return <CreateTheme suggestion={`${label} copy`} />;
+    return <CreateTheme note="The built-in themes can't be edited — they ship with the app. Take a copy of this one and you can change anything in it." />;
   }
 
   return (

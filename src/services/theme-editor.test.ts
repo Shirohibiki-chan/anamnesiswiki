@@ -385,6 +385,7 @@ describe("a theme made with the pickers", () => {
       bg: { on: true, type: "linear", angle: 160, origin: "center", from: { color: "#0d1221", alpha: 1 }, to: { color: "#1f1f28", alpha: 1 } },
       title: { on: true, type: "linear", angle: 95, origin: "center", from: { color: "#e8e8ee", alpha: 1 }, to: { color: "#5eead4", alpha: 1 } },
     },
+    fonts: {},
   };
   const css = serializeTheme("Sea glass", "sea-glass", draft, "2026-08-07");
 
@@ -512,6 +513,20 @@ describe("readThemeDraft on a hand-written file", () => {
     const draft = readThemeDraft('[data-theme="x"] { --font-display: "Cinzel", serif; --color-bg: #000; }');
     expect(Object.keys(draft.colors)).toEqual(["--color-bg"]);
   });
+
+  it("reads the faces the file declares, as written", () => {
+    const draft = readThemeDraft('[data-theme="x"] { --font-display: "Cinzel", serif; --font-mono: ui-monospace, monospace; }');
+    expect(draft.fonts["--font-display"]).toBe('"Cinzel", serif');
+    expect(draft.fonts["--font-mono"]).toBe("ui-monospace, monospace");
+  });
+
+  // The distinction the whole per-theme model rests on: a slot the file says
+  // nothing about is *absent*, not filled in from whatever the app happens to
+  // be rendering. Resolve it and every theme looks like it chose a font.
+  it("leaves a face the file never names out entirely", () => {
+    const draft = readThemeDraft('[data-theme="x"] { --color-bg: #000; }', () => '"Inter", sans-serif');
+    expect(draft.fonts).toEqual({});
+  });
 });
 
 // "The file doesn't set this" and "this is black" are different statements, and
@@ -578,14 +593,21 @@ describe("patchTheme", () => {
 }
 `;
 
-  const draftOf = (colors: Record<string, string>, gradients: ThemeDraft["gradients"] = {}): ThemeDraft => ({
+  const draftOf = (colors: Record<string, string>, gradients: ThemeDraft["gradients"] = {}, fonts: ThemeDraft["fonts"] = {}): ThemeDraft => ({
     colors,
     resolved: colors,
     gradients,
+    fonts,
   });
 
+  // The faces are the file's own, so a draft that came from reading it carries
+  // them and hands them straight back. Passing them explicitly is what the
+  // store does — `readThemeDraft` fills this in — and leaving them out is the
+  // separate, deliberate act of clearing a slot, tested two below.
+  const asRead = { "--font-display": '"Cormorant", serif' };
+
   it("changes the value it was asked to and leaves every other byte alone", () => {
-    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({ "--color-bg": "#101820" }), "2026-08-07");
+    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({ "--color-bg": "#101820" }, {}, asRead), "2026-08-07");
 
     expect(out).toContain("--color-bg: #101820;");
     expect(out).not.toContain("#071a1c");
@@ -596,6 +618,39 @@ describe("patchTheme", () => {
     expect(out).toContain("--my-own-thing: 4px;");
     expect(out).toContain("letter-spacing: 0.04em;");
     expect(out).toContain("/* the good blue */");
+  });
+
+  it("changes a face where the file already declares one", () => {
+    const out = patchTheme(
+      HAND_WRITTEN,
+      "Sea Glass",
+      "sea-glass",
+      draftOf({}, {}, { "--font-display": '"Cinzel", serif' }),
+      "2026-08-07",
+    );
+    expect(out).toContain('--font-display: "Cinzel", serif;');
+    expect(out).not.toContain("Cormorant");
+    // Still surgical — the rest of a hand-written file is not this module's.
+    expect(out).toContain("--my-own-thing: 4px;");
+    expect(out).toContain("letter-spacing: 0.04em;");
+  });
+
+  it("adds a face to a file that never named one", () => {
+    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({}, {}, { ...asRead, "--font-prose": '"Lora", serif' }), "2026-08-07");
+    expect(out).toContain("\n  --font-prose: \"Lora\", serif;");
+    expect(out).toContain('--font-display: "Cormorant", serif;');
+  });
+
+  // Clearing a slot back to the app's own face. There is no value that says
+  // "nothing" — the absence of the line *is* the statement — which is the same
+  // shape as switching a gradient off, and the one case where removing
+  // something is the edit rather than a loss.
+  it("takes a face's line out when the draft no longer names it", () => {
+    const out = patchTheme(HAND_WRITTEN, "Sea Glass", "sea-glass", draftOf({}, {}, {}), "2026-08-07");
+    expect(out).not.toContain("--font-display");
+    expect(out).not.toContain("Cormorant");
+    expect(out).toContain("--my-own-thing: 4px;");
+    expect(out).toContain("--color-accent-light: #5eead4;");
   });
 
   it("adds a token the file never mentioned, at the file's own indentation", () => {
