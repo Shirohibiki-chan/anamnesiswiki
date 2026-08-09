@@ -199,6 +199,19 @@ is below.
   The same shape applies to any other scoped plugin permission — **a permission
   that appears granted and still fails is the scope, every time.**
 
+- **An AppImage must not bundle graphics or display libraries.**
+  `libwayland-client`, `libEGL`, `libGL`, `libgbm`, `libdrm` and driver shims
+  are bound to the *host's* kernel and GPU stack; a copy built on
+  `ubuntu-22.04` is newer than what an older distro carries and the two don't
+  talk. AppImage publishes an excludelist saying so and `linuxdeploy` honours
+  it — Tauri's bundler walks webkit2gtk's dependency tree without consulting
+  it. This is not theoretical: it's why the app wouldn't start on a Fedora
+  laptop in the first outside install, 2026-08-09, and the workaround needed
+  knowledge no ordinary installer has. **If the AppImage is ever changed, the
+  test is a machine that reproduces the failure — CI runs the same Ubuntu that
+  produces the bad bundle, so a green build proves nothing here.** Detail and
+  the reported symptom are in `docs/plan.md` §Known Bugs.
+
 - **`sep()` is synchronous; `join()` is an IPC round trip into Rust per call.**
   That difference is why path building is done locally. Neither exists under
   `pnpm dev` or Vitest, which is why the separator is resolved lazily.
@@ -449,6 +462,24 @@ is below.
   editor ever stops working, check whether the token is being set on an ancestor
   and overridden on the element.**
 
+- **`patchTheme` decides "the app wrote this" by re-deriving from the file's own
+  colours** — which silently stops working the day a `deriveTokens` formula
+  changes, because every theme saved under the old formula then reads as
+  hand-chosen and never gets the fix. **Changing a derived formula means adding
+  the value it used to write to `RETIRED_DERIVED`**, or the change reaches the
+  built-ins in `index.css` and nothing else. Keep that list to values the app
+  demonstrably wrote; it's the one thing that overrules "leave it alone", and a
+  value a person might plausibly have picked doesn't belong in it.
+
+- **`@blocknote/shadcn`'s stylesheet gives every icon inside the editor back its
+  intrinsic size**, via `svg:not([class*=size-]) { width: revert; height: revert }`
+  — so a lucide icon in any BlockNote UI renders at 24px no matter what the
+  component asked for. That's how the block ＋ and drag handle ended up as the
+  two largest things on a line of 16px prose. **Size these by CSS in `page.css`,
+  not by an icon prop** — the prop is what `revert` is throwing away. The rule
+  there also has to bring `.bn-side-menu .bn-button`'s fixed 24px height down
+  with it, or a smaller icon just gets centred in the same gap.
+
 - **`--fs-content` has exactly one user**, `.editor-shell .bn-editor`. It's the
   "Writing" slider, and that slider means the text on a page — the moment a
   second element takes the token, the control stops being predictable and
@@ -494,6 +525,58 @@ is below.
   from a nested `<button>`.
 
 ## Search
+
+- **A search feature reachable only by typing a character is a feature nobody
+  has.** Tag-only filtering in the tree shipped as a leading `#`, with the
+  placeholder saying so, and went unfound for months — *"i didnt realize i had
+  to actually type the hashtag. I thought some UI selection would show up."*
+  The syntax now **sets a visible control and deletes itself from the field**,
+  which is the shape to copy: the shortcut still works, there's one place
+  saying what you're searching rather than a character in the field and a
+  control disagreeing with it, and using the shortcut once shows you the menu.
+
+- **The scope control is a menu, not buttons, and that was a correction.** It
+  was three pills under the tree's field first — *"i kind of hate the buttons.
+  they feel unprofessional and lame."* **Permanent furniture for a control
+  nobody touches is a cost paid every time you look at the screen, to expose a
+  choice made once a month.** `SearchScopeMenu.tsx` is shared by the tree and
+  the palette on purpose: two designs for "what am I searching" is how you get
+  two answers to it. Nothing renders when it's closed except the chip, and the
+  chip only when the scope isn't the default — asked for explicitly, so don't
+  quietly make it always-on.
+
+- **Where the scope menu opens from differs by surface, deliberately.** The
+  tree's field is something you click into, so focusing an empty one opens the
+  menu — that's the moment discovery has to happen. The palette opens already
+  focused and empty, so the same rule would put a menu over the results before
+  there were any; `Tab` opens it there instead, which is otherwise a dead key
+  in a dialog with one field.
+
+- **Settings search is scored on how much of the query a row accounts for, not
+  on how well it matched.** Fuse matches a query as one string, which answers
+  "projects folder" and returns *nothing at all* for "where are my files
+  saved" — the query the box exists for, since anyone who knew the setting's
+  name wouldn't be searching. Each word is scored separately and coverage
+  ranks above strength. **The pruning is load-bearing, not tidying:** rows
+  below the best coverage minus one are dropped, because every extra word in a
+  long query is another chance for an unrelated row to catch one of them, and
+  without it that query returned the right answer plus eighteen colour
+  swatches.
+
+- **The settings results are one ranked list on purpose.** Grouping them by
+  section was built and reverted within the hour: grouping sorts by section, so
+  the best answer lands wherever its panel sits in the rail (*Projects folder*
+  came nineteenth), and it split the rendered order from the ranked order, so
+  Enter opened a different row than the highlighted one. `groupByTab` still
+  exists and is still tested — anything using it must index into *its* shape,
+  never into the flat results.
+
+- **A settings section is declared in two files that can't import each other**
+  — the data in `constants/settings.ts`, the panel component in
+  `SettingsModal.tsx`'s `PANELS`. Nothing in the type system connects them, so
+  `settings-search.test.ts` reads the modal's source and fails if they drift.
+  Add a section to one and not the other and you get a rail entry opening a
+  blank pane.
 
 - **Prose is matched by exact substring, not fuzzily, and that's the design —
   not an unfinished bit.** Names and tags go through Fuse because they're short

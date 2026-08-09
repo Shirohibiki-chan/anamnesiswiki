@@ -22,7 +22,8 @@
 | Top bar spanning the center panel — breadcrumb trail on the left, right-panel toggle on the right, tiny fade-in "Saved" indicator after autosave commits | `src/components/shell/TopBar.tsx` |
 | First-launch project picker — grid of recent projects + "Open folder" and "New project" buttons; opens a native folder picker via Tauri dialog | `src/components/shell/ProjectPicker.tsx` |
 | Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `ProjectPicker` if none exists | `src/components/shell/StartupRouter.tsx` |
-| The settings dialog — the frame, the vertical rail of sections, and the one table (`SETTINGS_TABS`) that decides what's in it. Adding a section is one entry there. | `src/components/shell/SettingsModal.tsx` |
+| The settings dialog — the frame, the vertical rail of sections, the search box, and the ranked result list. The rail's contents come from `SETTINGS_TABS` in `src/constants/settings.ts`; adding a section is an entry there **and** one in this file's `PANELS` map, which a test checks are in step. | `src/components/shell/SettingsModal.tsx` |
+| Settings search — the index of every setting, built from the same registries the panels render from. A result scrolls to and flashes the row tagged `data-setting="<entry id>"`. | `src/services/settings-search.ts`, `src/constants/settings.ts` |
 | Settings → Theme — the theme list with live swatch dots, the New theme / import / folder buttons, and "Put everything back to default" | `src/components/shell/ThemeSettings.tsx` |
 | Settings → Colours — the colour and gradient pickers. Writes a `.css` file; see `docs/constants-and-theming.md`. | `src/components/shell/ThemeEditor.tsx` |
 | Making a theme — "Make a copy I can edit" with a name field, and the bare New theme button. Shared by the three panels that offer it. | `src/components/shell/CreateTheme.tsx` |
@@ -39,7 +40,8 @@
 |---|---|
 | Left sidebar container — top tab strip (Project / Templates / Assets), search bar, and the tree itself. Only the Project tab has behavior in Phase 1. | `src/components/tree/TreeSidebar.tsx` |
 | The project name row at the top of the tree with a home icon and "+" button for adding a top-level page | `src/components/tree/ProjectHeader.tsx` |
-| Search / filter input at the top of the tree — matches by name and by `#tag` prefix; passes through to `Fuse.js` | `src/components/tree/TreeSearch.tsx` |
+| Search / filter input at the top of the tree. Passes through to `createSearchMatcher` in `tree-service.ts`, which owns the `Fuse.js` index per scope. | `src/components/tree/TreeSearch.tsx` |
+| The "what am I searching" menu and the chip that shows a narrowed scope — shared by the tree filter and the Ctrl-K palette, which pass their own scope lists in. Typing a leading `#` sets tag scope and deletes itself from the field. | `src/components/search/SearchScopeMenu.tsx` |
 | The scrollable tree body — renders root nodes and delegates recursion to `TreeItem`; owns drag/drop reparenting via react-arborist | `src/components/tree/TreePanel.tsx` |
 | One tree row — icon (colored per effective color, cascading from parent unless overridden), name (renamable inline), color-dot button on hover, "+" button on hover for nodes that can have children, right-click context menu | `src/components/tree/TreeItem.tsx` |
 | Color palette popover shown when a color dot is clicked — 10-12 preset swatches plus a "clear/default" X button; shows "Inheriting from parent" hint when the current node has no own color but an ancestor does | `src/components/tree/ColorPicker.tsx` |

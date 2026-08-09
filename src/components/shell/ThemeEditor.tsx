@@ -24,7 +24,11 @@ import { gradientCss, type Gradient } from "../../services/theme-editor";
 
 function ColorRow({ token, value, onChange }: { token: ColorToken; value: string; onChange: (hex: string) => void }) {
   return (
-    <label className="theme-edit-color">
+    // `data-setting` is what Settings search scrolls to and flashes when a
+    // result points here. The value is the entry id in settings-search.ts,
+    // which for a colour is the token itself — same string both sides, so
+    // there's no third list to keep in step.
+    <label className="theme-edit-color" data-setting={token.token}>
       {/* The swatch *is* the input — a 28px square of the colour that opens the
           OS picker when you click it. A separate "edit" affordance beside a
           preview would be two things where one will do. */}
@@ -61,7 +65,7 @@ function GradientRow({
   };
 
   return (
-    <div className={`theme-edit-gradient${on ? " theme-edit-gradient-on" : ""}`}>
+    <div className={`theme-edit-gradient${on ? " theme-edit-gradient-on" : ""}`} data-setting={`gradient-${slot.key}`}>
       <div className="theme-edit-gradient-head">
         <input
           type="checkbox"

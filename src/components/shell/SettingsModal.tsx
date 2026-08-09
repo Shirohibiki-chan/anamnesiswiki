@@ -12,6 +12,20 @@
 // entries down the side is a list you read at a glance, while seven across the
 // top is a strip that scrolls.
 //
+// The search box is the third answer to the same pressure, and the one that
+// scales: splitting sections stops working once there are enough of them that
+// finding the right *section* is the problem. It replaces the panel while
+// there's a query in it, rather than filtering the rail, so results have room
+// to name the section they're in — half the answer, and the half you still
+// need next time.
+//
+// The results are **one ranked list, not a list per section.** Grouping them
+// was tried and reverted the same hour: it sorts by section, which means the
+// best answer to a question lands wherever its panel sits in the rail —
+// "where are my files saved" put *Projects folder* nineteenth. It also split
+// the highlight from the ordering, so Enter opened a row other than the lit
+// one. **The rank is the feature.** The section rides along on each row.
+//
 // Portaled to document.body for the same reason ConfirmDialog is: it has to
 // paint above the tree's stacking contexts.
 //
@@ -21,7 +35,9 @@
 // the accessibility screen behind a mouse.
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { SETTINGS_TABS } from "../../constants/settings";
+import { useSettingsSearch } from "../../hooks/use-settings-search";
 import { FontSettings } from "./FontSettings";
 import { ProjectsSettings } from "./ProjectsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
@@ -31,69 +47,22 @@ import { PatchNotes } from "./PatchNotes";
 import { ThemeSettings } from "./ThemeSettings";
 import { UpdateCheck } from "./UpdateCheck";
 
-// Adding a settings area is one entry here. Order is rail order, and `group`
-// only draws the hairline where it changes — the rail has no group headings,
-// because seven entries don't need to be sorted into piles to be scanned.
-const SETTINGS_TABS = [
-  {
-    id: "theme",
-    group: "look",
-    label: "Theme",
-    blurb: "The whole look, in one pick. Themes you've made yourself are in the list too.",
-    Panel: ThemeSettings,
-  },
-  {
-    id: "colours",
-    group: "look",
-    label: "Colours",
-    blurb: "Change a theme's colours and gradients here — it writes an ordinary .css file you can also open in Notepad.",
-    Panel: ThemeEditor,
-  },
-  {
-    id: "fonts",
-    group: "look",
-    label: "Fonts and text",
-    blurb: "Which typefaces to use, and how big.",
-    Panel: FontSettings,
-  },
-  {
-    id: "snippets",
-    group: "look",
-    label: "Snippets",
-    blurb: "Small bits of CSS that sit on top of whichever theme is on, each switched on and off by itself.",
-    Panel: SnippetSettings,
-  },
-  {
-    id: "projects",
-    group: "app",
-    label: "Projects",
-    blurb: "Where new and imported projects get saved.",
-    Panel: ProjectsSettings,
-  },
-  {
-    id: "keyboard",
-    group: "app",
-    label: "Keyboard",
-    blurb: "Every shortcut, and what it's bound to.",
-    Panel: ShortcutSettings,
-  },
-  {
-    id: "updates",
-    group: "app",
-    label: "Updates",
-    blurb: "Check for a new version. Only ever when you press the button.",
-    Panel: UpdateCheck,
-  },
-  {
-    id: "patch-notes",
-    group: "app",
-    label: "Patch Notes",
-    blurb: "What changed in the last few versions of Anamnesis.",
-    Panel: PatchNotes,
-  },
-] as const;
+// The half of a settings section that can't live in `constants/settings.ts`:
+// a constants file may not import a component. Ids come from there and are
+// matched here, so a section with no panel is a build error rather than a
+// blank screen.
+const PANELS: Record<string, () => React.JSX.Element> = {
+  theme: ThemeSettings,
+  colours: ThemeEditor,
+  fonts: FontSettings,
+  snippets: SnippetSettings,
+  projects: ProjectsSettings,
+  keyboard: ShortcutSettings,
+  updates: UpdateCheck,
+  "patch-notes": PatchNotes,
+};
 
-type TabId = (typeof SETTINGS_TABS)[number]["id"];
+type TabId = string;
 
 type SettingsModalProps = {
   onClose: () => void;
@@ -114,15 +83,94 @@ function tabIndexForKey(key: string, from: number): number | null {
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>(SETTINGS_TABS[0].id);
+  const [query, setQuery] = useState("");
+  const [highlighted, setHighlighted] = useState(0);
+  // Which setting the last result click was aiming at, so the panel it lands
+  // in can flash the row. Cleared once it's been used.
+  const [target, setTarget] = useState<string | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const { results } = useSettingsSearch(query);
+  const searching = query.trim().length > 0;
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      // Ctrl/Cmd-F puts the caret back in the box wherever you are in the
+      // dialog — the one key everyone already presses to look for something.
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+        return;
+      }
+      // Escape backs out one step at a time: it clears the search before it
+      // closes the dialog. Closing outright would throw away the query *and*
+      // the screen, when the thing being escaped is usually just the query.
+      if (event.key === "Escape") {
+        if (searchRef.current?.value) {
+          setQuery("");
+          setHighlighted(0);
+          searchRef.current.focus();
+          return;
+        }
+        onClose();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  // Scroll the flashed row into view and take the flash off again. The class
+  // is what the panels' CSS animates; the timer is what stops the row being
+  // permanently marked once you've found it.
+  useEffect(() => {
+    if (!target) return;
+    const node = panelRef.current?.querySelector<HTMLElement>(`[data-setting="${CSS.escape(target)}"]`);
+    node?.scrollIntoView({ block: "center" });
+    node?.classList.add("settings-found");
+    const timer = window.setTimeout(() => {
+      node?.classList.remove("settings-found");
+      setTarget(null);
+    }, 1600);
+    return () => window.clearTimeout(timer);
+  }, [target, activeTab]);
+
+  // Every path that changes the query goes through here, so the highlight is
+  // reset in one place rather than by an effect watching for it — a highlight
+  // left several rows down while the list underneath it changed would point at
+  // a different setting than the one that was under it a keystroke ago.
+  function retype(next: string) {
+    setQuery(next);
+    setHighlighted(0);
+  }
+
+  function openResult(index: number) {
+    const entry = results[index];
+    if (!entry) return;
+    setActiveTab(entry.tabId);
+    retype("");
+    // Set after the tab, so the effect above runs against the panel the result
+    // actually points at rather than whichever one was open.
+    setTarget(entry.id);
+  }
+
+  // Arrow keys walk the results and Enter opens one, from inside the field —
+  // so a search is type, arrow, Enter without ever leaving the box.
+  function onSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (!searching || results.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlighted((at) => (at + 1) % results.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlighted((at) => (at === 0 ? results.length - 1 : at - 1));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      openResult(highlighted);
+    }
+  }
 
   // Arrow keys select as they move (automatic activation), which is the right
   // call when switching panels is free — no loading, no unsaved state to lose.
@@ -140,7 +188,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   }
 
   const active = SETTINGS_TABS.find((tab) => tab.id === activeTab) ?? SETTINGS_TABS[0];
-  const ActivePanel = active.Panel;
+  const ActivePanel = PANELS[active.id];
 
   return createPortal(
     <div className="ui-backdrop" onClick={onClose}>
@@ -155,6 +203,21 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           <h2 id="settings-title" className="settings-title">
             Settings
           </h2>
+
+          <div className="settings-search">
+            <Search size={13} className="settings-search-icon" />
+            <input
+              ref={searchRef}
+              type="text"
+              className="settings-search-input"
+              value={query}
+              onChange={(e) => retype(e.target.value)}
+              onKeyDown={onSearchKeyDown}
+              placeholder="Search settings"
+              aria-label="Search settings"
+            />
+          </div>
+
           <button type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Close settings" onClick={onClose} autoFocus>
             <X size={15} />
           </button>
@@ -189,26 +252,62 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             ))}
           </div>
 
-          <div
-            className="settings-content"
-            role="tabpanel"
-            id={`settings-panel-${active.id}`}
-            aria-labelledby={`settings-tab-${active.id}`}
-          >
-            {/* Outside the scroller on purpose: with the nav down the side, this
-                heading is the only thing on screen naming where you are, and it
-                can't be the first thing that scrolls away. */}
-            <div className="settings-panel-head">
-              <h3 className="settings-panel-title">{active.label}</h3>
-              <p className="settings-panel-blurb">{active.blurb}</p>
+          {searching ? (
+            <div className="settings-content settings-results" role="region" aria-label="Search results">
+              {results.length === 0 ? (
+                <div className="settings-panel-head">
+                  <h3 className="settings-panel-title">Nothing found</h3>
+                  <p className="settings-panel-blurb">No setting matches “{query.trim()}”. The sections are all still there on the left.</p>
+                </div>
+              ) : (
+                results.map((entry, index) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`settings-result${index === highlighted ? " settings-result-active" : ""}`}
+                    // Following the mouse keeps one highlight rather than two —
+                    // a hover that looked selected next to a keyboard row that
+                    // was would make Enter a guess.
+                    onMouseEnter={() => setHighlighted(index)}
+                    onClick={() => openResult(index)}
+                  >
+                    <span className="settings-result-text">
+                      <span className="settings-result-label">{entry.label}</span>
+                      {entry.hint && <span className="settings-result-hint">{entry.hint}</span>}
+                    </span>
+                    {/* The section, per row rather than as a heading over a
+                        group of them. Grouping meant sorting by section, and
+                        sorting by section meant the best answer to a question
+                        could land nineteenth because its panel is fifth in the
+                        rail. Ranking is the whole point of a search box; the
+                        section is context, and context fits on the row. */}
+                    <span className="settings-result-tab">{entry.tabLabel}</span>
+                  </button>
+                ))
+              )}
             </div>
+          ) : (
+            <div
+              className="settings-content"
+              role="tabpanel"
+              id={`settings-panel-${active.id}`}
+              aria-labelledby={`settings-tab-${active.id}`}
+            >
+              {/* Outside the scroller on purpose: with the nav down the side, this
+                  heading is the only thing on screen naming where you are, and it
+                  can't be the first thing that scrolls away. */}
+              <div className="settings-panel-head">
+                <h3 className="settings-panel-title">{active.label}</h3>
+                <p className="settings-panel-blurb">{active.blurb}</p>
+              </div>
 
-            {/* Keyed, so switching sections starts at the top of the new one
-                rather than wherever the last one was scrolled to. */}
-            <div className="settings-panel" key={active.id}>
-              <ActivePanel />
+              {/* Keyed, so switching sections starts at the top of the new one
+                  rather than wherever the last one was scrolled to. */}
+              <div className="settings-panel" key={active.id} ref={panelRef}>
+                <ActivePanel />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>,
