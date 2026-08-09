@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-08 — v0.3.0 release notes cover the fonts change
+
+### Adjustments
+
+- **[RELEASES.md](RELEASES.md) describes what v0.3.0 actually ships.** The fonts-belong-to-the-theme change and the *New theme* button landed after the v0.3.0 notes were written, so the notes named a button that had moved and said nothing about a visible change to how fonts work. Since Settings → Patch Notes reads this file, that gap would have been on screen inside the app it was wrong about.
+
 ## 2026-08-08 — fonts belong to themes
 
 ### Adjustments

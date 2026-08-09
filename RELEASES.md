@@ -40,9 +40,9 @@ first version built for Mac and Linux as well as Windows.
   you want and press *Match the others to Panels*.
 - **A theme is a file.** Drop a `.css` into `Documents\Anamnesis\themes` and it
   turns up in the list. Edit it in Notepad with the app open and the window
-  changes as you save. Copy one of the built-in seven with *Make a copy I can
-  edit* and it becomes an ordinary file too — nothing is locked to the place you
-  made it.
+  changes as you save. Press *New theme* in Settings → Themes to copy the one
+  you're on into a file of your own, and it becomes an ordinary file too —
+  nothing is locked to the place you made it.
 - **Import a theme, or a palette from another app.** Point it at a `.css`
   somebody sent you, or at a `.json` palette exported from a palette tool, and
   it works out which colour is the window, which is the accent, which is the
@@ -55,6 +55,12 @@ first version built for Mac and Linux as well as Windows.
 - **98 fonts ship inside the app**, so anything you pick renders the same on any
   machine with nothing to install. Titles are in a serif now rather than the
   same sans-serif as everything else.
+- **Fonts belong to the theme, the same as its colours do.** Pick one in
+  Settings → Fonts and text and it's written into that theme's file — so
+  switching theme switches the fonts with it, and a copy keeps the faces it was
+  copied with. If you'd rather have one set of fonts everywhere regardless of
+  theme, there's a switch at the top of that panel for exactly that, and it's
+  per slot: your reading font can stay put while the titles follow the theme.
 - **Two text-size sliders, Writing and Interface.** They used to be one control,
   so getting your pages comfortable dragged the menus along with them.
 - **Small grey text is readable in every theme.** The greys used for hints,
