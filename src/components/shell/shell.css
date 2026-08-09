@@ -793,9 +793,39 @@
   margin: 0 0 var(--space-sm);
 }
 
-/* Tailwind's reset strips list markers, so both kinds are set back by hand. */
+/* Tailwind's reset strips list markers, so both kinds are set back by hand.
+   Numbers stay a real marker — digits are digits in any face — but the bullet
+   is drawn rather than typed.
+
+   `list-style: disc` renders U+2022 in whatever font the element inherits, and
+   in this app that's the *theme's* interface font: any of the 98 that ship,
+   plus anything someone puts in a hand-written theme. A bullet's weight, size
+   and vertical position then vary by face, and some render it small and
+   off-centre enough to read as a stray apostrophe rather than a bullet. A
+   drawn circle is the same mark in every theme. Sized in `em` so it still
+   tracks the Interface text-size slider. */
 ul.release-notes-list {
-  list-style: disc;
+  list-style: none;
+}
+
+ul.release-notes-list > li {
+  position: relative;
+}
+
+ul.release-notes-list > li::before {
+  content: "";
+  position: absolute;
+  /* Inside the list's own padding, so nothing shifts and long items still
+     wrap flush under their first line. */
+  left: -0.8em;
+  /* The first line's optical middle: half of a 1.5 line-height, less half the
+     dot. Pinned to the line rather than the item, so a six-line bullet keeps
+     its dot beside the first line. */
+  top: 0.585em;
+  width: 0.33em;
+  height: 0.33em;
+  border-radius: 50%;
+  background: var(--color-text-muted);
 }
 
 ol.release-notes-list {

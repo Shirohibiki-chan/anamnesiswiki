@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-08 — release notes bullets
+
+### Fixes
+
+- **The bullets in release notes are round dots again**, in Patch Notes and in the update panel alike. They were being typed rather than drawn — the app asked for a standard bullet character and let the theme's own font supply it, so the mark's size, weight and height changed with whichever of the 98 fonts a theme picks. On Midnight's it came out small enough and high enough to read as a stray apostrophe rather than a bullet. It's now a drawn circle, identical in every theme including hand-written ones, and it still grows and shrinks with the Interface text-size slider. Numbered lists keep real numbers — digits look like digits in any font.
+
 ## 2026-08-08 — patch notes in Settings
 
 ### Additions
