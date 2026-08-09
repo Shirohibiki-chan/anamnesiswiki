@@ -79,17 +79,23 @@ export function TreeSearch({ value, onChange, mode, onModeChange }: TreeSearchPr
           placeholder={PLACEHOLDERS[mode]}
         />
         <SearchScopeChip scopes={TREE_SCOPES} value={mode} onClick={() => setMenuOpen((open) => !open)} />
-      </div>
 
-      {menuOpen && (
-        <SearchScopeMenu
-          scopes={TREE_SCOPES}
-          value={mode}
-          onChange={(next) => onModeChange(next as TreeSearchMode)}
-          onClose={() => setMenuOpen(false)}
-          boundary={boundaryRef}
-        />
-      )}
+        {/* Inside the field, not beside it. The menu positions itself against
+            the nearest positioned ancestor, and that's `.tree-search-field` —
+            `.tree-search` carries the sidebar's padding and isn't positioned
+            at all, so a menu rendered as its sibling anchored to whatever
+            ancestor happened to be positioned and landed nowhere near the
+            box. It looked like the control had simply not shipped. */}
+        {menuOpen && (
+          <SearchScopeMenu
+            scopes={TREE_SCOPES}
+            value={mode}
+            onChange={(next) => onModeChange(next as TreeSearchMode)}
+            onClose={() => setMenuOpen(false)}
+            boundary={boundaryRef}
+          />
+        )}
+      </div>
     </div>
   );
 }

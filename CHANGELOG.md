@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-09 — two fixes to the search boxes that shipped this morning
+
+### Fixes
+
+- **The tree's scope menu now opens where the search box is.** It was landing somewhere else entirely — far enough away to look like the control had never been added, which is exactly how it was reported. Clicking into an empty sidebar search shows the menu under the field, as it was meant to.
+- **Ctrl-K no longer draws a green box around itself.** Every text field in the app gets a ring when you click into it, which is right for a field sitting among other things — but the search box fills the whole top of that panel and is already focused the moment it opens, so the ring was permanently on and traced a rectangle that didn't line up with anything. It's gone. The cursor is already in the only field there is.
+
 ## 2026-08-09 — you can see what the search is searching, and Settings has a search of its own
 
 ### Additions
@@ -25,6 +32,8 @@
 ### Adjustments
 
 - **The ＋ and the drag handle beside each block are smaller.** They were rendering at 24px next to 16px prose, which made the two biggest things on the line a pair of handles. They're 16px now, sized to the text they belong to.
+
+## 2026-08-09 — the update button comes before the release notes
 
 ### Adjustments
 
