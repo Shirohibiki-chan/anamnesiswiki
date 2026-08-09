@@ -60,12 +60,6 @@ Write the section in `RELEASES.md` *before* tagging, so it goes out with the
 release rather than being remembered afterwards. It's the plain-language read of
 what changed; `CHANGELOG.md` stays the full log and is what you write it from.
 
-**Keep the first paragraph plain.** The app's update panel shows the release body
-as unformatted text in a single block — headings, bullets and `**bold**` arrive
-as literal characters — so the opening paragraph is what people actually read
-before deciding to install. Everything below it is for the releases page, where
-it renders properly.
-
 Nothing reaches anyone's update button until you press that. That's the point of
 the draft — the release is assembled by four separate machines finishing at
 different times, and publishing early would offer people an update whose
