@@ -9,11 +9,17 @@
 // download is refused rather than installed. See docs/handoff.md → Updates.
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { RELEASES_PAGE_URL } from "../constants/links";
+import { parseReleaseNotes, type ReleaseNoteBlock } from "./release-notes";
 
 export type PendingUpdate = {
   version: string;
-  // Release notes as written in the GitHub release, or null if it had none.
-  notes: string | null;
+  // The release notes as blocks to render — headings, paragraphs and lists —
+  // or empty if the release had none. Parsed rather than passed through as
+  // markdown, and parsed into data rather than markup; release-notes.ts says
+  // why that distinction is the important one.
+  notes: ReleaseNoteBlock[];
   // Kept opaque to callers — it's the plugin's handle for the actual download.
   handle: Update;
 };
@@ -46,7 +52,7 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
     if (!update) return { status: "up-to-date" };
     return {
       status: "available",
-      update: { version: update.version, notes: update.body ?? null, handle: update },
+      update: { version: update.version, notes: parseReleaseNotes(update.body), handle: update },
     };
   } catch (error) {
     return { status: "error", message: describeFailure(error) };
@@ -89,4 +95,11 @@ export async function installUpdate(
 
 export async function restartApp(): Promise<void> {
   await relaunch();
+}
+
+// Hands the releases page to the system browser, for the rest of the notes the
+// panel doesn't show. Not a fetch — the app makes no request here, it asks the
+// OS to open a link, and only ever this one.
+export async function openReleasesPage(): Promise<void> {
+  await openUrl(RELEASES_PAGE_URL);
 }

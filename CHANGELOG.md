@@ -13,6 +13,14 @@
 
 ## 2026-08-08
 
+### Release notes in the update panel look like release notes now
+
+- **The "what's new" text in Settings → Updates used to arrive as a wall of raw formatting** — `###` and `-` and `**stars**` showing as themselves, the whole release run together in one block. It reads properly now: headings as headings, bullets as bullets, bold as bold.
+- **The version heading is skipped if you paste it in**, since the line above it already says which version is available.
+- **Long notes scroll inside the panel** rather than pushing *Download and install* down the screen.
+- **There's a *Read this on GitHub* link underneath**, if you'd rather read them in a browser window.
+- Nothing new goes out over the network. The text was already being fetched as part of checking for updates — it just wasn't readable.
+
 ### The sidebar draws lines showing what's inside what
 
 - **Each level of nesting now has a faint vertical line running down it**, so you can follow a row back up to the folder it lives in instead of counting indents by eye.

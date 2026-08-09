@@ -764,6 +764,68 @@
   white-space: pre-wrap;
 }
 
+/* The release notes themselves, rendered from `RELEASES.md` as it was written.
+   A big release runs well over a thousand words, and the notes sit directly
+   above *Download and install* — so they scroll inside a fixed height rather
+   than pushing the button off the bottom of the settings panel. Raise or drop
+   `max-height` to change how much shows before it starts scrolling. */
+.release-notes {
+  max-height: 20rem;
+  overflow-y: auto;
+  margin: var(--space-sm) 0 0;
+  padding-right: var(--space-sm);
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.release-notes-heading {
+  margin: var(--space-lg) 0 var(--space-xs);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.release-notes > :first-child {
+  margin-top: 0;
+}
+
+.release-notes-paragraph {
+  margin: 0 0 var(--space-sm);
+}
+
+/* Tailwind's reset strips list markers, so both kinds are set back by hand. */
+ul.release-notes-list {
+  list-style: disc;
+}
+
+ol.release-notes-list {
+  list-style: decimal;
+}
+
+.release-notes-list {
+  margin: 0 0 var(--space-sm);
+  padding-left: var(--space-lg);
+}
+
+.release-notes-list li {
+  margin-bottom: var(--space-xs);
+}
+
+.release-notes code {
+  padding: 0 0.25em;
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* The way out to the same notes on the releases page, for reading them in a
+   real browser window rather than a panel. */
+.update-check-notes-more {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--fs-xs);
+}
+
 .update-check-reassurance {
   margin: var(--space-sm) 0 0;
   font-size: var(--fs-2xs);

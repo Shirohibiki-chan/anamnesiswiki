@@ -266,6 +266,44 @@ is below.
   reaching GitHub costs the user nothing, and the message says so rather than
   presenting as an error.
 
+- **The release body is the only text in the app that didn't come off the
+  user's disk, and it is never rendered as HTML.** `services/release-notes.ts`
+  parses it into plain data — `ReleaseNoteBlock[]`, spans of text/strong/em/code
+  — and `components/shell/ReleaseNotes.tsx` maps those to React elements. No
+  HTML string exists at any point and nothing reaches
+  `dangerouslySetInnerHTML`. **Swapping the hand-written parser for a markdown
+  library is the change to be careful about**: most of them emit HTML strings,
+  and that would put remote-sourced markup on a screen reachable from the cog.
+  If one goes in, it has to emit elements. Links are deliberately rendered as
+  their words with the address dropped, so a release body can't send anyone
+  anywhere; the only outbound link on that panel is `RELEASES_PAGE_URL`, which
+  the app already knows.
+
+- **The grammar is only what `RELEASES.md` actually uses, and underscores are
+  excluded on purpose.** `###` headings, `-`/`1.` bullets, `**bold**`,
+  `*emphasis*`, `` `code` ``. `_emphasis_` is *not* supported, because these
+  notes are full of `_folder.json`, `snake_case` and `project_home` — treating
+  underscores as markers would mangle those constantly, and nobody writing
+  these uses them for italics. Don't "complete" the markdown support without
+  that trade in front of you. Bullets wrap across five or six lines in
+  `RELEASES.md`, so continuation lines fold into the item above; that's what
+  the line-by-line loop is for, and a block-splitting rewrite will break it.
+
+- **The whole body is shown, not a summary.** `RELEASES.md` is already the
+  curated read — ~1,500 words for v0.3.0, cut down from ~280 changelog lines —
+  and cutting it again in the panel throws away the work that document exists
+  to do. This was tried the other way first and was wrong. The notes scroll
+  inside a `max-height` instead, so a long release can't push *Download and
+  install* off the screen.
+
+- **`RELEASES_PAGE_URL` points at `/releases/latest`, not a tag built from the
+  version string.** The updater only ever reads `releases/latest/download/
+  latest.json`, so the update on offer *is* the latest release, and a guessed
+  `v{version}` tag would 404 if tag naming ever shifted. Opening it is
+  `openUrl` — the OS launches a browser, the app makes no request — and
+  `opener:default` already scopes `https://*`, so no capability change was
+  needed for it.
+
 ## React patterns
 
 - **Remount-by-`key` instead of resetting state in an effect.** `PageView` keys on
