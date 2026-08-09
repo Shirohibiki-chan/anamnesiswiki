@@ -52,13 +52,14 @@ Pushing the tag is what starts it. Watch it on the
 takes roughly twenty minutes, most of which is four machines compiling.
 
 When it finishes there's a **draft release** on the releases page with the
-installers attached. Paste in that version's section from
-[`RELEASES.md`](../RELEASES.md) — it's written for exactly this — then press
-**Publish release**.
+installers attached, **and its description is already filled in** — the build
+reads that version's section out of [`RELEASES.md`](../RELEASES.md) itself. Read
+it, then press **Publish release**.
 
-Write the section in `RELEASES.md` *before* tagging, so it goes out with the
-release rather than being remembered afterwards. It's the plain-language read of
-what changed; `CHANGELOG.md` stays the full log and is what you write it from.
+**Write the section in `RELEASES.md` before tagging.** Not as tidiness — the
+build now refuses to start without it, and the reason is in the next section.
+It's the plain-language read of what changed; `CHANGELOG.md` stays the full log
+and is what you write it from.
 
 Nothing reaches anyone's update button until you press that. That's the point of
 the draft — the release is assembled by four separate machines finishing at
@@ -74,9 +75,28 @@ looking like what they are. So write the section in `RELEASES.md` the way you'd
 want it read — that's the thing people actually read before deciding to install,
 and nothing gets trimmed on the way to the screen.
 
-Paste the section in whole. If you copy the `## v0.3.0 — 2026-08-08` heading
-along with it, the panel skips it, because its own headline directly above
-already says *Anamnesis 0.3.0 is available*.
+The version heading is dropped on the way in, because the panel's own headline
+directly above already says *Anamnesis 0.3.0 is available*.
+
+### Why the notes have to be right *before* you tag
+
+**The update panel does not read the release description.** It reads
+`latest.json` — the small file the build uploads beside the installers — and
+that file carries its own copy of the notes, written when the build ran. Editing
+the release on the web afterwards changes the page and *not* `latest.json`, so
+the panel would keep showing whatever the build put there.
+
+This is why the release body is generated from `RELEASES.md` rather than typed
+in afterwards, and why a missing section fails the build in the first few
+seconds instead of twenty minutes later. It was learned the expensive way: v0.3.0
+built with a placeholder body reading "See CHANGELOG.md for what changed", which
+had to be corrected by editing `latest.json` on the draft by hand before it could
+be published.
+
+If it ever happens again, that repair is: download `latest.json` from the draft,
+replace its `notes` field, and re-upload it with
+`gh release upload <tag> latest.json --clobber`. Nothing needs rebuilding — the
+signatures in that file cover the installers, not the file itself.
 
 There's also a **Read this on GitHub** link under the notes, for reading them in
 a browser window instead. Same text, more room.
