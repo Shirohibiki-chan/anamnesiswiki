@@ -38,14 +38,16 @@ export function UpdateCheck() {
       )}
 
       {state.phase === "available" && (
+        // The decision first, then the reading. These used to be the other way
+        // round — notes, then the link, then the buttons — which put the only
+        // thing most people came here to press underneath a release's worth of
+        // writing. Notes are a scrolling box, so it was never off the bottom of
+        // the panel, but you still had to read past the whole of one to reach
+        // it, and someone who has already decided to update shouldn't have to.
         <div className="update-check-card">
           <p className="update-check-headline">Anamnesis {state.update.version} is available.</p>
-          <ReleaseNotes blocks={state.update.notes} />
-          <p className="update-check-notes-more">
-            <button type="button" className="ui-link" onClick={() => void viewReleaseNotes()}>
-              Read this on GitHub
-            </button>
-          </p>
+          {/* Directly above the buttons, because it answers the question you
+              have with your hand over them. */}
           <p className="update-check-reassurance">Your projects aren't touched — updating only replaces the app itself.</p>
           <div className="update-check-buttons">
             <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void install(state.update)}>
@@ -55,6 +57,17 @@ export function UpdateCheck() {
               Not now
             </button>
           </div>
+
+          {/* Labelled now that it follows the buttons rather than the headline
+              — without one, the notes read as loose text under a control
+              instead of as the answer to "what's in it". */}
+          <p className="ui-eyebrow update-check-notes-eyebrow">What's new</p>
+          <ReleaseNotes blocks={state.update.notes} />
+          <p className="update-check-notes-more">
+            <button type="button" className="ui-link" onClick={() => void viewReleaseNotes()}>
+              Read this on GitHub
+            </button>
+          </p>
         </div>
       )}
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-09 — the update button comes before the release notes
+
+### Adjustments
+
+- **Download and install sits at the top of the update panel now**, directly under the headline and the line about your projects being untouched, with the release notes below it under a *What's new* heading. It used to be underneath the whole of the notes — a release's worth of writing between you and the one button you opened the panel to press. The notes have always been a scrolling box rather than an endless wall, so the button was never off the bottom of the screen, but reading past a full set of notes to reach a decision you'd already made is the wrong way round.
+
 ## 2026-08-09 — releases carry their own notes
 
 ### Fixes

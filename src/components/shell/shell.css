@@ -931,6 +931,13 @@ ol.release-notes-list {
   color: var(--color-text-muted);
 }
 
+/* Separates the notes from the buttons above them. Wider than the gap inside
+   the card because it's the seam between deciding and reading, and without it
+   the heading reads as a caption on the buttons. */
+.update-check-notes-eyebrow {
+  margin: var(--space-xl) 0 0;
+}
+
 /* All secondary, including "Download and install". This panel is deliberately
    the quietest thing in Settings — it's a utility, not an invitation — and a
    teal primary button would make an optional download the loudest control on
