@@ -140,6 +140,47 @@ describe("createSearchMatcher", () => {
     expect(matcher?.("1")).toBe(true);
     expect(matcher?.("2")).toBe(false);
   });
+
+  // The case that produced the mode control, and it cuts both ways: a project
+  // with a `character` tag *and* folders called Characters can't isolate
+  // either one with a plain query. Tag mode answered half of it from the
+  // start; `name` is the half that was missing.
+  const folder = node({ id: "1", name: "Characters", parentId: null, templateKey: "folder", tags: [] });
+  const tagged = node({ id: "2", name: "Valera Jiang", parentId: null, templateKey: "character", tags: ["character"] });
+
+  it("searches both fields by default", () => {
+    const matcher = createSearchMatcher(byId([folder, tagged]), "character");
+    expect(matcher?.("1")).toBe(true);
+    expect(matcher?.("2")).toBe(true);
+  });
+
+  it("in name mode, ignores a tag that would otherwise match", () => {
+    const matcher = createSearchMatcher(byId([folder, tagged]), "character", "name");
+    expect(matcher?.("1")).toBe(true);
+    expect(matcher?.("2")).toBe(false);
+  });
+
+  it("in tag mode, ignores a name that would otherwise match", () => {
+    const matcher = createSearchMatcher(byId([folder, tagged]), "character", "tag");
+    expect(matcher?.("1")).toBe(false);
+    expect(matcher?.("2")).toBe(true);
+  });
+
+  // `#` predates the control and survives it, for pasted queries. It may only
+  // ever narrow to tags — never widen a mode the control has set.
+  it("lets a leading # force tag mode over whatever the control says", () => {
+    const matcher = createSearchMatcher(byId([folder, tagged]), "#character", "name");
+    expect(matcher?.("1")).toBe(false);
+    expect(matcher?.("2")).toBe(true);
+  });
+
+  it("keeps each mode's index apart when the same nodes are searched three ways", () => {
+    const nodes = byId([folder, tagged]);
+    expect(createSearchMatcher(nodes, "character", "all")?.("1")).toBe(true);
+    expect(createSearchMatcher(nodes, "character", "tag")?.("1")).toBe(false);
+    expect(createSearchMatcher(nodes, "character", "name")?.("2")).toBe(false);
+    expect(createSearchMatcher(nodes, "character", "all")?.("2")).toBe(true);
+  });
 });
 
 // The fuzzy index is cached against the node record's identity so it isn't

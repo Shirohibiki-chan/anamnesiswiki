@@ -11,8 +11,14 @@ import {
   getEffectiveColor,
   type EffectiveColor,
   type TreeNodeData,
+  type TreeSearchMode,
 } from "../services/tree-service";
 import type { Node } from "../constants/schema";
+
+// Re-exported because the search field needs both, and a component may not
+// reach into services for them. See CLAUDE.md's layer order.
+export { TREE_SEARCH_MODES } from "../services/tree-service";
+export type { TreeSearchMode } from "../services/tree-service";
 
 export function useTreeData(): {
   treeData: TreeNodeData[];
@@ -46,11 +52,11 @@ export function useAncestorChain(nodeId: string): Node[] {
   return useProjectStore(useShallow((state) => getAncestorChain(nodeId, state.nodes)));
 }
 
-// The tree's name-and-#tag filter. Lives here rather than in TreePanel so the
+// The tree's name-and-tag filter. Lives here rather than in TreePanel so the
 // component doesn't import tree-service directly (CLAUDE.md's layer order),
-// and so the Fuse index is only rebuilt when the nodes or the query actually
-// change rather than on every render.
-export function useSearchMatcher(query: string): ((nodeId: string) => boolean) | null {
+// and so the Fuse index is only rebuilt when the nodes, the query or the mode
+// actually change rather than on every render.
+export function useSearchMatcher(query: string, mode: TreeSearchMode = "all"): ((nodeId: string) => boolean) | null {
   const { nodes } = useProject();
-  return useMemo(() => createSearchMatcher(nodes, query), [nodes, query]);
+  return useMemo(() => createSearchMatcher(nodes, query, mode), [nodes, query, mode]);
 }

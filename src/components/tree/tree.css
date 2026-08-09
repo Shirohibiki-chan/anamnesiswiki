@@ -119,14 +119,23 @@
 /* --- TreeSearch --- */
 
 .tree-search {
-  position: relative;
   padding: 0 var(--space-md) var(--space-md);
   flex-shrink: 0;
 }
 
+/* Everything positioned against the input goes in here — the magnifier, the
+   scope chip, and the scope menu that drops below it. It's a separate element
+   from `.tree-search` because that one carries the sidebar's padding, and a
+   menu anchored to a padded box hangs off the padding rather than the field. */
+.tree-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .tree-search-icon {
   position: absolute;
-  left: var(--space-lg);
+  left: var(--space-md);
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-placeholder);
@@ -136,9 +145,9 @@
 .tree-search-input {
   width: 100%;
   /* Left padding clears the magnifier that sits inside the field: the icon
-     starts at --space-lg and is 12px wide, so the caret needs to begin one
+     starts at --space-md and is 12px wide, so the caret needs to begin one
      --space-xl further in. The two have to move together. */
-  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-lg) + var(--space-xl));
+  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-md) + var(--space-xl));
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
@@ -148,6 +157,17 @@
 
 .tree-search-input::placeholder {
   color: var(--color-text-placeholder);
+}
+
+/* The scope chip sits inside the field rather than after it, so the input has
+   to give it room — otherwise a long query runs underneath it. */
+.tree-search-field .search-scope-chip {
+  position: absolute;
+  right: var(--space-xs);
+}
+
+.tree-search-input:has(~ .search-scope-chip) {
+  padding-right: calc(var(--space-xl) + var(--space-2xl));
 }
 
 /* --- TreePanel --- */

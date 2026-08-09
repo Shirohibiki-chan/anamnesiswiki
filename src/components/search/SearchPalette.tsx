@@ -6,8 +6,35 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getTemplateIcon } from "../../constants/icons";
 import { useProjectActions } from "../../hooks/use-project";
-import { useSearchResults, type SearchRow } from "../../hooks/use-search";
+import { useSearchResults, type SearchRow, type SearchScopeMode } from "../../hooks/use-search";
+import { SearchScopeChip, SearchScopeMenu } from "./SearchScopeMenu";
 import "./search.css";
+
+// Order is menu order, and the first is the default — `SearchScopeChip` reads
+// it that way to decide there's nothing worth saying. The tree's list is the
+// same minus Text, which it has no equivalent of; keep the shared three
+// worded identically, because two answers to "what am I searching" is worse
+// than one imperfect answer.
+const PALETTE_SCOPES = [
+  { value: "all", label: "Everything", hint: "names, tags and page text" },
+  { value: "name", label: "Names", hint: "page and folder names only" },
+  { value: "tag", label: "Tags", hint: "tags only — the same as typing #" },
+  { value: "text", label: "Page text", hint: "the words written on a page" },
+] as const;
+
+const PLACEHOLDERS: Record<SearchScopeMode, string> = {
+  all: "Search every page — name, #tag, or anything written on one",
+  name: "Search page and folder names",
+  tag: "Search tags",
+  text: "Search the text written on every page",
+};
+
+const SCOPE_BLURBS: Record<SearchScopeMode, string> = {
+  all: "names, tags and the text on every page",
+  name: "page and folder names only",
+  tag: "tags only",
+  text: "the text written on pages only",
+};
 
 /** The matched span, marked up without dangerouslySetInnerHTML. */
 function Highlighted({ text, start, end }: { text: string; start: number; end: number }) {
@@ -71,7 +98,10 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
   const { selectNode } = useProjectActions();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const results = useSearchResults(query);
+  const [scope, setScope] = useState<SearchScopeMode>("all");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const boundaryRef = useRef<HTMLDivElement>(null);
+  const results = useSearchResults(query, scope);
 
   function pick(row: SearchRow | undefined) {
     if (!row) return;
@@ -80,6 +110,15 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    // Tab opens the scope menu rather than moving focus. There is nothing else
+    // in this dialog to tab to — it's one field over a list you drive with the
+    // arrows — so the key was doing nothing, and the menu needs a way in that
+    // doesn't cost the caret its place.
+    if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      setMenuOpen((open) => !open);
+      return;
+    }
     if (e.key === "Escape") {
       onClose();
       return;
@@ -100,26 +139,52 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="ui-backdrop ui-backdrop-top" onMouseDown={onClose}>
       <div className="ui-surface search-palette" onMouseDown={(e) => e.stopPropagation()}>
-        <input
-          type="text"
-          className="search-palette-input"
-          value={query}
-          autoFocus
-          // Typing reshuffles the list under the highlight, so it goes back to
-          // the top rather than pointing at whatever now sits at that index.
-          // Done here rather than in an effect: this input is the only thing
-          // that can change the query.
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setActiveIndex(0);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Search every page — name, #tag, or anything written on one"
-        />
+        <div className="search-palette-field" ref={boundaryRef}>
+          <input
+            type="text"
+            className="search-palette-input"
+            value={query}
+            autoFocus
+            // Typing reshuffles the list under the highlight, so it goes back to
+            // the top rather than pointing at whatever now sits at that index.
+            // Done here rather than in an effect: this input is the only thing
+            // that can change the query.
+            onChange={(e) => {
+              setMenuOpen(false);
+              // Same shortcut the tree honours: a leading `#` sets the scope
+              // and drops out of the text rather than staying in the field as
+              // a character that means something.
+              if (e.target.value.startsWith("#")) {
+                setScope("tag");
+                setQuery(e.target.value.slice(1));
+              } else {
+                setQuery(e.target.value);
+              }
+              setActiveIndex(0);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={PLACEHOLDERS[scope]}
+          />
+          <SearchScopeChip scopes={PALETTE_SCOPES} value={scope} onClick={() => setMenuOpen((open) => !open)} />
+
+          {menuOpen && (
+            <SearchScopeMenu
+              scopes={PALETTE_SCOPES}
+              value={scope}
+              onChange={(next) => setScope(next as SearchScopeMode)}
+              onClose={() => setMenuOpen(false)}
+              boundary={boundaryRef}
+            />
+          )}
+        </div>
 
         {query.trim() === "" ? (
           <p className="search-palette-hint">
-            Type to search names, tags and the text on every page. Start with <code>#</code> to search tags only.
+            {/* The palette opens focused and empty every time, so unlike the
+                tree's field there's no "click into it" moment to hang the menu
+                off — opening the menu on mount would put it over the results
+                before there were any. This line is what points at it instead. */}
+            Searching {SCOPE_BLURBS[scope]}. Press <kbd>Tab</kbd> to search something else.
           </p>
         ) : results.length === 0 ? (
           <p className="search-palette-hint">Nothing matches “{query.trim()}”.</p>
