@@ -44,7 +44,7 @@ Investigated 2026-07-31 against a real export (`World-Orynthia_ Fragments of Fab
 - Portraits and covers are URLs on WA's servers, not files in the zip — same fetch-on-import shape the LK importer already uses.
 - Manuscripts, maps, timelines and `{{user}}` variables have no home here and would need flagging as skipped in the preview.
 
-**Worth salvaging even though the importer is dropped:** WA's Person template carries ~120 typed fields (age, pronouns, eyes, hair, height, species, family, relations, motivation, vices, quirks…). That list is a ready-made source for default property suggestions in Phase 13 — but mine it *selectively*. WA's own reputation for bloat is the cautionary tale; pick the dozen or so per template people actually fill in.
+**Worth salvaging even though the importer is dropped:** WA's Person template carries ~120 typed fields (age, pronouns, eyes, hair, height, species, family, relations, motivation, vices, quirks…). That list was the source for Phase 13's default property suggestions, mined *selectively* — WA's own reputation for bloat is the cautionary tale, so `constants/property-suggestions.ts` carries about a dozen per template rather than everything imaginable. The same rule applies if the list is mined again for anything else.
 
 ---
 
@@ -73,7 +73,17 @@ Supabase-backed sync for users who want multi-device access without shared-folde
   `deleteNodes`/`moveNodes` (see `docs/handoff.md` §Storage). **Scheduled into
   Phase 15**, which reworks that menu anyway — no reason to open it twice.
 
-- **More right-click menu items.** Answered 2026-07-31 — the user supplied a screenshot of LK's full node menu and the wanted items are now written up as **Phase 15**. Nothing left to ask here.
+- **The About dialog never got built.** The other half of a Phase 12 bullet
+  whose first half shipped as Settings → Patch Notes on 2026-08-08. Small and
+  self-contained — version, licence, the fonts' licences, a link to the repo.
+  Left here rather than folded into a phase because it belongs to none of them.
+
+- **The app's *default* fonts are still Inter / Fraunces / Newsreader.** The
+  98-family library ships, so nothing is blocked on bundling — but
+  `--font-ui` / `--font-display` / `--font-prose`'s defaults in `index.css` are
+  what someone sees before they touch anything, and moving those is **her
+  decision, not a build.** Ask; don't pick for her. Phase 12 closed without it
+  because it was never a task.
 
 - **The search scope controls are not the design that was wanted.** Shipped
   2026-08-09 and judged *"serviceable for now"* the same day — kept, not
@@ -133,8 +143,9 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Shipped
 
-Phases 0–11.5 are complete. **`docs/shipped.md`** has what each one delivered;
-`CHANGELOG.md` has the same story in plain language.
+Phases 0–13 are complete. **`docs/shipped.md`** has what each one delivered;
+`CHANGELOG.md` has the same story in plain language. **Phase 1.5 (Publish) is
+the only unstarted phase behind us** — it's unblocked and unscheduled, below.
 
 | Phase | | Shipped |
 |---|---|---|
@@ -151,6 +162,8 @@ Phases 0–11.5 are complete. **`docs/shipped.md`** has what each one delivered;
 | 10 | Polish + Distribution | 2026-07-31 |
 | 11.5 | The Design System | 2026-08-04 |
 | 11 | Make It Ours | 2026-08-05 |
+| 12 | Themes & Appearance | 2026-08-09 |
+| 13 | Property Types | 2026-08-10 |
 
 Project home — the last Queued Adjustment standing before Phase 9 — shipped
 2026-07-31.
@@ -203,85 +216,12 @@ Everything below comes out of one planning session: the user brought a list of r
 
 ---
 
-**Phases 11 and 11.5 are done** (2026-08-05 and 2026-08-04). Their detail is in
-`docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
+**Phases 11, 11.5, 12 and 13 are done** — the identity pass, the design system
+beneath it, themes, and property types. Their detail is in `docs/shipped.md`;
+what still binds the code is in `docs/handoff.md`. **Phase 14 is next.**
 
----
-
-## Phase 12 — Themes & Appearance
-
-Identity, the visual half — and the reversibility machinery that has to exist before it. Depends on Phase 11.5; don't start it early.
-
-- ~~**A sandbox to try directions in**~~ — shipped 2026-08-05, ahead of the phase proper, because she asked for somewhere to change fonts and colours that couldn't break the real app. `sandbox/theme-sandbox.html`, a single double-clickable file: a mock of the app driven by the real token names, the six palettes as starting points, font/size/spacing/gradient controls, a free-text CSS box, and an export that emits a `[data-theme]` block. It is **not** the theme switcher and doesn't replace the bullets below — it's the thing that makes "2–3 candidate directions" cheap to produce, and it's where her answers come from. `sandbox/README.md` covers keeping it in step with `src/index.css`.
-- ~~**Widen the sandbox**~~ — 2026-08-06, on her first reaction to it: "i'm going to need WAY more fonts than what's here" and "I want to be able to make gradients for various things." 98 open-licence families inlined (up from 3 bundled + Windows faces), and 12 gradient slots with radial/linear, three stops and per-stop transparency (up from 3 fixed linear ones). The two asks are the same signal — she wants range before she wants a decision, so **don't narrow her options down to a shortlist before she's played with them**.
-- ~~**Custom themes, the Obsidian way**~~ — 2026-08-06, and this is the bullet that reshaped the rest of the phase. She asked for it directly: *"i'd like to build the ability to create custom themes into the app, similar to how obsidian does it. I know notion and LK don't let you do fancy stuff, but I think that's lame tbh? Like, why NOT let people do what they want?"* Settings → Appearance, `.css` files in `<projectsDir>/themes/` and `/snippets/`, all 98 library families bundled so a theme can name any of them, the twelve gradient tokens wired to real components, and text scaling. Details in `docs/constants-and-theming.md`; the CSS-vetting rule is in `docs/handoff.md` and is not optional.
-- ~~**Colour and gradient pickers in the app**~~ — 2026-08-07. The bullet above originally said *the app is where a theme gets used, the sandbox is where it gets made*, and used that to argue there should be no colour picker in Settings. She asked the obvious question and it didn't survive it: *"i know we have css override but shouldn't we enable people to change colors in-app too, or is that too complicated? ... Idk i get that CSS is more robust but why not both."* There was no answer. So `ThemeEditor.tsx` ships: twenty colours, all twelve gradients, and a "make a copy I can edit" that seeds from whatever theme is on. **What replaced the old rule is a better one — there is one theme format.** The pickers write a `.css` file in the themes folder and read one back; nothing in the app knows or cares which of the three places a theme was made in. Keep it that way: the moment the editor gets a state of its own, hand-written themes become second-class.
-- ~~**Text scaling**~~ — 2026-08-06, split in two on 2026-08-07. `--fs-scale` multiplies the eight `--fs-*` steps; deliberately not a root `font-size`, which would drag the whole layout with it. `--fs-scale-content` is the second slider, on the page body alone — *"the contents are generally too large but getting it to a more normal size makes the ui a bit small."*
-- ~~**2–3 complete candidate directions**~~ — done twice over. Three shipped 2026-08-06 (`dark`, `midnight`, `daylight`), and on seeing them she picked one and asked for more: *"the midnight theme is BiS as far as what you did add, so make that default"* and *"maybe come up with some other dark themes that look different but aren't.... ugly?"* So `midnight` is now `DEFAULT_THEME_ID` and three more darks ship: `ember`, `grove`, `nightbloom`.
-- ~~**The four remaining queued palettes**~~ — **superseded, not built.** Parchment / Foxian / Belobog / Deep Space were four descriptions written before she'd seen anything; the second ask replaced them with a brief in her own words, and the answer to that was three themes chosen to be four *different rooms* rather than four shades of one. **The rule that survives: don't build a palette from a description she hasn't reacted to.** If she names one of the four, build that one.
-- ~~**Rebuild the settings screen**~~ — 2026-08-07, immediately after the bullet above, and caused by it: every feature this phase added went into one tab of a 28rem dialog until *"the entire settings menu is fucking insane now. Why is it one tiny ass column? it goes on and on and on... it's set up so poorly."* Both halves of that are one fault — **a narrow dialog can only stack, and a stack that long stops being a screen and becomes a scroll**. So the dialog is `ui-modal-xl` (60rem) with a vertical rail, and Appearance's five sections became four peer panels (Theme / Colours / Fonts and text / Snippets) beside Projects, Keyboard and Updates. **The rule going in: a settings section that doesn't fit on screen is a section that wants splitting, not a longer panel.** Adding one is still a single entry in `SETTINGS_TABS` — keep it that way.
-- ~~**Delete a theme from the app, and a contrast pass over all six**~~ — 2026-08-07. Two reports from use, one screen apart. The themes list had no way to remove anything from it, which reads as a bug in a list of files she owns; there's now a confirmed delete per custom row, and the failure path says so rather than doing nothing. The second was that the quiet grey text is hard to read and not accessible — true, and true of **every theme**: `--color-text-muted` measured between 3.14 and 3.94 against its own panel where AA small text wants 4.5, with the default the worst of the six. All twelve values (muted and placeholder, six themes) re-measured and lifted, and the floor is written down in `docs/handoff.md` so a seventh theme can't quietly repeat it. **The rule: a palette isn't finished until it's measured — by eye is how all six failed the same check together.**
-- ~~**Stop the pickers from destroying hand-written theme files**~~ — 2026-08-07, reported from use and the worst bug this phase has produced. Changing one colour in Settings called `serializeTheme`, which builds a file out of the twenty-odd tokens the app knows about — so a theme somebody had written by hand was replaced wholesale by the app's rendering of it, with no warning and no undo. **The rule: an edit changes the values it was asked to change and nothing else.** `patchTheme` locates the declaration and rewrites the value in place; `serializeTheme` is now only for a file that doesn't exist yet. Two things fell out of it — the write has to go to the *unvetted* copy of the file, or the loader's own URL stripping gets baked into her stylesheet permanently, and a copy now goes into `themes/backups` before the session's first change. Detail in `docs/handoff.md`.
-- ~~**Live reload on the themes and snippets folders**~~ — 2026-08-08, reported from use: editing a theme's `.css` by hand changed nothing until you found the rescan button, and even then it took a switch away and back to fully land (that second half was the id bug, fixed separately). The rescan button was always a stopgap — **a format whose selling point is "it's a file you can open in Notepad" has to behave like one**, and an app that only looks when asked doesn't. `watchCssDirs` puts a non-recursive watch on both folders and rescans on any `.css` event; `tauri-plugin-fs`'s `watch` feature is enabled for it. Two constraints came out of building it and both are in `docs/handoff.md`: the watch can't be recursive, because `themes/backups` is inside the folder it watches, and the store has to ignore its own writes, because a rescan flushes the pending one and a dragged colour picker would otherwise defeat its own debounce.
-- ~~**A copy of Midnight comes out in Midnight's fonts**~~ — 2026-08-08, reported from use. `createTheme` seeded from `COLOR_TOKENS` only, and Midnight is the one built-in that sets `--font-*`, so its copy fell back to the base tokens' faces and visibly wasn't the theme it copied. **The rule, and it generalises past fonts: the copy is a new `[data-theme]` id, so the original is not in the cascade behind it — anything a copy doesn't declare falls to the base tokens.** Detail in `docs/handoff.md`, including why the faces come from `themeFonts` and not from the document beside the colours.
-- ~~**The colour pickers were laggy**~~ — 2026-08-08, reported from use and the last of the four things that came out of actually living in the Colours panel. Every `input` event ran the entire commit: patch the file text, vet it, replace the `<style>` contents, clear and re-read the fonts, read the background back, and `JSON.stringify` the lot into `localStorage`. Two stylesheet reparses and two forced style recalculations per frame of a drag. **The rule: the thing that shows a change and the thing that records it are different jobs, and only one of them belongs in the event handler.** The preview is one inline custom property on the root element; the commit rides the debounce that was already there for the disk write. Detail, and the two cases that deliberately don't preview, in `docs/handoff.md`.
-- ~~**Import a theme, or a palette from another app**~~ — 2026-08-08, from two asks in one breath — a button so a theme file doesn't have to be dragged into a folder by hand, and some way to bring her other project's palette across without picking through it. Both are the same button. A `.css` is copied into the themes folder as-is; a `.json` goes through `palette-import.ts`, which works the roles out and writes what it guessed into the file's header. **The rule this one is built on is the contrast rule from two bullets up, applied to input nobody vetted: every text and border step is *solved* for a ratio against both surfaces rather than picked, so a file from outside can't land below the floor the built-ins are held to.** The second rule — names are a hint, not an instruction — is in `docs/handoff.md` with the case that forced it. - ~~**Abyssal, a seventh built-in**~~ — 2026-08-08, the other half of the ask above: her CharSnap palette, run through the importer and then hand-tuned where the numbers said to. It clears the "different room, not a different shade" bar on luminance as much as hue — `#00253d` is a lit ocean, not another dark. **The rule the tuning pass produced: the importer solves for a *floor* and a built-in is held to the *band* the other six sit in** — four values moved for that reason and each one is justified in the comment above its block in `index.css`. It also turned up a real defect in the importer, now fixed: callout text was mixed toward the body text, so all three callouts converged on one hue. The contrast rule is now **enforced by a test** (`palette-import.test.ts` parses `index.css`) rather than only written down, which is what should have happened when all six themes failed it at once.
-- ~~**The Quote callout wasn't a box, and Midnight's callouts were never its own**~~ — 2026-08-08, reported from use: *"the default theme's quote box isn't even a box and it looks terrible."* Two faults under one complaint. Quote's tint was flat white at 0.035 against Info and Secret's 0.12 of their own hue — and it was hardcoded that way in `deriveTokens`, so no theme could have fixed it from the picker either. Separately, Midnight is the one dark that never re-tuned its callouts despite the note above its block saying every dark does; it was wearing blues picked against `#0f0f14` and a neutral grey edge with nothing to separate it from navy. **The rule is the one this theme has now produced three times — borders, text ramp, callouts: a token group Midnight doesn't restate is a token group tuned for a different theme, and each was found by using the app rather than by looking.** So the third one is a test: `palette-import.test.ts` holds every shipped theme's callouts to the floor the importer already solves for, which is what caught Daylight's Quote edge at 2.56 in the same pass.
-- **Bundle the app's *default* fonts if she changes them.** The 98-family library ships, so nothing else is blocked on bundling — but `--font-ui`/`--font-display`/`--font-prose`'s defaults are still Inter/Fraunces/Newsreader in `index.css`, and moving those is a separate decision from her picking fonts for herself.
-- **Changelog viewer** in Settings, plus an **About** dialog. `CHANGELOG.md` renders via a Vite raw import.
-- ~~**Search in Settings**~~ — 2026-08-09, built when she said to: *"we're already in phase12, we're almost done it, so yeah we can do search in settings."* Taken from Obsidian 1.13, which added one because their settings panel got too big to scan; ours had gone the same way for the same reason. Arrow keys, Enter and `Ctrl/Cmd-F` all came with it as planned, and a result flashes the individual row rather than only opening its section.
-
-  **Most of the index builds itself** — colour rows from `COLOR_GROUPS`, typefaces from `FONT_SLOTS`, shortcuts from `SHORTCUT_LABELS` — so a derived entry can't describe a control that isn't there. `DECLARED_SETTINGS` is only the controls with no data behind them. **The rule: index from what the panel renders from, not from a list of what it renders.**
-
-  Two things were found by running it rather than by reading it, and both are in `docs/handoff.md`. Fuse matches a query as one string, so *"where are my files saved"* — the query the box exists for — returned nothing at all until each word was scored separately and rows ranked on **how much of the question they account for**. And grouping results by section, which seemed obviously right, sorts by section: it put the correct answer nineteenth and made Enter open a different row than the highlighted one. **The rank is the feature; the section rides on the row.**
-
-- ~~**The search scopes were invisible, then they were ugly**~~ — 2026-08-09, two rounds in one conversation. `#tag` filtering had shipped, the placeholder mentioned it, and she'd never found it: *"i didnt realize i had to actually type the hashtag. I thought some UI selection would show up or something."* **The rule from round one: a capability reachable only by typing a character is one most people don't have.** `#` now sets the scope and deletes itself from the field, so using the shortcut once shows you the control it stands for.
-
-  Round two was the control itself. Three pills under the field — *"i kind of hate the buttons. they feel unprofessional and lame? No idk i just thought they'd be inside a menu."* She was right and the reason generalises: **permanent furniture for a control nobody touches is a cost paid every time you look at the screen, to expose a choice made once a month.** It's a menu now, in `SearchScopeMenu.tsx`, shared by the tree and the palette so there's one answer to "what am I searching" rather than two. Nothing shows when it's closed except a chip when the scope isn't the default — *"Absolutley do not make them always visible."*
-
-  Searching names *only* came with it, since the collision cuts every way, and the palette got page-text-only at the same time. Where the menu opens from differs by surface and that's deliberate: the tree's field is clicked into, so focusing an empty one opens it; the palette opens already focused and empty, so a menu on mount would sit over the results before there were any — `Tab` opens it there instead.
-
-**Answered 2026-08-06:** the default was hers to decide and she decided — `midnight` leads the list, `dark` is the alternate. Her earlier worry (*"im afraid of making the default insane because i dont want ppl to be turned off by it"*) resolved by seeing it running rather than by discussing it, which is the pattern: build it switchable, let her look at it.
-
-**End state:** the app looks like hers, and looking different tomorrow costs nothing.
-
----
-
-## Phase 13 — Property Types ✅ Complete 2026-08-10
-
-Cheaper than it looks: `customProperties` on the node and the "+ Add a property" flow already shipped in Phase 7. This widens the type list, it doesn't build the system. Kept here rather than moved to `docs/shipped.md` for now, matching how Phase 12 sits — the decisions below are still the reference for anything touching properties. The one thing this phase *didn't* cover is in Queued Adjustments: renaming a chip field's options across the project.
-
-- ~~**New types:** number, select, multi-select, status~~ — 2026-08-09. Options are created by typing rather than declared up front in the add-property form; the alternative wants a list of values defined before you can record one, which is a form to fill in before you're allowed to write. **Status is a select that arrives pre-seeded and renders with a dot** — same machinery, different starting point (her call: *"A i guess?"*), which is why there's one `SelectProperty.tsx` and not three. **The rule the chips are built on: the palette is a set of pastels chosen against dark themes, so the colour is a background tint and the text stays on `--color-text-primary`** — colouring the text with a palette hex fails the contrast floor in `docs/handoff.md` the moment anyone opens Daylight.
-- ~~**Surface Created / Updated**~~ — 2026-08-09, rendering only as expected.
-- ~~**Default property suggestions per template**~~ — 2026-08-09, in `constants/property-suggestions.ts`, ~a dozen each. **They are suggestions and not schema, and that distinction is the file's reason to exist:** adding a field to `template-registry.ts` would make it appear, empty, on every page already using that template. Picking one runs the same `addCustomProperty` the typed path runs. Types are picked against how she writes rather than how a database would want it — Age is text, for the same reason Event's "When" is; `number` is reserved for genuine counts. Where a suggestion names something with its own page (Species, Birthplace, Affiliation) it's `refs`, so the list quietly builds the index Phases 18 and 24 run on.
-- ~~**Reorderable properties**~~ — 2026-08-09. **Per page, not per template** (her call): templates aren't user-editable until Phase 17, and making one page's order bind every page of that template quietly makes them so. `orderProperties` in `property-service.ts` is the tested part — the default grouping (fixed, then refs, then custom) is only ever its *input*, never enforced after, because interleaving is the whole point of dragging one.
-
-**Export was the non-obvious cost.** `lk-export`'s property loop guarded with `if (typeof value !== "string") continue`, which was correct only while every value this app could hold *was* a string — the moment one could be a number or an array of option ids, that line silently dropped it from the `.lk`. Flattening rules are now a table in `docs/lk-format.md`.
-
-### ~~One place that lists every property and every tag~~ — 2026-08-10
-
-Shipped as `AllPropertiesModal.tsx`, off the search palette's footer and **Ctrl+Shift+K**. All five bullets landed: counts per name, project-wide rename with merge, project-wide delete, click-through to the pages, and capitalisations listed apart but sorted together.
-
-**The decisions that bind:**
-
-- **Renaming onto an existing name is the merge**, as planned — but a property's merge isn't a tag's. A tag is a set, so merging is free; a property's value lives under its `key`, and two properties on one page have two keys. So the rule `planPropertyRename` enforces is *nothing written gets thrown away*: where one side is empty the empty one goes, and where both have something, **both are kept** under the new name and the view says so. Two fields with the same name on one page is untidy; a silently deleted paragraph isn't recoverable by looking at it.
-- **Template-declared properties are listed but not editable.** Their labels live in `template-registry.ts`, which isn't user-editable until Phase 17. Listing them anyway was the right call for a reason that wasn't in the plan: the counts answer *"which template fields is anyone actually filling in?"*, which is the question that should feed Phase 17.
-- **One undo entry per operation, not one per page** — `applyBulk` in `project-store.ts`. Forty pages changed by one click has to be reversible by one press, and the reverse is built from the fields the patch is about to overwrite rather than whole-node snapshots, since these run over the entire project.
-- **It re-plans at the click, not from the preview's patches.** The sentence shown before you press and the change made when you do are two runs of the same pure function against whatever the graph is at that moment.
-
-**Where it lives:** the search palette's footer plus its own shortcut, the user's call (*"a full-size modal off the command palette"*, 2026-08-09). Second and last user of `.ui-modal-xl` — see the amended comment in `controls.css`.
-
-**Chip options got the same treatment, same day** (*"we might as well deal w the chip option now"*). The sequencing note above predicted a values list would be the next thing anyone wants to rename in bulk, and it was — a status used on thirty pages was thirty separate option lists.
-
-The obvious fix was to move option lists off the node into `project.json`, and **that would have been wrong**: an option list sitting next to the values it explains is what lets a page's JSON file be read on its own, which is the entire argument for file-per-node in `CLAUDE.md`. Moving it would leave `Valera Jiang/_page.json` saying `"status": "o-3f2a"` with nothing on the page to say what that means. So options stay on the node, and three cheaper things make them behave as if they were shared:
-
-- **Seeded on creation** — `knownOptionsFor` gives a new copy of a chip property the vocabulary already in use for that name **on pages of the same template**. Not by name alone: "Type" is a suggested property on locations, factions, items *and* events, and a location's City/Village/Ruin has no business on a sword.
-- **Ids and colours are copied, never regenerated.** Two pages sharing an option id is harmless — ids only need to be unique within one spec — and it's what makes "the same option" mean something across pages.
-- **A "Used elsewhere" group in the dropdown**, so an option invented on page three can be adopted by page seven as itself rather than as a lookalike with the next colour in the rotation. Typing its name adopts it too.
-
-Order is taken from the longest list already in use rather than rebuilt by popularity, because a status *is* a sequence — Draft, In progress, Needs revision, Done — and sorting it by use count turns it into nonsense.
-
-**Not in scope, unchanged:** property types on tags (a tag is a bare string and should stay one), and tag hierarchies (`#char/valera`).
+Two things Phase 12 left behind are in Queued Adjustments rather than here: the
+About dialog and the app's default typefaces. Neither blocks anything.
 
 ---
 
