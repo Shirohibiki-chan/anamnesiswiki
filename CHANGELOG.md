@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-10 — one place that lists every property and every tag you've used
+
+### Additions
+
+- **A new *All properties & tags* view.** Press **Ctrl+Shift+K**, or click it at the bottom of the search box. It lists every property name and every tag in the world, sorted alphabetically, with how many pages use each and — for properties — how many of those actually have something written in. Clicking a row opens it: every page using it, each one a link that takes you there.
+  - **Rename across the whole project from that list.** This is the point of it. Renaming a tag on forty pages one page at a time is why the typo survives instead of getting fixed; here it's one box and one button.
+  - **Renaming onto a name that already exists merges the two**, which is usually exactly what you want when you find you've written *pov* and *POV*. It tells you before it does it, and asks a second time. Nothing you've written is ever thrown away — if a page has both filled in with different things, both are kept and it says so, so you can decide which one you meant.
+  - **Delete across the whole project**, with the page count named up front and a warning if any of them have something written in that field.
+  - **Different capitalisations are listed separately and point at each other.** *pov* and *POV* land next to each other and each says the other exists. They're your words, so nothing merges them behind your back — but you finally get to see that you've been writing both.
+  - Anything you can do in here is one press of undo away, however many pages it touched.
+- **Properties that come from a template are listed too**, with their counts, so you can see which fields are actually getting filled in and which have been sitting empty on forty pages. Those can't be renamed or deleted yet — they belong to the template, and editing templates comes later.
+
 ## 2026-08-09 — properties can be numbers and coloured chips, and you can drag them into the order you want
 
 ### Additions

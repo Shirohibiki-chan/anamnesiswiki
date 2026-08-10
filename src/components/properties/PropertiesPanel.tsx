@@ -24,7 +24,12 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus } from "lucide-react";
 import { getPropertySuggestions } from "../../constants/property-suggestions";
-import { FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type PropertyOption } from "../../constants/schema";
+import {
+  FOLDER_TEMPLATE_KEY,
+  PROPERTY_TYPE_LABELS,
+  type CustomPropertySpec,
+  type PropertyOption,
+} from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
 import { useTemplates } from "../../hooks/use-templates";
 import { orderProperties, type RenderableProperty } from "../../services/property-service";
@@ -41,17 +46,6 @@ import { TextProperty } from "./TextProperty";
 import "./properties.css";
 
 const BLANK_TEMPLATE_KEY = "blank";
-
-const CUSTOM_PROPERTY_TYPE_LABELS: Record<CustomPropertySpec["type"], string> = {
-  text: "Text",
-  longtext: "Long text",
-  number: "Number",
-  select: "Select",
-  multiselect: "Multi-select",
-  status: "Status",
-  refs: "References",
-  date: "Date",
-};
 
 export function PropertiesPanel() {
   const {
@@ -275,7 +269,7 @@ export function PropertiesPanel() {
             value={newPropertyType}
             onChange={(e) => setNewPropertyType(e.target.value as CustomPropertySpec["type"])}
           >
-            {Object.entries(CUSTOM_PROPERTY_TYPE_LABELS).map(([type, label]) => (
+            {Object.entries(PROPERTY_TYPE_LABELS).map(([type, label]) => (
               <option key={type} value={type}>
                 {label}
               </option>
@@ -292,7 +286,7 @@ export function PropertiesPanel() {
                     className={`property-add-suggestion${
                       newPropertyLabel === suggestion.label ? " property-add-suggestion-active" : ""
                     }`}
-                    title={`Fill in as ${CUSTOM_PROPERTY_TYPE_LABELS[suggestion.type]}`}
+                    title={`Fill in as ${PROPERTY_TYPE_LABELS[suggestion.type]}`}
                     onClick={() => applySuggestion(suggestion.label, suggestion.type)}
                   >
                     {suggestion.label}

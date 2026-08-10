@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { buildSettingsIndex, groupByTab, searchSettings } from "./settings-search";
 import { SETTINGS_TABS } from "../constants/settings";
+import { SHORTCUT_ACTIONS } from "../constants/shortcuts";
 
 const find = (query: string) => searchSettings(query).map((entry) => entry.id);
 
@@ -32,7 +33,10 @@ describe("buildSettingsIndex", () => {
     expect(entries.filter((entry) => entry.id.startsWith("--color-")).length).toBeGreaterThan(15);
     expect(entries.filter((entry) => entry.id.startsWith("gradient-")).length).toBe(12);
     expect(entries.filter((entry) => entry.id.startsWith("--font-")).length).toBeGreaterThanOrEqual(3);
-    expect(entries.filter((entry) => entry.id.startsWith("shortcut-")).length).toBe(5);
+    // Counted off the registry rather than written down, which is the point
+    // this test is making — a hardcoded 5 here fails the day a shortcut is
+    // added, without anything actually being wrong.
+    expect(entries.filter((entry) => entry.id.startsWith("shortcut-")).length).toBe(SHORTCUT_ACTIONS.length);
   });
 });
 

@@ -237,3 +237,42 @@
   font-size: var(--fs-2xs);
   cursor: pointer;
 }
+
+/* --- Footer --- */
+
+/* The palette's one exit that isn't a search result. It stays put whether
+   there are results or not: it's how the All properties & tags view is found
+   at all, and a row that appears only when the list is empty is a row nobody
+   discovers. */
+.search-palette-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-xs);
+  border-top: 1px solid var(--color-border);
+}
+
+.search-palette-footer-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.search-palette-footer-action:hover {
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+/* Mono for the same reason the shortcut settings rows use it — a literal
+   keystroke rendered in the proportional face reads as prose. */
+.search-palette-footer-action kbd {
+  font-family: var(--font-mono);
+  font-size: inherit;
+}

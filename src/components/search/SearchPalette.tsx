@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { getTemplateIcon } from "../../constants/icons";
 import { useProjectActions } from "../../hooks/use-project";
 import { useSearchResults, type SearchRow, type SearchScopeMode } from "../../hooks/use-search";
+import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { SearchScopeChip, SearchScopeMenu } from "./SearchScopeMenu";
 import "./search.css";
 
@@ -94,8 +95,15 @@ function ResultRow({ row, isActive, onPick }: { row: SearchRow; isActive: boolea
   );
 }
 
-export function SearchPalette({ onClose }: { onClose: () => void }) {
+export function SearchPalette({
+  onClose,
+  onOpenAllProperties,
+}: {
+  onClose: () => void;
+  onOpenAllProperties: () => void;
+}) {
   const { selectNode } = useProjectActions();
+  const allPropertiesKeys = useShortcutLabel("allProperties");
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [scope, setScope] = useState<SearchScopeMode>("all");
@@ -197,6 +205,25 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
             ))}
           </ul>
         )}
+
+        {/* The way in to the All properties & tags view, which is a different
+            question from the one this field answers — not "where is this page"
+            but "what have I actually been using". Mousedown for the same
+            reason the result rows use it: the input has focus and letting the
+            button take it first would close the palette mid-click. */}
+        <div className="search-palette-footer">
+          <button
+            type="button"
+            className="search-palette-footer-action"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onOpenAllProperties();
+            }}
+          >
+            All properties &amp; tags
+            <kbd>{allPropertiesKeys}</kbd>
+          </button>
+        </div>
       </div>
     </div>,
     document.body,

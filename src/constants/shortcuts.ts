@@ -21,12 +21,13 @@ export type Binding = {
 // Order matters: the listener walks this list and stops at the first match, so
 // this is the tie-break if two actions ever end up on the same combination.
 // Matching is exact — Ctrl+Shift+K is not Ctrl+K — so nothing today overlaps.
-export const SHORTCUT_ACTIONS = ["search", "newPage", "save", "undo", "redo"] as const;
+export const SHORTCUT_ACTIONS = ["search", "allProperties", "newPage", "save", "undo", "redo"] as const;
 
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
 
 export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   search: "Search",
+  allProperties: "All properties & tags",
   newPage: "New page",
   save: "Save now",
   undo: "Undo (sidebar)",
@@ -35,6 +36,10 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
 
 export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   search: { key: "k", mod: true },
+  // Next door to search on purpose — it's the other way of finding your way
+  // around a project by something other than the tree. Matching is exact, so
+  // this and Ctrl+K never collide.
+  allProperties: { key: "k", mod: true, shift: true },
   newPage: { key: "n", mod: true },
   save: { key: "s", mod: true },
   undo: { key: "z", mod: true },

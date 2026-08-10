@@ -63,6 +63,22 @@ export type CustomPropertySpec = {
   options?: PropertyOption[];
 };
 
+// What each type is called in front of the user. Here rather than in the
+// panel because two views name them now — the add-property form and the All
+// properties & tags list — and one type reading "Multi-select" in one and
+// "Multiselect" in the other is the kind of drift nobody notices until it's
+// everywhere.
+export const PROPERTY_TYPE_LABELS: Record<CustomPropertySpec["type"], string> = {
+  text: "Text",
+  longtext: "Long text",
+  number: "Number",
+  select: "Select",
+  multiselect: "Multi-select",
+  status: "Status",
+  refs: "References",
+  date: "Date",
+};
+
 // Option ids are stable strings rather than UUIDs here so a seeded status
 // reads plainly in the JSON on disk. Everything the user adds later gets a
 // UUID; nothing depends on which kind an id is.
