@@ -12,6 +12,7 @@ import { getPaletteHex } from "../../constants/palette";
 import { useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
 import { useEffectiveColor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
 import { useTemplates } from "../../hooks/use-templates";
 import type { TreeNodeData } from "../../services/tree-service";
 import { ColorPicker } from "./ColorPicker";
@@ -31,6 +32,8 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive, requestExport } = useDialogs();
   const { getLabel, canHaveChildren } = useTemplates();
+  const revealNode = useRevealNode();
+  const fileManagerName = useFileManagerName();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
@@ -213,10 +216,12 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             canHaveChildren={nestable}
             isProjectHome={isProjectHome}
             selectionCount={selectionCount}
+            fileManagerName={fileManagerName}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
             onToggleProjectHome={() => setProjectHome(node.id)}
+            onReveal={() => void revealNode(node.id)}
             onExport={() => requestExport(targetIds())}
             onDelete={handleDelete}
             onAddChild={() => setOpenPopover("add")}

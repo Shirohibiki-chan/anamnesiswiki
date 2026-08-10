@@ -526,6 +526,24 @@ function storageUnit(node: Node, index: PathIndex): string[] {
   return usesDirectoryStorage(node) ? dirSegments : [...dirSegments, fileName];
 }
 
+/**
+ * Where a node actually lives on disk, absolute — deliberately the same unit
+ * `moveNode` renames, so what a file manager gets pointed at is the thing that
+ * would move if the row were dragged: its own directory for a folder or a
+ * nestable page, its single JSON file for a leaf.
+ *
+ * Null means nothing is there yet, which is a real state rather than a
+ * failure. Nodes save on a debounce, so a page made a second ago is in the
+ * tree with no file behind it — and every project predates the folder it now
+ * sits in getting moved or renamed out from under it. Both want telling
+ * apart from "the file manager refused," which is why the check happens here
+ * instead of letting the reveal miss silently.
+ */
+export async function findNodeOnDisk(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<string | null> {
+  const path = joinPath(rootPath, ...storageUnit(node, toPathIndex(graph)));
+  return (await exists(path)) ? path : null;
+}
+
 export type Relocation = { oldSegments: string[]; newSegments: string[] };
 
 // Renaming and reparenting both boil down to "this node's resolved path

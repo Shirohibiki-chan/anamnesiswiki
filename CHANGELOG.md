@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-10 — find any page's file on your computer
+
+### Additions
+
+- **Right-click a page and pick "Show in File Explorer"** to open the folder it lives in with the file already highlighted. Your world is plain files on your own disk, and this is the shortest route to them — for backing something up by hand, or just seeing where a page actually is.
+  - It shows the right thing depending on the page. A character or a folder has a folder of its own, so that's what gets highlighted, with everything nested under it still inside. An item, event or note is a single file, so that's what you get.
+  - Two pages with the same name are told apart properly — the second Valera Jiang points at *her* folder, not the first one's.
+  - The menu names whatever your computer calls it, so it reads "Finder" on a Mac and "file manager" on Linux.
+  - Single pages only. Picking several rows hides the option rather than opening a pile of windows.
+  - **If there's nothing to show, it says so.** A page made seconds ago may not have been written to disk yet, and the app tells you that instead of opening the wrong folder. If your file manager refuses to open at all, you get the path in a message you can read.
+
 ## 2026-08-10 — drag the sidebars to whatever width you want
 
 ### Additions

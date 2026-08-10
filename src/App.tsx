@@ -1,4 +1,5 @@
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
+import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { useThemeBootstrap } from "./hooks/use-theme";
 
@@ -18,6 +19,10 @@ function App() {
           it sits, so mounting it once at the root costs nothing and means every
           screen can ask a destructive question. */}
       <ConfirmDialog />
+      {/* Same placement and the same reasoning as ConfirmDialog above: it
+          portals regardless, and a failure worth reporting can happen on
+          either screen. */}
+      <NoticeDialog />
     </>
   );
 }
