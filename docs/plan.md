@@ -423,6 +423,31 @@ Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer
 
 ---
 
+## Phase 26 — Teach It To Someone Else
+
+Asked for 2026-08-10 and deliberately placed last: a first-run tutorial for
+people who open this app without having watched it get built.
+
+**Not for the user.** She knows it. This is for the people she shares a world
+with and for anyone who installs a release — the audience Phase 1.5 (Publish)
+serves read-only, and the one person outside this project who has already
+installed a build and had to debug it himself.
+
+**Last is the right place, not a parking space.** Phase 21 rewrites the app
+shell and Phase 22 changes what sits at the root of the tree, so a tutorial
+written before either describes an app that no longer exists. A tutorial that
+points at the wrong thing is worse than none — someone following it concludes
+the app is broken, not the instructions. Wait for the surfaces to stop moving.
+
+**Nothing is designed here yet, on purpose.** Whether it's an interactive
+overlay, a sample project that opens on first launch, or a page inside the app
+is a decision for whoever picks this up, with her. The one constraint that's
+already fixed: whether someone has seen it is a local setting like every other
+(`app-settings-service.ts`) — there is no "did they finish onboarding" to
+report anywhere, per the policy boundary in `CLAUDE.md`.
+
+---
+
 ## Phase 2 — Cloud Sync (Deferred)
 
 Only if the shared-folder sync approach demonstrably stops working. Options in preference order: Supabase (hosted Postgres + auth), Yjs + y-webrtc (P2P CRDT), self-hosted sync server.
