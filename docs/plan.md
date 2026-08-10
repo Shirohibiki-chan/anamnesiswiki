@@ -64,6 +64,19 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Queued Adjustments
 
+- **Select / multi-select / status *options* can't be renamed across the
+  project.** Phase 13's All properties & tags view covers property *names* and
+  tags. It doesn't cover the values inside a chip field, and those have the
+  same problem one level down: an option list lives on the node
+  (`CustomPropertySpec.options`), so a status used on thirty pages is thirty
+  separate lists, and renaming "Draft" to "Drafting" is thirty edits. The
+  sequencing note that sent the index view second in the phase predicted this
+  ("a values list is the second thing anyone wants to rename in bulk") and it
+  turned out to be a third index rather than a fourth column of the one built.
+  **Not built on purpose — raise it with the user before scoping**, because the
+  honest fix might be moving option lists off the node entirely, which is a
+  storage change and not a view.
+
 - **Duplicate doesn't work on a multi-selection.** The right-click menu hides it
   above one selected row rather than looping `duplicateNode`, which writes
   through `saveNodes` without a relocation pass — adding several nodes at once
@@ -247,9 +260,9 @@ Identity, the visual half — and the reversibility machinery that has to exist 
 
 ---
 
-## Phase 13 — Property Types
+## Phase 13 — Property Types ✅ Complete 2026-08-10
 
-Cheaper than it looks: `customProperties` on the node and the "+ Add a property" flow already shipped in Phase 7. This widens the type list, it doesn't build the system.
+Cheaper than it looks: `customProperties` on the node and the "+ Add a property" flow already shipped in Phase 7. This widens the type list, it doesn't build the system. Kept here rather than moved to `docs/shipped.md` for now, matching how Phase 12 sits — the decisions below are still the reference for anything touching properties. The one thing this phase *didn't* cover is in Queued Adjustments: renaming a chip field's options across the project.
 
 - ~~**New types:** number, select, multi-select, status~~ — 2026-08-09. Options are created by typing rather than declared up front in the add-property form; the alternative wants a list of values defined before you can record one, which is a form to fill in before you're allowed to write. **Status is a select that arrives pre-seeded and renders with a dot** — same machinery, different starting point (her call: *"A i guess?"*), which is why there's one `SelectProperty.tsx` and not three. **The rule the chips are built on: the palette is a set of pastels chosen against dark themes, so the colour is a background tint and the text stays on `--color-text-primary`** — colouring the text with a palette hex fails the contrast floor in `docs/handoff.md` the moment anyone opens Daylight.
 - ~~**Surface Created / Updated**~~ — 2026-08-09, rendering only as expected.
@@ -258,23 +271,20 @@ Cheaper than it looks: `customProperties` on the node and the "+ Add a property"
 
 **Export was the non-obvious cost.** `lk-export`'s property loop guarded with `if (typeof value !== "string") continue`, which was correct only while every value this app could hold *was* a string — the moment one could be a number or an array of option ids, that line silently dropped it from the `.lk`. Flattening rules are now a table in `docs/lk-format.md`.
 
-### One place that lists every property and every tag
+### ~~One place that lists every property and every tag~~ — 2026-08-10
 
-Taken from Obsidian 1.13's All Properties view, and asked for 2026-08-08. **Two views, one mechanism** — the user asked for the tag half unprompted after seeing the property half, which is the tell that they're the same feature over two fields.
+Shipped as `AllPropertiesModal.tsx`, off the search palette's footer and **Ctrl+Shift+K**. All five bullets landed: counts per name, project-wide rename with merge, project-wide delete, click-through to the pages, and capitalisations listed apart but sorted together.
 
-The problem both solve is the one you only get after a project is big: you can see the tags and properties on *this* page, and nowhere can you see the set you've actually accumulated. So `pov` and `POV` and `point-of-view` coexist for months, and the only way to find out is to trip over it.
+**The decisions that bind:**
 
-- **A list of every property name in the project, with a count of how many pages use each.** Same for tags.
-- **Rename across the whole project from that list.** This is the point of the feature — renaming a tag on 40 pages one page at a time is why the typo survives instead of getting fixed. Merging is what rename already does when the new name is one that exists; say so in the confirmation rather than building a separate merge.
-- **Delete across the project**, with the count shown, behind a confirmation that names it.
-- **Click through to the pages using one.** `#tag` already works in both the tree filter (`TreeSearch.tsx`) and the search palette (`search-service.ts` §tag mode), so for tags this is a jump into machinery that exists. Properties have no equivalent yet and need one.
-- Case-insensitive grouping, so `POV` and `pov` land next to each other and can be seen. **Don't auto-merge them** — they're the user's words and she may mean both.
+- **Renaming onto an existing name is the merge**, as planned — but a property's merge isn't a tag's. A tag is a set, so merging is free; a property's value lives under its `key`, and two properties on one page have two keys. So the rule `planPropertyRename` enforces is *nothing written gets thrown away*: where one side is empty the empty one goes, and where both have something, **both are kept** under the new name and the view says so. Two fields with the same name on one page is untidy; a silently deleted paragraph isn't recoverable by looking at it.
+- **Template-declared properties are listed but not editable.** Their labels live in `template-registry.ts`, which isn't user-editable until Phase 17. Listing them anyway was the right call for a reason that wasn't in the plan: the counts answer *"which template fields is anyone actually filling in?"*, which is the question that should feed Phase 17.
+- **One undo entry per operation, not one per page** — `applyBulk` in `project-store.ts`. Forty pages changed by one click has to be reversible by one press, and the reverse is built from the fields the patch is about to overwrite rather than whole-node snapshots, since these run over the entire project.
+- **It re-plans at the click, not from the preview's patches.** The sentence shown before you press and the change made when you do are two runs of the same pure function against whatever the graph is at that moment.
 
-**Sequencing.** Do this *after* the new types above, not before. `select`/`multi-select`/`status` come with a set of allowed values per property, and a values list is the second thing anyone wants to rename in bulk. Building the view first means building it twice.
+**Where it lives:** the search palette's footer plus its own shortcut, the user's call (*"a full-size modal off the command palette"*, 2026-08-09). Second and last user of `.ui-modal-xl` — see the amended comment in `controls.css`.
 
-**Where it lives is open.** Settings is wrong — this is about a project's contents, not the app's configuration. Likeliest a panel off the search palette, or its own view. Decide when the rest of the phase is in place and the shape is clearer.
-
-**Not in scope:** property types on tags (a tag is a bare string and should stay one), and tag hierarchies (`#char/valera`). Both are their own features, and neither was asked for.
+**Not in scope, unchanged:** property types on tags (a tag is a bare string and should stay one), and tag hierarchies (`#char/valera`).
 
 ---
 

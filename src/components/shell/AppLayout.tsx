@@ -10,6 +10,7 @@ import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
 import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
+import { AllPropertiesModal } from "../properties/AllPropertiesModal";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { LoadWarning } from "./LoadWarning";
 import { NewPageDialog } from "./NewPageDialog";
@@ -26,6 +27,7 @@ export function AppLayout() {
   const { exportRequest, closeExport } = useDialogs();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAllPropertiesOpen, setIsAllPropertiesOpen] = useState(false);
   const [isNewPageOpen, setIsNewPageOpen] = useState(false);
   const saveNow = useSaveNow();
   const { undo, redo } = useHistoryActions();
@@ -35,8 +37,21 @@ export function AppLayout() {
   // re-render of the shell — see use-global-shortcuts.ts.
   const openSearch = useCallback(() => setIsSearchOpen(true), []);
   const openNewPage = useCallback(() => setIsNewPageOpen(true), []);
+  // Search hands over rather than stacking: two full-screen dialogs on top of
+  // each other is two Escapes to get out of one mistake.
+  const openAllProperties = useCallback(() => {
+    setIsSearchOpen(false);
+    setIsAllPropertiesOpen(true);
+  }, []);
   const handleSave = useCallback(() => void saveNow(), [saveNow]);
-  useGlobalShortcuts({ onSearch: openSearch, onNewPage: openNewPage, onSave: handleSave, onUndo: undo, onRedo: redo });
+  useGlobalShortcuts({
+    onSearch: openSearch,
+    onAllProperties: openAllProperties,
+    onNewPage: openNewPage,
+    onSave: handleSave,
+    onUndo: undo,
+    onRedo: redo,
+  });
 
   async function handleSwitchProject() {
     await clearLastOpenedProject();
@@ -71,7 +86,8 @@ export function AppLayout() {
       )}
 
       {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
-      {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} />}
+      {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
+      {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
       {isNewPageOpen && <NewPageDialog onClose={() => setIsNewPageOpen(false)} />}
     </div>
   );

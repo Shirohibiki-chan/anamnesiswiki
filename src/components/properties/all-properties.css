@@ -1,0 +1,292 @@
+/* AllPropertiesModal — the project-wide property and tag list. See
+   docs/plan.md Phase 13 and docs/constants-and-theming.md for the token set.
+
+   Second user of `.ui-modal-xl`, whose comment in controls.css says nothing
+   else should reach for it. The reasoning there was "if a dialog wants 60rem
+   it probably wants to not be a dialog", and the exception it carved out was
+   Settings — the one frame that isn't a single decision. This is the second:
+   it's a list you read and browse rather than a question you answer, and at
+   32rem the name, the counts and the note about capitalisation stop fitting
+   on a line together. */
+
+.all-properties {
+  gap: var(--space-xl);
+  /* Fixed rather than fitted: the list is filterable, and a dialog that
+     resized itself as you typed would move the row you were reaching for. */
+  height: min(44rem, calc(100vh - var(--space-3xl) * 2));
+  overflow: hidden;
+}
+
+.all-properties-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.all-properties-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+.all-properties-blurb {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+/* --- Toolbar --- */
+
+.all-properties-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.all-properties-modes {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.all-properties-mode {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.all-properties-mode:hover {
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+.all-properties-mode-active,
+.all-properties-mode-active:hover {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+/* The count sits inside the tab rather than beside it, so switching tabs
+   doesn't shift the labels sideways as the numbers change width. */
+.all-properties-count {
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.all-properties-filter {
+  flex: 0 1 16rem;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.all-properties-filter::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.all-properties-filter:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+/* --- The list --- */
+
+.all-properties-empty {
+  margin: 0;
+  padding: var(--space-3xl) 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.all-properties-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--space-xs) 0 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.all-properties-row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.all-properties-row:last-child {
+  border-bottom: none;
+}
+
+.all-properties-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-lg) var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.all-properties-summary:hover {
+  background: var(--color-accent-faint);
+}
+
+.all-properties-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 120ms ease;
+}
+
+.all-properties-row-open .all-properties-chevron {
+  transform: rotate(90deg);
+}
+
+.all-properties-name {
+  flex-shrink: 0;
+  color: var(--color-text-primary);
+}
+
+.all-properties-hash {
+  color: var(--color-text-muted);
+}
+
+/* The whole reason the view exists: `pov` and `POV` are two rows, and each
+   points at the other rather than leaving you to notice. A tint, never
+   coloured text — see docs/handoff.md on the palette and the contrast floor. */
+.all-properties-variant {
+  flex-shrink: 0;
+  padding: var(--space-2xs) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-secondary);
+}
+
+/* Pushed right and allowed to shrink first: the name is what you're scanning
+   for, so the counts are what should ellipsis away on a narrow window. */
+.all-properties-meta {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* --- The expanded half --- */
+
+.all-properties-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: 0 var(--space-md) var(--space-xl) calc(var(--space-md) + 13px + var(--space-md));
+}
+
+.all-properties-actions,
+.all-properties-rename {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.all-properties-rename-input {
+  flex: 0 1 18rem;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--color-text-primary);
+}
+
+.all-properties-rename-input:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+.all-properties-note {
+  flex: 1 1 16rem;
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
+/* The merge sentence. Full width under the field, because it's the thing that
+   has to be read before the second press and a line squeezed beside a button
+   is a line nobody reads. */
+.all-properties-warning {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+/* Its own scroll: a tag on two hundred pages shouldn't make the row taller
+   than the dialog. */
+.all-properties-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  max-height: 12rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.all-properties-page {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.all-properties-page:hover {
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+.all-properties-page-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}

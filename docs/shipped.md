@@ -877,3 +877,26 @@ Why it goes *before* the themes rather than with them: a theme swaps token *valu
 - ~~**All thirteen Part 1 defects.**~~ The last three were the doubled project name (6, dropped from the top bar), the single border colour (10), and the panels that vanished on a narrow window (13 — media queries that `minWidth: 900` made unreachable anyway).
 
 **End state reached:** the app is consistent and boring, which is the state a visual direction can actually be judged from.
+
+---
+
+## Phase 13 — Property Types ✅ Shipped 2026-08-09 / 2026-08-10
+
+Two passes, split at the user's request so she could use the new types before the view that indexes them was built.
+
+**Pass 1 (2026-08-09) — the types themselves.** Number, select, multi-select and status; per-page reordering; ~a dozen suggested property names per template; Created/Updated surfaced. Written up in `docs/plan.md` §Phase 13 and `CHANGELOG.md`. The non-obvious cost was `lk-export`, whose property loop guarded with `if (typeof value !== "string") continue` — correct only while every value the app could hold *was* a string.
+
+**Pass 2 (2026-08-10) — All properties & tags.**
+
+Files: `AllPropertiesModal.tsx` + `all-properties.css` (new), `use-property-index.ts` (new), the index and four `plan*` functions in `property-service.ts`, `applyBulk` plus four actions in `project-store.ts`, an `allProperties` shortcut, a footer row on the search palette, `PROPERTY_TYPE_LABELS` lifted from `PropertiesPanel.tsx` into `constants/schema.ts` now that two views name the types.
+
+- **Shape:** two tabs (Properties / Tags) over one row renderer, a filter box, rows that expand to their pages. Rename is inline in the row; delete goes through the app's existing `confirmDestructive`. Everything is one undo entry.
+- **Counts:** pages that *have* the property, plus how many have something written in. Both are shown because they answer different questions — the first is what rename and delete act on, and matching the destructive action's count matters more than a single tidy number; the second is what tells you a field is dead weight.
+- **Template properties are listed and locked.** Not in the plan's bullets; added because the counts answer "which template fields is anyone actually filling in?", which should feed Phase 17.
+- **Second `.ui-modal-xl`,** whose comment said nothing else should reach for it. Amended rather than ignored — the bar it cleared is Settings' bar, a thing you browse rather than a question you answer.
+
+**Verification.** `pnpm lint`, `tsc --noEmit`, `pnpm build` and `pnpm test` clean — 576 tests, 14 of them new over `indexProperties`, `indexTags` and the four planners. The planner tests are the ones that matter: they're the only check that a project-wide rename can't eat someone's writing.
+
+One existing test needed changing: `settings-search.test.ts` asserted exactly 5 shortcut entries. Its own comment said "if a registry grows, this grows with it", so it now counts off `SHORTCUT_ACTIONS.length` — a hardcoded number there fails the day a shortcut is added without anything being wrong.
+
+**Not run in the desktop app.** `pnpm dev` is browser-only and can't open a project, so this is compiled-and-tested rather than eyeballed.

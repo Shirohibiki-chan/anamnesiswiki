@@ -92,12 +92,15 @@
   --ui-modal-width: 32rem;
 }
 
-/* The fourth width, added back deliberately after the cull above. Settings is
-   the one dialog that isn't a single decision — it's seven screens behind one
-   frame, with a nav down the side — and squeezing that into `lg` is what made
-   it a column you scrolled instead of a panel you read. Nothing else should
-   reach for this: if a dialog wants 60rem, it probably wants to not be a
-   dialog. */
+/* The fourth width, added back deliberately after the cull above. Settings was
+   the dialog that isn't a single decision — seven screens behind one frame,
+   with a nav down the side — and squeezing that into `lg` is what made it a
+   column you scrolled instead of a panel you read.
+
+   Phase 13's All properties & tags view is the second and, so far, last. The
+   bar it cleared is the same one: it's a list you browse rather than a
+   question you answer. Anything that isn't should still take `lg` — if a
+   dialog wants 60rem for one decision, it probably wants to not be a dialog. */
 .ui-modal-xl {
   --ui-modal-width: 60rem;
 }

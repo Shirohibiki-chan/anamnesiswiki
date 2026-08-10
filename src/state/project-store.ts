@@ -18,6 +18,7 @@ import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
+import { planPropertyDelete, planPropertyRename, planTagDelete, planTagRename } from "../services/property-service";
 import * as lkImportService from "../services/lk-import";
 import type { ImportPendingImage } from "../services/lk-import";
 import { countLabel } from "../services/history-service";
@@ -121,6 +122,12 @@ export type ProjectStoreState = {
   removePropertyOption: (nodeId: string, key: string, optionId: string) => void;
   removeCustomProperty: (nodeId: string, key: string) => void;
   reorderProperties: (nodeId: string, orderedKeys: string[]) => void;
+  // Project-wide, from the All properties & tags view. Each is one undo entry
+  // however many pages it touched — see applyBulk.
+  renamePropertyEverywhere: (label: string, newLabel: string) => void;
+  deletePropertyEverywhere: (label: string) => void;
+  renameTagEverywhere: (tag: string, newTag: string) => void;
+  deleteTagEverywhere: (tag: string) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   clearNodeImage: (nodeId: string) => Promise<void>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
@@ -231,6 +238,43 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // thing to reverse — history-store owns that guard.
   const record = (label: string, undo: () => Promise<void> | void, redo: () => Promise<void> | void): void => {
     useHistoryStore.getState().record({ label, undo, redo });
+  };
+
+  /**
+   * Applies one patch per page and records the lot as a single undo entry.
+   *
+   * Used by the project-wide property and tag edits, which are the only things
+   * in this app that change dozens of pages from one click — and so the only
+   * ones where a per-page loop would leave the user pressing undo forty times
+   * to get back. The reverse is built by reading the fields the patch is about
+   * to overwrite, rather than snapshotting whole nodes: these run over the
+   * entire project, and a page's tabs are the largest thing on it.
+   */
+  const applyBulk = (label: string, patches: { nodeId: string; patch: Partial<Omit<Node, "id">> }[]): void => {
+    const { nodes } = get();
+    const present = patches.filter(({ nodeId }) => nodes[nodeId]);
+    if (present.length === 0) return;
+
+    const before = present.map(({ nodeId, patch }) => {
+      const node = nodes[nodeId];
+      const previous: Partial<Omit<Node, "id">> = {};
+      if ("customProperties" in patch) previous.customProperties = node.customProperties;
+      if ("properties" in patch) previous.properties = node.properties;
+      if ("propertyOrder" in patch) previous.propertyOrder = node.propertyOrder;
+      if ("tags" in patch) previous.tags = node.tags;
+      return { nodeId, patch: previous };
+    });
+
+    const run = (list: typeof present) => {
+      for (const { nodeId, patch } of list) get().updateNode(nodeId, patch);
+    };
+
+    run(present);
+    record(
+      `${label} on ${countLabel(present.length, "page")}`,
+      () => run(before),
+      () => run(present),
+    );
   };
 
   /**
@@ -639,6 +683,29 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
     reorderProperties(nodeId, orderedKeys) {
       get().updateNode(nodeId, { propertyOrder: orderedKeys });
+    },
+
+    // The four project-wide edits. All the thinking is in property-service's
+    // plan* functions, which the view has already run to show what's about to
+    // happen — these re-plan against the current graph rather than taking the
+    // preview's patches, so a page edited between the preview and the click
+    // is handled as it is now, not as it was.
+    renamePropertyEverywhere(label, newLabel) {
+      applyBulk(`renaming ${label}`, planPropertyRename(get().nodes, label, newLabel).patches);
+    },
+
+    deletePropertyEverywhere(label) {
+      applyBulk(`deleting ${label}`, planPropertyDelete(get().nodes, label).patches);
+    },
+
+    renameTagEverywhere(tag, newTag) {
+      const { patches } = planTagRename(get().nodes, tag, newTag);
+      applyBulk(`renaming #${tag}`, patches.map(({ nodeId, tags }) => ({ nodeId, patch: { tags } })));
+    },
+
+    deleteTagEverywhere(tag) {
+      const { patches } = planTagDelete(get().nodes, tag);
+      applyBulk(`deleting #${tag}`, patches.map(({ nodeId, tags }) => ({ nodeId, patch: { tags } })));
     },
 
     async setNodeImage(nodeId, data, extension) {

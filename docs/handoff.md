@@ -509,6 +509,35 @@ is below.
   `lk-export` writing the raw value would put a UUID in the user's LegendKeeper
   page.
 
+- **A property's identity across pages is its *label*, not its key.** Custom
+  property keys are per-page UUIDs, so "the Pronouns property" is only a thing
+  because two pages spell the label the same way. That's what `indexProperties`
+  groups on and what the project-wide rename and delete act on. It also means
+  the same label can arrive from two sources at once — a template declares it
+  on one kind of page and someone added their own on another — which is why the
+  index carries `fromTemplate` and `fromCustom` separately rather than one enum.
+
+- **Project-wide rename never throws away writing.** Renaming a property onto a
+  name that already exists is the merge, and merging two properties isn't
+  merging two tags: a tag is a set, but a property's value lives under its key
+  and two properties on one page have two keys. So `planPropertyRename` drops
+  the empty side where only one has a value, and where **both** have values it
+  keeps both under the new name and reports it, leaving the user with two
+  fields to sort out. That's deliberate and it should stay that way — untidy is
+  recoverable by looking at it, a silently deleted paragraph isn't. The same
+  applies where the target name is one the page's *template* declares: nothing
+  can merge into a template field until Phase 17 makes templates editable, so
+  the plan counts those pages (`templateClash`) and the view names them rather
+  than the rename quietly producing a duplicate nobody was warned about.
+
+- **Anything that changes many pages from one click records one undo entry.**
+  `applyBulk` in `project-store.ts` is the primitive; the four project-wide
+  property/tag actions are its only callers so far. It builds the reverse by
+  reading just the fields the patch is about to overwrite, not by snapshotting
+  nodes — these run over the whole project and a page's tabs are the largest
+  thing on it. A new bulk action should use it rather than looping `updateNode`,
+  or the user presses undo forty times to reverse one click.
+
 - **Wikilinks never guess between two same-named pages.** `[[Name]]` converts only
   when the name is unique; otherwise it stays plain text. Ambiguity should never
   resolve silently (same principle as Obsidian). Use `@`, which lists every match.

@@ -8,6 +8,7 @@ import { isTextEntryTarget, matchesBinding } from "../services/shortcut-service"
 
 export type GlobalShortcutHandlers = {
   onSearch: () => void;
+  onAllProperties: () => void;
   onNewPage: () => void;
   onSave: () => void;
   onUndo: () => void;
@@ -20,10 +21,18 @@ export type GlobalShortcutHandlers = {
  * on every keystroke into a page, and a fresh function each time would tear
  * the listener down and rebuild it that often.
  */
-export function useGlobalShortcuts({ onSearch, onNewPage, onSave, onUndo, onRedo }: GlobalShortcutHandlers): void {
+export function useGlobalShortcuts({
+  onSearch,
+  onAllProperties,
+  onNewPage,
+  onSave,
+  onUndo,
+  onRedo,
+}: GlobalShortcutHandlers): void {
   useEffect(() => {
     const handlers: Record<ShortcutAction, () => void> = {
       search: onSearch,
+      allProperties: onAllProperties,
       newPage: onNewPage,
       save: onSave,
       undo: onUndo,
@@ -64,5 +73,5 @@ export function useGlobalShortcuts({ onSearch, onNewPage, onSave, onUndo, onRedo
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSearch, onNewPage, onSave, onUndo, onRedo]);
+  }, [onSearch, onAllProperties, onNewPage, onSave, onUndo, onRedo]);
 }
