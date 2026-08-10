@@ -4,15 +4,15 @@
 // It used to hold the project name, which the sidebar header also shows about
 // 50px away — the doubled name in docs/ui-audit.md defect 6. The sidebar keeps
 // it: that copy has the home button and the add-page button attached and heads
-// the tree it names, while this one was a label with nothing to do. Nothing was
-// invented to fill the gap, because back/forward and a breadcrumb are already
-// queued for Phase 14 and this is where they go.
+// the tree it names, while this one was a label with nothing to do. The gap it
+// left was held open for back/forward, which Phase 14 filled 2026-08-10.
 //
 // The clickable breadcrumb trail meanwhile lives on the page itself (see
 // page/PageTitle.tsx), directly above the title it describes.
 import { FolderOpen, PanelRight, Search } from "lucide-react";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { HistoryIndicator } from "./HistoryIndicator";
+import { NavButtons } from "./NavButtons";
 import { SaveIndicator } from "./SaveIndicator";
 import { SettingsButton } from "./SettingsButton";
 
@@ -28,6 +28,7 @@ export function TopBar({ isRightPanelOpen, onToggleRightPanel, onSwitchProject, 
 
   return (
     <header className="top-bar">
+      <NavButtons />
       <div className="top-bar-right">
         <HistoryIndicator />
         <SaveIndicator />

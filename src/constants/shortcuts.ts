@@ -21,7 +21,17 @@ export type Binding = {
 // Order matters: the listener walks this list and stops at the first match, so
 // this is the tie-break if two actions ever end up on the same combination.
 // Matching is exact — Ctrl+Shift+K is not Ctrl+K — so nothing today overlaps.
-export const SHORTCUT_ACTIONS = ["search", "allProperties", "newPage", "save", "undo", "redo"] as const;
+export const SHORTCUT_ACTIONS = [
+  "search",
+  "allProperties",
+  "newPage",
+  "save",
+  "undo",
+  "redo",
+  "navigateBack",
+  "navigateForward",
+  "navigateHome",
+] as const;
 
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
 
@@ -32,6 +42,9 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   save: "Save now",
   undo: "Undo (sidebar)",
   redo: "Redo (sidebar)",
+  navigateBack: "Back",
+  navigateForward: "Forward",
+  navigateHome: "Project home",
 };
 
 export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
@@ -44,6 +57,19 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   save: { key: "s", mod: true },
   undo: { key: "z", mod: true },
   redo: { key: "y", mod: true },
+  // The convention every browser and file manager on Windows and Linux uses,
+  // which is the one someone reaches for without being told. Alt with a *named*
+  // key can't be typed as a character, which is why these are allowed to skip
+  // the Ctrl/Cmd requirement — see checkBindingShape.
+  //
+  // **Known cost on macOS:** Option+← / Option+→ are move-by-word inside a text
+  // field there, so these take a keypress the OS gives to the caret. The user
+  // this app is built for is on Windows, and the answer for a Mac user is to
+  // rebind — the alternative is per-platform defaults, which nothing else in
+  // this file has and which would be a shape change for one action.
+  navigateBack: { key: "ArrowLeft", alt: true },
+  navigateForward: { key: "ArrowRight", alt: true },
+  navigateHome: { key: "Home", alt: true },
 };
 
 // Actions that stand down while the caret is in text — the editor, a rename

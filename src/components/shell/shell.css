@@ -142,23 +142,31 @@
 
 /* --- TopBar --- */
 
-/* `flex-end`, not `space-between`, because the left side is now empty. The
-   project name used to sit there — and also in the sidebar header about 50px
-   away, which is the doubled name in docs/ui-audit.md defect 6. The sidebar
-   won: its copy has the home button and the add-page button attached to it and
-   is the thing the tree below actually belongs to, whereas this one was a
-   label with nothing to do. What's left is deliberately empty space rather
-   than something invented to fill it — back/forward and a breadcrumb are
-   already queued for Phase 14, and this is where they go. */
+/* `space-between` since Phase 14: navigation on the left, everything about the
+   window on the right. The left side was empty for two phases — the project
+   name used to sit there, and also in the sidebar header about 50px away, which
+   is the doubled name in docs/ui-audit.md defect 6. The sidebar won that one,
+   and the gap was held for back/forward rather than filled with something
+   invented. The breadcrumb never came here: it's on the page itself, directly
+   above the title it describes (page/PageTitle.tsx). */
 .top-bar {
   height: var(--h-bar);
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 var(--space-xl);
   background: var(--gradient-topbar, none), var(--color-panel-alt);
   border-bottom: 1px solid var(--color-border-strong);
+}
+
+/* Tighter than `.top-bar-right`'s gap: these three are one control in three
+   parts and read as a cluster, where the right-hand side is a row of unrelated
+   things that each want their own space. */
+.top-bar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
 .top-bar-right {

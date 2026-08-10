@@ -227,9 +227,23 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ## Phase 14 — Everyday Navigation
 
-Small things, felt daily. Independent of each other; safe to ship piecemeal.
+Small things, felt daily. Independent of each other; safe to ship piecemeal —
+and being shipped that way, one PR per bullet.
 
-- **Back / forward / home buttons.** Needs a navigation history stack — a separate thing from Phase 10's undo history, which reverses *edits*, not *location*.
+- ~~**Back / forward / home buttons**~~ — 2026-08-10. `navigation-service.ts`
+  holds the stack, the store records a visit inside `selectNode`, and the three
+  buttons sit at the left end of the top bar, which had been held empty for
+  them since Phase 11.5. **The decision that binds: `selectNode` is the single
+  choke point.** Back and forward move the cursor over the stack without
+  recording, everything else records by using the action it already uses — so a
+  navigation added in a year gets its history entry for free rather than by
+  remembering a second call. Session-only, and pruned when a page is deleted;
+  the reasoning for both is in the service's own header. It also relaxed the
+  shortcut rules by one notch: Alt with a *named* key skips the Ctrl/Cmd
+  requirement, since it can't produce a character. **Known cost, written down
+  rather than solved:** Alt+←/→ are move-by-word inside a text field on macOS,
+  so a Mac user has to rebind. Per-platform defaults are the fix if that ever
+  matters.
 
 - **Focus a folder as the top of the tree**, with a path bar above it to climb back out. Right-click → *Focus here*, and that folder's contents sit at the root; the path bar is the way back. This is the answer to nesting that has gone too deep to read — the user hit it at nine levels, where the names are gone entirely and only indent is left. It's the same move the universe selector makes (Phase 22), one level down, and the two compose: focus inside whichever universe you're in.
 
@@ -241,7 +255,11 @@ Small things, felt daily. Independent of each other; safe to ship piecemeal.
 - **Show in system explorer.**
 - **Hover previews** on wikilinks and mentions. The README already claims these exist; they don't.
 - **"Create new" landing page** — a blank untitled page that offers the template picker inline, so pages can be spammed out and typed later.
-- **Bookmarks rail** — pinned pages as icon tiles under the tree search, fed by "Set as shortcut" from Phase 15.
+- **Bookmarks rail** — pinned pages as icon tiles under the tree search, fed by
+  "Set as shortcut" from Phase 15. **This is the one bullet here that isn't
+  independent:** it has nothing to render until the thing that pins a page
+  exists. Either take it last, after Phase 15, or build the pin with it — don't
+  start it expecting the rest of the phase's freedom.
 - **The small-friction batch**, lifted from Obsidian 1.13's own list. Each is a line or two, none depends on the others, and they're the kind of thing that's only ever felt as vague clumsiness rather than reported as a bug — which is why they're written down rather than left to be noticed:
   - `Escape` cancels a rename and **leaves the tree focused** (today focus escapes with it);
   - `Escape` clears the current selection;

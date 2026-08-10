@@ -156,6 +156,24 @@ describe("checkBinding", () => {
     expect(checkBinding({ key: "j", shift: true }, "search", current)?.reason).toBe("needsModifier");
   });
 
+  // The second escape hatch from the modifier rule, added for Phase 14's
+  // Alt+←/Alt+→. The test underneath it is "can this produce a character", not
+  // "is Alt held" — which is why the letter cases below stay refused.
+  it("accepts Alt with a named key, which types nothing", () => {
+    expect(checkBinding({ key: "ArrowLeft", alt: true }, "navigateBack", current)).toBeNull();
+    expect(checkBinding({ key: "Home", alt: true }, "navigateHome", current)).toBeNull();
+  });
+
+  it("still refuses Alt with a letter, which types å on a Mac and opens menus on Windows", () => {
+    expect(checkBinding({ key: "j", alt: true }, "search", current)?.reason).toBe("needsModifier");
+  });
+
+  it("holds the three navigation defaults to its own rules", () => {
+    expect(checkBinding(DEFAULT_BINDINGS.navigateBack, "navigateBack", current)).toBeNull();
+    expect(checkBinding(DEFAULT_BINDINGS.navigateForward, "navigateForward", current)).toBeNull();
+    expect(checkBinding(DEFAULT_BINDINGS.navigateHome, "navigateHome", current)).toBeNull();
+  });
+
   it("refuses every Ctrl+Alt combination, since headings claim the space", () => {
     expect(checkBinding({ key: "j", mod: true, alt: true }, "search", current)?.reason).toBe("reservedByEditor");
   });

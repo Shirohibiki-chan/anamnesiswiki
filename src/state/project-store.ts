@@ -19,6 +19,15 @@ import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler
 import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import {
+  EMPTY_NAV_HISTORY,
+  forgetNodes,
+  locationAt,
+  stepBack,
+  stepForward,
+  visit,
+  type NavHistory,
+} from "../services/navigation-service";
+import {
   isChipType,
   knownOptionsFor,
   planOptionDelete,
@@ -104,6 +113,11 @@ export type ProjectStoreState = {
   // worth writing to disk. Carries the node id as well so PageView can ignore
   // a leftover from an earlier jump instead of applying it to the wrong page.
   pendingFocus: { nodeId: string; tabId: string } | null;
+  // Where you've been in this session. Not part of Project and never written to
+  // disk — see services/navigation-service.ts for why. Every navigation goes
+  // through `selectNode`, which is the only thing that appends to it; back and
+  // forward move the cursor over what's already there.
+  navHistory: NavHistory;
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   dismissSkippedFiles: () => void;
   dismissSaveErrors: () => void;
@@ -156,6 +170,14 @@ export type ProjectStoreState = {
   // be recorded as one undoable step across a whole multi-selection.
   setNodeColor: (ids: string[], color: string | undefined) => void;
   selectNode: (id: string | null, tabId?: string) => void;
+  // Moving over the session's navigation history rather than adding to it.
+  // Both are no-ops at the ends of the stack, so the buttons can stay mounted
+  // and just go quiet.
+  goBack: () => void;
+  goForward: () => void;
+  // The page designated as this project's home, if there is one. An ordinary
+  // navigation — it records, so Back comes straight back out of it.
+  goHome: () => void;
   // Cmd+S. Runs every outstanding debounced write now, then shows "Saved" —
   // including when there was nothing pending, because "Saved" is a statement
   // about the state of the disk, not about a write having just happened. The
@@ -325,6 +347,30 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // pages are already back under the right parents but not in the right places.
   const restoreOrdering = (ordering: OrderingSnapshot): Promise<void> => restoreNodes([], [], ordering);
 
+  /**
+   * Move to a page, with the navigation history it leaves behind.
+   *
+   * Split out from `selectNode` because back and forward have to change the
+   * selection *without* recording a new visit — they hand in a history whose
+   * cursor has already moved. Every other caller hands in `visit(...)`, which
+   * is what makes `selectNode` the single choke point: a navigation added in a
+   * year's time gets its history entry by using the action everything else
+   * already uses, not by remembering this exists.
+   *
+   * `tabId` is for callers that know which tab they mean — a search result
+   * naming the tab its match was found in. Everything else omits it, and
+   * clearing it here is what stops one jump's tab leaking into the next.
+   * Expanding the target's ancestors is deliberately *not* done here: TreePanel
+   * already does it for every selection however it was made.
+   */
+  const applySelection = (id: string | null, tabId: string | undefined, navHistory: NavHistory): void => {
+    const { rootPath, project } = get();
+    if (!rootPath || !project) return;
+    const nextProject: Project = { ...project, selectedId: id };
+    set({ project: nextProject, pendingFocus: id && tabId ? { nodeId: id, tabId } : null, navHistory });
+    scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+  };
+
   // The write half of setProjectHome, split out so undo and redo can set an
   // exact value instead of going back through the action's toggle.
   const applyHome = (homeNodeId: string | null): void => {
@@ -345,6 +391,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     saveErrors: [],
     recoveredCount: 0,
     pendingFocus: null,
+    navHistory: EMPTY_NAV_HISTORY,
 
     // Resolves null for anything that means "this isn't an openable project"
     // — missing or unreadable project.json, an unreadable folder — so callers
@@ -372,6 +419,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         isLoaded: true,
         skippedFiles: result.skipped,
         recoveredCount: result.recoveredCount,
+        // Seeded with wherever the project was left, not left empty — so the
+        // first page opened this session has somewhere to go Back *to*, which
+        // is the page that's on screen when the window appears.
+        navHistory: visit(EMPTY_NAV_HISTORY, result.project.selectedId ?? null),
       });
       return { name: result.project.name };
     },
@@ -392,7 +443,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       useHistoryStore.getState().clear();
       const project = createProject({ name });
       await fsService.saveProject(rootPath, project);
-      set({ rootPath, project, nodes: {}, isLoaded: true });
+      set({ rootPath, project, nodes: {}, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
       markSaved();
     },
 
@@ -472,7 +523,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       useHistoryStore.getState().clear();
       const project = { ...createProject({ name: trimmed, rootOrder }), homeNodeId };
       const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
-      set({ rootPath, project, nodes: nodesRecord, isLoaded: true });
+      set({ rootPath, project, nodes: nodesRecord, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
 
       await fsService.saveProject(rootPath, project);
       // One shared path index for the whole import rather than one per node —
@@ -495,6 +546,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         saveErrors: [],
         recoveredCount: 0,
         pendingFocus: null,
+        // Closing a project throws its history away with it — the ids in there
+        // mean nothing in the next project, and carrying them over would let
+        // Back navigate to a page in a world you've left.
+        navHistory: EMPTY_NAV_HISTORY,
       });
     },
 
@@ -997,7 +1052,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         selectedId: project.selectedId && toRemove.has(project.selectedId) ? null : project.selectedId,
       };
 
-      set({ nodes: nextNodes, project: nextProject });
+      // Same reasoning as the two fields above, one level further out: a
+      // deleted page left in the back stack sends Back to a blank page view
+      // with nothing to explain it. Whole subtrees go, not just the rows that
+      // were selected, and the cursor is re-pointed at wherever the selection
+      // ended up so the first Back is a real step rather than a correction.
+      const prunedHistory = forgetNodes(get().navHistory, toRemove);
+      const navHistory =
+        locationAt(prunedHistory) === nextProject.selectedId ? prunedHistory : visit(prunedHistory, nextProject.selectedId);
+
+      set({ nodes: nextNodes, project: nextProject, navHistory });
       track(
         fsService.deleteNodes(rootPath, removalRoots.map((id) => nodes[id]), allNodesBefore, Object.values(nextNodes)),
       );
@@ -1130,17 +1194,36 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       );
     },
 
-    // `tabId` is for callers that know which tab they mean — a search result
-    // naming the tab its match was found in. Everything else omits it, and
-    // clearing it here is what stops one jump's tab leaking into the next.
-    // Expanding the target's ancestors is deliberately *not* done here:
-    // TreePanel already does it for every selection however it was made.
     selectNode(id, tabId) {
-      const { rootPath, project } = get();
-      if (!rootPath || !project) return;
-      const nextProject: Project = { ...project, selectedId: id };
-      set({ project: nextProject, pendingFocus: id && tabId ? { nodeId: id, tabId } : null });
-      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+      const { navHistory } = get();
+      // The one place a visit is recorded, so nothing that navigates can
+      // forget to. Back and forward deliberately don't come through here — see
+      // `applySelection`.
+      applySelection(id, tabId, visit(navHistory, id));
+    },
+
+    goBack() {
+      const { navHistory } = get();
+      const next = stepBack(navHistory);
+      if (next === navHistory) return;
+      applySelection(locationAt(next), undefined, next);
+    },
+
+    goForward() {
+      const { navHistory } = get();
+      const next = stepForward(navHistory);
+      if (next === navHistory) return;
+      applySelection(locationAt(next), undefined, next);
+    },
+
+    goHome() {
+      const { project, nodes } = get();
+      const homeNodeId = project?.homeNodeId;
+      // A home that's been deleted clears itself on the way out (see
+      // deleteNodes), so this should never fire — but a button that silently
+      // navigates to nothing is worse than one that does nothing.
+      if (!homeNodeId || !nodes[homeNodeId]) return;
+      get().selectNode(homeNodeId);
     },
 
     async saveNow() {

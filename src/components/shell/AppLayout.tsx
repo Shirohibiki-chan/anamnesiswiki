@@ -4,6 +4,7 @@ import { useProject, useSaveNow } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useHistoryActions } from "../../hooks/use-history";
+import { useNavigationActions } from "../../hooks/use-navigation";
 import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
@@ -31,6 +32,8 @@ export function AppLayout() {
   const [isNewPageOpen, setIsNewPageOpen] = useState(false);
   const saveNow = useSaveNow();
   const { undo, redo } = useHistoryActions();
+  // Store actions, so these are stable and the shortcut listener isn't rebuilt.
+  const { goBack, goForward, goHome } = useNavigationActions();
 
   useSaveOnExit();
   // Stable so the shortcut listener is attached once, not rebuilt on every
@@ -51,6 +54,9 @@ export function AppLayout() {
     onSave: handleSave,
     onUndo: undo,
     onRedo: redo,
+    onNavigateBack: goBack,
+    onNavigateForward: goForward,
+    onNavigateHome: goHome,
   });
 
   async function handleSwitchProject() {
