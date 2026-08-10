@@ -16,17 +16,26 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–10 are done. The app is shippable**, and Phase 1.5 (Publish) is what's
-in front of it. `docs/plan.md` has phases 11–23; `docs/shipped.md` has what each
-finished phase delivered.
+**Phases 0–13 are done. The app is shippable**, and **Phase 14 (Everyday
+Navigation) is next.** `docs/plan.md` has phases 14–25 plus the unscheduled
+Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
 
-The two most recent ones are the ones a new session is most likely to touch.
-**Phase 9 — LK Export — shipped 2026-07-31**, so the format goes both ways; §LK
-export has the constraints that govern it and §Known gaps has the one thing it
-doesn't prove. **Phase 10 closed the same day** — search, keyboard shortcuts and
-rebinding, sidebar undo/redo, and releases that build and sign themselves for
-four platforms on a tag push. §Search, §Shortcuts, §Undo and §Updates below are
-the parts of that still binding on the code.
+The most recent ones are the ones a new session is most likely to touch.
+**Phase 12 — Themes & Appearance — closed 2026-08-09**: user-writable `.css`
+themes, seven built-ins, in-app colour and gradient pickers, snippets, text
+scaling, and search in Settings. **Phase 13 — Property Types — closed
+2026-08-10**: number/select/multi-select/status, per-page reordering, and the
+project-wide All properties & tags view. The parts of both still binding on the
+code are in §Product decisions below — the CSS-vetting rule, the contrast floor,
+and everything under properties and chip options.
+
+Further back but still load-bearing: **Phase 9 — LK Export — shipped
+2026-07-31**, so the format goes both ways; §LK export has the constraints that
+govern it and §Known gaps has the one thing it doesn't prove. **Phase 10 closed
+the same day** — search, keyboard shortcuts and rebinding, sidebar undo/redo,
+and releases that build and sign themselves for four platforms on a tag push.
+§Search, §Shortcuts, §Undo and §Updates below are the parts of that still
+binding on the code.
 
 A structural code review, a disk-I/O pass, and a documentation accuracy pass all
 ran on 2026-07-30. What they changed is in `CHANGELOG.md`; what they *concluded*
