@@ -5,6 +5,14 @@ import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useHistoryActions } from "../../hooks/use-history";
 import { useNavigationActions } from "../../hooks/use-navigation";
+import { usePanelWidthActions, usePanelWidths } from "../../hooks/use-panel-widths";
+import {
+  PROPERTIES_MAX_WIDTH,
+  PROPERTIES_MIN_WIDTH,
+  TREE_MAX_WIDTH,
+  TREE_MIN_WIDTH,
+} from "../../constants/layout";
+import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
@@ -30,10 +38,13 @@ export function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAllPropertiesOpen, setIsAllPropertiesOpen] = useState(false);
   const [isNewPageOpen, setIsNewPageOpen] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const saveNow = useSaveNow();
   const { undo, redo } = useHistoryActions();
   // Store actions, so these are stable and the shortcut listener isn't rebuilt.
   const { goBack, goForward, goHome } = useNavigationActions();
+  const widths = usePanelWidths();
+  const { setTreeWidth, setPropertiesWidth, resetPanelWidths } = usePanelWidthActions();
 
   useSaveOnExit();
   // Stable so the shortcut listener is attached once, not rebuilt on every
@@ -65,7 +76,26 @@ export function AppLayout() {
   }
 
   return (
-    <div className={`app-layout${isRightPanelOpen ? "" : " app-layout-properties-collapsed"}`}>
+    // Since Phase 14 the two column widths are custom properties on the grid
+    // rather than numbers in the stylesheet. They're properties and not an
+    // inline `grid-template-columns` because the handles read them too: both
+    // sit *outside* the panels, positioned against the grid itself, which is
+    // what keeps them clear of the properties panel's own scroll container. A
+    // handle inside a scrolling column scrolls away with the content.
+    //
+    // `app-layout-resizing` is only here to switch the column transition off
+    // mid-drag — 150ms of easing on every pointer move is a panel edge that
+    // trails the pointer and never catches up.
+    <div
+      className={[
+        "app-layout",
+        isRightPanelOpen ? "" : "app-layout-properties-collapsed",
+        isResizing ? "app-layout-resizing" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={{ "--tree-w": `${widths.tree}px`, "--props-w": `${widths.properties}px` } as React.CSSProperties}
+    >
       <aside className="app-layout-tree">
         <TreeSidebar />
       </aside>
@@ -89,6 +119,33 @@ export function AppLayout() {
         <aside className="app-layout-properties">
           <PropertiesPanel key={project?.selectedId ?? "none"} />
         </aside>
+      )}
+
+      {/* Last in the DOM so they sit above both panels without a z-index race,
+          and outside them so neither scrolls away from its own edge. The
+          properties handle isn't rendered at all while that panel is closed —
+          there's no edge there to drag. */}
+      <ResizeHandle
+        edge="tree"
+        label="Sidebar width"
+        width={widths.tree}
+        min={TREE_MIN_WIDTH}
+        max={TREE_MAX_WIDTH}
+        onResize={setTreeWidth}
+        onReset={resetPanelWidths}
+        onDragChange={setIsResizing}
+      />
+      {isRightPanelOpen && (
+        <ResizeHandle
+          edge="properties"
+          label="Properties panel width"
+          width={widths.properties}
+          min={PROPERTIES_MIN_WIDTH}
+          max={PROPERTIES_MAX_WIDTH}
+          onResize={setPropertiesWidth}
+          onReset={resetPanelWidths}
+          onDragChange={setIsResizing}
+        />
       )}
 
       {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}

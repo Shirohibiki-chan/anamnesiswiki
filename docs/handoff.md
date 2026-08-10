@@ -745,6 +745,37 @@ is below.
   it turns out to be stolen, the fix is a different default binding, not a
   fight with the webview. `Cmd+S` is the ordinary case and behaves.
 
+## Layout
+
+- **The side panels' widths are custom properties on `.app-layout`, and the
+  resize handles are positioned against the grid rather than inside the
+  panels.** `--tree-w` / `--props-w` feed both `grid-template-columns` and the
+  handles' `left`/`right`, which is what keeps a handle on the edge it belongs
+  to. **A handle inside `.app-layout-properties` scrolls away with the
+  content** — that panel is a scroll container, and this was the reason for the
+  arrangement, not a preference.
+
+- **`.app-layout-resizing` switching the column transition off mid-drag is
+  load-bearing, not polish.** `.app-layout` transitions
+  `grid-template-columns` over 150ms for the properties panel opening and
+  closing. The handles have no transition, so during a drag the handle moves
+  instantly and the column eases after it. Measured in a DOM replica of the
+  shell: dragging the tree edge to 400px with the class on puts the panel edge
+  at 400 and the handle at 398–403; with the class off the edge is at 400 and
+  the handle is still at 258–263. **A 140px gap between the line you're
+  dragging and the line that moves.** Anything that adds a third caller of
+  these custom properties has to hold the same flag.
+
+- **Widths are clamped everywhere they enter, not only where they're set.**
+  `parsePanelWidths` gives stored settings the same treatment `parseOverrides`
+  gives stored shortcuts, because `app-settings.json` outlives any version of
+  the app and the limits in `constants/layout.ts` are free to move. The
+  minimums are "the panel can still do its job", not an arbitrary floor —
+  **don't lower either to 0 to make dragging a way to hide a panel.** A panel
+  dragged to nothing leaves no edge to drag back.
+
+---
+
 ## Navigation
 
 - **`selectNode` is the only thing that records a visit, and that is the whole

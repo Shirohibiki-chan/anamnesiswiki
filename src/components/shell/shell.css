@@ -49,8 +49,16 @@
 .app-layout {
   height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr 300px;
+  /* Phase 14: both side columns are draggable, so their widths arrive as
+     custom properties from AppLayout rather than being written here. The
+     fallbacks are the widths they were fixed at before that, which is what
+     renders for the frame before the stored widths come back off disk. See
+     constants/layout.ts for the limits and why they're where they are. */
+  grid-template-columns: var(--tree-w, 260px) 1fr var(--props-w, 300px);
   grid-template-rows: minmax(0, 1fr);
+  /* The containing block for the two resize handles, which sit outside both
+     panels — see the .resize-handle block below. */
+  position: relative;
   /* The gradient layers over the colour rather than replacing it, here and at
      every other `--gradient-*` site: a theme that only sets some of the twelve
      still has a solid surface under each one, and a gradient with transparency
@@ -61,7 +69,15 @@
 }
 
 .app-layout-properties-collapsed {
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: var(--tree-w, 260px) 1fr;
+}
+
+/* Held only for the duration of a drag. 150ms of easing applied to every
+   pointer move is an edge that trails the pointer and never arrives — the
+   transition exists for the properties panel opening and closing, which is the
+   one column change that isn't already following the mouse. */
+.app-layout-resizing {
+  transition: none;
 }
 
 /* These two shared a rule until Phase 12. They still share a colour, but their
@@ -137,8 +153,59 @@
    only ever reachable in `pnpm dev` in a browser tab, and what they did there
    was make panels vanish with no indication and no way back short of resizing
    — web thinking in a desktop window, and dead web thinking at that. The
-   properties panel has a real toggle in the top bar; a matching one for the
-   tree is Phase 14's resizable-sidebars work. */
+   properties panel has a real toggle in the top bar; the tree now has a
+   draggable edge instead, which is the answer that keeps it findable. */
+
+/* --- ResizeHandle ---
+
+   Positioned against `.app-layout` rather than living inside the panel it
+   resizes, for one concrete reason: `.app-layout-properties` is a scroll
+   container, and a handle inside it scrolls away from the edge it's supposed
+   to be the edge of. Against the grid, both handles are full height and stay
+   put.
+
+   The strip is 5px of grab area sitting *over* the 1px border it appears to
+   be, offset by 2px so it straddles the line rather than sitting beside it.
+   Invisible until you're on it or in it — a permanent second line down each
+   side would be furniture for a control that gets touched about once. That's
+   the same argument the search scope pills lost in Phase 12. */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  z-index: 5;
+  cursor: col-resize;
+  background: transparent;
+  /* Only the colour transitions. Anything on `left`/`right` would put an
+     animation between the pointer and the edge it's dragging. */
+  transition: background-color 120ms ease;
+  /* The pointer capture in ResizeHandle.tsx delivers moves here even once the
+     pointer has left the strip; this stops the browser claiming the gesture as
+     a scroll or a text selection before that can happen. */
+  touch-action: none;
+}
+
+.resize-handle-tree {
+  left: calc(var(--tree-w, 260px) - 2px);
+}
+
+.resize-handle-properties {
+  right: calc(var(--props-w, 300px) - 2px);
+}
+
+.resize-handle:hover,
+.resize-handle:focus-visible,
+.resize-handle-dragging {
+  background: var(--color-accent);
+}
+
+/* The app-wide focus ring is drawn outside the element it's on, which on a 5px
+   strip is a halo around a line. The strip lighting up *is* the focus state —
+   it's the same thing hover does, and the arrow keys work from there. */
+.resize-handle:focus-visible {
+  outline: none;
+}
 
 /* --- TopBar --- */
 

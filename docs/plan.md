@@ -251,7 +251,16 @@ and being shipped that way, one PR per bullet.
 
   **Obsidian's Breadcrumbs plugin is not this.** Raised by the user 2026-08-08 and checked: it never touches the file explorer. It builds note-to-note hierarchies out of frontmatter and gives trail, matrix, prev/next and diagram views over them. Most of what it does is already in this plan under other names — the trail is the clickable breadcrumb already sitting above every page title (`page/PageTitle.tsx`), its tree and matrix views are Phase 18's Subpage Index and Backlinks blocks, prev/next chains are Phase 25's storylines, and its diagrams are Phase 24's graphs. Nothing left to lift from it.
 - **Double-click expands a folder**, and rename moves to the right-click menu. Note this is a *swap*: `TreeItem.tsx` already renames on double-click (react-arborist's default). Ships with a setting to put it back.
-- **Resizable sidebars.**
+- ~~**Resizable sidebars**~~ — 2026-08-10. Both edges drag, with arrow keys and
+  a double-click reset as the alternatives; widths persist in `app-settings`,
+  app-level rather than per-project like everything else about how it looks.
+  **The two decisions that bind are in `docs/handoff.md` §Layout**: the handles
+  are positioned against the grid rather than inside the panels, because the
+  properties panel is a scroll container and a handle inside it scrolls away
+  from its own edge; and the column transition has to be switched off mid-drag,
+  which is measured rather than assumed. The minimums are "the panel can still
+  do its job" — **dragging is not a way to hide a panel**, and shouldn't become
+  one.
 - **Show in system explorer.**
 - **Hover previews** on wikilinks and mentions. The README already claims these exist; they don't.
 - **"Create new" landing page** — a blank untitled page that offers the template picker inline, so pages can be spammed out and typed later.
