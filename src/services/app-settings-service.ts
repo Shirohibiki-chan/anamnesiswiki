@@ -173,6 +173,25 @@ export async function setAppearance(appearance: AppearanceSettings): Promise<voi
   await store.save();
 }
 
+/**
+ * How wide the two side panels are. App-level rather than per-project for the
+ * same reason the appearance settings are: one screen, several worlds.
+ *
+ * Returned unvalidated, like the shortcut overrides above — deciding whether a
+ * width is still usable belongs with the limits that say so, in
+ * `layout-service`'s `parsePanelWidths`.
+ */
+export async function getPanelWidths(): Promise<unknown> {
+  const store = await getStore();
+  return (await store.get("panelWidths")) ?? {};
+}
+
+export async function setPanelWidths(widths: { tree: number; properties: number }): Promise<void> {
+  const store = await getStore();
+  await store.set("panelWidths", widths);
+  await store.save();
+}
+
 export async function removeRecentProject(path: string): Promise<void> {
   const store = await getStore();
   const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-10 — drag the sidebars to whatever width you want
+
+### Additions
+
+- **Both side panels resize.** Grab the line between the tree and the page, or between the page and the properties panel, and drag. The width sticks — it's remembered for the app rather than per project, same as your theme and text size.
+  - **Double-click either line to put both back** to the widths they've always been.
+  - **They work from the keyboard too.** Tab to a divider and the left and right arrows move it 16px at a time; Home resets. Dragging a 5px line accurately with a mouse isn't something everyone can do.
+  - There's a floor and a ceiling on each. The tree won't go below the point where a name at four levels deep stops fitting, and neither panel can be dragged so wide that the page you're writing on has nowhere left to go. Dragging isn't a way to hide a panel — the properties panel still has its button in the top bar for that.
+
 ## 2026-08-10 — back, forward and home buttons
 
 ### Additions
