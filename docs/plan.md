@@ -75,6 +75,22 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 - **More right-click menu items.** Answered 2026-07-31 — the user supplied a screenshot of LK's full node menu and the wanted items are now written up as **Phase 15**. Nothing left to ask here.
 
+- **The search scope controls are not the design that was wanted.** Shipped
+  2026-08-09 and judged *"serviceable for now"* the same day — kept, not
+  accepted. The user chose to move on rather than redesign it then, so **the
+  specifics are not recorded and must be asked for, not guessed.** What is
+  known:
+  - *Sidebar:* a menu that opens on clicking into an empty field is not the
+    interaction she pictured. The first attempt was three always-visible
+    pills, rejected 2026-08-08 as *"unprofessional and lame"*; the menu was
+    the answer to that and is closer, not right.
+  - *Ctrl-K:* she described wanting *"filtering stuff and tabs"* (2026-08-08).
+    What shipped puts all four scopes behind a Tab press, which is a smaller
+    idea than the one she described and reads as nothing being there. Her own
+    words on the goal: *"i'd prefer a more robust UI."*
+  - Both are two attempts in without landing, which is the signal to design
+    it with her before building a third.
+
 - **Valeraverse needs re-importing once, and hasn't been.** Two import changes
   landed after her copy was brought in: the project home arriving as a real page,
   and each picture remembering the LK address it came from (without which export
