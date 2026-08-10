@@ -128,7 +128,22 @@ Before committing anything to disk, `ImportModal.tsx` shows: the parsed tree wit
 | a text run containing `"\n"` | `hardBreak` between runs | Import produced those newlines; a literal newline in a ProseMirror text node renders as nothing. |
 | anything unrecognised | `paragraph` keeping its text | Same never-silently-drop principle as import. |
 
-**Properties** go back as `TEXT_FIELD` (text, longtext, and date — LK has no date type either) and `RESOURCE_LINK` (refs, resolved through the export's own id map). Empty values are omitted rather than written as blank fields. `Node.tags` becomes `resource.tags`; the palette colour becomes `iconColor` as hex.
+**Properties** go back as `TEXT_FIELD` and `RESOURCE_LINK` (refs, resolved through the export's own id map) — LK has exactly those two property types, so everything that isn't a ref is text. Empty values are omitted rather than written as blank fields. `Node.tags` becomes `resource.tags`; the palette colour becomes `iconColor` as hex.
+
+Phase 13's four new types therefore flatten on the way out, in `printableValue`:
+
+| Anamnesis type | Goes to LK as | Note |
+|---|---|---|
+| `text`, `longtext` | `TEXT_FIELD` | Unchanged. |
+| `date` | `TEXT_FIELD` | Free text here (fictional calendars); LK has no date type either. |
+| `number` | `TEXT_FIELD` | Printed with `String(value)`. |
+| `select`, `status` | `TEXT_FIELD` | The chosen option's **label**. Values are stored as option ids, so exporting the raw value would write a UUID into the user's LK page. |
+| `multiselect` | `TEXT_FIELD` | Option labels joined with `", "`. |
+| `refs` | `RESOURCE_LINK` | Unchanged. |
+
+**These do not round-trip as themselves**, and can't: re-importing produces a text property holding the printed labels, with the option list and its colours gone. That's a floor LK sets, not a gap to close. An option id with no matching option in the spec is dropped rather than printed.
+
+**The trap this replaced:** the guard used to be `if (typeof value !== "string") continue`, which was correct only while every property this app could hold *was* a string. The moment a value could be a number or an array of option ids, that same line silently dropped it from the export.
 
 **Images can't travel.** A `.lk` stores URLs pointing at LK's own servers, never image data, so a file added in Anamnesis has nowhere to go. Import therefore records `Node.imageSource` / `bannerSource` — the address a picture was downloaded from — purely so export can hand it back. Anything without one is left out and counted in the export's lossy list. Projects imported before this existed have no sources and need a re-import to gain them.
 

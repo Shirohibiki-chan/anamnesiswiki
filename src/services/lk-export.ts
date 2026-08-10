@@ -8,6 +8,7 @@
 // therefore can't travel inside a `.lk` at all.
 import { COLOR_PALETTE } from "../constants/palette";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project, type Tab } from "../constants/schema";
+import type { RenderableProperty } from "./property-service";
 import { getPropertySchema } from "./template-registry";
 
 // ---- Raw .lk shapes we produce (mirrors lk-import's reader-side types) ----
@@ -293,13 +294,34 @@ function textFragment(value: string): LkNode {
   return emptyDoc(paragraphs.length > 0 ? paragraphs : [paragraphOf([])]);
 }
 
+/**
+ * A property value as text LK can hold. Select-family values are stored as
+ * option *ids*, so the labels have to be looked up through the spec — an
+ * export that wrote the ids would put "a3f1-…" in the user's LegendKeeper
+ * page. An id with no matching option is dropped rather than printed.
+ *
+ * `date` fields are free text here (fictional calendars — see
+ * docs/handoff.md) and LK has no date type either, so they need no special
+ * handling; they arrive as strings and leave as strings.
+ */
+function printableValue(spec: RenderableProperty, value: unknown): string {
+  if (spec.type === "number") return typeof value === "number" ? String(value) : "";
+
+  if (spec.type === "select" || spec.type === "status" || spec.type === "multiselect") {
+    const ids = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+    return ids
+      .map((id) => (spec.options ?? []).find((option) => option.id === id)?.label)
+      .filter((label): label is string => Boolean(label))
+      .join(", ");
+  }
+
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function convertProperties(node: Node, idMap: Map<string, string>): LkProperty[] {
   const out: LkProperty[] = [];
 
-  const specs = [
-    ...getPropertySchema(node.templateKey),
-    ...(node.customProperties ?? []).map((custom) => ({ key: custom.key, label: custom.label, type: custom.type })),
-  ];
+  const specs: RenderableProperty[] = [...getPropertySchema(node.templateKey), ...(node.customProperties ?? [])];
 
   for (const spec of specs) {
     const value = node.properties[spec.key];
@@ -317,11 +339,20 @@ function convertProperties(node: Node, idMap: Map<string, string>): LkProperty[]
       continue;
     }
 
-    // `date` fields are free text here (fictional calendars — see
-    // docs/handoff.md), and LK has no date property type either, so they go
-    // across as text like everything else.
-    if (typeof value !== "string" || !value.trim()) continue;
-    out.push({ id: crypto.randomUUID(), title: spec.label, type: "TEXT_FIELD", data: { fragment: textFragment(value) } });
+    // Everything else lands in a LK TEXT_FIELD, because LK has exactly two
+    // property types — text and resource link — and that's the one left. So
+    // this is where Phase 13's number/select/multi-select/status get
+    // flattened to their printed form: LK has no equivalent and the round
+    // trip back can only ever produce text. Recorded in docs/lk-format.md.
+    //
+    // Flattening deliberately happens here rather than by leaving them out.
+    // Before Phase 13 the guard below was `typeof value !== "string"`, which
+    // was true of every value this app could hold — the moment a property
+    // could be a number or an array of option ids, that same guard started
+    // silently dropping them from the export instead.
+    const text = printableValue(spec, value);
+    if (!text) continue;
+    out.push({ id: crypto.randomUUID(), title: spec.label, type: "TEXT_FIELD", data: { fragment: textFragment(text) } });
   }
 
   return out;

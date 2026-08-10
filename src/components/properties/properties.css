@@ -101,6 +101,263 @@
   resize: none;
 }
 
+/* --- Reordering (Phase 13) --- */
+
+/* The grip lives in the panel's own left padding rather than in the field's
+   label row, so none of the five field components had to grow a slot for it.
+   Hidden until the row is hovered — a permanently visible handle on every
+   property is furniture for something done rarely, which is the same note the
+   search pills got. */
+.property-sortable {
+  position: relative;
+}
+
+.property-grip {
+  position: absolute;
+  top: 0;
+  left: calc(var(--space-lg) * -1);
+  display: flex;
+  align-items: center;
+  height: 1.25rem;
+  color: var(--color-text-muted);
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.property-sortable:hover .property-grip {
+  opacity: 1;
+}
+
+.property-grip:active {
+  cursor: grabbing;
+}
+
+/* --- Select / multi-select / status (Phase 13) --- */
+
+/* Matches `.property-value-input`'s quiet-until-touched treatment, so a chip
+   field sits at the same visual weight as the text fields around it. */
+.property-select-trigger {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: 1.75rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin: calc(var(--space-sm) * -1) calc(var(--space-md) * -1);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.property-select-trigger:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+.property-select-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  flex: 1;
+}
+
+.property-select-empty {
+  flex: 1;
+  color: var(--color-text-placeholder);
+}
+
+.property-select-caret {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  opacity: 0;
+}
+
+.property-select-trigger:hover .property-select-caret {
+  opacity: 1;
+}
+
+/* The colour arrives as an inline background tint + border from the palette
+   hex; the text stays on the theme's own token so a pastel picked against a
+   dark theme can't drop below the contrast floor in docs/handoff.md when the
+   user switches to Daylight. */
+.property-select-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-xs);
+  background: var(--color-panel-edge);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2xs) var(--space-md);
+  white-space: nowrap;
+}
+
+.property-select-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.property-select-popover {
+  width: 15rem;
+  padding: var(--space-sm);
+}
+
+.property-select-search {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.property-select-search::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.property-select-search:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+.property-select-options {
+  margin-top: var(--space-sm);
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.property-select-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  border-radius: var(--radius-sm);
+}
+
+.property-select-row:hover {
+  background: var(--color-hover);
+}
+
+.property-select-row-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: var(--space-xs) var(--space-sm);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Fixed width whether or not there's a tick in it, so the chips stay on one
+   line as things get selected and deselected. */
+.property-select-row-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.property-select-create,
+.property-option-delete {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.property-select-create:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.property-option-delete:hover {
+  background: var(--color-hover);
+  color: var(--color-destructive);
+}
+
+.property-select-none {
+  padding: var(--space-sm);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.property-option-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: var(--space-md) 0;
+}
+
+.property-option-color {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.property-option-color-active {
+  border-color: var(--color-text-primary);
+}
+
+.property-option-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+/* --- Created / Updated (Phase 13) --- */
+
+.property-timestamps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.property-timestamps-icon {
+  flex-shrink: 0;
+}
+
+.property-timestamps-sep {
+  opacity: 0.5;
+}
+
 /* --- Tags --- */
 
 .property-tag-list {
@@ -294,6 +551,46 @@
   font-size: var(--fs-sm);
   color: var(--color-text-primary);
   font-family: inherit;
+}
+
+/* Suggested names for this template (Phase 13). Clicking one fills the name
+   and type in above rather than creating the property outright — it's a
+   starting point you can edit, not a decision. */
+.property-add-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.property-add-suggestion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.property-add-suggestion {
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  background: var(--color-panel-edge);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2xs) var(--space-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.property-add-suggestion:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-accent-faint-border);
+}
+
+/* Which suggestion is currently in the name field — otherwise clicking one
+   changes a box further up the form and nothing where you clicked. */
+.property-add-suggestion-active {
+  background: var(--color-accent-faint);
+  border-color: var(--color-accent-faint-border);
+  color: var(--color-text-primary);
 }
 
 .property-add-actions {

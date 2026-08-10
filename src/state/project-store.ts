@@ -6,6 +6,7 @@ import {
   createNode,
   createProject,
   createTab,
+  DEFAULT_STATUS_OPTIONS,
   FOLDER_TEMPLATE_KEY,
   type CustomPropertySpec,
   type Node,
@@ -116,7 +117,10 @@ export type ProjectStoreState = {
   updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
   updateNodeTags: (nodeId: string, tags: string[]) => void;
   addCustomProperty: (nodeId: string, label: string, type: CustomPropertySpec["type"]) => void;
+  updateCustomProperty: (nodeId: string, key: string, patch: Partial<Omit<CustomPropertySpec, "key">>) => void;
+  removePropertyOption: (nodeId: string, key: string, optionId: string) => void;
   removeCustomProperty: (nodeId: string, key: string) => void;
+  reorderProperties: (nodeId: string, orderedKeys: string[]) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   clearNodeImage: (nodeId: string) => Promise<void>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
@@ -569,8 +573,55 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { nodes } = get();
       const existing = nodes[nodeId];
       if (!existing) return;
-      const spec: CustomPropertySpec = { key: crypto.randomUUID(), label, type };
+      // Status is the one type that arrives usable — an empty status is a
+      // control with nothing in it, and the four states below are what
+      // everyone types anyway. Select and multi-select start empty on
+      // purpose: their values are the user's vocabulary, not ours.
+      const spec: CustomPropertySpec = {
+        key: crypto.randomUUID(),
+        label,
+        type,
+        ...(type === "status"
+          ? { options: DEFAULT_STATUS_OPTIONS.map((option) => ({ ...option })) }
+          : type === "select" || type === "multiselect"
+            ? { options: [] }
+            : {}),
+      };
       get().updateNode(nodeId, { customProperties: [...(existing.customProperties ?? []), spec] });
+    },
+
+    updateCustomProperty(nodeId, key, patch) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const customProperties = (existing.customProperties ?? []).map((spec) =>
+        spec.key === key ? { ...spec, ...patch } : spec,
+      );
+      get().updateNode(nodeId, { customProperties });
+    },
+
+    // Dropping an option has to drop the pages' use of it in the same step,
+    // or the value left behind points at an option that no longer exists and
+    // the chip silently renders as nothing. Options are defined per page (the
+    // spec lives on the node), so the only page that can be holding this one
+    // is this one.
+    removePropertyOption(nodeId, key, optionId) {
+      const { nodes } = get();
+      const existing = nodes[nodeId];
+      if (!existing) return;
+      const customProperties = (existing.customProperties ?? []).map((spec) =>
+        spec.key === key ? { ...spec, options: (spec.options ?? []).filter((option) => option.id !== optionId) } : spec,
+      );
+
+      const properties = { ...existing.properties };
+      const value = properties[key];
+      if (Array.isArray(value)) {
+        properties[key] = value.filter((id) => id !== optionId);
+      } else if (value === optionId) {
+        delete properties[key];
+      }
+
+      get().updateNode(nodeId, { customProperties, properties });
     },
 
     removeCustomProperty(nodeId, key) {
@@ -580,7 +631,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const customProperties = (existing.customProperties ?? []).filter((spec) => spec.key !== key);
       const properties = { ...existing.properties };
       delete properties[key];
-      get().updateNode(nodeId, { customProperties, properties });
+      // Drop it from the manual order too, so a key that no longer exists
+      // can't sit in the list influencing where its neighbours land.
+      const propertyOrder = existing.propertyOrder?.filter((orderedKey) => orderedKey !== key);
+      get().updateNode(nodeId, { customProperties, properties, propertyOrder });
+    },
+
+    reorderProperties(nodeId, orderedKeys) {
+      get().updateNode(nodeId, { propertyOrder: orderedKeys });
     },
 
     async setNodeImage(nodeId, data, extension) {

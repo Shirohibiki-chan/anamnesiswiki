@@ -1,18 +1,41 @@
 // Right sidebar — renders the selected node's template properties. See
-// docs/plan.md Phase 6/7. Folders never have properties (mirrors the
+// docs/plan.md Phase 6/7/13. Folders never have properties (mirrors the
 // prototype's `if (template.isFolder) return null`), and nothing renders
 // when no node is selected. Blank pages (Phase 7's template-optional new
 // page) get a prompt to apply a template instead of a fixed field list.
-import { useState, type FormEvent } from "react";
-import { Plus } from "lucide-react";
-import { FOLDER_TEMPLATE_KEY, type CustomPropertySpec } from "../../constants/schema";
+//
+// Phase 13 added four value types, per-page reordering, suggested property
+// names and the Created/Updated footer. The ordering is the part with a trap
+// in it: the default grouping below (fixed fields, then refs, then custom)
+// exists so a growing Friends/Participants list can't shove Summary off the
+// bottom of the panel, but a manual order has to be allowed to override
+// exactly that — interleaving them is the whole point of dragging one. So the
+// grouping is only ever the *input* to orderProperties, never enforced after.
+import { useRef, useState, type FormEvent } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Plus } from "lucide-react";
+import { getPropertySuggestions } from "../../constants/property-suggestions";
+import { FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type PropertyOption } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
 import { useTemplates } from "../../hooks/use-templates";
+import { orderProperties, type RenderableProperty } from "../../services/property-service";
 import { TemplatePicker } from "../tree/TemplatePicker";
 import { TreePopover } from "../tree/TreePopover";
 import { DateProperty } from "./DateProperty";
 import { ImageSlot } from "./ImageSlot";
+import { NumberProperty } from "./NumberProperty";
+import { PropertyTimestamps } from "./PropertyTimestamps";
 import { RefsProperty } from "./RefsProperty";
+import { SelectProperty } from "./SelectProperty";
 import { TagsProperty } from "./TagsProperty";
 import { TextProperty } from "./TextProperty";
 import "./properties.css";
@@ -22,13 +45,27 @@ const BLANK_TEMPLATE_KEY = "blank";
 const CUSTOM_PROPERTY_TYPE_LABELS: Record<CustomPropertySpec["type"], string> = {
   text: "Text",
   longtext: "Long text",
+  number: "Number",
+  select: "Select",
+  multiselect: "Multi-select",
+  status: "Status",
   refs: "References",
   date: "Date",
 };
 
 export function PropertiesPanel() {
-  const { project, nodes, updateNodeProperty, updateNodeTags, applyTemplate, addCustomProperty, removeCustomProperty } =
-    useProject();
+  const {
+    project,
+    nodes,
+    updateNodeProperty,
+    updateNodeTags,
+    applyTemplate,
+    addCustomProperty,
+    updateCustomProperty,
+    removePropertyOption,
+    removeCustomProperty,
+    reorderProperties,
+  } = useProject();
   const { getPropertySchema } = useTemplates();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
@@ -36,6 +73,8 @@ export function PropertiesPanel() {
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [newPropertyLabel, setNewPropertyLabel] = useState("");
   const [newPropertyType, setNewPropertyType] = useState<CustomPropertySpec["type"]>("text");
+  const newPropertyInput = useRef<HTMLInputElement | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   if (!node) {
     return (
@@ -54,23 +93,29 @@ export function PropertiesPanel() {
   }
 
   const schema = getPropertySchema(node.templateKey);
-  // Fixed text/date fields (Summary, When) always render first, so they
-  // never get shoved down the panel by a growing Friends/Participants list.
-  // Tags stays last regardless.
-  const fixedFields = schema.filter((prop) => prop.type !== "refs");
-  const refFields = schema.filter((prop) => prop.type === "refs");
+  const custom = node.customProperties ?? [];
+  const removableKeys = new Set(custom.map((prop) => prop.key));
+  // Fixed text/date fields first, refs next, custom last — the starting order
+  // for a page nobody has dragged anything on. See the header comment.
+  const defaultOrder: RenderableProperty[] = [
+    ...schema.filter((prop) => prop.type !== "refs"),
+    ...schema.filter((prop) => prop.type === "refs"),
+    ...custom,
+  ];
+  const ordered = orderProperties(defaultOrder, node.propertyOrder);
 
-  function renderField(
-    prop: { key: string; label: string; type: CustomPropertySpec["type"]; placeholder?: string },
-    onRemove?: () => void,
-  ) {
+  // A suggestion for something the page already has is noise, and picking it
+  // would make a second field with the same name.
+  const taken = new Set(ordered.map((prop) => prop.label.toLowerCase()));
+  const suggestions = getPropertySuggestions(node.templateKey).filter((s) => !taken.has(s.label.toLowerCase()));
+
+  function renderField(prop: RenderableProperty, onRemove?: () => void) {
     const raw = node!.properties[prop.key];
 
     if (prop.type === "refs") {
       const nodeIds = Array.isArray(raw) ? (raw as string[]) : [];
       return (
         <RefsProperty
-          key={prop.key}
           label={prop.label}
           nodeIds={nodeIds}
           excludeNodeId={node!.id}
@@ -81,10 +126,44 @@ export function PropertiesPanel() {
       );
     }
 
+    if (prop.type === "select" || prop.type === "multiselect" || prop.type === "status") {
+      const isMulti = prop.type === "multiselect";
+      const value = isMulti
+        ? Array.isArray(raw)
+          ? (raw as string[])
+          : []
+        : typeof raw === "string" && raw
+          ? [raw]
+          : [];
+      return (
+        <SelectProperty
+          label={prop.label}
+          type={prop.type}
+          options={prop.options ?? []}
+          value={value}
+          onChange={(ids) => updateNodeProperty(node!.id, prop.key, isMulti ? ids : (ids[0] ?? undefined))}
+          onOptionsChange={(options: PropertyOption[]) => updateCustomProperty(node!.id, prop.key, { options })}
+          onRemoveOption={(optionId) => removePropertyOption(node!.id, prop.key, optionId)}
+          onRemove={onRemove}
+        />
+      );
+    }
+
+    if (prop.type === "number") {
+      return (
+        <NumberProperty
+          label={prop.label}
+          value={typeof raw === "number" ? raw : undefined}
+          placeholder={prop.placeholder}
+          onChange={(value) => updateNodeProperty(node!.id, prop.key, value)}
+          onRemove={onRemove}
+        />
+      );
+    }
+
     if (prop.type === "date") {
       return (
         <DateProperty
-          key={prop.key}
           label={prop.label}
           value={typeof raw === "string" ? raw : ""}
           placeholder={prop.placeholder}
@@ -96,7 +175,6 @@ export function PropertiesPanel() {
 
     return (
       <TextProperty
-        key={prop.key}
         label={prop.label}
         value={typeof raw === "string" ? raw : ""}
         placeholder={prop.placeholder}
@@ -122,6 +200,35 @@ export function PropertiesPanel() {
     setIsAddingProperty(false);
   }
 
+  // A suggestion fills the form in rather than committing the property — it's
+  // a starting point, not a decision. Half of them want a small edit before
+  // they're right ("Affiliation" → "Affiliations", "Eyes" → "Eye colour"),
+  // and a click that creates the field outright means fixing the name is a
+  // delete and a retype. The cursor goes back to the name so the edit is
+  // already possible; Add is one keystroke away for the case that needed
+  // nothing changed.
+  function applySuggestion(label: string, type: CustomPropertySpec["type"]) {
+    setNewPropertyLabel(label);
+    setNewPropertyType(type);
+    newPropertyInput.current?.focus();
+    newPropertyInput.current?.select();
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = ordered.findIndex((prop) => prop.key === active.id);
+    const newIndex = ordered.findIndex((prop) => prop.key === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    // The order is written whole rather than as a diff, so a page that had no
+    // stored order gets a complete one on its first drag and every later drag
+    // is a straight replacement.
+    reorderProperties(
+      node!.id,
+      arrayMove(ordered, oldIndex, newIndex).map((prop) => prop.key),
+    );
+  }
+
   return (
     <div className="properties-panel">
       <ImageSlot nodeId={node.id} image={node.image} />
@@ -142,13 +249,21 @@ export function PropertiesPanel() {
           )}
         </div>
       )}
-      {fixedFields.map((prop) => renderField(prop))}
-      {refFields.map((prop) => renderField(prop))}
-      {(node.customProperties ?? []).map((prop) => renderField(prop, () => removeCustomProperty(node.id, prop.key)))}
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={ordered.map((prop) => prop.key)} strategy={verticalListSortingStrategy}>
+          {ordered.map((prop) => (
+            <SortableProperty key={prop.key} id={prop.key}>
+              {renderField(prop, removableKeys.has(prop.key) ? () => removeCustomProperty(node.id, prop.key) : undefined)}
+            </SortableProperty>
+          ))}
+        </SortableContext>
+      </DndContext>
 
       {isAddingProperty ? (
         <form className="property-add-form" onSubmit={handleAddProperty}>
           <input
+            ref={newPropertyInput}
             className="property-field-input"
             placeholder="Property name"
             autoFocus
@@ -166,6 +281,26 @@ export function PropertiesPanel() {
               </option>
             ))}
           </select>
+          {suggestions.length > 0 && (
+            <div className="property-add-suggestions">
+              <div className="ui-eyebrow property-field-label">Suggested</div>
+              <div className="property-add-suggestion-list">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.label}
+                    type="button"
+                    className={`property-add-suggestion${
+                      newPropertyLabel === suggestion.label ? " property-add-suggestion-active" : ""
+                    }`}
+                    title={`Fill in as ${CUSTOM_PROPERTY_TYPE_LABELS[suggestion.type]}`}
+                    onClick={() => applySuggestion(suggestion.label, suggestion.type)}
+                  >
+                    {suggestion.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="property-add-actions">
             <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setIsAddingProperty(false)}>
               Cancel
@@ -182,6 +317,28 @@ export function PropertiesPanel() {
       )}
 
       <TagsProperty label="Tags" tags={node.tags} onChange={(tags) => updateNodeTags(node.id, tags)} />
+      <PropertyTimestamps createdAt={node.createdAt} updatedAt={node.updatedAt} />
+    </div>
+  );
+}
+
+// The grip is its own element carrying the drag listeners, rather than the
+// whole row the way PageTabs does it — a property field is mostly text input,
+// and dragging to select text inside one would otherwise start a reorder.
+function SortableProperty({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="property-sortable"
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      {...attributes}
+    >
+      <span className="property-grip" title="Drag to reorder" {...listeners}>
+        <GripVertical size={12} />
+      </span>
+      {children}
     </div>
   );
 }
