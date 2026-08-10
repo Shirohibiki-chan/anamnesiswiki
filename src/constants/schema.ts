@@ -28,16 +28,50 @@ export type Tab = {
   content: BlockNoteDocument;
 };
 
+// One of the allowed values on a select / multi-select / status property.
+// `color` is a key from constants/palette.ts's COLOR_PALETTE, not a hex —
+// the same list node colours come from, so a chip recolours with the theme
+// instead of carrying a literal that outlives whatever palette it was picked
+// against. Ids are generated once and never reused, so renaming an option
+// leaves every page already using it pointing at the same option.
+export type PropertyOption = {
+  id: string;
+  label: string;
+  color: string;
+};
+
 // One-off extra fields a user adds to a single page beyond its template's
 // fixed property list (Notion's "+ Add property" pattern) — logged as a
-// queued adjustment during Phase 6, built in Phase 7. The definition (key,
-// label, type) lives here on the node; the value itself lives in
-// `properties[key]` the same way a template-defined property's value does.
+// queued adjustment during Phase 6, built in Phase 7, widened in Phase 13.
+// The definition (key, label, type) lives here on the node; the value itself
+// lives in `properties[key]` the same way a template-defined property's value
+// does. What that value looks like per type:
+//
+//   text / longtext / date  a string
+//   number                  a number (not a numeric string — see NumberProperty)
+//   refs / multiselect      an array of node ids / option ids
+//   select / status         one option id, or absent for "not set"
+//
+// `options` is only meaningful for select/multiselect/status and is absent
+// everywhere else. Status is a select that arrives pre-seeded (see
+// DEFAULT_STATUS_OPTIONS) and renders with a dot — same machinery, different
+// starting point, per the user's call 2026-08-09.
 export type CustomPropertySpec = {
   key: string;
   label: string;
-  type: "text" | "longtext" | "refs" | "date";
+  type: "text" | "longtext" | "refs" | "date" | "number" | "select" | "multiselect" | "status";
+  options?: PropertyOption[];
 };
+
+// Option ids are stable strings rather than UUIDs here so a seeded status
+// reads plainly in the JSON on disk. Everything the user adds later gets a
+// UUID; nothing depends on which kind an id is.
+export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
+  { id: "draft", label: "Draft", color: "gray" },
+  { id: "in-progress", label: "In progress", color: "amber" },
+  { id: "needs-revision", label: "Needs revision", color: "rose" },
+  { id: "done", label: "Done", color: "sage" },
+];
 
 export type Node = {
   id: string;
@@ -50,6 +84,16 @@ export type Node = {
   // existed won't have it on disk — every read site falls back to [] itself
   // rather than relying on a load-time migration. See createNode below.
   customProperties?: CustomPropertySpec[];
+  // Manual sidebar order for this page's properties, as property keys —
+  // covering the template's own fields and the custom ones together, since
+  // the point of reordering is to interleave them. Optional and partial: a
+  // page nobody has reordered has no entry at all and falls back to the
+  // default grouping (fixed fields, then refs, then custom — see
+  // PropertiesPanel), and a key the list doesn't mention sorts after
+  // everything it does. Per page, not per template, decided 2026-08-09:
+  // templates aren't user-editable until Phase 17, and making one page's
+  // order bind every page of that template quietly makes them so.
+  propertyOrder?: string[];
   tags: string[];
   color?: string;
   // Filename of the uploaded portrait/sidebar image inside the project's

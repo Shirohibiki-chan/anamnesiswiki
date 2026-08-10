@@ -491,7 +491,23 @@ is below.
 
 - **`Node.customProperties` is optional, not defaulted** — pages saved before the
   field existed don't have it on disk, so every read site falls back to `[]`
-  itself rather than relying on a default.
+  itself rather than relying on a default. `Node.propertyOrder` (Phase 13) is
+  the same deal, and is additionally allowed to be *partial*: a key it doesn't
+  mention sorts after every key it does, which is what a page looks like the
+  instant a property is added after a reorder. Both fallbacks are tested in
+  `property-service.test.ts` — get one wrong and every sidebar in the project
+  quietly rearranges itself on upgrade.
+
+- **Select/status values are option *ids*, and the option list lives on the
+  page.** So anything that removes an option has to remove the pages' use of it
+  in the same write — that's `removePropertyOption`, not `updateCustomProperty`
+  with a shorter list. A value left pointing at a deleted option renders as
+  nothing at all, which reads as the chip having been eaten. Two consequences
+  worth knowing before touching this: an id is generated once and never reused,
+  so renaming an option leaves every page already using it correct; and
+  **anything exporting a value has to resolve the label through the spec** —
+  `lk-export` writing the raw value would put a UUID in the user's LegendKeeper
+  page.
 
 - **Wikilinks never guess between two same-named pages.** `[[Name]]` converts only
   when the name is unique; otherwise it stays plain text. Ambiguity should never
@@ -861,6 +877,15 @@ is below.
   field you're about to type over. **A new or retuned theme isn't finished until
   both are measured against both backdrops.** Figures per theme are in
   `docs/constants-and-theming.md`.
+
+- **A palette colour tints a background; it never colours text.** `COLOR_PALETTE`
+  is ten pastels (`#5eead4`, `#fcd34d`, …) chosen to read against dark themes, so
+  any of them used as a text colour fails the floor above the moment someone
+  opens Daylight — and unlike a theme token, nothing re-tunes per theme, because
+  these are *data*, not tokens. Phase 13's select/status chips are the pattern to
+  copy: `${hex}26` background, `${hex}59` border, text left on
+  `--color-text-primary`. `FolderView`'s `${effectiveHex}14` is the same move.
+  The colour is decorative and the theme's own token carries the legibility.
 
 - **A `:hover` block names a hover token, never a surface token.** Hover had no
   token of its own until 2026-08-08 and borrowed whatever surface looked close —

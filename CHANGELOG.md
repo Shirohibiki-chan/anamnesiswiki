@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-09 — properties can be numbers and coloured chips, and you can drag them into the order you want
+
+### Additions
+
+- **Four new kinds of property: Number, Select, Multi-select and Status.** The three chip types work the way you'd hope — click the field, type a value, and it becomes a coloured chip you can pick again on the next page. There's no list to set up first: the options are whatever you've typed, and each one can be renamed or given a different colour from the pencil beside it. Select holds one, Multi-select holds as many as you like, and Status is a Select that arrives already filled in with Draft, In progress, Needs revision and Done, and wears a little dot so it reads differently at a glance. Picking the value that's already set clears it.
+  - Renaming an option renames it everywhere it's used on that page, and deleting one takes it off the page rather than leaving a chip pointing at nothing.
+  - **Number is for things that really are counts** — a population, a price. Ages are still text on purpose, because "appears 20, actually 400" is a real answer and a number box can't hold it.
+- **Every property has a suggested list now.** Open *Add property* and there's a row of names picked for whatever kind of page you're on — a character offers Age, Pronouns, Species, Occupation, Height, Eyes, Hair, Birthplace, Affiliation, Status, Motivation and Quirks; a location offers Population, Government, Ruler, Climate, Founded. Clicking one fills in the name and the kind for you, ready to edit — so *Affiliation* can become *Affiliations* before you press Add. Anything the page already has drops off the list. It's about a dozen per template rather than everything imaginable — the ones people actually fill in.
+  - Where a suggestion names something with its own page — Species, Birthplace, Affiliation, Ruler, Allies — it's added as a link rather than as text, so it quietly builds the web of connections instead of a wall of words.
+- **Drag any property into the order you want.** A grip appears to the left of a field when you hover it. Template fields and ones you've added yourself sit in one list and can be interleaved freely — Summary no longer has to come before everything. The order is per page, so arranging one character leaves every other character alone, and a page you've never dragged anything on looks exactly as it did.
+- **Created and Updated are shown at the bottom of the sidebar.** The app has been recording both for every page since the beginning and has never shown you either. Hover a date for the exact time.
+
+### Adjustments
+
+- **Exporting to LegendKeeper handles the new types.** LegendKeeper only has two kinds of property — text and links — so numbers and chips go across as text, with chips written out by name. They won't come back as chips if you re-import, because there's nothing on LegendKeeper's side to come back from. Worth knowing before you round-trip a page you've put a lot of chips on.
+
 ## 2026-08-09 — two fixes to the search boxes that shipped this morning
 
 ### Fixes

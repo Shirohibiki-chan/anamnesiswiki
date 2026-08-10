@@ -251,10 +251,12 @@ Identity, the visual half — and the reversibility machinery that has to exist 
 
 Cheaper than it looks: `customProperties` on the node and the "+ Add a property" flow already shipped in Phase 7. This widens the type list, it doesn't build the system.
 
-- **New types:** number, select, multi-select, status — the last three rendering as coloured chips, per the user's reference screenshot.
-- **Surface Created / Updated.** `createdAt` and `updatedAt` are already on every node and already saved to disk. Nothing displays them. This is rendering only.
-- **Default property suggestions per template**, mined selectively from World Anvil's Person field list (see Future Features → World Anvil import). A dozen or so per template. Resist the full list.
-- **Reorderable properties.**
+- ~~**New types:** number, select, multi-select, status~~ — 2026-08-09. Options are created by typing rather than declared up front in the add-property form; the alternative wants a list of values defined before you can record one, which is a form to fill in before you're allowed to write. **Status is a select that arrives pre-seeded and renders with a dot** — same machinery, different starting point (her call: *"A i guess?"*), which is why there's one `SelectProperty.tsx` and not three. **The rule the chips are built on: the palette is a set of pastels chosen against dark themes, so the colour is a background tint and the text stays on `--color-text-primary`** — colouring the text with a palette hex fails the contrast floor in `docs/handoff.md` the moment anyone opens Daylight.
+- ~~**Surface Created / Updated**~~ — 2026-08-09, rendering only as expected.
+- ~~**Default property suggestions per template**~~ — 2026-08-09, in `constants/property-suggestions.ts`, ~a dozen each. **They are suggestions and not schema, and that distinction is the file's reason to exist:** adding a field to `template-registry.ts` would make it appear, empty, on every page already using that template. Picking one runs the same `addCustomProperty` the typed path runs. Types are picked against how she writes rather than how a database would want it — Age is text, for the same reason Event's "When" is; `number` is reserved for genuine counts. Where a suggestion names something with its own page (Species, Birthplace, Affiliation) it's `refs`, so the list quietly builds the index Phases 18 and 24 run on.
+- ~~**Reorderable properties**~~ — 2026-08-09. **Per page, not per template** (her call): templates aren't user-editable until Phase 17, and making one page's order bind every page of that template quietly makes them so. `orderProperties` in `property-service.ts` is the tested part — the default grouping (fixed, then refs, then custom) is only ever its *input*, never enforced after, because interleaving is the whole point of dragging one.
+
+**Export was the non-obvious cost.** `lk-export`'s property loop guarded with `if (typeof value !== "string") continue`, which was correct only while every value this app could hold *was* a string — the moment one could be a number or an array of option ids, that line silently dropped it from the `.lk`. Flattening rules are now a table in `docs/lk-format.md`.
 
 ### One place that lists every property and every tag
 
