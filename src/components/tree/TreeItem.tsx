@@ -181,7 +181,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           <button
             type="button"
             className="tree-row-add"
-            title="Add child"
+            title="New page inside"
             onClick={(e) => {
               e.stopPropagation();
               if (openPopover === "add") closePopover();

@@ -33,7 +33,7 @@ publish) is next up; phases 11–23 are planned in `docs/plan.md`.
 
 **Main layout** — three columns: left tree, center page view, right properties panel. The right panel can be toggled off; the left is always visible.
 
-**Left panel — tree** — top strip has three tabs (Project / Templates / Assets; only Project functional in Phase 1). Below that, a search input filters by name or `#tag` prefix. Below that, the project tree. Icons per node type, colors per node color (folders get full-row tint, pages get icon-only tint), "+" buttons on hover to add children, color-dot buttons on hover to open a palette popover. Drag-drop to reparent. Right-click for context menu.
+**Left panel — tree** — top strip has three tabs (Project / Templates / Assets; only Project functional in Phase 1). Below that, a search input filters by name or `#tag` prefix. Below that, the project tree. Icons per node type, colors per node color (folders get full-row tint, pages get icon-only tint), "+" buttons on hover to make a page inside, color-dot buttons on hover to open a palette popover. Drag-drop to reparent. Right-click for context menu.
 
 **Center panel — page view** — folder nodes show a "Folders hold other pages" placeholder with a call to add a child. Non-folder pages show: a large title with the template's icon and click-to-rename, a breadcrumb strip above, a tab strip with each tab's hide/show eye toggle, and a BlockNote editor for the active tab's content. Custom callout blocks (Info / Quote / Secret) plus `@mention` and `[[wikilink]]` for cross-page linking.
 
@@ -118,7 +118,7 @@ Max folder depth is 3: `src/components/tree/TreeItem.tsx` is the deepest allowed
 - Icons per template type
 - Color per node with cascade to descendants (folders full-row tint, pages icon-only)
 - Search by name or `#tag`
-- Right-click context menu: Rename / Duplicate / Set color / Delete / Add child
+- Right-click context menu: New page inside / Rename / Duplicate / Set color / Show in the file manager / Delete
 
 **Page editing**
 - Tabbed pages with hide/show visibility toggle

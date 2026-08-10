@@ -91,7 +91,7 @@ is below.
   disappears from the tree on the next load. Enforced twice on purpose —
   `TreePanel`'s `disableDrop` and the store's `moveNodes` — because losing a
   subtree is too expensive to guard in one place. This is separate from
-  `canHaveChildren` gating the "Add child" button, which never covered drag.
+  `canHaveChildren` gating the "New page inside" button, which never covered drag.
 
 - **Collision comparison is case-folded.** Windows and macOS default to
   case-insensitive filesystems, so `Ruins` and `ruins` are one file to the OS. The

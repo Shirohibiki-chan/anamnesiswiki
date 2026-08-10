@@ -45,7 +45,7 @@
 | The scrollable tree body — renders root nodes and delegates recursion to `TreeItem`; owns drag/drop reparenting via react-arborist | `src/components/tree/TreePanel.tsx` |
 | One tree row — icon (colored per effective color, cascading from parent unless overridden), name (renamable inline), color-dot button on hover, "+" button on hover for nodes that can have children, right-click context menu | `src/components/tree/TreeItem.tsx` |
 | Color palette popover shown when a color dot is clicked — 10-12 preset swatches plus a "clear/default" X button; shows "Inheriting from parent" hint when the current node has no own color but an ancestor does | `src/components/tree/ColorPicker.tsx` |
-| Right-click context menu on tree rows — Rename / Duplicate / Set color / Delete / Add child, keyboard-accessible | `src/components/tree/ContextMenu.tsx` |
+| Right-click context menu on tree rows — New page inside / Rename / Duplicate / Set color / Show in the file manager / Delete, keyboard-accessible | `src/components/tree/ContextMenu.tsx` |
 
 ### Page (`src/components/page/`)
 
