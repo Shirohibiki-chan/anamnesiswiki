@@ -96,7 +96,7 @@ Valeraverse/
 ├── project.json                 # tree order, expanded state, selection, project name, home page
 ├── Canon/
 │   ├── _folder.json             # folder's own metadata (color, tags, notes)
-│   ├── Main Story.json          # a leaf page (item/event/note — never has children)
+│   ├── Main Story.json          # a page with nothing inside it yet
 │   └── ...
 ├── AUs/
 │   ├── _folder.json
@@ -113,7 +113,7 @@ Valeraverse/
 
 **Why file-per-node mirroring the tree:** the user's writing stays legible outside the app. Sync tools (Dropbox, Syncthing) only touch changed files. Git diffs are clean. If the app ever breaks, she still owns her work as plain JSON.
 
-**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` or `_page.json` — rather than as a flat sibling file. Deliberate, not incidental: a directory's ownership must never be derived from its *current* name, or a rename (or a sibling's suffix shifting) silently orphans its children on the next load. That happened once; see `docs/handoff.md` §Storage. Leaf templates (item/event/note) can never have children, so they stay a flat `Name.json`.
+**Folders and nestable non-folder templates (character/location/faction/species) both store themselves inside their own directory** — `_folder.json` or `_page.json` — rather than as a flat sibling file. Deliberate, not incidental: a directory's ownership must never be derived from its *current* name, or a rename (or a sibling's suffix shifting) silently orphans its children on the next load. That happened once; see `docs/handoff.md` §Storage. **Any page can hold pages.** The other templates (item/event/note/blank) stay a flat `Name.json` while they're empty and convert to their own directory the moment something is parented to them — `alwaysDirectory` in the registry means "a directory even when empty", not permission to nest.
 
 **Renames and reparents** are `fs.rename` on the file, or on the whole directory so children move for free. Watch Windows path length (~260 chars) on deep nesting.
 

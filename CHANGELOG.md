@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-10 — any page can hold pages now
+
+### Additions
+
+- **Notes, items and events can have pages inside them.** Until now only folders, characters, locations, factions and species could, so putting a page under a note meant making a folder you didn't want. Every page can now hold pages — the **+** button and the right-click menu are on every row, and you can drag a page onto any other page.
+  - **Nothing in your project moves.** Everything that was a folder on disk still is. A note stays the single readable file it always was right up until you put something inside it, and only then does it become a folder with the note's own page tucked in. Take the last page back out and it goes back to being one file.
+  - **The LegendKeeper importer stops throwing text away.** A page in LK that had both sub-pages *and* its own writing used to be turned into a plain folder so the sub-pages survived — and folders hold no text, so the writing was lost, with a line in the import summary telling you so. It now comes across whole. Worth re-importing for if any of your LK pages were like that.
+
 ## 2026-08-10 — "Add child" works again, and is now called something you can read
 
 ### Fixes

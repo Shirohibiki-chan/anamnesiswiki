@@ -517,3 +517,123 @@ describe("findNodeOnDisk", () => {
     expect(await findNodeOnDisk("/p", page, [page])).toBeNull();
   });
 });
+
+// The 2026-08-10 change: a leaf-template page grows a directory when it gains
+// a child and gives it back when it loses the last one. This is the storage
+// layer, and a conversion that plans nothing writes a page over open ground.
+describe("storage conversion for pages that gain or lose children", () => {
+  const flatNote = node({ id: "n", name: "Magic System", parentId: null, templateKey: "note" });
+  const childOfNote = node({ id: "c", name: "Blood Magic", parentId: "n", templateKey: "note" });
+
+  it("resolves a childless note to a flat file, exactly as before", () => {
+    expect(resolveNodePath(flatNote, [flatNote])).toEqual({ dirSegments: [], fileName: "Magic System.json" });
+  });
+
+  it("resolves the same note to its own directory once something is inside it", () => {
+    expect(resolveNodePath(flatNote, [flatNote, childOfNote])).toEqual({
+      dirSegments: ["Magic System"],
+      fileName: "_page.json",
+    });
+  });
+
+  it("leaves every template that was already a directory exactly where it was", () => {
+    // The reason no existing project has to migrate: a childless character is
+    // still `Valera Jiang/_page.json`, not a flat file.
+    const character = node({ id: "ch", name: "Valera Jiang", parentId: null, templateKey: "character" });
+    expect(resolveNodePath(character, [character])).toEqual({
+      dirSegments: ["Valera Jiang"],
+      fileName: "_page.json",
+    });
+  });
+
+  it("plans the move into a directory when the first child arrives", () => {
+    const plan = planRelocations([flatNote], [flatNote, childOfNote]);
+    expect(plan).toEqual([{ oldSegments: ["Magic System.json"], newSegments: ["Magic System", "_page.json"] }]);
+  });
+
+  it("plans the move back out, and prunes the directory it emptied", () => {
+    const plan = planRelocations([flatNote, childOfNote], [flatNote]);
+    expect(plan).toEqual([
+      {
+        oldSegments: ["Magic System", "_page.json"],
+        newSegments: ["Magic System.json"],
+        pruneDir: ["Magic System"],
+      },
+    ]);
+  });
+
+  it("does not prune on the way in — that directory is the destination", () => {
+    expect(planRelocations([flatNote], [flatNote, childOfNote])[0].pruneDir).toBeUndefined();
+  });
+
+  it("plans a conversion and a rename together as one move", () => {
+    const renamed = { ...flatNote, name: "Magic" };
+    const plan = planRelocations([flatNote], [renamed, { ...childOfNote }]);
+    expect(plan).toEqual([{ oldSegments: ["Magic System.json"], newSegments: ["Magic", "_page.json"] }]);
+  });
+
+  it("plans nothing when a note that already had children gains another", () => {
+    const second = node({ id: "c2", name: "Rune Magic", parentId: "n", templateKey: "note" });
+    expect(planRelocations([flatNote, childOfNote], [flatNote, childOfNote, second])).toEqual([]);
+  });
+
+  it("suffixes a converted note against a same-named directory sibling", () => {
+    // It was a flat file, which never collided with a directory of the same
+    // name. Becoming a directory puts it in the other collision group.
+    const folder = node({ id: "f", name: "Magic System", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 1 });
+    const note = node({ id: "n2", name: "Magic System", parentId: null, templateKey: "note", createdAt: 2 });
+    const child = node({ id: "c3", name: "Inside", parentId: "n2", templateKey: "note" });
+
+    expect(resolveNodePath(note, [folder, note])).toEqual({ dirSegments: [], fileName: "Magic System.json" });
+    expect(resolveNodePath(note, [folder, note, child])).toEqual({
+      dirSegments: ["Magic System (2)"],
+      fileName: "_page.json",
+    });
+  });
+
+  it("moves a child into the new directory in the same plan as the conversion", () => {
+    // Dragging an existing page onto a note: the note converts and the dragged
+    // page moves, and both have to be in one plan or they race on disk.
+    const stray = node({ id: "s", name: "Blood Magic", parentId: null, templateKey: "note" });
+    const adopted = { ...stray, parentId: "n" };
+    const plan = planRelocations([flatNote, stray], [flatNote, adopted]);
+
+    expect(plan).toContainEqual({ oldSegments: ["Magic System.json"], newSegments: ["Magic System", "_page.json"] });
+    expect(plan).toContainEqual({ oldSegments: ["Blood Magic.json"], newSegments: ["Magic System", "Blood Magic.json"] });
+  });
+});
+
+describe("pruning the directory a converted page leaves behind", () => {
+  beforeEach(() => {
+    fsMock.remove.mockClear();
+    fsMock.rename.mockClear();
+    fsMock.remove.mockImplementation(async () => {});
+  });
+
+  const note = node({ id: "n", name: "Magic System", parentId: null, templateKey: "note" });
+  const child = node({ id: "c", name: "Blood Magic", parentId: "n", templateKey: "note" });
+
+  it("moves the page file back out and removes the emptied directory", async () => {
+    await deleteNodes("/root", [child], [note, child], [note]);
+
+    expect(fsMock.rename).toHaveBeenCalledWith("/root/Magic System/_page.json", "/root/Magic System.json");
+    expect(fsMock.remove).toHaveBeenCalledWith("/root/Magic System");
+  });
+
+  it("removes it non-recursively, so a directory with anything left in it survives", async () => {
+    await deleteNodes("/root", [child], [note, child], [note]);
+
+    // The whole safety of the prune is this: `remove` without `recursive`
+    // fails on a non-empty directory rather than taking its contents with it.
+    const pruneCall = fsMock.remove.mock.calls.find(([path]) => path === "/root/Magic System");
+    expect(pruneCall?.[1]).toBeUndefined();
+  });
+
+  it("swallows a refused removal rather than failing the delete", async () => {
+    fsMock.remove.mockImplementation(async (path: string) => {
+      if (path === "/root/Magic System") throw new Error("directory not empty");
+    });
+
+    await expect(deleteNodes("/root", [child], [note, child], [note])).resolves.toBeUndefined();
+  });
+});

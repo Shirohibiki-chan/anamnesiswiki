@@ -6,7 +6,6 @@
 import { Copy, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
 
 type ContextMenuProps = {
-  canHaveChildren: boolean;
   isProjectHome: boolean;
   // How many rows the actions will apply to. Above one, the items that only
   // make sense for a single page (renaming, duplicating, nesting a new page,
@@ -27,7 +26,6 @@ type ContextMenuProps = {
 };
 
 export function ContextMenu({
-  canHaveChildren,
   isProjectHome,
   selectionCount,
   fileManagerName,
@@ -63,7 +61,7 @@ export function ContextMenu({
     <div className="tree-context-menu">
       {isMultiple && <div className="tree-context-menu-heading">{selectionCount} pages selected</div>}
 
-      {canHaveChildren && !isMultiple && (
+      {!isMultiple && (
         <button type="button" onClick={onAddChild}>
           <Plus size={13} /> New page inside
         </button>

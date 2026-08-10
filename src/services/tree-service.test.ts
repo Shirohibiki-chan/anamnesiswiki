@@ -50,10 +50,19 @@ describe("buildTreeData", () => {
     expect(tree[0].children).toEqual([]);
   });
 
-  it("gives a leaf template (note/item/event) null children, never an array", () => {
+  it("gives every template an array for children, so anything can be dropped onto", () => {
+    // The inverse of what this asserted until 2026-08-10. react-arborist reads
+    // null children as "leaf, not a drop target", and a note is one now.
     const note = node({ id: "note", name: "Note", parentId: null, templateKey: "note" });
     const tree = buildTreeData(byId([note]), ["note"]);
-    expect(tree[0].children).toBeNull();
+    expect(tree[0].children).toEqual([]);
+  });
+
+  it("nests under a leaf template", () => {
+    const note = node({ id: "note", name: "Note", parentId: null, templateKey: "note" });
+    const child = node({ id: "child", name: "Under it", parentId: "note", templateKey: "note" });
+    const tree = buildTreeData(byId([note, child]), ["note"]);
+    expect(tree[0].children?.map((n) => n.id)).toEqual(["child"]);
   });
 
   it("allows nesting under non-folder nestable templates (character/location/faction/species)", () => {

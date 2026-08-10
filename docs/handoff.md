@@ -86,12 +86,31 @@ is below.
   them risks a third state. The invariant is *"no file is left under a temp
   name"*, not "all or nothing".
 
-- **A leaf template can never be a drop target.** It has no directory of its
-  own, so a child filed under it is written into a marker-less directory and
-  disappears from the tree on the next load. Enforced twice on purpose —
-  `TreePanel`'s `disableDrop` and the store's `moveNodes` — because losing a
-  subtree is too expensive to guard in one place. This is separate from
-  `canHaveChildren` gating the "New page inside" button, which never covered drag.
+- **Any page can hold pages, and storage shape follows whether it actually
+  does.** Changed 2026-08-10. A leaf-template page is a flat `Name.json` while
+  it's empty and becomes `Name/_page.json` the moment something is parented to
+  it — `usesDirectoryStorage` decides from the live graph, which is why
+  `PathIndex` carries `parentIds` and why that argument is required rather than
+  optional. A call site that omitted it would resolve a converted page back to
+  its flat path and write over open ground.
+
+  **`alwaysDirectory` on a template is not permission to have children** — it
+  means "a directory even when empty", true for folder/character/location/
+  faction/species so their shape doesn't churn. It was called `canHaveChildren`
+  before this change. **Nothing in an existing project moves**, because every
+  template that was a directory still is.
+
+  Two things this replaced, both of which existed only because a leaf couldn't
+  nest: `TreePanel`'s `disableDrop` plus the `moveNodes` backstop (a drop onto
+  a leaf used to lose the whole subtree on the next load), and the LK
+  importer's "nestability net", which forced such a page to `folder` and
+  **dropped its own text** to keep the sub-pages.
+
+  The conversion is planned by `planRelocations`, which compares storage shape
+  as well as name and parent — a note gaining its first child changes neither
+  of those, so without that test the move plans nothing. Converting back leaves
+  an empty directory, removed best-effort and **never recursively**: a
+  directory with anything still in it must refuse to go.
 
 - **Collision comparison is case-folded.** Windows and macOS default to
   case-insensitive filesystems, so `Ruins` and `ruins` are one file to the OS. The
