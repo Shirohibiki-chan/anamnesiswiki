@@ -64,19 +64,6 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Queued Adjustments
 
-- **Select / multi-select / status *options* can't be renamed across the
-  project.** Phase 13's All properties & tags view covers property *names* and
-  tags. It doesn't cover the values inside a chip field, and those have the
-  same problem one level down: an option list lives on the node
-  (`CustomPropertySpec.options`), so a status used on thirty pages is thirty
-  separate lists, and renaming "Draft" to "Drafting" is thirty edits. The
-  sequencing note that sent the index view second in the phase predicted this
-  ("a values list is the second thing anyone wants to rename in bulk") and it
-  turned out to be a third index rather than a fourth column of the one built.
-  **Not built on purpose — raise it with the user before scoping**, because the
-  honest fix might be moving option lists off the node entirely, which is a
-  storage change and not a view.
-
 - **Duplicate doesn't work on a multi-selection.** The right-click menu hides it
   above one selected row rather than looping `duplicateNode`, which writes
   through `saveNodes` without a relocation pass — adding several nodes at once
@@ -283,6 +270,16 @@ Shipped as `AllPropertiesModal.tsx`, off the search palette's footer and **Ctrl+
 - **It re-plans at the click, not from the preview's patches.** The sentence shown before you press and the change made when you do are two runs of the same pure function against whatever the graph is at that moment.
 
 **Where it lives:** the search palette's footer plus its own shortcut, the user's call (*"a full-size modal off the command palette"*, 2026-08-09). Second and last user of `.ui-modal-xl` — see the amended comment in `controls.css`.
+
+**Chip options got the same treatment, same day** (*"we might as well deal w the chip option now"*). The sequencing note above predicted a values list would be the next thing anyone wants to rename in bulk, and it was — a status used on thirty pages was thirty separate option lists.
+
+The obvious fix was to move option lists off the node into `project.json`, and **that would have been wrong**: an option list sitting next to the values it explains is what lets a page's JSON file be read on its own, which is the entire argument for file-per-node in `CLAUDE.md`. Moving it would leave `Valera Jiang/_page.json` saying `"status": "o-3f2a"` with nothing on the page to say what that means. So options stay on the node, and three cheaper things make them behave as if they were shared:
+
+- **Seeded on creation** — `knownOptionsFor` gives a new copy of a chip property the vocabulary already in use for that name **on pages of the same template**. Not by name alone: "Type" is a suggested property on locations, factions, items *and* events, and a location's City/Village/Ruin has no business on a sword.
+- **Ids and colours are copied, never regenerated.** Two pages sharing an option id is harmless — ids only need to be unique within one spec — and it's what makes "the same option" mean something across pages.
+- **A "Used elsewhere" group in the dropdown**, so an option invented on page three can be adopted by page seven as itself rather than as a lookalike with the next colour in the rotation. Typing its name adopts it too.
+
+Order is taken from the longest list already in use rather than rebuilt by popularity, because a status *is* a sequence — Draft, In progress, Needs revision, Done — and sorting it by use count turns it into nonsense.
 
 **Not in scope, unchanged:** property types on tags (a tag is a bare string and should stay one), and tag hierarchies (`#char/valera`).
 
