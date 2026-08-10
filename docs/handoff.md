@@ -17,7 +17,7 @@ Kept short on purpose — this file is read most sessions.
 ## Where We Are
 
 **Phases 0–13 are done. The app is shippable**, and **Phase 14 (Everyday
-Navigation) is next.** `docs/plan.md` has phases 14–25 plus the unscheduled
+Navigation) is next.** `docs/plan.md` has phases 14–26 plus the unscheduled
 Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
 
 The most recent ones are the ones a new session is most likely to touch.
