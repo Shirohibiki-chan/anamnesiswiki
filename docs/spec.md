@@ -41,7 +41,7 @@ Each project is a folder on disk. The user picks the folder location on first la
 ├── project.json                         # tree order, expanded state, selection
 ├── Canon/
 │   ├── _folder.json                     # folder's own metadata (color, tags)
-│   ├── Main Story.json                  # a leaf page — never has children
+│   ├── Main Story.json                  # a page with nothing inside it yet
 │   └── Side Stories.json
 ├── AUs/
 │   ├── _folder.json
@@ -63,7 +63,7 @@ Each project is a folder on disk. The user picks the folder location on first la
 
 **Corrected 2026-07-30.** This diagram originally showed characters as flat `Valera Jiang.json` files. That was the pre-build plan; it isn't what got built, and the difference matters.
 
-**Two storage kinds.** Folders *and* any nestable non-folder template (character, location, faction, species) store themselves inside their own directory — `_folder.json` or `_page.json` respectively — alongside their children. Leaf templates (item, event, note) can never have children, so they stay a flat `Name.json` with no wrapping directory.
+**Two storage kinds.** Folders *and* any always-directory template (character, location, faction, species) store themselves inside their own directory — `_folder.json` or `_page.json` respectively — alongside their children, whether or not they currently have any. The rest (item, event, note, blank) stay a flat `Name.json` with no wrapping directory *until something is put inside them*, at which point they convert. **Every page can hold pages** — corrected 2026-08-10, when the restriction was lifted; see `docs/handoff.md` §Storage.
 
 **Why a page gets its own directory at all**: a directory's ownership must never be derived from its *current* name. The original flat scheme matched children to parents by filename, which meant renaming a page — or a sibling's collision suffix shifting — silently orphaned everything under it on the next load. That happened in Phase 4. The marker file is now what identifies ownership, and it survives any rename.
 

@@ -221,11 +221,12 @@ describe("buildImportPlan", () => {
     });
   });
 
-  describe("nestability net", () => {
-    // Regression: a page LK let hold sub-pages used to be able to land on a
-    // leaf template, which dropped the sub-pages from the tree entirely and
-    // wrote them where the loader would never find them again.
-    it("never classifies a resource with children as a template that can't hold them", () => {
+  describe("pages that hold pages", () => {
+    // Until 2026-08-10 this asserted the opposite: a resource with children
+    // was forced to `folder`, because our leaf templates couldn't hold pages.
+    // Now they can, so the inferred template stands and the page keeps its own
+    // writing — which is what the .lk file said in the first place.
+    it("keeps the inferred template for a resource that has children", () => {
       const plan = buildImportPlan(
         withRoot([
           resource("parent", "Magic System", "A", { documents: [doc("d1", "Rules", "A")] }),
@@ -234,18 +235,11 @@ describe("buildImportPlan", () => {
       );
       const parent = plan.nodes.find((n) => n.name === "Magic System")!;
       const child = plan.nodes.find((n) => n.name === "Blood Magic")!;
-      expect(parent.templateKey).toBe("folder");
+      expect(parent.templateKey).toBe("note");
       expect(child.parentId).toBe(parent.id);
     });
 
-    it("keeps a leaf template for the same page when it has no children", () => {
-      const plan = buildImportPlan(
-        withRoot([resource("a", "Magic System", "A", { documents: [doc("d1", "Rules", "A")] })]),
-      );
-      expect(plan.nodes[0].templateKey).toBe("note");
-    });
-
-    it("reports the dropped text when a page with children and its own writing is promoted", () => {
+    it("keeps the text of a page that has both sub-pages and its own writing", () => {
       const plan = buildImportPlan(
         withRoot([
           resource("parent", "Magic System", "A", {
@@ -254,7 +248,17 @@ describe("buildImportPlan", () => {
           resource("child", "Blood Magic", "B", { parentId: "parent" }),
         ]),
       );
-      expect(plan.lossyNotes.some((note) => note.includes("sub-pages and their own text"))).toBe(true);
+      const parent = plan.nodes.find((n) => n.name === "Magic System")!;
+      expect(parent.tabs.length).toBeGreaterThan(0);
+      expect(JSON.stringify(parent.tabs)).toContain("Mana is finite.");
+      expect(plan.lossyNotes.some((note) => note.includes("sub-pages and their own text"))).toBe(false);
+    });
+
+    it("keeps a leaf template for the same page when it has no children", () => {
+      const plan = buildImportPlan(
+        withRoot([resource("a", "Magic System", "A", { documents: [doc("d1", "Rules", "A")] })]),
+      );
+      expect(plan.nodes[0].templateKey).toBe("note");
     });
 
     it("gives a folder-classified resource no tabs, and flags it if it had real text", () => {

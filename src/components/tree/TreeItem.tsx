@@ -31,7 +31,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const effective = useEffectiveColor(node.id);
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive, requestExport } = useDialogs();
-  const { getLabel, canHaveChildren } = useTemplates();
+  const { getLabel } = useTemplates();
   const revealNode = useRevealNode();
   const fileManagerName = useFileManagerName();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
@@ -40,7 +40,6 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   if (!fullNode) return null;
 
   const isFolder = fullNode.templateKey === FOLDER_TEMPLATE_KEY;
-  const nestable = canHaveChildren(fullNode.templateKey);
   const { color: effectiveKey, isOwner } = effective;
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const ownHex = getPaletteHex(fullNode.color);
@@ -48,7 +47,10 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const showFolderTint = isFolder && !!effectiveHex;
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isProjectHome = homeNodeId === node.id;
-  const showToggle = hasChildren || (nestable && node.isOpen);
+  // Every page can hold pages now, so the chevron is purely about whether
+  // there's anything to reveal — an empty page shows none. `node.isOpen` keeps
+  // it visible through the moment a page is added, before the child arrives.
+  const showToggle = hasChildren || node.isOpen;
 
   const rowStyle: CSSProperties = {
     borderLeft: ownHex ? `2px solid ${ownHex}` : "2px solid transparent",
@@ -177,20 +179,19 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           }}
         />
 
-        {nestable && (
-          <button
-            type="button"
-            className="tree-row-add"
-            title="New page inside"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (openPopover === "add") closePopover();
-              else openPopoverAt("add", e.currentTarget);
-            }}
-          >
-            <Plus size={12} />
-          </button>
-        )}
+        {/* On every row: there's no longer a kind of page that can't hold one. */}
+        <button
+          type="button"
+          className="tree-row-add"
+          title="New page inside"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (openPopover === "add") closePopover();
+            else openPopoverAt("add", e.currentTarget);
+          }}
+        >
+          <Plus size={12} />
+        </button>
       </div>
 
       {openPopover === "color" && anchorRect && (
@@ -213,7 +214,6 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
       {openPopover === "menu" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
-            canHaveChildren={nestable}
             isProjectHome={isProjectHome}
             selectionCount={selectionCount}
             fileManagerName={fileManagerName}

@@ -16,7 +16,7 @@ import {
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
-import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
+import { getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import {
   EMPTY_NAV_HISTORY,
@@ -893,15 +893,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const moving = ids.filter((id) => nodes[id]);
       if (moving.length === 0) return;
 
-      // A leaf template has no directory of its own, so a child filed under it
-      // is written into a plain directory with no marker in it and vanishes
-      // from the tree on the next load. The tree already refuses this drop
-      // (TreePanel's disableDrop); this is the backstop, because losing a
-      // subtree is too expensive to guard in one place only.
-      if (newParentId) {
-        const newParent = nodes[newParentId];
-        if (!newParent || !canHaveChildren(newParent.templateKey)) return;
-      }
+      // The parent still has to exist — a drop onto an id that isn't in the
+      // graph would file a subtree nowhere. What's gone from this guard is the
+      // template test: a leaf gaining a child now grows a directory to hold it
+      // rather than losing it (see filesystem-service's `usesDirectoryStorage`).
+      if (newParentId && !nodes[newParentId]) return;
 
       // Same stale-path race as renameNode above.
       await Promise.all(moving.map((id) => flushSave(id)));

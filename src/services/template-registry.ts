@@ -22,7 +22,19 @@ export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 export type TemplateDefinition = {
   key: TemplateKey;
   label: string;
-  canHaveChildren: boolean;
+  /**
+   * Whether a page of this template is a directory on disk even with nothing
+   * inside it. **Not** a permission — every page can hold pages, and one made
+   * from a template with this false grows a directory the moment it does (see
+   * filesystem-service's `usesDirectoryStorage`).
+   *
+   * True for the templates that normally acquire children — folder, character,
+   * location, faction, species — so their shape doesn't churn as the last
+   * child comes and goes. It was called `canHaveChildren` until 2026-08-10,
+   * when nesting stopped depending on the template; the old name would now
+   * read as a restriction that no longer exists.
+   */
+  alwaysDirectory: boolean;
   tabs: TabSeed[];
   properties: PropertySpec[];
 };
@@ -51,21 +63,21 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   folder: {
     key: "folder",
     label: "Folder",
-    canHaveChildren: true,
+    alwaysDirectory: true,
     tabs: [],
     properties: [],
   },
   blank: {
     key: "blank",
     label: "Blank",
-    canHaveChildren: false,
+    alwaysDirectory: false,
     tabs: [],
     properties: [],
   },
   character: {
     key: "character",
     label: "Character",
-    canHaveChildren: true,
+    alwaysDirectory: true,
     tabs: [
       {
         id: "overview",
@@ -106,7 +118,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   location: {
     key: "location",
     label: "Location",
-    canHaveChildren: true,
+    alwaysDirectory: true,
     tabs: [
       {
         id: "overview",
@@ -155,7 +167,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   faction: {
     key: "faction",
     label: "Faction",
-    canHaveChildren: true,
+    alwaysDirectory: true,
     tabs: [
       {
         id: "overview",
@@ -197,7 +209,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   item: {
     key: "item",
     label: "Item",
-    canHaveChildren: false,
+    alwaysDirectory: false,
     tabs: [
       {
         id: "overview",
@@ -236,7 +248,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   event: {
     key: "event",
     label: "Event",
-    canHaveChildren: false,
+    alwaysDirectory: false,
     tabs: [
       {
         id: "overview",
@@ -277,7 +289,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   species: {
     key: "species",
     label: "Species",
-    canHaveChildren: true,
+    alwaysDirectory: true,
     tabs: [
       {
         id: "overview",
@@ -357,7 +369,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   note: {
     key: "note",
     label: "Note",
-    canHaveChildren: false,
+    alwaysDirectory: false,
     tabs: [
       {
         id: "overview",
@@ -378,8 +390,8 @@ export function getTemplate(key: string): TemplateDefinition | undefined {
   return TEMPLATE_REGISTRY[key as TemplateKey];
 }
 
-export function canHaveChildren(key: string): boolean {
-  return getTemplate(key)?.canHaveChildren ?? false;
+export function alwaysDirectory(key: string): boolean {
+  return getTemplate(key)?.alwaysDirectory ?? false;
 }
 
 export function getPropertySchema(key: string): PropertySpec[] {

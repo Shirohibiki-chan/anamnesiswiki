@@ -2,7 +2,6 @@
 // into the nested shape react-arborist wants, and computes each node's
 // effective (cascaded) color. See docs/glossary.md §Color Cascade.
 import Fuse from "fuse.js";
-import { canHaveChildren } from "./template-registry";
 import type { Node } from "../constants/schema";
 
 export type TreeNodeData = {
@@ -56,7 +55,12 @@ export function buildTreeData(
       id: node.id,
       name: node.name,
       templateKey: node.templateKey,
-      children: canHaveChildren(node.templateKey) ? buildChildren(node.id) : null,
+      // Always an array, never null. react-arborist reads a null `children` as
+      // "this is a leaf" and won't let anything be dropped *onto* it — which
+      // was right while leaf templates couldn't hold pages and is wrong now
+      // that any page can. An empty array still renders without a chevron,
+      // because TreeItem shows the toggle only when there's something in there.
+      children: buildChildren(node.id),
     }));
   }
 

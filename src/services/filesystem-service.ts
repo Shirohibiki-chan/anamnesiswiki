@@ -15,7 +15,7 @@ import {
   type DirEntry,
 } from "@tauri-apps/plugin-fs";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
-import { canHaveChildren } from "./template-registry";
+import { alwaysDirectory } from "./template-registry";
 import {
   ASSETS_DIR,
   BACKUPS_DIR,
@@ -129,15 +129,34 @@ function isFolderNode(node: Node): boolean {
   return node.templateKey === FOLDER_TEMPLATE_KEY;
 }
 
-// Folders and any nestable non-folder template (character/location/faction/
-// species) both store themselves inside their own directory rather than as
-// a flat sibling file — the directory holds their own marker file (which
-// one depends on ownMetaFileName) plus their children. This makes a node's
-// directory identity independent of its current name, unlike a bare
-// "match by filename" scheme, which breaks permanently the moment the node
-// is renamed.
-function usesDirectoryStorage(node: Node): boolean {
-  return isFolderNode(node) || canHaveChildren(node.templateKey);
+// Whether a node stores itself inside a directory of its own — holding its
+// marker file (`ownMetaFileName`) plus its children — rather than as a flat
+// sibling `.json`. Directory storage is what makes a node's identity on disk
+// independent of its current name; a bare "match by filename" scheme breaks
+// permanently the moment the node is renamed.
+//
+// Two ways to qualify, and the difference matters:
+//
+//   - **`alwaysDirectory` templates** (folder, character, location, faction,
+//     species) are a directory even while empty. They are the ones that
+//     normally acquire children, and churning their storage shape as the last
+//     child comes and goes would be noise.
+//   - **Everything else earns a directory by actually having a child.** A note
+//     with nothing under it stays one readable `New Note.json`; put a page
+//     inside it and it becomes `New Note/` with `_page.json` in it.
+//
+// The second rule is what lets *any* page hold pages (2026-08-10). Deciding
+// from the live graph rather than from the template is deliberate: a page can
+// now be created before its template is chosen, so the template cannot be what
+// answers this. Note that no existing project moves — every template that was
+// a directory before still is.
+// `parentIds` is required, not optional, and is passed as the bare set so
+// `buildPathIndex` can call this before it has a whole index to hand. An
+// optional parameter here would default a converted note back to its flat
+// path at any call site that forgot it, and write its page over open ground —
+// the storage layer is where a silently-wrong default costs real work.
+function usesDirectoryStorage(node: Node, parentIds: ReadonlySet<string>): boolean {
+  return isFolderNode(node) || alwaysDirectory(node.templateKey) || parentIds.has(node.id);
 }
 
 function ownMetaFileName(node: Node): string {
@@ -158,6 +177,13 @@ function byCreationOrder(a: Node, b: Node): number {
 export type PathIndex = {
   byId: Map<string, Node>;
   segmentById: Map<string, string>;
+  /**
+   * Ids that have at least one child in this snapshot. Storage shape depends
+   * on it — see `usesDirectoryStorage` — which is why it lives in the index
+   * rather than being recomputed: a scan per node would be quadratic, and the
+   * whole point of the index is that path questions cost a node's depth.
+   */
+  parentIds: Set<string>;
 };
 
 // Siblings sharing a sanitized name would collide on disk, so later ones (by
@@ -175,6 +201,15 @@ export function buildPathIndex(allNodes: Node[]): PathIndex {
   const sanitizedById = new Map<string, string>();
   const collisionGroups = new Map<string, Node[]>();
 
+  // First pass and separate on purpose: the collision key below asks whether
+  // each node is directory-stored, and for a leaf template that answer depends
+  // on whether anything is parented to it — which isn't known until every node
+  // has been seen.
+  const parentIds = new Set<string>();
+  for (const node of allNodes) {
+    if (node.parentId) parentIds.add(node.parentId);
+  }
+
   for (const node of allNodes) {
     byId.set(node.id, node);
     const baseName = sanitizeSegment(node.name);
@@ -184,7 +219,7 @@ export function buildPathIndex(allNodes: Node[]): PathIndex {
     // file to the OS, so without folding neither gets a suffix and the second
     // write silently lands on top of the first. The *displayed* segment keeps
     // its original case — only the collision test ignores it.
-    const groupKey = JSON.stringify([node.parentId, usesDirectoryStorage(node), baseName.toLowerCase()]);
+    const groupKey = JSON.stringify([node.parentId, usesDirectoryStorage(node, parentIds), baseName.toLowerCase()]);
     const group = collisionGroups.get(groupKey);
     if (group) group.push(node);
     else collisionGroups.set(groupKey, [node]);
@@ -203,7 +238,7 @@ export function buildPathIndex(allNodes: Node[]): PathIndex {
     });
   }
 
-  return { byId, segmentById };
+  return { byId, segmentById, parentIds };
 }
 
 // A node not present in the index it's resolved against still has to produce
@@ -240,7 +275,7 @@ export function resolveNodePath(node: Node, graph: Node[] | PathIndex): Resolved
     current = current.parentId ? index.byId.get(current.parentId) : undefined;
   }
 
-  if (usesDirectoryStorage(node)) {
+  if (usesDirectoryStorage(node, index.parentIds)) {
     return { dirSegments: [...ancestorSegments, ownSegment(node, index)], fileName: ownMetaFileName(node) };
   }
   return { dirSegments: ancestorSegments, fileName: `${ownSegment(node, index)}.json` };
@@ -498,7 +533,7 @@ export async function deleteNodes(
   for (const node of nodes) {
     const { dirSegments, fileName } = resolveNodePath(node, indexBefore);
     const dirPath = joinPath(rootPath, ...dirSegments);
-    if (usesDirectoryStorage(node)) {
+    if (usesDirectoryStorage(node, indexBefore.parentIds)) {
       await remove(dirPath, { recursive: true });
     } else {
       await remove(joinPath(dirPath, fileName));
@@ -523,7 +558,19 @@ export async function deleteNode(
 // caller never needs to know which one it got.
 function storageUnit(node: Node, index: PathIndex): string[] {
   const { dirSegments, fileName } = resolveNodePath(node, index);
-  return usesDirectoryStorage(node) ? dirSegments : [...dirSegments, fileName];
+  return usesDirectoryStorage(node, index.parentIds) ? dirSegments : [...dirSegments, fileName];
+}
+
+// The node's *own* file, never the directory around it. Used only for the two
+// sides of a storage conversion, where the thing that moves is the page file
+// itself rather than the whole unit: `New Note.json` becomes
+// `New Note/_page.json` when the note's first child arrives, and back again
+// when its last one leaves. `storageUnit` can't express that — it answers with
+// the directory the moment the node is directory-stored, and renaming a file
+// *to* a directory path is not the same operation.
+function ownFileUnit(node: Node, index: PathIndex): string[] {
+  const { dirSegments, fileName } = resolveNodePath(node, index);
+  return [...dirSegments, fileName];
 }
 
 /**
@@ -544,7 +591,22 @@ export async function findNodeOnDisk(rootPath: string, node: Node, graph: Node[]
   return (await exists(path)) ? path : null;
 }
 
-export type Relocation = { oldSegments: string[]; newSegments: string[] };
+export type Relocation = {
+  oldSegments: string[];
+  newSegments: string[];
+  /**
+   * A directory to try removing once the move lands — set only when a node
+   * converts back from directory storage to a flat file, where the directory
+   * it just moved out of is left behind empty.
+   *
+   * Best-effort and deliberately non-recursive: if anything is still in there
+   * the removal fails and the folder stays, which is the behaviour to want.
+   * Nothing depends on it succeeding — a stray empty directory is untidy in
+   * her project folder and otherwise inert, and if the node ever gains a child
+   * again the conversion simply reuses it.
+   */
+  pruneDir?: string[];
+};
 
 // Renaming and reparenting both boil down to "this node's resolved path
 // changed" — but the node the user acted on is not always the only one that
@@ -578,7 +640,28 @@ export function planRelocations(
     // descendants must not be moved a second time. Only a node whose own
     // segment or own parent changed needs a filesystem operation of its own.
     const ownSegmentChanged = ownSegment(before, indexBefore) !== ownSegment(after, indexAfter);
-    if (!ownSegmentChanged && before.parentId === after.parentId) continue;
+    // A leaf-template node changes storage shape when it gains its first child
+    // or loses its last — its name and its parent are both untouched, so
+    // without this test the conversion plans nothing and the next save writes
+    // the page to a path that no longer describes where it lives.
+    const wasDirectory = usesDirectoryStorage(before, indexBefore.parentIds);
+    const isDirectory = usesDirectoryStorage(after, indexAfter.parentIds);
+    const storageShapeChanged = wasDirectory !== isDirectory;
+    if (!ownSegmentChanged && !storageShapeChanged && before.parentId === after.parentId) continue;
+
+    // A conversion moves the page file into (or out of) a directory of its own,
+    // so both sides are file paths. `applyRelocations` makes the parent
+    // directory before every rename, which is what creates `New Note/` here.
+    if (storageShapeChanged) {
+      const oldSegments = ownFileUnit(before, indexBefore);
+      plan.push({
+        oldSegments,
+        newSegments: ownFileUnit(after, indexAfter),
+        // Going back to flat empties the directory the page file just left.
+        ...(wasDirectory ? { pruneDir: oldSegments.slice(0, -1) } : {}),
+      });
+      continue;
+    }
 
     plan.push({
       oldSegments: storageUnit(before, indexBefore),
@@ -596,6 +679,20 @@ export function planRelocations(
 // directory still carries its own `_page.json`, so even a crash mid-shuffle
 // leaves the node loadable (under an odd directory name that the next save
 // corrects) rather than lost.
+// Best-effort, and every failure is deliberately silent: a directory that
+// still has something in it *should* refuse to go, and a stray empty one is
+// inert. Never recursive — that flag is what would turn this from tidying up
+// into deleting a subtree.
+async function pruneEmptyDir(rootPath: string, item: Relocation): Promise<void> {
+  if (!item.pruneDir || item.pruneDir.length === 0) return;
+  try {
+    await remove(joinPath(rootPath, ...item.pruneDir));
+  } catch {
+    // Not empty, or gone already. Either way there's nothing to do and
+    // nothing that depends on it.
+  }
+}
+
 async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<void> {
   if (plan.length === 0) return;
 
@@ -603,6 +700,7 @@ async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<v
     const [only] = plan;
     await mkdir(joinPath(rootPath, ...only.newSegments.slice(0, -1)), { recursive: true });
     await rename(joinPath(rootPath, ...only.oldSegments), joinPath(rootPath, ...only.newSegments));
+    await pruneEmptyDir(rootPath, only);
     return;
   }
 
@@ -631,6 +729,10 @@ async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<v
       await rename(item.tempPath, joinPath(rootPath, ...item.newSegments));
       staged.shift();
     }
+    // After every move, never between them: a directory being emptied by one
+    // conversion can be the same directory another item is still staged out
+    // of, and removing it early would fail that move instead of this prune.
+    for (const item of plan) await pruneEmptyDir(rootPath, item);
   } catch (error) {
     for (const item of staged) {
       // A failed rollback leaves that one under its temp name, which the load

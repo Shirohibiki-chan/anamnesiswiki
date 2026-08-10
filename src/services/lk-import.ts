@@ -8,7 +8,7 @@
 import { fetch as httpFetch } from "@tauri-apps/plugin-http";
 import { COLOR_PALETTE } from "../constants/palette";
 import { createTab, FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
-import { canHaveChildren, getPropertySchema, type TemplateKey } from "./template-registry";
+import { getPropertySchema, type TemplateKey } from "./template-registry";
 
 // ---- Raw .lk shapes (loose — only the fields we actually read) ----
 type LkMark = { type: string; attrs?: Record<string, unknown> };
@@ -86,9 +86,7 @@ const TAB_SIGNATURE_TEMPLATES: { tabs: string[]; templateKey: TemplateKey }[] = 
   { tabs: ["Overview", "Backstory"], templateKey: "character" },
 ];
 
-type InferredTemplate = { templateKey: TemplateKey; promotedForChildren: boolean };
-
-function inferTemplateKey(tabNames: string[], hasChildren: boolean): InferredTemplate {
+function inferTemplateKey(tabNames: string[], hasChildren: boolean): TemplateKey {
   const present = new Set(tabNames);
   const matched = TAB_SIGNATURE_TEMPLATES.find((signature) => signature.tabs.every((tab) => present.has(tab)));
 
@@ -97,17 +95,18 @@ function inferTemplateKey(tabNames: string[], hasChildren: boolean): InferredTem
   else if (tabNames.join("|") === "Main") templateKey = hasChildren ? "folder" : "note";
   else templateKey = "note";
 
-  // Nestability net: LK lets any page hold sub-pages, but our leaf templates
-  // (item/event/note) can't — and a leaf node is stored as a flat `Name.json`
-  // with no directory of its own, so its children get written into a
-  // directory the loader doesn't recognize as node-owned and are gone for
-  // good on the next project load, with nothing shown in the tree meanwhile.
-  // Falling back to `folder` keeps the sub-pages; the page's own text is
-  // dropped in that case, which is reported in the import preview.
-  if (hasChildren && !canHaveChildren(templateKey)) {
-    return { templateKey: FOLDER_TEMPLATE_KEY, promotedForChildren: true };
-  }
-  return { templateKey, promotedForChildren: false };
+  // There used to be a "nestability net" here: an inferred leaf template
+  // (item/event/note) that had sub-pages was forced to `folder` instead,
+  // because a leaf had no directory of its own and its children would have
+  // been written somewhere the loader didn't recognise and lost. Folders hold
+  // no text, so that promotion *dropped the page's own writing* and said so in
+  // the preview.
+  //
+  // Removed 2026-08-10, when any page became able to hold pages. An imported
+  // LK page now keeps both its sub-pages and its own text, which is what the
+  // `.lk` file said in the first place — this net was always a concession to
+  // our storage model rather than anything LK asked for.
+  return templateKey;
 }
 
 // ---- iconColor -> our palette (nearest by RGB distance); LK's own "unset" value is white ----
@@ -146,8 +145,6 @@ function describeLossy(tracker: LossyTracker): string[] {
   const notes: string[] = [];
   const folders = tracker.get("folderContentDropped");
   if (folders) notes.push(`${plural(folders, "organizing page")} had their own text, which isn't kept — pages used purely as containers don't hold content here.`);
-  const promoted = tracker.get("promotedPageContentDropped");
-  if (promoted) notes.push(`${plural(promoted, "page")} had both sub-pages and their own text. They became folders so the sub-pages come across, which means their own text isn't kept.`);
   const columns = tracker.get("columns");
   if (columns) notes.push(`${plural(columns, "multi-column layout")} were flattened into a single column.`);
   const embeds = tracker.get("embeds");
@@ -473,12 +470,12 @@ export function buildImportPlan(raw: unknown): ImportPlan {
       const newId = idMap.get(resource.id)!;
       const hasChildren = (byParent.get(resource.id) ?? []).length > 0;
       const sortedDocs = [...resource.documents].sort((a, b) => posCompare(a.pos, b.pos));
-      const { templateKey, promotedForChildren } = inferTemplateKey(sortedDocs.map((d) => d.name), hasChildren);
+      const templateKey = inferTemplateKey(sortedDocs.map((d) => d.name), hasChildren);
       templateCounts[templateKey] = (templateCounts[templateKey] ?? 0) + 1;
 
       const isFolder = templateKey === FOLDER_TEMPLATE_KEY;
       if (isFolder && sortedDocs.some((d) => textLength(d.content?.content))) {
-        bump(lossy, promotedForChildren ? "promotedPageContentDropped" : "folderContentDropped");
+        bump(lossy, "folderContentDropped");
       }
 
       const tabs: Tab[] = isFolder

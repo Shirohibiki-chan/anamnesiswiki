@@ -6,7 +6,6 @@ import { Tree, type TreeApi } from "react-arborist";
 import { TREE_INDENT } from "../../constants/layout";
 import { useProject } from "../../hooks/use-project";
 import { useSearchMatcher, useTreeData, type TreeSearchMode } from "../../hooks/use-tree-data";
-import { useTemplates } from "../../hooks/use-templates";
 import { useElementSize } from "../../hooks/use-element-size";
 import type { TreeNodeData } from "../../services/tree-service";
 import { TreeItem } from "./TreeItem";
@@ -15,7 +14,7 @@ import { TreeSearch } from "./TreeSearch";
 export function TreePanel() {
   const { project, renameNode, moveNodes, setExpanded, selectNode } = useProject();
   const { treeData, getAncestorChain } = useTreeData();
-  const { canHaveChildren } = useTemplates();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<TreeSearchMode>("all");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
@@ -70,18 +69,14 @@ export function TreePanel() {
             initialOpenState={initialOpenState}
             searchTerm={searchQuery}
             searchMatch={(node) => (searchMatcher ? searchMatcher(node.data.id) : true)}
-            // A page dropped onto a leaf template (item/event/note/blank) is a
-            // tree the storage model can't represent: a leaf has no directory
-            // of its own, so its would-be children get written into a plain
-            // directory with no marker file in it. Until this existed the drop
-            // was allowed, looked fine until the next load, and then the whole
-            // subtree disappeared — see docs/handoff.md §Loading. The root
-            // (`parentNode` is the invisible root node, id "__REACT_ARBORIST_
-            // INTERNAL_ROOT__") always accepts drops.
-            disableDrop={({ parentNode }) => {
-              const templateKey = parentNode?.data?.templateKey;
-              return templateKey ? !canHaveChildren(templateKey) : false;
-            }}
+            // No `disableDrop`: every page can hold pages as of 2026-08-10.
+            // There used to be one, because a leaf template had no directory
+            // of its own and its would-be children were written into a plain
+            // directory with no marker in it — the drop looked fine until the
+            // next load, and then the whole subtree was gone. The storage
+            // model now grows a directory for a leaf that gains a child (see
+            // filesystem-service's `usesDirectoryStorage`), so the shape the
+            // guard existed to prevent can no longer occur.
             onRename={({ id, name }) => renameNode(id, name)}
             onMove={({ dragIds, parentId, index }) => {
               // react-arborist reports the drop index within the destination
