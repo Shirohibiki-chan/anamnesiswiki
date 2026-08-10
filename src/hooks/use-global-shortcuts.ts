@@ -13,6 +13,9 @@ export type GlobalShortcutHandlers = {
   onSave: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
+  onNavigateHome: () => void;
 };
 
 /**
@@ -28,6 +31,9 @@ export function useGlobalShortcuts({
   onSave,
   onUndo,
   onRedo,
+  onNavigateBack,
+  onNavigateForward,
+  onNavigateHome,
 }: GlobalShortcutHandlers): void {
   useEffect(() => {
     const handlers: Record<ShortcutAction, () => void> = {
@@ -37,6 +43,9 @@ export function useGlobalShortcuts({
       save: onSave,
       undo: onUndo,
       redo: onRedo,
+      navigateBack: onNavigateBack,
+      navigateForward: onNavigateForward,
+      navigateHome: onNavigateHome,
     };
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -73,5 +82,5 @@ export function useGlobalShortcuts({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSearch, onAllProperties, onNewPage, onSave, onUndo, onRedo]);
+  }, [onSearch, onAllProperties, onNewPage, onSave, onUndo, onRedo, onNavigateBack, onNavigateForward, onNavigateHome]);
 }

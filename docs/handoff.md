@@ -745,6 +745,50 @@ is below.
   it turns out to be stolen, the fix is a different default binding, not a
   fight with the webview. `Cmd+S` is the ordinary case and behaves.
 
+## Navigation
+
+- **`selectNode` is the only thing that records a visit, and that is the whole
+  design.** Phase 14's back/forward stack lives in `navigation-service.ts` as
+  pure functions over `{ entries, index }`; the store appends to it inside
+  `selectNode` and nowhere else. Nine call sites navigate today — the tree, the
+  breadcrumb, mentions and wikilinks, search results, the All properties view,
+  the sidebar's home button, a newly created page — and none of them knows the
+  history exists. **Don't add a second path that sets `selectedId` directly.**
+  `goBack`/`goForward` are the deliberate exception and go through
+  `applySelection`, which is `selectNode` minus the recording; anything else
+  that skips the recording is a page you can't get back from.
+
+- **This is not the undo history and must never share a key or a button with
+  it.** `history-service.ts` reverses *edits*; this reverses *location*.
+  Pressing Back after a rename goes to the previous page with the rename
+  intact, and that distinction is the feature — see the top of
+  `navigation-service.ts`.
+
+- **A deleted page has to leave the stack in the same write that deletes it.**
+  `deleteNodes` calls `forgetNodes` with the whole removed subtree, for exactly
+  the reason it already clears `selectedId` and `homeNodeId`: Back landing on a
+  page that no longer exists renders an empty page view with nothing to explain
+  it. Removal can leave the same location either side of the gap, so duplicates
+  collapse — two identical entries in a row make Back look broken.
+
+- **Nothing here is written to disk, and that's a decision.** Reopening a
+  project starts the stack from the page you left, with nothing behind it. A
+  persisted trail would offer Back to a page from nine days ago and would hold
+  ids for pages that may not exist anymore.
+
+- **Alt with a *named* key is a legal binding; Alt with a letter is not.** The
+  shortcut rule was "Ctrl/Cmd or a function key", which would have refused
+  Alt+←. `isAltNamedKey` in `shortcut-service.ts` is the third case, and the
+  test behind it is *can this keypress produce a character* — `event.key`
+  longer than one character means no. Alt+letter types å on a Mac and opens
+  menus on Windows, so it stays refused. **Known and unfixed:** Alt+←/→ are
+  move-by-word in a text field on macOS, so these defaults take a keypress the
+  OS wants there. The fix, if it ever matters, is per-platform defaults —
+  nothing else in `constants/shortcuts.ts` has them, which is why it wasn't
+  done for one action.
+
+---
+
 ## Undo
 
 - **An entry is two closures, not a diff.** `state/history-store.ts` holds a

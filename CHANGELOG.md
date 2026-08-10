@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-10 — back, forward and home buttons
+
+### Additions
+
+- **Back and forward, at the top left of the page.** They walk the pages you've opened this session, the way a browser's do — click a mention, read it, press Back and you're where you were. **Alt+←** and **Alt+→** do the same from the keyboard.
+  - It follows *where you've been*, not what you've changed. Pressing Back after renaming something takes you to the previous page with the rename still there — undo is still Ctrl+Z and is a separate thing entirely.
+  - Every way of getting to a page counts: clicking the tree, clicking a mention or a `[[wikilink]]`, opening a search result, clicking a breadcrumb, or making a new page.
+  - Going somewhere new after going back drops the forward trail, same as a browser.
+  - It starts empty each time you open the app. Back offering a page you last looked at nine days ago isn't much use, so the trail is only ever this session's.
+  - Deleting a page takes it out of the trail too, so Back can never land you on a page that isn't there anymore.
+- **A home button beside them**, and **Alt+Home**, going to whatever page you've set as the project's home — the same place the little house in the sidebar goes. If you haven't set one, the button says so when you hover it rather than sitting there greyed out for no reason.
+- **All three can be rebound** in Settings → Keyboard like every other shortcut.
+
+### Adjustments
+
+- **Alt with an arrow or another named key is now a legal shortcut** to assign. Shortcuts used to need Ctrl or Cmd (or a function key) so they couldn't fire while you were typing — but Alt+← types nothing, so the rule was stricter than it needed to be and would have refused the very keys Back and Forward arrive on. Alt with a *letter* is still refused, because that does type things on a Mac.
+
 ## 2026-08-10 — one place that lists every property and every tag you've used
 
 ### Additions

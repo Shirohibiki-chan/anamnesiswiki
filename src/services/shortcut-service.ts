@@ -149,6 +149,20 @@ export function isFunctionKey(key: string): boolean {
   return FUNCTION_KEY.test(key);
 }
 
+/**
+ * Alt held with a key that isn't a character — Alt+←, Alt+Home, Alt+Enter.
+ *
+ * The second escape hatch from the Ctrl/Cmd requirement, and it exists for the
+ * same reason the function-key one does: the rule is really "this must not be
+ * able to fire while someone is typing", and `event.key` being longer than one
+ * character is exactly the test for a keypress that produces no text. Alt with
+ * a *letter* is a different matter — on macOS it types å, ∂, ø, and on Windows
+ * it opens menus — so this deliberately doesn't cover it.
+ */
+export function isAltNamedKey(binding: Binding): boolean {
+  return Boolean(binding.alt) && !binding.mod && binding.key.length > 1;
+}
+
 export type BindingProblem = {
   reason: "needsModifier" | "reservedByEditor" | "reservedBySystem" | "alreadyTaken";
   /** Plain-language, shown to the user as-is. */
@@ -200,10 +214,11 @@ export function checkBinding(
  * whole reason app undo can sit on Ctrl+Z. See EDITOR_SCOPED_ACTIONS.
  */
 export function checkBindingShape(binding: Binding, action: ShortcutAction): BindingProblem | null {
-  if (!binding.mod && !isFunctionKey(binding.key)) {
+  if (!binding.mod && !isFunctionKey(binding.key) && !isAltNamedKey(binding)) {
     return {
       reason: "needsModifier",
-      message: "Needs Ctrl or Cmd held down — otherwise it would fire while you're typing. A function key (F1–F12) on its own is fine.",
+      message:
+        "Needs Ctrl or Cmd held down — otherwise it would fire while you're typing. A function key (F1–F12) on its own is fine, and so is Alt with an arrow or another named key.",
     };
   }
 
