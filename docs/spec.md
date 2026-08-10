@@ -164,7 +164,7 @@ Everything a single user needs to build worlds. No sharing, no sync, no accounts
    - Recursive tree matching the prototype's behavior
    - Icons per node type (from Lucide)
    - Drag-and-drop to reparent nodes (react-arborist handles this)
-   - Right-click context menu: rename, duplicate, delete, add child, **set color**
+   - Right-click context menu: new page inside, rename, duplicate, delete, **set color**
    - "+" button on hover to add a child page
    - Search/filter input at the top (name + `#tag` prefix filters by tag)
    - ~~"Project / Templates / Assets" tab strip at the very top~~ — **never built.** Only the Project view was ever going to be functional in Phase 1, so a three-tab strip with two dead tabs was dropped rather than shipped as decoration. Reconsider if Templates or Assets ever get real views.

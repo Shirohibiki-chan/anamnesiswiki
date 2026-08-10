@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-10 — "Add child" works again, and is now called something you can read
+
+### Fixes
+
+- **Right-click → make a new page inside something now works.** It has been dead since the tree was first built: clicking it opened the type picker and closed it in the same instant, so nothing appeared. The **+** button that shows when you hover a row was doing the same job correctly the whole time, which is why the feature never looked missing — only that one route to it.
+
+### Renames
+
+- **"Add child" is now "New page inside."** Same thing, described in words rather than in tree jargon. The hover **+** button's tooltip says the same.
+
 ## 2026-08-10 — find any page's file on your computer
 
 ### Additions

@@ -1,6 +1,6 @@
 // Project name row at the top of the tree — home button, name, and a "+"
-// button to add a top-level node (opens the same type picker as any other
-// "add child" button, just targeting the root instead of a parent node).
+// button to add a top-level node (opens the same type picker as a row's own
+// "New page inside", just targeting the root instead of a parent node).
 //
 // The home icon jumps to whichever page has been designated this project's home
 // (right-click any page → "Set as project home", LK's own arrangement). With
