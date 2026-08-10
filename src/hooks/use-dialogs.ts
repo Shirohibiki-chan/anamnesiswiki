@@ -11,7 +11,11 @@ export function useDialogs() {
   const exportRequest = useDialogStore((s) => s.exportRequest);
   const requestExport = useDialogStore((s) => s.requestExport);
   const closeExport = useDialogStore((s) => s.closeExport);
+  const notice = useDialogStore((s) => s.notice);
+  const dismissNotice = useDialogStore((s) => s.dismissNotice);
   return {
+    notice,
+    dismissNotice,
     pickFolder,
     pickLkFile,
     pickLkSavePath,

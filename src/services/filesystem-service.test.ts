@@ -26,6 +26,7 @@ import {
   buildPathIndex,
   deleteNodes,
   fileNameFromPath,
+  findNodeOnDisk,
   moveNodes,
   PathTooLongError,
   planRelocations,
@@ -480,5 +481,39 @@ describe("fileNameFromPath", () => {
   it("hands back a bare name unchanged, and an empty string for a trailing slash", () => {
     expect(fileNameFromPath("Abyssal.css")).toBe("Abyssal.css");
     expect(fileNameFromPath("/p/themes/")).toBe("");
+  });
+});
+
+describe("findNodeOnDisk", () => {
+  it("points at a leaf page's own .json file", async () => {
+    fsMock.exists.mockImplementation(async () => true);
+    const page = node({ id: "1", name: "A Mysterious Letter", parentId: null, templateKey: "note" });
+
+    expect(await findNodeOnDisk("/p", page, [page])).toBe("/p/A Mysterious Letter.json");
+  });
+
+  it("points at a directory-storage node's directory, not its _page.json", async () => {
+    fsMock.exists.mockImplementation(async () => true);
+    const page = node({ id: "1", name: "Valera Jiang", parentId: null, templateKey: "character" });
+
+    // The directory is the unit that moves when the row is dragged, so it's
+    // the thing to select in a file manager — showing the metadata file
+    // instead would hide the children.
+    expect(await findNodeOnDisk("/p", page, [page])).toBe("/p/Valera Jiang");
+  });
+
+  it("carries the collision suffix, so the second Valera isn't shown as the first", async () => {
+    fsMock.exists.mockImplementation(async () => true);
+    const first = node({ id: "1", name: "Valera Jiang", parentId: null, templateKey: "character" });
+    const second = node({ id: "2", name: "Valera Jiang", parentId: null, templateKey: "character" });
+
+    expect(await findNodeOnDisk("/p", second, [first, second])).toBe("/p/Valera Jiang (2)");
+  });
+
+  it("returns null when nothing is there yet rather than a path that would miss", async () => {
+    fsMock.exists.mockImplementation(async () => false);
+    const page = node({ id: "1", name: "Brand New", parentId: null, templateKey: "note" });
+
+    expect(await findNodeOnDisk("/p", page, [page])).toBeNull();
   });
 });

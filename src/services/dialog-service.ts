@@ -4,7 +4,7 @@
 // confirm prompts moved to an in-app themed modal instead — see
 // state/dialog-store.ts and components/shell/ConfirmDialog.tsx.
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 /**
  * Hands a folder to the OS file manager. Phase 12's themes and snippets are
@@ -17,6 +17,38 @@ import { openPath } from "@tauri-apps/plugin-opener";
  */
 export async function showFolder(path: string): Promise<void> {
   await openPath(path);
+}
+
+/**
+ * Opens the folder a file sits in with that file *selected*, rather than
+ * opening the file. Distinct from `showFolder` above and not a duplicate of
+ * it: pointing Explorer at a page's own folder would show its insides, and
+ * "show me where this is" means the row highlighted among its siblings — the
+ * same thing every editor's Reveal in File Explorer does.
+ *
+ * Also not a disk touch, same as `showFolder`: nothing is read or written.
+ * Whether the path is really there is settled before this is called, by
+ * `findNodeOnDisk` in filesystem-service, because a missing path here fails
+ * differently on each OS and on Windows tends to open Documents instead.
+ */
+export async function revealItem(path: string): Promise<void> {
+  await revealItemInDir(path);
+}
+
+/**
+ * What to call the thing the menu item opens. Releases build for Windows,
+ * macOS and Linux, so a fixed "Show in File Explorer" is wrong on two of the
+ * three — and this is a menu entry someone reads to find out what it does,
+ * which makes the OS's own word for it the whole content of the label.
+ *
+ * Lowercase "file manager" on Linux is deliberate: there's no single name to
+ * capitalise, since it could be Nautilus, Dolphin or Thunar.
+ */
+export function fileManagerName(): string {
+  const platform = navigator.platform.toLowerCase();
+  if (platform.includes("mac")) return "Finder";
+  if (platform.includes("win")) return "File Explorer";
+  return "file manager";
 }
 
 export async function pickFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null> {

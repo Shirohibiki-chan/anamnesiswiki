@@ -17,6 +17,19 @@ type PendingConfirm = { message: string; resolve: (ok: boolean) => void };
 /** The nodes to export, plus their descendants. Null when the modal is shut. */
 type ExportRequest = { rootIds: string[] };
 
+/**
+ * A one-way message with nothing to decide — the app couldn't do the thing and
+ * is saying so. Separate from `pendingConfirm` rather than a mode of it: that
+ * one resolves a promise a caller is blocked on, and an acknowledgement that
+ * resolves nothing has no business sharing its lifecycle.
+ *
+ * It exists because of a Phase 12 bug worth not repeating: "open the themes
+ * folder" swallowed its own rejection, so a refused call left the button doing
+ * nothing at all, indistinguishable from a slow file manager. Anything that
+ * hands work to the OS needs somewhere to report that the OS said no.
+ */
+type Notice = { message: string };
+
 type DialogStoreState = {
   pendingConfirm: PendingConfirm | null;
   requestConfirm: (message: string) => Promise<boolean>;
@@ -24,11 +37,23 @@ type DialogStoreState = {
   exportRequest: ExportRequest | null;
   requestExport: (rootIds: string[]) => void;
   closeExport: () => void;
+  notice: Notice | null;
+  showNotice: (message: string) => void;
+  dismissNotice: () => void;
 };
 
 export const useDialogStore = create<DialogStoreState>((set, get) => ({
   pendingConfirm: null,
   exportRequest: null,
+  notice: null,
+
+  showNotice(message) {
+    set({ notice: { message } });
+  },
+
+  dismissNotice() {
+    set({ notice: null });
+  },
 
   requestExport(rootIds) {
     set({ exportRequest: { rootIds } });

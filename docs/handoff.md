@@ -207,6 +207,10 @@ is below.
   `{ "identifier": "opener:allow-open-path", "allow": [{ "path": "**" }] }`.
   The same shape applies to any other scoped plugin permission — **a permission
   that appears granted and still fails is the scope, every time.**
+  `opener:allow-reveal-item-in-dir` is the second instance and was scoped the
+  same way when "Show in File Explorer" landed. Note that none of this shows up
+  in `pnpm dev`: capabilities are enforced by the Rust side, so a missing scope
+  is invisible in the browser and only appears in `pnpm tauri dev` or a build.
 
 - **An AppImage must not bundle graphics or display libraries.**
   `libwayland-client`, `libEGL`, `libGL`, `libgbm`, `libdrm` and driver shims

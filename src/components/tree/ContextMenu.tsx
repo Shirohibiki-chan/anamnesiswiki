@@ -1,9 +1,9 @@
 // Right-click menu content: Rename / Duplicate / Set color / Set as project
-// home / Delete / Add child. Delete is confirmed before it runs — via the
+// home / Show in the file manager / Delete / Add child. Delete is confirmed before it runs — via the
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
 // earlier native window.confirm(). Positioning/portaling is handled by the
 // TreePopover wrapper.
-import { Copy, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
+import { Copy, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
 
 type ContextMenuProps = {
   canHaveChildren: boolean;
@@ -13,10 +13,13 @@ type ContextMenuProps = {
   // designating home) drop out rather than being shown and quietly doing
   // something surprising.
   selectionCount: number;
+  /** The OS's own word for its file manager — see dialog-service. */
+  fileManagerName: string;
   onRename: () => void;
   onDuplicate: () => void;
   onSetColor: () => void;
   onToggleProjectHome: () => void;
+  onReveal: () => void;
   onExport: () => void;
   onDelete: () => void;
   onAddChild: () => void;
@@ -27,10 +30,12 @@ export function ContextMenu({
   canHaveChildren,
   isProjectHome,
   selectionCount,
+  fileManagerName,
   onRename,
   onDuplicate,
   onSetColor,
   onToggleProjectHome,
+  onReveal,
   onExport,
   onDelete,
   onAddChild,
@@ -68,6 +73,14 @@ export function ContextMenu({
       {!isMultiple && (
         <button type="button" onClick={() => run(onToggleProjectHome)}>
           <Home size={13} /> {isProjectHome ? "Remove as project home" : "Set as project home"}
+        </button>
+      )}
+      {/* Single selection only: revealing several rows at once means several
+          file manager windows, and rows in different folders can't be shown
+          together anyway. */}
+      {!isMultiple && (
+        <button type="button" onClick={() => run(onReveal)}>
+          <FolderOpen size={13} /> Show in {fileManagerName}
         </button>
       )}
       <button type="button" onClick={() => run(onExport)}>
