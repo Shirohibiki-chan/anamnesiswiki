@@ -31,6 +31,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
+import { useKnownOptions } from "../../hooks/use-property-index";
 import { useTemplates } from "../../hooks/use-templates";
 import { orderProperties, type RenderableProperty } from "../../services/property-service";
 import { TemplatePicker } from "../tree/TemplatePicker";
@@ -61,6 +62,7 @@ export function PropertiesPanel() {
     reorderProperties,
   } = useProject();
   const { getPropertySchema } = useTemplates();
+  const knownOptions = useKnownOptions();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -134,6 +136,7 @@ export function PropertiesPanel() {
           label={prop.label}
           type={prop.type}
           options={prop.options ?? []}
+          knownOptions={knownOptions(node!.templateKey, prop.label)}
           value={value}
           onChange={(ids) => updateNodeProperty(node!.id, prop.key, isMulti ? ids : (ids[0] ?? undefined))}
           onOptionsChange={(options: PropertyOption[]) => updateCustomProperty(node!.id, prop.key, { options })}

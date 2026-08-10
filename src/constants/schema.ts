@@ -63,6 +63,11 @@ export type CustomPropertySpec = {
   options?: PropertyOption[];
 };
 
+// The three types that carry an option list. Named once because both the
+// service that indexes options project-wide and the views that render them
+// have to agree on what counts as a chip field.
+export const CHIP_PROPERTY_TYPES: CustomPropertySpec["type"][] = ["select", "multiselect", "status"];
+
 // What each type is called in front of the user. Here rather than in the
 // panel because two views name them now — the add-property form and the All
 // properties & tags list — and one type reading "Multi-select" in one and

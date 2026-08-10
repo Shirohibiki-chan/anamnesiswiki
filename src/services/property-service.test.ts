@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { CustomPropertySpec, Node } from "../constants/schema";
+import type { PropertyOption } from "../constants/schema";
 import {
   indexProperties,
+  indexPropertyOptions,
   indexTags,
+  knownOptionsFor,
   orderProperties,
+  planOptionDelete,
+  planOptionRecolour,
+  planOptionRename,
   planPropertyDelete,
   planPropertyRename,
   planTagDelete,
@@ -292,5 +298,173 @@ describe("planTagDelete", () => {
     const plan = planTagDelete(nodes, "pov");
     expect(plan.pages).toBe(1);
     expect(plan.patches[0].tags).toEqual(["canon"]);
+  });
+});
+
+// ---- Chip options ----
+
+function option(id: string, label: string, color = "sage"): PropertyOption {
+  return { id, label, color };
+}
+
+function chip(
+  key: string,
+  label: string,
+  options: PropertyOption[],
+  type: CustomPropertySpec["type"] = "status",
+): CustomPropertySpec {
+  return { key, label, type, options };
+}
+
+const draft = option("o-draft", "Draft", "gray");
+const done = option("o-done", "Done", "sage");
+
+describe("indexPropertyOptions", () => {
+  it("groups by option name across pages and counts offered against picked", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [draft, done])], properties: { k1: "o-draft" } }),
+      page({ id: "b", customProperties: [chip("k2", "Status", [draft, done])], properties: { k2: "o-done" } }),
+      page({ id: "c", customProperties: [chip("k3", "Status", [draft])] }),
+    );
+
+    const index = indexPropertyOptions(nodes, "Status");
+    expect(index.map((entry) => [entry.label, entry.offeredCount, entry.usedCount])).toEqual([
+      ["Done", 2, 1],
+      ["Draft", 3, 1],
+    ]);
+  });
+
+  // Two pages that invented the same option separately have two ids and can
+  // have two colours. The index has to pick one, and the honest pick is the
+  // one most pages already show.
+  it("reports the colour the most pages give it", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [option("x", "Draft", "rose")])] }),
+      page({ id: "b", customProperties: [chip("k2", "Status", [option("y", "Draft", "gray")])] }),
+      page({ id: "c", customProperties: [chip("k3", "Status", [option("z", "Draft", "gray")])] }),
+    );
+
+    expect(indexPropertyOptions(nodes, "Status")[0].color).toBe("gray");
+  });
+
+  it("ignores properties of the same name that aren't chip fields", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [draft])] }),
+      page({ id: "b", customProperties: [custom("k2", "Status", "text")] }),
+    );
+
+    expect(indexPropertyOptions(nodes, "Status").map((entry) => entry.label)).toEqual(["Draft"]);
+  });
+});
+
+describe("knownOptionsFor", () => {
+  // The order of a status is a sequence, not a popularity ranking — rebuilding
+  // it from counts would shuffle Draft/In progress/Done into nonsense.
+  it("takes the longest list as the base and appends what it's missing", () => {
+    const nodes = project(
+      page({ id: "a", templateKey: "character", customProperties: [chip("k1", "Status", [draft, done])] }),
+      page({
+        id: "b",
+        templateKey: "character",
+        customProperties: [chip("k2", "Status", [draft, option("o-hold", "On hold")])],
+      }),
+    );
+
+    expect(knownOptionsFor(nodes, "character", "Status").map((o) => o.label)).toEqual(["Draft", "Done", "On hold"]);
+  });
+
+  it("copies ids rather than minting new ones, so the same option is the same option", () => {
+    const nodes = project(
+      page({ id: "a", templateKey: "character", customProperties: [chip("k1", "Status", [draft])] }),
+    );
+
+    expect(knownOptionsFor(nodes, "character", "Status")[0].id).toBe("o-draft");
+  });
+
+  // "Type" is a suggested property on locations, factions, items and events.
+  // A location's City/Village/Ruin has no business appearing on a sword.
+  it("does not carry options between templates", () => {
+    const nodes = project(
+      page({
+        id: "a",
+        templateKey: "location",
+        customProperties: [chip("k1", "Type", [option("c", "City")], "select")],
+      }),
+    );
+
+    expect(knownOptionsFor(nodes, "item", "Type")).toEqual([]);
+    expect(knownOptionsFor(nodes, "location", "Type").map((o) => o.label)).toEqual(["City"]);
+  });
+});
+
+describe("planOptionRename", () => {
+  it("renames every page's copy without touching what's picked", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [draft, done])], properties: { k1: "o-draft" } }),
+      page({ id: "b", customProperties: [chip("k2", "Status", [draft])] }),
+    );
+
+    const plan = planOptionRename(nodes, "Status", "Draft", "Drafting");
+    expect(plan.pages).toBe(2);
+    expect(plan.used).toBe(1);
+    expect(plan.patches[0].patch.customProperties?.[0].options?.map((o) => o.label)).toEqual(["Drafting", "Done"]);
+    expect(plan.patches[0].patch.properties).toEqual({ k1: "o-draft" });
+  });
+
+  // The merge case, and the one that would silently blank a chip if the value
+  // weren't moved across with it.
+  it("moves the value onto the surviving option when the new name already exists", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [draft, done])], properties: { k1: "o-draft" } }),
+    );
+
+    const plan = planOptionRename(nodes, "Status", "Draft", "Done");
+    expect(plan.patches[0].patch.customProperties?.[0].options?.map((o) => o.label)).toEqual(["Done"]);
+    expect(plan.patches[0].patch.properties).toEqual({ k1: "o-done" });
+  });
+
+  it("merges without leaving a duplicate in a multi-select's value", () => {
+    const nodes = project(
+      page({
+        id: "a",
+        customProperties: [chip("k1", "Tone", [draft, done], "multiselect")],
+        properties: { k1: ["o-draft", "o-done"] },
+      }),
+    );
+
+    const plan = planOptionRename(nodes, "Tone", "Draft", "Done");
+    expect(plan.patches[0].patch.properties).toEqual({ k1: ["o-done"] });
+  });
+});
+
+describe("planOptionRecolour", () => {
+  it("gives every copy the same colour", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [option("x", "Draft", "rose")])] }),
+      page({ id: "b", customProperties: [chip("k2", "Status", [option("y", "Draft", "gray")])] }),
+    );
+
+    const plan = planOptionRecolour(nodes, "Status", "Draft", "amber");
+    expect(plan.patches.map((p) => p.patch.customProperties?.[0].options?.[0].color)).toEqual(["amber", "amber"]);
+  });
+});
+
+describe("planOptionDelete", () => {
+  it("removes the option and unpicks it, leaving a single-select empty", () => {
+    const nodes = project(
+      page({ id: "a", customProperties: [chip("k1", "Status", [draft, done])], properties: { k1: "o-draft" } }),
+      page({
+        id: "b",
+        customProperties: [chip("k2", "Status", [draft, done], "multiselect")],
+        properties: { k2: ["o-draft", "o-done"] },
+      }),
+    );
+
+    const plan = planOptionDelete(nodes, "Status", "Draft");
+    expect(plan.pages).toBe(2);
+    expect(plan.used).toBe(2);
+    expect(plan.patches[0].patch.customProperties?.[0].options?.map((o) => o.label)).toEqual(["Done"]);
+    expect(plan.patches[0].patch.properties).toEqual({});
+    expect(plan.patches[1].patch.properties).toEqual({ k2: ["o-done"] });
   });
 });

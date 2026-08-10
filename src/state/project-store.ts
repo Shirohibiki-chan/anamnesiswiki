@@ -18,7 +18,17 @@ import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { canHaveChildren, getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
-import { planPropertyDelete, planPropertyRename, planTagDelete, planTagRename } from "../services/property-service";
+import {
+  isChipType,
+  knownOptionsFor,
+  planOptionDelete,
+  planOptionRecolour,
+  planOptionRename,
+  planPropertyDelete,
+  planPropertyRename,
+  planTagDelete,
+  planTagRename,
+} from "../services/property-service";
 import * as lkImportService from "../services/lk-import";
 import type { ImportPendingImage } from "../services/lk-import";
 import { countLabel } from "../services/history-service";
@@ -128,6 +138,9 @@ export type ProjectStoreState = {
   deletePropertyEverywhere: (label: string) => void;
   renameTagEverywhere: (tag: string, newTag: string) => void;
   deleteTagEverywhere: (tag: string) => void;
+  renameOptionEverywhere: (propertyLabel: string, optionLabel: string, newLabel: string) => void;
+  recolourOptionEverywhere: (propertyLabel: string, optionLabel: string, color: string) => void;
+  deleteOptionEverywhere: (propertyLabel: string, optionLabel: string) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   clearNodeImage: (nodeId: string) => Promise<void>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
@@ -617,19 +630,26 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { nodes } = get();
       const existing = nodes[nodeId];
       if (!existing) return;
-      // Status is the one type that arrives usable — an empty status is a
-      // control with nothing in it, and the four states below are what
-      // everyone types anyway. Select and multi-select start empty on
-      // purpose: their values are the user's vocabulary, not ours.
+
+      // A chip property arrives with the vocabulary already in use for that
+      // name on pages of the same kind — ids and colours copied, so it's
+      // genuinely the same option rather than a lookalike. Without this,
+      // adding Status to a second character means retyping your own four
+      // states and getting different colours for them.
+      //
+      // Status is the one type with a fallback: an empty status is a control
+      // with nothing in it, and the four defaults are what everyone types
+      // anyway. Select and multi-select start empty on purpose when there's
+      // nothing to copy — their values are the user's vocabulary, not ours.
+      const known = isChipType(type) ? knownOptionsFor(nodes, existing.templateKey, label) : [];
+      const options =
+        known.length > 0 ? known : type === "status" ? DEFAULT_STATUS_OPTIONS.map((option) => ({ ...option })) : [];
+
       const spec: CustomPropertySpec = {
         key: crypto.randomUUID(),
         label,
         type,
-        ...(type === "status"
-          ? { options: DEFAULT_STATUS_OPTIONS.map((option) => ({ ...option })) }
-          : type === "select" || type === "multiselect"
-            ? { options: [] }
-            : {}),
+        ...(isChipType(type) ? { options } : {}),
       };
       get().updateNode(nodeId, { customProperties: [...(existing.customProperties ?? []), spec] });
     },
@@ -706,6 +726,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     deleteTagEverywhere(tag) {
       const { patches } = planTagDelete(get().nodes, tag);
       applyBulk(`deleting #${tag}`, patches.map(({ nodeId, tags }) => ({ nodeId, patch: { tags } })));
+    },
+
+    renameOptionEverywhere(propertyLabel, optionLabel, newLabel) {
+      applyBulk(`renaming ${optionLabel}`, planOptionRename(get().nodes, propertyLabel, optionLabel, newLabel).patches);
+    },
+
+    recolourOptionEverywhere(propertyLabel, optionLabel, color) {
+      applyBulk(`recolouring ${optionLabel}`, planOptionRecolour(get().nodes, propertyLabel, optionLabel, color).patches);
+    },
+
+    deleteOptionEverywhere(propertyLabel, optionLabel) {
+      applyBulk(`deleting ${optionLabel}`, planOptionDelete(get().nodes, propertyLabel, optionLabel).patches);
     },
 
     async setNodeImage(nodeId, data, extension) {

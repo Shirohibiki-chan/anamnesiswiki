@@ -69,9 +69,9 @@
 | Reference selector for properties like Friends / Leader / Participants — searchable dropdown of all non-folder nodes in the project, added items render as clickable chips that navigate to the referenced node | `src/components/properties/RefsProperty.tsx` |
 | Date picker for the Event template's When property — accepts free-text ("Year 872, Third Age") or a real date | `src/components/properties/DateProperty.tsx` |
 | Number field — stores a real number rather than a numeric string, and keeps what you're typing intact while you type it | `src/components/properties/NumberProperty.tsx` |
-| Select / multi-select / status field — one component for all three; options are created by typing, render as coloured chips, and can be renamed, recoloured or deleted from the dropdown | `src/components/properties/SelectProperty.tsx` |
+| Select / multi-select / status field — one component for all three; options are created by typing, render as coloured chips, and can be renamed, recoloured or deleted from the dropdown. A "Used elsewhere" group offers the values this property has on other pages of the same kind | `src/components/properties/SelectProperty.tsx` |
 | Created / Updated dates at the foot of the panel, exact time on hover | `src/components/properties/PropertyTimestamps.tsx` |
-| The All properties & tags view — every property name and tag in the project with use counts, project-wide rename (merging when the new name exists) and delete, and click-through to the pages using one. Opens from the search palette's footer or Ctrl+Shift+K | `src/components/properties/AllPropertiesModal.tsx` |
+| The All properties & tags view — every property name and tag in the project with use counts, project-wide rename (merging when the new name exists) and delete, and click-through to the pages using one. A chip property also lists its values, each renameable, recolourable and deletable across the project. Opens from the search palette's footer or Ctrl+Shift+K | `src/components/properties/AllPropertiesModal.tsx` |
 
 ### Modals (`src/components/modals/`)
 

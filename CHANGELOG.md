@@ -11,6 +11,12 @@
   - **Different capitalisations are listed separately and point at each other.** *pov* and *POV* land next to each other and each says the other exists. They're your words, so nothing merges them behind your back — but you finally get to see that you've been writing both.
   - Anything you can do in here is one press of undo away, however many pages it touched.
 - **Properties that come from a template are listed too**, with their counts, so you can see which fields are actually getting filled in and which have been sitting empty on forty pages. Those can't be renamed or deleted yet — they belong to the template, and editing templates comes later.
+- **The values inside Select, Multi-select and Status fields are in there too.** Open a chip property in the list and you get every value it uses — *Draft*, *In progress*, whatever you've typed — with how many pages offer it and how many actually have it picked. Rename one across the project, recolour it across the project, or delete it. Renaming onto a name that already exists merges the two, and any page that had the old one ends up on the new one rather than losing its choice.
+
+### Adjustments
+
+- **Chip fields stop making you retype yourself.** Adding a Status to a second character now arrives with the states you already use on your other characters — same names, same colours, same options — instead of a blank list or the four defaults. It only borrows from pages of the same kind, so a location's *Type* (City, Village, Ruin) never turns up on a sword.
+- **And when you invent a new value later, the other pages can see it.** Open any chip field's dropdown and there's a *Used elsewhere* section listing values this property has on your other pages of that kind. Picking one brings it over exactly as it is — same colour — rather than making a near-identical copy. Typing the name of one you already use adopts it too, instead of quietly creating a second one that only looks the same.
 
 ## 2026-08-09 — properties can be numbers and coloured chips, and you can drag them into the order you want
 

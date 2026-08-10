@@ -895,7 +895,13 @@ Files: `AllPropertiesModal.tsx` + `all-properties.css` (new), `use-property-inde
 - **Template properties are listed and locked.** Not in the plan's bullets; added because the counts answer "which template fields is anyone actually filling in?", which should feed Phase 17.
 - **Second `.ui-modal-xl`,** whose comment said nothing else should reach for it. Amended rather than ignored — the bar it cleared is Settings' bar, a thing you browse rather than a question you answer.
 
-**Verification.** `pnpm lint`, `tsc --noEmit`, `pnpm build` and `pnpm test` clean — 576 tests, 14 of them new over `indexProperties`, `indexTags` and the four planners. The planner tests are the ones that matter: they're the only check that a project-wide rename can't eat someone's writing.
+**Chip options, same day.** Asked for immediately after the above — *"we might as well deal w the chip option now"*. The sequencing note in the phase predicted it: a values list is the second thing anyone wants to rename in bulk.
+
+The design decision was where option lists live. Moving them off the node into `project.json` is the obvious fix and would have broken the readability of a page's own JSON, which is what file-per-node is for. They stayed put, and three things make them act shared: `knownOptionsFor` seeds a new copy of a chip property from what's already in use on pages of the same **template** (not the same name — "Type" spans four templates), ids and colours are copied rather than regenerated, and `planOptionRename` / `planOptionRecolour` / `planOptionDelete` reach every copy. The dropdown gained a "Used elsewhere" group so a value invented late is adopted rather than duplicated.
+
+The subtle one is `planOptionRename`'s merge: renaming onto a name a page already has means the losing option's *id* disappears, so the page's value has to be moved onto the survivor in the same write. A value left pointing at a deleted option renders as nothing, which reads as the chip having been eaten — the same trap `removePropertyOption` was written to avoid in pass 1.
+
+**Verification.** `pnpm lint`, `tsc --noEmit`, `pnpm build` and `pnpm test` clean — 587 tests, 25 of them new over `indexProperties`, `indexTags`, `indexPropertyOptions`, `knownOptionsFor` and the seven planners. The planner tests are the ones that matter: they're the only check that a project-wide rename can't eat someone's writing.
 
 One existing test needed changing: `settings-search.test.ts` asserted exactly 5 shortcut entries. Its own comment said "if a registry grows, this grows with it", so it now counts off `SHORTCUT_ACTIONS.length` — a hardcoded number there fails the day a shortcut is added without anything being wrong.
 

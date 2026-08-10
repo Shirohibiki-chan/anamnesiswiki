@@ -530,6 +530,26 @@ is below.
   the plan counts those pages (`templateClash`) and the view names them rather
   than the rename quietly producing a duplicate nobody was warned about.
 
+- **Chip option lists stay on the node. Don't move them to `project.json`.**
+  It looks like the obvious fix for "a status on thirty pages is thirty option
+  lists", and it breaks the thing file-per-node exists for: an option list
+  sitting next to the values it explains is what lets a page's JSON be read on
+  its own. Move it and `Valera Jiang/_page.json` says `"status": "o-3f2a"` with
+  nothing on the page to say what that means. What makes them behave as though
+  they were shared instead: `knownOptionsFor` seeds a new copy from what's
+  already in use, ids and colours are **copied rather than regenerated** (two
+  pages sharing an option id is fine — ids only need to be unique within one
+  spec), and the project-wide edits in `planOption*` reach every copy. Anything
+  that adds a fourth chip type or another way of creating one has to go through
+  the same seeding, or option lists start drifting again.
+
+- **Options are shared by property name *and template*, never by name alone.**
+  "Type" is a suggested property on locations, factions, items and events; a
+  location's City/Village/Ruin has no business appearing on a sword. The
+  project-wide *rename* in the All properties & tags view is by name only —
+  that's fine, since it only touches pages that actually carry the option — but
+  anything that *offers* options to a page must filter by template.
+
 - **Anything that changes many pages from one click records one undo entry.**
   `applyBulk` in `project-store.ts` is the primitive; the four project-wide
   property/tag actions are its only callers so far. It builds the reverse by

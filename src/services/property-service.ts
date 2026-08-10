@@ -6,7 +6,7 @@
 // always did and every sidebar silently rearranging itself on upgrade, and
 // the rename planners below are the only code in this app that edits dozens of
 // the user's pages from one click.
-import type { CustomPropertySpec, Node, PropertyOption } from "../constants/schema";
+import { CHIP_PROPERTY_TYPES, type CustomPropertySpec, type Node, type PropertyOption } from "../constants/schema";
 
 // The shape the sidebar renders from — a template's own fixed field and a
 // per-page custom one flattened into one thing, since once they're ordered
@@ -368,4 +368,248 @@ export function planTagDelete(nodes: Record<string, Node>, tag: string): { patch
   }
 
   return { patches, pages: patches.length };
+}
+
+// ---- Chip options across the project ----
+//
+// The same problem as the two above, one level down. A select/status option
+// list lives on the node (see schema.ts), so a Status used on thirty pages is
+// thirty separate lists and renaming "Draft" is thirty edits.
+//
+// The fix is *not* to move option lists off the node into project.json.
+// Keeping them next to the values they explain is what makes a page's JSON
+// file readable on its own, which is the whole argument for file-per-node in
+// CLAUDE.md. So options stay where they are, and instead: they're seeded from
+// what's already in use when a property is added (`knownOptionsFor`), reuse
+// each other's ids and colours rather than minting new ones, and can be
+// renamed, recoloured and deleted across the project from one place.
+//
+// **Grouped by property label *and* template.** Not by label alone: "Type" is
+// a suggested property on locations, factions, items and events, and a
+// location's City/Village/Ruin has no business appearing on a sword.
+
+const CHIP_TYPES = new Set(CHIP_PROPERTY_TYPES);
+
+export function isChipType(type: CustomPropertySpec["type"]): boolean {
+  return CHIP_TYPES.has(type);
+}
+
+/** A chip property's value, as a list, whatever shape it's stored in. */
+function selectedIds(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === "string");
+  return typeof value === "string" && value ? [value] : [];
+}
+
+/** Back to the shape the type stores — an array for multi, one id or nothing otherwise. */
+function valueFromIds(type: CustomPropertySpec["type"], ids: string[]): unknown {
+  return type === "multiselect" ? ids : ids[0];
+}
+
+/** Every chip spec on a node carrying a given property name. */
+function chipSpecs(node: Node, propertyLabel: string): CustomPropertySpec[] {
+  return (node.customProperties ?? []).filter((spec) => spec.label === propertyLabel && isChipType(spec.type));
+}
+
+export type OptionIndexEntry = {
+  /** The exact spelling. As everywhere else, capitalisations stay separate. */
+  label: string;
+  /** The colour the most pages give it — what reusing it should adopt. */
+  color: string;
+  /** Pages whose copy of the property offers this option. */
+  offeredCount: number;
+  /** Of those, how many actually have it picked. */
+  usedCount: number;
+  hasCaseVariants: boolean;
+};
+
+/**
+ * Every option in use under one property name, across the project.
+ *
+ * Grouped by the option's *label*, because ids aren't shared between pages
+ * that invented the same option separately — which is exactly the mess this
+ * is here to show and then let the user clean up.
+ */
+export function indexPropertyOptions(nodes: Record<string, Node>, propertyLabel: string): OptionIndexEntry[] {
+  const byLabel = new Map<string, { colors: Map<string, number>; offered: number; used: number }>();
+
+  for (const node of Object.values(nodes)) {
+    for (const spec of chipSpecs(node, propertyLabel)) {
+      const picked = new Set(selectedIds(node.properties[spec.key]));
+      for (const option of spec.options ?? []) {
+        const entry = byLabel.get(option.label) ?? { colors: new Map(), offered: 0, used: 0 };
+        entry.colors.set(option.color, (entry.colors.get(option.color) ?? 0) + 1);
+        entry.offered += 1;
+        if (picked.has(option.id)) entry.used += 1;
+        byLabel.set(option.label, entry);
+      }
+    }
+  }
+
+  const entries: OptionIndexEntry[] = [...byLabel].map(([label, entry]) => ({
+    label,
+    color: [...entry.colors].sort((a, b) => b[1] - a[1])[0][0],
+    offeredCount: entry.offered,
+    usedCount: entry.used,
+    hasCaseVariants: false,
+  }));
+
+  return finishIndex(entries);
+}
+
+/**
+ * The option list a new copy of this property should start with.
+ *
+ * Takes the longest list already in use as the base rather than merging
+ * everything into popularity order, because the *order* of a status carries
+ * meaning — Draft, In progress, Needs revision, Done is a sequence, and
+ * rebuilding it by how often each is used would shuffle it. Anything the base
+ * doesn't already have is appended.
+ *
+ * Ids are copied, not regenerated. Two pages genuinely sharing an option id is
+ * harmless (ids only have to be unique within one spec) and it's what makes
+ * "the same option" mean something across pages.
+ */
+export function knownOptionsFor(
+  nodes: Record<string, Node>,
+  templateKey: string,
+  propertyLabel: string,
+): PropertyOption[] {
+  let base: PropertyOption[] = [];
+  const extra: PropertyOption[] = [];
+
+  for (const node of Object.values(nodes)) {
+    if (node.templateKey !== templateKey) continue;
+    for (const spec of chipSpecs(node, propertyLabel)) {
+      const options = spec.options ?? [];
+      if (options.length > base.length) {
+        extra.push(...base);
+        base = options.map((option) => ({ ...option }));
+      } else {
+        extra.push(...options);
+      }
+    }
+  }
+
+  const seen = new Set(base.map((option) => option.label.toLowerCase()));
+  for (const option of extra) {
+    if (seen.has(option.label.toLowerCase())) continue;
+    seen.add(option.label.toLowerCase());
+    base.push({ ...option });
+  }
+  return base;
+}
+
+export type OptionPlan = {
+  patches: NodePropertyPatch[];
+  /** Pages whose copy of the property changed. */
+  pages: number;
+  /** Pages where the option was actually picked, not just offered. */
+  used: number;
+};
+
+/** Applies a change to every copy of one option, page by page. */
+function planOptionChange(
+  nodes: Record<string, Node>,
+  propertyLabel: string,
+  optionLabel: string,
+  edit: (
+    spec: CustomPropertySpec,
+    matched: PropertyOption[],
+  ) => { options: PropertyOption[]; remap?: Map<string, string | null> },
+): OptionPlan {
+  const patches: NodePropertyPatch[] = [];
+  let used = 0;
+
+  for (const node of Object.values(nodes)) {
+    const custom = node.customProperties ?? [];
+    let touched = false;
+    let usedHere = false;
+    const properties = { ...node.properties };
+
+    const customProperties = custom.map((spec) => {
+      if (spec.label !== propertyLabel || !isChipType(spec.type)) return spec;
+      const matched = (spec.options ?? []).filter((option) => option.label === optionLabel);
+      if (matched.length === 0) return spec;
+
+      touched = true;
+      const picked = selectedIds(properties[spec.key]);
+      if (matched.some((option) => picked.includes(option.id))) usedHere = true;
+
+      const { options, remap } = edit(spec, matched);
+      if (remap) {
+        // Rewritten rather than filtered, because a rename that merges has to
+        // move the value onto the surviving option — a value left pointing at
+        // an id that's gone renders as nothing, which reads as the chip having
+        // been eaten.
+        const next: string[] = [];
+        for (const id of picked) {
+          const to = remap.has(id) ? remap.get(id) : id;
+          if (to && !next.includes(to)) next.push(to);
+        }
+        const value = valueFromIds(spec.type, next);
+        if (value === undefined) delete properties[spec.key];
+        else properties[spec.key] = value;
+      }
+      return { ...spec, options };
+    });
+
+    if (!touched) continue;
+    patches.push({ nodeId: node.id, patch: { customProperties, properties } });
+    if (usedHere) used += 1;
+  }
+
+  return { patches, pages: patches.length, used };
+}
+
+/** Renames an option everywhere, merging where the new name already exists on a page. */
+export function planOptionRename(
+  nodes: Record<string, Node>,
+  propertyLabel: string,
+  optionLabel: string,
+  newLabel: string,
+): OptionPlan {
+  return planOptionChange(nodes, propertyLabel, optionLabel, (spec, matched) => {
+    const matchedIds = new Set(matched.map((option) => option.id));
+    const target =
+      optionLabel === newLabel
+        ? undefined
+        : (spec.options ?? []).find((option) => option.label === newLabel && !matchedIds.has(option.id));
+
+    if (!target) {
+      return {
+        options: (spec.options ?? []).map((option) =>
+          matchedIds.has(option.id) ? { ...option, label: newLabel } : option,
+        ),
+      };
+    }
+
+    return {
+      options: (spec.options ?? []).filter((option) => !matchedIds.has(option.id)),
+      remap: new Map([...matchedIds].map((id) => [id, target.id])),
+    };
+  });
+}
+
+export function planOptionRecolour(
+  nodes: Record<string, Node>,
+  propertyLabel: string,
+  optionLabel: string,
+  color: string,
+): OptionPlan {
+  return planOptionChange(nodes, propertyLabel, optionLabel, (spec, matched) => {
+    const matchedIds = new Set(matched.map((option) => option.id));
+    return {
+      options: (spec.options ?? []).map((option) => (matchedIds.has(option.id) ? { ...option, color } : option)),
+    };
+  });
+}
+
+export function planOptionDelete(nodes: Record<string, Node>, propertyLabel: string, optionLabel: string): OptionPlan {
+  return planOptionChange(nodes, propertyLabel, optionLabel, (spec, matched) => {
+    const matchedIds = new Set(matched.map((option) => option.id));
+    return {
+      options: (spec.options ?? []).filter((option) => !matchedIds.has(option.id)),
+      remap: new Map([...matchedIds].map((id) => [id, null])),
+    };
+  });
 }
