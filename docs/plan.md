@@ -30,7 +30,11 @@ The original blocker still stands if a calendar view is ever wanted anyway: Even
 
 **Canvas / board / whiteboard**
 
-Freeform spatial planning surface — LK ships one as "Board." Kept on the list at the user's request 2026-07-31, with eyes open: this is the largest single build anywhere in this document, larger than the atlas. Nothing else in the plan depends on it, so it can wait indefinitely without blocking anything.
+Freeform spatial planning surface — LK ships one as "Board." Kept on the list at the user's request 2026-07-31. Nothing else in the plan depends on it, so it can wait indefinitely without blocking anything.
+
+**The "largest single build in this document" estimate is withdrawn 2026-08-10.** It assumed writing a drawing surface from scratch. **Excalidraw** is the answer instead: MIT-licensed, embeds as a React component, works entirely offline, and stores a scene as plain JSON — which is the same promise the rest of the app makes about her files. Obsidian's Excalidraw plugin is the same move. That turns this from the biggest build here into an integration, and the remaining work is where a board *lives* in the tree and how a board links to pages, not the canvas itself. Still unscheduled; it's now cheap enough to schedule whenever she wants it rather than something to be talked out of.
+
+**It is not a prerequisite for Phase 25 — Storylines**, and the two must not be collapsed into one job. They share pan, zoom and drag-a-thing-somewhere, which is the smaller part of either. A storyline's nodes are *pages* and its edges *mean* something ("this leads to that"), so it needs a graph that knows what it's holding; a board deliberately holds anything and knows nothing about it. Building storylines out of a drawing tool would give up the part that makes it useful.
 
 ---
 
@@ -415,11 +419,34 @@ Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer
 
 **The view** is a zoomable, pannable, drag-and-drop graph. Each node is a scene or an event; edges run in narrative order. The tree branches for parallel plot threads or alternate viewpoints and reconverges at shared events — so it's a DAG, not a strict tree, and a node can have two parents. Nothing else in the app has that shape; the sidebar tree's model does not fit it.
 
+**Where a node sits is her decision, and the app never overrules it.** Added
+2026-08-10. Positions are authored and saved (see Storage below) — a scene goes
+where she puts it and stays there. **This rules out inheriting Phase 24's
+force-directed layout**, whatever else is shared with it: a force simulation
+exists precisely to choose positions for you, and it would spend the session
+undoing her arrangement. Phase 24 is right to use one — a relationship graph is
+explored, not composed — and that's the difference. What Storylines can take
+from Phase 24 is the pan/zoom surface and the edge drawing, not the layout.
+Offer a tidy-up as a button she presses, never as behaviour that just happens.
+
+**Loose notes can be dropped anywhere on the canvas.** Asked for 2026-08-10, and
+it's the one place a storyline borrows from a whiteboard. Her case is a branch
+that stops: a thread ends and the story continues somewhere else, and without
+somewhere to say so the reader just finds a dead end. **A note holds links, not
+only text** — `continued in [[Demonic AU — Valera's Fall]]` is the whole point,
+and it costs nearly nothing because wikilinks already exist and Phase 22 already
+decided that following one into another universe switches to it. That turns a
+dangling branch into an exit rather than a note-to-self. Notes are annotations,
+not nodes: no edges, no page behind them, never counted as part of the sequence.
+**Her framing was other people reading it**, which is also the argument for
+labelling clusters ("Act 2") — for someone who didn't write the thing, an
+unlabelled fork and a fork that stops look identical.
+
 **Every node is also a page.** Opening a node opens a full editor where the whole scene gets written — a storyline is somewhere she writes, not just a map of writing kept elsewhere. Creating a node makes a lightweight page for it by default; pointing a node at an existing page is the other option, and both are first-class, because half the nodes in a real storyline are events that already have pages.
 
-**Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
+**Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure, and the loose notes — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
 
-**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom/node/edge rendering from Phase 24. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
+**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom and edge rendering from Phase 24 — its *layout*, per the note above, is the one thing not to inherit. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
 
 ---
 
