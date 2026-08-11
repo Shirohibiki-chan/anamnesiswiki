@@ -18,7 +18,7 @@ import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
 import { getDefaultTabs } from "../services/template-registry";
-import { isDescendantOf, orderSiblings } from "../services/tree-service";
+import { isDescendantOf, orderSiblings, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   EMPTY_NAV_HISTORY,
   forgetNodes,
@@ -182,6 +182,9 @@ export type ProjectStoreState = {
   deleteNode: (id: string) => Promise<void>;
   deleteNodes: (ids: string[]) => Promise<void>;
   duplicateNode: (id: string) => Promise<void>;
+  // Rewrites one sibling group's manual order. `parentId` is null for the
+  // project root, matching rootOrder/childOrder.
+  sortChildren: (parentId: string | null, sort: SiblingSort) => void;
   // Colour has its own action rather than going through updateNode, so it can
   // be recorded as one undoable step across a whole multi-selection.
   setNodeColor: (ids: string[], color: string | undefined) => void;
@@ -1412,6 +1415,40 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         previousPinnedIds.includes(id) ? `removing the "${nodes[id].name}" shortcut` : `the "${nodes[id].name}" shortcut`,
         () => applyPins(previousPinnedIds),
         () => applyPins(pinnedIds),
+      );
+    },
+
+    // Sorting only ever rewrites the order list — no node changes, no files
+    // move, so nothing here needs the relocation pass that moveNodes does. The
+    // whole ordering snapshot is captured for undo rather than just this one
+    // group, because `restoreOrdering` is the existing reverse for exactly this
+    // shape of change and a bespoke narrower one would be a second way to do it.
+    sortChildren(parentId, sort) {
+      const { rootPath, project, nodes } = get();
+      if (!rootPath || !project) return;
+      if (parentId !== null && !nodes[parentId]) return;
+
+      const currentIds = orderedSiblingIds(nodes, project, parentId);
+      if (currentIds.length < 2) return;
+      const sortedIds = sortSiblingIds(currentIds, nodes, sort);
+      // Sorting an already-sorted group would otherwise leave an undo entry
+      // that reverses nothing, which reads as undo being broken.
+      if (sortedIds.every((id, index) => id === currentIds[index])) return;
+
+      const orderingBefore = captureOrdering(project);
+      const nextProject: Project =
+        parentId === null
+          ? { ...project, rootOrder: sortedIds }
+          : { ...project, childOrder: { ...project.childOrder, [parentId]: sortedIds } };
+      set({ project: nextProject });
+      track(() => fsService.saveProject(rootPath, nextProject));
+
+      const orderingAfter = captureOrdering(nextProject);
+      const label = parentId === null ? "sorting the project" : `sorting "${nodes[parentId].name}"`;
+      record(
+        label,
+        () => restoreOrdering(orderingBefore),
+        () => restoreOrdering(orderingAfter),
       );
     },
 

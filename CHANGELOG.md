@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-08-11 — put a folder's pages in order, and fold a branch away
+
+**Phase 15 starts here** — the right-click menu getting the rest of the items it was always meant to have.
+
+### Additions
+
+- **"Sort sub-pages" on the right-click menu**, with four orders to pick from: A to Z, Z to A, newest first, oldest first. It sorts the pages directly inside the one you clicked — not everything below it — and it's a one-time tidy-up rather than a setting, so you can still drag things wherever you want afterwards and they'll stay put.
+  - **Numbers sort like numbers.** "Chapter 10" comes after "Chapter 2", not between "Chapter 1" and "Chapter 3". Capital letters don't jump to the front either.
+  - **Ctrl+Z puts the old order back**, as one step, however many pages moved.
+  - It only appears on a page with at least two pages inside it — below that there's nothing to sort.
+
+- **"Expand all inside" and "Collapse all inside."** Opens or folds away everything below a page in the sidebar, however deep it goes, instead of clicking through each arrow. Handy on a big branch you've just come back to, and on one you're done with.
+  - **Collapse leaves the page you clicked open** and folds up what's inside it. Its own arrow closes it the rest of the way, and that way you can still see where you are.
+  - Both work on a multi-selection, and the app remembers what's open the same way it always has.
+
 ## 2026-08-11 — pin the pages you keep coming back to
 
 ### Additions

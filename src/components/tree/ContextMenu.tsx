@@ -1,12 +1,16 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Set color /
-// Focus here / Hide from readers / Set as project home / Show in the file
-// manager / Export / Delete. Also reached from the row's own "..." button —
-// see TreeItem.
+// Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// from readers / Set as project home / Show in the file manager / Export /
+// Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
 // earlier native window.confirm(). Positioning/portaling is handled by the
 // TreePopover wrapper.
 import {
+  ArrowDownUp,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Copy,
   Crosshair,
   Eye,
@@ -46,9 +50,18 @@ type ContextMenuProps = {
    * it, which looks exactly like the project having disappeared.
    */
   hasChildren: boolean;
+  /**
+   * Whether this row holds more than one page. Sorting is offered above that
+   * rather than above zero: a group of one is already in every order at once,
+   * and an item that visibly does nothing is worse than one that isn't there.
+   */
+  canSort: boolean;
   onRename: () => void;
   onDuplicate: () => void;
   onSetColor: () => void;
+  onSortChildren: () => void;
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
   onFocusHere: () => void;
   onToggleProjectHome: () => void;
   onTogglePinned: () => void;
@@ -67,9 +80,13 @@ export function ContextMenu({
   selectionCount,
   fileManagerName,
   hasChildren,
+  canSort,
   onRename,
   onDuplicate,
   onSetColor,
+  onSortChildren,
+  onExpandAll,
+  onCollapseAll,
   onFocusHere,
   onToggleProjectHome,
   onTogglePinned,
@@ -85,7 +102,7 @@ export function ContextMenu({
   // means deciding which kind it is:
   //
   //   "Set color"        swaps this popover's contents for the picker, so
-  //                      closing after it would shut what it just opened.
+  //   "Sort sub-pages"   closing after it would shut what it just opened.
   //   "New page inside"  is shared with the row's own "+" button and closes
   //                      the menu from inside its own handler.
   //
@@ -121,6 +138,28 @@ export function ContextMenu({
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color
       </button>
+      {/* Single selection only. Sorting rewrites one group's order, and "sort
+          the sub-pages of these three" is three separate reorderings sharing a
+          menu click — nothing on screen would show which one went wrong. */}
+      {!isMultiple && canSort && (
+        <button type="button" className="tree-context-menu-submenu" onClick={onSortChildren}>
+          <ArrowDownUp size={13} /> Sort sub-pages
+          <ChevronRight size={13} className="tree-context-menu-chevron" />
+        </button>
+      )}
+      {/* Expand/collapse are about what's *inside* the row, so they need
+          something in there — and unlike sorting they read fine repeated over a
+          selection, which is why they don't drop out above one row. */}
+      {hasChildren && (
+        <>
+          <button type="button" onClick={() => run(onExpandAll)}>
+            <ChevronsUpDown size={13} /> Expand all inside
+          </button>
+          <button type="button" onClick={() => run(onCollapseAll)}>
+            <ChevronsDownUp size={13} /> Collapse all inside
+          </button>
+        </>
+      )}
       {/* Single selection only, and only with something inside: focus shows
           the inside of *one* thing, and there's no reading of "focus on these
           three" that isn't just a different feature. */}

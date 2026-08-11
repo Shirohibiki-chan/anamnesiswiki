@@ -18,16 +18,18 @@ import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
 import type { TreeNodeData } from "../../services/tree-service";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
+import { SortMenu } from "./SortMenu";
 import { TreePopover } from "./TreePopover";
 
-type OpenPopover = "color" | "menu" | null;
+type OpenPopover = "color" | "menu" | "sort" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, togglePinned } = useProjectActions();
+  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, sortChildren, togglePinned } =
+    useProjectActions();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
@@ -105,6 +107,36 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         : `Delete "${nodeName}"? This can't be undone.`;
     }
     if (await confirmDestructive(warning)) deleteNodes(ids);
+  }
+
+  // Expand/collapse everything under the targeted rows. Walks react-arborist's
+  // own node objects rather than the store, because open/closed is its state —
+  // it calls back into `setExpanded` per row (see TreePanel's onToggle), which
+  // is what persists the result to project.json.
+  //
+  // Only rows that actually hold something are touched. Every node in our data
+  // carries a `children` array whether or not it has any (see tree-service's
+  // buildTreeData and why it never returns null), so react-arborist considers
+  // all of them expandable — opening the empty ones would write a line into
+  // `expandedIds` for every leaf page in the subtree to no visible effect.
+  //
+  // The targeted rows themselves are opened by "expand" but not closed by
+  // "collapse": the menu says *inside*, and folding the row you opened the menu
+  // on would take the result off screen along with the thing that produced it.
+  // Its own chevron is right there for that.
+  function setSubtreeOpen(isOpen: boolean) {
+    for (const id of targetIds()) {
+      const target = node.tree.get(id);
+      if (!target) continue;
+      const walk = (current: typeof target, isTarget: boolean) => {
+        const children = current.children ?? [];
+        if (children.length === 0) return;
+        if (isOpen) current.open();
+        else if (!isTarget) current.close();
+        for (const child of children) walk(child, false);
+      };
+      walk(target, true);
+    }
   }
 
   // Shared by right-clicking the row and by the row's own "..." button, so the
@@ -260,6 +292,21 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "sort" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <SortMenu
+            onSelect={(sort) => {
+              // Opened as well as sorted, for the same reason "Focus here"
+              // opens: a reorder inside a collapsed row is a change with
+              // nothing on screen to show for it.
+              node.open();
+              sortChildren(node.id, sort);
+              closePopover();
+            }}
+            onBack={() => setOpenPopover("menu")}
+          />
+        </TreePopover>
+      )}
       {openPopover === "menu" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
@@ -272,9 +319,13 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             selectionCount={selectionCount}
             fileManagerName={fileManagerName}
             hasChildren={hasChildren}
+            canSort={(node.children?.length ?? 0) > 1}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
+            onSortChildren={() => setOpenPopover("sort")}
+            onExpandAll={() => setSubtreeOpen(true)}
+            onCollapseAll={() => setSubtreeOpen(false)}
             // Opened as well as focused. The row is about to stop existing at
             // this level — it becomes the path bar — and leaving the tree
             // collapsed under it would show an empty panel under a bar naming

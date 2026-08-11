@@ -597,6 +597,31 @@ button.tree-path-crumb:hover {
   color: var(--color-palette-rose) !important;
 }
 
+/* The chevron on an item that opens a submenu rather than doing something.
+   Pushed to the far edge so the row reads as "there's more this way" — the one
+   visual difference between an item that acts and an item that descends. */
+.tree-context-menu-chevron {
+  margin-left: auto;
+  opacity: 0.5;
+}
+
+/* A submenu's own header, which is also the way back out. Separated like the
+   multi-selection heading is, so the items below it read as belonging to it. */
+.tree-context-menu-back {
+  margin-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--color-border-subtle) !important;
+  border-radius: 0 !important;
+  color: var(--color-text-primary) !important;
+  font-weight: 500;
+}
+
+/* Submenu items carry no icon of their own, so they'd start at the popover's
+   left edge while every menu they came from indents its labels past one. This
+   lines them up with the header's label above them. */
+.tree-context-menu-back ~ button {
+  padding-left: calc(var(--space-md) + 13px + var(--space-md));
+}
+
 /* ─── Shortcut rail ────────────────────────────────────────────────────────
    Pinned pages as icon tiles, under the search box. Wraps rather than
    scrolling sideways, unlike the path bar above: the path bar is one chain
