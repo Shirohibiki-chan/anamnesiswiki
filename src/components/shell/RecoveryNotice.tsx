@@ -1,24 +1,44 @@
-// Reports pages that were found parked under a move's temp name and put back.
-// This is good news, not a warning — but it's still worth saying out loud,
-// because it means an earlier move was interrupted, and an interrupted move
-// staying quiet is exactly what turned one into lost pages on 2026-07-31.
+// Reports the two repairs a load can make to a project on the way in. Both are
+// good news, not warnings — but both are still worth saying out loud, because
+// each one means an earlier write left the folder in a state it shouldn't have
+// been in, and a repair staying quiet is exactly what turned the first of them
+// into lost pages on 2026-07-31.
 import { LifeBuoy, X } from "lucide-react";
 import { useProject } from "../../hooks/use-project";
 
+// "A", "A" and "B", "A", "B" and "C". Quoted because a page name can be a
+// whole phrase, and an unquoted list of those doesn't read as a list.
+function formatNames(names: string[]): string {
+  const quoted = names.map((name) => `“${name}”`);
+  if (quoted.length <= 1) return quoted.join("");
+  return `${quoted.slice(0, -1).join(", ")} and ${quoted[quoted.length - 1]}`;
+}
+
 export function RecoveryNotice() {
-  const { recoveredCount, dismissRecovered } = useProject();
-  if (recoveredCount === 0) return null;
+  const { recoveredCount, reunitedNames, dismissRecovered } = useProject();
+  if (recoveredCount === 0 && reunitedNames.length === 0) return null;
 
   const one = recoveredCount === 1;
 
   return (
     <div className="recovery-notice" role="status">
       <LifeBuoy size={14} className="recovery-notice-icon" />
-      <p className="recovery-notice-message">
-        {one ? "1 page was" : `${recoveredCount} pages were`} put back after a move that didn't finish.{" "}
-        {one ? "It's" : "They're"} where {one ? "it" : "they"} started out — worth a look to check{" "}
-        {one ? "it's" : "they're"} where you want {one ? "it" : "them"}.
-      </p>
+      <div className="recovery-notice-body">
+        {recoveredCount > 0 && (
+          <p className="recovery-notice-message">
+            {one ? "1 page was" : `${recoveredCount} pages were`} put back after a move that didn't finish.{" "}
+            {one ? "It's" : "They're"} where {one ? "it" : "they"} started out — worth a look to check{" "}
+            {one ? "it's" : "they're"} where you want {one ? "it" : "them"}.
+          </p>
+        )}
+        {reunitedNames.length > 0 && (
+          <p className="recovery-notice-message">
+            The pages nested inside {formatNames(reunitedNames)} had come loose{" "}
+            {reunitedNames.length === 1 ? "from it" : "from them"} on disk, and have been put back inside. Nothing was
+            lost, and there's nothing to do — this fixes itself once and stays fixed.
+          </p>
+        )}
+      </div>
       <button type="button" className="ui-icon-btn ui-icon-btn-sm" aria-label="Dismiss" onClick={dismissRecovered}>
         <X size={13} />
       </button>

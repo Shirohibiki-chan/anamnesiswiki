@@ -212,12 +212,46 @@ is below.
   intact on disk. `assets/` is skipped by name instead, which is also one fewer
   directory listing per load.
 
+- **A marker-less `Name/` with a flat `Name.json` beside it is one node in two
+  pieces, and the load puts it back together** (`reuniteOwnerFile`). That is the
+  exact wreckage a page gaining its first child left behind before the write
+  path was fixed — the child written into the new directory, the parent's own
+  file never moved in after it. Hoisting the children out loses nothing, but it
+  shows the user a tree they didn't build, and it happens again on every load.
+  Three things make this safe to do automatically, and removing any one of them
+  makes it unsafe:
+  - **Only when the directory is marker-less.** A directory *with* a marker next
+    to a same-named file is two unrelated nodes, which is legal — a
+    directory-storage node and a leaf page never collide, so neither gets a
+    numbered suffix.
+  - **Only when the directory actually holds nodes.** An empty `Name/` proves
+    nothing, and someone can make one by hand in Explorer; swallowing their page
+    into it would be the app inventing structure.
+  - **Only if the rename succeeds.** The in-memory adoption is conditional on the
+    file having actually moved. Adopting the children while the flat file stayed
+    put would have the next save write a second copy of the node inside the
+    directory, and the load after that would find the same id twice. Failing
+    means the tree loads in the old hoisted shape and the next load tries again.
+
+- **The flat file is read by the directory branch, not the file branch**, and
+  the file branch stands back for exactly the names in `ownerFileNames`. This is
+  why every subdirectory at a level is listed before any file at that level is
+  read: whether a flat `Name.json` belongs to this level or inside `Name/` is a
+  question only `Name/`'s own listing answers. Reading it in both branches puts
+  the same id in the graph twice.
+
 - **The load walk knows `MOVE_TEMP_PREFIX`, and that isn't optional.** Anything
   still parked under a move's temp name is a real page whose relocation was
   interrupted. A parked *file* has no `.json` suffix, so the extension check
   skipped it outright — that is exactly how two pages disappeared on
   2026-07-31. `repairStrandedNodes` renames them back afterwards and the count
   surfaces through `recoveredCount` (see `RecoveryNotice.tsx`).
+
+- **Every repair the load makes is reported.** Both `recoveredCount` and
+  `reunited` reach the user through `RecoveryNotice`. Silent recovery is how the
+  first of these stayed invisible long enough to become lost pages: the app
+  quietly patched the same damage on every load and never said the damage was
+  there. A repair the user isn't told about is a bug they can't report.
 
 - **Repair is a rename, never a save-then-delete.** A stranded *directory* has
   its children inside it; writing the node's own marker at the new path and

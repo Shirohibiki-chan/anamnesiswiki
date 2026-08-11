@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-10 — opening a project repairs the nesting it used to quietly flatten
+
+### Fixes
+
+- **Pages that came loose from the page they were nested in get put back on open.** The previous fix stopped new damage, but it couldn't undo what was already on disk — anything nested before it still came back one level out, every single time the project was opened. Opening now spots the two halves and rejoins them, so the nesting you built is the nesting you get. It happens once and stays fixed.
+  - Nothing is moved on a guess. A page is only put back where there's something actually sitting inside the folder waiting for it, and the folder is left alone entirely if it's one you made yourself in Explorer.
+  - If the repair can't be written for any reason, the page loads exactly as it did before rather than half-repaired, and the next open tries again.
+
+### Additions
+
+- **Opening a project now says what it repaired on the way in.** The notice at the top of the window already reported pages put back after an interrupted move; it now also reports pages put back inside the page they belong to, by name. Repairs happening in silence is what let the last problem go unnoticed long enough to matter.
+
 ## 2026-08-10 — fix: making a page inside another page didn't move the parent's file
 
 ### Fixes

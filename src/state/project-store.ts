@@ -106,6 +106,11 @@ export type ProjectStoreState = {
   // put back. Worth telling the user about: it means an earlier move was
   // interrupted, and silence is what made that dangerous in the first place.
   recoveredCount: number;
+  // Pages whose own file was found outside the directory holding their
+  // children, and which the last load put back inside it. Same reason as
+  // above, plus one of its own: the tree these pages come back into is not the
+  // one she was last looking at, and nothing else would explain the change.
+  reunitedNames: string[];
   dismissRecovered: () => void;
   // Which tab to open on, when a page is being reached from somewhere that
   // knows the answer — a search result naming the tab its match came from.
@@ -395,6 +400,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     skippedFiles: [],
     saveErrors: [],
     recoveredCount: 0,
+    reunitedNames: [],
     pendingFocus: null,
     navHistory: EMPTY_NAV_HISTORY,
 
@@ -424,6 +430,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         isLoaded: true,
         skippedFiles: result.skipped,
         recoveredCount: result.recoveredCount,
+        reunitedNames: result.reunited,
         // Seeded with wherever the project was left, not left empty — so the
         // first page opened this session has somewhere to go Back *to*, which
         // is the page that's on screen when the window appears.
@@ -436,8 +443,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       set({ skippedFiles: [] });
     },
 
+    // One dismissal for both, because they're one notice on screen.
     dismissRecovered() {
-      set({ recoveredCount: 0 });
+      set({ recoveredCount: 0, reunitedNames: [] });
     },
 
     dismissSaveErrors() {
@@ -550,6 +558,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         skippedFiles: [],
         saveErrors: [],
         recoveredCount: 0,
+        reunitedNames: [],
         pendingFocus: null,
         // Closing a project throws its history away with it — the ids in there
         // mean nothing in the next project, and carrying them over would let
