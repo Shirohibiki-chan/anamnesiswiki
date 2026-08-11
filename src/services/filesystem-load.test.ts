@@ -133,17 +133,77 @@ describe("loadProject", () => {
   // 2026-07-31. None of these were failures of writing — the files were on
   // disk the whole time, and the loader walked straight past them.
   describe("recovering pages the loader used to walk past", () => {
-    // A page dropped onto a leaf template gets written into a plain directory
-    // named after that page, which has no marker file in it. Returning early
-    // on such a directory took the entire subtree with it.
-    it("keeps the contents of a marker-less directory, reparented up a level", async () => {
-      put("Valera Jiang.json", nodeJson("vj", "Valera Jiang", "note"));
-      put("Valera Jiang/Xuehua/_page.json", nodeJson("xh", "Xuehua", "character"));
+    // A marker-less directory with nothing claiming it is still walked, and
+    // its contents come up a level rather than vanishing. Returning early on
+    // such a directory is what took an entire subtree with it.
+    it("keeps the contents of an unclaimed marker-less directory, reparented up a level", async () => {
+      put("Leftover/Xuehua/_page.json", nodeJson("xh", "Xuehua", "character"));
 
       const result = await loadProject(ROOT);
-      expect(result!.nodes.map((n) => n.id).sort()).toEqual(["vj", "xh"]);
-      expect(result!.nodes.find((n) => n.id === "xh")!.parentId).toBeNull();
+      expect(result!.nodes.map((n) => n.id)).toEqual(["xh"]);
+      expect(result!.nodes[0].parentId).toBeNull();
       expect(result!.skipped).toEqual([]);
+      expect(renames).toEqual([]);
+    });
+
+    // The state a page gaining its first child used to leave behind: the child
+    // written into `Name/`, the page's own file still flat beside it. Hoisting
+    // the child up a level loads everything but shows the user a tree they
+    // didn't build, so the two halves are put back together instead.
+    describe("a page whose own file was left outside the directory holding its children", () => {
+      beforeEach(() => {
+        put("Valera Jiang.json", nodeJson("vj", "Valera Jiang", "note"));
+        put("Valera Jiang/Xuehua/_page.json", nodeJson("xh", "Xuehua", "character"));
+      });
+
+      it("nests the children under it rather than hoisting them out", async () => {
+        const result = await loadProject(ROOT);
+        expect(result!.nodes.map((n) => n.id).sort()).toEqual(["vj", "xh"]);
+        expect(result!.nodes.find((n) => n.id === "xh")!.parentId).toBe("vj");
+        expect(result!.skipped).toEqual([]);
+      });
+
+      it("moves the flat file into the directory, so the repair holds", async () => {
+        const result = await loadProject(ROOT);
+        expect(renames).toEqual([[`${ROOT}/Valera Jiang.json`, `${ROOT}/Valera Jiang/_page.json`]]);
+        expect(result!.reunited).toEqual(["Valera Jiang"]);
+      });
+
+      // Reading it twice would put the same id in the graph twice.
+      it("reads the flat file once, not once per branch that could claim it", async () => {
+        await loadProject(ROOT);
+        // project.json, the flat file, the page inside it.
+        expect(calls.readTextFile).toBe(3);
+      });
+    });
+
+    // Only the directory can say the flat file belongs inside it, and an empty
+    // one says nothing. Someone can make a folder by hand in Explorer next to
+    // a page of the same name, and moving their page into it on that evidence
+    // would be the app inventing structure.
+    it("leaves a page alone when the directory beside it holds nothing", async () => {
+      put("Valera Jiang.json", nodeJson("vj", "Valera Jiang", "note"));
+      put("Valera Jiang/notes.txt", "hand-written");
+
+      const result = await loadProject(ROOT);
+      expect(result!.nodes.map((n) => n.id)).toEqual(["vj"]);
+      expect(renames).toEqual([]);
+      expect(result!.reunited).toEqual([]);
+    });
+
+    // Legal, and not the broken state: a directory-storage node and a leaf
+    // page never collide on disk, so neither gets a numbered suffix and two
+    // unrelated nodes can share a name.
+    it("keeps a marker-carrying directory and a same-named file as two nodes", async () => {
+      put("Valera.json", nodeJson("leaf", "Valera", "note"));
+      put("Valera/_page.json", nodeJson("dir", "Valera", "character"));
+      put("Valera/Sword.json", nodeJson("sword", "Her Sword", "item"));
+
+      const result = await loadProject(ROOT);
+      expect(result!.nodes.map((n) => n.id).sort()).toEqual(["dir", "leaf", "sword"]);
+      expect(result!.nodes.find((n) => n.id === "leaf")!.parentId).toBeNull();
+      expect(result!.nodes.find((n) => n.id === "sword")!.parentId).toBe("dir");
+      expect(renames).toEqual([]);
     });
 
     // An interrupted move leaves nodes parked under a temp name. A file parked
@@ -170,9 +230,11 @@ describe("loadProject", () => {
       expect(renames).toEqual([[`${ROOT}/${MOVE_TEMP_PREFIX}def456`, `${ROOT}/AUs`]]);
     });
 
-    it("reports nothing to recover for an ordinary project", async () => {
+    it("reports nothing to repair for an ordinary project", async () => {
       put("Letter.json", nodeJson("letter", "Letter", "note"));
-      expect((await loadProject(ROOT))!.recoveredCount).toBe(0);
+      const result = await loadProject(ROOT);
+      expect(result!.recoveredCount).toBe(0);
+      expect(result!.reunited).toEqual([]);
     });
   });
 

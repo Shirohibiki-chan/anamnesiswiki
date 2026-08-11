@@ -287,6 +287,13 @@ export type LoadedProject = {
   skipped: string[];
   /** Pages found parked under a move's temp name and put back. */
   recoveredCount: number;
+  /**
+   * Names of pages whose own file had been left outside the directory holding
+   * their children, and which the load put back inside it. Names rather than a
+   * count because the tree these pages come back into is one the user last saw
+   * differently, and "your work is under *this*" is the useful half.
+   */
+  reunited: string[];
 };
 
 // A project folder is plain JSON on the user's own disk, synced by whatever
@@ -308,15 +315,18 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
 
   const skipped: string[] = [];
   const recovered: StrandedNode[] = [];
+  const reunited: string[] = [];
   const limited = createReadLimiter(READ_CONCURRENCY);
-  const nodes = await walkEntries(rootPath, await limited(() => readDir(rootPath)), null, skipped, recovered, limited);
+  const rootEntries = await limited(() => readDir(rootPath));
+  const nodes = await walkEntries(rootPath, rootEntries, null, skipped, recovered, reunited, limited);
   // Directories are read in parallel, so the order files finish in is down to
-  // timing. Sorting keeps the "couldn't read these" list the user sees stable
-  // between two loads of the same damaged project.
+  // timing. Sorting keeps the lists the user sees stable between two loads of
+  // the same damaged project.
   skipped.sort();
+  reunited.sort();
 
   const recoveredCount = await repairStrandedNodes(rootPath, nodes, recovered);
-  return { project, nodes, skipped, recoveredCount };
+  return { project, nodes, skipped, recoveredCount, reunited };
 }
 
 // Puts anything left parked under a move's temp name back at its real path.
@@ -385,31 +395,85 @@ async function readNodeFile(path: string, skipped: string[], limited: ReadLimite
 // shared limiter capping how many are actually in flight.
 type StrandedNode = { tempPath: string; nodeId: string };
 
+function markerFileOf(entries: DirEntry[]): string | null {
+  if (entries.some((child) => !child.isDirectory && child.name === FOLDER_FILE)) return FOLDER_FILE;
+  if (entries.some((child) => !child.isDirectory && child.name === PAGE_META_FILE)) return PAGE_META_FILE;
+  return null;
+}
+
+// Moves a flat `Name.json` into the marker-less `Name/` sitting beside it, so
+// the node and the children it's holding are one storage unit again — the
+// shape `usesDirectoryStorage` says a node with children has.
+//
+// Reaching this means a node gained its first child without its own file
+// following it into the new directory, which is what shipped broken on
+// 2026-08-10 and was fixed in the writing layer the same day. Repairing it on
+// load as well is what gets the *already damaged* projects back, since nothing
+// in the write path ever revisits a node it isn't currently saving.
+//
+// A failure is reported by returning false rather than thrown, and the caller
+// then leaves the tree in the hoisted shape it would have had before. That
+// pairing is the whole point: adopting the children in memory while the file
+// stayed put would have the next save write a second copy of the node inside
+// the directory, and the load after that would find the same id twice.
+async function reuniteOwnerFile(ownerPath: string, dirPath: string, owner: Node): Promise<boolean> {
+  try {
+    await rename(ownerPath, joinPath(dirPath, ownMetaFileName(owner)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function walkEntries(
   dirPath: string,
   entries: DirEntry[],
   parentId: string | null,
   skipped: string[],
   recovered: StrandedNode[],
+  reunited: string[],
   limited: ReadLimiter,
 ): Promise<Node[]> {
+  // Every subdirectory at this level is listed before anything here is read.
+  // Pairing a flat `Name.json` with a `Name/` beside it needs to know whether
+  // that directory carries a marker of its own, and only its listing says so.
+  // The listings are kept and handed to the recursive calls below, so this is
+  // the same one-listing-per-directory the walk has always made, just ordered.
+  const listings = new Map<string, DirEntry[]>();
+  await Promise.all(
+    entries.map(async (entry) => {
+      // Ours, flat, and never node-owned — skipped by name so it isn't even
+      // listed. Every other marker-less directory *is* walked (see below), and
+      // a world's worth of images is the one place where that would cost
+      // something for nothing.
+      if (!entry.isDirectory || (parentId === null && entry.name === ASSETS_DIR)) return;
+      listings.set(entry.name, await limited(() => readDir(joinPath(dirPath, entry.name))));
+    }),
+  );
+
+  // Files that belong to a marker-less directory rather than to this level.
+  // The directory branch reads them, so the file branch has to stand back or
+  // the same file is read twice and lands in the graph as two nodes. Both
+  // conditions matter: a directory *with* a marker next to a same-named file
+  // is two unrelated nodes, which is legal — a directory-storage node and a
+  // leaf page never collide, so neither gets a numbered suffix.
+  const ownerFileNames = new Set<string>();
+  for (const [name, childEntries] of listings) {
+    const ownerFileName = `${name}.json`;
+    if (!markerFileOf(childEntries) && entries.some((e) => !e.isDirectory && e.name === ownerFileName)) {
+      ownerFileNames.add(ownerFileName);
+    }
+  }
+
   const perEntry = await Promise.all(
     entries.map(async (entry): Promise<Node[]> => {
       const entryPath = joinPath(dirPath, entry.name);
 
       if (entry.isDirectory) {
-        // Ours, flat, and never node-owned — skipped by name so it isn't even
-        // listed. Every other marker-less directory *is* walked now (see
-        // below), and a world's worth of images is the one place where that
-        // would cost something for nothing.
-        if (parentId === null && entry.name === ASSETS_DIR) return [];
+        const childEntries = listings.get(entry.name);
+        if (!childEntries) return []; // assets/, skipped above without listing.
 
-        const childEntries = await limited(() => readDir(entryPath));
-        const markerFile = childEntries.some((child) => !child.isDirectory && child.name === FOLDER_FILE)
-          ? FOLDER_FILE
-          : childEntries.some((child) => !child.isDirectory && child.name === PAGE_META_FILE)
-            ? PAGE_META_FILE
-            : null;
+        const markerFile = markerFileOf(childEntries);
         // No marker file means this isn't a node-owned directory (assets/, or
         // a directory left behind by something going wrong). It contributes no
         // node of its own — but it is still **walked**, and anything inside it
@@ -420,7 +484,29 @@ async function walkEntries(
         // its own, so the child was written into a plain `Name/` directory
         // with no marker in it. The whole subtree then vanished from the tree
         // on the next load while sitting perfectly intact on disk.
-        if (!markerFile) return walkEntries(entryPath, childEntries, parentId, skipped, recovered, limited);
+        if (!markerFile) {
+          const hoisted = await walkEntries(entryPath, childEntries, parentId, skipped, recovered, reunited, limited);
+          const ownerFileName = `${entry.name}.json`;
+          if (!ownerFileNames.has(ownerFileName)) return hoisted;
+
+          const owner = await readNodeFile(joinPath(dirPath, ownerFileName), skipped, limited);
+          if (!owner) return hoisted;
+          owner.parentId = parentId;
+
+          // Only what the walk pushed *up* to this level — anything deeper
+          // already found its own parent inside. A marker-less directory
+          // nested in another hoists through both, so this correctly claims
+          // those too: as far as disk can say, they're this node's.
+          const adoptees = hoisted.filter((child) => child.parentId === parentId);
+          // An empty directory next to a page proves nothing and is left
+          // alone. Someone can make one by hand in Explorer, and swallowing
+          // the page into it would move a file for no reason.
+          if (adoptees.length > 0 && (await reuniteOwnerFile(joinPath(dirPath, ownerFileName), entryPath, owner))) {
+            for (const child of adoptees) child.parentId = owner.id;
+            reunited.push(owner.name);
+          }
+          return [owner, ...hoisted];
+        }
 
         const node = await readNodeFile(joinPath(entryPath, markerFile), skipped, limited);
         // An unreadable marker still leaves a real directory that may hold
@@ -433,11 +519,20 @@ async function walkEntries(
         // would survive every future save. Reported for the same repair as a
         // stranded file.
         if (node && entry.name.startsWith(MOVE_TEMP_PREFIX)) recovered.push({ tempPath: entryPath, nodeId: node.id });
-        const children = await walkEntries(entryPath, childEntries, node?.id ?? parentId, skipped, recovered, limited);
+        const children = await walkEntries(
+          entryPath,
+          childEntries,
+          node?.id ?? parentId,
+          skipped,
+          recovered,
+          reunited,
+          limited,
+        );
         return node ? [node, ...children] : children;
       }
 
       if (entry.name === FOLDER_FILE || entry.name === PAGE_META_FILE || entry.name === PROJECT_FILE) return [];
+      if (ownerFileNames.has(entry.name)) return [];
 
       // A file left under a move's temp name is a real page that a relocation
       // didn't finish putting away. It has no `.json` suffix, so the extension
