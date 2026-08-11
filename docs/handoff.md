@@ -531,6 +531,15 @@ is below.
   shift-selecting upwards would otherwise throw the user onto a page they
   didn't click.
 
+- **A submenu swapped into `TreePopover` must be no bigger than the menu it
+  replaces.** The popover measures itself once, at mount, and flips and clamps
+  against the viewport from there; swapping its contents doesn't re-measure.
+  SortMenu and MoveMenu both live inside this — MoveMenu's list is capped at
+  22rem for it (439px against the full context menu's 528px), and its width at
+  11rem (194px against 198px), because the popover is right-aligned to the
+  trigger and the trigger is in the sidebar, the narrow side of the window.
+  Anything taller or wider opens off an edge with no clamp left to catch it.
+
 - **Popovers portal to `document.body` via `TreePopover`.** Every react-arborist
   row is its own `position: absolute` stacking context for virtualisation, so a
   popover nested inside a row can never paint above a neighbouring row via
@@ -548,6 +557,15 @@ is below.
 
 - **BlockNote's editable area shrink-wraps to its own text** and won't stretch via
   CSS, so clicking the empty space below a short page is handled in JS.
+
+- **Truncating text inside a flex column needs three things, not one.**
+  `.tree-move-option` wanted `text-overflow: ellipsis`, and got nothing until it
+  also had `min-width: 0` at every level of the chain (a flex item's default
+  `min-width: auto` floors it at its own min-content width) *and*
+  `align-items: stretch` to beat `.tree-context-menu button`'s `center`, which
+  is (0,1,1) and outranked the new class. Measured symptom: a 310px name laid
+  out inside a 176px row, running out past the popover's edge rather than
+  clipping. Worth recognising — it looks like the ellipsis rule "not working".
 
 - **"Just created" is a one-shot request, not a property of the page.**
   `PageTitle` opens into its rename input when `pendingRenameId` names the page,

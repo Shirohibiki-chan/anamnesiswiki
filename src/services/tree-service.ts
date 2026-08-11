@@ -162,6 +162,92 @@ export function selectionRoots(ids: string[], nodes: Record<string, Node>): stri
   });
 }
 
+/**
+ * One place "Move to" can put a page. `id` is null for the project root, which
+ * is a real destination and has no node to name it — the caller passes the
+ * project's name for that row.
+ *
+ * `path` is the ancestor names from the root down, excluding the destination
+ * itself. It isn't decoration: a world has several pages called "Notes", and a
+ * list of bare names is a list of identical rows.
+ */
+export type MoveDestination = {
+  id: string | null;
+  name: string;
+  path: string[];
+};
+
+/**
+ * Everywhere the given pages could go, in the order the sidebar draws them.
+ *
+ * Three kinds of place are left out, and each is a bug rather than a tidiness
+ * preference:
+ *
+ * - **The pages being moved, and everything under them.** A page filed inside
+ *   itself is a cycle: the tree walk never terminates, and on disk it's a
+ *   directory being moved into its own subtree, which is how a subtree gets
+ *   lost rather than relocated. Dragging can't express this — react-arborist
+ *   won't draw the drop — so this is the first route to Move that has to say it
+ *   out loud.
+ * - **The parent they already share.** "Move to" the folder they're already in
+ *   does nothing visible, which reads as the menu being broken. Only excluded
+ *   when they *all* share it: a selection spread across three folders can
+ *   genuinely be gathered into any one of them.
+ * - **Nothing else.** Every page can hold pages (2026-08-10), so there's no
+ *   template that can't be a destination.
+ */
+export function moveDestinations(
+  movingIds: string[],
+  nodes: Record<string, Node>,
+  rootOrder: string[],
+  childOrder: Record<string, string[]> | undefined,
+  rootLabel: string,
+): MoveDestination[] {
+  const moving = movingIds.filter((id) => nodes[id]);
+  if (moving.length === 0) return [];
+
+  const movingSet = new Set(moving);
+  const isInsideMoving = (id: string): boolean => {
+    let currentId: string | null = id;
+    while (currentId) {
+      if (movingSet.has(currentId)) return true;
+      currentId = nodes[currentId]?.parentId ?? null;
+    }
+    return false;
+  };
+
+  // `undefined` when they don't agree, which is the case that keeps every
+  // parent in the list. Reading the first one and comparing is enough — a
+  // single moving page trivially agrees with itself.
+  const sharedParent = moving.every((id) => nodes[id].parentId === nodes[moving[0]].parentId)
+    ? nodes[moving[0]].parentId
+    : undefined;
+
+  const childrenByParent = new Map<string | null, Node[]>();
+  for (const node of Object.values(nodes)) {
+    const list = childrenByParent.get(node.parentId) ?? [];
+    list.push(node);
+    childrenByParent.set(node.parentId, list);
+  }
+
+  const destinations: MoveDestination[] = [];
+  if (sharedParent !== null) destinations.push({ id: null, name: rootLabel, path: [] });
+
+  const walk = (parentId: string | null, path: string[]): void => {
+    const siblings = orderSiblings(childrenByParent.get(parentId) ?? [], parentId === null ? rootOrder : childOrder?.[parentId]);
+    for (const node of siblings) {
+      // The whole subtree goes with it, so there's nothing below a moving page
+      // worth descending into either.
+      if (isInsideMoving(node.id)) continue;
+      if (node.id !== sharedParent) destinations.push({ id: node.id, name: node.name, path });
+      walk(node.id, [...path, node.name]);
+    }
+  };
+  walk(null, []);
+
+  return destinations;
+}
+
 export type EffectiveColor = {
   color: string | null;
   isOwner: boolean;

@@ -4,13 +4,16 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
 import { useProject } from "./use-project";
+import { useCallback } from "react";
 import {
   buildTreeData,
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
   isHiddenByAncestor,
+  moveDestinations,
   type EffectiveColor,
+  type MoveDestination,
   type TreeNodeData,
   type TreeSearchMode,
 } from "../services/tree-service";
@@ -20,6 +23,7 @@ import type { Node } from "../constants/schema";
 // reach into services for them. See CLAUDE.md's layer order.
 export { TREE_SEARCH_MODES } from "../services/tree-service";
 export type { TreeSearchMode } from "../services/tree-service";
+export type { MoveDestination } from "../services/tree-service";
 
 export function useTreeData(): {
   treeData: TreeNodeData[];
@@ -74,6 +78,28 @@ export function useAncestorChain(nodeId: string): Node[] {
 // when the answer itself flips.
 export function useHiddenByAncestor(nodeId: string): boolean {
   return useProjectStore((state) => isHiddenByAncestor(nodeId, state.nodes));
+}
+
+/**
+ * Where a selection could be moved to, answered on demand rather than watched.
+ *
+ * `getState()` rather than a subscription, the same call useRevealNode makes
+ * and for the same reason: the only caller is TreeItem, which renders once per
+ * visible row, and reading `nodes` here would re-run every row on every
+ * keystroke typed into the editor. The list is a snapshot taken when the menu
+ * opens, which is all a menu ever shows.
+ *
+ * The returned callback keeps its identity forever, so it can't be what makes
+ * a row re-render either.
+ */
+export function useMoveDestinations(): (ids: string[]) => MoveDestination[] {
+  return useCallback((ids: string[]) => {
+    const { project, nodes } = useProjectStore.getState();
+    if (!project) return [];
+    // The project's own name labels the top-level row, because that's what
+    // it's called everywhere else she looks — the breadcrumb, the window.
+    return moveDestinations(ids, nodes, project.rootOrder, project.childOrder, project.name);
+  }, []);
 }
 
 // The tree's name-and-tag filter. Lives here rather than in TreePanel so the

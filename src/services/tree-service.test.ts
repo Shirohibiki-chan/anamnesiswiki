@@ -6,6 +6,7 @@ import {
   getEffectiveColor,
   isDescendantOf,
   isHiddenByAncestor,
+  moveDestinations,
   selectionRoots,
   sortSiblingIds,
 } from "./tree-service";
@@ -491,5 +492,94 @@ describe("selectionRoots", () => {
   it("stops rather than looping when a parent id points at nothing", () => {
     const orphan = byId([node({ id: "orphan", name: "Orphan", parentId: "missing", templateKey: "note" })]);
     expect(selectionRoots(["orphan"], orphan)).toEqual(["orphan"]);
+  });
+});
+
+describe("moveDestinations", () => {
+  // Canon/ holds Characters/ (holding Valera) and Places/; AUs/ sits beside it
+  // and holds a second page also called Valera, which is what the path on each
+  // destination exists to tell apart.
+  const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+  const characters = node({ id: "characters", name: "Characters", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+  const valera = node({ id: "valera", name: "Valera", parentId: "characters", templateKey: "character" });
+  const places = node({ id: "places", name: "Places", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+  const aus = node({ id: "aus", name: "AUs", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+  const auValera = node({ id: "au-valera", name: "Valera", parentId: "aus", templateKey: "character" });
+  const nodes = byId([canon, characters, valera, places, aus, auValera]);
+  const rootOrder = ["canon", "aus"];
+  const childOrder = { canon: ["characters", "places"] };
+
+  function ids(movingIds: string[]): (string | null)[] {
+    return moveDestinations(movingIds, nodes, rootOrder, childOrder, "Valeraverse").map((d) => d.id);
+  }
+
+  it("lists everywhere else, in the order the sidebar draws it", () => {
+    expect(ids(["valera"])).toEqual([null, "canon", "places", "aus", "au-valera"]);
+  });
+
+  it("leaves out the page being moved", () => {
+    expect(ids(["characters"])).not.toContain("characters");
+  });
+
+  it("leaves out everything inside the page being moved", () => {
+    // Canon is missing too, but as the parent it's already in — see below.
+    expect(ids(["characters"])).toEqual([null, "places", "aus", "au-valera"]);
+  });
+
+  it("leaves out the parent the page is already in", () => {
+    expect(ids(["valera"])).not.toContain("characters");
+  });
+
+  it("leaves out the project root when the page is already at the top level", () => {
+    expect(ids(["aus"])).not.toContain(null);
+  });
+
+  it("keeps every parent when the selection is spread across several", () => {
+    // Neither "characters" nor "aus" is a shared parent, so both stay: three
+    // pages in three folders can genuinely be gathered into any one of them.
+    expect(ids(["valera", "au-valera"])).toEqual([null, "canon", "characters", "places", "aus"]);
+  });
+
+  it("leaves out the one parent a whole selection shares", () => {
+    expect(ids(["characters", "places"])).toEqual([null, "aus", "au-valera"]);
+  });
+
+  it("names the project root with the label it was given", () => {
+    const [first] = moveDestinations(["valera"], nodes, rootOrder, childOrder, "Valeraverse");
+    expect(first).toEqual({ id: null, name: "Valeraverse", path: [] });
+  });
+
+  it("carries each destination's ancestors, so two pages of one name read apart", () => {
+    const found = moveDestinations(["places"], nodes, rootOrder, childOrder, "Valeraverse");
+    expect(found.find((d) => d.id === "valera")?.path).toEqual(["Canon", "Characters"]);
+    expect(found.find((d) => d.id === "au-valera")?.path).toEqual(["AUs"]);
+  });
+
+  it("returns nothing when no id names a page", () => {
+    expect(moveDestinations(["gone"], nodes, rootOrder, childOrder, "Valeraverse")).toEqual([]);
+  });
+
+  it("ignores an id that no longer names a page alongside one that does", () => {
+    expect(ids(["valera", "gone"])).toEqual([null, "canon", "places", "aus", "au-valera"]);
+  });
+
+  it("falls back to creation order where no manual order was recorded", () => {
+    // AUs has no childOrder entry, so its two children sort by creation time —
+    // the same fallback the sidebar itself uses for a folder nobody has
+    // dragged anything around in.
+    const later = node({ id: "au-later", name: "Later", parentId: "aus", templateKey: "note", createdAt: 5 });
+    const earlier = node({ id: "au-earlier", name: "Earlier", parentId: "aus", templateKey: "note", createdAt: 1 });
+    const withBoth = byId([canon, characters, valera, places, aus, later, earlier]);
+    const found = moveDestinations(["valera"], withBoth, rootOrder, childOrder, "Valeraverse");
+    expect(found.map((d) => d.id)).toEqual([null, "canon", "places", "aus", "au-earlier", "au-later"]);
+  });
+
+  it("stops rather than looping when a parent id points at nothing", () => {
+    const orphan = node({ id: "orphan", name: "Orphan", parentId: "missing", templateKey: "note" });
+    const withOrphan = byId([canon, orphan]);
+    expect(moveDestinations(["orphan"], withOrphan, ["canon"], {}, "Valeraverse").map((d) => d.id)).toEqual([
+      null,
+      "canon",
+    ]);
   });
 });

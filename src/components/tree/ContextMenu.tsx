@@ -1,4 +1,5 @@
-// Right-click menu content: New page inside / Rename / Duplicate / Set color /
+// Right-click menu content: New page inside / Rename / Duplicate / Move to /
+// Set color /
 // Save as template / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
@@ -16,6 +17,7 @@ import {
   FileStack,
   Eye,
   EyeOff,
+  FolderInput,
   FolderOpen,
   Home,
   Palette,
@@ -59,6 +61,7 @@ type ContextMenuProps = {
   canSort: boolean;
   onRename: () => void;
   onDuplicate: () => void;
+  onMoveTo: () => void;
   onSetColor: () => void;
   onSaveAsTemplate: () => void;
   onSortChildren: () => void;
@@ -85,6 +88,7 @@ export function ContextMenu({
   canSort,
   onRename,
   onDuplicate,
+  onMoveTo,
   onSetColor,
   onSaveAsTemplate,
   onSortChildren,
@@ -139,6 +143,15 @@ export function ContextMenu({
           exactly what copying one does, done to each of them. */}
       <button type="button" onClick={() => run(onDuplicate)}>
         <Copy size={13} /> Duplicate
+      </button>
+      {/* Multi-selection included: filing a run of pages into one folder is
+          most of what moving is for, and unlike renaming it means the same
+          thing done ten times as it does done once. Sits beside Duplicate
+          because it answers the same kind of question — where this page
+          lives — rather than what's written in it. */}
+      <button type="button" className="tree-context-menu-submenu" onClick={onMoveTo}>
+        <FolderInput size={13} /> Move to
+        <ChevronRight size={13} className="tree-context-menu-chevron" />
       </button>
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color

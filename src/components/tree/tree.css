@@ -622,6 +622,125 @@ button.tree-path-crumb:hover {
   padding-left: calc(var(--space-md) + 13px + var(--space-md));
 }
 
+/* --- MoveMenu ---
+   A search box plus a scrolling list, swapped into the same popover the
+   context menu was in. That popover measures itself once, at mount, against
+   the viewport (see TreePopover) and the swap doesn't re-measure — so this has
+   to stay no taller than the menu it replaces, or a move started from a row
+   low in the sidebar would open off the bottom of the window. The list's
+   max-height is what holds that: header + field + 22rem measures 439px
+   against the full menu's 528px, which is about eight destinations at a time.
+
+   The width is bounded for the same reason and against the same measurement:
+   the popover is right-aligned to the trigger, so a submenu wider than the
+   menu would push its left edge outward with no clamp left to catch it — and
+   the sidebar is the narrow side of the window. 11rem measures 194px against
+   the context menu's 198px, so the swap can only ever move that edge inward. */
+.tree-move-menu {
+  width: 11rem;
+}
+
+.tree-move-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-xs);
+}
+
+.tree-move-search-icon {
+  position: absolute;
+  left: var(--space-sm);
+  color: var(--color-text-placeholder);
+  pointer-events: none;
+}
+
+.tree-move-search-input {
+  width: 100%;
+  /* Clears the magnifier sitting inside the field — the icon starts at
+     --space-sm and is 12px wide, so the caret begins past both. The two have
+     to move together, as in .tree-search-input above. */
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) calc(var(--space-sm) + 12px + var(--space-xs));
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-xs);
+}
+
+.tree-move-search-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.tree-move-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  /* Every level of the flex chain down to the text needs this, not just the
+     span that carries the ellipsis — a flex item's default `min-width: auto`
+     floors it at its own min-content width, so any one of them left out is
+     enough to push a long name straight out of the popover. */
+  min-width: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+/* Qualified by the list, and it has to be: `.tree-context-menu button` above
+   is (0,1,1) and would otherwise win every declaration these two share —
+   including the `align-items: center` that broke the truncation below. A
+   destination row isn't that row: it's a name over its trail rather than one
+   line with an icon. It also sits inside .tree-move-list rather than beside
+   the back header, so the submenu indent rule doesn't reach it, which is right
+   here — there's no icon column to line up with. */
+.tree-move-list .tree-move-option {
+  display: flex;
+  flex-direction: column;
+  /* Centring on the cross axis of a *column* flex sizes each line to its own
+     text instead of to the row, which laid a long name out 310px wide in a
+     176px row and never reached the ellipsis below. */
+  align-items: stretch;
+  gap: 1px;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tree-move-list .tree-move-option:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+/* Both lines truncate rather than wrap. A page named for a whole sentence is
+   ordinary in a worldbuilding wiki, and a row that grows to three lines pushes
+   the rest of the list out of a popover that can't re-measure.
+
+   `min-width: 0` on the list and the row above is what makes the ellipsis
+   happen at all; see the note on .tree-move-list. Measured before the fix: a
+   310px name inside a 240px row, running out past the popover's edge. */
+.tree-move-option-name,
+.tree-move-option-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-move-option-path {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.tree-move-empty {
+  padding: var(--space-sm);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
 /* ─── Shortcut rail ────────────────────────────────────────────────────────
    Pinned pages as icon tiles, under the search box. Wraps rather than
    scrolling sideways, unlike the path bar above: the path bar is one chain

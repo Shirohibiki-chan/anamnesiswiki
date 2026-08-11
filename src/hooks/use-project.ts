@@ -31,6 +31,7 @@ export function useProjectActions() {
       addTab: state.addTab,
       renameNode: state.renameNode,
       moveNode: state.moveNode,
+      moveNodes: state.moveNodes,
       deleteNode: state.deleteNode,
       deleteNodes: state.deleteNodes,
       duplicateNodes: state.duplicateNodes,
