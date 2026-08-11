@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-11 — move a page by naming where it goes
+
+**Phase 15 finishes here** — the right-click menu now has everything it was meant to have.
+
+### Additions
+
+- **"Move to" on the right-click menu.** Type the name of the page or folder you want, pick it from the list, and everything you'd selected goes there — no dragging a page up eighty rows to a folder you can't see at the same time. Enter takes the top result, so it's three keystrokes if you know where you're going.
+  - **It lists the whole world**, so you can also just scroll it. Each destination shows the trail above it — a world with three pages called "Notes" doesn't give you three identical rows to guess between.
+  - **It leaves out the places that aren't places**: the pages you're moving, anything inside them (a page can't go inside itself), and the folder they're already in.
+  - **Works on a multi-selection**, and gathers a run of pages from different folders into one.
+  - **The destination opens as the page lands in it**, along with anything it's nested inside, so you can see where your work went instead of watching it disappear.
+  - One Ctrl+Z puts everything back where it was, whether that was one page or nine from three different folders.
+
 ## 2026-08-11 — the title stops grabbing the cursor
 
 ### Fixes

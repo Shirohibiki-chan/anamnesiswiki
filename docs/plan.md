@@ -215,8 +215,8 @@ Everything below comes out of one planning session: the user brought a list of r
 **Phases 11, 11.5, 12, 13 and 14 are done** — the identity pass, the design
 system beneath it, themes, property types, and everyday navigation. Their
 detail is in `docs/shipped.md`; what still binds the code is in
-`docs/handoff.md`. **Phase 15 is next**, and it starts one item short: "Set as
-shortcut" was built in Phase 14 alongside the rail it feeds.
+`docs/handoff.md`. **Phase 15 is done too** — the right-click menu's full pass.
+**Phase 16 is next.**
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
@@ -233,10 +233,10 @@ Convert to template · Export (per node) · Move ▸ · Sort sub-pages ▸ · ~~
 
 **Skipped:** "Edit permissions" — multi-user, not us.
 
-**Shipped 2026-08-11:** Sort sub-pages, Expand/Collapse all inside, the queued
-duplicate-on-multi-selection fix, and Convert to template — which shipped under
-the name **"Save as template"**, because "convert" reads as one-way and the page
-is copied rather than changed.
+**Phase 15 is done, 2026-08-11.** Sort sub-pages, Expand/Collapse all inside,
+the queued duplicate-on-multi-selection fix, Convert to template — which shipped
+under the name **"Save as template"**, because "convert" reads as one-way and
+the page is copied rather than changed — and Move to.
 
 **What "Save as template" settled**, from the user's own test of LegendKeeper's
 version (2026-08-11) — these are answers, not guesses, and don't need re-asking:
@@ -248,7 +248,7 @@ version (2026-08-11) — these are answers, not guesses, and don't need re-askin
   the project folder — see `docs/handoff.md` §Templates for why that file and
   not a directory, and why they're kept out of the project's `nodes`.
 
-**Still open: Move ▸.** The destination picker is a **search box** (her
+**Move ▸ shipped as "Move to"**, with a **search box** for the destination (her
 choice, 2026-08-11) rather than a submenu mirroring the tree — a submenu of
 everywhere doesn't survive a world this size.
 

@@ -10,7 +10,12 @@ import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useIsPinned, useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
-import { useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
+import {
+  useEffectiveColor,
+  useHiddenByAncestor,
+  useMoveDestinations,
+  type MoveDestination,
+} from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useTreeDoubleClick } from "../../hooks/use-preferences";
@@ -18,18 +23,29 @@ import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
 import type { TreeNodeData } from "../../services/tree-service";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
+import { MoveMenu } from "./MoveMenu";
 import { SortMenu } from "./SortMenu";
 import { TreePopover } from "./TreePopover";
 
-type OpenPopover = "color" | "menu" | "sort" | null;
+type OpenPopover = "color" | "menu" | "sort" | "move" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNodes, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, sortChildren, saveAsTemplate, togglePinned } =
-    useProjectActions();
+  const {
+    duplicateNodes,
+    deleteNodes,
+    moveNodes,
+    setNodeColor,
+    setNodeHidden,
+    setProjectHome,
+    setFocus,
+    sortChildren,
+    saveAsTemplate,
+    togglePinned,
+  } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
@@ -39,8 +55,13 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const doubleClickAction = useTreeDoubleClick();
   const revealNode = useRevealNode();
   const fileManagerName = useFileManagerName();
+  const getMoveDestinations = useMoveDestinations();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  // Computed when the submenu opens rather than on every render: it walks the
+  // whole graph, and this component renders once per visible row. A menu shows
+  // a snapshot anyway — nothing can move while it's open.
+  const [destinations, setDestinations] = useState<MoveDestination[]>([]);
 
   if (!fullNode) return null;
 
@@ -165,6 +186,28 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   function openMenu(anchor: HTMLElement) {
     if (!node.isSelected) node.select();
     openPopoverAt("menu", anchor);
+  }
+
+  // Where the selection could go, worked out at the moment the submenu opens.
+  function openMoveMenu() {
+    setDestinations(getMoveDestinations(targetIds()));
+    setOpenPopover("move");
+  }
+
+  // Opening the destination — and everything above it — is what makes the move
+  // visible. Unlike a drag, which lands somewhere already on screen, this can
+  // file a page into a collapsed folder in a corner of the tree nobody is
+  // looking at, and from here that's indistinguishable from the page having
+  // vanished. Done before the move so the row is already open when its new
+  // page arrives, rather than blinking shut and back.
+  function moveTo(destinationId: string | null) {
+    const ids = targetIds();
+    if (destinationId) {
+      node.tree.openParents(destinationId);
+      node.tree.open(destinationId);
+    }
+    void moveNodes(ids, destinationId);
+    closePopover();
   }
 
   // The new page opens in the center panel and asks what it is there, so this
@@ -323,6 +366,11 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "move" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <MoveMenu destinations={destinations} onSelect={moveTo} onBack={() => setOpenPopover("menu")} />
+        </TreePopover>
+      )}
       {openPopover === "menu" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
@@ -338,6 +386,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             canSort={(node.children?.length ?? 0) > 1}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNodes(targetIds())}
+            onMoveTo={openMoveMenu}
             onSetColor={() => setOpenPopover("color")}
             onSaveAsTemplate={() => void handleSaveAsTemplate()}
             onSortChildren={() => setOpenPopover("sort")}
