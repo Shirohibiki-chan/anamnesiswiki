@@ -228,7 +228,13 @@ export function PropertiesPanel() {
 
   return (
     <div className="properties-panel">
-      <ImageSlot nodeId={node.id} image={node.image} />
+      <ImageSlot
+        nodeId={node.id}
+        image={node.image}
+        imageAlt={node.imageAlt}
+        imageFocusY={node.imageFocusY}
+        hasBanner={node.banner !== undefined}
+      />
       {node.templateKey === BLANK_TEMPLATE_KEY && (
         <div className="properties-panel-apply-template">
           <p>This page doesn't have a template yet.</p>

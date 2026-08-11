@@ -140,6 +140,18 @@ export type Node = {
   // ImageSlot resolves it against the project root when it needs to display
   // or delete the file.
   image?: string;
+  // Alternative text describing `image`, written by the user through the image
+  // slot's ALT button. Absent means none was written — the picture then renders
+  // with an empty alt, which is the correct markup for a decorative image and
+  // is what every page created before this field existed gets.
+  imageAlt?: string;
+  // 0-100 vertical focus point for `image`, the same idea as `bannerFocusY`
+  // below. Absent is meaningful and is the default: the slot shows the whole
+  // photo at its own aspect ratio, and nothing is cropped. Setting one is what
+  // "Reposition" does — it crops the slot to a square frame focused there, and
+  // clearing it returns the whole photo. So this field is both the focus point
+  // *and* the flag saying the slot is cropped at all.
+  imageFocusY?: number;
   // A separate full-width cover image shown above the page title (Phase 8's
   // PageBanner) — distinct from `image` above, matching LegendKeeper's own
   // banner-vs-sidebar-image distinction. Same assets/ dir, addressed the same

@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-11 — buttons on the sidebar picture
+
+**Phase 16 starts here.**
+
+### Additions
+
+- **The sidebar picture has its own buttons now**, on a small bar that appears when you hover over it. Four of them:
+  - **Change picture** — swap it without having to remove the old one first. Dropping a new file straight onto the picture still works too.
+  - **Reposition** — crops the picture to a square and lets you drag it up and down to choose which part shows, the same way the cover image at the top of a page already worked. There's a **Show whole image** button next to it to undo the crop and go back to the full photo, which is still what a picture looks like until you touch this.
+  - **Describe** — writes ALT text, the short description of what's in the picture. The button turns teal once there's one, and hovering it shows you what you wrote.
+  - **Set as cover** — makes the sidebar picture the page's cover image as well. If the page already has a cover it asks first, because the old one gets thrown away.
+
+### Adjustments
+
+- **The remove × on the sidebar picture only appears when you hover the picture**, matching the cover image at the top of a page. It was sitting on top of the photo permanently.
+- **Clicking the picture itself no longer opens the file browser** — that's the change button's job now. It would have fought the reposition drag for the same click. An *empty* slot is still click-anywhere-to-browse.
+- **Removing a picture also clears its description and its crop**, so neither carries over onto whatever you upload next.
+
 ## 2026-08-11 — move a page by naming where it goes
 
 **Phase 15 finishes here** — the right-click menu now has everything it was meant to have.
