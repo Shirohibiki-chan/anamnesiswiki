@@ -68,16 +68,6 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Queued Adjustments
 
-- **Duplicate doesn't work on a multi-selection.** The right-click menu hides it
-  above one selected row rather than looping `duplicateNode`, which writes
-  through `saveNodes` without a relocation pass. **The relocation half was
-  fixed 2026-08-10** — every add path now goes through `fsService.addNodes`,
-  which plans relocations the same way `deleteNodes` does, so colliding
-  siblings' suffixes are handled. What's left is only the UI: the menu still
-  hides Duplicate above one selected row rather than looping. Bulk delete,
-  move, and colour are all supported. **Scheduled into Phase 15**, which
-  reworks that menu anyway — no reason to open it twice.
-
 - **The About dialog never got built.** The other half of a Phase 12 bullet
   whose first half shipped as Settings → Patch Notes on 2026-08-08. Small and
   self-contained — version, licence, the fonts' licences, a link to the repo.
@@ -239,11 +229,33 @@ From the user's screenshot of LK's node menu, minus what doesn't apply to a sing
 
 Convert to template · Export (per node) · Move ▸ · Sort sub-pages ▸ · ~~Set as shortcut~~ · Hide · Collapse all · Expand all.
 
-**"Set as shortcut" already shipped**, 2026-08-11, pulled forward into Phase 14 because the bookmarks rail there had nothing to render without it. Hide shipped too. Neither needs revisiting here.
+**"Set as shortcut" already shipped**, 2026-08-11, pulled forward into Phase 14 because the bookmarks rail there had nothing to render without it. Hide shipped too. Per-node **Export** was already on the menu as "Export to LegendKeeper". None of the three needs revisiting here.
 
 **Skipped:** "Edit permissions" — multi-user, not us.
 
-Fold in the queued **duplicate-on-multi-selection** fix while in here; it's the same menu and the same batch-relocation problem `deleteNodes`/`moveNodes` already solved.
+**Shipped 2026-08-11:** Sort sub-pages, Expand/Collapse all inside, the queued
+duplicate-on-multi-selection fix, and Convert to template — which shipped under
+the name **"Save as template"**, because "convert" reads as one-way and the page
+is copied rather than changed.
+
+**What "Save as template" settled**, from the user's own test of LegendKeeper's
+version (2026-08-11) — these are answers, not guesses, and don't need re-asking:
+
+- **It copies everything.** The writing, the properties *with the values filled
+  into them*, tags, colour, pictures. Not a description of a page's shape.
+- **It asks about sub-pages**, one question, two answers.
+- **Templates are per world**, not per app. They live in `.templates.json` in
+  the project folder — see `docs/handoff.md` §Templates for why that file and
+  not a directory, and why they're kept out of the project's `nodes`.
+
+**Still open: Move ▸.** The destination picker is a **search box** (her
+choice, 2026-08-11) rather than a submenu mirroring the tree — a submenu of
+everywhere doesn't survive a world this size.
+
+**Left to Phase 17 deliberately:** templates currently surface only in the
+new-page screen, with a hover × to delete one. That's enough to make them
+usable and to undo a mistake; browsing, renaming and reorganising them is the
+Templates tab's job.
 
 ---
 

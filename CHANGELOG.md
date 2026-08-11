@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-11 — turn a page you like into a template
+
+### Additions
+
+- **"Save as template" on any page's right-click menu.** It copies the page — the writing, the properties and what you've filled into them, the tags, the colour, the pictures — and keeps it as a template for this world. **The page itself doesn't change**; you get a copy to start from, not a page that's been turned into something else.
+  - **It asks whether the pages inside should come along too**, so a character with six sub-pages can be a template for that whole arrangement or just for the character. A page with nothing inside it doesn't get asked.
+  - **Templates belong to the world, not the app.** Valeraverse's templates are Valeraverse's — saved with it, and they travel with the folder if you sync or share it.
+
+- **Your templates show up when you make a new page**, under the built-in ones as "Or one of this world's own". Picking one fills the new page in the same way the built-in templates do, sub-pages included.
+  - **Hover one there and click the × to delete it**, with a confirmation first. Deleting a template doesn't touch any page you already made from it. A proper Templates tab to organise them is still to come.
+
+- Each template gets **its own copies of any pictures**, so replacing a page's portrait later can't take the template's with it.
+
+### Fixes
+
+- **A page named "assets", "project" or ".templates" at the top level no longer collides with the app's own files.** These are names Anamnesis already uses in your project folder, and a page that landed on one could go missing from the sidebar while sitting perfectly intact on disk. Such a page now gets a numbered name — "assets (2)" — the same way two pages with the same name already do. Nothing existing needs fixing; it's the same rule that was already there, applied to a case it was missing.
+
 ## 2026-08-11 — duplicate more than one page at a time
 
 ### Fixes

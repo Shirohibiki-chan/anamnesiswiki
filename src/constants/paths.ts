@@ -11,6 +11,26 @@ export const FOLDER_META_FILE = "_folder.json";
 export const PAGE_META_FILE = "_page.json";
 export const ASSETS_DIR = "assets";
 
+/**
+ * The world's own templates — "Convert to template" writes here. One file
+ * holding a forest of pages, rather than a directory of them like the tree
+ * itself: templates are scaffolding rather than writing, there are a dozen at
+ * most, and a directory would have to be reserved at the project root, where
+ * `Templates/` is a folder name someone might genuinely want.
+ *
+ * Per world, not per app (her decision, 2026-08-11): a template is made of the
+ * tabs and properties a particular world needs, and carrying Valeraverse's into
+ * an unrelated project would be clutter rather than a head start.
+ *
+ * The leading dot is doing real work. The load walk skips this name, and any
+ * name the walk skips is a name a page can be lost behind — a page called
+ * "Templates" resolves to `Templates.json`, which is the same file as
+ * `templates.json` on Windows and macOS both. Nobody titles a page
+ * ".templates". `buildPathIndex` reserves it as well, so even that page gets a
+ * " (2)" instead of a collision.
+ */
+export const TEMPLATES_FILE = ".templates.json";
+
 // Phase 12. Both sit *beside* the projects, in the projects folder rather than
 // inside any one of them — a theme isn't part of a world, and having to
 // re-make it for every project would be the wrong shape. They're also

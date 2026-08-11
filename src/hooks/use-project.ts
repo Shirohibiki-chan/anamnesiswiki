@@ -1,7 +1,9 @@
 // The only import path components have into project-store.ts. See CLAUDE.md's
 // layer order — components never import stores directly.
+import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
+import { listTemplates } from "../services/template-library";
 import type { Node } from "../constants/schema";
 
 // Subscribes to the *whole* store: any change anywhere re-renders the caller.
@@ -33,6 +35,9 @@ export function useProjectActions() {
       deleteNodes: state.deleteNodes,
       duplicateNodes: state.duplicateNodes,
       sortChildren: state.sortChildren,
+      saveAsTemplate: state.saveAsTemplate,
+      deleteTemplate: state.deleteTemplate,
+      applyCustomTemplate: state.applyCustomTemplate,
       setNodeColor: state.setNodeColor,
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
@@ -90,4 +95,16 @@ export function usePinnedIds(): string[] {
 
 export function useIsPinned(nodeId: string): boolean {
   return useProjectStore((state) => (state.project?.pinnedIds ?? []).includes(nodeId));
+}
+
+/**
+ * This world's own templates, in the order they should be offered.
+ *
+ * Returns the roots only — a template's sub-pages are its business, not
+ * something to list beside it. Recomputed from the library rather than stored
+ * sorted, the same way the tree derives its order (see tree-service).
+ */
+export function useCustomTemplates(): Node[] {
+  const templates = useProjectStore((state) => state.templates);
+  return useMemo(() => listTemplates(templates), [templates]);
 }

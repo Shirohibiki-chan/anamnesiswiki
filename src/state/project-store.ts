@@ -9,8 +9,10 @@ import {
   DEFAULT_STATUS_OPTIONS,
   FOLDER_TEMPLATE_KEY,
   type CustomPropertySpec,
+  createTemplateLibrary,
   type Node,
   type Project,
+  type TemplateLibrary,
   type Tab,
 } from "../constants/schema";
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
@@ -19,6 +21,13 @@ import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler
 import { enqueueWrite } from "../services/write-queue";
 import { getDefaultTabs } from "../services/template-registry";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
+import {
+  addTemplate,
+  cloneSubtree,
+  collectSubtree,
+  parseTemplateLibrary,
+  removeTemplate,
+} from "../services/template-library";
 import {
   EMPTY_NAV_HISTORY,
   forgetNodes,
@@ -94,6 +103,10 @@ export type ProjectStoreState = {
   rootPath: string | null;
   project: Project | null;
   nodes: Record<string, Node>;
+  // This world's own templates, kept apart from `nodes` on purpose — see
+  // constants/schema.ts's TemplateLibrary. Always an object, empty before a
+  // project is open, so no reader has to null-check it.
+  templates: TemplateLibrary;
   isLoaded: boolean;
   lastSavedAt: number | null;
   // Node files that couldn't be read on the last load (corrupt JSON, wrong
@@ -186,6 +199,27 @@ export type ProjectStoreState = {
   // call site is several undo entries for one thing the user did, and the
   // ordering pass below has to see the whole batch to place the copies right.
   duplicateNodes: (ids: string[]) => Promise<void>;
+  /**
+   * Copies a page into this world's templates. The original is untouched —
+   * this is "make me one of these to start from", not "turn this into a
+   * template" — which is what the dialog says before it runs.
+   *
+   * `includeDescendants` is the sub-pages question. Off keeps the page's own
+   * shape and drops what's parented to it.
+   */
+  saveAsTemplate: (nodeId: string, includeDescendants: boolean) => Promise<void>;
+  deleteTemplate: (rootId: string) => void;
+  /**
+   * Pours one of this world's templates into an existing page — the same shape
+   * `applyTemplate` has for the built-in ones, because it answers the same
+   * question in the same place: a page is made first and asks what it is
+   * afterwards (see NewPageLanding).
+   *
+   * The page keeps its own name, id and position. Everything the template
+   * carries — tabs, properties, tags, colour, pictures, and the pages that were
+   * saved inside it — replaces what's there.
+   */
+  applyCustomTemplate: (nodeId: string, templateRootId: string) => Promise<void>;
   // Rewrites one sibling group's manual order. `parentId` is null for the
   // project root, matching rootOrder/childOrder.
   sortChildren: (parentId: string | null, sort: SiblingSort) => void;
@@ -291,6 +325,37 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // for why ordering matters even though none of this is awaited.
   const track = (work: () => Promise<unknown>): void => {
     void enqueueWrite(work).then(markSaved).catch(recordSaveError);
+  };
+
+  // Set and written together, always. The library is one file, so there's no
+  // partial write to get right — but there are three call sites plus their
+  // undos, and each one forgetting the save independently is how the tree and
+  // the disk drift apart.
+  const applyTemplates = (templates: TemplateLibrary): void => {
+    const { rootPath } = get();
+    set({ templates });
+    if (rootPath) track(() => fsService.saveTemplateLibrary(rootPath, templates));
+  };
+
+  /**
+   * A private copy of an image, under a fresh name. Returns the name to point
+   * at, or undefined when there was nothing to copy.
+   *
+   * A copy that can't be read gives back `undefined` rather than throwing: the
+   * page or template still arrives, minus a picture that was already missing.
+   * Failing the whole operation over it would be the app refusing to work
+   * because of damage it can't fix either way.
+   */
+  const copyAssetFile = async (rootPath: string, fileName: string | undefined): Promise<string | undefined> => {
+    if (!fileName) return undefined;
+    const extension = fileName.slice(fileName.lastIndexOf(".") + 1);
+    const copyName = `${crypto.randomUUID()}.${extension}`;
+    try {
+      await fsService.saveAssetImage(rootPath, copyName, await fsService.readAssetImage(rootPath, fileName));
+    } catch {
+      return undefined;
+    }
+    return copyName;
   };
 
   const captureOrdering = (project: Project): OrderingSnapshot => ({
@@ -447,6 +512,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     rootPath: null,
     project: null,
     nodes: {},
+    templates: createTemplateLibrary(),
     isLoaded: false,
     lastSavedAt: null,
     skippedFiles: [],
@@ -475,11 +541,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // and running one would write pages from the old world into the new one.
       useHistoryStore.getState().clear();
 
+      // Read after the pages rather than alongside them: a project with no
+      // template file is the normal case, and a template file that won't parse
+      // reads as an empty library (see fsService.loadTemplateLibrary). Neither
+      // is allowed to be the reason a world doesn't open.
+      const templates = parseTemplateLibrary(await fsService.loadTemplateLibrary(rootPath));
+
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
       set({
         rootPath,
         project: result.project,
         nodes,
+        templates,
         isLoaded: true,
         skippedFiles: result.skipped,
         recoveredCount: result.recoveredCount,
@@ -516,7 +589,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       useHistoryStore.getState().clear();
       const project = createProject({ name });
       await fsService.saveProject(rootPath, project);
-      set({ rootPath, project, nodes: {}, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
+      set({
+        rootPath,
+        project,
+        nodes: {},
+        templates: createTemplateLibrary(),
+        isLoaded: true,
+        navHistory: EMPTY_NAV_HISTORY,
+      });
       markSaved();
     },
 
@@ -613,6 +693,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         rootPath: null,
         project: null,
         nodes: {},
+        templates: createTemplateLibrary(),
         isLoaded: false,
         lastSavedAt: null,
         skippedFiles: [],
@@ -1315,6 +1396,162 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
           await restoreOrdering(orderingBefore);
         },
         () => restoreNodes(clones, clonedAssets, orderingAfter),
+      );
+    },
+
+    // The page stays exactly where it is; what lands in the library is a copy.
+    // Nothing about the project's own nodes changes, so there's no relocation
+    // pass and no path index — the template file is the only write.
+    async saveAsTemplate(nodeId, includeDescendants) {
+      const { rootPath, nodes, templates } = get();
+      if (!rootPath || !nodes[nodeId]) return;
+
+      const sources = collectSubtree(nodeId, nodes, includeDescendants);
+      const { clones, idMap } = cloneSubtree(sources, null, () => crypto.randomUUID());
+
+      // Its own copies of the pictures, for the same reason a duplicate gets
+      // them: sharing the original's filename means replacing the page's image
+      // later deletes the template's out from under it.
+      const withOwnAssets = await Promise.all(
+        clones.map(async (clone) => {
+          const [image, banner] = await Promise.all([copyAssetFile(rootPath, clone.image), copyAssetFile(rootPath, clone.banner)]);
+          return { ...clone, image, banner };
+        }),
+      );
+
+      const rootId = idMap.get(nodeId)!;
+      const nextTemplates = addTemplate(templates, withOwnAssets, rootId);
+      set({ templates: nextTemplates });
+      track(() => fsService.saveTemplateLibrary(rootPath, nextTemplates));
+
+      record(
+        `saving "${nodes[nodeId].name}" as a template`,
+        () => applyTemplates(removeTemplate(get().templates, rootId)),
+        () => applyTemplates(addTemplate(get().templates, withOwnAssets, rootId)),
+      );
+    },
+
+    // The template's copied image files are deliberately left on disk. They're
+    // in the shared assets/ directory, undo is one keystroke away, and an
+    // orphaned image costs a few KB where a deleted one costs the picture.
+    deleteTemplate(rootId) {
+      const { rootPath, templates } = get();
+      if (!rootPath || !templates.nodes[rootId]) return;
+
+      const name = templates.nodes[rootId].name;
+      const removed = collectSubtree(rootId, templates.nodes, true);
+      const index = templates.rootOrder.indexOf(rootId);
+      const nextTemplates = removeTemplate(templates, rootId);
+      applyTemplates(nextTemplates);
+
+      record(
+        `deleting the "${name}" template`,
+        () => {
+          // Put back where it was, not on the end — undo that moves the thing
+          // it restores is undo you have to check up on.
+          const current = get().templates;
+          const nodes = { ...current.nodes };
+          for (const node of removed) nodes[node.id] = node;
+          const rootOrder = [...current.rootOrder];
+          rootOrder.splice(index === -1 ? rootOrder.length : index, 0, rootId);
+          applyTemplates({ ...current, nodes, rootOrder });
+        },
+        () => applyTemplates(removeTemplate(get().templates, rootId)),
+      );
+    },
+
+    // The page itself is patched in place and its saved sub-pages arrive as
+    // children — so the page keeps its id, and everything already pointing at
+    // it (the selection, the tree's open rows, a wikilink someone wrote) still
+    // points at the same page afterwards.
+    async applyCustomTemplate(nodeId, templateRootId) {
+      const { rootPath, nodes, templates } = get();
+      const target = nodes[nodeId];
+      if (!rootPath || !target || !templates.nodes[templateRootId]) return;
+
+      const source = templates.nodes[templateRootId];
+      // The template's own descendants, re-parented onto the page. The root
+      // isn't among them: its *contents* are being poured into a page that
+      // already exists, rather than arriving as a new page of its own.
+      const descendants = collectSubtree(templateRootId, templates.nodes, true).filter((n) => n.id !== templateRootId);
+      const { clones } = cloneSubtree(descendants, nodeId, () => crypto.randomUUID());
+
+      // Every picture gets a private copy, the root's included — a page sharing
+      // the template's filename would lose its image the moment the template
+      // was deleted or re-saved.
+      const copyAssetsOf = async <T extends { image?: string; banner?: string }>(node: T): Promise<T> => {
+        const [image, banner] = await Promise.all([
+          copyAssetFile(rootPath, node.image),
+          copyAssetFile(rootPath, node.banner),
+        ]);
+        return { ...node, image, banner };
+      };
+      const arriving = await Promise.all(clones.map(copyAssetsOf));
+      const { image: rootImage, banner: rootBanner } = await copyAssetsOf(source);
+
+      // Deep-copied out of the library rather than shared with it: writing on
+      // the page afterwards must not quietly edit the template it came from.
+      const patch: Partial<Omit<Node, "id">> = {
+        templateKey: source.templateKey,
+        tabs: structuredClone(source.tabs),
+        properties: structuredClone(source.properties),
+        customProperties: source.customProperties ? structuredClone(source.customProperties) : undefined,
+        propertyOrder: source.propertyOrder ? [...source.propertyOrder] : undefined,
+        tags: [...source.tags],
+        color: source.color,
+        image: rootImage,
+        banner: rootBanner,
+      };
+
+      // Read off the node as it stands, not a whole snapshot of it: these are
+      // exactly the fields the patch overwrites, which is what undo has to put
+      // back. Same approach as applyBulk above.
+      const previous: Partial<Omit<Node, "id">> = {
+        templateKey: target.templateKey,
+        tabs: target.tabs,
+        properties: target.properties,
+        customProperties: target.customProperties,
+        propertyOrder: target.propertyOrder,
+        tags: target.tags,
+        color: target.color,
+        image: target.image,
+        banner: target.banner,
+      };
+
+      // The pages that land directly on the target. Undo deletes these and
+      // their own children go with them, the way deleting a folder works.
+      const arrivingRootIds = arriving.filter((n) => n.parentId === nodeId).map((n) => n.id);
+
+      const addArriving = (): void => {
+        if (arriving.length === 0) return;
+        const before = Object.values(get().nodes);
+        const nextNodes = { ...get().nodes };
+        for (const clone of arriving) nextNodes[clone.id] = clone;
+        set({ nodes: nextNodes });
+        // The target gains its first child here, which moves its own file into
+        // a new directory — so a debounced write for it is cancelled rather
+        // than left to fire into the gap. Same reasoning as addNode.
+        cancelSave(nodeId);
+        track(() => fsService.addNodes(rootPath, [nextNodes[nodeId], ...arriving], before, Object.values(nextNodes)));
+      };
+
+      get().updateNode(nodeId, patch);
+      addArriving();
+
+      let clonedAssets: CapturedAsset[] = [];
+      record(
+        `using the "${source.name}" template`,
+        async () => {
+          const currentRootPath = get().rootPath;
+          if (currentRootPath && arriving.length > 0) clonedAssets = await captureAssets(currentRootPath, arriving);
+          if (arrivingRootIds.length > 0) await get().deleteNodes(arrivingRootIds);
+          get().updateNode(nodeId, previous);
+        },
+        async () => {
+          get().updateNode(nodeId, patch);
+          const project = get().project;
+          if (arriving.length > 0 && project) await restoreNodes(arriving, clonedAssets, captureOrdering(project));
+        },
       );
     },
 

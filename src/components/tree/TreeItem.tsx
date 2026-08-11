@@ -28,13 +28,13 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNodes, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, sortChildren, togglePinned } =
+  const { duplicateNodes, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, sortChildren, saveAsTemplate, togglePinned } =
     useProjectActions();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
   const isPinned = useIsPinned(node.id);
-  const { confirmDestructive, requestExport } = useDialogs();
+  const { confirmDestructive, requestExport, requestTemplateScope } = useDialogs();
   const createPageIn = useCreatePageIn();
   const doubleClickAction = useTreeDoubleClick();
   const revealNode = useRevealNode();
@@ -107,6 +107,22 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         : `Delete "${nodeName}"? This can't be undone.`;
     }
     if (await confirmDestructive(warning)) deleteNodes(ids);
+  }
+
+  // Asks the sub-pages question first, then copies. Cancel resolves to null
+  // and nothing happens — which is why the dialog offers three answers rather
+  // than a yes/no, since "no" would otherwise have to mean "just this page".
+  //
+  // The row's own children decide whether it's worth asking: a page with
+  // nothing inside it has no sub-pages to include or leave behind, and a
+  // dialog whose two buttons do the same thing is a dialog asking nothing.
+  async function handleSaveAsTemplate() {
+    if (!hasChildren) {
+      await saveAsTemplate(node.id, false);
+      return;
+    }
+    const scope = await requestTemplateScope(nodeName);
+    if (scope) await saveAsTemplate(node.id, scope === "all");
   }
 
   // Expand/collapse everything under the targeted rows. Walks react-arborist's
@@ -323,6 +339,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNodes(targetIds())}
             onSetColor={() => setOpenPopover("color")}
+            onSaveAsTemplate={() => void handleSaveAsTemplate()}
             onSortChildren={() => setOpenPopover("sort")}
             onExpandAll={() => setSubtreeOpen(true)}
             onCollapseAll={() => setSubtreeOpen(false)}

@@ -767,3 +767,50 @@
 .page-banner-loading {
   background: var(--color-panel-alt);
 }
+
+/* Separates this world's own templates from the built-in ones above them.
+   Tighter than the hint at the top of the screen, which is a paragraph
+   introducing the whole choice — this is a label on the second half of it. */
+.new-page-landing-custom-hint {
+  margin-top: var(--space-xl);
+}
+
+/* Holds a custom template's tile and its remove button in one hover target, so
+   the × appears when you're anywhere near the tile rather than only dead on it. */
+.new-page-landing-custom {
+  position: relative;
+  display: flex;
+}
+
+.new-page-landing-custom .new-page-landing-choice {
+  width: 100%;
+}
+
+.new-page-landing-custom-remove {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  /* Hidden rather than transparent until wanted: these sit in a grid of things
+     to click, and a permanent × on each one turns a menu of choices into a menu
+     of things to delete. */
+  opacity: 0;
+}
+
+.new-page-landing-custom:hover .new-page-landing-custom-remove,
+.new-page-landing-custom-remove:focus-visible {
+  opacity: 1;
+}
+
+.new-page-landing-custom-remove:hover {
+  background: var(--color-hover);
+  color: var(--color-palette-rose);
+}

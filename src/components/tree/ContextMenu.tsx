@@ -1,5 +1,5 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Set color /
-// Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// Save as template / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
@@ -13,6 +13,7 @@ import {
   ChevronsUpDown,
   Copy,
   Crosshair,
+  FileStack,
   Eye,
   EyeOff,
   FolderOpen,
@@ -59,6 +60,7 @@ type ContextMenuProps = {
   onRename: () => void;
   onDuplicate: () => void;
   onSetColor: () => void;
+  onSaveAsTemplate: () => void;
   onSortChildren: () => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
@@ -84,6 +86,7 @@ export function ContextMenu({
   onRename,
   onDuplicate,
   onSetColor,
+  onSaveAsTemplate,
   onSortChildren,
   onExpandAll,
   onCollapseAll,
@@ -140,6 +143,14 @@ export function ContextMenu({
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color
       </button>
+      {/* Single selection only. It copies one page's shape, and three pages
+          have three shapes — "save these as a template" would have to either
+          pick one or make three, and neither is what the click looked like. */}
+      {!isMultiple && (
+        <button type="button" onClick={() => run(onSaveAsTemplate)}>
+          <FileStack size={13} /> Save as template
+        </button>
+      )}
       {/* Single selection only. Sorting rewrites one group's order, and "sort
           the sub-pages of these three" is three separate reorderings sharing a
           menu click — nothing on screen would show which one went wrong. */}

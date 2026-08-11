@@ -885,3 +885,60 @@ describe("pruning the directory a converted page leaves behind", () => {
     await expect(deleteNodes("/root", [child], [note, child], [note])).resolves.toBeUndefined();
   });
 });
+
+describe("reserved root names", () => {
+  // Each of these is a name the app has already taken at the project root, so
+  // a page wanting it has to be pushed aside. Before this, the page won and
+  // the consequences were silent: a root page called "assets" is written to
+  // `assets/`, which the load walk skips by name — the page is on disk and
+  // gone from the tree. "templates" lands on the template library, because
+  // `Templates.json` and `templates.json` are one file on Windows and macOS.
+  it("pushes a root page named after the assets directory to (2)", () => {
+    const page = node({ id: "1", name: "assets", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    expect(resolveNodePath(page, [page])).toEqual({ dirSegments: ["assets (2)"], fileName: "_folder.json" });
+  });
+
+  it("pushes a root page named after project.json to (2)", () => {
+    const page = node({ id: "1", name: "project", parentId: null, templateKey: "note" });
+    expect(resolveNodePath(page, [page])).toEqual({ dirSegments: [], fileName: "project (2).json" });
+  });
+
+  it("pushes a root page named after the template library to (2)", () => {
+    const page = node({ id: "1", name: ".templates", parentId: null, templateKey: "note" });
+    expect(resolveNodePath(page, [page])).toEqual({ dirSegments: [], fileName: ".templates (2).json" });
+  });
+
+  // The collision test folds case, and it has to: the clash is with the
+  // filesystem, which folds case too.
+  it("catches a differently-cased spelling of a reserved name", () => {
+    const page = node({ id: "1", name: "Assets", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    expect(resolveNodePath(page, [page])).toEqual({ dirSegments: ["Assets (2)"], fileName: "_folder.json" });
+  });
+
+  // Reserved at the root only. A folder deeper in the tree is free to be
+  // called "assets" — nothing of the app's lives there.
+  it("leaves a nested page of the same name alone", () => {
+    const folder = node({ id: "1", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "2", name: "assets", parentId: "1", templateKey: FOLDER_TEMPLATE_KEY });
+    expect(resolveNodePath(page, [folder, page])).toEqual({
+      dirSegments: ["Canon", "assets"],
+      fileName: "_folder.json",
+    });
+  });
+
+  // A directory-stored page and a leaf page never collide with each other, and
+  // that stays true against a reserved name: only `assets/` the directory is
+  // taken, so a leaf page called "assets" writes `assets.json` unbothered.
+  it("only reserves the storage kind the app actually uses", () => {
+    const page = node({ id: "1", name: "assets", parentId: null, templateKey: "note" });
+    expect(resolveNodePath(page, [page])).toEqual({ dirSegments: [], fileName: "assets.json" });
+  });
+
+  it("numbers real siblings after the reserved name, not from scratch", () => {
+    const first = node({ id: "1", name: "assets", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 1 });
+    const second = node({ id: "2", name: "assets", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 2 });
+    const all = [first, second];
+    expect(resolveNodePath(first, all).dirSegments).toEqual(["assets (2)"]);
+    expect(resolveNodePath(second, all).dirSegments).toEqual(["assets (3)"]);
+  });
+});
