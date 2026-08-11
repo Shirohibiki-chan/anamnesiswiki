@@ -38,6 +38,36 @@ Freeform spatial planning surface — LK ships one as "Board." Kept on the list 
 
 ---
 
+**Collapsible group headers in the sidebar (GitBook-style)**
+
+Raised by the user 2026-08-11, with a GitBook screenshot: small uppercase muted
+labels — GETTING STARTED, BASICS FOR EVERYONE, BASICS FOR CREATORS — with pages
+sitting under each one and no indentation, and the section collapsing as a unit.
+**Wanted, not scheduled**, and the design question is unanswered, so don't build
+from this note alone.
+
+The unresolved part is what a header *is*, and the two answers cost very
+different amounts:
+
+- **Top-level folders drawn as headers.** No new data at all — a root folder
+  renders as a label instead of a row, and its children lose one level of
+  indent. Collapsing already works, since it's the folder's own expanded state.
+  Cheap, but it applies to *every* root folder whether she meant it to or not,
+  and a header can't be clicked into, so the folder's own page and properties
+  become unreachable from the tree.
+- **A group is its own kind of node** — a label with nothing behind it, placeable
+  anywhere. Faithful to GitBook, and it's opt-in per group. But it's a new node
+  kind that every part of the app has to know about: drag and drop, search, LK
+  import and export, the disk layout (it has no page to be a directory *for*),
+  and Phase 24's graphs.
+
+**Check Phase 22 — Universes before scheduling either.** Her top-level folders
+today are Canon and the AUs, and Phase 22 moves exactly those out of the tree
+into a switcher. Building headers on top of them first means designing this
+twice.
+
+---
+
 **World Anvil import**
 
 Investigated 2026-07-31 against a real export (`World-Orynthia_ Fragments of Fable-2026-07-31.zip`) and **dropped for now** by the user. Recording the findings so the next look doesn't start cold:
