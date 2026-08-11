@@ -53,8 +53,13 @@ than assumed:
 - A **group is top-level only.** A group cannot go inside a group. That single
   constraint is what makes this affordable — it removes every hard case a
   place-a-label-anywhere design would create.
-- **Pages nest freely inside a group**, with no hard limit (GitBook's own advice
-  is to stay under about three levels).
+- **Pages nest freely inside a group**, with no hard limit. GitBook suggests
+  staying under about three levels; **that is their styling advice for published
+  documentation sites and does not carry over here.** The user's own worlds go
+  much deeper and always will — do not implement a depth cap, warn about depth,
+  or treat deep nesting as a mistake. The only real ceiling is the Windows path
+  length noted in `CLAUDE.md`, and Phase 22 *removes* two levels from every AU
+  path rather than adding any.
 - **A group is a label, not a page.** There is nothing to open, so it has no
   content of its own.
 
@@ -71,14 +76,21 @@ isn't a page and must not be offered as a target), LK export (the format has no
 equivalent — its children export as top-level), and Phase 24's graphs.
 
 **Phase 22 — Universes comes first, and her own hierarchy is why:** universes
-sit *above* groups in it, and the top-level rows a group would replace are Canon
-and the AUs — the exact rows Phase 22 moves out of the tree into a switcher.
-Groups built there now would be built on top of something that's leaving.
+sit *above* groups in it. Groups don't replace Canon and the AUs — those become
+universes; they leave the *tree* for the switcher, and the top level they vacate
+is where groups then go. Build groups before that and they're built on rows
+that are moving.
 
-Still open, and worth one question rather than a guess: whether a page may sit
-at the top level *outside* any group (GitBook allows it), and whether her
-existing folders convert to groups on upgrade or she rebuilds the grouping by
-hand.
+**What's shared between universes is a universe, not a group** — already decided
+2026-08-08, see Phase 22. A Shared universe stays visible alongside whichever
+one is selected, which a group can't do: a group lives inside one universe, so
+shared lore held in a group would only be shared with itself. Groups apply
+*within* Shared exactly as they do anywhere else.
+
+**Groups are made by hand, and existing folders are never auto-converted** —
+the user, 2026-08-11. So a project has no groups at all until she makes one,
+which settles the other open question by implication: **a page may sit at the
+top level outside any group**, and that's the normal state, not a degraded one.
 
 ---
 
