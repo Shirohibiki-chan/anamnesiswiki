@@ -494,6 +494,115 @@
   display: block;
 }
 
+/* Reposition (Phase 16) only means something inside a frame that clips, so
+   setting a focus point is what puts the slot into a fixed square crop — see
+   schema.ts's imageFocusY on why an absent value is the uncropped default
+   rather than a stored 50. */
+.property-image-slot-cropped {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.property-image-slot-cropped .property-image-preview {
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+}
+
+.property-image-slot-repositioning {
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+/* The tools sit on the photo, so like the remove × they carry their own scrim
+   — a panel-coloured fill over an arbitrary picture is no fill at all. */
+.property-image-tools {
+  position: absolute;
+  bottom: var(--space-sm);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border-radius: var(--radius-full);
+  background: var(--color-scrim-soft);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.property-image-slot:hover .property-image-tools,
+.property-image-tools:focus-within {
+  opacity: 1;
+}
+
+.property-image-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-on-scrim);
+  cursor: pointer;
+}
+
+.property-image-tool:hover {
+  background: var(--color-scrim-solid);
+}
+
+/* A picture that already has a description says so, so the button isn't a
+   coin toss between "write one" and "read the one that's there". */
+.property-image-tool-set {
+  color: var(--color-accent-light);
+}
+
+.property-image-reposition-bar {
+  position: absolute;
+  bottom: var(--space-sm);
+  left: var(--space-sm);
+  right: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.property-image-hint {
+  font-size: var(--fs-xs);
+  color: var(--color-on-scrim);
+  background: var(--color-scrim-soft);
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+
+.property-image-reposition-actions {
+  display: flex;
+  gap: var(--space-2xs);
+}
+
+.property-image-reposition-btn {
+  font-size: var(--fs-xs);
+  color: var(--color-on-scrim);
+  background: var(--color-scrim-soft);
+  border: none;
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.property-image-reposition-btn:hover {
+  background: var(--color-scrim-solid);
+}
+
+.property-image-alt {
+  margin-top: var(--space-sm);
+}
+
 /* A `.ui-icon-btn` sitting on top of a photo rather than on a panel, so it
    keeps its own circular scrim — the shared hover fill would be invisible
    against whatever image happens to be underneath it. */
@@ -504,6 +613,17 @@
   border-radius: var(--radius-full);
   background: var(--color-scrim-soft);
   color: var(--color-on-scrim);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+/* Hover-only from Phase 16, matching the banner's own × — a delete button
+   parked permanently on top of a picture is the loudest thing in the panel. It
+   still appears on keyboard focus, or it stops being reachable without a
+   mouse. */
+.property-image-slot:hover .property-image-remove,
+.property-image-remove:focus-visible {
+  opacity: 1;
 }
 
 .property-image-remove:hover {

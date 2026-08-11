@@ -202,6 +202,10 @@ export type ProjectStoreState = {
   deleteOptionEverywhere: (propertyLabel: string, optionLabel: string) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   clearNodeImage: (nodeId: string) => Promise<void>;
+  setImageAlt: (nodeId: string, alt: string) => void;
+  setImageFocus: (nodeId: string, focusY: number) => void;
+  clearImageFocus: (nodeId: string) => void;
+  setBannerFromImage: (nodeId: string) => Promise<void>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
@@ -1039,8 +1043,50 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const existing = nodes[nodeId];
       if (!rootPath || !existing?.image) return;
       const previousImage = existing.image;
-      get().updateNode(nodeId, { image: undefined });
+      // The crop and the description belong to the picture that's going, not
+      // to the slot — leaving either behind would apply them to whatever is
+      // uploaded next.
+      get().updateNode(nodeId, { image: undefined, imageAlt: undefined, imageFocusY: undefined });
       await fsService.deleteAssetImage(rootPath, previousImage);
+    },
+
+    setImageAlt(nodeId, alt) {
+      const trimmed = alt.trim();
+      get().updateNode(nodeId, { imageAlt: trimmed === "" ? undefined : trimmed });
+    },
+
+    setImageFocus(nodeId, focusY) {
+      get().updateNode(nodeId, { imageFocusY: Math.min(100, Math.max(0, focusY)) });
+    },
+
+    // Back to the whole photo at its own shape. Absent is the uncropped state
+    // rather than a stored 50, so this clears rather than resets — see
+    // schema.ts on why the field is its own flag.
+    clearImageFocus(nodeId) {
+      get().updateNode(nodeId, { imageFocusY: undefined });
+    },
+
+    // "Set cover" — the sidebar portrait becomes the page's banner as well.
+    async setBannerFromImage(nodeId) {
+      const { rootPath, nodes } = get();
+      const existing = nodes[nodeId];
+      if (!rootPath || !existing?.image) return;
+
+      // The cover gets its own copy of the file rather than a second reference
+      // to the portrait's. Sharing one filename would have setNodeImage's
+      // cleanup delete the cover's bytes the next time the portrait is
+      // replaced — the same reasoning duplicateNodes and saveAsTemplate carry.
+      const bytes = await fsService.readAssetImage(rootPath, existing.image);
+      const extension = existing.image.split(".").pop() ?? "png";
+      const fileName = `${crypto.randomUUID()}.${extension}`;
+      await fsService.saveAssetImage(rootPath, fileName, bytes);
+
+      const previousBanner = get().nodes[nodeId]?.banner;
+      // `imageSource` carries across because it describes this exact picture,
+      // and LK export needs an address for the cover as much as for the
+      // portrait — same picture, same address, nothing invented.
+      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: existing.imageSource });
+      if (previousBanner) track(() => fsService.deleteAssetImage(rootPath, previousBanner));
     },
 
     // The page-header cover image (Phase 8's PageBanner) — a separate slot

@@ -205,6 +205,16 @@ is below.
 - **Images are addressed by filename, never derived from the page's name** — an
   uploaded image outlives any rename or move of the page it belongs to.
 
+- **Two slots never share one asset filename, even when they hold the same
+  picture.** `setBannerFromImage` ("Set cover") copies the portrait's file
+  rather than pointing the banner at it, because every slot's setter deletes
+  the file the slot was holding: share the name and replacing the portrait
+  deletes the cover's bytes out from under it, leaving a page whose banner is
+  a filename with nothing behind it. Same reasoning `duplicateNodes` and
+  `saveAsTemplate` already carry — anything new that puts an existing picture
+  in a second place copies the file. Cheap in practice: these are the user's
+  own portraits, not a library.
+
 - **`joinPath` is plain string concatenation**, which is only safe because every
   segment reaching it is a constant from `constants/paths.ts` or has been through
   `sanitizeSegment` (which strips separators along with the other illegal
