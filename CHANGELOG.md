@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-10 — a "..." button on every row in the sidebar
+
+### Additions
+
+- **Hover a page in the sidebar and there's a "..." next to the + now.** It opens the same menu as right-clicking the row — rename, duplicate, colour, show in File Explorer, export, delete. Right-click still works and hasn't changed; this is just the version you can see.
+  - It behaves like right-clicking in the one way that matters: if the row you press it on isn't part of the selection, it selects that row first, so the menu never acts on pages you weren't pointing at. Press it inside a multi-selection and the selection is kept.
+
 ## 2026-08-10 — new pages start blank, and pick what they are on the page
 
 ### Adjustments
