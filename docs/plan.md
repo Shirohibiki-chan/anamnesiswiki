@@ -43,28 +43,42 @@ Freeform spatial planning surface — LK ships one as "Board." Kept on the list 
 Raised by the user 2026-08-11, with a GitBook screenshot: small uppercase muted
 labels — GETTING STARTED, BASICS FOR EVERYONE, BASICS FOR CREATORS — with pages
 sitting under each one and no indentation, and the section collapsing as a unit.
-**Wanted, not scheduled**, and the design question is unanswered, so don't build
-from this note alone.
+**Wanted, and the shape is settled** (the user, same day) — not yet scheduled.
+Her hierarchy, which is GitBook's: **universe → groups → folders and pages
+inside them.**
 
-The unresolved part is what a header *is*, and the two answers cost very
-different amounts:
+**How GitBook actually does it**, checked against their docs 2026-08-11 rather
+than assumed:
 
-- **Top-level folders drawn as headers.** No new data at all — a root folder
-  renders as a label instead of a row, and its children lose one level of
-  indent. Collapsing already works, since it's the folder's own expanded state.
-  Cheap, but it applies to *every* root folder whether she meant it to or not,
-  and a header can't be clicked into, so the folder's own page and properties
-  become unreachable from the tree.
-- **A group is its own kind of node** — a label with nothing behind it, placeable
-  anywhere. Faithful to GitBook, and it's opt-in per group. But it's a new node
-  kind that every part of the app has to know about: drag and drop, search, LK
-  import and export, the disk layout (it has no page to be a directory *for*),
-  and Phase 24's graphs.
+- A **group is top-level only.** A group cannot go inside a group. That single
+  constraint is what makes this affordable — it removes every hard case a
+  place-a-label-anywhere design would create.
+- **Pages nest freely inside a group**, with no hard limit (GitBook's own advice
+  is to stay under about three levels).
+- **A group is a label, not a page.** There is nothing to open, so it has no
+  content of its own.
 
-**Check Phase 22 — Universes before scheduling either.** Her top-level folders
-today are Canon and the AUs, and Phase 22 moves exactly those out of the tree
-into a switcher. Building headers on top of them first means designing this
-twice.
+**A group is still a directory on disk, and that isn't a contradiction** — it's
+only where its pages live. *Folder* in Anamnesis currently fuses two things
+GitBook keeps apart: a container for other pages, and a clickable row with its
+own page, properties and colour. **A group is the first without the second**, so
+it's a flag on a node rather than a new storage shape, and renames, drag and
+drop and the ` (2)` collision suffixes all keep working untouched.
+
+What genuinely has to learn about it: selection and routing (it can't be
+opened), the properties panel (it has none), `[[wikilinks]]` and search (it
+isn't a page and must not be offered as a target), LK export (the format has no
+equivalent — its children export as top-level), and Phase 24's graphs.
+
+**Phase 22 — Universes comes first, and her own hierarchy is why:** universes
+sit *above* groups in it, and the top-level rows a group would replace are Canon
+and the AUs — the exact rows Phase 22 moves out of the tree into a switcher.
+Groups built there now would be built on top of something that's leaving.
+
+Still open, and worth one question rather than a guess: whether a page may sit
+at the top level *outside* any group (GitBook allows it), and whether her
+existing folders convert to groups on upgrade or she rebuilds the grouping by
+hand.
 
 ---
 
