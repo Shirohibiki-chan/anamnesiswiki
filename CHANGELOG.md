@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-08-11 — pictures inside a page
+
+### Additions
+
+- **You can put a picture in the middle of a page now.** Drag an image file onto the page, paste one, or use the `/` menu and pick "Image" — then **Choose a picture**. The file is copied into your project's `assets/` folder, the same place the sidebar and cover pictures already live, so it's yours and it works with no internet.
+- **The "Enter URL" box is gone.** That was the only way in before, and it didn't add a picture at all — it pointed the page at an address on someone else's website, which the app would have to go and fetch every time it drew the page. It didn't belong in an offline app and it wasn't what anyone wanted anyway.
+
+### Fixes
+
+- **A picture in the middle of a page no longer disappears silently when you export to LegendKeeper.** A `.lk` file can only hold web addresses of pictures already on LegendKeeper's servers, so a file from your computer has nowhere to go — but the export now counts them and says so in the preview, the same way it already did for sidebar pictures, and it keeps the caption you wrote under it.
+
+### Known
+
+- **Removing a picture from a page leaves the file in your project's `assets/` folder.** Nothing is lost and nothing breaks; it's just a file nothing points at any more. The Assets tab in the next phase is where those become visible and removable.
+
 ## 2026-08-11 — buttons on the sidebar picture
 
 **Phase 16 starts here.**

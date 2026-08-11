@@ -17,6 +17,7 @@ import {
 } from "../constants/schema";
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import * as fsService from "../services/filesystem-service";
+import { assetRef, releaseAssetUrls } from "../services/asset-urls";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
 import { getDefaultTabs } from "../services/template-registry";
@@ -206,6 +207,14 @@ export type ProjectStoreState = {
   setImageFocus: (nodeId: string, focusY: number) => void;
   clearImageFocus: (nodeId: string) => void;
   setBannerFromImage: (nodeId: string) => Promise<void>;
+  /**
+   * Writes a picture into the project's `assets/` and hands back the reference
+   * that goes inside a page's image block (Phase 16). Unlike `setNodeImage`
+   * there's no slot on the node that owns it — the reference lives in the
+   * block, inside the tab's content, and the ordinary content autosave is what
+   * persists it.
+   */
+  uploadAsset: (data: Uint8Array, extension: string) => Promise<string>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
@@ -567,6 +576,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // and running one would write pages from the old world into the new one.
       useHistoryStore.getState().clear();
 
+      // The picture cache is keyed by project root, so nothing from the old
+      // world can be *shown* by the new one — but the blobs would sit in
+      // memory for the rest of the session with nothing able to display them.
+      releaseAssetUrls();
+
       // Read after the pages rather than alongside them: a project with no
       // template file is the normal case, and a template file that won't parse
       // reads as an empty library (see fsService.loadTemplateLibrary). Neither
@@ -719,6 +733,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
     closeProject() {
       useHistoryStore.getState().clear();
+      releaseAssetUrls();
       set({
         rootPath: null,
         project: null,
@@ -1064,6 +1079,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // schema.ts on why the field is its own flag.
     clearImageFocus(nodeId) {
       get().updateNode(nodeId, { imageFocusY: undefined });
+    },
+
+    // A picture dropped, pasted or picked inside the editor. Deliberately not
+    // paired with a delete: the reference lives in the page's text, where it
+    // can be cut, undone, re-pasted and duplicated freely, so "which file is
+    // still wanted" isn't a question any single edit can answer. Removing an
+    // image block therefore leaves its file in assets/ — see docs/handoff.md,
+    // and Phase 17's Assets tab is where unused files get to be visible.
+    async uploadAsset(data, extension) {
+      const { rootPath } = get();
+      if (!rootPath) throw new Error("No project is open.");
+      const fileName = `${crypto.randomUUID()}.${extension}`;
+      await fsService.saveAssetImage(rootPath, fileName, data);
+      return assetRef(fileName);
     },
 
     // "Set cover" — the sidebar portrait becomes the page's banner as well.

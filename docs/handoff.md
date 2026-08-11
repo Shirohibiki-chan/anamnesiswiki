@@ -682,6 +682,37 @@ is below.
   A copy that won't read yields `undefined` rather than throwing: the template
   arrives without a picture that was already missing.
 
+- **A picture inside a page is stored as `anamnesis-asset:<filename>`, and the
+  scheme is the point.** BlockNote's image block holds one string in
+  `props.url`, and that field is also where a real web address would sit, so
+  the two have to be told apart with certainty rather than by guessing at the
+  shape of a string. `services/asset-urls.ts` resolves ours off disk and passes
+  everything else through **untouched** — never fetched, never rewritten.
+  Changing `ASSET_REF_PREFIX` strands every picture already written into a
+  page.
+
+- **`resolveFileUrl` must cache, and that isn't an optimisation.** BlockNote
+  calls it on every render of a file block, and an object URL lives until it's
+  revoked — so a read per call mints a fresh blob per picture per keystroke,
+  none of which anything ever reclaims. The cache is keyed by project root as
+  well as filename (two worlds can hold the same filename) and is dropped on
+  project open and close, which is the only moment the blobs stop being
+  displayable.
+
+- **Removing an image block does not delete its file, on purpose.** The
+  reference lives in the page's text, where it can be cut, undone, re-pasted
+  and duplicated, so no single edit can answer "is this file still wanted" —
+  and a delete that guesses wrong takes the picture out of the page it's still
+  in. Unused files accumulate in `assets/` instead, which is what Phase 17's
+  Assets tab exists to make visible. **If a sweep is ever written, it has to
+  read every tab of every page plus the template library, not the open page.**
+
+- **BlockNote's file panel is replaced, not configured** (`ImageFilePanel.tsx`,
+  with `filePanel={false}` on the view). Its own panel offers an
+  embed-from-URL tab, which puts a remote fetch on the render path of a page —
+  across the policy boundary in `CLAUDE.md`, and useless offline. Restoring the
+  default panel restores that tab.
+
 - **Don't fork BlockNote.** Extend via its documented block-spec API.
 
 - **`@blocknote/shadcn` is required for menus to render at all**, and it needs two

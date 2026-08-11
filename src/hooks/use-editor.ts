@@ -7,6 +7,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
+import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems } from "../services/editor-blocks/callout-slash-menu";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
@@ -22,11 +23,28 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   // The full-store subscription is deliberate here: the mention menu and
   // wikilink resolution both need to see every node in the project, and this
   // component is already re-rendering as the user types regardless.
-  const { nodes } = useProject();
+  const { nodes, rootPath, uploadAsset } = useProject();
 
   const editor = useCreateBlockNote({
     schema: editorSchema,
     initialContent: content.length > 0 ? (content as never) : undefined,
+    // Phase 16. These two are what make a picture inside a page possible at
+    // all: BlockNote's image block holds a single string, so `uploadFile`
+    // decides what gets written there and `resolveFileUrl` turns it back into
+    // something the webview can paint. Without the pair, the only way into
+    // that block is its embed-from-URL tab — a picture the app would have to
+    // fetch off the internet to show, which crosses CLAUDE.md's policy
+    // boundary and is useless in a world you're writing offline.
+    //
+    // These are read once, when the editor is created. That's fine for
+    // `rootPath` — the editor is remounted per page, and a project change
+    // remounts the whole app shell — but it does mean neither can be swapped
+    // for a stale-capture-sensitive value later.
+    uploadFile: async (file: File) => {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      return uploadAsset(bytes, extensionFor(file));
+    },
+    resolveFileUrl: (url: string) => resolveAssetUrl(rootPath, url),
   });
 
   const confirmWikilinkBracket = useWikilinkBracketConfirm(editor, nodes, nodeId);

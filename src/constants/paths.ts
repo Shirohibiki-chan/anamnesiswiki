@@ -12,6 +12,26 @@ export const PAGE_META_FILE = "_page.json";
 export const ASSETS_DIR = "assets";
 
 /**
+ * How a picture inside a page's writing is written down (Phase 16). The
+ * editor's image block stores a string in `props.url` and there is nowhere
+ * else to put one, so what goes in there is `anamnesis-asset:<filename>` —
+ * a file in `ASSETS_DIR`, resolved to something displayable at render time by
+ * `services/asset-urls.ts`.
+ *
+ * A scheme rather than a bare filename because that field is *also* where a
+ * real web address would sit, and the two have to be told apart with
+ * certainty rather than by guessing at the shape of the string. Nothing in
+ * this app writes a web address there — the upload panel is the only way in,
+ * and BlockNote's own "embed from URL" tab is deliberately not rendered (see
+ * `ImageFilePanel.tsx`) — but a `.lk` import, a paste, or a future format
+ * could still produce one, and it must pass through untouched rather than
+ * being looked for on disk.
+ *
+ * Changing this string strands every picture already written into a page.
+ */
+export const ASSET_REF_PREFIX = "anamnesis-asset:";
+
+/**
  * The world's own templates — "Convert to template" writes here. One file
  * holding a forest of pages, rather than a directory of them like the tree
  * itself: templates are scaffolding rather than writing, there are a dozen at

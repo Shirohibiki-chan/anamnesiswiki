@@ -214,6 +214,33 @@ describe("buildExportFile", () => {
       });
     });
 
+    // Phase 16 put pictures inside the writing, and a `.lk` has nowhere to put
+    // one — it stores addresses on LK's servers, never data. Before this case
+    // existed an image block fell to the default branch and left an empty
+    // paragraph with nothing said about it.
+    it("counts a picture in the writing as lossy, and keeps its caption", () => {
+      const nodes = [
+        node({
+          id: "a",
+          name: "Page",
+          parentId: null,
+          templateKey: "note",
+          tabs: [
+            tab("Main", [
+              { type: "image", props: { url: "anamnesis-asset:cat.png", caption: "Valera, age 19" } },
+              { type: "paragraph", content: [{ type: "text", text: "after", styles: {} }] },
+            ]),
+          ],
+        }),
+      ];
+      const plan = exportOf(nodes, ["a"]);
+      const out = firstDocContent(plan, "Page");
+
+      expect(out[0]).toEqual({ type: "paragraph", content: [{ type: "text", text: "Valera, age 19" }] });
+      expect(out[1]).toEqual({ type: "paragraph", content: [{ type: "text", text: "after" }] });
+      expect(plan.lossyNotes.some((n) => n.includes("1 picture"))).toBe(true);
+    });
+
     it("converts a divider to a rule and a quote block to a blockquote", () => {
       const out = blocksOf([
         { type: "divider" },
