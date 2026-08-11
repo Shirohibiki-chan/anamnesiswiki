@@ -205,6 +205,14 @@ function convertListRun(
   };
 }
 
+// A file block's caption is a plain string on its props, not inline content
+// like every other block's text, so it can't go through convertInline.
+function captionRuns(block: BlockNoteBlock): LkNode[] {
+  const caption = block.props?.caption;
+  if (typeof caption !== "string" || caption === "") return [];
+  return [{ type: "text", text: caption }];
+}
+
 function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker): LkNode[] {
   const inline = () => convertInline(block.content, idMap);
 
@@ -243,6 +251,19 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
           content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy)],
         },
       ];
+    case "image":
+    case "video":
+    case "audio":
+    case "file":
+      // A file inside the writing has nowhere to go in a `.lk`: the format
+      // stores addresses of things on LegendKeeper's own servers, never the
+      // data, so a picture off her disk has nothing to put there — the same
+      // wall `imageProperties` hits for the sidebar portrait, counted into the
+      // same note. It leaves the caption behind rather than an empty
+      // paragraph, so a picture that was explaining something doesn't take the
+      // explanation with it.
+      bump(lossy, "localImages");
+      return [paragraphOf(captionRuns(block))];
     case "toggleListItem": {
       const title = convertInline(block.content, idMap)
         .map((node) => node.text ?? "")
