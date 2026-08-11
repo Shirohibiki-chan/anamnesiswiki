@@ -4,7 +4,7 @@
 // confirm prompts moved to an in-app themed modal instead — see
 // state/dialog-store.ts and components/shell/ConfirmDialog.tsx.
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 /**
  * Hands a folder to the OS file manager. Phase 12's themes and snippets are
@@ -65,6 +65,28 @@ export async function pickLkSavePath(defaultName: string): Promise<string | null
     defaultPath: `${defaultName}.lk`,
     filters: [{ name: "LegendKeeper export", extensions: ["lk"] }],
   });
+}
+
+/**
+ * Where to put a copy of a picture that's in a page (Phase 16). No extension
+ * filter: the copy keeps whatever the original is, and offering to "save as
+ * .png" a file that's a .webp would either lie about the contents or convert
+ * something nobody asked to convert. The suggested name already carries the
+ * right extension.
+ */
+export async function pickImageSavePath(defaultName: string): Promise<string | null> {
+  return save({ title: "Save a copy of this picture", defaultPath: defaultName });
+}
+
+/**
+ * Hands a web address to the OS's default browser. The app makes no request of
+ * its own — this is the same mechanism the releases link uses, and the reason
+ * "save a copy" of an *embedded* picture opens it rather than downloading it:
+ * saving it here would mean fetching it here, and the browser is already the
+ * tool for that.
+ */
+export async function openExternalUrl(url: string): Promise<void> {
+  await openUrl(url);
 }
 
 /**
