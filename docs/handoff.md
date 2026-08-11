@@ -51,10 +51,22 @@ is below.
   it — silently orphans every child the moment the node is renamed or a sibling's
   collision suffix shifts. This has already been shipped broken once.
 
-- **Don't set `canHaveChildren: true` on `note`** (or any leaf template) to solve
-  a nesting problem. Storage kind is derived from that flag, so flipping it moves
-  every existing note from `Name.json` to `Name/_page.json` — a silent on-disk
-  migration of the user's real data, with no migration step written.
+- **Don't set `alwaysDirectory: true` on `note`** (or any other flat template) to
+  solve a nesting problem — nesting doesn't need it, and hasn't since 2026-08-10.
+  The flag means "a directory even when empty", so flipping it moves every
+  existing note from `Name.json` to `Name/_page.json` — a silent on-disk
+  migration of the user's real data, with no migration step written. It was
+  called `canHaveChildren` until the same date.
+
+- **A template change can move a page's file, so it goes through
+  `relocateNode`, never a plain save.** The template carries `alwaysDirectory`,
+  so giving a page one can flip it between `Name.json` and `Name/_page.json`
+  while its name and parent stay exactly as they were. `updateNode` would write
+  at the newly-resolved path and leave the old file behind — one node, two files,
+  and the next load reads both. Only the relocation planner sees the shape
+  change. This stopped being an edge case when pages started being created blank
+  and given a template afterwards: it is now the ordinary path for every new
+  page, not a rare conversion.
 
 - **Collision suffixes are recomputed, never stored**, so changing one sibling
   renumbers the others. `planRelocations` exists solely to keep disk in step with

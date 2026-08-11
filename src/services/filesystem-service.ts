@@ -786,6 +786,16 @@ export async function moveNodes(rootPath: string, allNodesBefore: Node[], allNod
   await relocateNodes(rootPath, allNodesBefore, allNodesAfter, nodeIds);
 }
 
+// Same disk work as a rename, reached from somewhere that isn't one: giving a
+// page a template can flip it between a flat file and its own directory (see
+// `usesDirectoryStorage`), which moves the node's file even though its name
+// and parent are untouched. Without this the store's plain save would simply
+// write at the newly-resolved path and leave the old file sitting there — one
+// node, two files on disk, and the next load reads both.
+export async function relocateNode(rootPath: string, allNodesBefore: Node[], allNodesAfter: Node[], nodeId: string): Promise<void> {
+  await relocateNodes(rootPath, allNodesBefore, allNodesAfter, [nodeId]);
+}
+
 // Phase 6 image slot — assets live in a flat assets/ dir (not tree-mirrored,
 // since a node's uploaded image outlives any single rename/move) addressed by
 // the filename stored on Node.image. Never derived from the node's name, so

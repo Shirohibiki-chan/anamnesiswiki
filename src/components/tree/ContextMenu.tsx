@@ -40,16 +40,17 @@ export function ContextMenu({
   onClose,
 }: ContextMenuProps) {
   // Wraps the actions that *finish* here — the menu has done its job and gets
-  // out of the way. Not every item is one of those: "New page inside" and "Set
-  // color" swap this popover's contents for a picker instead, so closing after
-  // them shuts the thing they just opened. Both are therefore bound directly,
-  // and adding a new item means deciding which kind it is.
+  // out of the way. Two items are bound directly instead, and adding a new one
+  // means deciding which kind it is:
   //
-  // "New page inside" was wrapped in here from Phase 3 until 2026-08-10, which
-  // set the picker and unset it in the same batch and made the item look inert.
-  // It went unnoticed for as long as it did because the row's own "+" opens the
-  // same picker correctly, so the feature was never missing — only that route
-  // to it.
+  //   "Set color"        swaps this popover's contents for the picker, so
+  //                      closing after it would shut what it just opened.
+  //   "New page inside"  is shared with the row's own "+" button and closes
+  //                      the menu from inside its own handler.
+  //
+  // "New page inside" was wrapped in here from Phase 3 until 2026-08-10, back
+  // when it opened a picker: it set the picker and unset it in the same batch,
+  // which made the item look inert.
   function run(action: () => void) {
     action();
     onClose();

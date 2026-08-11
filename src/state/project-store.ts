@@ -138,7 +138,7 @@ export type ProjectStoreState = {
   renameTab: (nodeId: string, tabId: string, label: string) => void;
   deleteTab: (nodeId: string, tabId: string) => void;
   reorderTabs: (nodeId: string, orderedTabIds: string[]) => void;
-  applyTemplate: (nodeId: string, templateKey: string) => void;
+  applyTemplate: (nodeId: string, templateKey: string) => Promise<void>;
   updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
   updateNodeTags: (nodeId: string, tags: string[]) => void;
   addCustomProperty: (nodeId: string, label: string, type: CustomPropertySpec["type"]) => void;
@@ -659,15 +659,45 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // Sets a page's template and adds that template's default tabs — but
     // only the ones this page doesn't already have (by id), so applying a
     // template to a blank page that's already been written in never
-    // clobbers the user's own tabs/content. Used by Phase 7's "Apply a
-    // template" prompt on blank pages (see PropertiesPanel.tsx).
-    applyTemplate(nodeId, templateKey) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
-      if (!existing) return;
+    // clobbers the user's own tabs/content. This is how every page gets its
+    // kind: new pages are created blank and choose one from the page itself
+    // (see components/page/NewPageLanding.tsx), and a blank page that's
+    // already been written in can still pick one later from the properties
+    // panel.
+    async applyTemplate(nodeId, templateKey) {
+      const { rootPath, nodes } = get();
+      if (!rootPath || !nodes[nodeId]) return;
+
+      // Flushed for the same reason renameNode flushes: the write below can
+      // move this node's file, and a debounced content save still holding the
+      // pre-move path would either miss it or write a second copy back at the
+      // old one.
+      await flushSave(nodeId);
+
+      const { rootPath: rootPathAfter, nodes: nodesAfter } = get();
+      const existing = nodesAfter[nodeId];
+      if (!rootPathAfter || !existing) return;
+
+      const allNodesBefore = Object.values(nodesAfter);
       const existingTabIds = new Set(existing.tabs.map((tab) => tab.id));
       const newTabs = getDefaultTabs(templateKey).filter((tab) => !existingTabIds.has(tab.id));
-      get().updateNode(nodeId, { templateKey, tabs: [...existing.tabs, ...newTabs] });
+      const updated: Node = {
+        ...existing,
+        templateKey,
+        tabs: [...existing.tabs, ...newTabs],
+        updatedAt: Date.now(),
+      };
+      const nextNodes = { ...nodesAfter, [nodeId]: updated };
+      set({ nodes: nextNodes });
+
+      // Not a plain save: a template carries whether the node stores itself as
+      // a flat file or as its own directory, so changing one can move the
+      // node's file without its name or parent changing at all. Only the
+      // relocation planner sees that; `updateNode` would write at the new path
+      // and leave the old file behind. When the shape doesn't change there's
+      // nothing to move and this is just the save. See
+      // filesystem-service's relocateNode.
+      track(fsService.relocateNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), nodeId));
     },
 
     updateNodeProperty(nodeId, key, value) {

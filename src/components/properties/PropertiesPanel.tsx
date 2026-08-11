@@ -25,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus } from "lucide-react";
 import { getPropertySuggestions } from "../../constants/property-suggestions";
 import {
+  BLANK_TEMPLATE_KEY,
   FOLDER_TEMPLATE_KEY,
   PROPERTY_TYPE_LABELS,
   type CustomPropertySpec,
@@ -46,7 +47,6 @@ import { TagsProperty } from "./TagsProperty";
 import { TextProperty } from "./TextProperty";
 import "./properties.css";
 
-const BLANK_TEMPLATE_KEY = "blank";
 
 export function PropertiesPanel() {
   const {
@@ -183,7 +183,7 @@ export function PropertiesPanel() {
   }
 
   function handleApplyTemplate(templateKey: string) {
-    applyTemplate(node!.id, templateKey);
+    void applyTemplate(node!.id, templateKey);
     setAnchorRect(null);
   }
 

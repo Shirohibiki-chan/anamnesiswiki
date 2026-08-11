@@ -16,13 +16,13 @@ import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
+import { useCreatePage } from "../../hooks/use-new-page";
 import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
 import { AllPropertiesModal } from "../properties/AllPropertiesModal";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { LoadWarning } from "./LoadWarning";
-import { NewPageDialog } from "./NewPageDialog";
 import { RecoveryNotice } from "./RecoveryNotice";
 import { SaveWarning } from "./SaveWarning";
 import { TopBar } from "./TopBar";
@@ -37,7 +37,6 @@ export function AppLayout() {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAllPropertiesOpen, setIsAllPropertiesOpen] = useState(false);
-  const [isNewPageOpen, setIsNewPageOpen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const saveNow = useSaveNow();
   const { undo, redo } = useHistoryActions();
@@ -50,7 +49,10 @@ export function AppLayout() {
   // Stable so the shortcut listener is attached once, not rebuilt on every
   // re-render of the shell — see use-global-shortcuts.ts.
   const openSearch = useCallback(() => setIsSearchOpen(true), []);
-  const openNewPage = useCallback(() => setIsNewPageOpen(true), []);
+  // No dialog in between: the shortcut makes the page, and the page itself is
+  // where it gets named and given a kind. Already stable — useCreatePage never
+  // replaces its callback — so it doesn't need wrapping like the rest of these.
+  const openNewPage = useCreatePage();
   // Search hands over rather than stacking: two full-screen dialogs on top of
   // each other is two Escapes to get out of one mistake.
   const openAllProperties = useCallback(() => {
@@ -151,7 +153,6 @@ export function AppLayout() {
       {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
       {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
       {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
-      {isNewPageOpen && <NewPageDialog onClose={() => setIsNewPageOpen(false)} />}
     </div>
   );
 }

@@ -2,11 +2,12 @@
 // title + tab strip + placeholder body, and no selection gets EmptyPageView.
 // See docs/plan.md Phase 4.
 import { useState } from "react";
-import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
+import { BLANK_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
+import { NewPageLanding } from "./NewPageLanding";
 import { PageBanner } from "./PageBanner";
 import { PageTabs } from "./PageTabs";
 import { PageTitle } from "./PageTitle";
@@ -44,6 +45,14 @@ export function PageView() {
 
   const activeTab = node.tabs.find((tab) => tab.id === activeTabId) ?? node.tabs[0];
 
+  // A page nobody has answered anything about yet: created blank, and nothing
+  // written in it since. Both halves matter — a blank page *with* tabs is one
+  // that deliberately skipped the templates and is being written in, and
+  // shoving the grid back in front of that would undo the choice every time
+  // the page was reopened. Picking a template adds that template's tabs, so
+  // either answer moves the page out of this state on its own.
+  const isUnanswered = node.templateKey === BLANK_TEMPLATE_KEY && node.tabs.length === 0;
+
   function handleAddTab() {
     const tab = addTab(node!.id, "New Tab");
     setActiveTabId(tab.id);
@@ -53,8 +62,14 @@ export function PageView() {
     <div className="page-view-shell">
       <PageBanner node={node} />
       <div className="page-view">
-        <PageTitle node={node} />
-        {node.tabs.length === 0 ? (
+        {/* The one page whose name is worth interrupting for: it was created a
+            second ago called "Untitled", and the user is the only one who
+            knows what it should be. Everywhere else the title is click-to-edit
+            and stays out of the way. */}
+        <PageTitle node={node} startEditing={isUnanswered} />
+        {isUnanswered ? (
+          <NewPageLanding node={node} />
+        ) : node.tabs.length === 0 ? (
           <div className="page-view-no-tabs">
             <p>This page doesn't have any tabs yet.</p>
             <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={handleAddTab}>
