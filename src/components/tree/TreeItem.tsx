@@ -13,6 +13,7 @@ import { useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-pr
 import { useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useCreatePageIn } from "../../hooks/use-new-page";
+import { useTreeDoubleClick } from "../../hooks/use-preferences";
 import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
 import type { TreeNodeData } from "../../services/tree-service";
 import { ColorPicker } from "./ColorPicker";
@@ -32,6 +33,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive, requestExport } = useDialogs();
   const createPageIn = useCreatePageIn();
+  const doubleClickAction = useTreeDoubleClick();
   const revealNode = useRevealNode();
   const fileManagerName = useFileManagerName();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
@@ -126,6 +128,26 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     createPageIn(node.id);
   }
 
+  // Double-click opens the row, the way it does in every file manager. It used
+  // to rename, which was react-arborist's default rather than a decision —
+  // and renaming is the destructive one of the two to trigger by accident, on
+  // the gesture people use to look inside things. Rename is on the menu, where
+  // the rest of the row's actions already are.
+  //
+  // Both actions stay reachable whichever way this is set, so nothing is lost
+  // by preferring the other: the menu always renames, and a row with children
+  // always has its chevron.
+  function handleDoubleClick() {
+    if (doubleClickAction === "rename") {
+      void node.edit();
+      return;
+    }
+    // A row with nothing inside it has nothing to open. Renaming instead would
+    // be the setting quietly not applying on exactly the rows where the old
+    // behaviour was most likely to be muscle memory.
+    if (showToggle) node.toggle();
+  }
+
   return (
     <div className="tree-node" style={style} ref={dragHandle}>
       {/* One vertical line per level of nesting above this row, drawn where
@@ -175,7 +197,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           <span
             className="tree-row-name"
             style={showFolderTint ? { color: effectiveHex ?? undefined, fontWeight: 500 } : undefined}
-            onDoubleClick={() => void node.edit()}
+            onDoubleClick={handleDoubleClick}
           >
             {fullNode.name}
           </span>

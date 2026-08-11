@@ -192,6 +192,25 @@ export async function setPanelWidths(widths: { tree: number; properties: number 
   await store.save();
 }
 
+/**
+ * How the app behaves rather than how it looks — app-level for the same reason
+ * the widths above are.
+ *
+ * Returned unvalidated, like the widths and the shortcut overrides: deciding
+ * whether a stored value still means anything belongs with the code that knows
+ * what the values are, in `preferences-service`'s `parsePreferences`.
+ */
+export async function getPreferences(): Promise<unknown> {
+  const store = await getStore();
+  return (await store.get("preferences")) ?? {};
+}
+
+export async function setPreferences(preferences: Record<string, unknown>): Promise<void> {
+  const store = await getStore();
+  await store.set("preferences", preferences);
+  await store.save();
+}
+
 export async function removeRecentProject(path: string): Promise<void> {
   const store = await getStore();
   const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];

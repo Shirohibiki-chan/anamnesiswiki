@@ -5,6 +5,7 @@ import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useLoadShortcuts } from "../../hooks/use-shortcuts";
 import { useLoadPanelWidths } from "../../hooks/use-panel-widths";
+import { useLoadPreferences } from "../../hooks/use-preferences";
 import { AppLayout } from "./AppLayout";
 import { ProjectPicker } from "./ProjectPicker";
 import "./shell.css";
@@ -14,6 +15,7 @@ export function StartupRouter() {
   const { getLastOpenedProject } = useAppSettings();
   const loadShortcuts = useLoadShortcuts();
   const loadPanelWidths = useLoadPanelWidths();
+  const loadPreferences = useLoadPreferences();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
@@ -22,11 +24,12 @@ export function StartupRouter() {
       // Shortcuts load before either screen, since Settings — and so the
       // shortcuts screen — is reachable from the picker as well as from
       // inside a project.
-      // Both before either screen, and both for the same reason: neither ever
-      // rejects, and a settings file that won't open leaves the defaults.
-      // Panel widths go first so the shell's columns are already right on its
-      // first paint rather than snapping from the fallback a frame later.
-      await Promise.all([loadShortcuts(), loadPanelWidths()]);
+      // All three before either screen, and all for the same reason: none of
+      // them ever rejects, and a settings file that won't open leaves the
+      // defaults. Panel widths matter most here — the shell's columns are
+      // already right on its first paint rather than snapping from the
+      // fallback a frame later.
+      await Promise.all([loadShortcuts(), loadPanelWidths(), loadPreferences()]);
       // Anything that goes wrong here has to end with the picker on screen.
       // Without the catch, a settings store that won't open — or any other
       // unexpected rejection — left `isChecking` true forever, and the app

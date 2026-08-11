@@ -41,6 +41,7 @@ import { useSettingsSearch } from "../../hooks/use-settings-search";
 import { FontSettings } from "./FontSettings";
 import { ProjectsSettings } from "./ProjectsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
+import { SidebarSettings } from "./SidebarSettings";
 import { SnippetSettings } from "./SnippetSettings";
 import { ThemeEditor } from "./ThemeEditor";
 import { PatchNotes } from "./PatchNotes";
@@ -56,6 +57,7 @@ const PANELS: Record<string, () => React.JSX.Element> = {
   colours: ThemeEditor,
   fonts: FontSettings,
   snippets: SnippetSettings,
+  sidebar: SidebarSettings,
   projects: ProjectsSettings,
   keyboard: ShortcutSettings,
   updates: UpdateCheck,

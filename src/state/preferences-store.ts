@@ -1,0 +1,48 @@
+// How the app behaves. A store rather than component state because the two
+// ends are far apart: the control is in the settings dialog, and what reads it
+// is a tree row several components away that must react the moment it changes.
+import { create } from "zustand";
+import * as appSettings from "../services/app-settings-service";
+import {
+  DEFAULT_PREFERENCES,
+  parsePreferences,
+  type Preferences,
+  type TreeDoubleClickAction,
+} from "../services/preferences-service";
+
+export type PreferencesStoreState = {
+  preferences: Preferences;
+  /** Called once at startup. See StartupRouter. */
+  loadPreferences: () => Promise<void>;
+  setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
+};
+
+export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
+  // Applied to the screen first and written after, and the write is not
+  // awaited by the caller — a settings toggle that waits on a disk round trip
+  // before it moves is a toggle that feels broken. Same shape as the panel
+  // widths, minus the debounce: nobody flips a checkbox sixty times a second.
+  const apply = (preferences: Preferences) => {
+    set({ preferences });
+    void appSettings.setPreferences(preferences).catch(() => {});
+  };
+
+  return {
+    preferences: DEFAULT_PREFERENCES,
+
+    // A settings file that won't open must not cost the user a usable app, so
+    // a failure here leaves the defaults in place — which is also exactly what
+    // a first run looks like. Same shape as loadPanelWidths and loadBindings.
+    async loadPreferences() {
+      try {
+        set({ preferences: parsePreferences(await appSettings.getPreferences()) });
+      } catch {
+        set({ preferences: DEFAULT_PREFERENCES });
+      }
+    },
+
+    setTreeDoubleClick(action) {
+      apply({ ...get().preferences, treeDoubleClick: action });
+    },
+  };
+});

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-10 — double-clicking a page in the sidebar opens it
+
+### Adjustments
+
+- **Double-clicking a page in the sidebar now opens it instead of renaming it.** Renaming on a double-click was never a decision — it's what the tree library does by default — and it's the riskier of the two to set off by accident, on the gesture everyone uses to look inside things. Renaming is still on the right-click menu, where the rest of a row's actions are.
+
+### Additions
+
+- **Settings has a new Sidebar section**, with the switch to put double-click-to-rename back if you prefer it. It's one setting for now; anything else about how the tree behaves will land there rather than being scattered.
+
 ## 2026-08-10 — opening a project repairs the nesting it used to quietly flatten
 
 ### Fixes
