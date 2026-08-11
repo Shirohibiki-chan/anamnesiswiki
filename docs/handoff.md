@@ -911,6 +911,35 @@ is below.
   underneath. Plain HTML5 DnD can't do this — browsers won't reliably start a drag
   from a nested `<button>`.
 
+- **The lightbox reads its pictures off the DOM, not out of `editor.document`**
+  (`services/page-images.ts`). The rendered `src` is already resolved — a blob
+  URL for an uploaded file, the web address itself for an embedded one — so the
+  lightbox is guaranteed to show the bytes the page is showing, in the order the
+  page shows them. Going through the document instead means re-resolving every
+  `anamnesis-asset:` reference and walking nested blocks to rebuild an order the
+  DOM already has, with a second resolution that can fall out of step with the
+  first. The uploaded file's original name survives there too, as BlockNote's
+  `name` prop rendered into `alt`; the stored reference is a UUID and remembers
+  nothing.
+
+- **The click that opens it is a capture-phase native listener, and it doesn't
+  swallow the click.** Both halves matter. Capture, because ProseMirror runs its
+  own listeners inside that subtree while React 19 attaches synthetic handlers up
+  at the root container — anything in between calling `stopPropagation` would
+  leave clicking a picture silently doing nothing (verified: with an inner
+  handler stopping propagation, the capture listener still fires). Not swallowed,
+  because ProseMirror's own handling is what selects the block, so closing the
+  lightbox leaves the picture selected with its formatting toolbar up, which is
+  where Save a copy and the caption live. Matching on `img.bn-visual-media`
+  specifically is also what keeps the resize handles and the caption clickable —
+  they're siblings of the image, not inside it.
+
+- **The lightbox's pan clamp measures `clientWidth`/`clientHeight`, and that
+  includes the stage's padding on purpose.** Overflow clips at the padding box,
+  so a picture can be dragged exactly until its edge meets that box. Changing
+  these to the content width would look more correct and would quietly make the
+  last strip of a zoomed picture unreachable.
+
 ## Search
 
 - **A search feature reachable only by typing a character is a feature nobody

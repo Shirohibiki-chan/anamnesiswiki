@@ -1,4 +1,5 @@
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
+import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
@@ -28,6 +29,11 @@ function App() {
           are no props to thread a callback down through, the same routing
           reason the export request lives in the dialog store. */}
       <SaveAsTemplateDialog />
+      {/* Opened from two places with no props path between them — a picture
+          inside the editor and the portrait button in the properties panel —
+          and it portals like the three above, so it belongs at the root for
+          the same reason they do. */}
+      <Lightbox />
     </>
   );
 }
