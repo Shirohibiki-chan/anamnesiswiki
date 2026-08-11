@@ -9,7 +9,7 @@ import { TREE_INDENT } from "../../constants/layout";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
-import { useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
+import { useIsPinned, useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
 import { useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useCreatePageIn } from "../../hooks/use-new-page";
@@ -27,10 +27,11 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus } = useProjectActions();
+  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, togglePinned } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
+  const isPinned = useIsPinned(node.id);
   const { confirmDestructive, requestExport } = useDialogs();
   const createPageIn = useCreatePageIn();
   const doubleClickAction = useTreeDoubleClick();
@@ -263,6 +264,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
             isProjectHome={isProjectHome}
+            isPinned={isPinned}
             // This row's own flag, not `looksHidden`: a visible page inside a
             // hidden folder still has hiding of its own to offer, and offering
             // to "show" it would set a flag that changes nothing anyone sees.
@@ -282,6 +284,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
               setFocus(node.id);
             }}
             onToggleProjectHome={() => setProjectHome(node.id)}
+            onTogglePinned={() => togglePinned(node.id)}
             onToggleHidden={() => setNodeHidden(targetIds(), !fullNode.hidden)}
             onReveal={() => void revealNode(node.id)}
             onExport={() => requestExport(targetIds())}

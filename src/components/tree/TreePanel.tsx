@@ -8,12 +8,13 @@ import { useProject } from "../../hooks/use-project";
 import { useSearchMatcher, useTreeData, type TreeSearchMode } from "../../hooks/use-tree-data";
 import { useElementSize } from "../../hooks/use-element-size";
 import type { TreeNodeData } from "../../services/tree-service";
+import { BookmarksRail } from "./BookmarksRail";
 import { TreeItem } from "./TreeItem";
 import { TreePathBar } from "./TreePathBar";
 import { TreeSearch } from "./TreeSearch";
 
 export function TreePanel() {
-  const { project, renameNode, moveNodes, setExpanded, selectNode, focusedId, setFocus } = useProject();
+  const { project, renameNode, moveNodes, setExpanded, selectNode, togglePinned, focusedId, setFocus } = useProject();
   const { treeData, focusPath, getAncestorChain } = useTreeData();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,6 +100,16 @@ export function TreePanel() {
   return (
     <div className="tree-panel">
       <TreeSearch value={searchQuery} onChange={setSearchQuery} mode={searchMode} onModeChange={setSearchMode} />
+      {/* Above the path bar, not below it: the rail belongs to the project
+          and the path bar belongs to whatever the tree is currently showing,
+          so a rail that moved when you focused a folder would read as being
+          part of the focused branch. */}
+      <BookmarksRail
+        pinnedIds={project?.pinnedIds ?? []}
+        selectedId={project?.selectedId ?? null}
+        onSelect={selectNode}
+        onUnpin={togglePinned}
+      />
       {focusPath.length > 0 && (
         <TreePathBar projectName={project?.name ?? "Project"} path={focusPath} onFocus={setFocus} />
       )}
