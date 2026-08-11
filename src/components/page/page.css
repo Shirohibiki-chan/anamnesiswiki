@@ -817,39 +817,6 @@
 
 /* --- Pictures in a page (Phase 16) --- */
 
-/* Our replacement for BlockNote's two-tab file panel — see ImageFilePanel.tsx
-   on why the embed-from-URL half isn't rendered. It sits inside BlockNote's
-   own popover shell, so this styles the contents only. */
-.editor-file-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-lg);
-}
-
-.editor-file-panel-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.editor-file-panel-hint {
-  margin: 0;
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-}
-
-.editor-file-panel-error {
-  margin: 0;
-  font-size: var(--fs-xs);
-  color: var(--color-destructive);
-}
-
-.editor-file-panel-input {
-  display: none;
-}
-
 /* Sizing is already BlockNote's: `.bn-visual-media-wrapper` carries the
    max-width and the resize handles, and `.bn-visual-media` is `width: 100%`
    of it. All that's wanted here is the app's own corner radius instead of
