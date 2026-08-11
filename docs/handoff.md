@@ -147,33 +147,45 @@ is below.
   case-insensitive filesystems, so `Ruins` and `ruins` are one file to the OS. The
   displayed segment keeps the user's own capitalisation — only the test folds.
 
-- **`MAX_PATH_CHARS` is 255, near Windows' 260 rather than well short of it.**
-  It was 200 until 2026-08-11, holding back headroom for a node's children on
-  the theory that a directory-storage node's own path is only a prefix. That
-  was wrong twice over: the check already runs on the node's *own full file
-  path*, and a child too long to write fails its own check when it's written.
-  The headroom only ever bought refusing pages Windows would have taken — five
-  levels of ordinary page names under `OneDrive\Documents\Anamnesis` is 203
-  characters, and the user hit that on a project no other app objected to.
-  Don't raise it past ~255 either: file-per-page exists so her writing stays
-  legible outside the app, and a path Explorer or a sync client won't open
-  isn't legible, whatever `\\?\` would allow.
+- **There is no total path-length limit, and don't reintroduce one.** There was
+  one until 2026-08-11: `MAX_PATH_CHARS = 200`, refusing the write outright, on
+  Windows' old MAX_PATH of 260 with 60 held back in case a node's children ran
+  longer. Wrong twice over — the check already ran on the node's *own full file
+  path*, and a child too long to write fails its own check when it's written —
+  and it cost real pages. Five levels of ordinary page names under
+  `OneDrive\Documents\Anamnesis` is 203 characters, which the user hit on a
+  project nothing else objected to.
 
-- **A single name is capped at `MAX_SEGMENT_CHARS` (96); the total path is
-  refused.** Two different guards for two different problems. One absurd name —
-  a pasted paragraph as a page title — is shortened on disk, because the page's
-  real name lives in its JSON and the tree reads it from there, so nothing the
-  user sees changes. Depth is refused, because there's nothing to shorten.
+  **Measured before removing it**, on Windows 11 with `LongPathsEnabled` (on by
+  default there): Rust's `std::fs`, which is what Tauri's fs plugin calls,
+  wrote, read and listed a 1021-character path without complaint, and so did
+  PowerShell and .NET. Rust prefixes `\\?\` itself for long absolute paths, so
+  this doesn't depend on the app manifest. A number picked in advance can only
+  be wrong in one of two directions, and it was wrong in the direction that
+  loses work.
 
-  This reverses a 2026-07-30 decision recorded in `docs/spec.md` that
-  over-long paths would be refused and never truncated, on the grounds that
-  silently renaming the user's files is worse than saying why. That still holds
-  as a *general* rule, and the cap is set to respect it: 96 is more than double
-  the longest name in any of the user's worlds, so it only fires on input no
-  one would call a title. What changed the balance is that the alternative
-  isn't a polite refusal, it's the page not saving at all — which is the
-  complaint that prompted it. Don't lower this number: doing so would change
-  where existing pages resolve to and strand their old files.
+  The OS is the authority now. `saveNode` attempts the write and reports what
+  comes back through the ordinary save-error channel; `LONG_PATH_ADVICE_CHARS`
+  (260) only decides whether a *failure* gets the "this path is very long"
+  explanation attached, because at that size the path is unreadable and a raw
+  `os error 3` says nothing actionable. Below it the original error passes
+  through untouched. If this ever needs revisiting, the argument to beat is
+  measurement, not MAX_PATH.
+
+- **`MAX_SEGMENT_CHARS` (96) *is* enforced, on one name rather than the whole
+  path.** NTFS's 255-per-name limit hasn't moved and long-path support doesn't
+  lift it, so one absurd name — a pasted paragraph as a page title — is
+  shortened on disk instead of failing. The page keeps its real name: that
+  lives in its JSON and the tree reads it from there, so nothing the user sees
+  changes.
+
+  This is the narrow part of a 2026-07-30 decision recorded in `docs/spec.md`
+  that over-long paths would be refused and never truncated, on the grounds
+  that silently renaming the user's files is worse than saying why. That still
+  holds generally, and 96 respects it — more than double the longest name in
+  any of the user's worlds, so it only fires on input no one would call a
+  title. Don't lower it: doing so would change where existing pages resolve to
+  and strand their old files.
 
 - **Images are addressed by filename, never derived from the page's name** — an
   uploaded image outlives any rename or move of the page it belongs to.
