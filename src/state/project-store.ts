@@ -333,11 +333,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // moment where a restored page references a file that isn't there yet.
     for (const asset of assets) await fsService.saveAssetImage(rootPath, asset.fileName, asset.bytes);
 
+    const previousNodes = Object.values(get().nodes);
     const nextNodes = { ...get().nodes };
     for (const node of restored) nextNodes[node.id] = node;
     const nextProject: Project = { ...project, ...ordering };
 
-    if (restored.length > 0) await fsService.saveNodes(rootPath, restored, Object.values(nextNodes));
+    // Through addNodes, not saveNodes: undoing a delete can put the last child
+    // back into a page that had converted to a flat file when it left, and
+    // that page's own file has to move back before its child is written.
+    if (restored.length > 0) await fsService.addNodes(rootPath, restored, previousNodes, Object.values(nextNodes));
     await fsService.saveProject(rootPath, nextProject);
 
     set({ nodes: nextNodes, project: nextProject });
@@ -565,7 +569,19 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
 
       set({ nodes: nextNodes, project: nextProject });
-      track(fsService.saveNode(rootPath, node, Object.values(nextNodes)));
+
+      // The parent is written alongside the child, and any debounced write it
+      // already had is dropped first. Both are about the same thing: gaining a
+      // first child moves the parent's own file into a new directory (see
+      // fsService.addNodes), and a pending save firing in the gap would
+      // recreate it at the destination before the move got there — which fails
+      // the move instead of racing it. Its content is already in `nextNodes`,
+      // so cancelling loses nothing; this write is that write.
+      const parent = input.parentId ? nextNodes[input.parentId] : undefined;
+      if (parent) cancelSave(parent.id);
+      track(
+        fsService.addNodes(rootPath, parent ? [parent, node] : [node], Object.values(nodes), Object.values(nextNodes)),
+      );
       if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
 
       const orderingAfter = captureOrdering(nextProject);
@@ -1177,8 +1193,12 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
       set({ nodes: nextNodes, project: nextProject });
       // Duplicating a folder writes its whole subtree, so the clones share one
-      // path index rather than each rebuilding it from the full graph.
-      track(fsService.saveNodes(rootPath, clones, Object.values(nextNodes)));
+      // path index rather than each rebuilding it from the full graph. Through
+      // addNodes so the arrival of a copy gets the same relocation pass a new
+      // page does — a copy lands beside its original, so its parent can't
+      // convert, but a same-named sibling appearing does shift collision
+      // suffixes, and that has always needed the planner.
+      track(fsService.addNodes(rootPath, clones, Object.values(nodes), Object.values(nextNodes)));
       if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
 
       // The clones' own copies of the pictures, read only if the user actually

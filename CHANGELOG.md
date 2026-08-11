@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-10 — fix: making a page inside another page didn't move the parent's file
+
+### Fixes
+
+- **A page put inside another page could leave the outer page's file in the wrong place.** When a page holds nothing, it's a single file on disk; the moment you put something inside it, it's supposed to become a folder with its own file tucked in. Putting the first page inside it did the second half and skipped the first — the new page went into the folder, and the outer page's file stayed sitting outside it.
+  - **This is what was behind the red "a change couldn't be saved to disk" message.** Once the two disagreed, the next rename or move went looking for a file that had never been put there.
+  - **Nothing was deleted, and nothing is lost.** Everything is still on disk. But pages nested since the last update will come back **one level out** — sitting next to the page they were put in rather than inside it — because that's where the app can safely tell they are. Dragging them back in works normally now.
+  - Restarting the app clears the error: it re-reads what's actually on disk instead of what it thought was there.
+  - The same gap applied to duplicating a page and to undoing a delete. All three go through the same path now, and it's covered by tests.
+
 ## 2026-08-10 — hide a page from anyone you show your world to
 
 ### Additions

@@ -501,11 +501,45 @@ export async function saveNode(rootPath: string, node: Node, graph: Node[] | Pat
 // subtree duplicate). Resolving every node against one shared index instead of
 // rebuilding it per node is the difference between linear and quadratic work
 // on a large world.
+//
+// **Only for nodes written into a graph that already accounts for them** — an
+// import, where every path is resolved against the finished world. Adding to a
+// world that's already on disk goes through `addNodes` below, which is this
+// plus the relocation pass that arrival makes necessary.
 export async function saveNodes(rootPath: string, nodesToSave: Node[], allNodes: Node[]): Promise<void> {
   const index = buildPathIndex(allNodes);
   for (const node of nodesToSave) {
     await saveNode(rootPath, node, index);
   }
+}
+
+// The add counterpart to `deleteNodes`, and it exists for the same reason:
+// arriving changes where *other* nodes live, so writing the new files is only
+// half the job.
+//
+// A page that gains its first child stops being `Name.json` and becomes
+// `Name/_page.json` (see `usesDirectoryStorage`), and creating that child is
+// the commonest way it happens. Without the plan below, the child was written
+// into a `Name/` directory while the parent's own file stayed flat beside it —
+// one node claiming two places, and every later path resolution computing the
+// directory form of a file that was never moved there. That's an `os error 2`
+// on the next rename, and on the next load a `Name/` with no marker file in
+// it, whose contents `walkEntries` reparents up a level.
+//
+// Shipped broken 2026-08-10 with the change that made storage shape depend on
+// having children, and reached within the day.
+//
+// Relocations run **first**: the new nodes are resolved against the finished
+// layout, so the parent has to already be in the directory they're written
+// into.
+export async function addNodes(
+  rootPath: string,
+  newNodes: Node[],
+  allNodesBefore: Node[],
+  allNodesAfter: Node[],
+): Promise<void> {
+  await applyRelocations(rootPath, planRelocations(allNodesBefore, allNodesAfter, buildPathIndex(allNodesBefore)));
+  await saveNodes(rootPath, newNodes, allNodesAfter);
 }
 
 // `allNodesAfter` is the graph with this node (and its descendants) already

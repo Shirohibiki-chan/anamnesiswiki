@@ -72,6 +72,25 @@ is below.
   renumbers the others. `planRelocations` exists solely to keep disk in step with
   that; deleting it reintroduces two directories claiming the same node id.
 
+- **Adding a node runs the relocation planner too, not just a write.** This is
+  the least obvious consequence of storage shape depending on having children:
+  a page gaining its *first* child stops being `Name.json` and becomes
+  `Name/_page.json`, and creating that child is by far the commonest way it
+  happens. `fsService.addNodes` is the add counterpart to `deleteNodes` and
+  every add path goes through it — create, duplicate, and undoing a delete.
+  Relocations run **before** the new files are written, since those are resolved
+  against the finished layout.
+
+  Skipping it doesn't fail loudly. The child lands in `Name/` correctly (`mkdir`
+  is recursive) while the parent's file stays flat beside it: one node claiming
+  two places, every later path resolution computing a directory form that was
+  never created, `os error 2` on the next rename, and on the next load a
+  marker-less `Name/` whose contents `walkEntries` hoists up a level. Shipped
+  exactly this way on 2026-08-10 and hit within the day.
+
+  **`saveNodes` is not the same thing** and is only for writing into a graph
+  that already accounts for the nodes — an import building a world from nothing.
+
 - **Deleting or moving several nodes is one call, never a loop over the
   single-node one.** This follows directly from the line above: every delete and
   every move ends by renumbering colliding siblings across the *whole* graph, so

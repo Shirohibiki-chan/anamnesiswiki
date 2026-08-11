@@ -23,6 +23,7 @@ const fsMock = vi.hoisted(() => ({
 vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 
 import {
+  addNodes,
   buildPathIndex,
   deleteNodes,
   fileNameFromPath,
@@ -644,6 +645,77 @@ describe("storage conversion when a blank page is given a template", () => {
     // A flat template can't pull it back out while that's still true.
     const child = node({ id: "c", name: "Her Sword", parentId: "b", templateKey: "note" });
     expect(planRelocations([blank, child], [{ ...blank, templateKey: "note" }, child])).toEqual([]);
+  });
+});
+
+// The add side of the same coin as the prune block below. Shipped missing on
+// 2026-08-10 with the change that made storage shape depend on having children:
+// delete and drag ran the relocation planner, creating a page did not, so a
+// page's first child was written into a directory its parent's own file had
+// never moved into.
+describe("adding a node that converts its new parent", () => {
+  beforeEach(() => {
+    fsMock.rename.mockClear();
+    fsMock.writeTextFile.mockClear();
+    fsMock.remove.mockImplementation(async () => {});
+  });
+
+  const flatNote = node({ id: "n", name: "Magic System", parentId: null, templateKey: "note" });
+  const child = node({ id: "c", name: "Blood Magic", parentId: "n", templateKey: "note" });
+
+  it("moves the parent into its own directory", async () => {
+    await addNodes("/root", [flatNote, child], [flatNote], [flatNote, child]);
+
+    expect(fsMock.rename).toHaveBeenCalledWith("/root/Magic System.json", "/root/Magic System/_page.json");
+  });
+
+  it("writes the child inside that directory, not beside the old flat file", async () => {
+    await addNodes("/root", [flatNote, child], [flatNote], [flatNote, child]);
+
+    const written = fsMock.writeTextFile.mock.calls.map(([path]) => path);
+    expect(written).toContain("/root/Magic System/Blood Magic.json");
+    expect(written).not.toContain("/root/Blood Magic.json");
+  });
+
+  it("moves the parent before writing anything, so the child is never written into a directory that is about to be renamed onto", async () => {
+    const order: string[] = [];
+    fsMock.rename.mockImplementation(async () => void order.push("rename"));
+    fsMock.writeTextFile.mockImplementation(async () => void order.push("write"));
+
+    await addNodes("/root", [flatNote, child], [flatNote], [flatNote, child]);
+
+    expect(order[0]).toBe("rename");
+    fsMock.rename.mockImplementation(async () => {});
+    fsMock.writeTextFile.mockImplementation(async () => {});
+  });
+
+  it("renames nothing when the parent was already a directory", async () => {
+    // A character is `alwaysDirectory`, so its first child changes nothing
+    // about where it lives. The commonest add, and it must stay one write.
+    const character = node({ id: "ch", name: "Valera Jiang", parentId: null, templateKey: "character" });
+    const sword = node({ id: "s", name: "Her Sword", parentId: "ch", templateKey: "item" });
+
+    await addNodes("/root", [character, sword], [character], [character, sword]);
+
+    expect(fsMock.rename).not.toHaveBeenCalled();
+    expect(fsMock.writeTextFile.mock.calls.map(([path]) => path)).toContain("/root/Valera Jiang/Her Sword.json");
+  });
+
+  it("renames nothing when the parent already had children", async () => {
+    const second = node({ id: "c2", name: "Rune Magic", parentId: "n", templateKey: "note" });
+
+    await addNodes("/root", [flatNote, second], [flatNote, child], [flatNote, child, second]);
+
+    expect(fsMock.rename).not.toHaveBeenCalled();
+  });
+
+  it("adds a top-level page without touching anything else", async () => {
+    const loose = node({ id: "l", name: "Loose Page", parentId: null, templateKey: "note" });
+
+    await addNodes("/root", [loose], [flatNote], [flatNote, loose]);
+
+    expect(fsMock.rename).not.toHaveBeenCalled();
+    expect(fsMock.writeTextFile.mock.calls.map(([path]) => path)).toEqual(["/root/Loose Page.json"]);
   });
 });
 

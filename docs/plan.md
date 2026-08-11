@@ -70,12 +70,13 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 - **Duplicate doesn't work on a multi-selection.** The right-click menu hides it
   above one selected row rather than looping `duplicateNode`, which writes
-  through `saveNodes` without a relocation pass — adding several nodes at once
-  can shift colliding siblings' suffixes the same way deleting them does, and
-  that path hasn't been worked through. Bulk delete, move, and colour are all
-  supported. Fix by giving duplicate the same batch treatment as
-  `deleteNodes`/`moveNodes` (see `docs/handoff.md` §Storage). **Scheduled into
-  Phase 15**, which reworks that menu anyway — no reason to open it twice.
+  through `saveNodes` without a relocation pass. **The relocation half was
+  fixed 2026-08-10** — every add path now goes through `fsService.addNodes`,
+  which plans relocations the same way `deleteNodes` does, so colliding
+  siblings' suffixes are handled. What's left is only the UI: the menu still
+  hides Duplicate above one selected row rather than looping. Bulk delete,
+  move, and colour are all supported. **Scheduled into Phase 15**, which
+  reworks that menu anyway — no reason to open it twice.
 
 - **The About dialog never got built.** The other half of a Phase 12 bullet
   whose first half shipped as Settings → Patch Notes on 2026-08-08. Small and
