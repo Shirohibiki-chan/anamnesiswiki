@@ -70,13 +70,19 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
     setIsRepositioning(true);
   }
 
-  function handlePointerDown(e: PointerEvent<HTMLDivElement>) {
+  // On the picture rather than on the frame around it, and that's the whole
+  // fix for a bug worth not reintroducing: capturing the pointer on the frame
+  // captured it for presses on the buttons *inside* the frame too, and a
+  // captured pointer redirects the click that follows to the capturing element.
+  // So "Show whole image" and "Done" were unreachable the entire time
+  // repositioning was on — the only time they're shown.
+  function handlePointerDown(e: PointerEvent<HTMLImageElement>) {
     if (!isRepositioning) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragState.current = { startY: e.clientY, startFocus: imageFocusY ?? 50 };
   }
 
-  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
+  function handlePointerMove(e: PointerEvent<HTMLImageElement>) {
     if (!dragState.current || !frameRef.current) return;
     const height = frameRef.current.offsetHeight || 1;
     const deltaPercent = ((e.clientY - dragState.current.startY) / height) * 100;
@@ -124,9 +130,6 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
           setIsDragOver(false);
           void acceptFile(e.dataTransfer.files[0]);
         }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
       >
         {imageUrl ? (
           <>
@@ -136,6 +139,10 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
               className="property-image-preview"
               style={isCropped ? { objectPosition: `center ${imageFocusY}%` } : undefined}
               draggable={false}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
             />
             <button
               type="button"

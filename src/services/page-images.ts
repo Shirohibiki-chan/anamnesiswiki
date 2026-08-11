@@ -80,3 +80,16 @@ export function embeddedImageAt(
 
   return { images: elements.map(toLightboxImage), index };
 }
+
+/**
+ * The same thing, for a caller that has a block id rather than a click — the
+ * toolbar button, which knows which block is selected and nothing about where
+ * it is on screen. `data-id` is BlockNote's own attribute on a block element
+ * (see @blocknote/core's pm-nodes/BlockContainer.ts).
+ */
+export function embeddedImageInBlock(
+  container: Element,
+  blockId: string,
+): { images: LightboxImage[]; index: number } | null {
+  return embeddedImageAt(container, container.querySelector(`[data-id="${CSS.escape(blockId)}"] ${EMBEDDED_IMAGE_SELECTOR}`));
+}

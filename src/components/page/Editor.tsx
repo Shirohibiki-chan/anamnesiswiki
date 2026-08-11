@@ -15,8 +15,10 @@ import {
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
+import { Fragment } from "react";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
+import { ExpandImageButton } from "./ExpandImageButton";
 import { SaveImageButton } from "./SaveImageButton";
 
 type EditorProps = {
@@ -26,12 +28,10 @@ type EditorProps = {
 };
 
 export function Editor({ nodeId, content, onContentChange }: EditorProps) {
-  const { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems } = useEditor(
-    nodeId,
-    content,
-    onContentChange,
-  );
-  // Clicking a picture opens it full size. The listener lives on this wrapper
+  const { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems, suggestionMenuFloating } =
+    useEditor(nodeId, content, onContentChange);
+  // Double-clicking a picture opens it full size; a single click still selects
+  // it, which is what raises the toolbar. The listener lives on this wrapper
   // rather than on anything BlockNote renders, so it covers every picture in
   // the tab without a custom image block — see hooks/use-lightbox.ts.
   const imageLightboxRef = useEditorImageLightbox();
@@ -66,14 +66,31 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           formattingToolbar={() => (
             <FormattingToolbar>
               {getFormattingToolbarItems().map((item) =>
-                item.key === "fileDownloadButton" ? <SaveImageButton key="fileDownloadButton" /> : item,
+                item.key === "fileDownloadButton" ? (
+                  // Both of ours land where the Download button was, so they
+                  // sit with the rest of the picture controls rather than at
+                  // the end of the strip past the text ones.
+                  <Fragment key="fileDownloadButton">
+                    <ExpandImageButton />
+                    <SaveImageButton />
+                  </Fragment>
+                ) : (
+                  item
+                ),
               )}
             </FormattingToolbar>
           )}
         />
-        <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} />
-        <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} />
-        <SuggestionMenuController triggerCharacter={WIKILINK_TRIGGER} getItems={getMentionItems} />
+        {/* All three take the same floating options — see use-editor.ts. Without
+            them a menu opened near the bottom of the window is positioned while
+            it's still an empty loading strip and then grows off the screen. */}
+        <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} floatingUIOptions={suggestionMenuFloating} />
+        <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} floatingUIOptions={suggestionMenuFloating} />
+        <SuggestionMenuController
+          triggerCharacter={WIKILINK_TRIGGER}
+          getItems={getMentionItems}
+          floatingUIOptions={suggestionMenuFloating}
+        />
       </BlockNoteView>
     </div>
   );

@@ -922,17 +922,39 @@ is below.
   `name` prop rendered into `alt`; the stored reference is a UUID and remembers
   nothing.
 
-- **The click that opens it is a capture-phase native listener, and it doesn't
-  swallow the click.** Both halves matter. Capture, because ProseMirror runs its
-  own listeners inside that subtree while React 19 attaches synthetic handlers up
-  at the root container — anything in between calling `stopPropagation` would
-  leave clicking a picture silently doing nothing (verified: with an inner
-  handler stopping propagation, the capture listener still fires). Not swallowed,
-  because ProseMirror's own handling is what selects the block, so closing the
-  lightbox leaves the picture selected with its formatting toolbar up, which is
-  where Save a copy and the caption live. Matching on `img.bn-visual-media`
-  specifically is also what keeps the resize handles and the caption clickable —
-  they're siblings of the image, not inside it.
+- **It opens on a double-click, and a single click must stay untouched.** A
+  single click on a picture is what selects the block, and selecting the block is
+  what raises the formatting toolbar — where the caption, the resize and Save a
+  copy are. Opening a window over that made the toolbar unreachable in practice,
+  which is how it shipped first and why it changed. The toolbar's own Open full
+  size button (`components/page/ExpandImageButton.tsx`) is the discoverable half;
+  the double-click is the gesture. The listener is capture-phase and native
+  because ProseMirror runs its own listeners inside that subtree while React 19
+  attaches synthetic handlers up at the root container, so anything in between
+  calling `stopPropagation` would leave it silently doing nothing. Matching
+  `img.bn-visual-media` is what keeps the resize handles and the caption working
+  — they're siblings of the image, not inside it.
+
+- **A suggestion menu has to be re-positioned once its items arrive.**
+  `getItems` is a promise, so BlockNote draws a one-line loading strip first and
+  floating-ui measures *that*; the menu then grows downward from an anchor
+  chosen for a box eight times shorter. Measured in the running editor with the
+  cursor 85px from the bottom of the window: placed at y=601 and grown to 617px,
+  so 498px of it hung below the window, and one forced reposition moved it to
+  y=10. The placement maths was never wrong — nothing re-ran it. `autoUpdate`
+  covers scrolling, window resizes and element resizes and none of those fire
+  for this, so `use-editor.ts` adds a `MutationObserver` on the menu's children
+  through the documented `floatingUIOptions` prop. **Watch `childList`/`subtree`
+  only, never `attributes`:** floating-ui's `size` middleware writes
+  `max-height` onto that same element on every run, so observing attributes
+  makes each update trigger the next.
+
+- **The sidebar picture's reposition drag captures the pointer on the `<img>`,
+  not on the slot around it.** On the slot it captured presses on the buttons
+  inside it too, and a captured pointer takes the click that follows with it —
+  so "Show whole image" and "Done" did nothing for the whole time repositioning
+  was on, which is the only time they're shown. Keeping the drag on the image
+  puts the buttons structurally outside it.
 
 - **The lightbox's pan clamp measures `clientWidth`/`clientHeight`, and that
   includes the stage's padding on purpose.** Overflow clips at the padding box,

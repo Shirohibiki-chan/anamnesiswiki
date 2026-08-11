@@ -6,7 +6,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
-import type { DefaultReactSuggestionItem } from "@blocknote/react";
+import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
@@ -92,5 +92,40 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     return filterSuggestionItems(getMentionMenuItems(editor, nodes, nodeId), query);
   }
 
-  return { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems };
+  return { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems, suggestionMenuFloating };
 }
+
+/**
+ * Re-positions a suggestion menu once its items have arrived.
+ *
+ * `getItems` is a promise — BlockNote's own signature — so the menu is drawn as
+ * a one-line loading strip first, and floating-ui measures *that*. It picks the
+ * right side and anchors the top correctly for a 30px box, then the items land
+ * and the box grows downward from an anchor chosen for something eight times
+ * shorter. Near the bottom of the window the result is a menu hanging most of
+ * the way off the screen with a sliver showing.
+ *
+ * Measured in the running editor before the fix, with the cursor 85px from the
+ * bottom: the menu was placed at y=601 and grew to 617px tall, so 498px of it
+ * was below the window. Nothing re-ran the calculation — one forced reposition
+ * moved it to y=10, entirely on screen. The placement maths was never wrong;
+ * it just ran once, too early.
+ *
+ * `autoUpdate` (which BlockNote already merges in) watches for scrolling,
+ * window resizes and the elements themselves being resized, and none of those
+ * fire for this. Watching the menu's own children does, so this adds that and
+ * nothing else.
+ *
+ * Deliberately `childList`/`subtree` only, never `attributes`: floating-ui's
+ * `size` middleware writes `max-height` onto this same element every time it
+ * runs, so observing attributes would have each update trigger the next one.
+ */
+const suggestionMenuFloating: FloatingUIOptions = {
+  useFloatingOptions: {
+    whileElementsMounted: (_reference, floating, update) => {
+      const observer = new MutationObserver(() => update());
+      observer.observe(floating, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    },
+  },
+};
