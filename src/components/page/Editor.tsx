@@ -7,11 +7,10 @@
 // Everything that isn't a BlockNote React component lives in
 // hooks/use-editor.ts, per CLAUDE.md's rule that components never import
 // services directly.
-import { FilePanelController, SuggestionMenuController } from "@blocknote/react";
+import { SuggestionMenuController } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
-import { ImageFilePanel } from "./ImageFilePanel";
 
 type EditorProps = {
   nodeId: string;
@@ -42,14 +41,10 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         editor={editor}
         theme="dark"
         slashMenu={false}
-        // Off so ours renders instead — BlockNote's own panel offers a
-        // fetch-a-picture-from-the-web tab. See ImageFilePanel.
-        filePanel={false}
         className="wiki-body editor-shell"
         onKeyDownCapture={onKeyDownCapture}
         onChange={handleChange}
       >
-        <FilePanelController filePanel={ImageFilePanel} />
         <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} />
         <SuggestionMenuController triggerCharacter={WIKILINK_TRIGGER} getItems={getMentionItems} />

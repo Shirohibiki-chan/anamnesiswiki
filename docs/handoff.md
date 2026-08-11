@@ -707,11 +707,26 @@ is below.
   Assets tab exists to make visible. **If a sweep is ever written, it has to
   read every tab of every page plus the template library, not the open page.**
 
-- **BlockNote's file panel is replaced, not configured** (`ImageFilePanel.tsx`,
-  with `filePanel={false}` on the view). Its own panel offers an
-  embed-from-URL tab, which puts a remote fetch on the render path of a page —
-  across the policy boundary in `CLAUDE.md`, and useless offline. Restoring the
-  default panel restores that tab.
+- **BlockNote's own file panel is the one that renders, both tabs, and that is
+  a decision rather than a default.** Upload and embed-from-URL. The panel was
+  briefly replaced with an upload-only one, on the grounds that a URL embed
+  puts a remote fetch on the render path of a page; **the user overruled that
+  the same day and wants both** — see `CLAUDE.md`'s Policy Boundary, where the
+  exception is written down with what still holds. Don't remove the URL tab
+  again.
+
+  The mechanism is worth knowing, because it looks like a bug from either
+  side: the default panel builds its tab list as
+  `uploadFile === undefined ? [] : [upload]` **plus** embed. So a missing
+  `uploadFile` doesn't disable uploading, it silently removes the tab, and the
+  block presents as a URL box with no other option. That's exactly how it
+  shipped before Phase 16.
+
+- **The image size and type limits live in `uploadFile`, not in any panel.** A
+  picture arrives three ways — picked, dragged onto the page, pasted — and
+  BlockNote funnels all three through that one function. A check in the panel
+  covers the least common of the three. Throwing is how it refuses; BlockNote
+  catches it and shows its own upload-failed text.
 
 - **Don't fork BlockNote.** Extend via its documented block-spec API.
 

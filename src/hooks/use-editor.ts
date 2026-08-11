@@ -7,6 +7,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
+import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems } from "../services/editor-blocks/callout-slash-menu";
@@ -31,16 +32,27 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     // Phase 16. These two are what make a picture inside a page possible at
     // all: BlockNote's image block holds a single string, so `uploadFile`
     // decides what gets written there and `resolveFileUrl` turns it back into
-    // something the webview can paint. Without the pair, the only way into
-    // that block is its embed-from-URL tab — a picture the app would have to
-    // fetch off the internet to show, which crosses CLAUDE.md's policy
-    // boundary and is useless in a world you're writing offline.
+    // something the webview can paint.
+    //
+    // Providing `uploadFile` is also what makes BlockNote render the Upload
+    // tab beside its embed-from-URL one — its default panel builds the tab
+    // list as `uploadFile === undefined ? [] : [upload]` plus embed, which is
+    // why that block used to offer a URL box and nothing else.
     //
     // These are read once, when the editor is created. That's fine for
     // `rootPath` — the editor is remounted per page, and a project change
     // remounts the whole app shell — but it does mean neither can be swapped
     // for a stale-capture-sensitive value later.
+    //
+    // The limits live here rather than in a panel because a picture arrives
+    // three ways — picked, dragged onto the page, pasted — and BlockNote
+    // routes all three through this one function. A check in the panel would
+    // have covered the least common of the three. Throwing is the documented
+    // way to refuse: BlockNote catches it and shows its own upload-failed text
+    // in the panel.
     uploadFile: async (file: File) => {
+      if (!file.type.startsWith("image/")) throw new Error("That's not an image file.");
+      if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is too large (10MB max).");
       const bytes = new Uint8Array(await file.arrayBuffer());
       return uploadAsset(bytes, extensionFor(file));
     },

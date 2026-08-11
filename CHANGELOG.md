@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-11 — the URL box comes back
+
+### Fixes
+
+- **Adding a picture by web address works again, alongside uploading one.** The image block now has both tabs: **Upload** for a file off your computer, **Embed** for a link. Removing the second one was the wrong call — it was taken out on the grounds that the app shouldn't fetch anything off the internet, and that's your decision to make, not the app's.
+- **The 10MB limit and the "that's not an image" check now cover dragging and pasting too**, not just picking a file through the panel. They were only ever checked on the one route.
+
+### Worth knowing
+
+- **An embedded picture is a link, not a copy.** It loads from that website every time the page is drawn, so it won't show with no internet, and if the site takes it down or moves it, it's gone from your page too. **Upload** copies the file into your project, where nothing outside can touch it. Both are one click apart — worth uploading anything you'd be upset to lose.
+
 ## 2026-08-11 — pictures inside a page
 
 ### Additions
