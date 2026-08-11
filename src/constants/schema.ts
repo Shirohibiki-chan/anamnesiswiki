@@ -179,6 +179,20 @@ export type Project = {
   // needn't have a home page. Deleting the designated page clears it (see
   // project-store's deleteNode) so this never points at a node that's gone.
   homeNodeId?: string | null;
+  // Pages pinned to the rail under the tree search — LegendKeeper's "Set as
+  // shortcut", and the same kind of thing `homeNodeId` is: ordinary pages,
+  // marked, not a reserved sort of page. Per-project rather than app-level,
+  // unlike the sidebar widths and the double-click preference: which pages you
+  // reach for constantly is a fact about a world, not a habit that follows you
+  // between them.
+  //
+  // Optional, so every project saved before this existed reads as "none
+  // pinned" rather than needing a migration. Order is the order they were
+  // pinned in, and is the order the rail draws them — deliberately not
+  // alphabetical or tree order, because a rail you arranged stays where you
+  // put it. Deleting a pinned page unpins it (see project-store's deleteNodes)
+  // so this never points at a node that's gone.
+  pinnedIds?: string[];
   expandedIds: string[];
   selectedId: string | null;
   createdAt: number;

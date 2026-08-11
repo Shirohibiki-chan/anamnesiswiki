@@ -6,10 +6,26 @@
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
 // earlier native window.confirm(). Positioning/portaling is handled by the
 // TreePopover wrapper.
-import { Copy, Crosshair, Eye, EyeOff, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
+import {
+  Copy,
+  Crosshair,
+  Eye,
+  EyeOff,
+  FolderOpen,
+  Home,
+  Palette,
+  PencilLine,
+  Pin,
+  PinOff,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 type ContextMenuProps = {
   isProjectHome: boolean;
+  /** Whether this row is already on the shortcut rail — the item toggles. */
+  isPinned: boolean;
   /**
    * Whether the row the menu was opened on is hidden — which is what the item
    * offers to undo. On a multi-selection it applies that answer to the whole
@@ -35,6 +51,7 @@ type ContextMenuProps = {
   onSetColor: () => void;
   onFocusHere: () => void;
   onToggleProjectHome: () => void;
+  onTogglePinned: () => void;
   onToggleHidden: () => void;
   onReveal: () => void;
   onExport: () => void;
@@ -45,6 +62,7 @@ type ContextMenuProps = {
 
 export function ContextMenu({
   isProjectHome,
+  isPinned,
   isHidden,
   selectionCount,
   fileManagerName,
@@ -54,6 +72,7 @@ export function ContextMenu({
   onSetColor,
   onFocusHere,
   onToggleProjectHome,
+  onTogglePinned,
   onToggleHidden,
   onReveal,
   onExport,
@@ -120,6 +139,15 @@ export function ContextMenu({
       {!isMultiple && (
         <button type="button" onClick={() => run(onToggleProjectHome)}>
           <Home size={13} /> {isProjectHome ? "Remove as project home" : "Set as project home"}
+        </button>
+      )}
+      {/* Single selection only. Pinning a run of pages at once would fill the
+          rail in one gesture, and the rail's whole value is that it's short —
+          it's the handful you reach for, not a second copy of the tree. */}
+      {!isMultiple && (
+        <button type="button" onClick={() => run(onTogglePinned)}>
+          {isPinned ? <PinOff size={13} /> : <Pin size={13} />}{" "}
+          {isPinned ? "Remove shortcut" : "Set as shortcut"}
         </button>
       )}
       {/* Single selection only: revealing several rows at once means several

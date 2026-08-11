@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-11 — pin the pages you keep coming back to
+
+### Additions
+
+- **Right-click any page and pick "Set as shortcut."** It appears as a small tile in a row under the sidebar search, and clicking it opens the page from wherever you are — no hunting down the tree. This is the last piece of the everyday-navigation work, and **Phase 14 is now finished.**
+  - **Icons rather than a list of names.** The pages worth pinning are the handful you open constantly, and for those you already know the name — a list would spend a line of sidebar on each one to tell you something you weren't asking. Hovering a tile shows the name.
+  - New shortcuts go on the **end** of the row, not the front, so the ones you've already learned the position of stay where they are.
+  - A tile keeps its page's colour, including one inherited from the folder it's in, so a shortcut looks like where it came from.
+  - **Middle-click a tile to remove it**, the same way you'd close a browser tab. "Remove shortcut" is on the right-click menu too.
+  - Shortcuts belong to the world, not the app — each project keeps its own, and they're saved with it. Deleting a page removes its shortcut.
+  - **The row isn't there at all until you pin something.** No empty prompt taking up space above the tree.
+
 ## 2026-08-11 — the app no longer decides how deep is too deep
 
 ### Fixes

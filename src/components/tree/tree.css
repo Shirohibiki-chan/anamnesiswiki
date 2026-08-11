@@ -596,3 +596,58 @@ button.tree-path-crumb:hover {
 .tree-context-menu-danger {
   color: var(--color-palette-rose) !important;
 }
+
+/* ─── Shortcut rail ────────────────────────────────────────────────────────
+   Pinned pages as icon tiles, under the search box. Wraps rather than
+   scrolling sideways, unlike the path bar above: the path bar is one chain
+   and hiding its tail loses the way out, whereas a rail is a set with no
+   order to follow, and a shortcut you can't see is a shortcut you don't have.
+   Growing to two rows is the honest cost of pinning ten things. */
+.bookmarks-rail {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin: 0 var(--space-md) var(--space-sm);
+}
+
+.bookmarks-rail:empty {
+  display: none;
+}
+
+.bookmark-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.bookmark-tile:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+/* The tile for the page you're on. Leads with the border rather than the
+   fill, because a tile may already be tinted by its page's own colour and a
+   strong background would fight it. `--color-accent` is deliberately not used
+   for either: it's an alias for the 15% tint, not the bold teal — see the note
+   on it in index.css. */
+.bookmark-tile.is-selected {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+}
+
+.bookmark-tile:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 1px;
+}

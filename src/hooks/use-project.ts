@@ -36,6 +36,7 @@ export function useProjectActions() {
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
       setProjectHome: state.setProjectHome,
+      togglePinned: state.togglePinned,
       setFocus: state.setFocus,
       setExpanded: state.setExpanded,
     })),
@@ -77,4 +78,15 @@ export function useSaveNow(): () => Promise<void> {
 // this when opening", the other is "we couldn't write this just now."
 export function useSaveErrors(): string[] {
   return useProjectStore(useShallow((state) => state.saveErrors));
+}
+
+// The pinned pages, in the order they were pinned. Narrow on purpose: every
+// tree row asks whether it's pinned, and a full-store subscription in a
+// per-row component re-renders the whole tree on every keystroke.
+export function usePinnedIds(): string[] {
+  return useProjectStore(useShallow((state) => state.project?.pinnedIds ?? []));
+}
+
+export function useIsPinned(nodeId: string): boolean {
+  return useProjectStore((state) => (state.project?.pinnedIds ?? []).includes(nodeId));
 }

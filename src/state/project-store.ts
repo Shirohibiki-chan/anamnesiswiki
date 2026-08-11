@@ -201,6 +201,7 @@ export type ProjectStoreState = {
   // one case it stays quiet is a flush that failed; SaveWarning has that.
   saveNow: () => Promise<void>;
   setProjectHome: (id: string | null) => void;
+  togglePinned: (id: string) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
 };
 
@@ -420,6 +421,17 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     const { rootPath, project } = get();
     if (!rootPath || !project) return;
     const nextProject: Project = { ...project, homeNodeId };
+    set({ project: nextProject });
+    track(() => fsService.saveProject(rootPath, nextProject));
+  };
+
+  // Same split, same reason: undo sets the exact list it saw rather than
+  // toggling back, which would be wrong if anything else changed the pins in
+  // between.
+  const applyPins = (pinnedIds: string[]): void => {
+    const { rootPath, project } = get();
+    if (!rootPath || !project) return;
+    const nextProject: Project = { ...project, pinnedIds };
     set({ project: nextProject });
     track(() => fsService.saveProject(rootPath, nextProject));
   };
@@ -1140,6 +1152,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         // nothing. Cleared here, including when home was merely *inside* the
         // subtree being deleted rather than its root.
         homeNodeId: project.homeNodeId && toRemove.has(project.homeNodeId) ? null : project.homeNodeId,
+        // Same again for the shortcut rail: a pinned page is an ordinary page
+        // and can be deleted like one, and a tile pointing at nothing is worse
+        // than no tile.
+        pinnedIds: (project.pinnedIds ?? []).filter((pinnedId) => !toRemove.has(pinnedId)),
         // Selection survives a delete only if what was selected is still
         // there — a stale selectedId leaves the page view rendering nothing
         // with no way back to a real page.
@@ -1373,6 +1389,29 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         "the home page change",
         () => applyHome(previousHomeNodeId),
         () => applyHome(homeNodeId),
+      );
+    },
+
+    // Pinning a page to the rail. Written immediately for the same reason as
+    // the home page above: a deliberate act, not incidental UI state.
+    //
+    // A new pin goes on the end rather than the front. The rail is a row of
+    // small tiles and its order is the only thing making any one of them
+    // findable by muscle memory — putting each new pin first would shuffle
+    // every tile along one every time, which costs the whole row to gain a
+    // position for one page.
+    togglePinned(id) {
+      const { rootPath, project, nodes } = get();
+      if (!rootPath || !project || !nodes[id]) return;
+      const previousPinnedIds = project.pinnedIds ?? [];
+      const pinnedIds = previousPinnedIds.includes(id)
+        ? previousPinnedIds.filter((pinnedId) => pinnedId !== id)
+        : [...previousPinnedIds, id];
+      applyPins(pinnedIds);
+      record(
+        previousPinnedIds.includes(id) ? `removing the "${nodes[id].name}" shortcut` : `the "${nodes[id].name}" shortcut`,
+        () => applyPins(previousPinnedIds),
+        () => applyPins(pinnedIds),
       );
     },
 

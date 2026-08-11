@@ -1154,3 +1154,151 @@ The subtle one is `planOptionRename`'s merge: renaming onto a name a page alread
 One existing test needed changing: `settings-search.test.ts` asserted exactly 5 shortcut entries. Its own comment said "if a registry grows, this grows with it", so it now counts off `SHORTCUT_ACTIONS.length` — a hardcoded number there fails the day a shortcut is added without anything being wrong.
 
 **Not run in the desktop app.** `pnpm dev` is browser-only and can't open a project, so this is compiled-and-tested rather than eyeballed.
+
+---
+
+# Phase 14 — Everyday Navigation — 2026-08-11
+
+Eleven small things, felt daily, shipped one PR per bullet over 2026-08-10
+and 2026-08-11. The detail that still governs the code moved to
+`docs/handoff.md`; what follows is the record.
+
+## What was in it
+
+Small things, felt daily. Independent of each other; safe to ship piecemeal —
+and being shipped that way, one PR per bullet.
+
+- ~~**Back / forward / home buttons**~~ — 2026-08-10. `navigation-service.ts`
+  holds the stack, the store records a visit inside `selectNode`, and the three
+  buttons sit at the left end of the top bar, which had been held empty for
+  them since Phase 11.5. **The decision that binds: `selectNode` is the single
+  choke point.** Back and forward move the cursor over the stack without
+  recording, everything else records by using the action it already uses — so a
+  navigation added in a year gets its history entry for free rather than by
+  remembering a second call. Session-only, and pruned when a page is deleted;
+  the reasoning for both is in the service's own header. It also relaxed the
+  shortcut rules by one notch: Alt with a *named* key skips the Ctrl/Cmd
+  requirement, since it can't produce a character. **Known cost, written down
+  rather than solved:** Alt+←/→ are move-by-word inside a text field on macOS,
+  so a Mac user has to rebind. Per-platform defaults are the fix if that ever
+  matters.
+
+- ~~**Focus a folder as the top of the tree**~~ — 2026-08-11. Right-click →
+  *Focus here*; that node's **children** become the tree's roots, and the node
+  itself is named in the path bar above, which is the way back out. The answer
+  to nesting gone too deep to read — the user hit it at nine levels, where the
+  names are gone and only indent is left.
+
+  **Four decisions bind, and each rules out a way of being wrong:**
+  - **Session-only, never written to disk.** Reopening a project into a tree
+    showing a fraction of itself, with no memory of having asked for that,
+    reads as pages having gone missing. Same reasoning as `navHistory`.
+  - **The path bar is not optional.** A sidebar quietly showing part of the
+    project with nothing saying so *is* the failure mode; the bar is what makes
+    it read as a view rather than a loss.
+  - **Selecting a page outside the focus drops the focus** (`applySelection`).
+    The tree physically can't show it, so the alternative is the sidebar
+    silently not following a search result or a wikilink.
+  - **A drop at the tree's root means "into the focused node"**, not into the
+    project (`parentId ?? focusedId` in TreePanel). Without that, dragging a
+    page to the top of a focused tree flings it to the one place the person
+    doing it can't currently see.
+
+  *Focus here* is hidden on a page with nothing inside it: an empty tree under
+  a path bar looks exactly like the project having disappeared.
+
+  **Obsidian's Breadcrumbs plugin is not this.** Raised by the user 2026-08-08 and checked: it never touches the file explorer. It builds note-to-note hierarchies out of frontmatter and gives trail, matrix, prev/next and diagram views over them. Most of what it does is already in this plan under other names — the trail is the clickable breadcrumb already sitting above every page title (`page/PageTitle.tsx`), its tree and matrix views are Phase 18's Subpage Index and Backlinks blocks, prev/next chains are Phase 25's storylines, and its diagrams are Phase 24's graphs. Nothing left to lift from it.
+- ~~**Double-click expands a folder**~~ — 2026-08-10. The swap it was always
+  going to be: renaming was react-arborist's default rather than a decision,
+  and it's the destructive one of the two to trigger by accident on the gesture
+  people use to look inside things. Rename was already on the right-click menu,
+  so nothing had to move there. **Settings gained a Sidebar section** for the
+  switch that puts it back, and a `preferences` store beside the panel widths —
+  app-level, not per-project, since a habit about double-clicking doesn't change
+  with the world you have open. The default is deliberately the new behaviour
+  rather than the old one: "nothing recorded" has to mean the swap, or it never
+  reaches anyone who had the app before it.
+- ~~**Resizable sidebars**~~ — 2026-08-10. Both edges drag, with arrow keys and
+  a double-click reset as the alternatives; widths persist in `app-settings`,
+  app-level rather than per-project like everything else about how it looks.
+  **The two decisions that bind are in `docs/handoff.md` §Layout**: the handles
+  are positioned against the grid rather than inside the panels, because the
+  properties panel is a scroll container and a handle inside it scrolls away
+  from its own edge; and the column transition has to be switched off mid-drag,
+  which is measured rather than assumed. The minimums are "the panel can still
+  do its job" — **dragging is not a way to hide a panel**, and shouldn't become
+  one.
+- ~~**Show in system explorer**~~ — 2026-08-10.
+- ~~**Hover previews** on wikilinks and mentions~~ — 2026-08-11. Wikilinks
+  resolve *into* mentions (see `wikilink.ts`), so both are one chip and one
+  implementation. **The 350ms delay is the feature, not a detail:** with no
+  delay a card fires on every link the pointer crosses on its way somewhere
+  else, and a preview you learn to steer around is worse than none.
+  `pointer-events: none` on the card is load-bearing too — it opens directly
+  below the chip, so a card that could take the pointer would swallow the
+  chip's own mouseleave and stay up until you moved somewhere else entirely.
+  **Excerpt rules, in `preview-service.ts`:** the first *non-empty* tab rather
+  than the first tab (templates seed several and only some get filled), never
+  a hidden tab (a tab held back from readers must not leak through a preview
+  of the page it's on), and the cut lands on a word boundary.
+- ~~**"Create new" landing page**~~ — 2026-08-10. Every route to a new page —
+  the tree's "+", the right-click item, the folder view's button, the keyboard
+  shortcut — now makes an untitled blank page and opens it, with the template
+  grid on the page itself and the title already in edit mode. The popover that
+  used to ask first is gone from all four, and `NewPageDialog.tsx` with it; the
+  properties panel keeps its own copy for a blank page deciding late what it is.
+  **The decision that binds is in `docs/handoff.md` §Storage**: a template
+  carries whether a page stores itself as a file or a directory, so applying one
+  moves the page on disk and has to go through the relocation planner rather
+  than a plain save.
+- ~~**Bookmarks rail**~~ — 2026-08-11, taken last with its own pin built
+  alongside it, which was the choice this bullet said to make. "Set as
+  shortcut" is lifted out of Phase 15 and onto the right-click menu; that
+  menu's remaining items are untouched and Phase 15 still owns them.
+  **The decisions that bind:** pins are per-project (`Project.pinnedIds`,
+  optional so no project needs migrating), because which pages you reach for
+  constantly is a fact about a world rather than a habit that follows you
+  between them — unlike the sidebar widths and the double-click preference,
+  which are app-level. A new pin goes on the *end* of the rail: its order is
+  the only thing making any one tile findable without reading, and prepending
+  would shuffle every tile along to gain a position for one page. Deleting a
+  pinned page unpins it, the same pruning `homeNodeId` and `selectedId`
+  already get. The rail draws nothing at all when empty rather than showing a
+  prompt — somewhere to put shortcuts is worth nothing to someone who hasn't
+  made one, and a strip of instructions above the tree would be paid for daily
+  by everyone who has.
+- ~~**The small-friction batch**~~ — 2026-08-10, lifted from Obsidian 1.13's own
+  list. Three of the six needed building; the other three were checked and
+  already true, which is the point of having written them down. **Don't
+  re-add the ones marked below as already-satisfied without first checking they
+  still are** — two of them hold because of something elsewhere, not because
+  anything guards them.
+  - ~~`Escape` cancels a rename and **leaves the tree focused**~~ — built.
+    Decided in a capture handler on the tree panel, because whether a row is
+    being renamed stops being true the moment the key is handled anywhere else,
+    and the focus is taken back on the next frame rather than immediately: the
+    field is still mounted and still focused when the key arrives.
+  - ~~`Escape` clears the current selection~~ — built, **deliberately narrower
+    than the line said.** In this app the tree's selection *is* which page is
+    open, so clearing it outright would close the page as a side effect of
+    getting out of a multi-select. Escape drops back to the row you're on
+    instead, and does nothing at all when there's no multi-selection to undo.
+  - ~~`Ctrl-N`/`Ctrl-P` move through suggestion lists~~ — built, in all three:
+    the quick switcher, the settings search, and the editor's slash/@/wikilink
+    menus. `services/list-keys.ts` is the one definition. The editor's menu is
+    the odd one out — BlockNote owns that highlight, so the keypress is
+    *translated* into the arrow key BlockNote is already listening for rather
+    than reimplemented against its internals.
+  - **Already true: auto-reveal doesn't fire while renaming.** Not because
+    anything guards it — because a rename ends on blur, and every path that can
+    change the selection takes focus first. A guard was written and deleted; it
+    could never have fired. If a path ever arrives that moves the selection
+    without taking focus, this becomes real again.
+  - **Already true: `Shift`-arrow extends a multi-selection.** react-arborist's
+    own container does it, and nothing here passes `disableMultiSelection`.
+  - **Already true: closing the quick switcher with `Escape` keeps the
+    selection.** It only ever calls `selectNode` when you pick something, so
+    arrowing through results doesn't move the selection there is to restore.
+    Worth keeping that way: previewing on arrow would make this real work.
+
+---
