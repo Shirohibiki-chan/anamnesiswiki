@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-11 — duplicate more than one page at a time
+
+### Fixes
+
+- **"Duplicate" works on a multi-selection now.** Select several pages, right-click, and Duplicate — it used to vanish from the menu the moment you had more than one page selected, which looked like copying a group wasn't possible rather than like it hadn't been built yet. Each page gets its copy directly below it, and one Ctrl+Z takes the whole lot back out.
+  - **Selecting a folder *and* something inside it copies the folder once**, not the inner page twice. A copy brings everything inside it along, so copying the page on its own as well would leave a spare copy of it sitting inside the new folder.
+
 ## 2026-08-11 — put a folder's pages in order, and fold a branch away
 
 **Phase 15 starts here** — the right-click menu getting the rest of the items it was always meant to have.

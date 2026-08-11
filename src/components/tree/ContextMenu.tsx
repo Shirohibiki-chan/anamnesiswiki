@@ -38,9 +38,9 @@ type ContextMenuProps = {
    */
   isHidden: boolean;
   // How many rows the actions will apply to. Above one, the items that only
-  // make sense for a single page (renaming, duplicating, nesting a new page,
-  // designating home, revealing on disk) drop out rather than being shown and
-  // quietly doing something surprising.
+  // make sense for a single page (renaming, nesting a new page, designating
+  // home, revealing on disk) drop out rather than being shown and quietly
+  // doing something surprising.
   selectionCount: number;
   /** The OS's own word for its file manager — see dialog-service. */
   fileManagerName: string;
@@ -130,11 +130,13 @@ export function ContextMenu({
           <PencilLine size={13} /> Rename
         </button>
       )}
-      {!isMultiple && (
-        <button type="button" onClick={() => run(onDuplicate)}>
-          <Copy size={13} /> Duplicate
-        </button>
-      )}
+      {/* Multi-selection included. It used to drop out above one row, which
+          read as duplicating being impossible on a selection rather than as
+          not having been wired up yet — and copying a run of pages means
+          exactly what copying one does, done to each of them. */}
+      <button type="button" onClick={() => run(onDuplicate)}>
+        <Copy size={13} /> Duplicate
+      </button>
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color
       </button>

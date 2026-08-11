@@ -28,7 +28,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, sortChildren, togglePinned } =
+  const { duplicateNodes, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus, sortChildren, togglePinned } =
     useProjectActions();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
@@ -321,7 +321,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             hasChildren={hasChildren}
             canSort={(node.children?.length ?? 0) > 1}
             onRename={() => void node.edit()}
-            onDuplicate={() => void duplicateNode(node.id)}
+            onDuplicate={() => void duplicateNodes(targetIds())}
             onSetColor={() => setOpenPopover("color")}
             onSortChildren={() => setOpenPopover("sort")}
             onExpandAll={() => setSubtreeOpen(true)}
