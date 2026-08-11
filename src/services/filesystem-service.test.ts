@@ -320,11 +320,11 @@ describe("case-insensitive sibling collisions", () => {
   });
 });
 
-// Regression: Windows' default MAX_PATH is 260 characters. A write over that
-// limit fails at the OS, and before the save-error channel existed it failed
-// silently — so the check is here, in front of the write, with a message that
-// says which page and what to do about it.
-describe("path length guard", () => {
+// The app used to refuse any path over 200 characters rather than attempt it.
+// It doesn't guess any more — the OS decides, and a failure is reported like
+// any other failed write, with the length mentioned only when it's plausibly
+// the cause. See constants/limits.ts for the measurements behind that.
+describe("long paths", () => {
   // A chain of pages, each inside the last, so depth is what runs the path up
   // rather than any one silly name.
   function chain(depth: number, name: string): Node[] {
@@ -333,21 +333,14 @@ describe("path length guard", () => {
     );
   }
 
-  it("refuses to save a node whose resolved path exceeds the limit", async () => {
-    const nodes = chain(6, "and while she looked so sad in photographs");
-    await expect(
-      saveNode("C:/Users/shiro/OneDrive/Documents/Anamnesis/Valeraverse", nodes[5], nodes),
-    ).rejects.toThrow(PathTooLongError);
+  beforeEach(() => {
+    fsMock.writeTextFile.mockClear();
+    fsMock.writeTextFile.mockImplementation(async () => {});
   });
 
-  it("names the page in the error, since the path itself is unreadable at that length", async () => {
-    const nodes = chain(6, "A Very Long Page Name That Goes On A While");
-    await expect(saveNode("C:/Projects/World", nodes[5], nodes)).rejects.toThrow(/A Very Long Page/);
-  });
-
-  // The user's own project, and the case that made the old 200-character limit
-  // worth changing: five levels of ordinary page names, refused by this app and
-  // by nothing else. Comes to 203 characters.
+  // The user's own project, and the case that made the old limit worth
+  // removing: five levels of ordinary page names, refused by this app and by
+  // nothing else. Comes to 203 characters.
   it("saves five levels of real page names under a OneDrive project folder", async () => {
     const root = "C:/Users/shiro/OneDrive/Documents/Anamnesis/this is the story of a girl";
     const names = [
@@ -362,6 +355,31 @@ describe("path length guard", () => {
     nodes.push(node({ id: "leaf", name: "Untitled", parentId: "n3", templateKey: "note" }));
 
     await expect(saveNode(root, nodes[4], nodes)).resolves.toBeUndefined();
+  });
+
+  it("attempts a path the app would once have refused, rather than deciding for the OS", async () => {
+    const nodes = chain(12, "and while she looked so sad in photographs");
+    await expect(saveNode("C:/Projects/World", nodes[11], nodes)).resolves.toBeUndefined();
+    expect(fsMock.writeTextFile.mock.calls[0][0].length).toBeGreaterThan(500);
+  });
+
+  it("explains a failure on a very long path, naming the page and keeping the OS message", async () => {
+    fsMock.writeTextFile.mockRejectedValueOnce(new Error("os error 3"));
+    const nodes = chain(12, "A Very Long Page Name That Goes On A While");
+
+    const failed = saveNode("C:/Projects/World", nodes[11], nodes);
+    await expect(failed).rejects.toThrow(PathTooLongError);
+    await expect(failed).rejects.toThrow(/A Very Long Page/);
+    await expect(failed).rejects.toThrow(/os error 3/);
+  });
+
+  it("passes a failure on an ordinary path straight through, unembellished", async () => {
+    fsMock.writeTextFile.mockRejectedValueOnce(new Error("the disk is full"));
+    const ordinary = node({ id: "o", name: "Valera Jiang", parentId: null, templateKey: "character" });
+
+    const failed = saveNode("C:/Projects/World", ordinary, [ordinary]);
+    await expect(failed).rejects.toThrow("the disk is full");
+    await expect(failed).rejects.not.toThrow(PathTooLongError);
   });
 
   it("allows an ordinary path through untouched", async () => {

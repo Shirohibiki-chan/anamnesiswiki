@@ -24,7 +24,7 @@ import {
   PAGE_META_FILE,
   PROJECT_FILE,
 } from "../constants/paths";
-import { MAX_PATH_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
+import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -570,24 +570,26 @@ export async function saveProject(rootPath: string, project: Project): Promise<v
   await writeTextFile(joinPath(rootPath, PROJECT_FILE), JSON.stringify(project, null, 2));
 }
 
-// Thrown rather than returned so it travels the same route as a real fs
-// failure — every write path already has to cope with one of those, and this
-// is the same thing from the user's point of view: their page did not get
-// written. Carries the node's name because the path alone is unreadable at the
-// length that triggers this.
+// Not a refusal — a translation. The write has already been attempted and the
+// OS has already said no; this only adds the explanation the raw error can't,
+// because at this length the path itself is unreadable and "os error 3" tells
+// the user nothing they can act on. The original message is kept inside it, so
+// nothing is hidden if the real cause turns out to be something else.
 export class PathTooLongError extends Error {
   constructor(
     readonly nodeName: string,
     readonly path: string,
+    readonly cause: string,
   ) {
-    // Deliberately doesn't say "shorten the page name" any more: names are
-    // capped on disk now (see sanitizeSegment), so the only things that still
-    // add up are how deep the page sits and how long a path the project folder
-    // itself starts from — and the second one is the bigger lever by far.
+    // Deliberately doesn't say "shorten the page name": names are capped on
+    // disk now (see sanitizeSegment), so the only things that still add up are
+    // how deep the page sits and how long a path the project folder itself
+    // starts from — and the second one is the bigger lever by far.
     super(
-      `"${nodeName}" is nested too deeply to save — its file path is ${path.length} characters, ` +
-        `over the ${MAX_PATH_CHARS} Windows will open. Move it further up the tree, ` +
-        `or keep your project folder closer to the top of the drive.`,
+      `"${nodeName}" couldn't be saved, and its file path is unusually long — ` +
+        `${path.length} characters, past the ${LONG_PATH_ADVICE_CHARS} some Windows setups stop at. ` +
+        `That's the likely reason. Move it further up the tree, or keep your project folder ` +
+        `closer to the top of the drive. (${cause})`,
     );
     this.name = "PathTooLongError";
   }
@@ -598,12 +600,13 @@ export async function saveNode(rootPath: string, node: Node, graph: Node[] | Pat
   const dirPath = joinPath(rootPath, ...dirSegments);
   const filePath = joinPath(dirPath, fileName);
 
-  // Checked before `mkdir`, so a path we're going to refuse doesn't leave an
-  // empty directory tree behind as a souvenir.
-  if (filePath.length > MAX_PATH_CHARS) throw new PathTooLongError(node.name, filePath);
-
-  await mkdir(dirPath, { recursive: true });
-  await writeTextFile(filePath, JSON.stringify(node, null, 2));
+  try {
+    await mkdir(dirPath, { recursive: true });
+    await writeTextFile(filePath, JSON.stringify(node, null, 2));
+  } catch (error) {
+    if (filePath.length <= LONG_PATH_ADVICE_CHARS) throw error;
+    throw new PathTooLongError(node.name, filePath, error instanceof Error ? error.message : String(error));
+  }
 }
 
 // Batch counterpart to saveNode for the write-many paths (an LK import, a
