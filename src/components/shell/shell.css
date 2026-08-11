@@ -1538,6 +1538,67 @@ ol.release-notes-list {
   color: var(--color-text-muted);
 }
 
+/* --- SidebarSettings ---
+
+   A `fieldset`, not a div with a heading: these are radios, and a group of
+   radios whose question isn't attached to them is a group a screen reader
+   reads as three unrelated choices. `legend` is the question. */
+
+.sidebar-setting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sidebar-setting-label {
+  padding: 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.sidebar-setting-blurb {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.sidebar-setting-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.sidebar-setting-option input {
+  margin-top: var(--space-2xs);
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.sidebar-setting-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.sidebar-setting-option-label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.sidebar-setting-option-hint {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
 /* The one control in Fonts and text that decides what the rest of the panel
    means, so it's boxed off above them rather than sitting in the flow as a
    fifth row — a switch that changes where four other controls write has to

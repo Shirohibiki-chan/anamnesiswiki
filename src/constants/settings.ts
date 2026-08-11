@@ -43,6 +43,12 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     blurb: "Small bits of CSS that sit on top of whichever theme is on, each switched on and off by itself.",
   },
   {
+    id: "sidebar",
+    group: "app",
+    label: "Sidebar",
+    blurb: "How the page tree behaves.",
+  },
+  {
     id: "projects",
     group: "app",
     label: "Projects",
@@ -140,6 +146,13 @@ export const DECLARED_SETTINGS: readonly {
     label: "Snippets",
     hint: "small bits of CSS on top of the theme, each switched on by itself",
     keywords: ["css", "tweak", "override", "custom", "patch"],
+  },
+  {
+    id: "tree-double-click",
+    tabId: "sidebar",
+    label: "Double-click in the sidebar",
+    hint: "whether it opens a page or renames it",
+    keywords: ["double click", "rename", "expand", "open", "tree", "folder", "sidebar", "two clicks"],
   },
   {
     id: "projects-folder",

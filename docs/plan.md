@@ -255,7 +255,16 @@ and being shipped that way, one PR per bullet.
   **Three cheaper things already take the pressure off**, which is why this is one Phase 14 line and not its own phase. Indent guides and an 18px indent shipped 2026-08-08 and buy back most of a name at eight levels. The universe selector removes two levels from the AU tree on its own. Focus is for what's left.
 
   **Obsidian's Breadcrumbs plugin is not this.** Raised by the user 2026-08-08 and checked: it never touches the file explorer. It builds note-to-note hierarchies out of frontmatter and gives trail, matrix, prev/next and diagram views over them. Most of what it does is already in this plan under other names — the trail is the clickable breadcrumb already sitting above every page title (`page/PageTitle.tsx`), its tree and matrix views are Phase 18's Subpage Index and Backlinks blocks, prev/next chains are Phase 25's storylines, and its diagrams are Phase 24's graphs. Nothing left to lift from it.
-- **Double-click expands a folder**, and rename moves to the right-click menu. Note this is a *swap*: `TreeItem.tsx` already renames on double-click (react-arborist's default). Ships with a setting to put it back.
+- ~~**Double-click expands a folder**~~ — 2026-08-10. The swap it was always
+  going to be: renaming was react-arborist's default rather than a decision,
+  and it's the destructive one of the two to trigger by accident on the gesture
+  people use to look inside things. Rename was already on the right-click menu,
+  so nothing had to move there. **Settings gained a Sidebar section** for the
+  switch that puts it back, and a `preferences` store beside the panel widths —
+  app-level, not per-project, since a habit about double-clicking doesn't change
+  with the world you have open. The default is deliberately the new behaviour
+  rather than the old one: "nothing recorded" has to mean the swap, or it never
+  reaches anyone who had the app before it.
 - ~~**Resizable sidebars**~~ — 2026-08-10. Both edges drag, with arrow keys and
   a double-click reset as the alternatives; widths persist in `app-settings`,
   app-level rather than per-project like everything else about how it looks.
