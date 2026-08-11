@@ -1,5 +1,6 @@
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
+import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { useThemeBootstrap } from "./hooks/use-theme";
 
@@ -23,6 +24,10 @@ function App() {
           portals regardless, and a failure worth reporting can happen on
           either screen. */}
       <NoticeDialog />
+      {/* Raised from a tree row, which react-arborist renders itself — so there
+          are no props to thread a callback down through, the same routing
+          reason the export request lives in the dialog store. */}
+      <SaveAsTemplateDialog />
     </>
   );
 }

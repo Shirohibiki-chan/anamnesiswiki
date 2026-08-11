@@ -13,9 +13,15 @@ export function useDialogs() {
   const closeExport = useDialogStore((s) => s.closeExport);
   const notice = useDialogStore((s) => s.notice);
   const dismissNotice = useDialogStore((s) => s.dismissNotice);
+  const pendingTemplateScope = useDialogStore((s) => s.pendingTemplateScope);
+  const requestTemplateScope = useDialogStore((s) => s.requestTemplateScope);
+  const resolveTemplateScope = useDialogStore((s) => s.resolveTemplateScope);
   return {
     notice,
     dismissNotice,
+    pendingTemplateScope,
+    requestTemplateScope,
+    resolveTemplateScope,
     pickFolder,
     pickLkFile,
     pickLkSavePath,

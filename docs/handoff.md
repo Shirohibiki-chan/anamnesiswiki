@@ -608,6 +608,36 @@ is below.
 
 ## Editor & templates
 
+- **The world's own templates are never in `project-store`'s `nodes`.** They
+  live in their own `templates: TemplateLibrary` record (`services/template-
+  library.ts`), and that separation is the whole safety argument for the
+  feature: search, the property index, LK export and the Phase 1.5 publisher
+  all walk every page they can see, and any one of them that forgot to filter
+  templates out would put scaffolding into her exported or published world.
+  Keeping them out of `nodes` makes that leak impossible rather than a thing
+  each new walker has to remember. **If templates ever need to appear in the
+  tree, filter at the render site — don't merge the records.**
+
+- **They're one file, `.templates.json`, not a directory of pages.** A
+  `Templates/` directory would have to be reserved at the project root, and
+  that's a folder name someone genuinely wants. The leading dot is load-bearing
+  for the same reason: any name the load walk skips is a name a page can be
+  lost behind, and nobody titles a page ".templates".
+
+- **`buildPathIndex` reserves the app's own root names** (`assets`,
+  `project.json`, `.templates.json`) by treating each as an invisible occupant
+  of its collision group, so a page wanting one gets " (2)". Before that, a
+  root page called "assets" was written to `assets/` and then skipped by the
+  load walk — on disk, gone from the tree. **Reserved at the root only:**
+  `_folder.json`/`_page.json` are reserved in *every* directory and are not
+  covered, so a page named "_folder" is still a live collision.
+
+- **A template carries its own copies of its picture files.** Sharing the
+  original page's filename means replacing that page's image later deletes the
+  template's out from under it — the same reasoning `duplicateNodes` documents.
+  A copy that won't read yields `undefined` rather than throwing: the template
+  arrives without a picture that was already missing.
+
 - **Don't fork BlockNote.** Extend via its documented block-spec API.
 
 - **`@blocknote/shadcn` is required for menus to render at all**, and it needs two

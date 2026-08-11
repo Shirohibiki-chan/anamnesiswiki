@@ -14,7 +14,7 @@ import {
   writeTextFile,
   type DirEntry,
 } from "@tauri-apps/plugin-fs";
-import { FOLDER_TEMPLATE_KEY, type Node, type Project } from "../constants/schema";
+import { FOLDER_TEMPLATE_KEY, type Node, type Project, type TemplateLibrary } from "../constants/schema";
 import { alwaysDirectory } from "./template-registry";
 import {
   ASSETS_DIR,
@@ -24,6 +24,7 @@ import {
   PAGE_META_FILE,
   PROBE_TEMP_PREFIX,
   PROJECT_FILE,
+  TEMPLATES_FILE,
 } from "../constants/paths";
 import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
 
@@ -207,6 +208,26 @@ export type PathIndex = {
 // the grouping key below encodes: parent + storage kind + sanitized name.
 // It's JSON rather than a joined string so no separator character can appear
 // inside a name and make two different groups look like the same key.
+/**
+ * Root-level names the app has already taken, as collision-group keys in the
+ * exact shape `buildPathIndex` builds below.
+ *
+ * Root only, and deliberately not the whole story: `_folder.json` and
+ * `_page.json` are reserved inside *every* directory, so a page named "_folder"
+ * is a collision this doesn't catch. That one predates this and is left alone
+ * rather than half-fixed here — it needs the key to be built per parent, which
+ * is a different change.
+ */
+const RESERVED_ROOT_KEYS = new Set(
+  [
+    { name: ASSETS_DIR, isDirectory: true },
+    { name: PROJECT_FILE, isDirectory: false },
+    { name: TEMPLATES_FILE, isDirectory: false },
+  ].map(({ name, isDirectory }) =>
+    JSON.stringify([null, isDirectory, name.replace(/\.json$/i, "").toLowerCase()]),
+  ),
+);
+
 export function buildPathIndex(allNodes: Node[]): PathIndex {
   const byId = new Map<string, Node>();
   const sanitizedById = new Map<string, string>();
@@ -237,15 +258,25 @@ export function buildPathIndex(allNodes: Node[]): PathIndex {
   }
 
   const segmentById = new Map<string, string>();
-  for (const group of collisionGroups.values()) {
-    if (group.length === 1) {
+  for (const [groupKey, group] of collisionGroups) {
+    // A name the app has already taken at the project root counts as an
+    // occupant nobody can see, so the first page wanting it starts at " (2)".
+    //
+    // Without this a root page called "assets" is written to `assets/` and then
+    // skipped by the load walk — it exists on disk and is gone from the tree.
+    // One called "templates" is worse: `Templates.json` and `templates.json`
+    // are two names and one file on Windows and macOS both, so it lands on the
+    // template library. That case-folding is why the group key folds case too.
+    const offset = RESERVED_ROOT_KEYS.has(groupKey) ? 1 : 0;
+    if (group.length === 1 && offset === 0) {
       segmentById.set(group[0].id, sanitizedById.get(group[0].id)!);
       continue;
     }
     group.sort(byCreationOrder);
     group.forEach((node, index) => {
       const baseName = sanitizedById.get(node.id)!;
-      segmentById.set(node.id, index === 0 ? baseName : `${baseName} (${index + 1})`);
+      const position = index + offset;
+      segmentById.set(node.id, position === 0 ? baseName : `${baseName} (${position + 1})`);
     });
   }
 
@@ -542,7 +573,19 @@ async function walkEntries(
         return node ? [node, ...children] : children;
       }
 
-      if (entry.name === FOLDER_FILE || entry.name === PAGE_META_FILE || entry.name === PROJECT_FILE) return [];
+      // The app's own files, not pages. TEMPLATES_FILE is skipped at every
+      // level rather than only at the root, like the two markers and
+      // project.json beside it: the check costs nothing, and a copy of it
+      // turning up one folder down (a Dropbox conflict copy, a hand-move) would
+      // otherwise be read as a page whose "tabs" are a library of templates.
+      if (
+        entry.name === FOLDER_FILE ||
+        entry.name === PAGE_META_FILE ||
+        entry.name === PROJECT_FILE ||
+        entry.name === TEMPLATES_FILE
+      ) {
+        return [];
+      }
       if (ownerFileNames.has(entry.name)) return [];
 
       // A file left under a move's temp name is a real page that a relocation
@@ -569,6 +612,28 @@ async function walkEntries(
 export async function saveProject(rootPath: string, project: Project): Promise<void> {
   await mkdir(rootPath, { recursive: true });
   await writeTextFile(joinPath(rootPath, PROJECT_FILE), JSON.stringify(project, null, 2));
+}
+
+/**
+ * The world's templates. Absent or unreadable both read as "no templates yet",
+ * which is the same forgiveness `loadProject` extends to a broken node file and
+ * for the same reason: this sits in a folder she can open, and a bad edit to it
+ * must not be the thing that stops a project opening. `parseTemplateLibrary`
+ * takes it from there and drops individual entries that don't hold up.
+ */
+export async function loadTemplateLibrary(rootPath: string): Promise<unknown> {
+  const path = joinPath(rootPath, TEMPLATES_FILE);
+  if (!(await exists(path))) return null;
+  try {
+    return JSON.parse(await readTextFile(path));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveTemplateLibrary(rootPath: string, library: TemplateLibrary): Promise<void> {
+  await mkdir(rootPath, { recursive: true });
+  await writeTextFile(joinPath(rootPath, TEMPLATES_FILE), JSON.stringify(library, null, 2));
 }
 
 // Not a refusal — a translation. The write has already been attempted and the

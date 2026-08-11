@@ -30,6 +30,18 @@ type ExportRequest = { rootIds: string[] };
  */
 type Notice = { message: string };
 
+/**
+ * The sub-pages question "Save as template" asks before it runs — LegendKeeper
+ * asks the same one, and it's the only thing about the operation that can't be
+ * guessed. `null` is the cancel, so a caller has one thing to check.
+ *
+ * Its own entry rather than a mode of `pendingConfirm` for the reason that one
+ * exists at all: a yes/no dialog can't offer two yeses, and squeezing a third
+ * answer through a boolean is how "Cancel" ends up meaning "just this page".
+ */
+export type TemplateScope = "all" | "one";
+type PendingTemplateScope = { pageName: string; resolve: (scope: TemplateScope | null) => void };
+
 type DialogStoreState = {
   pendingConfirm: PendingConfirm | null;
   requestConfirm: (message: string) => Promise<boolean>;
@@ -40,12 +52,29 @@ type DialogStoreState = {
   notice: Notice | null;
   showNotice: (message: string) => void;
   dismissNotice: () => void;
+  pendingTemplateScope: PendingTemplateScope | null;
+  requestTemplateScope: (pageName: string) => Promise<TemplateScope | null>;
+  resolveTemplateScope: (scope: TemplateScope | null) => void;
 };
 
 export const useDialogStore = create<DialogStoreState>((set, get) => ({
   pendingConfirm: null,
   exportRequest: null,
   notice: null,
+  pendingTemplateScope: null,
+
+  requestTemplateScope(pageName) {
+    return new Promise<TemplateScope | null>((resolve) => {
+      set({ pendingTemplateScope: { pageName, resolve } });
+    });
+  },
+
+  resolveTemplateScope(scope) {
+    const pending = get().pendingTemplateScope;
+    if (!pending) return;
+    set({ pendingTemplateScope: null });
+    pending.resolve(scope);
+  },
 
   showNotice(message) {
     set({ notice: { message } });

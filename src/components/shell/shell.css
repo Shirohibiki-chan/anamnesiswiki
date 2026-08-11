@@ -24,6 +24,18 @@
   overflow-y: auto;
 }
 
+/* Only the dialogs that ask something with more than one right answer carry a
+   title. A plain confirm doesn't: its message *is* the question, and a heading
+   above it would say the same thing twice. */
+.confirm-dialog-title {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
 .confirm-dialog-message {
   margin: 0 0 var(--space-xl);
   font-size: var(--fs-md);
@@ -32,6 +44,11 @@
 
 .confirm-dialog-actions {
   display: flex;
+  /* A safety net for a very small window, not the normal case: the template
+     dialog puts three buttons here and takes the standard modal width so they
+     fit on one line. Right-aligned either way, so anything that does wrap drops
+     below its neighbours rather than drifting under the message. */
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-md);
 }

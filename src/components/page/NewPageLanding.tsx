@@ -11,8 +11,10 @@
 // button underneath, and all it does is give the page somewhere to write —
 // which is the difference between an unanswered question and an answered one.
 import { BLANK_TEMPLATE_KEY, TEMPLATE_KEYS, type Node } from "../../constants/schema";
+import { X } from "lucide-react";
 import { getTemplateIcon } from "../../constants/icons";
-import { useProjectActions } from "../../hooks/use-project";
+import { useCustomTemplates, useProjectActions } from "../../hooks/use-project";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
 
 // Matches the first tab every other template starts with, so a page that
@@ -21,10 +23,23 @@ import { useTemplates } from "../../hooks/use-templates";
 const FIRST_TAB_LABEL = "Overview";
 
 export function NewPageLanding({ node }: { node: Node }) {
-  const { applyTemplate, addTab } = useProjectActions();
+  const { applyTemplate, applyCustomTemplate, addTab, deleteTemplate } = useProjectActions();
+  const customTemplates = useCustomTemplates();
+  const { confirmDestructive } = useDialogs();
   const { getLabel } = useTemplates();
 
   const choices = TEMPLATE_KEYS.filter((key) => key !== BLANK_TEMPLATE_KEY);
+
+  // Asked before it happens, unlike most things here — every other button on
+  // this screen is a choice you can change by pressing a different one, and
+  // this is the only one that throws something away. Undo covers it too, but
+  // undo is only a comfort if you noticed.
+  async function handleDeleteTemplate(templateId: string, name: string) {
+    const ok = await confirmDestructive(
+      `Delete the "${name}" template? Pages already made from it aren't affected.`,
+    );
+    if (ok) deleteTemplate(templateId);
+  }
 
   return (
     <div className="new-page-landing">
@@ -49,6 +64,49 @@ export function NewPageLanding({ node }: { node: Node }) {
           );
         })}
       </div>
+
+      {/* This world's own templates, made with "Save as template" on any page's
+          right-click menu. Below the built-in ones and under their own heading
+          rather than mixed in: these are hers, they can be deleted, and a row
+          of them with no explanation would read as pages that wandered in.
+          The section isn't there at all until she's made one. */}
+      {customTemplates.length > 0 && (
+        <>
+          <p className="new-page-landing-hint new-page-landing-custom-hint">Or one of this world&rsquo;s own:</p>
+          <div className="new-page-landing-grid">
+            {customTemplates.map((template) => {
+              const Icon = getTemplateIcon(template.templateKey);
+              return (
+                // A wrapper rather than a button inside a button, which isn't
+                // legal HTML and which browsers resolve by dropping one of them.
+                <div key={template.id} className="new-page-landing-custom">
+                  <button
+                    type="button"
+                    className="new-page-landing-choice"
+                    onClick={() => void applyCustomTemplate(node.id, template.id)}
+                  >
+                    <Icon size={20} />
+                    <span>{template.name}</span>
+                  </button>
+                  {/* The only way to get rid of a template until Phase 17 gives
+                      them a tab of their own. Without it a template saved by
+                      mistake is permanent, which is a bad trade for a menu item
+                      that's one slip away from "Set color". Hover-only, so it
+                      isn't clutter on a row of things you're picking from. */}
+                  <button
+                    type="button"
+                    className="new-page-landing-custom-remove"
+                    title={`Delete the "${template.name}" template`}
+                    onClick={() => void handleDeleteTemplate(template.id, template.name)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <button type="button" className="new-page-landing-skip" onClick={() => addTab(node.id, FIRST_TAB_LABEL)}>
         Skip this — just start writing

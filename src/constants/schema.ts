@@ -198,6 +198,37 @@ export type Project = {
   createdAt: number;
 };
 
+/**
+ * A world's own templates, as saved by "Convert to template".
+ *
+ * Deliberately the same shape as the project's tree — a flat bag of `Node`s
+ * wired together by `parentId`, plus the order of the roots — because a
+ * template *is* a page, copied. That's what LegendKeeper does and what the user
+ * confirmed she wants: converting copies everything, the writing and the filled
+ * -in property values included, optionally with the sub-pages underneath.
+ *
+ * Reusing `Node` means these get tabs, properties, colours, images and nesting
+ * for free, and Phase 17's Templates tab can render them with the same tree the
+ * project uses. Kept in their own record rather than mixed into the project's
+ * `nodes`, which is the important half: anything that walks every page — search,
+ * the property index, LK export, the Phase 1.5 publisher — would otherwise have
+ * to remember to filter templates out, and the one that forgets is a bug that
+ * puts scaffolding in her published world.
+ */
+export type TemplateLibrary = {
+  version: 1;
+  // Keyed by id, matching the project store's `nodes`.
+  nodes: Record<string, Node>;
+  // The template roots, in the order they should be offered. Newest last, the
+  // way the shortcut rail appends rather than prepends: a list that reorders
+  // itself every time you add to it can't be learned.
+  rootOrder: string[];
+};
+
+export function createTemplateLibrary(): TemplateLibrary {
+  return { version: 1, nodes: {}, rootOrder: [] };
+}
+
 export function createTab(input: { id: string; label: string; hidden?: boolean; content?: BlockNoteDocument }): Tab {
   return {
     id: input.id,
