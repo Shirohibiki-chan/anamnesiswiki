@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-11 — page names get the whole sidebar back
+
+### Fixes
+
+- **Page names in the tree stop being cut off three-quarters of the way along.** The colour dot, the "..." and the + only appear when you hover a row — but they were still holding their space on every row all the time, invisibly, so every name was truncated to leave room for buttons that weren't on screen. **Names now get the full width of the panel — 60px more at the default width — and only shorten on the one row you're actually pointing at.**
+- **Those three buttons can be reached with the keyboard now.** They used to be invisible but still in the tab order, so tabbing through the tree stopped on three buttons nobody could see.
+- **A row keeps its buttons while its menu is open**, instead of the name springing back to full width underneath an open menu.
+
 ## 2026-08-11 — pictures inside a page
 
 ### Additions

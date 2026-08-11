@@ -550,6 +550,25 @@ is below.
   trigger and the trigger is in the sidebar, the narrow side of the window.
   Anything taller or wider opens off an edge with no clamp left to catch it.
 
+- **A hover-revealed control in a tree row is `display: none`, never
+  `opacity: 0`.** An invisible element still takes its width: the row's colour
+  dot, "..." and + held ~60px of every row permanently, so every page name in
+  the sidebar was truncated to reserve space for buttons that weren't on
+  screen. It was reported as a design failure, and it was one — the panel is
+  the app's main navigation and it was throwing away a quarter of its width for
+  nothing. Anything added to that row has to follow the same rule or it takes
+  the width straight back.
+
+- **The keyboard half of that hangs off `[role="treeitem"]:focus-within`, and
+  nothing of ours can replace it.** `display: none` drops the buttons out of
+  the tab order, so without a focus rule they're mouse-only. The attribute is
+  on react-arborist's own row wrapper — the element it calls `.focus()` on —
+  and that wrapper is an *ancestor* of our `.tree-node`. `:focus-within`
+  matches the focused element or one containing it, never a descendant of it,
+  so `.tree-node:focus-within` is dead CSS however right it reads. Measured
+  both ways in the browser before shipping. No `rowClassName` is configured on
+  the tree, so the role is the only handle.
+
 - **Popovers portal to `document.body` via `TreePopover`.** Every react-arborist
   row is its own `position: absolute` stacking context for virtualisation, so a
   popover nested inside a row can never paint above a neighbouring row via

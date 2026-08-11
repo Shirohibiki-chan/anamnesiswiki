@@ -252,7 +252,13 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           <span key={level} className="tree-guide" style={{ left: level * TREE_INDENT }} aria-hidden="true" />
         ))}
       <div
-        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}`}
+        // `tree-row-active` holds the row's buttons on screen while one of its
+        // popovers is open. They're laid out only on hover now (see tree.css),
+        // and the mouse leaves the row the moment it travels to the menu —
+        // without this the buttons vanish and the name springs back to full
+        // width underneath an open menu, including the button the menu is
+        // anchored to.
+        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}${openPopover ? " tree-row-active" : ""}`}
         style={rowStyle}
         onContextMenu={(e) => {
           e.preventDefault();
