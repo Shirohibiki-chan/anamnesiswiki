@@ -36,6 +36,51 @@ export function orderSiblings(siblings: Node[], order: string[] | undefined): No
 }
 
 /**
+ * The orders "Sort sub-pages" offers. A one-shot rewrite of the manual order,
+ * not a mode the tree stays in: the tree is drag-reorderable, and a sort that
+ * persisted would either undo the next drag or quietly stop applying — both
+ * worse than sorting again when it's wanted. Undo puts the old order back.
+ */
+export const SIBLING_SORTS = ["name-asc", "name-desc", "newest", "oldest"] as const;
+export type SiblingSort = (typeof SIBLING_SORTS)[number];
+
+export const SIBLING_SORT_LABELS: Record<SiblingSort, string> = {
+  "name-asc": "A to Z",
+  "name-desc": "Z to A",
+  newest: "Newest first",
+  oldest: "Oldest first",
+};
+
+/**
+ * Reorders one sibling group. Takes the ids already in their current display
+ * order and returns them sorted — the caller writes the result straight back
+ * to `rootOrder`/`childOrder`, which is what makes it undoable as a single
+ * ordering change rather than a move per page.
+ *
+ * Names compare with `localeCompare` and its numeric option, so "Chapter 2"
+ * sorts before "Chapter 10" — worldbuilding pages are numbered constantly and
+ * plain string order puts 10 in the middle of the single digits. Ties break on
+ * creation time so the result is stable rather than dependent on input order.
+ */
+export function sortSiblingIds(ids: string[], nodes: Record<string, Node>, sort: SiblingSort): string[] {
+  const present = ids.filter((id) => nodes[id]);
+  return present.sort((idA, idB) => {
+    const a = nodes[idA];
+    const b = nodes[idB];
+    switch (sort) {
+      case "name-asc":
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }) || sortByCreation(a, b);
+      case "name-desc":
+        return b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: "base" }) || sortByCreation(a, b);
+      case "newest":
+        return b.createdAt - a.createdAt || a.id.localeCompare(b.id);
+      case "oldest":
+        return sortByCreation(a, b);
+    }
+  });
+}
+
+/**
  * @param focusedId When set, the tree starts at this node's *children* rather
  * than at the project root — "focus here" from the right-click menu. The node
  * itself isn't in the returned data; it's named in the path bar above the tree

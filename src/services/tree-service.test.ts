@@ -6,6 +6,7 @@ import {
   getEffectiveColor,
   isDescendantOf,
   isHiddenByAncestor,
+  sortSiblingIds,
 } from "./tree-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
@@ -392,5 +393,56 @@ describe("isDescendantOf", () => {
   it("says no rather than looping when a parent id points at nothing", () => {
     const orphan = node({ id: "orphan", name: "Orphan", parentId: "missing", templateKey: "note" });
     expect(isDescendantOf("orphan", "canon", byId([orphan]))).toBe(false);
+  });
+});
+
+describe("sortSiblingIds", () => {
+  const nodes = byId([
+    node({ id: "b", name: "Chapter 2", parentId: "canon", templateKey: "note", createdAt: 300 }),
+    node({ id: "a", name: "chapter 10", parentId: "canon", templateKey: "note", createdAt: 100 }),
+    node({ id: "c", name: "Aria", parentId: "canon", templateKey: "note", createdAt: 200 }),
+  ]);
+  const ids = ["b", "a", "c"];
+
+  // Numeric collation, not plain string order — worldbuilding pages get
+  // numbered constantly, and "Chapter 10" sorting between 1 and 2 is the
+  // failure everyone recognises. Case is ignored for the same reason: a
+  // lowercase title is a typo, not a sort key.
+  it("sorts by name with numbers in numeric order, ignoring case", () => {
+    expect(sortSiblingIds(ids, nodes, "name-asc")).toEqual(["c", "b", "a"]);
+  });
+
+  it("reverses for Z to A", () => {
+    expect(sortSiblingIds(ids, nodes, "name-desc")).toEqual(["a", "b", "c"]);
+  });
+
+  it("sorts newest first by creation time", () => {
+    expect(sortSiblingIds(ids, nodes, "newest")).toEqual(["b", "c", "a"]);
+  });
+
+  it("sorts oldest first by creation time", () => {
+    expect(sortSiblingIds(ids, nodes, "oldest")).toEqual(["a", "c", "b"]);
+  });
+
+  // Two pages made in the same millisecond — bulk import does this for a whole
+  // project at once. Ties break on id so the answer doesn't depend on the order
+  // they happened to arrive in, which would make the sort look non-repeatable.
+  it("breaks ties on identical names and timestamps stably", () => {
+    const same = byId([
+      node({ id: "z", name: "Same", parentId: null, templateKey: "note", createdAt: 5 }),
+      node({ id: "y", name: "Same", parentId: null, templateKey: "note", createdAt: 5 }),
+    ]);
+    expect(sortSiblingIds(["z", "y"], same, "name-asc")).toEqual(["y", "z"]);
+    expect(sortSiblingIds(["y", "z"], same, "name-asc")).toEqual(["y", "z"]);
+  });
+
+  it("drops ids that no longer name a page rather than sorting around holes", () => {
+    expect(sortSiblingIds(["b", "gone", "c"], nodes, "name-asc")).toEqual(["c", "b"]);
+  });
+
+  it("leaves the caller's array alone", () => {
+    const original = [...ids];
+    sortSiblingIds(ids, nodes, "name-asc");
+    expect(ids).toEqual(original);
   });
 });
