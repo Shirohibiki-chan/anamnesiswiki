@@ -10,6 +10,19 @@
 
 - **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
   - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
+## 2026-08-11 — pages five folders deep can save again
+
+### Fixes
+
+- **Pages stopped saving long before they had to.** The app refused any page whose file path went over 200 characters — which sounds like plenty until you count it up: `OneDrive\Documents\Anamnesis`, your project's name, and five levels of ordinary page names gets you there. Windows itself allows 260, and the limit now sits just under that instead of 55 characters short of it. Nothing about your files changed; the app was being stricter than it needed to be.
+  - The old headroom was held back in case a page's *children* ran longer. That was never the right check — a page too deep to save fails on its own path when it's saved — so all it did was refuse pages Windows would have taken quite happily.
+
+### Adjustments
+
+- **A very long page title now gets a shorter filename instead of blocking the save.** Past about 96 characters the name on disk is trimmed. The page keeps its full title: that's stored inside the file rather than being the filename, and the sidebar reads it from there. Nothing you'd actually call a title comes near this — the longest across your worlds is 44 characters — it's there so pasting a paragraph into the title bar can't cost you the page.
+
+- **The message when a path really is too long now suggests something that works.** Shortening the name won't help any more, so it no longer says to. Moving the page up a level will, and so will keeping your Anamnesis folder somewhere shorter than `OneDrive\Documents` — that path alone is 30 characters of the budget before your project even starts.
+
 ## 2026-08-10 — hovering a link shows you the page without opening it
 
 ### Additions

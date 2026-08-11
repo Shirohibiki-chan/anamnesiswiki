@@ -32,10 +32,12 @@ import {
   PathTooLongError,
   planRelocations,
   resolveNodePath,
+  sanitizeSegment,
   saveNode,
   watchCssDirs,
 } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
+import { MAX_SEGMENT_CHARS } from "../constants/limits";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
   return {
@@ -323,21 +325,85 @@ describe("case-insensitive sibling collisions", () => {
 // silently — so the check is here, in front of the write, with a message that
 // says which page and what to do about it.
 describe("path length guard", () => {
-  it("refuses to save a node whose resolved path exceeds the limit", async () => {
-    const deep = node({ id: "d", name: "x".repeat(150), parentId: null, templateKey: "note" });
-    await expect(saveNode("C:/Users/shiro/Documents/Anamnesis/Valeraverse", deep, [deep])).rejects.toThrow(
-      PathTooLongError,
+  // A chain of pages, each inside the last, so depth is what runs the path up
+  // rather than any one silly name.
+  function chain(depth: number, name: string): Node[] {
+    return Array.from({ length: depth }, (_, i) =>
+      node({ id: `n${i}`, name, parentId: i === 0 ? null : `n${i - 1}`, templateKey: "location" }),
     );
+  }
+
+  it("refuses to save a node whose resolved path exceeds the limit", async () => {
+    const nodes = chain(6, "and while she looked so sad in photographs");
+    await expect(
+      saveNode("C:/Users/shiro/OneDrive/Documents/Anamnesis/Valeraverse", nodes[5], nodes),
+    ).rejects.toThrow(PathTooLongError);
   });
 
   it("names the page in the error, since the path itself is unreadable at that length", async () => {
-    const deep = node({ id: "d", name: `A Very Long Page ${"y".repeat(200)}`, parentId: null, templateKey: "note" });
-    await expect(saveNode("C:/Projects/World", deep, [deep])).rejects.toThrow(/A Very Long Page/);
+    const nodes = chain(6, "A Very Long Page Name That Goes On A While");
+    await expect(saveNode("C:/Projects/World", nodes[5], nodes)).rejects.toThrow(/A Very Long Page/);
+  });
+
+  // The user's own project, and the case that made the old 200-character limit
+  // worth changing: five levels of ordinary page names, refused by this app and
+  // by nothing else. Comes to 203 characters.
+  it("saves five levels of real page names under a OneDrive project folder", async () => {
+    const root = "C:/Users/shiro/OneDrive/Documents/Anamnesis/this is the story of a girl";
+    const names = [
+      "Locations",
+      "who cried a river and drowned the whole world",
+      "and while she looked so sad in photographs",
+      "i absolutely love her",
+    ];
+    const nodes = names.map((name, i) =>
+      node({ id: `n${i}`, name, parentId: i === 0 ? null : `n${i - 1}`, templateKey: "location" }),
+    );
+    nodes.push(node({ id: "leaf", name: "Untitled", parentId: "n3", templateKey: "note" }));
+
+    await expect(saveNode(root, nodes[4], nodes)).resolves.toBeUndefined();
   });
 
   it("allows an ordinary path through untouched", async () => {
     const ordinary = node({ id: "o", name: "Valera Jiang", parentId: null, templateKey: "character" });
     await expect(saveNode("C:/Projects/World", ordinary, [ordinary])).resolves.toBeUndefined();
+  });
+});
+
+// A page title is not a filename. The name lives in the node's JSON and the
+// tree reads it from there, so the on-disk segment can be shortened without
+// the user ever seeing a truncated title — which is the difference between
+// "your page saved" and "your page didn't".
+describe("long page names", () => {
+  it("shortens the filename rather than refusing the page", async () => {
+    const essay = node({ id: "e", name: "x".repeat(400), parentId: null, templateKey: "note" });
+    await expect(saveNode("C:/Projects/World", essay, [essay])).resolves.toBeUndefined();
+  });
+
+  it("keeps the whole name for anything of a sane length", () => {
+    const name = "who cried a river and drowned the whole world";
+    expect(sanitizeSegment(name)).toBe(name);
+  });
+
+  it("never ends a shortened name in a space or a dot", () => {
+    // The cut lands mid-word on a name made of two-character units, so the
+    // character it stops on is a space.
+    expect(sanitizeSegment("ab ".repeat(60)).endsWith(" ")).toBe(false);
+  });
+
+  it("cuts by character, so an emoji name can't be split down the middle", () => {
+    // Whole moons, not half of one: a UTF-16 slice would end on a lone
+    // surrogate, which is not a filename any OS will take.
+    expect(sanitizeSegment("🌙".repeat(200))).toBe("🌙".repeat(MAX_SEGMENT_CHARS));
+  });
+
+  it("suffixes two long names that shorten to the same thing", () => {
+    const shared = "The Very Long Chapter Title That Keeps Going On And On Past Any Reasonable Length For A Filename";
+    const a = node({ id: "a", name: `${shared} one`, parentId: null, templateKey: "location", createdAt: 1 });
+    const b = node({ id: "b", name: `${shared} two`, parentId: null, templateKey: "location", createdAt: 2 });
+    const index = buildPathIndex([a, b]);
+
+    expect(resolveNodePath(a, index).dirSegments).not.toEqual(resolveNodePath(b, index).dirSegments);
   });
 });
 
