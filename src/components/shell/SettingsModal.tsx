@@ -37,6 +37,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, X } from "lucide-react";
 import { SETTINGS_TABS } from "../../constants/settings";
+import { listStepForKey, stepIndex } from "../../services/list-keys";
 import { useSettingsSearch } from "../../hooks/use-settings-search";
 import { FontSettings } from "./FontSettings";
 import { ProjectsSettings } from "./ProjectsSettings";
@@ -162,12 +163,13 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   // so a search is type, arrow, Enter without ever leaving the box.
   function onSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (!searching || results.length === 0) return;
-    if (event.key === "ArrowDown") {
+    const step = listStepForKey(event);
+    if (step) {
       event.preventDefault();
-      setHighlighted((at) => (at + 1) % results.length);
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setHighlighted((at) => (at === 0 ? results.length - 1 : at - 1));
+      // See the same call in SearchPalette: Ctrl-N opens a new page at the
+      // window level, and it must not also do that from in here.
+      event.stopPropagation();
+      setHighlighted((at) => stepIndex(at, step, results.length));
     } else if (event.key === "Enter") {
       event.preventDefault();
       openResult(highlighted);

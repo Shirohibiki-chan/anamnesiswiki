@@ -19,7 +19,7 @@ type EditorProps = {
 };
 
 export function Editor({ nodeId, content, onContentChange }: EditorProps) {
-  const { editor, onWikilinkKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems } = useEditor(
+  const { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems } = useEditor(
     nodeId,
     content,
     onContentChange,
@@ -42,7 +42,7 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         theme="dark"
         slashMenu={false}
         className="wiki-body editor-shell"
-        onKeyDownCapture={onWikilinkKeyDownCapture}
+        onKeyDownCapture={onKeyDownCapture}
         onChange={handleChange}
       >
         <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} />

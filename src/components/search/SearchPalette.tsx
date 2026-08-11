@@ -8,6 +8,7 @@ import { getTemplateIcon } from "../../constants/icons";
 import { useProjectActions } from "../../hooks/use-project";
 import { useSearchResults, type SearchRow, type SearchScopeMode } from "../../hooks/use-search";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
+import { listStepForKey, stepIndex } from "../../services/list-keys";
 import { SearchScopeChip, SearchScopeMenu } from "./SearchScopeMenu";
 import "./search.css";
 
@@ -136,11 +137,16 @@ export function SearchPalette({
       pick(results[activeIndex]);
       return;
     }
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    const step = listStepForKey(e);
+    if (step) {
       e.preventDefault();
+      // Ctrl-N is bound to "new page" at the window level, and a shortcut that
+      // fires *as well* would leave a page behind every time you walked the
+      // list. The arrows don't need this, but claiming the keypress for
+      // whichever key got us here is one rule instead of two.
+      e.stopPropagation();
       if (results.length === 0) return;
-      const step = e.key === "ArrowDown" ? 1 : -1;
-      setActiveIndex((i) => (i + step + results.length) % results.length);
+      setActiveIndex((i) => stepIndex(i, step, results.length));
     }
   }
 

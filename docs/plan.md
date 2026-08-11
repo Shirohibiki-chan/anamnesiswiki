@@ -292,13 +292,39 @@ and being shipped that way, one PR per bullet.
   independent:** it has nothing to render until the thing that pins a page
   exists. Either take it last, after Phase 15, or build the pin with it — don't
   start it expecting the rest of the phase's freedom.
-- **The small-friction batch**, lifted from Obsidian 1.13's own list. Each is a line or two, none depends on the others, and they're the kind of thing that's only ever felt as vague clumsiness rather than reported as a bug — which is why they're written down rather than left to be noticed:
-  - `Escape` cancels a rename and **leaves the tree focused** (today focus escapes with it);
-  - `Escape` clears the current selection;
-  - auto-reveal doesn't fire while a file or folder is being renamed;
-  - `Shift`-arrow extends a multi-selection from the keyboard;
-  - `Ctrl-N`/`Ctrl-P` move through suggestion lists — the wikilink autocomplete, the quick switcher — on every platform, not just macOS;
-  - closing the quick switcher or command palette with `Escape` restores the selection that was there before it opened.
+- ~~**The small-friction batch**~~ — 2026-08-10, lifted from Obsidian 1.13's own
+  list. Three of the six needed building; the other three were checked and
+  already true, which is the point of having written them down. **Don't
+  re-add the ones marked below as already-satisfied without first checking they
+  still are** — two of them hold because of something elsewhere, not because
+  anything guards them.
+  - ~~`Escape` cancels a rename and **leaves the tree focused**~~ — built.
+    Decided in a capture handler on the tree panel, because whether a row is
+    being renamed stops being true the moment the key is handled anywhere else,
+    and the focus is taken back on the next frame rather than immediately: the
+    field is still mounted and still focused when the key arrives.
+  - ~~`Escape` clears the current selection~~ — built, **deliberately narrower
+    than the line said.** In this app the tree's selection *is* which page is
+    open, so clearing it outright would close the page as a side effect of
+    getting out of a multi-select. Escape drops back to the row you're on
+    instead, and does nothing at all when there's no multi-selection to undo.
+  - ~~`Ctrl-N`/`Ctrl-P` move through suggestion lists~~ — built, in all three:
+    the quick switcher, the settings search, and the editor's slash/@/wikilink
+    menus. `services/list-keys.ts` is the one definition. The editor's menu is
+    the odd one out — BlockNote owns that highlight, so the keypress is
+    *translated* into the arrow key BlockNote is already listening for rather
+    than reimplemented against its internals.
+  - **Already true: auto-reveal doesn't fire while renaming.** Not because
+    anything guards it — because a rename ends on blur, and every path that can
+    change the selection takes focus first. A guard was written and deleted; it
+    could never have fired. If a path ever arrives that moves the selection
+    without taking focus, this becomes real again.
+  - **Already true: `Shift`-arrow extends a multi-selection.** react-arborist's
+    own container does it, and nothing here passes `disableMultiSelection`.
+  - **Already true: closing the quick switcher with `Escape` keeps the
+    selection.** It only ever calls `selectNode` when you pick something, so
+    arrowing through results doesn't move the selection there is to restore.
+    Worth keeping that way: previewing on arrow would make this real work.
 
 ---
 

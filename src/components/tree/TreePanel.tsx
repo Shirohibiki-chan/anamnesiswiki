@@ -54,10 +54,51 @@ export function TreePanel() {
     [],
   );
 
+  // react-arborist's own container is what holds keyboard focus (it's the
+  // `role="tree"` element it renders, and the only thing in here with a
+  // tabindex). Both Escape behaviours below have to put focus back on it, and
+  // neither is reachable from the row that started them.
+  function focusTree() {
+    containerRef.current?.querySelector<HTMLElement>('[role="tree"]')?.focus();
+  }
+
+  // Escape, in the two senses a file tree has for it.
+  //
+  // Capture, because the answer depends on something that stops being true the
+  // moment the key is handled anywhere else: whether a row is being renamed.
+  // react-arborist's container ignores every key while editing, and the rename
+  // field's own handler cancels the edit and unmounts itself — taking focus
+  // with it, out of the tree entirely, which is the actual complaint. So the
+  // work here is deciding *now* and acting after.
+  function handleEscape(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Escape") return;
+    const api = treeApiRef.current;
+    if (!api) return;
+
+    if (api.isEditing) {
+      // The field cancels itself; this only catches the focus. Deferred
+      // because the input is still mounted and still focused at this point,
+      // and focusing the tree before it goes would be undone by it going.
+      requestAnimationFrame(focusTree);
+      return;
+    }
+
+    // Not "deselect everything": in this app the tree's selection *is* which
+    // page is open, so clearing it outright would close the page as a side
+    // effect of getting out of a multi-select. Dropping back to the row you're
+    // on is the half that maps — it undoes the selection without touching what
+    // you're reading. With nothing multi-selected there's nothing to undo, and
+    // Escape falls through to whatever else wants it.
+    const focused = api.focusedNode;
+    if (api.selectedIds.size <= 1 || !focused) return;
+    event.preventDefault();
+    api.select(focused);
+  }
+
   return (
     <div className="tree-panel">
       <TreeSearch value={searchQuery} onChange={setSearchQuery} mode={searchMode} onModeChange={setSearchMode} />
-      <div className="tree-panel-body" ref={containerRef}>
+      <div className="tree-panel-body" ref={containerRef} onKeyDownCapture={handleEscape}>
         {size.height > 0 && (
           <Tree<TreeNodeData>
             ref={treeApiRef}
