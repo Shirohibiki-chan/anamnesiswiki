@@ -18,7 +18,7 @@ import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
 import { getDefaultTabs } from "../services/template-registry";
-import { isDescendantOf, orderSiblings, sortSiblingIds, type SiblingSort } from "../services/tree-service";
+import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   EMPTY_NAV_HISTORY,
   forgetNodes,
@@ -181,7 +181,11 @@ export type ProjectStoreState = {
   moveNodes: (ids: string[], newParentId: string | null, index?: number) => Promise<void>;
   deleteNode: (id: string) => Promise<void>;
   deleteNodes: (ids: string[]) => Promise<void>;
-  duplicateNode: (id: string) => Promise<void>;
+  // The whole selection copied as one undoable step. Takes a list rather than
+  // an id even though the menu's usual case is one row: a per-id loop at the
+  // call site is several undo entries for one thing the user did, and the
+  // ordering pass below has to see the whole batch to place the copies right.
+  duplicateNodes: (ids: string[]) => Promise<void>;
   // Rewrites one sibling group's manual order. `parentId` is null for the
   // project root, matching rootOrder/childOrder.
   sortChildren: (parentId: string | null, sort: SiblingSort) => void;
@@ -1207,19 +1211,26 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       );
     },
 
-    async duplicateNode(id) {
+    async duplicateNodes(ids) {
       const { rootPath, project, nodes } = get();
-      const original = nodes[id];
-      if (!rootPath || !project || !original) return;
+      if (!rootPath || !project) return;
 
-      const subtreeIds = [id, ...descendantIds(id, nodes)];
+      const existing = ids.filter((id) => nodes[id]);
+      if (existing.length === 0) return;
+
+      // Only the roots of the selection get copied — see selectionRoots for
+      // why selecting a folder and something inside it can't mean copying both.
+      const roots = selectionRoots(existing, nodes);
+
+      const subtreeIds = roots.flatMap((rootId) => [rootId, ...descendantIds(rootId, nodes)]);
       const idMap = new Map(subtreeIds.map((subId) => [subId, crypto.randomUUID()]));
+      const rootIds = new Set(roots);
       const now = Date.now();
 
       const clones: Node[] = await Promise.all(
         subtreeIds.map(async (subId) => {
           const source = nodes[subId];
-          const isRootOfDuplicate = subId === id;
+          const isRootOfDuplicate = rootIds.has(subId);
           // A clone must get its own copy of the image/banner file — sharing
           // the original's filename would mean deleting/replacing it on
           // either the original or the copy later deletes it out from under
@@ -1254,16 +1265,27 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // A copy belongs directly after what it was copied from, wherever that
       // is — at the root or inside a folder. Without the folder half, a
       // duplicate made inside a folder jumped to the bottom of the list.
-      const cloneRootId = idMap.get(id)!;
-      const siblingIds = orderedSiblingIds(nextNodes, project, original.parentId).filter((n) => n !== cloneRootId);
-      const originalIndex = siblingIds.indexOf(id);
-      const withClone = [...siblingIds];
-      withClone.splice(originalIndex === -1 ? withClone.length : originalIndex + 1, 0, cloneRootId);
+      //
+      // Rebuilt by walking each parent's existing order rather than splicing
+      // one copy in at a time: duplicating several pages from the same folder
+      // at once shifts every position after the first insertion, so the second
+      // copy would land one place further along than it should.
+      const cloneByOriginal = new Map<string, string>(roots.map((rootId) => [rootId, idMap.get(rootId)!]));
+      const cloneRootIds = new Set(cloneByOriginal.values());
+      const affectedParents = new Set(roots.map((rootId) => nodes[rootId].parentId));
 
-      const nextProject: Project =
-        original.parentId === null
-          ? { ...project, rootOrder: withClone }
-          : { ...project, childOrder: { ...project.childOrder, [original.parentId]: withClone } };
+      let nextProject: Project = project;
+      for (const parentId of affectedParents) {
+        const siblingIds = orderedSiblingIds(nextNodes, nextProject, parentId).filter((n) => !cloneRootIds.has(n));
+        const withClones = siblingIds.flatMap((n) => {
+          const cloneId = cloneByOriginal.get(n);
+          return cloneId ? [n, cloneId] : [n];
+        });
+        nextProject =
+          parentId === null
+            ? { ...nextProject, rootOrder: withClones }
+            : { ...nextProject, childOrder: { ...nextProject.childOrder, [parentId]: withClones } };
+      }
 
       set({ nodes: nextNodes, project: nextProject });
       // Duplicating a folder writes its whole subtree, so the clones share one
@@ -1283,11 +1305,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const orderingBefore = captureOrdering(project);
       const orderingAfter = captureOrdering(nextProject);
       record(
-        `duplicating "${original.name}"`,
+        roots.length === 1
+          ? `duplicating "${nodes[roots[0]].name}"`
+          : `duplicating ${countLabel(roots.length, "page")}`,
         async () => {
           const currentRootPath = get().rootPath;
           if (currentRootPath) clonedAssets = await captureAssets(currentRootPath, clones);
-          await get().deleteNodes([cloneRootId]);
+          await get().deleteNodes([...cloneRootIds]);
           await restoreOrdering(orderingBefore);
         },
         () => restoreNodes(clones, clonedAssets, orderingAfter),

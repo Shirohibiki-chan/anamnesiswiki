@@ -31,7 +31,7 @@ export function useProjectActions() {
       moveNode: state.moveNode,
       deleteNode: state.deleteNode,
       deleteNodes: state.deleteNodes,
-      duplicateNode: state.duplicateNode,
+      duplicateNodes: state.duplicateNodes,
       sortChildren: state.sortChildren,
       setNodeColor: state.setNodeColor,
       setNodeHidden: state.setNodeHidden,

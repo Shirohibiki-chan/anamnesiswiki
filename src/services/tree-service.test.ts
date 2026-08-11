@@ -6,6 +6,7 @@ import {
   getEffectiveColor,
   isDescendantOf,
   isHiddenByAncestor,
+  selectionRoots,
   sortSiblingIds,
 } from "./tree-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
@@ -444,5 +445,51 @@ describe("sortSiblingIds", () => {
     const original = [...ids];
     sortSiblingIds(ids, nodes, "name-asc");
     expect(ids).toEqual(original);
+  });
+});
+
+describe("selectionRoots", () => {
+  // canon > sub > page, plus an unrelated root.
+  const nodes = byId([
+    node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY }),
+    node({ id: "sub", name: "Sub", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY }),
+    node({ id: "page", name: "Page", parentId: "sub", templateKey: "note" }),
+    node({ id: "other", name: "Other", parentId: null, templateKey: "note" }),
+  ]);
+
+  it("keeps everything when nothing contains anything else", () => {
+    expect(selectionRoots(["canon", "other"], nodes)).toEqual(["canon", "other"]);
+  });
+
+  it("drops a child whose parent is also selected", () => {
+    expect(selectionRoots(["canon", "sub"], nodes)).toEqual(["canon"]);
+  });
+
+  // The reason the walk goes all the way up instead of checking one level:
+  // "page" is two levels under "canon", and a parent-only check would keep it
+  // and copy it a second time inside the copy of Canon.
+  it("drops a grandchild whose ancestor is selected further up", () => {
+    expect(selectionRoots(["canon", "page"], nodes)).toEqual(["canon"]);
+  });
+
+  it("keeps a page whose selected relative is in another branch", () => {
+    expect(selectionRoots(["other", "page"], nodes)).toEqual(["other", "page"]);
+  });
+
+  it("ignores ids that no longer name a page", () => {
+    expect(selectionRoots(["canon", "gone"], nodes)).toEqual(["canon"]);
+  });
+
+  it("de-duplicates a repeated id", () => {
+    expect(selectionRoots(["other", "other"], nodes)).toEqual(["other"]);
+  });
+
+  it("says nothing is a root of an empty selection", () => {
+    expect(selectionRoots([], nodes)).toEqual([]);
+  });
+
+  it("stops rather than looping when a parent id points at nothing", () => {
+    const orphan = byId([node({ id: "orphan", name: "Orphan", parentId: "missing", templateKey: "note" })]);
+    expect(selectionRoots(["orphan"], orphan)).toEqual(["orphan"]);
   });
 });

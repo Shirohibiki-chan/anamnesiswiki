@@ -136,6 +136,32 @@ export function isDescendantOf(nodeId: string, ancestorId: string, nodes: Record
   return false;
 }
 
+/**
+ * The members of `ids` that aren't already inside another member.
+ *
+ * A selection can easily hold both a folder and a page inside it, and any
+ * operation that carries a whole subtree — copying, deleting — would otherwise
+ * act on the inner page twice: once on its own, once as part of its ancestor.
+ * For a copy that means a second copy of it turning up inside the first.
+ *
+ * Order is preserved, so the caller's own sibling ordering survives.
+ * `deleteNodes` answers the same question inline against the descendant set it
+ * has to build anyway; this is for callers that don't need one.
+ */
+export function selectionRoots(ids: string[], nodes: Record<string, Node>): string[] {
+  const selected = new Set(ids.filter((id) => nodes[id]));
+  return [...selected].filter((id) => {
+    let parentId = nodes[id].parentId;
+    while (parentId) {
+      if (selected.has(parentId)) return false;
+      // A parent id pointing at nothing ends the walk rather than looping
+      // forever — the same guard isDescendantOf above needs.
+      parentId = nodes[parentId]?.parentId ?? null;
+    }
+    return true;
+  });
+}
+
 export type EffectiveColor = {
   color: string | null;
   isOwner: boolean;
