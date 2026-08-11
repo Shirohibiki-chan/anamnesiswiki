@@ -825,3 +825,19 @@
 .editor-shell .bn-visual-media {
   border-radius: var(--radius-md);
 }
+
+/* Captions read as a note about the picture, not as more of the page's prose.
+   BlockNote's own is left-aligned at `.8em` in the body colour, which puts it
+   at the same weight as the paragraph under it and hanging off the left edge.
+   Centred and muted instead, the way a figure caption is set nearly
+   everywhere — matched against GitBook, which is where the user writes the
+   published version of this world.
+
+   `--fs-xs` rather than an em multiple so it tracks the Writing text-size
+   slider like everything else in here, instead of drifting relative to it. */
+.editor-shell .bn-file-caption {
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  line-height: var(--lh-normal);
+}

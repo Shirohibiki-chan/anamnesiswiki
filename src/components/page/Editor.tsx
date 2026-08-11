@@ -7,10 +7,16 @@
 // Everything that isn't a BlockNote React component lives in
 // hooks/use-editor.ts, per CLAUDE.md's rule that components never import
 // services directly.
-import { SuggestionMenuController } from "@blocknote/react";
+import {
+  FormattingToolbar,
+  FormattingToolbarController,
+  SuggestionMenuController,
+  getFormattingToolbarItems,
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import { SaveImageButton } from "./SaveImageButton";
 
 type EditorProps = {
   nodeId: string;
@@ -43,8 +49,22 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         slashMenu={false}
         className="wiki-body editor-shell"
         onKeyDownCapture={onKeyDownCapture}
+        // The default toolbar minus its Download button, which calls
+        // `window.open` and so does nothing in a Tauri window. Swapped by key
+        // rather than by listing every other item out, so anything BlockNote
+        // adds to that strip in a future version arrives on its own.
+        formattingToolbar={false}
         onChange={handleChange}
       >
+        <FormattingToolbarController
+          formattingToolbar={() => (
+            <FormattingToolbar>
+              {getFormattingToolbarItems().map((item) =>
+                item.key === "fileDownloadButton" ? <SaveImageButton key="fileDownloadButton" /> : item,
+              )}
+            </FormattingToolbar>
+          )}
+        />
         <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} />
         <SuggestionMenuController triggerCharacter={WIKILINK_TRIGGER} getItems={getMentionItems} />

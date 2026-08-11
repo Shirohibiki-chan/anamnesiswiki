@@ -722,6 +722,23 @@ is below.
   block presents as a URL box with no other option. That's exactly how it
   shipped before Phase 16.
 
+- **BlockNote's Download button is swapped out, by key, not hidden.** Theirs is
+  `resolveFileUrl(url).then(window.open)` — a Tauri window doesn't open new
+  ones, so it did nothing at all, and opening a `blob:` in a tab wouldn't be a
+  download even where it works. `SaveImageButton` goes through the OS save
+  dialog instead. **The swap maps over `getFormattingToolbarItems()` replacing
+  the element keyed `fileDownloadButton`**, rather than listing the other
+  twenty out, so anything BlockNote adds to that strip in a later version
+  arrives on its own. Verified against the running module: 21 items, that key
+  present. If the key ever disappears the swap silently stops applying and the
+  dead button comes back — that's the failure mode to check if it ever "stops
+  working" after an upgrade.
+
+- **An embedded picture is opened, never fetched.** "Save a copy" of something
+  on someone else's server would mean requesting it, which is a network call
+  nobody asked for. The button changes to "Open in browser" and hands the
+  address to the OS. Don't turn this into a download.
+
 - **The image size and type limits live in `uploadFile`, not in any panel.** A
   picture arrives three ways — picked, dragged onto the page, pasted — and
   BlockNote funnels all three through that one function. A check in the panel

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-11 — saving a picture, and quieter captions
+
+### Fixes
+
+- **The download button on a picture works now.** It did nothing at all: BlockNote's own version opens the picture in a new browser window, and this app doesn't open browser windows. It's now **Save a copy**, which asks where to put it through the normal Windows save box and writes the file there.
+  - On an **embedded** picture — one added by web address — the same button says **Open in browser** instead, because there's no file on your computer to copy. Your browser's own "Save image as" is right there once it opens.
+- **Captions are centred and quieter.** They were left-aligned in the same colour and nearly the same size as the paragraph underneath, so a caption read as another line of the page rather than a note about the picture. They now sit centred under the picture in the muted grey, matching how they look on GitBook.
+
 ## 2026-08-11 — the URL box comes back
 
 ### Fixes
