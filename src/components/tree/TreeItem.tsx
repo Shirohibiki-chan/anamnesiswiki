@@ -4,7 +4,7 @@
 // §Color Cascade and docs/spec.md §Node colors.
 import { useState, type CSSProperties } from "react";
 import type { NodeRendererProps } from "react-arborist";
-import { ChevronDown, ChevronRight, Home, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, MoreHorizontal, Plus } from "lucide-react";
 import { TREE_INDENT } from "../../constants/layout";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
@@ -99,6 +99,18 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     if (await confirmDestructive(warning)) deleteNodes(ids);
   }
 
+  // Shared by right-clicking the row and by the row's own "..." button, so the
+  // two can't drift apart — the menu acts on the selection, and a menu opened
+  // on a row that isn't in it would act on rows the user isn't pointing at.
+  //
+  // Opening it *inside* a multi-selection keeps that selection: that's the
+  // whole point of having made one. Opening it anywhere else replaces it, the
+  // way every file manager behaves.
+  function openMenu(anchor: HTMLElement) {
+    if (!node.isSelected) node.select();
+    openPopoverAt("menu", anchor);
+  }
+
   // The new page opens in the center panel and asks what it is there, so this
   // doesn't need to ask anything first. Expanding the row is what makes the
   // result visible — a page added to a collapsed row would otherwise appear to
@@ -125,11 +137,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         style={rowStyle}
         onContextMenu={(e) => {
           e.preventDefault();
-          // Right-clicking inside a multi-selection keeps it — that's the
-          // whole point of having made one. Right-clicking anywhere else
-          // replaces it, the way every file manager behaves.
-          if (!node.isSelected) node.select();
-          openPopoverAt("menu", e.currentTarget);
+          openMenu(e.currentTarget);
         }}
       >
         <button
@@ -181,6 +189,22 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             else openPopoverAt("color", e.currentTarget);
           }}
         />
+
+        {/* The right-click menu, for anyone who doesn't right-click. Anchored to
+            the button rather than the row so the menu opens under the thing
+            that was pressed. */}
+        <button
+          type="button"
+          className="tree-row-menu"
+          title="More actions"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (openPopover === "menu") closePopover();
+            else openMenu(e.currentTarget);
+          }}
+        >
+          <MoreHorizontal size={12} />
+        </button>
 
         {/* On every row: there's no longer a kind of page that can't hold one. */}
         <button

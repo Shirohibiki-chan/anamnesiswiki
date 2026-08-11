@@ -356,6 +356,7 @@
 }
 
 .tree-row-color-dot,
+.tree-row-menu,
 .tree-row-add {
   flex-shrink: 0;
   width: 16px;
@@ -377,6 +378,7 @@
 }
 
 .tree-row:hover .tree-row-color-dot,
+.tree-row:hover .tree-row-menu,
 .tree-row:hover .tree-row-add {
   opacity: 1;
 }
@@ -391,6 +393,7 @@
 
 /* Sits inside a row that's already hovered, so it needs the bigger step to
    read against it rather than the same one. */
+.tree-row-menu:hover,
 .tree-row-add:hover {
   background: var(--color-hover-strong);
   color: var(--color-text-primary);
