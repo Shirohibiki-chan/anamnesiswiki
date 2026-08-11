@@ -1,16 +1,5 @@
 # Changelog
 
-## 2026-08-11 — pages that couldn't be saved, and a folder that stayed broken
-
-### Fixes
-
-- **Two things you did at once could leave a page with no file behind it.** Making a page and then renaming it, or making a page and then putting something inside it, sends two writes to disk — and nothing was keeping them in order. The second one would go looking for a file the first hadn't finished writing, fail, and stop. Every write the app makes now goes in a queue and happens in the order you did things. Nothing waits on it; the app is exactly as quick as before.
-  - **This is what was behind the red "some changes couldn't be saved" box**, and why the list in it kept getting longer.
-  - **Worst case, a page you'd just made was never written at all.** The failure happened before the new page got its turn, so it was in the sidebar and nowhere else until you reopened the project.
-
-- **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
-  - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
-## 2026-08-11 — pages five folders deep can save again
 ## 2026-08-11 — the app no longer decides how deep is too deep
 
 ### Fixes
@@ -21,6 +10,9 @@
 
 - **There's no length limit any more; your computer decides.** The old 260-character Windows limit isn't the limit on modern Windows, and guessing at a replacement number could only be wrong in one of two directions — the direction it was wrong in lost pages. So the app just tries to save, and tells you if the system actually says no. Tested first: a 1021-character path wrote, read back and opened fine, in the app's own file handling and in Windows' own tools.
   - **If a save does fail on a very long path, the message says so and includes what the system said**, instead of the app inventing a rule. Below that length you get the real error untouched, because the length isn't the reason.
+
+- **If a save ever does fail on a long path, the app checks what your computer actually allows before it says anything.** It writes a test file somewhere deliberately too deep and sees whether that works. If your Windows is set to stop at 260 characters, the message says so, since that's a real setting with a real fix. If it isn't, the message says the length probably isn't the reason and shows what the system said instead — no sending you after the wrong thing.
+  - It only runs after something has already gone wrong, never when the app starts, and it cleans up after itself.
 
 - **A very long page title gets a shorter filename instead of blocking the save.** Past about 96 characters the name on disk is trimmed. The page keeps its full title: that's stored inside the file rather than being the filename, and the sidebar reads it from there. This one's a real limit — no filesystem allows a single file name past 255 — and nothing you'd call a title comes near 96; the longest across your worlds is 44. It's there so pasting a paragraph into the title can't cost you the page.
 
