@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-10 — new pages start blank, and pick what they are on the page
+
+### Adjustments
+
+- **Making a page no longer asks you what kind it is first.** The **+** button, the right-click item, the folder view's button and the keyboard shortcut all now make an untitled page straight away and open it. What used to be a popover in the way is now the page itself: the title is already waiting to be typed into, and the kinds of page are laid out underneath it.
+  - **You can put it off.** "Skip this — just start writing" gives the page somewhere to write and leaves the question open. The properties panel on the right still offers the templates later, whenever you've worked out what the page turned into.
+  - **Pages can be made in a run and named afterwards.** Nothing has to be decided at the moment you least want to decide it.
+  - Picking a kind adds that kind's headings and properties to the page. Anything already written stays exactly where it is — nothing is replaced.
+  - Folders are made the same way, by picking Folder on a new page.
+
 ## 2026-08-10 — any page can hold pages now
 
 ### Additions

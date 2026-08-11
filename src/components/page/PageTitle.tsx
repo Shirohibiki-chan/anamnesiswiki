@@ -8,11 +8,21 @@ import { getPaletteHex } from "../../constants/palette";
 import { useProjectActions, useProjectHomeId, useProjectName } from "../../hooks/use-project";
 import { useAncestorChain, useEffectiveColor } from "../../hooks/use-tree-data";
 
-export function PageTitle({ node }: { node: Node }) {
+type PageTitleProps = {
+  node: Node;
+  /**
+   * Opens straight into the rename input. Read once, at mount — PageView is
+   * keyed by node id, so this remounts per page and can't fight a later
+   * re-render for control of whether the input is open.
+   */
+  startEditing?: boolean;
+};
+
+export function PageTitle({ node, startEditing = false }: PageTitleProps) {
   const projectName = useProjectName();
   const homeNodeId = useProjectHomeId();
   const { renameNode, selectNode } = useProjectActions();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(startEditing);
 
   const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);

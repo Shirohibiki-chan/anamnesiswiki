@@ -25,6 +25,8 @@ export function useProjectActions() {
       dismissSaveErrors: state.dismissSaveErrors,
       addNode: state.addNode,
       updateNode: state.updateNode,
+      applyTemplate: state.applyTemplate,
+      addTab: state.addTab,
       renameNode: state.renameNode,
       moveNode: state.moveNode,
       deleteNode: state.deleteNode,

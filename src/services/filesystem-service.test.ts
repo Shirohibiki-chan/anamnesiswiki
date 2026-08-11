@@ -603,6 +603,50 @@ describe("storage conversion for pages that gain or lose children", () => {
   });
 });
 
+// The other way a node's storage shape changes: not by gaining a child, but by
+// being told what kind of page it is. Every page is now created blank and given
+// a template afterwards from the page itself, so this fires on ordinary use
+// rather than as an edge case — see project-store's applyTemplate, which routes
+// through relocateNode for exactly this reason.
+describe("storage conversion when a blank page is given a template", () => {
+  const blank = node({ id: "b", name: "Valera Jiang", parentId: null, templateKey: "blank" });
+
+  it("resolves a blank page to a flat file", () => {
+    expect(resolveNodePath(blank, [blank])).toEqual({ dirSegments: [], fileName: "Valera Jiang.json" });
+  });
+
+  it("plans the move into a directory when a directory template is applied", () => {
+    const asCharacter = { ...blank, templateKey: "character" };
+    expect(planRelocations([blank], [asCharacter])).toEqual([
+      { oldSegments: ["Valera Jiang.json"], newSegments: ["Valera Jiang", "_page.json"] },
+    ]);
+  });
+
+  it("plans nothing when the template applied is also a flat one", () => {
+    // blank → note changes what the page *is* without changing where it lives,
+    // and a plan here would be a rename of a file onto itself.
+    expect(planRelocations([blank], [{ ...blank, templateKey: "note" }])).toEqual([]);
+  });
+
+  it("plans the move back out when a directory template is replaced by a flat one", () => {
+    const asCharacter = { ...blank, templateKey: "character" };
+    expect(planRelocations([asCharacter], [{ ...blank, templateKey: "note" }])).toEqual([
+      {
+        oldSegments: ["Valera Jiang", "_page.json"],
+        newSegments: ["Valera Jiang.json"],
+        pruneDir: ["Valera Jiang"],
+      },
+    ]);
+  });
+
+  it("plans nothing when the page already had children to hold it in a directory", () => {
+    // It was already `Valera Jiang/_page.json` because something is inside it.
+    // A flat template can't pull it back out while that's still true.
+    const child = node({ id: "c", name: "Her Sword", parentId: "b", templateKey: "note" });
+    expect(planRelocations([blank, child], [{ ...blank, templateKey: "note" }, child])).toEqual([]);
+  });
+});
+
 describe("pruning the directory a converted page leaves behind", () => {
   beforeEach(() => {
     fsMock.remove.mockClear();

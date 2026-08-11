@@ -8,6 +8,15 @@ export type BlockNoteDocument = unknown[];
 
 export const FOLDER_TEMPLATE_KEY = "folder";
 
+// What every new page starts as. A page is created first and given a template
+// second (see components/page/NewPageLanding.tsx) — "blank" is the state in
+// between, and the one a page stays in if the user just starts writing.
+export const BLANK_TEMPLATE_KEY = "blank";
+
+// The name a page is created with. Not left empty: a node's name is also its
+// filename, and an empty one has nowhere to be written.
+export const UNTITLED_PAGE_NAME = "Untitled";
+
 // Canonical order used in the New Page picker. See docs/constants-and-theming.md.
 export const TEMPLATE_KEYS = [
   "folder",

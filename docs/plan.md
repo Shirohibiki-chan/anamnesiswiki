@@ -265,9 +265,18 @@ and being shipped that way, one PR per bullet.
   which is measured rather than assumed. The minimums are "the panel can still
   do its job" — **dragging is not a way to hide a panel**, and shouldn't become
   one.
-- **Show in system explorer.**
+- ~~**Show in system explorer**~~ — 2026-08-10.
 - **Hover previews** on wikilinks and mentions. The README already claims these exist; they don't.
-- **"Create new" landing page** — a blank untitled page that offers the template picker inline, so pages can be spammed out and typed later.
+- ~~**"Create new" landing page**~~ — 2026-08-10. Every route to a new page —
+  the tree's "+", the right-click item, the folder view's button, the keyboard
+  shortcut — now makes an untitled blank page and opens it, with the template
+  grid on the page itself and the title already in edit mode. The popover that
+  used to ask first is gone from all four, and `NewPageDialog.tsx` with it; the
+  properties panel keeps its own copy for a blank page deciding late what it is.
+  **The decision that binds is in `docs/handoff.md` §Storage**: a template
+  carries whether a page stores itself as a file or a directory, so applying one
+  moves the page on disk and has to go through the relocation planner rather
+  than a plain save.
 - **Bookmarks rail** — pinned pages as icon tiles under the tree search, fed by
   "Set as shortcut" from Phase 15. **This is the one bullet here that isn't
   independent:** it has nothing to render until the thing that pins a page

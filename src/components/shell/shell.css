@@ -804,40 +804,6 @@
   }
 }
 
-/* Cmd+N's template picker — see components/shell/NewPageDialog.tsx. Shares the
-   settings modal's header and close button, and is `.ui-modal .ui-modal-sm`:
-   it used to be the only 20rem dialog in the app for no reason beyond being
-   typed that way, and at 22rem it matches the confirm dialog, which is the
-   other small one-decision dialog. */
-
-/* Pulled up under the title — this is a subtitle for the heading above it, not
-   a paragraph of its own. */
-.new-page-hint {
-  margin: calc(var(--space-md) * -1) 0 var(--space-lg);
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-}
-
-/* The picker is built for a 12rem popover; here it has a dialog to fill. */
-.new-page-templates .tree-template-picker {
-  width: 100%;
-  gap: var(--space-2xs) var(--space-md);
-}
-
-.new-page-templates .tree-template-option {
-  font-size: var(--fs-sm);
-  padding: var(--space-md);
-}
-
-/* Matched to the hover above it — arriving here by keyboard should look like
-   arriving by mouse, plus the ring that says which one you did. */
-.new-page-templates .tree-template-option:focus-visible {
-  outline: none;
-  background: var(--color-accent-hover);
-  color: var(--color-accent-light);
-  box-shadow: inset 0 0 0 1px var(--color-accent-dark);
-}
-
 /* Keyboard section — see components/shell/ShortcutSettings.tsx. */
 .shortcut-list {
   list-style: none;

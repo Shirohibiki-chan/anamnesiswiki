@@ -536,6 +536,78 @@
 /* "Add a tab" here and "Add a page" in the folder view below are both
    `.ui-btn .ui-btn-lg .ui-btn-secondary` — the empty-state size. */
 
+/* --- NewPageLanding --- */
+
+/* Sits where the tabs and the editor will be once the page has answered for
+   itself, so it's left-aligned in the same column rather than centred like the
+   folder view's empty state — the page isn't empty, it's unstarted, and the
+   title above it is the thing to look at first. */
+.new-page-landing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-lg);
+}
+
+.new-page-landing-hint {
+  margin: 0;
+  max-width: 42rem;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+/* auto-fill rather than a fixed column count: this column is resizable (both
+   side panels are), and eight cards that reflow beat eight cards that squash. */
+.new-page-landing-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space-sm);
+}
+
+.new-page-landing-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.new-page-landing-choice:hover,
+.new-page-landing-choice:focus-visible {
+  outline: none;
+  border-color: var(--color-accent-dark);
+  background: var(--color-accent-hover);
+  color: var(--color-accent-light);
+}
+
+/* Deliberately not one of the cards. It's the answer "none of these", and a
+   ninth tile saying that would read as a ninth kind of page. */
+.new-page-landing-skip {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.new-page-landing-skip:hover {
+  color: var(--color-text-primary);
+}
+
 /* --- FolderView --- */
 
 .folder-view {

@@ -55,7 +55,8 @@
 | Large page title row — template icon (colored per effective color), click-to-rename inline editor, breadcrumb-style parent path above | `src/components/page/PageTitle.tsx` |
 | Tab strip beneath the title — one button per tab, active-tab underline in accent color, click-the-eye toggle to hide/show a tab. Hidden tabs render dimmer and italic. | `src/components/page/PageTabs.tsx` |
 | BlockNote editor wrapper for the active tab's content — configures BlockNote with the custom Info / Quote / Secret blocks, mention extension, and wikilink parsing; debounces content changes to the autosave service | `src/components/page/Editor.tsx` |
-| Empty-content view shown for folder nodes — folder name, color-tint background, and a "Folders hold other pages" hint with a call-to-action button that opens `NewPageModal` targeted at this folder | `src/components/page/FolderView.tsx` |
+| Empty-content view shown for folder nodes — folder name, color-tint background, and a "Folders hold other pages" hint with a button that makes a page inside this folder | `src/components/page/FolderView.tsx` |
+| What a brand-new page shows before it's anything in particular — the grid of template choices, and a "skip this" that leaves the page blank with somewhere to write. Replaces the popover that used to ask before the page existed. | `src/components/page/NewPageLanding.tsx` |
 | Placeholder rendered when no node is selected (rare — usually the app auto-selects a page on load) | `src/components/page/EmptyPageView.tsx` |
 
 ### Properties (`src/components/properties/`)
@@ -78,7 +79,6 @@
 | What you see | File |
 |---|---|
 | Base modal wrapper used by every dialog below — renders a blurred backdrop, handles Escape-to-close, and shows a "Discard changes?" confirm dialog when `isDirty` is true | `src/components/modals/Modal.tsx` |
-| Template picker for creating a new page — grid of the 8 template types with icons and names; clicking creates a fresh page of that type under the target parent | `src/components/modals/NewPageModal.tsx` |
 | LegendKeeper import wizard — file picker for `.lk` files, preview of the parsed tree with inferred template counts per branch, warnings for content types that will lossy-convert (columns, inline icons), Confirm button that commits the import | `src/components/modals/ImportModal.tsx` |
 | LegendKeeper export dialog — checkbox tree of what to export (all / folders / specific pages), Cancel and Export buttons; produces a `.lk` file the user saves anywhere | `src/components/modals/ExportModal.tsx` |
 | Publish dialog (Phase 1.5) — checkbox tree of what to publish, "include hidden tabs?" toggle (default off), tag filter, output folder picker; on Publish, generates a static site to the chosen folder | `src/components/modals/PublishModal.tsx` |

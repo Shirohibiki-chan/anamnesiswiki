@@ -1,6 +1,12 @@
-// Popover content for picking a node's template — new pages instantiate the
-// chosen template's default tabs/properties from template-registry.ts.
-// Positioning/portaling is handled by the TreePopover wrapper around this.
+// Popover content for giving an existing page a template — its default
+// tabs/properties come from template-registry.ts, and any the page already has
+// are left alone. Positioning/portaling is handled by the TreePopover wrapper
+// around this.
+//
+// Only the properties panel reaches this now: a page that was made blank and
+// then written in, deciding later what it is. A page being made picks from
+// components/page/NewPageLanding.tsx instead, which is the same list laid out
+// for a whole column rather than a popover.
 import { TEMPLATE_KEYS } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { useTemplates } from "../../hooks/use-templates";

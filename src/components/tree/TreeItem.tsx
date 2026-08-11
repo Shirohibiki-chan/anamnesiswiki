@@ -12,26 +12,25 @@ import { getPaletteHex } from "../../constants/palette";
 import { useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
 import { useEffectiveColor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
-import { useTemplates } from "../../hooks/use-templates";
 import type { TreeNodeData } from "../../services/tree-service";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
-import { TemplatePicker } from "./TemplatePicker";
 import { TreePopover } from "./TreePopover";
 
-type OpenPopover = "color" | "add" | "menu" | null;
+type OpenPopover = "color" | "menu" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, addNode, setNodeColor, setProjectHome } = useProjectActions();
+  const { duplicateNode, deleteNodes, setNodeColor, setProjectHome } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive, requestExport } = useDialogs();
-  const { getLabel } = useTemplates();
+  const createPageIn = useCreatePageIn();
   const revealNode = useRevealNode();
   const fileManagerName = useFileManagerName();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
@@ -100,10 +99,14 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     if (await confirmDestructive(warning)) deleteNodes(ids);
   }
 
-  function handleAddChild(templateKey: string) {
-    addNode({ parentId: node.id, templateKey, name: `New ${getLabel(templateKey)}` });
+  // The new page opens in the center panel and asks what it is there, so this
+  // doesn't need to ask anything first. Expanding the row is what makes the
+  // result visible — a page added to a collapsed row would otherwise appear to
+  // have gone nowhere.
+  function handleAddChild() {
     closePopover();
     node.open();
+    createPageIn(node.id);
   }
 
   return (
@@ -186,8 +189,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           title="New page inside"
           onClick={(e) => {
             e.stopPropagation();
-            if (openPopover === "add") closePopover();
-            else openPopoverAt("add", e.currentTarget);
+            handleAddChild();
           }}
         >
           <Plus size={12} />
@@ -206,11 +208,6 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
-      {openPopover === "add" && anchorRect && (
-        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
-          <TemplatePicker onSelect={handleAddChild} />
-        </TreePopover>
-      )}
       {openPopover === "menu" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
@@ -224,7 +221,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onReveal={() => void revealNode(node.id)}
             onExport={() => requestExport(targetIds())}
             onDelete={handleDelete}
-            onAddChild={() => setOpenPopover("add")}
+            onAddChild={handleAddChild}
             onClose={closePopover}
           />
         </TreePopover>
