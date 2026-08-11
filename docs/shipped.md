@@ -1302,3 +1302,124 @@ and being shipped that way, one PR per bullet.
     Worth keeping that way: previewing on arrow would make this real work.
 
 ---
+
+# Phase 15 — Right-Click Menu, Full Pass — 2026-08-11
+
+From the user's screenshot of LK's node menu, minus what doesn't apply to a
+single-user app: Convert to template · Export (per node) · Move ▸ · Sort
+sub-pages ▸ · ~~Set as shortcut~~ · Hide · Collapse all · Expand all. Shipped
+one PR per item over 2026-08-11. What still governs the code is in
+`docs/handoff.md`; this is the record.
+
+**Three of the eight were already done before the phase opened.** "Set as
+shortcut" and Hide shipped in Phase 14, the first because the bookmarks rail
+there had nothing to render without it. Per-node Export had been on the menu
+since Phase 9 as "Export to LegendKeeper". Checking rather than assuming saved
+building all three twice.
+
+**Skipped: "Edit permissions"** — multi-user, not us.
+
+## What was in it
+
+- ~~**Sort sub-pages ▸**~~ — #120. Four orders (A to Z, Z to A, newest, oldest)
+  applied to the pages directly inside the clicked row, not everything below
+  it. **A one-shot rewrite of the manual order, not a mode the tree stays in:**
+  the tree is drag-reorderable, and a sort that persisted would either undo the
+  next drag or quietly stop applying. Undo puts the old order back.
+  `localeCompare`'s numeric option, so "Chapter 2" sorts before "Chapter 10" —
+  worldbuilding pages are numbered constantly.
+
+  Offered above *two* children rather than one: a group of one is already in
+  every order at once, and an item that visibly does nothing is worse than one
+  that isn't there. `sortChildren` returns early when the order already matches,
+  because an undo entry that reverses nothing reads as undo being broken.
+
+- ~~**Expand all inside / Collapse all inside**~~ — #120. Walks
+  react-arborist's own nodes rather than the store, since open/closed is its
+  state; it calls back into `setExpanded` per row, which is what persists.
+  **Only rows that actually hold something are touched** — every node carries a
+  `children` array whether or not it has any, so opening the empty ones would
+  write a line into `expandedIds` for every leaf page in the subtree to no
+  visible effect. Collapse leaves the clicked row itself open: the menu says
+  *inside*, and folding it would take the result off screen along with the
+  thing that produced it.
+
+- ~~**Duplicate on a multi-selection**~~ — #121, the queued adjustment folded
+  in. It used to drop out of the menu above one row, which read as copying a
+  group being impossible rather than as not yet built. `duplicateNode` became
+  `duplicateNodes(ids)` — one undo entry for one gesture, and the ordering pass
+  needs the whole batch to place each copy directly below its original.
+  `selectionRoots` was extracted from `deleteNodes` for it: selecting a folder
+  *and* a page inside it copies the folder once, since a copy carries its
+  subtree and doing the inner page as well leaves a spare inside the new folder.
+
+- ~~**Convert to template**~~ — #122, **shipped as "Save as template"**:
+  "convert" reads as one-way, and the page is copied rather than changed.
+
+  **What the user's own test of LK's version settled** (2026-08-11) — answers,
+  not guesses: it copies *everything* (writing, properties with their filled-in
+  values, tags, colour, pictures), it asks about sub-pages as one question with
+  two answers, and templates are **per world**. All three were built to match.
+
+  Storage and the reasoning for it are in `docs/handoff.md` §Templates: a
+  separate `.templates.json`, kept out of the project's `nodes`, because search,
+  the property index, LK export and the Phase 1.5 publisher all walk every page
+  and one missed filter puts scaffolding into a published world.
+
+  The scope dialog gets its own dialog-store entry rather than a mode on
+  `pendingConfirm`, because a yes/no can't offer two yeses. It's skipped
+  entirely for a page with no children.
+
+  **A live bug fell out of the design work:** a top-level page named "assets"
+  was written to `assets/` and then skipped by the load walk — intact on disk,
+  absent from the tree. Same for "project". `RESERVED_ROOT_KEYS` now reserves
+  position 0 for those names so a colliding page is numbered like any other
+  clash. The per-directory markers (`_folder.json` / `_page.json`) remain
+  uncovered; `docs/handoff.md` records that gap.
+
+- ~~**Move ▸**~~ — #124, **shipped as "Move to"**, with a **search box** for the
+  destination (her choice, 2026-08-11) rather than a submenu mirroring the
+  tree: a menu of everywhere doesn't survive a world of any size, and walking
+  one to reach a folder is the same work as finding it in the sidebar and
+  dragging. Typing the name is the thing dragging can't do.
+
+  **Matching is a plain substring, not the fuzzy index the tree filter uses.**
+  The tree filter *shows* pages and a stray near-match costs a glance; picking
+  the wrong row here files the work somewhere she didn't choose.
+
+  `moveDestinations` leaves out the pages being moved and everything beneath
+  them. **This is the first route to Move that has to say that out loud** —
+  `moveNodes` never needed the check because react-arborist won't draw a drop
+  into a node's own subtree. A page filed inside itself is a cycle: the tree
+  walk never terminates, and on disk it's a directory moved into its own
+  subtree, which is how a subtree gets lost rather than relocated. The shared
+  parent is excluded too, but only when they *all* share it — a selection spread
+  across three folders can genuinely be gathered into any one of them.
+
+  The destination and its ancestors are opened *before* the move, so the page is
+  visible where it lands rather than disappearing into a collapsed folder in a
+  corner of the tree.
+
+## Verification
+
+Lint, build and the full suite green on each PR; 731 tests at the phase's start,
+**771 at its end** — 13 new for `moveDestinations`, 20 for the template library,
+7 for the reserved root names.
+
+CSS measured against the live stylesheet with DOM replicas rather than
+eyeballed, since `pnpm dev` can't open a project. That caught three things
+that would otherwise have shipped: the template dialog's three buttons need
+343px and `ui-modal-sm` gives ~304px, so it takes the standard width; the move
+submenu had to be capped (439×198 against the context menu's 528×198) because
+`TreePopover` measures once at mount and a content swap doesn't re-measure; and
+the move list's names weren't truncating at all — a 310px name laid out in a
+176px row, running out past the popover's edge.
+
+**Not run in the desktop app.** Compiled, tested and measured rather than
+eyeballed, as with Phase 14.
+
+## Left to Phase 17 deliberately
+
+Templates surface only in the new-page screen, with a hover × to delete one.
+That's enough to make them usable and to undo a mistake; browsing, renaming and
+reorganising them is the Templates tab's job.

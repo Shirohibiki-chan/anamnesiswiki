@@ -138,7 +138,7 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ## Shipped
 
-Phases 0–14 are complete. **`docs/shipped.md`** has what each one delivered;
+Phases 0–15 are complete. **`docs/shipped.md`** has what each one delivered;
 `CHANGELOG.md` has the same story in plain language. **Phase 1.5 (Publish) is
 the only unstarted phase behind us** — it's unblocked and unscheduled, below.
 
@@ -160,6 +160,7 @@ the only unstarted phase behind us** — it's unblocked and unscheduled, below.
 | 12 | Themes & Appearance | 2026-08-09 |
 | 13 | Property Types | 2026-08-10 |
 | 14 | Everyday Navigation | 2026-08-11 |
+| 15 | Right-Click Menu, Full Pass | 2026-08-11 |
 
 Project home — the last Queued Adjustment standing before Phase 9 — shipped
 2026-07-31.
@@ -212,50 +213,18 @@ Everything below comes out of one planning session: the user brought a list of r
 
 ---
 
-**Phases 11, 11.5, 12, 13 and 14 are done** — the identity pass, the design
-system beneath it, themes, property types, and everyday navigation. Their
-detail is in `docs/shipped.md`; what still binds the code is in
-`docs/handoff.md`. **Phase 15 is done too** — the right-click menu's full pass.
-**Phase 16 is next.**
+**Phases 11, 11.5, 12, 13, 14 and 15 are done** — the identity pass, the design
+system beneath it, themes, property types, everyday navigation, and the
+right-click menu's full pass. Their detail is in `docs/shipped.md`; what still
+binds the code is in `docs/handoff.md`. **Phase 16 is next.**
+
+One thing Phase 15 left for **Phase 17** on purpose: this world's own templates
+surface only in the new-page screen, with a hover × to delete one. Enough to
+make them usable and to undo a mistake; browsing, renaming and reorganising
+them is the Templates tab's job.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 15 — Right-Click Menu, Full Pass
-
-From the user's screenshot of LK's node menu, minus what doesn't apply to a single-user app.
-
-Convert to template · Export (per node) · Move ▸ · Sort sub-pages ▸ · ~~Set as shortcut~~ · Hide · Collapse all · Expand all.
-
-**"Set as shortcut" already shipped**, 2026-08-11, pulled forward into Phase 14 because the bookmarks rail there had nothing to render without it. Hide shipped too. Per-node **Export** was already on the menu as "Export to LegendKeeper". None of the three needs revisiting here.
-
-**Skipped:** "Edit permissions" — multi-user, not us.
-
-**Phase 15 is done, 2026-08-11.** Sort sub-pages, Expand/Collapse all inside,
-the queued duplicate-on-multi-selection fix, Convert to template — which shipped
-under the name **"Save as template"**, because "convert" reads as one-way and
-the page is copied rather than changed — and Move to.
-
-**What "Save as template" settled**, from the user's own test of LegendKeeper's
-version (2026-08-11) — these are answers, not guesses, and don't need re-asking:
-
-- **It copies everything.** The writing, the properties *with the values filled
-  into them*, tags, colour, pictures. Not a description of a page's shape.
-- **It asks about sub-pages**, one question, two answers.
-- **Templates are per world**, not per app. They live in `.templates.json` in
-  the project folder — see `docs/handoff.md` §Templates for why that file and
-  not a directory, and why they're kept out of the project's `nodes`.
-
-**Move ▸ shipped as "Move to"**, with a **search box** for the destination (her
-choice, 2026-08-11) rather than a submenu mirroring the tree — a submenu of
-everywhere doesn't survive a world this size.
-
-**Left to Phase 17 deliberately:** templates currently surface only in the
-new-page screen, with a hover × to delete one. That's enough to make them
-usable and to undo a mistake; browsing, renaming and reorganising them is the
-Templates tab's job.
 
 ---
 
