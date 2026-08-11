@@ -18,7 +18,7 @@ import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
 import { getDefaultTabs } from "../services/template-registry";
-import { orderSiblings } from "../services/tree-service";
+import { isDescendantOf, orderSiblings } from "../services/tree-service";
 import {
   EMPTY_NAV_HISTORY,
   forgetNodes,
@@ -119,6 +119,16 @@ export type ProjectStoreState = {
   // worth writing to disk. Carries the node id as well so PageView can ignore
   // a leftover from an earlier jump instead of applying it to the wrong page.
   pendingFocus: { nodeId: string; tabId: string } | null;
+  // Which node the tree is showing the inside of — "Focus here" in the
+  // right-click menu, for a branch nested deeper than the sidebar can render
+  // legibly. Its *children* become the tree's roots; the node itself is named
+  // in the path bar above, which is the way back out.
+  //
+  // Session-only and never written to disk, for the same reason navHistory
+  // isn't: reopening a project into a tree showing a fraction of itself, with
+  // no memory of having asked for that, reads as pages having gone missing.
+  focusedId: string | null;
+  setFocus: (id: string | null) => void;
   // Where you've been in this session. Not part of Project and never written to
   // disk — see services/navigation-service.ts for why. Every navigation goes
   // through `selectNode`, which is the only thing that appends to it; back and
@@ -386,10 +396,21 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
    * already does it for every selection however it was made.
    */
   const applySelection = (id: string | null, tabId: string | undefined, navHistory: NavHistory): void => {
-    const { rootPath, project } = get();
+    const { rootPath, project, nodes, focusedId } = get();
     if (!rootPath || !project) return;
     const nextProject: Project = { ...project, selectedId: id };
-    set({ project: nextProject, pendingFocus: id && tabId ? { nodeId: id, tabId } : null, navHistory });
+    // Landing outside the focused branch drops the focus. The tree physically
+    // can't show a page that isn't under the focused node, so the alternative
+    // is the sidebar quietly not following you — which is how a search result
+    // or a wikilink would leave you on a page with no row anywhere. Selecting
+    // the focused node itself counts as outside: it isn't in its own subtree.
+    const leavesFocus = Boolean(focusedId) && (!id || !isDescendantOf(id, focusedId!, nodes));
+    set({
+      project: nextProject,
+      pendingFocus: id && tabId ? { nodeId: id, tabId } : null,
+      navHistory,
+      ...(leavesFocus ? { focusedId: null } : {}),
+    });
     scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
   };
 
@@ -414,6 +435,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     recoveredCount: 0,
     reunitedNames: [],
     pendingFocus: null,
+    focusedId: null,
     navHistory: EMPTY_NAV_HISTORY,
 
     // Resolves null for anything that means "this isn't an openable project"
@@ -449,6 +471,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         navHistory: visit(EMPTY_NAV_HISTORY, result.project.selectedId ?? null),
       });
       return { name: result.project.name };
+    },
+
+    // Not undoable and not recorded in navigation history: this changes what
+    // the sidebar is showing, not what the project contains or which page is
+    // open. Undo is for edits, and Back is for pages.
+    setFocus(id) {
+      set({ focusedId: id });
     },
 
     dismissSkippedFiles() {
@@ -572,6 +601,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         recoveredCount: 0,
         reunitedNames: [],
         pendingFocus: null,
+        focusedId: null,
         // Closing a project throws its history away with it — the ids in there
         // mean nothing in the next project, and carrying them over would let
         // Back navigate to a page in a world you've left.

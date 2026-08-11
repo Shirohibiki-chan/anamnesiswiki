@@ -23,18 +23,35 @@ export type { TreeSearchMode } from "../services/tree-service";
 
 export function useTreeData(): {
   treeData: TreeNodeData[];
+  /** The node whose inside the tree is showing, or null for the whole project. */
+  focusedNode: Node | null;
+  /** Project root → focused node, for the path bar. Empty when not focused. */
+  focusPath: Node[];
   getEffectiveColor: (nodeId: string) => EffectiveColor;
   getAncestorChain: (nodeId: string) => Node[];
 } {
-  const { project, nodes } = useProject();
+  const { project, nodes, focusedId } = useProject();
+
+  // Read through `nodes` rather than trusted: the focused page can be deleted
+  // while it's focused, and a path bar naming a page that no longer exists is
+  // worse than no path bar. `buildTreeData` falls back to the whole tree on
+  // the same condition, so the two can't disagree about what's showing.
+  const focusedNode = focusedId ? (nodes[focusedId] ?? null) : null;
 
   const treeData = useMemo(
-    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}),
-    [nodes, project?.rootOrder, project?.childOrder],
+    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}, focusedId),
+    [nodes, project?.rootOrder, project?.childOrder, focusedId],
+  );
+
+  const focusPath = useMemo(
+    () => (focusedNode ? [...getAncestorChain(focusedNode.id, nodes), focusedNode] : []),
+    [focusedNode, nodes],
   );
 
   return {
     treeData,
+    focusedNode,
+    focusPath,
     getEffectiveColor: (nodeId: string) => getEffectiveColor(nodeId, nodes),
     getAncestorChain: (nodeId: string) => getAncestorChain(nodeId, nodes),
   };

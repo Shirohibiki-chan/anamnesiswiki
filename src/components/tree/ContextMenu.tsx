@@ -1,11 +1,12 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Set color /
-// Hide from readers / Set as project home / Show in the file manager / Export /
-// Delete. Also reached from the row's own "..." button — see TreeItem.
+// Focus here / Hide from readers / Set as project home / Show in the file
+// manager / Export / Delete. Also reached from the row's own "..." button —
+// see TreeItem.
 // Delete is confirmed before it runs — via the
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
 // earlier native window.confirm(). Positioning/portaling is handled by the
 // TreePopover wrapper.
-import { Copy, Eye, EyeOff, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
+import { Copy, Crosshair, Eye, EyeOff, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
 
 type ContextMenuProps = {
   isProjectHome: boolean;
@@ -23,9 +24,16 @@ type ContextMenuProps = {
   selectionCount: number;
   /** The OS's own word for its file manager — see dialog-service. */
   fileManagerName: string;
+  /**
+   * Whether this row has anything inside it. "Focus here" is hidden when it
+   * doesn't: focusing an empty page shows an empty tree with a path bar over
+   * it, which looks exactly like the project having disappeared.
+   */
+  hasChildren: boolean;
   onRename: () => void;
   onDuplicate: () => void;
   onSetColor: () => void;
+  onFocusHere: () => void;
   onToggleProjectHome: () => void;
   onToggleHidden: () => void;
   onReveal: () => void;
@@ -40,9 +48,11 @@ export function ContextMenu({
   isHidden,
   selectionCount,
   fileManagerName,
+  hasChildren,
   onRename,
   onDuplicate,
   onSetColor,
+  onFocusHere,
   onToggleProjectHome,
   onToggleHidden,
   onReveal,
@@ -92,6 +102,14 @@ export function ContextMenu({
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color
       </button>
+      {/* Single selection only, and only with something inside: focus shows
+          the inside of *one* thing, and there's no reading of "focus on these
+          three" that isn't just a different feature. */}
+      {!isMultiple && hasChildren && (
+        <button type="button" onClick={() => run(onFocusHere)}>
+          <Crosshair size={13} /> Focus here
+        </button>
+      )}
       {/* Multi-selection included: hiding a run of pages is most of why anyone
           hides one, and unlike renaming or revealing it means the same thing
           done ten times as it does done once. */}

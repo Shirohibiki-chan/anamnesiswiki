@@ -935,6 +935,24 @@ is below.
 
 ## Navigation
 
+- **Tree focus is session-only and lives in `focusedId` on the project store.**
+  Never written to `project.json`, for the same reason `navHistory` isn't:
+  reopening a project into a sidebar showing a fraction of itself, with no
+  memory of having asked for that, is indistinguishable from pages having gone
+  missing.
+
+- **Selecting a page outside the focus clears the focus**, in `applySelection`
+  — the one place every selection goes through. The tree cannot render a row
+  for a page that isn't under the focused node, so the alternative is the
+  sidebar silently failing to follow a search result or a wikilink. Selecting
+  the focused node *itself* counts as leaving: it isn't inside its own subtree.
+
+- **While focused, a drop at the tree's root means "into the focused node".**
+  react-arborist reports `parentId: null` for a root drop and has no idea the
+  tree starts partway down; `parentId ?? focusedId` in TreePanel is what stops
+  a drag to the top of a focused tree throwing the page out to the project
+  root — the one place the person doing it can't see.
+
 - **`selectNode` is the only thing that records a visit, and that is the whole
   design.** Phase 14's back/forward stack lives in `navigation-service.ts` as
   pure functions over `{ entries, index }`; the store appends to it inside

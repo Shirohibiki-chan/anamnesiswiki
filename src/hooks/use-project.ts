@@ -36,6 +36,7 @@ export function useProjectActions() {
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
       setProjectHome: state.setProjectHome,
+      setFocus: state.setFocus,
       setExpanded: state.setExpanded,
     })),
   );

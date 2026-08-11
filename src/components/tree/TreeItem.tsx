@@ -27,7 +27,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome } = useProjectActions();
+  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome, setFocus } = useProjectActions();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
@@ -269,9 +269,18 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             isHidden={Boolean(fullNode.hidden)}
             selectionCount={selectionCount}
             fileManagerName={fileManagerName}
+            hasChildren={hasChildren}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
+            // Opened as well as focused. The row is about to stop existing at
+            // this level — it becomes the path bar — and leaving the tree
+            // collapsed under it would show an empty panel under a bar naming
+            // a page with things in it.
+            onFocusHere={() => {
+              node.open();
+              setFocus(node.id);
+            }}
             onToggleProjectHome={() => setProjectHome(node.id)}
             onToggleHidden={() => setNodeHidden(targetIds(), !fullNode.hidden)}
             onReveal={() => void revealNode(node.id)}
