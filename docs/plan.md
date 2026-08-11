@@ -276,7 +276,18 @@ and being shipped that way, one PR per bullet.
   do its job" — **dragging is not a way to hide a panel**, and shouldn't become
   one.
 - ~~**Show in system explorer**~~ — 2026-08-10.
-- **Hover previews** on wikilinks and mentions. The README already claims these exist; they don't.
+- ~~**Hover previews** on wikilinks and mentions~~ — 2026-08-11. Wikilinks
+  resolve *into* mentions (see `wikilink.ts`), so both are one chip and one
+  implementation. **The 350ms delay is the feature, not a detail:** with no
+  delay a card fires on every link the pointer crosses on its way somewhere
+  else, and a preview you learn to steer around is worse than none.
+  `pointer-events: none` on the card is load-bearing too — it opens directly
+  below the chip, so a card that could take the pointer would swallow the
+  chip's own mouseleave and stay up until you moved somewhere else entirely.
+  **Excerpt rules, in `preview-service.ts`:** the first *non-empty* tab rather
+  than the first tab (templates seed several and only some get filled), never
+  a hidden tab (a tab held back from readers must not leak through a preview
+  of the page it's on), and the cut lands on a word boundary.
 - ~~**"Create new" landing page**~~ — 2026-08-10. Every route to a new page —
   the tree's "+", the right-click item, the folder view's button, the keyboard
   shortcut — now makes an untitled blank page and opens it, with the template

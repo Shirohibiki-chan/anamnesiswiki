@@ -10,6 +10,13 @@
 
 - **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
   - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
+## 2026-08-10 — hovering a link shows you the page without opening it
+
+### Additions
+
+- **Mentions and `[[wikilinks]]` show a preview card when you rest the pointer on them.** The page's name, what kind of page it is, its tags, and the first few lines of writing on it — enough to tell which Valera a link means without leaving the page you're on. Focusing a link with the keyboard shows it too.
+  - It waits a moment before appearing, so links you're only passing over on the way somewhere else stay quiet.
+  - The excerpt comes from the first tab that actually has writing in it, not the first tab — templates start with several and only some get filled in. **Tabs you've hidden are never used**, so nothing held back shows up in a preview.
 
 ## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
 

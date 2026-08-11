@@ -543,6 +543,107 @@
   text-decoration: line-through;
 }
 
+/* --- HoverPreviewCard ---
+
+   `pointer-events: none` is not cosmetic. The card opens under the pointer's
+   own path and sits directly below the link that opened it; if it could take
+   the pointer, moving down out of the link would land *on the card*, which
+   never fires the link's mouseleave — so it would stay up until you moved
+   somewhere else entirely. Nothing in it is reachable anyway.
+
+   Portaled to document.body, so it's outside .wiki-body and inherits none of
+   the writing font or size. Deliberate: this is interface, not prose. */
+.hover-preview {
+  z-index: 60;
+  pointer-events: none;
+  width: 22rem;
+  max-width: calc(100vw - var(--space-2xl));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  font-family: var(--font-ui);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  box-shadow: var(--elev-modal);
+}
+
+.hover-preview-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.hover-preview-icon {
+  flex-shrink: 0;
+  color: var(--color-accent-light);
+}
+
+.hover-preview-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hover-preview-template {
+  flex-shrink: 0;
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.hover-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* Four lines, then it stops. A preview long enough to need scrolling is one
+   you'd have been faster opening — and it can't be scrolled anyway. */
+.hover-preview-excerpt {
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+/* Which tab the words came from, inline ahead of them rather than on its own
+   row — the excerpt is the point, and a label on a line of its own would take
+   a quarter of the card to say something most previews don't need. */
+.hover-preview-tab {
+  margin-right: var(--space-sm);
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.hover-preview-empty {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
 .page-view-no-tabs {
   color: var(--color-text-muted);
   font-size: var(--fs-md);
