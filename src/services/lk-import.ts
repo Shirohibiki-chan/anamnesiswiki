@@ -26,6 +26,11 @@ type LkResource = {
   name: string;
   pos: string;
   iconColor?: string;
+  // A page LK holds back from anyone the world is shown to. Read since
+  // 2026-08-10; before that only the same flag one level down, on documents,
+  // was read, so a hidden page came across visible and its hiddenness was
+  // simply gone. Re-import to recover it.
+  isHidden?: boolean;
   documents: LkDocument[];
   properties?: LkProperty[];
   tags?: string[];
@@ -512,6 +517,9 @@ export function buildImportPlan(raw: unknown): ImportPlan {
         customProperties,
         tags: Array.isArray(resource.tags) ? resource.tags : [],
         color: nearestPaletteKey(resource.iconColor),
+        // Left off entirely when the page isn't hidden, so an import produces
+        // the same file a page made here would. See schema.ts's `hidden`.
+        ...(resource.isHidden ? { hidden: true } : {}),
         bannerFocusY,
         // Remembered so a later export can hand the picture back to LK, which
         // stores addresses rather than image data. See schema.ts.

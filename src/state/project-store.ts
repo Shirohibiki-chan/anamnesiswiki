@@ -169,6 +169,7 @@ export type ProjectStoreState = {
   // Colour has its own action rather than going through updateNode, so it can
   // be recorded as one undoable step across a whole multi-selection.
   setNodeColor: (ids: string[], color: string | undefined) => void;
+  setNodeHidden: (ids: string[], hidden: boolean) => void;
   selectNode: (id: string | null, tabId?: string) => void;
   // Moving over the session's navigation history rather than adding to it.
   // Both are no-ops at the ends of the stack, so the buttons can stay mounted
@@ -1217,6 +1218,31 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         `recolouring ${countLabel(targets.length, "page")}`,
         () => apply((id) => previousColors.get(id)),
         () => apply(() => color),
+      );
+    },
+
+    // Only the pages named are flagged; the cascade onto their descendants is
+    // derived at read time (tree-service's isHiddenByAncestor) rather than
+    // written onto every child. Writing it down would mean a page dragged out
+    // of a hidden folder stayed hidden with nothing on screen explaining why.
+    setNodeHidden(ids, hidden) {
+      const { nodes } = get();
+      const targets = ids.filter((id) => nodes[id]);
+      if (targets.length === 0) return;
+
+      const previousHidden = new Map(targets.map((id) => [id, nodes[id].hidden]));
+      const apply = (next: (id: string) => boolean | undefined) => {
+        for (const id of targets) get().updateNode(id, { hidden: next(id) });
+      };
+
+      // Written as `undefined` rather than `false` on the way back to visible,
+      // so a page that was never hidden and a page that was un-hidden are the
+      // same page on disk. Nothing distinguishes them.
+      apply(() => (hidden ? true : undefined));
+      record(
+        `${hidden ? "hiding" : "showing"} ${countLabel(targets.length, "page")}`,
+        () => apply((id) => previousHidden.get(id)),
+        () => apply(() => (hidden ? true : undefined)),
       );
     },
 

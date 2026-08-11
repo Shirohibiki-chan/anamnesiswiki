@@ -126,6 +126,15 @@ export type Node = {
   propertyOrder?: string[];
   tags: string[];
   color?: string;
+  // Held back from anyone the world is shown to, while staying completely
+  // normal to work on here — LK's own `isHidden` on a resource, and the same
+  // idea `Tab.hidden` already carries one level down. Absent means visible, so
+  // no page written before this existed needs migrating.
+  //
+  // It cascades: hiding a page hides everything under it, since a reader who
+  // can't reach the parent can't reach the children either. Only the page's
+  // own flag is stored — see tree-service's isHiddenByAncestor.
+  hidden?: boolean;
   // Filename of the uploaded portrait/sidebar image inside the project's
   // assets/ directory (see paths.ts's ASSETS_DIR), not a full path — Phase 6's
   // ImageSlot resolves it against the project root when it needs to display

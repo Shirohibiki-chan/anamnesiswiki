@@ -99,6 +99,21 @@ A failed individual image download doesn't fail the whole import — that one pa
 
 `iconColor` maps to our palette by nearest RGB distance (`nearestPaletteKey`). LK's own "no custom color set" sentinel is plain white (`#FFFFFF`), which is skipped entirely rather than mapped to a "white-ish" palette entry.
 
+## Hidden
+
+`isHidden` exists at **two** levels and they mean different things:
+
+| LK | Ours | Since |
+|---|---|---|
+| `documents[].isHidden` — a tab nobody but an admin sees on a page they do | `Tab.hidden` | Phase 9 |
+| `resources[].isHidden` — a page nobody but an admin sees at all | `Node.hidden` | 2026-08-10 |
+
+Only the first was read until 2026-08-10, so **every hidden page in an import before that date came across visible**, and export wrote `isHidden: false` for all of them. A world imported before then needs re-importing to get the flag back; nothing else recovers it, since the information was never written to disk.
+
+Both directions cascade rather than being stamped onto descendants — LK hides a page's whole subtree from a reader, and so does this app (`tree-service.ts`'s `isHiddenByAncestor`). Export therefore writes the flag only on the pages that carry it, and a hidden page's children go across as `false`. Marking them individually would survive a round trip as a flag on each one, and un-hiding the parent would then un-hide nothing.
+
+**The synthesised project root is the exception** on the way in: LK's root resource becomes the home page through a reduced path that also drops its colour and tags, and its `isHidden` goes with them. Hiding a whole world is not a thing anyone does, and it would import as a project where nothing is visible.
+
 ## What the import preview surfaces
 
 Before committing anything to disk, `ImportModal.tsx` shows: the parsed tree with inferred template icons, per-template counts, and a plain-language list of every lossy conversion that actually occurred (built from `describeLossy`) — nothing is silently dropped without being named in that list.

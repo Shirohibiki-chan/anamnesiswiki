@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-10 — hide a page from anyone you show your world to
+
+### Additions
+
+- **Right-click a page and pick "Hide from readers."** The page stays completely normal for you — it just goes dim and italic in the sidebar, the same way a hidden tab already does, so you can see at a glance what's held back. It's LegendKeeper's own "only admins can see hidden pages", and it's meant for the same things: spoilers, twists, the stuff a co-writer shouldn't hit yet.
+  - **Hiding a folder hides everything in it.** Anyone who can't get to the folder can't get to what's inside it, so the pages under it dim too. Un-hide the folder and they all come back — nothing was marked individually.
+  - **The page itself says so.** Open a hidden page and there's a "Hidden" chip next to the title, or "Inside a hidden page" if it's a parent doing it. The sidebar isn't where you spend the hour, so it can't be the only place that mentions it.
+  - Works on several pages at once, and undo puts them back.
+  - Nothing published or shared exists yet, so today this is a marker — but it's the marker the publishing feature will read when it arrives.
+
+### Fixes
+
+- **LegendKeeper's hidden pages import properly now, and export properly too.** Only *tabs* had their hidden setting read; a hidden **page** came across visible, and every page went back out to LK marked visible whatever you'd set here. **If your world had hidden pages in LK, that's worth a re-import** — the setting was never written down, so nothing else brings it back.
+
 ## 2026-08-10 — a "..." button on every row in the sidebar
 
 ### Additions

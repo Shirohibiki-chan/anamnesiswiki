@@ -89,6 +89,25 @@ export function getEffectiveColor(nodeId: string, nodes: Record<string, Node>): 
   return { color: null, isOwner: false };
 }
 
+// Whether something *above* this node is hidden, which makes this node hidden
+// too without its own flag being set. Deliberately excludes the node itself:
+// callers need to tell "hidden because I said so" from "hidden because my
+// folder is", since only the first is what the menu toggles.
+//
+// Not stored on the children. A cascade written down is a cascade that goes
+// stale the moment a page is dragged somewhere else, and this is the same
+// walk-up-the-parents answer `getEffectiveColor` above already gives.
+export function isHiddenByAncestor(nodeId: string, nodes: Record<string, Node>): boolean {
+  let currentParentId = nodes[nodeId]?.parentId ?? null;
+  while (currentParentId) {
+    const parent: Node | undefined = nodes[currentParentId];
+    if (!parent) return false;
+    if (parent.hidden) return true;
+    currentParentId = parent.parentId;
+  }
+  return false;
+}
+
 // Ancestors from the project root down to (but excluding) nodeId itself —
 // used for the page view's breadcrumb trail.
 export function getAncestorChain(nodeId: string, nodes: Record<string, Node>): Node[] {

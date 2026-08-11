@@ -474,7 +474,11 @@ export function buildExportFile(input: {
       name: node.name,
       pos,
       iconColor: paletteHexFor(node.color),
-      isHidden: false,
+      // Straight across — LK's `isHidden` on a resource means what this app's
+      // `hidden` means, and both cascade to descendants rather than being
+      // written onto each one. Hardcoded `false` here until 2026-08-10, which
+      // silently un-hid every hidden page on the way out.
+      isHidden: Boolean(node.hidden),
       isLocked: false,
       documents,
       properties: [...convertProperties(node, idMap), ...imageProperties(node)],

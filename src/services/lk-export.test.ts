@@ -127,6 +127,31 @@ describe("buildExportFile", () => {
     expect(resource.iconColor).toBe("#5eead4");
   });
 
+  describe("hidden pages", () => {
+    it("carries a hidden page across as LK's isHidden", () => {
+      const nodes = [node({ id: "a", name: "Sampo", parentId: null, templateKey: "note", tabs: [tab("Main")], hidden: true })];
+      expect(findResource(exportOf(nodes, ["a"]), "Sampo").isHidden).toBe(true);
+    });
+
+    it("writes false for a visible page", () => {
+      const nodes = [node({ id: "a", name: "Sampo", parentId: null, templateKey: "note", tabs: [tab("Main")] })];
+      expect(findResource(exportOf(nodes, ["a"]), "Sampo").isHidden).toBe(false);
+    });
+
+    it("does not mark the children of a hidden page — LK cascades it the same way", () => {
+      // Writing it onto every descendant would come back on the next import as
+      // a flag on each of them, and un-hiding the parent would no longer
+      // un-hide anything.
+      const nodes = [
+        node({ id: "canon", name: "Canon", parentId: null, templateKey: "folder", hidden: true }),
+        node({ id: "a", name: "Sampo", parentId: "canon", templateKey: "note", tabs: [tab("Main")] }),
+      ];
+      const plan = exportOf(nodes, ["canon"]);
+      expect(findResource(plan, "Canon").isHidden).toBe(true);
+      expect(findResource(plan, "Sampo").isHidden).toBe(false);
+    });
+  });
+
   describe("images", () => {
     it("exports a picture that came from LegendKeeper, using the address it came from", () => {
       const nodes = [

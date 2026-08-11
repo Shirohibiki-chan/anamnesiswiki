@@ -10,7 +10,7 @@ import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
-import { useEffectiveColor } from "../../hooks/use-tree-data";
+import { useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
@@ -26,8 +26,9 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // and a full-store subscription re-rendered every row on every keystroke
   // typed into the editor.
   const fullNode = useNode(node.id);
-  const { duplicateNode, deleteNodes, setNodeColor, setProjectHome } = useProjectActions();
+  const { duplicateNode, deleteNodes, setNodeColor, setNodeHidden, setProjectHome } = useProjectActions();
   const effective = useEffectiveColor(node.id);
+  const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
   const { confirmDestructive, requestExport } = useDialogs();
   const createPageIn = useCreatePageIn();
@@ -46,6 +47,10 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const showFolderTint = isFolder && !!effectiveHex;
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isProjectHome = homeNodeId === node.id;
+  // Dimmed whether it's hidden itself or sitting under something that is —
+  // both mean the same thing to a reader, and a normal-looking page inside a
+  // hidden folder would be a lie about what gets shown.
+  const looksHidden = Boolean(fullNode.hidden) || hiddenByAncestor;
   // Every page can hold pages now, so the chevron is purely about whether
   // there's anything to reveal — an empty page shows none. `node.isOpen` keeps
   // it visible through the moment a page is added, before the child arrives.
@@ -133,7 +138,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           <span key={level} className="tree-guide" style={{ left: level * TREE_INDENT }} aria-hidden="true" />
         ))}
       <div
-        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}`}
+        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}`}
         style={rowStyle}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -236,12 +241,17 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
             isProjectHome={isProjectHome}
+            // This row's own flag, not `looksHidden`: a visible page inside a
+            // hidden folder still has hiding of its own to offer, and offering
+            // to "show" it would set a flag that changes nothing anyone sees.
+            isHidden={Boolean(fullNode.hidden)}
             selectionCount={selectionCount}
             fileManagerName={fileManagerName}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNode(node.id)}
             onSetColor={() => setOpenPopover("color")}
             onToggleProjectHome={() => setProjectHome(node.id)}
+            onToggleHidden={() => setNodeHidden(targetIds(), !fullNode.hidden)}
             onReveal={() => void revealNode(node.id)}
             onExport={() => requestExport(targetIds())}
             onDelete={handleDelete}

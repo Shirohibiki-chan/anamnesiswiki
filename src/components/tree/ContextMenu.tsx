@@ -1,12 +1,21 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Set color /
-// Set as project home / Show in the file manager / Delete. Delete is confirmed before it runs — via the
+// Hide from readers / Set as project home / Show in the file manager / Export /
+// Delete. Also reached from the row's own "..." button — see TreeItem.
+// Delete is confirmed before it runs — via the
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
 // earlier native window.confirm(). Positioning/portaling is handled by the
 // TreePopover wrapper.
-import { Copy, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
+import { Copy, Eye, EyeOff, FolderOpen, Home, Palette, PencilLine, Plus, Trash2, Upload } from "lucide-react";
 
 type ContextMenuProps = {
   isProjectHome: boolean;
+  /**
+   * Whether the row the menu was opened on is hidden — which is what the item
+   * offers to undo. On a multi-selection it applies that answer to the whole
+   * selection, the way "Set color" applies one swatch: the row under the
+   * pointer is the one whose state is on screen, so it's the one to read.
+   */
+  isHidden: boolean;
   // How many rows the actions will apply to. Above one, the items that only
   // make sense for a single page (renaming, duplicating, nesting a new page,
   // designating home, revealing on disk) drop out rather than being shown and
@@ -18,6 +27,7 @@ type ContextMenuProps = {
   onDuplicate: () => void;
   onSetColor: () => void;
   onToggleProjectHome: () => void;
+  onToggleHidden: () => void;
   onReveal: () => void;
   onExport: () => void;
   onDelete: () => void;
@@ -27,12 +37,14 @@ type ContextMenuProps = {
 
 export function ContextMenu({
   isProjectHome,
+  isHidden,
   selectionCount,
   fileManagerName,
   onRename,
   onDuplicate,
   onSetColor,
   onToggleProjectHome,
+  onToggleHidden,
   onReveal,
   onExport,
   onDelete,
@@ -79,6 +91,13 @@ export function ContextMenu({
       )}
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color
+      </button>
+      {/* Multi-selection included: hiding a run of pages is most of why anyone
+          hides one, and unlike renaming or revealing it means the same thing
+          done ten times as it does done once. */}
+      <button type="button" onClick={() => run(onToggleHidden)}>
+        {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}{" "}
+        {isHidden ? "Show to readers" : "Hide from readers"}
       </button>
       {!isMultiple && (
         <button type="button" onClick={() => run(onToggleProjectHome)}>

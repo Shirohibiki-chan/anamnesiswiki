@@ -43,7 +43,7 @@
 | Search / filter input at the top of the tree. Passes through to `createSearchMatcher` in `tree-service.ts`, which owns the `Fuse.js` index per scope. | `src/components/tree/TreeSearch.tsx` |
 | The "what am I searching" menu and the chip that shows a narrowed scope — shared by the tree filter and the Ctrl-K palette, which pass their own scope lists in. Typing a leading `#` sets tag scope and deletes itself from the field. | `src/components/search/SearchScopeMenu.tsx` |
 | The scrollable tree body — renders root nodes and delegates recursion to `TreeItem`; owns drag/drop reparenting via react-arborist | `src/components/tree/TreePanel.tsx` |
-| One tree row — icon (colored per effective color, cascading from parent unless overridden), name (renamable inline), and three hover buttons: color dot, "..." for the context menu, "+" for a page inside. The menu is also on right-click. | `src/components/tree/TreeItem.tsx` |
+| One tree row — icon (colored per effective color, cascading from parent unless overridden), name (renamable inline), and three hover buttons: color dot, "..." for the context menu, "+" for a page inside. The menu is also on right-click. Hidden pages, and pages inside one, render dimmed and italic. | `src/components/tree/TreeItem.tsx` |
 | Color palette popover shown when a color dot is clicked — 10-12 preset swatches plus a "clear/default" X button; shows "Inheriting from parent" hint when the current node has no own color but an ancestor does | `src/components/tree/ColorPicker.tsx` |
 | Right-click context menu on tree rows — New page inside / Rename / Duplicate / Set color / Show in the file manager / Delete, keyboard-accessible | `src/components/tree/ContextMenu.tsx` |
 
