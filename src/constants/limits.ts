@@ -17,12 +17,33 @@ export const MAX_SEARCH_RESULTS = 40;
 export const SEARCH_SNIPPET_CHARS = 100;
 
 // Windows' default MAX_PATH is 260 characters including the drive and the
-// terminator, and it's the tightest limit of any platform we ship to. Checked
-// with headroom rather than at the wire, because a directory-storage node's
-// own path is only the prefix — its `_page.json`, and every child filed under
-// it, are longer still. A page whose own path is already at 260 has nowhere
-// left to put its contents.
-export const MAX_PATH_CHARS = 200;
+// terminator, and it's the tightest limit of any platform we ship to.
+//
+// This used to be 200, holding back 60 characters on the grounds that a
+// directory-storage node's own path is only the prefix — its `_page.json` and
+// its children are longer still. That reasoning was wrong: the check runs on
+// the node's *own full file path*, and a child too long to write fails its own
+// check when it's written. All the headroom bought was refusing to save pages
+// that Windows would have taken quite happily — five levels of ordinary page
+// names under `OneDrive\Documents\Anamnesis` lands around 203, and the user
+// hit exactly that on 2026-08-11 with a project no other app complained about.
+//
+// 255 leaves the terminator and a little slack. Deliberately not higher even
+// though `\\?\` paths would go further: the whole point of file-per-page is
+// that her writing stays legible outside the app, and a path Explorer or a
+// sync client won't open isn't legible.
+export const MAX_PATH_CHARS = 255;
+
+// The longest a single file or folder name may be on disk. Nothing to do with
+// the total above — it's a guard against one absurd name (a pasted paragraph
+// as a page title) eating the whole budget or tripping NTFS's own 255-per-name
+// limit. The page keeps its full name: that lives in the JSON, and the tree
+// reads names from there, never from the filename.
+//
+// 96 is well clear of anything real — the longest name in the user's worlds is
+// 44 characters — which matters, because lowering this later would change
+// where existing pages resolve to and leave their old files behind.
+export const MAX_SEGMENT_CHARS = 96;
 
 // How many versions Settings → Patch Notes offers. Three is enough to cover
 // "what changed recently" without the panel becoming an archive — the whole

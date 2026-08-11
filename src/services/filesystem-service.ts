@@ -24,7 +24,7 @@ import {
   PAGE_META_FILE,
   PROJECT_FILE,
 } from "../constants/paths";
-import { MAX_PATH_CHARS } from "../constants/limits";
+import { MAX_PATH_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -94,7 +94,17 @@ function createReadLimiter(limit: number): <T>(task: () => Promise<T>) => Promis
 
 export function sanitizeSegment(name: string): string {
   const cleaned = name.replace(ILLEGAL_CHARS, "_").trim().replace(/[. ]+$/, "");
-  return cleaned.length > 0 ? cleaned : "Untitled";
+  // Cut by code point, not by UTF-16 unit: slicing a name mid-emoji leaves a
+  // lone surrogate, which is not a filename any OS will take. The trailing
+  // strip runs again afterwards because the cut can land on a space or a dot,
+  // and Windows won't have a name ending in either. Two names that shorten to
+  // the same thing collide like any other same-name siblings and pick up the
+  // usual " (2)" — see buildPathIndex.
+  const capped =
+    cleaned.length > MAX_SEGMENT_CHARS
+      ? Array.from(cleaned).slice(0, MAX_SEGMENT_CHARS).join("").replace(/[. ]+$/, "")
+      : cleaned;
+  return capped.length > 0 ? capped : "Untitled";
 }
 
 /**
@@ -570,10 +580,14 @@ export class PathTooLongError extends Error {
     readonly nodeName: string,
     readonly path: string,
   ) {
+    // Deliberately doesn't say "shorten the page name" any more: names are
+    // capped on disk now (see sanitizeSegment), so the only things that still
+    // add up are how deep the page sits and how long a path the project folder
+    // itself starts from — and the second one is the bigger lever by far.
     super(
       `"${nodeName}" is nested too deeply to save — its file path is ${path.length} characters, ` +
-        `over the ${MAX_PATH_CHARS} this app allows for Windows compatibility. ` +
-        `Shorten the page name, or move it somewhere less deeply nested.`,
+        `over the ${MAX_PATH_CHARS} Windows will open. Move it further up the tree, ` +
+        `or keep your project folder closer to the top of the drive.`,
     );
     this.name = "PathTooLongError";
   }

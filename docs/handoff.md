@@ -147,13 +147,33 @@ is below.
   case-insensitive filesystems, so `Ruins` and `ruins` are one file to the OS. The
   displayed segment keeps the user's own capitalisation — only the test folds.
 
-- **`MAX_PATH_CHARS` is 200, not Windows' 260.** A directory-storage node's own
-  path is only a prefix; its `_page.json` and every child beneath it are longer.
-  A node sitting exactly at the OS limit has nowhere to put its contents.
+- **`MAX_PATH_CHARS` is 255, near Windows' 260 rather than well short of it.**
+  It was 200 until 2026-08-11, holding back headroom for a node's children on
+  the theory that a directory-storage node's own path is only a prefix. That
+  was wrong twice over: the check already runs on the node's *own full file
+  path*, and a child too long to write fails its own check when it's written.
+  The headroom only ever bought refusing pages Windows would have taken — five
+  levels of ordinary page names under `OneDrive\Documents\Anamnesis` is 203
+  characters, and the user hit that on a project no other app objected to.
+  Don't raise it past ~255 either: file-per-page exists so her writing stays
+  legible outside the app, and a path Explorer or a sync client won't open
+  isn't legible, whatever `\\?\` would allow.
 
-- **Over-long paths are refused, not truncated.** `docs/spec.md` offered
-  truncation ("keep the full name in the JSON body"). Silently renaming the user's
-  files to make them fit is worse than refusing and saying why.
+- **A single name is capped at `MAX_SEGMENT_CHARS` (96); the total path is
+  refused.** Two different guards for two different problems. One absurd name —
+  a pasted paragraph as a page title — is shortened on disk, because the page's
+  real name lives in its JSON and the tree reads it from there, so nothing the
+  user sees changes. Depth is refused, because there's nothing to shorten.
+
+  This reverses a 2026-07-30 decision recorded in `docs/spec.md` that
+  over-long paths would be refused and never truncated, on the grounds that
+  silently renaming the user's files is worse than saying why. That still holds
+  as a *general* rule, and the cap is set to respect it: 96 is more than double
+  the longest name in any of the user's worlds, so it only fires on input no
+  one would call a title. What changed the balance is that the alternative
+  isn't a polite refusal, it's the page not saving at all — which is the
+  complaint that prompted it. Don't lower this number: doing so would change
+  where existing pages resolve to and strand their old files.
 
 - **Images are addressed by filename, never derived from the page's name** — an
   uploaded image outlives any rename or move of the page it belongs to.
