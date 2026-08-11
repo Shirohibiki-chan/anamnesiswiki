@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
+
+### Additions
+
+- **`Ctrl-N` and `Ctrl-P` walk any list of suggestions**, alongside the arrow keys — the quick switcher, the search box in Settings, and the slash, `@` and `[[` menus in the editor. Same keys everywhere, on every platform. They're a shorter reach than the arrows when your hands are already typing, which is where all four of those lists live.
+
+### Adjustments
+
+- **`Escape` out of renaming a page leaves you in the sidebar.** It used to cancel the rename and drop keyboard focus entirely, so the arrow keys stopped working until you clicked back into the tree.
+- **`Escape` drops a multi-selection back to the page you're on.** Selecting several pages by accident used to need a click somewhere to undo. It leaves the page you're reading open — the selection and the open page are the same thing here, so clearing it outright would close what you were looking at.
+
 ## 2026-08-10 — double-clicking a page in the sidebar opens it
 
 ### Adjustments

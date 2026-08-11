@@ -7,7 +7,6 @@
 // "[[query" text, so no leftover brackets are ever left behind.
 import { filterSuggestionItems, SuggestionMenu, type BlockNoteEditor } from "@blocknote/core";
 import { useExtension, useExtensionState } from "@blocknote/react";
-import type { KeyboardEvent } from "react";
 import type { Node } from "../../constants/schema";
 import { getMentionMenuItems } from "./mention-menu-items";
 
@@ -25,7 +24,11 @@ export function useWikilinkBracketConfirm(
     selector: (state) => (state?.triggerCharacter === WIKILINK_TRIGGER ? state.query : undefined),
   });
 
-  return function onKeyDownCapture(event: KeyboardEvent) {
+  // Structural rather than a React or DOM `KeyboardEvent`: this is no longer
+  // wired straight to the element. use-editor composes it behind one capture
+  // handler with the suggestion-list keys, and only these two members are what
+  // this actually needs from the event.
+  return function onKeyDownCapture(event: { key: string; preventDefault: () => void }) {
     if (event.key !== "]" || query === undefined || !query.endsWith("]")) return;
 
     const items = filterSuggestionItems(getMentionMenuItems(editor, nodes, currentNodeId), query.slice(0, -1));
