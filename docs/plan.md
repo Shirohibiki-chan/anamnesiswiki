@@ -250,9 +250,29 @@ and being shipped that way, one PR per bullet.
   so a Mac user has to rebind. Per-platform defaults are the fix if that ever
   matters.
 
-- **Focus a folder as the top of the tree**, with a path bar above it to climb back out. Right-click → *Focus here*, and that folder's contents sit at the root; the path bar is the way back. This is the answer to nesting that has gone too deep to read — the user hit it at nine levels, where the names are gone entirely and only indent is left. It's the same move the universe selector makes (Phase 22), one level down, and the two compose: focus inside whichever universe you're in.
+- ~~**Focus a folder as the top of the tree**~~ — 2026-08-11. Right-click →
+  *Focus here*; that node's **children** become the tree's roots, and the node
+  itself is named in the path bar above, which is the way back out. The answer
+  to nesting gone too deep to read — the user hit it at nine levels, where the
+  names are gone and only indent is left.
 
-  **Three cheaper things already take the pressure off**, which is why this is one Phase 14 line and not its own phase. Indent guides and an 18px indent shipped 2026-08-08 and buy back most of a name at eight levels. The universe selector removes two levels from the AU tree on its own. Focus is for what's left.
+  **Four decisions bind, and each rules out a way of being wrong:**
+  - **Session-only, never written to disk.** Reopening a project into a tree
+    showing a fraction of itself, with no memory of having asked for that,
+    reads as pages having gone missing. Same reasoning as `navHistory`.
+  - **The path bar is not optional.** A sidebar quietly showing part of the
+    project with nothing saying so *is* the failure mode; the bar is what makes
+    it read as a view rather than a loss.
+  - **Selecting a page outside the focus drops the focus** (`applySelection`).
+    The tree physically can't show it, so the alternative is the sidebar
+    silently not following a search result or a wikilink.
+  - **A drop at the tree's root means "into the focused node"**, not into the
+    project (`parentId ?? focusedId` in TreePanel). Without that, dragging a
+    page to the top of a focused tree flings it to the one place the person
+    doing it can't currently see.
+
+  *Focus here* is hidden on a page with nothing inside it: an empty tree under
+  a path bar looks exactly like the project having disappeared.
 
   **Obsidian's Breadcrumbs plugin is not this.** Raised by the user 2026-08-08 and checked: it never touches the file explorer. It builds note-to-note hierarchies out of frontmatter and gives trail, matrix, prev/next and diagram views over them. Most of what it does is already in this plan under other names — the trail is the clickable breadcrumb already sitting above every page title (`page/PageTitle.tsx`), its tree and matrix views are Phase 18's Subpage Index and Backlinks blocks, prev/next chains are Phase 25's storylines, and its diagrams are Phase 24's graphs. Nothing left to lift from it.
 - ~~**Double-click expands a folder**~~ — 2026-08-10. The swap it was always

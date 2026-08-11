@@ -9,11 +9,12 @@ import { useSearchMatcher, useTreeData, type TreeSearchMode } from "../../hooks/
 import { useElementSize } from "../../hooks/use-element-size";
 import type { TreeNodeData } from "../../services/tree-service";
 import { TreeItem } from "./TreeItem";
+import { TreePathBar } from "./TreePathBar";
 import { TreeSearch } from "./TreeSearch";
 
 export function TreePanel() {
-  const { project, renameNode, moveNodes, setExpanded, selectNode } = useProject();
-  const { treeData, getAncestorChain } = useTreeData();
+  const { project, renameNode, moveNodes, setExpanded, selectNode, focusedId, setFocus } = useProject();
+  const { treeData, focusPath, getAncestorChain } = useTreeData();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<TreeSearchMode>("all");
@@ -98,7 +99,11 @@ export function TreePanel() {
   return (
     <div className="tree-panel">
       <TreeSearch value={searchQuery} onChange={setSearchQuery} mode={searchMode} onModeChange={setSearchMode} />
+      {focusPath.length > 0 && (
+        <TreePathBar projectName={project?.name ?? "Project"} path={focusPath} onFocus={setFocus} />
+      )}
       <div className="tree-panel-body" ref={containerRef} onKeyDownCapture={handleEscape}>
+
         {size.height > 0 && (
           <Tree<TreeNodeData>
             ref={treeApiRef}
@@ -128,7 +133,13 @@ export function TreePanel() {
               // All of them go in one call — a dragged multi-selection arrives
               // here as several ids, and moving them one at a time races on
               // disk (see the store's moveNodes).
-              void moveNodes(dragIds, parentId, index);
+              //
+              // `parentId` is null for a drop at the tree's own root, and
+              // while focused that root *is* the focused node — not the
+              // project. Without the fallback, dragging a page to the top of a
+              // focused tree would fling it out to the project root, which is
+              // the one place the person doing it can't currently see.
+              void moveNodes(dragIds, parentId ?? focusedId, index);
             }}
             onToggle={(id) => setExpanded(id, treeApiRef.current?.isOpen(id) ?? false)}
             // The page view follows the row you last touched, not the topmost

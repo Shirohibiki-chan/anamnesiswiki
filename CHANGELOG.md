@@ -10,7 +10,6 @@
 
 - **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
   - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
-
 ## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
 
 ### Additions
@@ -21,6 +20,16 @@
 
 - **`Escape` out of renaming a page leaves you in the sidebar.** It used to cancel the rename and drop keyboard focus entirely, so the arrow keys stopped working until you clicked back into the tree.
 - **`Escape` drops a multi-selection back to the page you're on.** Selecting several pages by accident used to need a click somewhere to undo. It leaves the page you're reading open — the selection and the open page are the same thing here, so clearing it outright would close what you were looking at.
+
+## 2026-08-10 — focus the sidebar on one branch
+
+### Additions
+
+- **Right-click a page or folder → *Focus here*, and the sidebar shows only what's inside it.** Its contents sit at the top of the tree, and a bar above them shows the way back — project name, then each step down to where you are, all clickable. This is the answer to a branch nested deeper than the sidebar can show legibly, where the names have run off the edge and only the indent is left.
+  - The bar is always there while you're focused, so the sidebar never quietly shows part of your world with nothing saying so.
+  - Opening a page that isn't inside the focused branch — from search, or by following a link — steps back out on its own, rather than leaving the sidebar stuck somewhere you aren't.
+  - Dragging a page to the top of a focused tree puts it *in* the folder you're focused on, not out at the project root.
+  - It resets when you close the project. Reopening always shows the whole thing.
 
 ## 2026-08-10 — double-clicking a page in the sidebar opens it
 
