@@ -16,6 +16,7 @@ import {
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import * as fsService from "../services/filesystem-service";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
+import { enqueueWrite } from "../services/write-queue";
 import { getDefaultTabs } from "../services/template-registry";
 import { orderSiblings } from "../services/tree-service";
 import {
@@ -264,8 +265,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // This has already cost the user real pages (2026-07-31: a half-completed
   // move left files stranded under temp names and said nothing). Don't
   // reintroduce a bare `void fsService.…` here.
-  const track = (work: Promise<unknown>): void => {
-    void work.then(markSaved).catch(recordSaveError);
+  //
+  // Takes a function rather than a promise, and that distinction is the whole
+  // point: a promise passed in here has already started, and two of these
+  // overlapping is what desynced the graph from the disk on 2026-08-11. Every
+  // one of them is queued in call order instead — see services/write-queue.ts
+  // for why ordering matters even though none of this is awaited.
+  const track = (work: () => Promise<unknown>): void => {
+    void enqueueWrite(work).then(markSaved).catch(recordSaveError);
   };
 
   const captureOrdering = (project: Project): OrderingSnapshot => ({
@@ -346,8 +353,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // Through addNodes, not saveNodes: undoing a delete can put the last child
     // back into a page that had converted to a flat file when it left, and
     // that page's own file has to move back before its child is written.
-    if (restored.length > 0) await fsService.addNodes(rootPath, restored, previousNodes, Object.values(nextNodes));
-    await fsService.saveProject(rootPath, nextProject);
+    // Queued like every other write, even though this one is awaited: awaiting
+    // orders it against *this* function's own steps, not against a page save
+    // the user set off a moment before pressing undo.
+    if (restored.length > 0) {
+      await enqueueWrite(() => fsService.addNodes(rootPath, restored, previousNodes, Object.values(nextNodes)));
+    }
+    await enqueueWrite(() => fsService.saveProject(rootPath, nextProject));
 
     set({ nodes: nextNodes, project: nextProject });
     markSaved();
@@ -388,7 +400,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     if (!rootPath || !project) return;
     const nextProject: Project = { ...project, homeNodeId };
     set({ project: nextProject });
-    track(fsService.saveProject(rootPath, nextProject));
+    track(() => fsService.saveProject(rootPath, nextProject));
   };
 
   return {
@@ -589,9 +601,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const parent = input.parentId ? nextNodes[input.parentId] : undefined;
       if (parent) cancelSave(parent.id);
       track(
-        fsService.addNodes(rootPath, parent ? [parent, node] : [node], Object.values(nodes), Object.values(nextNodes)),
+        () => fsService.addNodes(rootPath, parent ? [parent, node] : [node], Object.values(nodes), Object.values(nextNodes)),
       );
-      if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
+      if (nextProject !== project) track(() => fsService.saveProject(rootPath, nextProject));
 
       const orderingAfter = captureOrdering(nextProject);
       record(
@@ -723,7 +735,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // and leave the old file behind. When the shape doesn't change there's
       // nothing to move and this is just the save. See
       // filesystem-service's relocateNode.
-      track(fsService.relocateNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), nodeId));
+      track(() => fsService.relocateNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), nodeId));
     },
 
     updateNodeProperty(nodeId, key, value) {
@@ -862,7 +874,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // if this node still exists (it could have been deleted mid-upload).
       const previousImage = get().nodes[nodeId]?.image;
       get().updateNode(nodeId, { image: fileName });
-      if (previousImage) track(fsService.deleteAssetImage(rootPath, previousImage));
+      if (previousImage) track(() => fsService.deleteAssetImage(rootPath, previousImage));
     },
 
     async clearNodeImage(nodeId) {
@@ -886,7 +898,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       await fsService.saveAssetImage(rootPath, fileName, data);
       const previousBanner = get().nodes[nodeId]?.banner;
       get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50 });
-      if (previousBanner) track(fsService.deleteAssetImage(rootPath, previousBanner));
+      if (previousBanner) track(() => fsService.deleteAssetImage(rootPath, previousBanner));
     },
 
     setBannerFocus(nodeId, focusY) {
@@ -924,7 +936,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const updated: Node = { ...existingAfter, name, updatedAt: Date.now() };
       const nextNodes = { ...nodesAfter, [id]: updated };
       set({ nodes: nextNodes });
-      track(fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id));
+      track(() => fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id));
 
       // A rename is its own inverse, so both halves are the ordinary action —
       // no new filesystem path is involved in undoing one.
@@ -1004,8 +1016,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       }
 
       set({ nodes: nextNodes, project: nextProject });
-      track(fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present));
-      if (nextProject !== projectAfter) track(fsService.saveProject(rootPathAfter, nextProject));
+      track(() => fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present));
+      if (nextProject !== projectAfter) track(() => fsService.saveProject(rootPathAfter, nextProject));
 
       // Where each one came from. A multi-selection can be dragged out of
       // several different folders at once, so putting them back is one move
@@ -1115,17 +1127,21 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
       set({ nodes: nextNodes, project: nextProject, navHistory });
       track(
-        fsService.deleteNodes(rootPath, removalRoots.map((id) => nodes[id]), allNodesBefore, Object.values(nextNodes)),
+        () => fsService.deleteNodes(rootPath, removalRoots.map((id) => nodes[id]), allNodesBefore, Object.values(nextNodes)),
       );
-      track(fsService.saveProject(rootPath, nextProject));
+      track(() => fsService.saveProject(rootPath, nextProject));
       // A deleted node's own uploaded image/banner (see ImageSlot Phase 6,
       // PageBanner Phase 8) lives in the flat assets/ dir, not inside the
       // node's own file/directory, so fsService.deleteNodes above never
       // touches either — clean them up here or they orphan forever.
       for (const removedId of toRemove) {
         const removed = nodes[removedId];
-        if (removed?.image) track(fsService.deleteAssetImage(rootPath, removed.image));
-        if (removed?.banner) track(fsService.deleteAssetImage(rootPath, removed.banner));
+        // Pulled out of the node first: the write runs later now that it's
+        // queued, and a narrowed optional property doesn't survive into a
+        // closure the way a plain local does.
+        const { image, banner } = removed ?? {};
+        if (image) track(() => fsService.deleteAssetImage(rootPath, image));
+        if (banner) track(() => fsService.deleteAssetImage(rootPath, banner));
       }
 
       // Descendants as well as what was selected — undoing a folder delete has
@@ -1207,8 +1223,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // page does — a copy lands beside its original, so its parent can't
       // convert, but a same-named sibling appearing does shift collision
       // suffixes, and that has always needed the planner.
-      track(fsService.addNodes(rootPath, clones, Object.values(nodes), Object.values(nextNodes)));
-      if (nextProject !== project) track(fsService.saveProject(rootPath, nextProject));
+      track(() => fsService.addNodes(rootPath, clones, Object.values(nodes), Object.values(nextNodes)));
+      if (nextProject !== project) track(() => fsService.saveProject(rootPath, nextProject));
 
       // The clones' own copies of the pictures, read only if the user actually
       // undoes — the undo is about to delete those files, and redo needs them

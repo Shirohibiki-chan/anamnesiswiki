@@ -1,3 +1,5 @@
+import { enqueueWrite } from "./write-queue";
+
 // Plain service, not a hook — debounce timers must survive React re-renders.
 const DEBOUNCE_MS = 300;
 
@@ -21,9 +23,18 @@ export function setSaveErrorHandler(handler: ((key: string, error: unknown) => v
   saveErrorHandler = handler;
 }
 
+// Queued rather than run on the spot, for the same reason the store's writes
+// are: a debounced save resolves its own path from the current graph, and a
+// relocation that's still in flight hasn't finished making that path true yet.
+//
+// Safe only because nothing inside a queued task ever calls back into
+// `flushSave` — that would be a task waiting on the queue it's already at the
+// head of. The callers that flush (rename, move) do it *before* handing their
+// own work over, which is also the order the comment above `flushSave`
+// describes.
 async function runSave(key: string, save: () => Promise<void> | void): Promise<void> {
   try {
-    await save();
+    await enqueueWrite(save);
   } catch (error) {
     saveErrorHandler?.(key, error);
     throw error;

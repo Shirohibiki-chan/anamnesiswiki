@@ -186,6 +186,28 @@ is below.
   the app said nothing and carried on as though it had worked. Don't reintroduce
   a bare `void fsService.…` — the whole point is that there's one place to look.
 
+- **Every disk write is also *ordered*, through `write-queue.ts`.** `track()`
+  takes a function rather than a promise for exactly this reason — a promise
+  handed in has already started. Node paths are recomputed from the in-memory
+  graph on every write, so an operation's plan describes the disk as it will be
+  once everything issued before it has landed; two overlapping operations break
+  that, and the second one renames from a path the first hasn't written yet.
+  Tauri's fs calls are IPC round-trips, so "make a page, then rename it" is
+  genuinely two writes in flight. On 2026-08-11 that left three pages with no
+  file of their own and one folder that could never save again. Not awaiting is
+  still right — the UI must not block on a disk — but not-awaited must not mean
+  unordered. Nothing inside a queued task may call `flushSave`.
+
+- **A rename whose source isn't on disk is not a failure.** `applyRelocations`
+  attempts the rename, and only if it fails *and* `exists` confirms the source
+  is gone does it skip: the node is in memory and every caller re-saves it at
+  its new path straight after, so skipping repairs the gap. Throwing instead
+  aborts the write that would have fixed things, and because paths are
+  recomputed every time, the next operation plans the same impossible rename —
+  permanently. The order matters: letting `exists` decide up front would let one
+  wrong answer skip a move whose file really is there, leaving two copies of one
+  node id on disk.
+
 - **`updateNode` snapshots the graph when the debounce *fires*, not when it's
   scheduled.** A 300ms-old snapshot can resolve against a world that no longer
   exists — a sibling renamed inside the window shifts collision suffixes and the

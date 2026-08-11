@@ -822,13 +822,41 @@ async function pruneEmptyDir(rootPath: string, item: Relocation): Promise<void> 
   }
 }
 
+// A rename can fail for two quite different reasons, and treating them the
+// same is what turns one bad write into a folder that can never save again.
+// If the OS refused — a file a sync client has locked, a full disk — that is a
+// real failure and the caller has to hear about it. If the source simply isn't
+// there, there is nothing to move: the node is still in memory, and every
+// caller of applyRelocations rewrites the nodes it acted on at their new paths
+// immediately afterwards (see relocateNodes and addNodes). Throwing in that
+// case aborts the write that would have put things right, so the gap survives
+// — and since paths are recomputed from the graph every time, the *next*
+// operation plans the same impossible rename and fails identically, forever.
+// That is exactly how one folder stopped saving anything on 2026-08-11.
+//
+// Confirmed after the fact rather than checked before: `exists` deciding on
+// its own would let a moment's wrong answer skip a move whose file really is
+// there, leaving the old copy on disk beside the new one — one node id in two
+// places, which is the failure this whole module is shaped around avoiding.
+// Attempting the rename first means the only way to reach the skip is for the
+// rename to have genuinely failed *and* the source to genuinely be gone.
+async function renameOrConfirmMissing(oldPath: string, newPath: string): Promise<boolean> {
+  try {
+    await rename(oldPath, newPath);
+    return true;
+  } catch (error) {
+    if (await exists(oldPath)) throw error;
+    return false;
+  }
+}
+
 async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<void> {
   if (plan.length === 0) return;
 
   if (plan.length === 1) {
     const [only] = plan;
     await mkdir(joinPath(rootPath, ...only.newSegments.slice(0, -1)), { recursive: true });
-    await rename(joinPath(rootPath, ...only.oldSegments), joinPath(rootPath, ...only.newSegments));
+    await renameOrConfirmMissing(joinPath(rootPath, ...only.oldSegments), joinPath(rootPath, ...only.newSegments));
     await pruneEmptyDir(rootPath, only);
     return;
   }
@@ -849,7 +877,9 @@ async function applyRelocations(rootPath: string, plan: Relocation[]): Promise<v
     for (const item of plan) {
       const oldPath = joinPath(rootPath, ...item.oldSegments);
       const tempPath = joinPath(rootPath, ...item.oldSegments.slice(0, -1), `.anamnesis-move-${crypto.randomUUID()}`);
-      await rename(oldPath, tempPath);
+      // Nothing there to stage means nothing to put back either, so it never
+      // joins `staged` and the rollback below can't try to un-move it.
+      if (!(await renameOrConfirmMissing(oldPath, tempPath))) continue;
       staged.push({ tempPath, oldPath, newSegments: item.newSegments });
     }
     while (staged.length > 0) {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-11 — pages that couldn't be saved, and a folder that stayed broken
+
+### Fixes
+
+- **Two things you did at once could leave a page with no file behind it.** Making a page and then renaming it, or making a page and then putting something inside it, sends two writes to disk — and nothing was keeping them in order. The second one would go looking for a file the first hadn't finished writing, fail, and stop. Every write the app makes now goes in a queue and happens in the order you did things. Nothing waits on it; the app is exactly as quick as before.
+  - **This is what was behind the red "some changes couldn't be saved" box**, and why the list in it kept getting longer.
+  - **Worst case, a page you'd just made was never written at all.** The failure happened before the new page got its turn, so it was in the sidebar and nowhere else until you reopened the project.
+
+- **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
+  - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
+
 ## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
 
 ### Additions
