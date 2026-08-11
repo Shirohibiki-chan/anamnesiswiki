@@ -10,9 +10,10 @@
 // alone: with a reposition drag living on the picture, a stray click opening a
 // file dialog would fight it.
 import { useRef, useState, type PointerEvent } from "react";
-import { Image as ImageIcon, Move, PanelTop, Type, Upload, X } from "lucide-react";
+import { Expand, Image as ImageIcon, Move, PanelTop, Type, Upload, X } from "lucide-react";
 import { MAX_IMAGE_BYTES } from "../../constants/limits";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useOpenSingleImage } from "../../hooks/use-lightbox";
 import { useNodeImage } from "../../hooks/use-node-image";
 import { useProject } from "../../hooks/use-project";
 
@@ -33,6 +34,7 @@ function extensionFor(file: File): string {
 export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: ImageSlotProps) {
   const { setNodeImage, clearNodeImage, setImageAlt, setImageFocus, clearImageFocus, setBannerFromImage } = useProject();
   const { confirmDestructive } = useDialogs();
+  const openImage = useOpenSingleImage();
   const { url: imageUrl, status: imageStatus } = useNodeImage(image);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,6 +178,20 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
                   onClick={() => inputRef.current?.click()}
                 >
                   <Upload size={13} />
+                </button>
+                {/* Phase 16's fifth slot button. A button rather than a click
+                    on the picture itself, which is the one thing this slot
+                    can't have: the reposition drag already starts there, and
+                    a click that both begins a drag and opens a window is how
+                    you get one by accident every time you try the other. */}
+                <button
+                  type="button"
+                  className="property-image-tool"
+                  aria-label="Open image full size"
+                  title="Open image full size"
+                  onClick={() => openImage(imageUrl, imageAlt ?? "")}
+                >
+                  <Expand size={13} />
                 </button>
                 <button
                   type="button"

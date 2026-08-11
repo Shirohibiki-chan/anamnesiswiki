@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-11 — pictures open full size
+
+### Additions
+
+- **Click a picture in a page and it opens full size**, filling the window over a dark backdrop. Press **Esc** or click anywhere off the picture to close it.
+  - **The file name is shown** along the top — the name the file had on your computer when you added it, not the jumble it's stored under.
+  - **Arrows move between every picture on the page**, not just the one you clicked, with a count so you know where you are. **←** and **→** work too, and they wrap around, so going back one from the first lands on the last.
+  - **Scroll to zoom in**, toward wherever the pointer is, and **drag the picture to move around** once it's bigger than the window. There are **+ / −** buttons and a percentage you can click to go back to fit. **+**, **−** and **0** on the keyboard do the same.
+- **The sidebar picture has a fifth button: open it full size.** A button rather than clicking the picture, because dragging the picture is already how you reposition it — one click can't sensibly start a drag and open a window.
+
+### Worth knowing
+
+- **Clicking a picture still selects it as well**, so when you close the full-size view its toolbar is right there — that's where Save a copy and the caption are. Resizing a picture by its edges, and clicking its caption to edit it, both work exactly as before.
+
 ## 2026-08-11 — saving a picture, and quieter captions
 
 ### Fixes

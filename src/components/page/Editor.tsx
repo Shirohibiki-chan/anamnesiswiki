@@ -16,6 +16,7 @@ import {
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { SaveImageButton } from "./SaveImageButton";
 
 type EditorProps = {
@@ -30,9 +31,14 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
     content,
     onContentChange,
   );
+  // Clicking a picture opens it full size. The listener lives on this wrapper
+  // rather than on anything BlockNote renders, so it covers every picture in
+  // the tab without a custom image block — see hooks/use-lightbox.ts.
+  const imageLightboxRef = useEditorImageLightbox();
 
   return (
     <div
+      ref={imageLightboxRef}
       className="editor-shell-wrapper"
       onClick={(e) => {
         // BlockNote's own editable area shrink-wraps to its content, so a

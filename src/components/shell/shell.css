@@ -2094,3 +2094,143 @@ ol.release-notes-list {
 .theme-edit-name::placeholder {
   color: var(--color-text-placeholder);
 }
+
+/* --- Lightbox ---
+   A picture filling the window. See components/shell/Lightbox.tsx.
+
+   Not `.ui-backdrop`: that one centres a panel inside itself, and this needs a
+   column — bar on top, picture filling what's left — with a much heavier scrim,
+   since the whole point is that the app stops competing with the photo. Above
+   `.ui-backdrop`'s z-index so a picture opened from a modal lands on top of it
+   rather than behind. */
+
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.lightbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  color: var(--color-on-scrim);
+}
+
+/* One line, ellipsised — a file name is worth showing and never worth
+   wrapping the bar for. `min-width: 0` because a flex child won't shrink below
+   its content otherwise, which is what pushes the controls off the edge. */
+.lightbox-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.75;
+}
+
+.lightbox-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.lightbox-count {
+  margin-right: var(--space-sm);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.lightbox-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-scrim);
+  cursor: pointer;
+}
+
+.lightbox-btn:hover {
+  background: var(--color-scrim-solid);
+}
+
+/* `overflow: hidden` is what makes panning mean anything: the picture is
+   scaled past the stage and clipped by it, rather than growing the page.
+   It's also what the pan clamp measures against, and the reason that clamp
+   reads `clientWidth`: overflow clips at the padding box, so a picture can be
+   dragged until its edge meets that box and no further.
+
+   The side padding keeps the arrows off a fit-size picture; the top keeps it
+   off the bar, which it otherwise sits flush against. */
+.lightbox-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--space-lg) var(--space-3xl) var(--space-2xl);
+}
+
+/* Fits the stage at rest, and is never blown up past its own size — a small
+   picture shown at 400% would be a wall of pixels presented as a feature. */
+.lightbox-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  /* The transform is set inline from the current zoom and pan. No transition:
+     it would fight a drag, arriving a frame behind the pointer the whole way. */
+  transform-origin: center;
+  user-select: none;
+}
+
+.lightbox-image-zoomed {
+  cursor: grab;
+}
+
+.lightbox-image-zoomed:active {
+  cursor: grabbing;
+}
+
+.lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-scrim-soft);
+  color: var(--color-on-scrim);
+  cursor: pointer;
+}
+
+.lightbox-arrow:hover {
+  background: var(--color-scrim-solid);
+}
+
+.lightbox-arrow-prev {
+  left: var(--space-lg);
+}
+
+.lightbox-arrow-next {
+  right: var(--space-lg);
+}

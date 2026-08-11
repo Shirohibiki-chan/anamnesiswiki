@@ -68,6 +68,18 @@ export const IMPORT_IMAGE_CONCURRENCY = 6;
 // it is faster than following the link.
 export const PREVIEW_EXCERPT_CHARS = 280;
 
+// How far the lightbox will zoom, and by how much per step. 1 is fit-to-window
+// and also the floor: a picture smaller than the window is shown at the size it
+// fits, never blown up past it, so "zoom out" bottoms out at the whole picture
+// on screen rather than a stamp in the middle of it. 8 is past the point where
+// anything is legible and exists to stop a trackpad flick zooming to infinity.
+//
+// The step is shared by the buttons, the +/- keys and one notch of the wheel,
+// so a notch and a click move by the same amount.
+export const LIGHTBOX_MIN_SCALE = 1;
+export const LIGHTBOX_MAX_SCALE = 8;
+export const LIGHTBOX_ZOOM_STEP = 1.3;
+
 // How long the pointer has to stay on a link before its preview appears. This
 // number is the difference between a convenience and something you learn to
 // steer around: with no delay, a card fires on every link the pointer crosses
