@@ -18,3 +18,16 @@ src/fonts-library.css -diff -merge
 # The bundled font files themselves. Marked explicitly so no eol normalisation
 # can ever touch them, `* text=auto` above notwithstanding.
 *.woff2 binary
+
+# Two branches that both add a section to the top of the changelog conflict on
+# every merge after the first, even though the sections have nothing to do with
+# each other — they just land at the same line. With several PRs open at once
+# that means re-resolving the same non-conflict repeatedly before anything can
+# be merged.
+#
+# `union` keeps both sides instead of stopping, which is what resolving it by
+# hand was doing anyway. Safe here specifically because the file is append-only
+# at the top and nothing rewrites an existing entry: a genuine disagreement
+# about the same lines would be merged silently rather than flagged, which
+# would be a bad trade for source files. Don't extend it to any of them.
+CHANGELOG.md merge=union
