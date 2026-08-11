@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-11 — the title stops grabbing the cursor
+
+### Fixes
+
+- **Opening a page you haven't named yet no longer highlights its title for renaming.** A page you made and left as "Untitled" did this every single time you clicked back onto it — the title turned into a text box with everything selected, so the next thing you typed would have replaced the name. It now only happens once, on the page you've *just* made, which is the moment it was meant for. Any other time, the title is click-to-edit like it always was.
+
 ## 2026-08-11 — turn a page you like into a template
 
 ### Additions

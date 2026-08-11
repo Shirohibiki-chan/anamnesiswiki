@@ -132,6 +132,22 @@ export type ProjectStoreState = {
   // worth writing to disk. Carries the node id as well so PageView can ignore
   // a leftover from an earlier jump instead of applying it to the wrong page.
   pendingFocus: { nodeId: string; tabId: string } | null;
+  // A page created a moment ago, still called "Untitled", whose title should
+  // open straight into its rename input. Session-only and never written to
+  // disk, like pendingFocus above, and it carries a node id for the same
+  // reason: so it can only ever apply to the page it was asked for.
+  //
+  // Being a one-shot is the whole point. The rule used to be "any blank page
+  // with no tabs" — a state a page *stays* in until it's answered — so every
+  // click back onto an unfinished page grabbed the keyboard and highlighted
+  // the title as though a rename had been asked for. Naming a page you just
+  // made is help; doing it again on every visit is the title fighting you for
+  // the cursor.
+  pendingRenameId: string | null;
+  // Called by the create hook just *before* it opens the new page: the one
+  // selection that lands on the page named here keeps the request, and every
+  // other navigation clears it. See applySelection.
+  requestRename: (id: string) => void;
   // Which node the tree is showing the inside of — "Focus here" in the
   // right-click menu, for a branch nested deeper than the sidebar can render
   // legibly. Its *children* become the tree's roots; the node itself is named
@@ -469,7 +485,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
    * already does it for every selection however it was made.
    */
   const applySelection = (id: string | null, tabId: string | undefined, navHistory: NavHistory): void => {
-    const { rootPath, project, nodes, focusedId } = get();
+    const { rootPath, project, nodes, focusedId, pendingRenameId } = get();
     if (!rootPath || !project) return;
     const nextProject: Project = { ...project, selectedId: id };
     // Landing outside the focused branch drops the focus. The tree physically
@@ -481,6 +497,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     set({
       project: nextProject,
       pendingFocus: id && tabId ? { nodeId: id, tabId } : null,
+      // Survives only the one selection that opens the page it names — which
+      // is the selection the create hook makes a line after asking. Every
+      // other navigation clears it, so coming back to a page you never got
+      // round to naming opens it like any other page.
+      pendingRenameId: pendingRenameId === id ? id : null,
       navHistory,
       ...(leavesFocus ? { focusedId: null } : {}),
     });
@@ -520,6 +541,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     recoveredCount: 0,
     reunitedNames: [],
     pendingFocus: null,
+    pendingRenameId: null,
     focusedId: null,
     navHistory: EMPTY_NAV_HISTORY,
 
@@ -570,6 +592,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // open. Undo is for edits, and Back is for pages.
     setFocus(id) {
       set({ focusedId: id });
+    },
+
+    requestRename(id) {
+      set({ pendingRenameId: id });
     },
 
     dismissSkippedFiles() {
@@ -701,6 +727,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         recoveredCount: 0,
         reunitedNames: [],
         pendingFocus: null,
+        pendingRenameId: null,
         focusedId: null,
         // Closing a project throws its history away with it — the ids in there
         // mean nothing in the next project, and carrying them over would let

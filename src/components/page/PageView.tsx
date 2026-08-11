@@ -20,8 +20,18 @@ import "./page.css";
 // it's matched against this node's id so a leftover from an earlier jump
 // can't open the wrong tab on the next page opened.
 export function PageView() {
-  const { project, nodes, pendingFocus, updateTabContent, toggleTabHidden, addTab, renameTab, deleteTab, reorderTabs } =
-    useProject();
+  const {
+    project,
+    nodes,
+    pendingFocus,
+    pendingRenameId,
+    updateTabContent,
+    toggleTabHidden,
+    addTab,
+    renameTab,
+    deleteTab,
+    reorderTabs,
+  } = useProject();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
 
@@ -64,9 +74,11 @@ export function PageView() {
       <div className="page-view">
         {/* The one page whose name is worth interrupting for: it was created a
             second ago called "Untitled", and the user is the only one who
-            knows what it should be. Everywhere else the title is click-to-edit
-            and stays out of the way. */}
-        <PageTitle node={node} startEditing={isUnanswered} />
+            knows what it should be. Everywhere else — including coming back to
+            this same page later, before it's been named — the title is
+            click-to-edit and stays out of the way. See the store's
+            pendingRenameId for why that distinction is the whole fix. */}
+        <PageTitle node={node} startEditing={pendingRenameId === node.id} />
         {isUnanswered ? (
           <NewPageLanding node={node} />
         ) : node.tabs.length === 0 ? (

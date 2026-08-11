@@ -549,6 +549,22 @@ is below.
 - **BlockNote's editable area shrink-wraps to its own text** and won't stretch via
   CSS, so clicking the empty space below a short page is handled in JS.
 
+- **"Just created" is a one-shot request, not a property of the page.**
+  `PageTitle` opens into its rename input when `pendingRenameId` names the page,
+  and the store clears that on any navigation except the one that opens the page
+  it names. The obvious-looking alternative — deriving it from the page's state,
+  as `startEditing={isUnanswered}` used to — is wrong: blank-with-no-tabs is a
+  state a page *stays* in until it's answered, so every visit back to an
+  unfinished page reopened the rename input and took the cursor. Anything that
+  should happen once, on creation, needs a one-shot; the page itself can't tell
+  you how long it's been there.
+
+- **Request the rename before selecting the new page, not after.** `PageTitle`
+  reads `startEditing` once at mount, so asking afterwards only works while
+  React batches the two store writes into one render. Asking first is correct
+  under either, and the render in between is harmless — the request names a page
+  that isn't on screen yet.
+
 ## LK import
 
 - **The LK project root is now a real Node** — the imported project's home page

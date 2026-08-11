@@ -20,10 +20,20 @@ import { useProjectStore } from "../state/project-store";
  */
 export function useCreatePageIn(): (parentId: string | null) => string | null {
   return useCallback((parentId: string | null) => {
-    const { project, addNode, selectNode } = useProjectStore.getState();
+    const { project, addNode, selectNode, requestRename } = useProjectStore.getState();
     if (!project) return null;
 
     const node = addNode({ parentId, templateKey: BLANK_TEMPLATE_KEY, name: UNTITLED_PAGE_NAME });
+    // Before the selection, not after: opening the page is what mounts the
+    // title, and the title reads "am I being named?" once, at mount. Asking
+    // afterwards would only land because React happens to batch the two
+    // updates into one render — true today, and not something a rename should
+    // quietly depend on. Selecting the page the request names keeps it (see
+    // the store's applySelection); everything else clears it.
+    //
+    // This is the only place the request is made. A page is worth interrupting
+    // for exactly once, when it's a second old and still called "Untitled".
+    requestRename(node.id);
     // Opening it is the point: the new page is empty and unnamed, so leaving
     // it sitting in the tree for the user to go and find would mean creating a
     // page and then having to work out which one it was.
