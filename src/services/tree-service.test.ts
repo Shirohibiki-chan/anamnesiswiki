@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTreeData, createSearchMatcher, getAncestorChain, getEffectiveColor } from "./tree-service";
+import { buildTreeData, createSearchMatcher, getAncestorChain, getEffectiveColor, isHiddenByAncestor } from "./tree-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -102,6 +102,49 @@ describe("getEffectiveColor", () => {
     const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
     const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note" });
     expect(getEffectiveColor("page", byId([canon, page]))).toEqual({ color: null, isOwner: false });
+  });
+});
+
+describe("isHiddenByAncestor", () => {
+  it("is false for a node with no ancestors at all", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, hidden: true });
+    expect(isHiddenByAncestor("canon", byId([canon]))).toBe(false);
+  });
+
+  it("excludes the node's own flag — that is the caller's to read", () => {
+    // The menu offers to un-hide a page it hid; a page hidden by its folder
+    // has nothing of its own to undo, and the two have to stay tellable apart.
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note", hidden: true });
+    expect(isHiddenByAncestor("page", byId([canon, page]))).toBe(false);
+  });
+
+  it("is true when the parent is hidden", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, hidden: true });
+    const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note" });
+    expect(isHiddenByAncestor("page", byId([canon, page]))).toBe(true);
+  });
+
+  it("is true through visible ancestors in between", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, hidden: true });
+    const sub = node({ id: "sub", name: "Sub", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "page", name: "Page", parentId: "sub", templateKey: "note" });
+    expect(isHiddenByAncestor("page", byId([canon, sub, page]))).toBe(true);
+  });
+
+  it("cannot be overridden from below, unlike the colour cascade", () => {
+    // A visible page inside a hidden folder is still unreachable to a reader,
+    // so there is nothing for a child to override. This is the one place the
+    // two cascades in this file deliberately disagree.
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, hidden: true });
+    const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note", hidden: false });
+    expect(isHiddenByAncestor("page", byId([canon, page]))).toBe(true);
+  });
+
+  it("is false when nothing in the chain is hidden", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note" });
+    expect(isHiddenByAncestor("page", byId([canon, page]))).toBe(false);
   });
 });
 

@@ -1,12 +1,12 @@
 // Page header — breadcrumb trail, template icon (tinted per effective
 // color), and a click-to-rename title. See docs/spec.md §Page view.
 import { useState } from "react";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, EyeOff, Home } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useProjectActions, useProjectHomeId, useProjectName } from "../../hooks/use-project";
-import { useAncestorChain, useEffectiveColor } from "../../hooks/use-tree-data";
+import { useAncestorChain, useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
 
 type PageTitleProps = {
   node: Node;
@@ -28,6 +28,8 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const Icon = getTemplateIcon(node.templateKey);
   const ancestors = useAncestorChain(node.id);
+  const hiddenByAncestor = useHiddenByAncestor(node.id);
+  const looksHidden = Boolean(node.hidden) || hiddenByAncestor;
 
   function commit(value: string) {
     const trimmed = value.trim();
@@ -81,6 +83,16 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
         {homeNodeId === node.id && (
           <span className="page-title-home-badge">
             <Home size={12} /> Home
+          </span>
+        )}
+        {/* The tree dims a hidden row, but the tree isn't where the writing
+            happens. Without this the one place you'd spend an hour is the one
+            place that never mentions nobody else will read it. Says which kind
+            it is, because "the folder this is in" is not something the page
+            can otherwise tell you. */}
+        {looksHidden && (
+          <span className="page-title-hidden-badge">
+            <EyeOff size={12} /> {node.hidden ? "Hidden" : "Inside a hidden page"}
           </span>
         )}
       </div>

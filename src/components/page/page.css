@@ -236,6 +236,25 @@
   font-weight: 500;
 }
 
+/* Same chip as the Home badge above, in muted rather than accent colours: Home
+   is a thing about this page worth pointing at, hidden is a state to be aware
+   of. Not a button — the switch is in the tree's right-click menu, where the
+   rest of what a page *is* lives. */
+.page-title-hidden-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  font-style: italic;
+}
+
 .page-title-input {
   flex: 1;
   min-width: 0;

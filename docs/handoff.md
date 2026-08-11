@@ -932,6 +932,28 @@ is below.
 
 ## Product decisions
 
+- **Hidden means "not shown to other people", never "out of the way".** A hidden
+  page stays in the tree, in search, in the same place, fully editable — it goes
+  dim and italic and nothing else. LK's wording is what she's matching ("only
+  admins can see hidden pages"), and it's the same idea `Tab.hidden` already
+  carried one level down. **Don't repurpose it as an archive or a declutter
+  toggle**, and don't add "collapse hidden pages out of the tree" to it: that's a
+  different feature that happens to share a word, and hanging it on this flag
+  means one switch doing two jobs she'd want set differently.
+
+- **The hidden cascade is derived, never stored.** A hidden page hides everything
+  under it, and only the page's own flag is written (`tree-service.ts`'s
+  `isHiddenByAncestor` walks up for the rest). Stamping descendants would strand
+  them hidden the moment one is dragged out, with nothing on screen saying why,
+  and un-hiding the parent would stop un-hiding anything. Going back to visible
+  deletes the field rather than writing `false`, so a page that was never hidden
+  and one that was un-hidden are the same file.
+
+- **Nothing consumes `Node.hidden` yet.** It ships ahead of the thing it's for:
+  Phase 1.5's publisher is what has to read it, and a publisher that doesn't
+  puts the pages she marked private on a website. Noted in `docs/plan.md` under
+  Phase 1.5 as well, because that's where someone will be looking.
+
 - **Folders get full-row colour tinting; pages get icon-only.** Folders are
   categorical anchors and should read as containers; pages are their contents and
   shouldn't compete. Colour cascades to descendants, and the node that *set* the

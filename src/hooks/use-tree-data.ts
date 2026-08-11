@@ -9,6 +9,7 @@ import {
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
+  isHiddenByAncestor,
   type EffectiveColor,
   type TreeNodeData,
   type TreeSearchMode,
@@ -50,6 +51,12 @@ export function useEffectiveColor(nodeId: string): EffectiveColor {
 
 export function useAncestorChain(nodeId: string): Node[] {
   return useProjectStore(useShallow((state) => getAncestorChain(nodeId, state.nodes)));
+}
+
+// A plain boolean, so no shallow compare needed — this only re-renders the row
+// when the answer itself flips.
+export function useHiddenByAncestor(nodeId: string): boolean {
+  return useProjectStore((state) => isHiddenByAncestor(nodeId, state.nodes));
 }
 
 // The tree's name-and-tag filter. Lives here rather than in TreePanel so the

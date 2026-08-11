@@ -383,6 +383,18 @@
   opacity: 1;
 }
 
+/* A page held back from anyone the world is shown to. Dimmed and italic, the
+   same treatment hidden *tabs* already get in the tab strip, so the two read as
+   one idea at two levels rather than two features. Deliberately still fully
+   legible and fully usable: hidden is about who else sees this, never about
+   getting it out of her way. Applies to pages inside a hidden one too — see
+   TreeItem's looksHidden. */
+.tree-row-hidden .tree-row-name,
+.tree-row-hidden .tree-row-icon {
+  opacity: 0.55;
+  font-style: italic;
+}
+
 /* Unlike the color dot and add button either side of it, the home badge is an
    indicator rather than a control — it stays visible without hovering, since
    its whole job is marking which page is home at a glance. */

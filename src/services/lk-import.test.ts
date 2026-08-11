@@ -8,6 +8,7 @@ type RawResource = {
   name: string;
   pos: string;
   iconColor?: string;
+  isHidden?: boolean;
   documents: RawDoc[];
   properties?: unknown[];
   tags?: string[];
@@ -556,6 +557,31 @@ describe("buildImportPlan", () => {
         withRoot([resource("a", "Page", "A", { banner: { enabled: true, url: "https://assets.legendkeeper.com/banner.png" } })]),
       );
       expect(plan.pendingImages).toEqual([{ nodeId: plan.nodes[0].id, url: "https://assets.legendkeeper.com/banner.png", field: "banner" }]);
+    });
+  });
+
+  describe("hidden pages", () => {
+    it("carries LK's page-level isHidden across", () => {
+      const plan = buildImportPlan(withRoot([resource("a", "Page", "A", { isHidden: true })]));
+      expect(plan.nodes[0].hidden).toBe(true);
+    });
+
+    it("leaves the field off entirely for a visible page", () => {
+      // So an imported page and one made here are the same file on disk, and
+      // `hidden: false` never has to mean anything.
+      const plan = buildImportPlan(withRoot([resource("a", "Page", "A")]));
+      expect("hidden" in plan.nodes[0]).toBe(false);
+    });
+
+    it("is separate from the same flag on a tab", () => {
+      // Both exist in LK and mean different things — the page nobody sees, and
+      // the tab nobody sees on a page they do. Reading only the second is what
+      // this app did until 2026-08-10.
+      const plan = buildImportPlan(
+        withRoot([resource("a", "Page", "A", { documents: [doc("a-main", "Main", "A", [], { isHidden: true })] })]),
+      );
+      expect(plan.nodes[0].hidden).toBeUndefined();
+      expect(plan.nodes[0].tabs[0].hidden).toBe(true);
     });
   });
 
