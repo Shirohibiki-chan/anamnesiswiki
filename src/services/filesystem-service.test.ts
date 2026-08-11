@@ -32,10 +32,13 @@ import {
   PathTooLongError,
   planRelocations,
   resolveNodePath,
+  sanitizeSegment,
   saveNode,
   watchCssDirs,
 } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
+import { MAX_SEGMENT_CHARS } from "../constants/limits";
+import { PROBE_TEMP_PREFIX } from "../constants/paths";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
   return {
@@ -318,26 +321,155 @@ describe("case-insensitive sibling collisions", () => {
   });
 });
 
-// Regression: Windows' default MAX_PATH is 260 characters. A write over that
-// limit fails at the OS, and before the save-error channel existed it failed
-// silently — so the check is here, in front of the write, with a message that
-// says which page and what to do about it.
-describe("path length guard", () => {
-  it("refuses to save a node whose resolved path exceeds the limit", async () => {
-    const deep = node({ id: "d", name: "x".repeat(150), parentId: null, templateKey: "note" });
-    await expect(saveNode("C:/Users/shiro/Documents/Anamnesis/Valeraverse", deep, [deep])).rejects.toThrow(
-      PathTooLongError,
+// The app used to refuse any path over 200 characters rather than attempt it.
+// It doesn't guess any more — the OS decides, and a failure is reported like
+// any other failed write, with the length mentioned only when it's plausibly
+// the cause. See constants/limits.ts for the measurements behind that.
+describe("long paths", () => {
+  // A chain of pages, each inside the last, so depth is what runs the path up
+  // rather than any one silly name.
+  function chain(depth: number, name: string): Node[] {
+    return Array.from({ length: depth }, (_, i) =>
+      node({ id: `n${i}`, name, parentId: i === 0 ? null : `n${i - 1}`, templateKey: "location" }),
     );
+  }
+
+  beforeEach(() => {
+    fsMock.writeTextFile.mockReset();
+    fsMock.writeTextFile.mockImplementation(async () => {});
+    fsMock.remove.mockClear();
   });
 
-  it("names the page in the error, since the path itself is unreadable at that length", async () => {
-    const deep = node({ id: "d", name: `A Very Long Page ${"y".repeat(200)}`, parentId: null, templateKey: "note" });
-    await expect(saveNode("C:/Projects/World", deep, [deep])).rejects.toThrow(/A Very Long Page/);
+  // The user's own project, and the case that made the old limit worth
+  // removing: five levels of ordinary page names, refused by this app and by
+  // nothing else. Comes to 203 characters.
+  it("saves five levels of real page names under a OneDrive project folder", async () => {
+    const root = "C:/Users/shiro/OneDrive/Documents/Anamnesis/this is the story of a girl";
+    const names = [
+      "Locations",
+      "who cried a river and drowned the whole world",
+      "and while she looked so sad in photographs",
+      "i absolutely love her",
+    ];
+    const nodes = names.map((name, i) =>
+      node({ id: `n${i}`, name, parentId: i === 0 ? null : `n${i - 1}`, templateKey: "location" }),
+    );
+    nodes.push(node({ id: "leaf", name: "Untitled", parentId: "n3", templateKey: "note" }));
+
+    await expect(saveNode(root, nodes[4], nodes)).resolves.toBeUndefined();
+  });
+
+  it("attempts a path the app would once have refused, rather than deciding for the OS", async () => {
+    const nodes = chain(12, "and while she looked so sad in photographs");
+    await expect(saveNode("C:/Projects/World", nodes[11], nodes)).resolves.toBeUndefined();
+    expect(fsMock.writeTextFile.mock.calls[0][0].length).toBeGreaterThan(500);
+  });
+
+  // Which of the two messages a failure gets is decided by asking the disk,
+  // not by assuming. `supportsLongPaths` memoises per project root, so each of
+  // these uses a root of its own — otherwise the first answer would be the
+  // only one either test ever sees.
+  it("blames the machine's setting when the disk won't take a long path either", async () => {
+    // The probe writes into its own directory; failing that write is what a
+    // machine with long paths switched off looks like.
+    fsMock.writeTextFile.mockRejectedValue(new Error("os error 3"));
+    const nodes = chain(12, "A Very Long Page Name That Goes On A While");
+
+    const failed = saveNode("C:/Short-Paths-Off", nodes[11], nodes);
+    await expect(failed).rejects.toThrow(PathTooLongError);
+    await expect(failed).rejects.toThrow(/A Very Long Page/);
+    await expect(failed).rejects.toThrow(/is set to stop at 260/);
+    await expect(failed).rejects.toThrow(/os error 3/);
+  });
+
+  it("says the length may not be the reason when the disk does take long paths", async () => {
+    // Everything writes except this one page — so the probe succeeds and the
+    // length is a red herring.
+    fsMock.writeTextFile.mockRejectedValueOnce(new Error("the file is locked"));
+    const nodes = chain(12, "A Very Long Page Name That Goes On A While");
+
+    const failed = saveNode("C:/Long-Paths-On", nodes[11], nodes);
+    await expect(failed).rejects.toThrow(PathTooLongError);
+    await expect(failed).rejects.toThrow(/may not be the reason/);
+    await expect(failed).rejects.toThrow(/the file is locked/);
+  });
+
+  it("asks the disk once per project, not once per failed save", async () => {
+    fsMock.writeTextFile.mockRejectedValue(new Error("os error 3"));
+    const nodes = chain(12, "Another Long Page Name That Goes On A While");
+    const probeWrites = () =>
+      fsMock.writeTextFile.mock.calls.filter(([path]) => path.includes(PROBE_TEMP_PREFIX)).length;
+
+    await expect(saveNode("C:/Asked-Once", nodes[11], nodes)).rejects.toThrow(PathTooLongError);
+    expect(probeWrites()).toBe(1);
+    await expect(saveNode("C:/Asked-Once", nodes[10], nodes)).rejects.toThrow(PathTooLongError);
+    expect(probeWrites()).toBe(1);
+  });
+
+  it("cleans up after the probe, deepest first", async () => {
+    fsMock.writeTextFile.mockRejectedValue(new Error("os error 3"));
+    const nodes = chain(12, "Yet Another Long Page Name That Goes On");
+
+    await expect(saveNode("C:/Tidied-Up", nodes[11], nodes)).rejects.toThrow(PathTooLongError);
+
+    const removed = fsMock.remove.mock.calls.map(([path]) => path).filter((path) => path.includes(PROBE_TEMP_PREFIX));
+    expect(removed).toHaveLength(3);
+    expect(removed[0].length).toBeGreaterThan(removed[1].length);
+    expect(removed[1].length).toBeGreaterThan(removed[2].length);
+    // Never recursive — that flag is what would turn tidying up into deleting
+    // whatever happened to be underneath.
+    expect(fsMock.remove.mock.calls.every(([, options]) => options === undefined)).toBe(true);
+  });
+
+  it("passes a failure on an ordinary path straight through, unembellished", async () => {
+    fsMock.writeTextFile.mockRejectedValueOnce(new Error("the disk is full"));
+    const ordinary = node({ id: "o", name: "Valera Jiang", parentId: null, templateKey: "character" });
+
+    const failed = saveNode("C:/Projects/World", ordinary, [ordinary]);
+    await expect(failed).rejects.toThrow("the disk is full");
+    await expect(failed).rejects.not.toThrow(PathTooLongError);
   });
 
   it("allows an ordinary path through untouched", async () => {
     const ordinary = node({ id: "o", name: "Valera Jiang", parentId: null, templateKey: "character" });
     await expect(saveNode("C:/Projects/World", ordinary, [ordinary])).resolves.toBeUndefined();
+  });
+});
+
+// A page title is not a filename. The name lives in the node's JSON and the
+// tree reads it from there, so the on-disk segment can be shortened without
+// the user ever seeing a truncated title — which is the difference between
+// "your page saved" and "your page didn't".
+describe("long page names", () => {
+  it("shortens the filename rather than refusing the page", async () => {
+    const essay = node({ id: "e", name: "x".repeat(400), parentId: null, templateKey: "note" });
+    await expect(saveNode("C:/Projects/World", essay, [essay])).resolves.toBeUndefined();
+  });
+
+  it("keeps the whole name for anything of a sane length", () => {
+    const name = "who cried a river and drowned the whole world";
+    expect(sanitizeSegment(name)).toBe(name);
+  });
+
+  it("never ends a shortened name in a space or a dot", () => {
+    // The cut lands mid-word on a name made of two-character units, so the
+    // character it stops on is a space.
+    expect(sanitizeSegment("ab ".repeat(60)).endsWith(" ")).toBe(false);
+  });
+
+  it("cuts by character, so an emoji name can't be split down the middle", () => {
+    // Whole moons, not half of one: a UTF-16 slice would end on a lone
+    // surrogate, which is not a filename any OS will take.
+    expect(sanitizeSegment("🌙".repeat(200))).toBe("🌙".repeat(MAX_SEGMENT_CHARS));
+  });
+
+  it("suffixes two long names that shorten to the same thing", () => {
+    const shared = "The Very Long Chapter Title That Keeps Going On And On Past Any Reasonable Length For A Filename";
+    const a = node({ id: "a", name: `${shared} one`, parentId: null, templateKey: "location", createdAt: 1 });
+    const b = node({ id: "b", name: `${shared} two`, parentId: null, templateKey: "location", createdAt: 2 });
+    const index = buildPathIndex([a, b]);
+
+    expect(resolveNodePath(a, index).dirSegments).not.toEqual(resolveNodePath(b, index).dirSegments);
   });
 });
 

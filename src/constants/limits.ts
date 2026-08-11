@@ -16,13 +16,40 @@ export const MAX_SEARCH_RESULTS = 40;
 // thing she was looking for.
 export const SEARCH_SNIPPET_CHARS = 100;
 
-// Windows' default MAX_PATH is 260 characters including the drive and the
-// terminator, and it's the tightest limit of any platform we ship to. Checked
-// with headroom rather than at the wire, because a directory-storage node's
-// own path is only the prefix — its `_page.json`, and every child filed under
-// it, are longer still. A page whose own path is already at 260 has nowhere
-// left to put its contents.
-export const MAX_PATH_CHARS = 200;
+// **Not a limit the app enforces.** It used to refuse any path over 200
+// characters, on the old Windows MAX_PATH of 260, with 60 held back on the
+// theory that a node's children run longer than its own path. That was wrong
+// twice: the check already ran on the node's own full file path, and a child
+// too long to write fails its own check when it's written. All the headroom
+// bought was refusing pages the OS would have taken — five levels of ordinary
+// page names under `OneDrive\Documents\Anamnesis` comes to 203, which the user
+// hit on 2026-08-11 with a project nothing else objected to.
+//
+// Measured rather than assumed, on Windows 11 with `LongPathsEnabled` (on by
+// default there): Rust's `std::fs` — what Tauri's fs plugin calls — wrote,
+// read and listed a **1021-character** path without complaint, and so did
+// PowerShell and .NET. The 260 ceiling this was designed around isn't the
+// ceiling any more, and guessing at a replacement produced false refusals
+// rather than safety.
+//
+// So the OS decides, and a failed write is reported through the save-error
+// channel like any other. This number is used only to *explain* a failure that
+// already happened: past this length "the path is very long" is worth saying,
+// because the path is unreadable at that size and a raw OS error tells the
+// user nothing they can act on. Below it the original error passes through
+// untouched. Nothing is refused on the strength of it.
+export const LONG_PATH_ADVICE_CHARS = 260;
+
+// This one *is* enforced, because it's a limit that hasn't moved: NTFS allows
+// 255 characters per individual file or folder name, long-path support or not.
+// So one absurd name — a pasted paragraph as a page title — is shortened on
+// disk rather than failing. The page keeps its full name: that lives in the
+// JSON, and the tree reads names from there, never from the filename.
+//
+// 96 is well clear of anything real — the longest name in the user's worlds is
+// 44 characters — which matters, because lowering this later would change
+// where existing pages resolve to and leave their old files behind.
+export const MAX_SEGMENT_CHARS = 96;
 
 // How many versions Settings → Patch Notes offers. Three is enough to cover
 // "what changed recently" without the panel becoming an archive — the whole

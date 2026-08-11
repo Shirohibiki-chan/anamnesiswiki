@@ -116,6 +116,77 @@
    the project name lives — the *only* place, since docs/ui-audit.md defect 6:
    the top bar used to show it a second time about 50px away. */
 
+/* --- TreePathBar ---
+
+   Only rendered while the tree is focused on something, which is the point:
+   its absence is what says "you're looking at the whole project". Tinted with
+   the accent so it doesn't read as another row of the tree. */
+
+.tree-path-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0 var(--space-md) var(--space-md);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-accent-faint-border);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-faint);
+}
+
+/* Scrolls sideways rather than wrapping. A deep path is exactly when this
+   appears, and a bar that grew to three rows would push the tree it labels off
+   the top of the panel. The scrollbar is hidden because the row is one line
+   tall and a horizontal bar under it would double its height. */
+.tree-path-bar-crumbs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.tree-path-bar-crumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.tree-path-crumb-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tree-path-crumb {
+  padding: 0 var(--space-2xs);
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+button.tree-path-crumb:hover {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.tree-path-crumb-current {
+  color: var(--color-accent-light);
+  font-weight: 500;
+  cursor: default;
+}
+
+.tree-path-sep {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.tree-path-clear {
+  flex-shrink: 0;
+}
+
 /* --- TreeSearch --- */
 
 .tree-search {

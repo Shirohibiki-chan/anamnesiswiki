@@ -35,10 +35,19 @@ export function orderSiblings(siblings: Node[], order: string[] | undefined): No
   });
 }
 
+/**
+ * @param focusedId When set, the tree starts at this node's *children* rather
+ * than at the project root — "focus here" from the right-click menu. The node
+ * itself isn't in the returned data; it's named in the path bar above the tree
+ * instead, which is the way back out. A focused id that no longer exists (the
+ * page was deleted while focused) falls back to the whole tree rather than
+ * rendering nothing.
+ */
 export function buildTreeData(
   nodes: Record<string, Node>,
   rootOrder: string[],
   childOrder: Record<string, string[]> = {},
+  focusedId: string | null = null,
 ): TreeNodeData[] {
   const childrenByParent = new Map<string | null, Node[]>();
   for (const node of Object.values(nodes)) {
@@ -64,7 +73,22 @@ export function buildTreeData(
     }));
   }
 
-  return buildChildren(null);
+  return buildChildren(focusedId && nodes[focusedId] ? focusedId : null);
+}
+
+// Whether `nodeId` sits anywhere beneath `ancestorId`. Used to decide whether
+// a page being selected is inside the current focus — a page reached from a
+// search result or a wikilink usually isn't, and the tree can't show it while
+// focused, so the focus is dropped rather than the tree quietly failing to
+// follow. Excludes the ancestor itself: the focused node is not *inside* the
+// focus, it's the boundary of it.
+export function isDescendantOf(nodeId: string, ancestorId: string, nodes: Record<string, Node>): boolean {
+  let currentParentId = nodes[nodeId]?.parentId ?? null;
+  while (currentParentId) {
+    if (currentParentId === ancestorId) return true;
+    currentParentId = nodes[currentParentId]?.parentId ?? null;
+  }
+  return false;
 }
 
 export type EffectiveColor = {

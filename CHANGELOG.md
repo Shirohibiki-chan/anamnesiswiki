@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-11 — the app no longer decides how deep is too deep
+
+### Fixes
+
+- **Pages stopped saving long before they had to.** The app refused any page whose file path went over 200 characters, and told you to shorten the name or move it. That number came from an old Windows limit of 260, with 60 characters held back just in case — which was never the right check, and only ever meant refusing pages Windows would have written quite happily. Five folders deep with ordinary page names gets you to about 203.
+
+- **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
+  - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
+
+### Adjustments
+
+- **There's no length limit any more; your computer decides.** The old 260-character Windows limit isn't the limit on modern Windows, and guessing at a replacement number could only be wrong in one of two directions — the direction it was wrong in lost pages. So the app just tries to save, and tells you if the system actually says no. Tested first: a 1021-character path wrote, read back and opened fine, in the app's own file handling and in Windows' own tools.
+  - **If a save does fail on a very long path, the message says so and includes what the system said**, instead of the app inventing a rule. Below that length you get the real error untouched, because the length isn't the reason.
+
+- **If a save ever does fail on a long path, the app checks what your computer actually allows before it says anything.** It writes a test file somewhere deliberately too deep and sees whether that works. If your Windows is set to stop at 260 characters, the message says so, since that's a real setting with a real fix. If it isn't, the message says the length probably isn't the reason and shows what the system said instead — no sending you after the wrong thing.
+  - It only runs after something has already gone wrong, never when the app starts, and it cleans up after itself.
+
+- **A very long page title gets a shorter filename instead of blocking the save.** Past about 96 characters the name on disk is trimmed. The page keeps its full title: that's stored inside the file rather than being the filename, and the sidebar reads it from there. This one's a real limit — no filesystem allows a single file name past 255 — and nothing you'd call a title comes near 96; the longest across your worlds is 44. It's there so pasting a paragraph into the title can't cost you the page.
+
 ## 2026-08-11 — pages that couldn't be saved, and a folder that stayed broken
 
 ### Fixes
@@ -10,6 +29,7 @@
 
 - **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
   - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
+
 ## 2026-08-10 — hovering a link shows you the page without opening it
 
 ### Additions
@@ -17,7 +37,6 @@
 - **Mentions and `[[wikilinks]]` show a preview card when you rest the pointer on them.** The page's name, what kind of page it is, its tags, and the first few lines of writing on it — enough to tell which Valera a link means without leaving the page you're on. Focusing a link with the keyboard shows it too.
   - It waits a moment before appearing, so links you're only passing over on the way somewhere else stay quiet.
   - The excerpt comes from the first tab that actually has writing in it, not the first tab — templates start with several and only some get filled in. **Tabs you've hidden are never used**, so nothing held back shows up in a preview.
-
 ## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
 
 ### Additions
@@ -28,6 +47,16 @@
 
 - **`Escape` out of renaming a page leaves you in the sidebar.** It used to cancel the rename and drop keyboard focus entirely, so the arrow keys stopped working until you clicked back into the tree.
 - **`Escape` drops a multi-selection back to the page you're on.** Selecting several pages by accident used to need a click somewhere to undo. It leaves the page you're reading open — the selection and the open page are the same thing here, so clearing it outright would close what you were looking at.
+
+## 2026-08-10 — focus the sidebar on one branch
+
+### Additions
+
+- **Right-click a page or folder → *Focus here*, and the sidebar shows only what's inside it.** Its contents sit at the top of the tree, and a bar above them shows the way back — project name, then each step down to where you are, all clickable. This is the answer to a branch nested deeper than the sidebar can show legibly, where the names have run off the edge and only the indent is left.
+  - The bar is always there while you're focused, so the sidebar never quietly shows part of your world with nothing saying so.
+  - Opening a page that isn't inside the focused branch — from search, or by following a link — steps back out on its own, rather than leaving the sidebar stuck somewhere you aren't.
+  - Dragging a page to the top of a focused tree puts it *in* the folder you're focused on, not out at the project root.
+  - It resets when you close the project. Reopening always shows the whole thing.
 
 ## 2026-08-10 — double-clicking a page in the sidebar opens it
 

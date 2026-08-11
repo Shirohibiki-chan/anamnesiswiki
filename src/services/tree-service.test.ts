@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildTreeData, createSearchMatcher, getAncestorChain, getEffectiveColor, isHiddenByAncestor } from "./tree-service";
+import {
+  buildTreeData,
+  createSearchMatcher,
+  getAncestorChain,
+  getEffectiveColor,
+  isDescendantOf,
+  isHiddenByAncestor,
+} from "./tree-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -316,5 +323,74 @@ describe("buildTreeData childOrder", () => {
     const y = node({ id: "y", name: "Y", parentId: "g", templateKey: "note", createdAt: 6 });
     const tree = buildTreeData(byId([folder, a, b, c, other, x, y]), ["f", "g"], { f: ["c", "b", "a"] });
     expect(tree[1].children!.map((n) => n.name)).toEqual(["X", "Y"]);
+  });
+});
+
+describe("buildTreeData focus", () => {
+  // Canon > AUs > Demonic > Valera. Deep enough to be the case focus exists
+  // for, which is the tree the user hit at nine levels.
+  const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 0 });
+  const aus = node({ id: "aus", name: "AUs", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY, createdAt: 1 });
+  const demonic = node({ id: "demonic", name: "Demonic", parentId: "aus", templateKey: FOLDER_TEMPLATE_KEY, createdAt: 2 });
+  const valera = node({ id: "valera", name: "Valera", parentId: "demonic", templateKey: "character", createdAt: 3 });
+  const stray = node({ id: "stray", name: "Stray", parentId: null, templateKey: "note", createdAt: 4 });
+  const nodes = byId([canon, aus, demonic, valera, stray]);
+
+  it("starts at the whole project when nothing is focused", () => {
+    expect(buildTreeData(nodes, ["canon", "stray"]).map((n) => n.name)).toEqual(["Canon", "Stray"]);
+  });
+
+  // The focused node's *children* are the roots. The node itself is named in
+  // the path bar instead — it's the boundary of the view, not part of it.
+  it("starts at the focused node's children, not the node itself", () => {
+    const tree = buildTreeData(nodes, ["canon", "stray"], {}, "aus");
+    expect(tree.map((n) => n.name)).toEqual(["Demonic"]);
+    expect(tree[0].children!.map((n) => n.name)).toEqual(["Valera"]);
+  });
+
+  it("leaves everything outside the focus out entirely", () => {
+    const names = buildTreeData(nodes, ["canon", "stray"], {}, "demonic").map((n) => n.name);
+    expect(names).toEqual(["Valera"]);
+  });
+
+  // The focused page can be deleted while it's focused. Falling back to the
+  // whole tree is the one behaviour that can't look like the project vanished.
+  it("falls back to the whole project when the focused node is gone", () => {
+    expect(buildTreeData(nodes, ["canon", "stray"], {}, "deleted-id").map((n) => n.name)).toEqual(["Canon", "Stray"]);
+  });
+
+  it("shows an empty tree for a focused node with nothing in it", () => {
+    expect(buildTreeData(nodes, ["canon", "stray"], {}, "valera")).toEqual([]);
+  });
+});
+
+describe("isDescendantOf", () => {
+  const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+  const aus = node({ id: "aus", name: "AUs", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+  const valera = node({ id: "valera", name: "Valera", parentId: "aus", templateKey: "character" });
+  const stray = node({ id: "stray", name: "Stray", parentId: null, templateKey: "note" });
+  const nodes = byId([canon, aus, valera, stray]);
+
+  it("finds a direct child", () => {
+    expect(isDescendantOf("aus", "canon", nodes)).toBe(true);
+  });
+
+  it("finds a grandchild", () => {
+    expect(isDescendantOf("valera", "canon", nodes)).toBe(true);
+  });
+
+  it("says no for a page in another branch", () => {
+    expect(isDescendantOf("stray", "canon", nodes)).toBe(false);
+  });
+
+  // A node isn't inside itself: focusing something and then selecting *it*
+  // means leaving the focus, since its own row isn't in the focused tree.
+  it("says no for the ancestor itself", () => {
+    expect(isDescendantOf("canon", "canon", nodes)).toBe(false);
+  });
+
+  it("says no rather than looping when a parent id points at nothing", () => {
+    const orphan = node({ id: "orphan", name: "Orphan", parentId: "missing", templateKey: "note" });
+    expect(isDescendantOf("orphan", "canon", byId([orphan]))).toBe(false);
   });
 });

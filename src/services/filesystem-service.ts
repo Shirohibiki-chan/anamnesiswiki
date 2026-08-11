@@ -22,9 +22,10 @@ import {
   FOLDER_META_FILE as FOLDER_FILE,
   MOVE_TEMP_PREFIX,
   PAGE_META_FILE,
+  PROBE_TEMP_PREFIX,
   PROJECT_FILE,
 } from "../constants/paths";
-import { MAX_PATH_CHARS } from "../constants/limits";
+import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -94,7 +95,17 @@ function createReadLimiter(limit: number): <T>(task: () => Promise<T>) => Promis
 
 export function sanitizeSegment(name: string): string {
   const cleaned = name.replace(ILLEGAL_CHARS, "_").trim().replace(/[. ]+$/, "");
-  return cleaned.length > 0 ? cleaned : "Untitled";
+  // Cut by code point, not by UTF-16 unit: slicing a name mid-emoji leaves a
+  // lone surrogate, which is not a filename any OS will take. The trailing
+  // strip runs again afterwards because the cut can land on a space or a dot,
+  // and Windows won't have a name ending in either. Two names that shorten to
+  // the same thing collide like any other same-name siblings and pick up the
+  // usual " (2)" — see buildPathIndex.
+  const capped =
+    cleaned.length > MAX_SEGMENT_CHARS
+      ? Array.from(cleaned).slice(0, MAX_SEGMENT_CHARS).join("").replace(/[. ]+$/, "")
+      : cleaned;
+  return capped.length > 0 ? capped : "Untitled";
 }
 
 /**
@@ -560,23 +571,85 @@ export async function saveProject(rootPath: string, project: Project): Promise<v
   await writeTextFile(joinPath(rootPath, PROJECT_FILE), JSON.stringify(project, null, 2));
 }
 
-// Thrown rather than returned so it travels the same route as a real fs
-// failure — every write path already has to cope with one of those, and this
-// is the same thing from the user's point of view: their page did not get
-// written. Carries the node's name because the path alone is unreadable at the
-// length that triggers this.
+// Not a refusal — a translation. The write has already been attempted and the
+// OS has already said no; this only adds the explanation the raw error can't,
+// because at this length the path itself is unreadable and "os error 3" tells
+// the user nothing they can act on. The original message is kept inside it, so
+// nothing is hidden if the real cause turns out to be something else.
 export class PathTooLongError extends Error {
   constructor(
     readonly nodeName: string,
     readonly path: string,
+    readonly cause: string,
+    readonly longPathsSupported: boolean,
   ) {
+    // Neither message says "shorten the page name": names are capped on disk
+    // (see sanitizeSegment), so the only things that still add up are how deep
+    // the page sits and how long a path the project folder starts from.
+    //
+    // The two are genuinely different problems and shouldn't read alike. A
+    // machine that stops at 260 has a setting behind it, and saying so is the
+    // difference between "this app is broken" and "this is fixable". A machine
+    // that takes long paths and still refused this one has something else
+    // wrong, and sending that user after the length would waste their time —
+    // which is why the OS's own words are in both.
     super(
-      `"${nodeName}" is nested too deeply to save — its file path is ${path.length} characters, ` +
-        `over the ${MAX_PATH_CHARS} this app allows for Windows compatibility. ` +
-        `Shorten the page name, or move it somewhere less deeply nested.`,
+      longPathsSupported
+        ? `"${nodeName}" couldn't be saved. Its file path is unusually long (${path.length} characters), ` +
+            `though this computer does handle long paths, so that may not be the reason. (${cause})`
+        : `"${nodeName}" couldn't be saved: its file path is ${path.length} characters, and this computer ` +
+            `is set to stop at ${LONG_PATH_ADVICE_CHARS}. Move the page further up the tree, or keep your ` +
+            `project folder closer to the top of the drive — Windows can also be set to allow longer paths, ` +
+            `but that's a system-wide change. (${cause})`,
     );
     this.name = "PathTooLongError";
   }
+}
+
+// Whether this machine will actually take a path past the old 260-character
+// MAX_PATH. Answered by trying one, never by reading a setting: it depends on
+// the Windows build, a machine-wide policy flag, *and* the filesystem the
+// project happens to sit on, and only the drive itself can speak for all
+// three at once. A guess here is what the old hardcoded limit was.
+//
+// Lazy and memoised per project root — it only runs once a write has already
+// failed on a long path, so the ordinary case never pays for it and nothing
+// runs at launch.
+//
+// Two nested padded names rather than one, so the probe path clears 260 by a
+// wide margin whatever the project folder's own length is; a single name can't
+// be relied on for that, since no filesystem allows one past 255. Cleanup is
+// three plain removes with no recursive flag anywhere near them, and a failure
+// to clean up leaves something the loader ignores.
+const longPathSupport = new Map<string, Promise<boolean>>();
+
+async function probeLongPaths(rootPath: string): Promise<boolean> {
+  const outer = joinPath(rootPath, `${PROBE_TEMP_PREFIX}${crypto.randomUUID()}`);
+  const inner = joinPath(outer, "p".repeat(200));
+  const file = joinPath(inner, `${"p".repeat(200)}.tmp`);
+  try {
+    await mkdir(inner, { recursive: true });
+    await writeTextFile(file, "");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    for (const path of [file, inner, outer]) {
+      try {
+        await remove(path);
+      } catch {
+        // Never made, or already gone. Nothing depends on it.
+      }
+    }
+  }
+}
+
+export async function supportsLongPaths(rootPath: string): Promise<boolean> {
+  const answered = longPathSupport.get(rootPath);
+  if (answered) return answered;
+  const asking = probeLongPaths(rootPath);
+  longPathSupport.set(rootPath, asking);
+  return asking;
 }
 
 export async function saveNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
@@ -584,12 +657,23 @@ export async function saveNode(rootPath: string, node: Node, graph: Node[] | Pat
   const dirPath = joinPath(rootPath, ...dirSegments);
   const filePath = joinPath(dirPath, fileName);
 
-  // Checked before `mkdir`, so a path we're going to refuse doesn't leave an
-  // empty directory tree behind as a souvenir.
-  if (filePath.length > MAX_PATH_CHARS) throw new PathTooLongError(node.name, filePath);
-
-  await mkdir(dirPath, { recursive: true });
-  await writeTextFile(filePath, JSON.stringify(node, null, 2));
+  try {
+    await mkdir(dirPath, { recursive: true });
+    await writeTextFile(filePath, JSON.stringify(node, null, 2));
+  } catch (error) {
+    if (filePath.length <= LONG_PATH_ADVICE_CHARS) throw error;
+    // Only now, after a failure that a long path could plausibly explain, is it
+    // worth asking the disk what it allows. Which of the two messages the user
+    // gets is the whole reason the question is asked: "your Windows is set to
+    // stop here" is something they can act on, and saying it to someone whose
+    // machine takes long paths fine would send them after the wrong thing.
+    throw new PathTooLongError(
+      node.name,
+      filePath,
+      error instanceof Error ? error.message : String(error),
+      await supportsLongPaths(rootPath),
+    );
+  }
 }
 
 // Batch counterpart to saveNode for the write-many paths (an LK import, a
