@@ -426,13 +426,19 @@ button.tree-path-crumb:hover {
   padding: 0 var(--space-xs);
 }
 
+/* `display: none` rather than `opacity: 0`, and that's the whole point of this
+   rule. An invisible element still takes its width, so three 16px buttons plus
+   their gaps held ~60px of every row permanently — every page name in the tree
+   was truncated three-quarters of the way along to reserve space for controls
+   that weren't on screen. Names now get the full width of the panel and only
+   give it up on the one row being pointed at. */
 .tree-row-color-dot,
 .tree-row-menu,
 .tree-row-add {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
@@ -440,7 +446,6 @@ button.tree-path-crumb:hover {
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
-  opacity: 0;
 }
 
 .tree-row-color-dot {
@@ -448,10 +453,27 @@ button.tree-path-crumb:hover {
   border: 1px solid var(--color-text-placeholder);
 }
 
+/* The focus half is what keeps these reachable without a mouse: `display: none`
+   takes them out of the tab order, where `opacity: 0` left them in it —
+   focusable but invisible, which was its own bug.
+
+   It has to hang off `[role="treeitem"]`, and nothing of ours will do. That
+   attribute is on react-arborist's own row wrapper, which is the element it
+   calls `.focus()` on (`row-container.js`: `tabIndex: -1` plus a focus effect)
+   — and that wrapper is an *ancestor* of `.tree-node`. `:focus-within` matches
+   the focused element or one containing it, never a descendant of it, so
+   `.tree-node:focus-within` is dead CSS here however right it looks. No
+   `rowClassName` is configured, so the role is the only handle. */
 .tree-row:hover .tree-row-color-dot,
 .tree-row:hover .tree-row-menu,
-.tree-row:hover .tree-row-add {
-  opacity: 1;
+.tree-row:hover .tree-row-add,
+[role="treeitem"]:focus-within .tree-row-color-dot,
+[role="treeitem"]:focus-within .tree-row-menu,
+[role="treeitem"]:focus-within .tree-row-add,
+.tree-row-active .tree-row-color-dot,
+.tree-row-active .tree-row-menu,
+.tree-row-active .tree-row-add {
+  display: flex;
 }
 
 /* A page held back from anyone the world is shown to. Dimmed and italic, the
