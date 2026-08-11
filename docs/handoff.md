@@ -172,6 +172,21 @@ is below.
   through untouched. If this ever needs revisiting, the argument to beat is
   measurement, not MAX_PATH.
 
+- **`supportsLongPaths` asks the disk, and only ever to choose the wording.**
+  It writes a deliberately over-long path into the project folder and sees what
+  happens, because the answer depends on the Windows build, a machine-wide
+  policy flag *and* the filesystem the project sits on — no one of those can
+  be read and trusted for the other two. Lazy and memoised per root: it runs
+  only after a write has already failed on a long path, so nothing runs at
+  launch and the ordinary case never pays for it.
+
+  It deliberately does **not** gate anything. Refusing a save early on a
+  machine that stops at 260 loses the same page as letting the OS refuse it,
+  only sooner and with a rule the app invented — which is what the old limit
+  did. What detection genuinely buys is that "this computer is set to stop at
+  260" can be said to the user who needs to hear it and withheld from the one
+  who doesn't. Don't wire it to a constraint.
+
 - **`MAX_SEGMENT_CHARS` (96) *is* enforced, on one name rather than the whole
   path.** NTFS's 255-per-name limit hasn't moved and long-path support doesn't
   lift it, so one absurd name — a pasted paragraph as a page title — is

@@ -39,6 +39,15 @@ export const BACKUPS_DIR = "backups";
 // interrupted move look like data loss.
 export const MOVE_TEMP_PREFIX = ".anamnesis-move-";
 
+// Directory used to find out whether this machine will accept a path past the
+// old 260-character MAX_PATH — see filesystem-service's `supportsLongPaths`.
+// Made and removed within one call, so it should never be seen.
+//
+// Unlike the prefix above, the load walk needs no knowledge of this one: what
+// it holds is a `.tmp` file, and the walk only reads `.json`. A leftover from
+// an app that was killed mid-probe is inert, not a page waiting to be found.
+export const PROBE_TEMP_PREFIX = ".anamnesis-probe-";
+
 export async function getDefaultProjectsDir(): Promise<string> {
   return join(await documentDir(), "Anamnesis");
 }

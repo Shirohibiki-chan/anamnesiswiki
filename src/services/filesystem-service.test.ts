@@ -38,6 +38,7 @@ import {
 } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 import { MAX_SEGMENT_CHARS } from "../constants/limits";
+import { PROBE_TEMP_PREFIX } from "../constants/paths";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
   return {
@@ -334,8 +335,9 @@ describe("long paths", () => {
   }
 
   beforeEach(() => {
-    fsMock.writeTextFile.mockClear();
+    fsMock.writeTextFile.mockReset();
     fsMock.writeTextFile.mockImplementation(async () => {});
+    fsMock.remove.mockClear();
   });
 
   // The user's own project, and the case that made the old limit worth
@@ -363,14 +365,60 @@ describe("long paths", () => {
     expect(fsMock.writeTextFile.mock.calls[0][0].length).toBeGreaterThan(500);
   });
 
-  it("explains a failure on a very long path, naming the page and keeping the OS message", async () => {
-    fsMock.writeTextFile.mockRejectedValueOnce(new Error("os error 3"));
+  // Which of the two messages a failure gets is decided by asking the disk,
+  // not by assuming. `supportsLongPaths` memoises per project root, so each of
+  // these uses a root of its own — otherwise the first answer would be the
+  // only one either test ever sees.
+  it("blames the machine's setting when the disk won't take a long path either", async () => {
+    // The probe writes into its own directory; failing that write is what a
+    // machine with long paths switched off looks like.
+    fsMock.writeTextFile.mockRejectedValue(new Error("os error 3"));
     const nodes = chain(12, "A Very Long Page Name That Goes On A While");
 
-    const failed = saveNode("C:/Projects/World", nodes[11], nodes);
+    const failed = saveNode("C:/Short-Paths-Off", nodes[11], nodes);
     await expect(failed).rejects.toThrow(PathTooLongError);
     await expect(failed).rejects.toThrow(/A Very Long Page/);
+    await expect(failed).rejects.toThrow(/is set to stop at 260/);
     await expect(failed).rejects.toThrow(/os error 3/);
+  });
+
+  it("says the length may not be the reason when the disk does take long paths", async () => {
+    // Everything writes except this one page — so the probe succeeds and the
+    // length is a red herring.
+    fsMock.writeTextFile.mockRejectedValueOnce(new Error("the file is locked"));
+    const nodes = chain(12, "A Very Long Page Name That Goes On A While");
+
+    const failed = saveNode("C:/Long-Paths-On", nodes[11], nodes);
+    await expect(failed).rejects.toThrow(PathTooLongError);
+    await expect(failed).rejects.toThrow(/may not be the reason/);
+    await expect(failed).rejects.toThrow(/the file is locked/);
+  });
+
+  it("asks the disk once per project, not once per failed save", async () => {
+    fsMock.writeTextFile.mockRejectedValue(new Error("os error 3"));
+    const nodes = chain(12, "Another Long Page Name That Goes On A While");
+    const probeWrites = () =>
+      fsMock.writeTextFile.mock.calls.filter(([path]) => path.includes(PROBE_TEMP_PREFIX)).length;
+
+    await expect(saveNode("C:/Asked-Once", nodes[11], nodes)).rejects.toThrow(PathTooLongError);
+    expect(probeWrites()).toBe(1);
+    await expect(saveNode("C:/Asked-Once", nodes[10], nodes)).rejects.toThrow(PathTooLongError);
+    expect(probeWrites()).toBe(1);
+  });
+
+  it("cleans up after the probe, deepest first", async () => {
+    fsMock.writeTextFile.mockRejectedValue(new Error("os error 3"));
+    const nodes = chain(12, "Yet Another Long Page Name That Goes On");
+
+    await expect(saveNode("C:/Tidied-Up", nodes[11], nodes)).rejects.toThrow(PathTooLongError);
+
+    const removed = fsMock.remove.mock.calls.map(([path]) => path).filter((path) => path.includes(PROBE_TEMP_PREFIX));
+    expect(removed).toHaveLength(3);
+    expect(removed[0].length).toBeGreaterThan(removed[1].length);
+    expect(removed[1].length).toBeGreaterThan(removed[2].length);
+    // Never recursive — that flag is what would turn tidying up into deleting
+    // whatever happened to be underneath.
+    expect(fsMock.remove.mock.calls.every(([, options]) => options === undefined)).toBe(true);
   });
 
   it("passes a failure on an ordinary path straight through, unembellished", async () => {

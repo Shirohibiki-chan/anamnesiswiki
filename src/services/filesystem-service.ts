@@ -22,6 +22,7 @@ import {
   FOLDER_META_FILE as FOLDER_FILE,
   MOVE_TEMP_PREFIX,
   PAGE_META_FILE,
+  PROBE_TEMP_PREFIX,
   PROJECT_FILE,
 } from "../constants/paths";
 import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
@@ -580,19 +581,75 @@ export class PathTooLongError extends Error {
     readonly nodeName: string,
     readonly path: string,
     readonly cause: string,
+    readonly longPathsSupported: boolean,
   ) {
-    // Deliberately doesn't say "shorten the page name": names are capped on
-    // disk now (see sanitizeSegment), so the only things that still add up are
-    // how deep the page sits and how long a path the project folder itself
-    // starts from — and the second one is the bigger lever by far.
+    // Neither message says "shorten the page name": names are capped on disk
+    // (see sanitizeSegment), so the only things that still add up are how deep
+    // the page sits and how long a path the project folder starts from.
+    //
+    // The two are genuinely different problems and shouldn't read alike. A
+    // machine that stops at 260 has a setting behind it, and saying so is the
+    // difference between "this app is broken" and "this is fixable". A machine
+    // that takes long paths and still refused this one has something else
+    // wrong, and sending that user after the length would waste their time —
+    // which is why the OS's own words are in both.
     super(
-      `"${nodeName}" couldn't be saved, and its file path is unusually long — ` +
-        `${path.length} characters, past the ${LONG_PATH_ADVICE_CHARS} some Windows setups stop at. ` +
-        `That's the likely reason. Move it further up the tree, or keep your project folder ` +
-        `closer to the top of the drive. (${cause})`,
+      longPathsSupported
+        ? `"${nodeName}" couldn't be saved. Its file path is unusually long (${path.length} characters), ` +
+            `though this computer does handle long paths, so that may not be the reason. (${cause})`
+        : `"${nodeName}" couldn't be saved: its file path is ${path.length} characters, and this computer ` +
+            `is set to stop at ${LONG_PATH_ADVICE_CHARS}. Move the page further up the tree, or keep your ` +
+            `project folder closer to the top of the drive — Windows can also be set to allow longer paths, ` +
+            `but that's a system-wide change. (${cause})`,
     );
     this.name = "PathTooLongError";
   }
+}
+
+// Whether this machine will actually take a path past the old 260-character
+// MAX_PATH. Answered by trying one, never by reading a setting: it depends on
+// the Windows build, a machine-wide policy flag, *and* the filesystem the
+// project happens to sit on, and only the drive itself can speak for all
+// three at once. A guess here is what the old hardcoded limit was.
+//
+// Lazy and memoised per project root — it only runs once a write has already
+// failed on a long path, so the ordinary case never pays for it and nothing
+// runs at launch.
+//
+// Two nested padded names rather than one, so the probe path clears 260 by a
+// wide margin whatever the project folder's own length is; a single name can't
+// be relied on for that, since no filesystem allows one past 255. Cleanup is
+// three plain removes with no recursive flag anywhere near them, and a failure
+// to clean up leaves something the loader ignores.
+const longPathSupport = new Map<string, Promise<boolean>>();
+
+async function probeLongPaths(rootPath: string): Promise<boolean> {
+  const outer = joinPath(rootPath, `${PROBE_TEMP_PREFIX}${crypto.randomUUID()}`);
+  const inner = joinPath(outer, "p".repeat(200));
+  const file = joinPath(inner, `${"p".repeat(200)}.tmp`);
+  try {
+    await mkdir(inner, { recursive: true });
+    await writeTextFile(file, "");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    for (const path of [file, inner, outer]) {
+      try {
+        await remove(path);
+      } catch {
+        // Never made, or already gone. Nothing depends on it.
+      }
+    }
+  }
+}
+
+export async function supportsLongPaths(rootPath: string): Promise<boolean> {
+  const answered = longPathSupport.get(rootPath);
+  if (answered) return answered;
+  const asking = probeLongPaths(rootPath);
+  longPathSupport.set(rootPath, asking);
+  return asking;
 }
 
 export async function saveNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
@@ -605,7 +662,17 @@ export async function saveNode(rootPath: string, node: Node, graph: Node[] | Pat
     await writeTextFile(filePath, JSON.stringify(node, null, 2));
   } catch (error) {
     if (filePath.length <= LONG_PATH_ADVICE_CHARS) throw error;
-    throw new PathTooLongError(node.name, filePath, error instanceof Error ? error.message : String(error));
+    // Only now, after a failure that a long path could plausibly explain, is it
+    // worth asking the disk what it allows. Which of the two messages the user
+    // gets is the whole reason the question is asked: "your Windows is set to
+    // stop here" is something they can act on, and saying it to someone whose
+    // machine takes long paths fine would send them after the wrong thing.
+    throw new PathTooLongError(
+      node.name,
+      filePath,
+      error instanceof Error ? error.message : String(error),
+      await supportsLongPaths(rootPath),
+    );
   }
 }
 
