@@ -33,3 +33,16 @@ export const PATCH_NOTES_VERSION_COUNT = 3;
 // made a 53-picture world take about a minute with the window looking frozen;
 // a small pool cuts that without leaning on someone else's server.
 export const IMPORT_IMAGE_CONCURRENCY = 6;
+
+// How much of a page a hover preview shows. Bigger than a search snippet
+// because it answers a different question: a snippet proves a match, and a
+// preview is meant to save you the trip. Four or five lines at the card's
+// width — enough to recognise which Valera this is, short enough that reading
+// it is faster than following the link.
+export const PREVIEW_EXCERPT_CHARS = 280;
+
+// How long the pointer has to stay on a link before its preview appears. This
+// number is the difference between a convenience and something you learn to
+// steer around: with no delay, a card fires on every link the pointer crosses
+// on its way somewhere else. Matches what Obsidian settled on.
+export const HOVER_PREVIEW_DELAY_MS = 350;
