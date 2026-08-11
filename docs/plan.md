@@ -57,9 +57,11 @@ than assumed:
   staying under about three levels; **that is their styling advice for published
   documentation sites and does not carry over here.** The user's own worlds go
   much deeper and always will — do not implement a depth cap, warn about depth,
-  or treat deep nesting as a mistake. The only real ceiling is the Windows path
-  length noted in `CLAUDE.md`, and Phase 22 *removes* two levels from every AU
-  path rather than adding any.
+  or treat deep nesting as a mistake, and **don't reach for the old
+  260-character Windows path ceiling as a reason** — it was measured and
+  withdrawn (see `constants/limits.ts`), and repeating it is how a limit that
+  doesn't exist gets designed around anyway. Phase 22 *removes* two levels from
+  every AU path rather than adding any.
 - **A group is a label, not a page.** There is nothing to open, so it has no
   content of its own.
 
@@ -123,6 +125,23 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 ---
 
 ## Queued Adjustments
+
+- **LegendKeeper's controls for a picture in a page, which the user pointed at
+  2026-08-11 as the shape to match.** Two parts, neither built here yet:
+  - **Buttons that appear over the picture on hover** — change image, reposition,
+    expand — in the top corner, the same idea as the sidebar slot's own hover
+    toolbar.
+  - **A right-click / dots menu on the block**, holding: Title / No Title, a
+    colour row, Change image, Fit to image, Link to page (with a page search),
+    Layout, Duplicate, Delete, Insert row below.
+
+  What exists instead today is BlockNote's formatting toolbar (which now carries
+  Open full size and Save a copy) plus double-click to open. **The hover buttons
+  mean rendering into BlockNote's own block DOM**, which is the part to think
+  about before starting rather than the buttons themselves. Several of the menu
+  entries — Link to page, Layout, Insert row below — are really Phase 18 sidebar
+  blocks wearing a different hat, so check that phase before treating this as one
+  job.
 
 - **The About dialog never got built.** The other half of a Phase 12 bullet
   whose first half shipped as Settings → Patch Notes on 2026-08-08. Small and

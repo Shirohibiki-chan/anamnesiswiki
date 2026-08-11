@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-11 — the / menu stops falling off the bottom
+
+### Fixes
+
+- **The `/` menu (and `@`, and `[[`) no longer opens as a sliver when the cursor is near the bottom of the window.** It was being positioned while it was still an empty "loading" strip, then growing downward from a spot picked for something a fraction of its height — so most of it ended up below the bottom edge. With the cursor 85px from the bottom, 498px of the menu was off screen. It now sits above the cursor, whole.
+- **"Show whole image" and "Done" on the sidebar picture work.** They never did: starting a reposition grabbed the mouse for the whole picture area, including those two buttons, so pressing either did nothing — and they only appear while repositioning, which is exactly when they were broken. Dragging to reposition is unchanged.
+- **A picture in a page opens full size on *double*-click now, not single.** A single click is what selects the picture and brings up its toolbar — where the caption, the resize and Save a copy are — and opening a window on top of that made the toolbar impossible to reach.
+  - **The toolbar has an "Open full size" button** next to Save a copy, so it's something you can find rather than a gesture you have to know.
+
 ## 2026-08-11 — pictures open full size
 
 ### Additions

@@ -11,7 +11,7 @@
 // so neither ever causes a render.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LIGHTBOX_MAX_SCALE, LIGHTBOX_MIN_SCALE, LIGHTBOX_ZOOM_STEP } from "../constants/limits";
-import { embeddedImageAt } from "../services/page-images";
+import { embeddedImageAt, embeddedImageInBlock } from "../services/page-images";
 import { useLightboxStore, type LightboxImage } from "../state/lightbox-store";
 
 type View = { scale: number; x: number; y: number };
@@ -23,18 +23,22 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Opening the lightbox from a click on a picture inside the editor.
+ * Opening the lightbox by **double-clicking** a picture inside the editor.
+ *
+ * It was a single click first, and that was wrong: a single click on a picture
+ * is what selects the block, and selecting the block is what puts the
+ * formatting toolbar on screen — where the caption, Save a copy and the
+ * resize live. Opening a window over the top of that made the toolbar
+ * unreachable in practice. Double-click is the ordinary gesture for "open this
+ * properly" and costs the single click nothing; the toolbar's own Open full
+ * size button (components/page/ExpandImageButton.tsx) is the findable half.
  *
  * Returns a ref to put on the element that wraps the editor. The listener is
- * native and on the capture phase rather than a React `onClick`, which is not
+ * native and on the capture phase rather than a React handler, which is not
  * defensiveness for its own sake: ProseMirror runs its own listeners inside
  * that subtree, React 19 attaches synthetic handlers up at the root container,
- * and anything in between calling `stopPropagation` would leave clicking a
- * picture silently doing nothing. Capture runs before any of it.
- *
- * The click is deliberately not swallowed. ProseMirror still selects the block
- * underneath, so closing the lightbox leaves the picture selected with its
- * formatting toolbar up — which is where "Save a copy" and the caption live.
+ * and anything in between calling `stopPropagation` would leave double-clicking
+ * a picture silently doing nothing. Capture runs before any of it.
  */
 export function useEditorImageLightbox() {
   const openLightbox = useLightboxStore((state) => state.openLightbox);
@@ -44,16 +48,37 @@ export function useEditorImageLightbox() {
     const container = containerRef.current;
     if (!container) return;
 
-    function handleClick(event: MouseEvent) {
+    function handleDoubleClick(event: MouseEvent) {
       const found = embeddedImageAt(container as Element, event.target);
-      if (found) openLightbox(found.images, found.index);
+      if (!found) return;
+      // A double-click on a picture would otherwise select the word behind it
+      // and leave a highlight across the block once the lightbox closes.
+      event.preventDefault();
+      openLightbox(found.images, found.index);
     }
 
-    container.addEventListener("click", handleClick, true);
-    return () => container.removeEventListener("click", handleClick, true);
+    container.addEventListener("dblclick", handleDoubleClick, true);
+    return () => container.removeEventListener("dblclick", handleDoubleClick, true);
   }, [openLightbox]);
 
   return containerRef;
+}
+
+/**
+ * Opening the lightbox for a block the toolbar knows is selected, rather than
+ * one the pointer landed on. Same set of pictures and the same arrows — only
+ * the way in differs.
+ */
+export function useOpenBlockImage() {
+  const openLightbox = useLightboxStore((state) => state.openLightbox);
+  return useCallback(
+    (container: Element | null | undefined, blockId: string) => {
+      if (!container) return;
+      const found = embeddedImageInBlock(container, blockId);
+      if (found) openLightbox(found.images, found.index);
+    },
+    [openLightbox],
+  );
 }
 
 /**
