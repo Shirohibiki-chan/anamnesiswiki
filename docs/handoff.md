@@ -956,6 +956,27 @@ is below.
   was on, which is the only time they're shown. Keeping the drag on the image
   puts the buttons structurally outside it.
 
+- **Backspace and Ctrl/Cmd-C/X on a selected picture are ProseMirror's, and
+  reimplementing them would be a second definition of delete.** They were on the
+  Phase 16 list; measuring first (2026-08-11) showed Backspace already takes the
+  document from three blocks to two, because ProseMirror does this for any
+  selected node and BlockNote's picture is one. `image-keys.ts` deliberately
+  handles only the four keys that had nothing behind them: `+`, `-`, `0`, Enter.
+
+- **"Is a picture selected" is `.ProseMirror-selectednode`, never
+  `editor.getSelection()`.** That call reports the *block*, and it reports the
+  same block when the caret is merely sitting in the line next to one — resizing
+  on that answer would fire while she was typing a paragraph. The class is
+  ProseMirror's own and means precisely "this node is the selection".
+
+- **Those keys must be stopped as well as prevented.** `preventDefault` alone
+  doesn't reach ProseMirror: its keydown handler sits on the editor element,
+  below the root container React attaches `onKeyDownCapture` to, so Enter would
+  still insert a paragraph under the picture on the way past. The resize step
+  and its two bounds come from BlockNote's own drag handles (64px floor, editor
+  width ceiling) so that dragging to the edge and pressing to the edge stop in
+  the same place.
+
 - **The lightbox's pan clamp measures `clientWidth`/`clientHeight`, and that
   includes the stage's padding on purpose.** Overflow clips at the padding box,
   so a picture can be dragged exactly until its edge meets that box. Changing
