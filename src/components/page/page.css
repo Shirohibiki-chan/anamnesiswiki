@@ -29,6 +29,21 @@
   padding: var(--space-3xl) var(--page-gutter);
 }
 
+/* A page margin is the right gap under a top bar and the wrong one under a
+   banner, because the banner has already paid it: its bottom 3rem is a
+   gradient into the page background, so 32px of padding under that reads as
+   about 70px of nothing between the cover and the breadcrumb. The two cases
+   are told apart by which banner element is actually there rather than by a
+   class PageView has to remember to pass — an image banner has the fade, the
+   empty "Add banner" row doesn't and keeps a little more room. */
+.page-banner + .page-view {
+  padding-top: var(--space-md);
+}
+
+.page-banner-empty + .page-view {
+  padding-top: var(--space-lg);
+}
+
 /* --- PageBanner --- */
 
 .page-banner {
@@ -151,7 +166,11 @@
   align-items: center;
   gap: var(--space-xs);
   font-size: var(--fs-xs);
-  color: var(--color-text-muted);
+  /* One step up from muted. The trail is a set of links you're meant to use,
+     not a caption — at 12px on the page background, muted grey read as
+     something switched off. Muted stays the colour of things that only answer
+     a question you didn't ask. */
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-xl);
   overflow: hidden;
 }
@@ -171,8 +190,10 @@
   gap: var(--space-xs);
 }
 
+/* The page you're on, at full strength — it's the end of the sentence the
+   trail is making, and it's the one crumb that isn't a link. */
 .page-title-breadcrumb-current {
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   flex-shrink: 1;
 }
 
@@ -208,7 +229,7 @@
 }
 
 .page-title-breadcrumb-link:hover {
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   text-decoration: underline;
 }
 
