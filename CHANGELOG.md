@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-11 — pictures answer the keyboard
+
+### Additions
+
+- **Resize a picture in a page from the keyboard.** Click a picture (or arrow into it from the line above or below) and press **+** to make it bigger, **−** to make it smaller, **0** to put it back to its own size. Each press is a tenth, so it moves by the same amount whether the picture is a thumbnail or the width of the page, and it stops in exactly the places dragging the edges stops.
+- **Enter opens the picture's Upload / Embed panel**, so swapping a picture for another one no longer means reaching for the toolbar. It used to insert an empty line under the picture instead.
+
+### Worth knowing
+
+- **Backspace, and copy and cut, already worked** on a selected picture and are untouched — that was worth checking rather than building over.
+- None of this fires while you're typing: it only answers when the picture itself is what's selected, never when the cursor is merely in the line beside it, and never inside the caption box or the panel's own address field.
+
 ## 2026-08-11 — the trail sits under the banner properly
 
 ### Adjustments

@@ -91,6 +91,19 @@ export const LIGHTBOX_ZOOM_STEP = 1.3;
 // four it stops being read as a path and starts being read as a wall.
 export const BREADCRUMB_MAX_ANCESTORS = 4;
 
+// Resizing a picture in a page from the keyboard (Phase 16). Both numbers are
+// deliberately BlockNote's own: 64px is the floor its drag handles clamp to,
+// and the ceiling — the editor's width — is read from the same expression they
+// use, so a picture dragged to the edge and one pressed to the edge stop in the
+// same place.
+//
+// A factor rather than a pixel step, so one press does the same *amount* to a
+// thumbnail as to a picture running the width of the page. 10% is small enough
+// to land on a size you meant and large enough that holding the key gets
+// somewhere: seven presses roughly halve a picture.
+export const IMAGE_MIN_PREVIEW_WIDTH = 64;
+export const IMAGE_RESIZE_STEP = 1.1;
+
 // How long the pointer has to stay on a link before its preview appears. This
 // number is the difference between a convenience and something you learn to
 // steer around: with no delay, a card fires on every link the pointer crosses

@@ -11,6 +11,7 @@ import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems } from "../services/editor-blocks/callout-slash-menu";
+import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
 import { resolveWikilinks } from "../services/editor-blocks/wikilink";
@@ -66,8 +67,14 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   // `onKeyDownCapture`. Suggestion-list movement goes first and reports
   // whether it claimed the key: it only ever does while a menu is open, and a
   // key it claimed is one the bracket confirm shouldn't also see.
+  //
+  // The picture keys go second for the same reason: `-` and `0` are ordinary
+  // characters in a suggestion query, and a menu being open means she's typing
+  // rather than acting on a selected picture. They only fire when ProseMirror
+  // reports a picture as *the* selection, which typing can't produce.
   function onKeyDownCapture(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (handleSuggestionListKeys(event)) return;
+    if (handleImageKeys(editor, event)) return;
     confirmWikilinkBracket(event);
   }
 
