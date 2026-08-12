@@ -241,6 +241,17 @@ export type ProjectStoreState = {
    * persists it.
    */
   uploadAsset: (data: Uint8Array, extension: string) => Promise<string>;
+  /** Every file in `assets/`, with its size. Read on demand — see useAssets. */
+  listAssets: () => Promise<{ fileName: string; size: number }[]>;
+  /**
+   * Deletes one picture file. Phase 17's Assets tab, which only offers this for
+   * a file nothing points at.
+   *
+   * Undoable, and it has to be: this sits under a grid of thumbnails where the
+   * wrong one is a mis-click away. The bytes are read before the delete and
+   * held by the undo entry, the same way deleting a page holds its pictures.
+   */
+  deleteAsset: (fileName: string) => Promise<void>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
@@ -1153,6 +1164,34 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const fileName = `${crypto.randomUUID()}.${extension}`;
       await fsService.saveAssetImage(rootPath, fileName, data);
       return assetRef(fileName);
+    },
+
+    async listAssets() {
+      const { rootPath } = get();
+      if (!rootPath) return [];
+      return fsService.listAssetImages(rootPath);
+    },
+
+    async deleteAsset(fileName) {
+      const { rootPath } = get();
+      if (!rootPath) return;
+
+      // Read before the delete, so undo has something to put back. A file that
+      // won't read is still deleted — refusing would leave her unable to clear
+      // a picture that's already damaged — but then there's nothing to restore,
+      // so no undo entry is offered rather than one that would quietly do
+      // nothing.
+      const bytes = await fsService.readAssetImage(rootPath, fileName).catch(() => null);
+
+      track(() => fsService.deleteAssetImage(rootPath, fileName));
+      if (!bytes) return;
+
+      const restored = bytes;
+      record(
+        `deleting the picture ${fileName}`,
+        () => track(() => fsService.saveAssetImage(rootPath, fileName, restored)),
+        () => track(() => fsService.deleteAssetImage(rootPath, fileName)),
+      );
     },
 
     // "Set cover" — the sidebar portrait becomes the page's banner as well.

@@ -844,6 +844,21 @@ is below.
   one of them looking up an id that isn't in `nodes`. Not persisted either: the
   template you last had open isn't a fact about the world.
 
+- **`indexAssetUsage` must see the template library, and it takes it as an
+  argument so a caller can't forget.** A picture is in use in four places, not
+  three: portrait, cover, inside a page's writing, and all three again in
+  `templates`. `saveAsTemplate` copies a page's portrait and cover *files* but
+  not the pictures written inside its tabs, so a template and its source page
+  legitimately share one. The Assets tab puts a delete button on anything this
+  reports as unused, so a miss here is a page or a template quietly losing its
+  picture. It walks nested blocks too — a picture indented under a list item is
+  as much in use as one at the top level.
+
+- **The Assets listing is driven by the directory, never by the usage index.** A
+  reference to a file that isn't there is a broken picture, not a picture you
+  have; listing from the index would put phantom rows in the tab and offer to
+  delete files that don't exist.
+
 - **A built-in template's override is a root in `templates.nodes` that must
   never be in `rootOrder`.** `rootOrder` is her own templates — the extras
   offered on the new-page screen — and an override isn't an extra, it's what

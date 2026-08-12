@@ -1,8 +1,7 @@
 // Left sidebar container — top tab strip, and whichever view it selects.
 //
-// The strip has been three buttons with two of them `disabled` since Phase 3.
-// Phase 17 makes Templates real; Assets follows in the same phase and keeps its
-// placeholder until then.
+// The strip was three buttons with two of them `disabled` from Phase 3 until
+// Phase 17, which made both real.
 //
 // Which tab is open is local state on purpose. It isn't a property of the
 // world — nothing about Valeraverse changes because you looked at your
@@ -10,12 +9,13 @@
 // doesn't persist across launches either: the sidebar is the app's main
 // navigation and it should open showing the tree.
 import { useState } from "react";
+import { AssetsPanel } from "./AssetsPanel";
 import { ProjectHeader } from "./ProjectHeader";
 import { TemplatesPanel } from "./TemplatesPanel";
 import { TreePanel } from "./TreePanel";
 import "./tree.css";
 
-type SidebarTab = "project" | "templates";
+type SidebarTab = "project" | "templates" | "assets";
 
 export function TreeSidebar() {
   const [tab, setTab] = useState<SidebarTab>("project");
@@ -25,21 +25,22 @@ export function TreeSidebar() {
       <div className="tree-sidebar-tabs" role="tablist">
         <SidebarTabButton label="Project" tab="project" current={tab} onSelect={setTab} />
         <SidebarTabButton label="Templates" tab="templates" current={tab} onSelect={setTab} />
-        <button type="button" className="tree-sidebar-tab" disabled title="Coming in this phase">
-          Assets
-        </button>
+        <SidebarTabButton label="Assets" tab="assets" current={tab} onSelect={setTab} />
       </div>
 
       {/* The project header and search belong to the tree, not to the sidebar —
           a search box above a list of templates would search the wrong thing. */}
-      {tab === "project" ? (
+      {tab === "project" && (
         <>
           <ProjectHeader />
           <TreePanel />
         </>
-      ) : (
-        <TemplatesPanel />
       )}
+      {tab === "templates" && <TemplatesPanel />}
+      {/* Remounted every time the tab is opened, which is deliberate: it reads
+          `assets/` off disk on mount, and coming back to it after uploading a
+          picture should show the picture. */}
+      {tab === "assets" && <AssetsPanel />}
     </div>
   );
 }
