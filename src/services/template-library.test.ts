@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addTemplate,
+  buildTemplateTree,
   cloneSubtree,
   collectSubtree,
   listTemplates,
@@ -167,6 +168,104 @@ describe("addTemplate / removeTemplate / listTemplates", () => {
     const library = libraryWith(["a", "b"]);
     const orphaned = { ...library, rootOrder: ["b"] };
     expect(listTemplates(orphaned).map((t) => t.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("buildTemplateTree", () => {
+  function library(nodes: Node[], rootOrder: string[]) {
+    return { version: 1 as const, nodes: byId(nodes), rootOrder };
+  }
+
+  it("nests a template's sub-pages under it", () => {
+    const tree = buildTemplateTree(
+      library(
+        [
+          node({ id: "valera", name: "Valera", parentId: null, templateKey: "character" }),
+          node({ id: "sword", name: "Her Sword", parentId: "valera", templateKey: "item" }),
+          node({ id: "coin", name: "A Coin", parentId: "sword", templateKey: "item" }),
+        ],
+        ["valera"],
+      ),
+    );
+
+    expect(tree.map((item) => item.node.id)).toEqual(["valera"]);
+    expect(tree[0].children.map((item) => item.node.id)).toEqual(["sword"]);
+    expect(tree[0].children[0].children.map((item) => item.node.id)).toEqual(["coin"]);
+  });
+
+  // The roots are the tab's list, and it must read the same as the one the
+  // new-page screen offers — both go through listTemplates.
+  it("draws the roots in the library's own order", () => {
+    const tree = buildTemplateTree(
+      library(
+        [
+          node({ id: "a", name: "A", parentId: null, templateKey: "character" }),
+          node({ id: "b", name: "B", parentId: null, templateKey: "location" }),
+        ],
+        ["b", "a"],
+      ),
+    );
+    expect(tree.map((item) => item.node.id)).toEqual(["b", "a"]);
+  });
+
+  it("puts sub-pages in creation order", () => {
+    const tree = buildTemplateTree(
+      library(
+        [
+          node({ id: "root", name: "Root", parentId: null, templateKey: "character" }),
+          node({ id: "later", name: "Later", parentId: "root", templateKey: "item", createdAt: 2 }),
+          node({ id: "earlier", name: "Earlier", parentId: "root", templateKey: "item", createdAt: 1 }),
+        ],
+        ["root"],
+      ),
+    );
+    expect(tree[0].children.map((item) => item.node.id)).toEqual(["earlier", "later"]);
+  });
+
+  it("is empty for an empty library", () => {
+    expect(buildTemplateTree(createTemplateLibrary())).toEqual([]);
+  });
+
+  // The file is hand-editable by design, and parseTemplateLibrary repairs a
+  // parent that's missing but can't see one pointing back down at its own
+  // descendant. Unguarded this recurses until the stack goes.
+  it("does not hang on a template that is its own ancestor", () => {
+    const tree = buildTemplateTree(
+      library(
+        [
+          node({ id: "root", name: "Root", parentId: null, templateKey: "character" }),
+          node({ id: "a", name: "A", parentId: "root", templateKey: "item" }),
+          node({ id: "b", name: "B", parentId: "a", templateKey: "item" }),
+        ],
+        ["root"],
+      ),
+    );
+    // Sanity: the same shape with `root.parentId = "b"` would be the cycle.
+    expect(tree[0].children[0].children.map((item) => item.node.id)).toEqual(["b"]);
+
+    const cyclic = library(
+      [
+        node({ id: "root", name: "Root", parentId: "b", templateKey: "character" }),
+        node({ id: "a", name: "A", parentId: "root", templateKey: "item" }),
+        node({ id: "b", name: "B", parentId: "a", templateKey: "item" }),
+      ],
+      ["root"],
+    );
+    // `root` isn't a root here, so nothing is drawn at all — but it returns.
+    expect(buildTemplateTree(cyclic)).toEqual([]);
+
+    // And with the cycle reachable from a real root, each node is drawn once.
+    const reachable = library(
+      [
+        node({ id: "root", name: "Root", parentId: null, templateKey: "character" }),
+        node({ id: "a", name: "A", parentId: "root", templateKey: "item" }),
+        node({ id: "b", name: "B", parentId: "a", templateKey: "item" }),
+        node({ id: "loop", name: "Loop", parentId: "b", templateKey: "item" }),
+      ],
+      ["root"],
+    );
+    reachable.nodes.a.parentId = "loop";
+    expect(buildTemplateTree(reachable)).toEqual([{ node: reachable.nodes.root, children: [] }]);
   });
 });
 

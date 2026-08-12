@@ -1,6 +1,18 @@
 # Changelog
 
-## 2026-08-11 — pick a tag instead of retyping it
+## 2026-08-12 — your templates have somewhere to live
+
+### Additions
+
+- **The Templates tab at the top of the sidebar works.** It lists every template you've saved with "Save as template", so you can finally see what you've got without starting a page to find out. Until now they only appeared on the screen a brand-new page opens with.
+- **Each one shows what kind of page it makes** — Character, Location, Item — next to its name, and a template you saved *with* its sub-pages has a little arrow to show you what's inside it.
+- **Delete a template from here too**, with the same check first, and the same undo after. Pages you already made from it aren't affected either way.
+- If you haven't saved any yet, the tab tells you how: build a page the way you want that kind of page to start, then right-click it and choose Save as template.
+
+### Worth knowing
+
+- **The Assets tab is still greyed out.** It's the other half of this phase and it's next.
+- The tab opens on Project every time you start the app. Which tab you were last looking at isn't remembered on purpose — the tree is the way around your world, and that's what the sidebar should be showing when it opens.
 
 ### Additions
 
