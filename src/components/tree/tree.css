@@ -989,7 +989,12 @@ button.tree-path-crumb:hover {
 
 /* --- AssetsPanel (Phase 17) --- */
 
+/* `container-type: inline-size` makes this the box the grid below measures
+   itself against — see the note there. `inline-size` and not `size`: the
+   panel's height comes from its content, and a container that queries height
+   can't take its height from what's inside it. */
 .tree-assets {
+  container-type: inline-size;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1006,37 +1011,49 @@ button.tree-path-crumb:hover {
   color: var(--color-text-muted);
 }
 
-/* A list rather than a grid of thumbnails, and that's a measurement rather
-   than a preference. A grid was built first: at the sidebar's 180px minimum
-   `auto-fill` collapsed to one 156px tile per row, and at 420px it gave four
-   95px columns whose captions clipped — and the caption is the whole point of
-   this tab, since the filename is a UUID and the picture's only useful label is
-   what's using it. A row gives the caption the full width at every size. */
-.tree-assets-list {
+/* A grid, with a fixed column count per width rather than `auto-fill`.
+   `repeat(auto-fill, minmax(84px, 1fr))` was tried first and is the trap: it
+   keeps tiles at the minimum and spends every extra pixel on more columns, so
+   the sidebar's 180px floor collapsed to a single tile per row and 420px gave
+   five narrow ones with the captions clipped. Counting columns instead means
+   the tile *grows* with the panel — 78px at the 180px minimum, 118px at the
+   260px default, 129px at the 420px maximum — which is what makes the picture
+   itself the label. Measured at all three on 2026-08-12.
+
+   The container query is what lets that count follow the sidebar's own width;
+   a media query would follow the window's, and this panel is resizable
+   independently of it. `container-type: inline-size` is on `.tree-assets`. */
+.tree-assets-grid {
   list-style: none;
   margin: 0;
-  padding: 0;
-}
-
-.tree-assets-row {
-  display: flex;
-  align-items: center;
+  padding: 0 var(--space-md);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-md);
+}
+
+@container (min-width: 300px) {
+  .tree-assets-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* `min-width: 0` is what lets the caption ellipsise instead of widening its
+   grid column — a UUID filename in a tooltip is harmless, one setting the
+   column width is not. */
+.tree-assets-tile {
   min-width: 0;
-  padding: var(--space-xs) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
-.tree-assets-row:hover {
-  background: var(--color-hover);
-}
-
-/* Square, so a column of portraits and a column of wide banners line up.
-   `position: relative` is for the delete button. */
+/* Square, so portraits and wide banners tile evenly. `position: relative` is
+   for the delete button that sits on the picture's corner. */
 .tree-assets-thumb {
   position: relative;
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1061,30 +1078,39 @@ button.tree-path-crumb:hover {
 
 /* A picture nothing points at. Outlined rather than tinted: it's the one she
    can act on, and a colour would read as a warning about the picture itself. */
-.tree-assets-row-unused .tree-assets-thumb {
+.tree-assets-tile-unused .tree-assets-thumb {
   border-color: var(--color-accent-faint-border);
 }
 
-/* `min-width: 0` is what lets the two lines ellipsise instead of pushing the
-   delete button out of the panel — the same trap the tree rows document. */
 .tree-assets-text {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.tree-assets-uses,
+/* Two lines and then an ellipsis, rather than one. At the narrow end a tile is
+   78px across and "Not used anywhere" — the caption that matters most, since
+   it's the one with a delete button attached — doesn't fit on a single line at
+   any width this panel has. The `min-height` reserves both lines whether or not
+   the second is used, so a row of tiles keeps its captions on one baseline
+   instead of stepping up and down with the text. */
+.tree-assets-uses {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2 * 1.35 * var(--fs-2xs));
+  font-size: var(--fs-2xs);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+
 .tree-assets-size {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tree-assets-uses {
-  font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
 }
 
 .tree-assets-size {
@@ -1092,10 +1118,16 @@ button.tree-path-crumb:hover {
   color: var(--color-text-muted);
 }
 
-/* `display: none`, never `opacity: 0` — an invisible button still takes its
-   width, and this panel is as narrow as the tree. Same rule, same reason. */
+/* `display: none`, never `opacity: 0` — the rule the tree rows document. It
+   costs nothing here, since the button is positioned out of flow, but a hidden
+   control that still answers to a click is its own bug.
+
+   Opaque rather than transparent: this one sits *on* the picture, and a
+   transparent button over a photograph is a button you can't see. */
 .tree-assets-delete {
-  flex-shrink: 0;
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
   width: 20px;
   height: 20px;
   display: none;
@@ -1103,13 +1135,13 @@ button.tree-path-crumb:hover {
   justify-content: center;
   border: none;
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: var(--color-panel);
   color: var(--color-text-secondary);
   cursor: pointer;
 }
 
-.tree-assets-row:hover .tree-assets-delete,
-.tree-assets-row:focus-within .tree-assets-delete {
+.tree-assets-tile:hover .tree-assets-delete,
+.tree-assets-tile:focus-within .tree-assets-delete {
   display: flex;
 }
 
