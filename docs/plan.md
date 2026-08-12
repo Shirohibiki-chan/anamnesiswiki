@@ -306,10 +306,118 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ## Phase 17 — Templates & Assets Tabs
 
-The two greyed-out tabs in `TreeSidebar.tsx`.
+The two greyed-out tabs in `TreeSidebar.tsx`. Both are views over things the
+project already has and can't currently see: the templates saved by "Convert to
+template", and the picture files in `assets/`.
 
-- **Templates tab, powered by "Convert to template"** (Phase 15). The user chose this over a dedicated template editor 2026-07-31, and it's the better trade: templates get designed in a real page rather than in a settings form, and there's no second editing surface to build or maintain. This supersedes the old "user-editable templates" Future Feature.
-- **Assets tab** — the image organiser over the project's `assets/` directory.
+**Scoped 2026-08-12.** Three questions were put to the user and her answers are
+baked in below rather than left open.
+
+### The tab strip becomes real
+
+`TreeSidebar.tsx` has carried three buttons with two of them `disabled` since
+Phase 3. The strip starts switching what the sidebar shows: Project (the tree as
+it is now), Templates, Assets. The tree's own header and search belong to the
+Project view and don't follow the user into the other two.
+
+### Templates tab
+
+The world's own templates — `.templates.json`, kept in the store's `templates`
+record, never in `nodes`. Rendered as a list in `rootOrder`, each with its kind's
+icon; a template saved with its sub-pages shows them nested underneath.
+
+- **Rename, reorder, delete.** Delete already exists (`deleteTemplate`, with
+  undo); the other two are new and are the "browsing, renaming and reorganising"
+  the Phase 15 note left here. Reordering writes `rootOrder`, which is already
+  the field that decides the offer order on the new-page screen.
+- **Start a new page from one**, without going through the new-page screen.
+- **Open one and edit it.** Clicking a template opens it in the main area as a
+  page — its tabs, properties and pictures — and edits save back to the library.
+
+**The last of those reverses half of the 2026-07-31 decision, deliberately, and
+the reasoning that decision rested on still stands.** That call was "no second
+editing surface to build or maintain", and it bought a real thing: templates get
+*designed* in a real page, which is still how they're made. What it didn't
+answer is fixing one — a typo, a renamed property, one more tab — where the only
+route today is building the page again and saving a second template over the
+first. Asked directly on 2026-08-12, the user chose editing. So the surface
+arrives, and what stops it being a second editing surface in the expensive sense
+is that it is literally the page editor pointed at a different record.
+
+**The one thing not to do here is put templates into `nodes` to make that
+easier.** Their separation is the whole safety argument for the feature —
+search, the property index, LK export and the Phase 1.5 publisher all walk every
+page they can see, and any one that forgot to filter would put scaffolding into
+her published world (`docs/handoff.md` §Editor & templates). The editor has to
+take its node from either record instead. `project.selectedId` is a project node
+id and must stay one, so which template is open is its own piece of state.
+
+**Editing a template must not touch pages already made from it.** Applying a
+template deep-copies (`applyCustomTemplate`), so this is already true of the
+data; it needs saying in the UI, because "template" reads like a live link and
+it isn't one.
+
+### Assets tab
+
+The image organiser over `assets/`. Nothing in the app can currently *list* that
+directory — `filesystem-service.ts` saves, reads and deletes one file at a time —
+so this starts with a listing and an honest answer to "is this picture in use".
+
+**A picture can be in use in four places, and a usage index that misses one is
+worse than none**, because the whole tab is built on trusting it:
+
+1. `Node.image` — the sidebar portrait.
+2. `Node.banner` — the cover.
+3. `anamnesis-asset:<filename>` inside any block of any tab of any page, hidden
+   tabs included.
+4. All three of the above again, in the template library.
+
+That fourth one is not optional. `saveAsTemplate` copies a page's `image` and
+`banner` files but not the pictures sitting *inside* its tabs, so a template and
+the page it came from can share an in-page picture file. Harmless until now —
+nothing has ever deleted one — and this phase is what makes it reachable.
+
+- **Every file in `assets/`** with a thumbnail, its name, its size, and where
+  it's used: the pages that carry it, or "not used anywhere".
+- **Delete a picture that's used nowhere.** One that *is* used has no delete
+  button — the user's call over deleting anything with a warning, on the grounds
+  that the failure there is quiet (a page keeps pointing at a file that's gone
+  and shows an empty box).
+- **"Remove from every page", so a picture in use can become one that isn't.**
+  The user's own answer, and better than either option offered: it clears the
+  portrait and cover slots that hold it and takes out the image blocks that show
+  it, across every page at once, leaving the file deletable. It routes through
+  `applyBulk`, so thirty pages is **one** undo rather than thirty.
+- **Put a picture into the open page** by clicking it, or dragging it onto the
+  page. It reuses the file that's already there rather than writing a second
+  copy of the same bytes — which is the point, for one map that belongs on six
+  pages.
+
+**Deleting a file is undoable, and the machinery for it exists.** `CapturedAsset`
+already holds the bytes of a deleted page's pictures so undo can put them back;
+an asset deleted from this tab is the same problem and takes the same answer. A
+delete that can only be apologised for is not one to ship next to a grid of
+thumbnails where the wrong one is a mis-click away.
+
+### Two things to know before starting
+
+- **`applyBulk`'s reverse patch only understands four fields** —
+  `customProperties`, `properties`, `propertyOrder`, `tags`. Removing a picture
+  patches `tabs`, `image` and `banner`, so undo would silently restore nothing
+  until those are added. It reads the fields rather than snapshotting nodes on
+  purpose (a page's tabs are the largest thing on it), and that reasoning holds:
+  the property actions run over the whole project, where this runs only over the
+  pages that carry one picture.
+- **Every write still goes through `track()` and the write queue.** Deleting a
+  file and saving the pages that referenced it are two disk operations that must
+  land in that order.
+
+### Sequencing
+
+Roughly one PR each: the tab strip; the Templates list (rename, reorder, delete,
+new page from); template editing; the assets listing and usage index in
+services, with tests; the Assets grid with delete and undo; remove-from-every-
+page; insert-into-page.
 
 ---
 
