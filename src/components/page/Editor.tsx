@@ -21,6 +21,45 @@ import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { ExpandImageButton } from "./ExpandImageButton";
 import { SaveImageButton } from "./SaveImageButton";
 
+/**
+ * The default toolbar minus its Download button, which calls `window.open` and
+ * so does nothing in a Tauri window. Swapped by key rather than by listing every
+ * other item out, so anything BlockNote adds to that strip in a future version
+ * arrives on its own.
+ *
+ * **Declared here, at the module level, and that placement is the fix for a
+ * bug rather than tidiness.** `FormattingToolbarController` renders whatever it
+ * is given as a *component type*, so a function defined inside `Editor` is a
+ * different type on every render — and React throws away a subtree whose type
+ * changed and builds a new one. Every keystroke re-renders Editor (the page's
+ * content goes to the store and comes back), so the whole toolbar was being
+ * rebuilt from scratch as she typed.
+ *
+ * Nothing showed, because the toolbar looks the same rebuilt. What didn't
+ * survive was any state inside it: the caption box is a popover held open by a
+ * `useState` in BlockNote's own button, so it closed on the first character and
+ * dropped focus back to the page. Same for the rename box beside it.
+ */
+function PageFormattingToolbar() {
+  return (
+    <FormattingToolbar>
+      {getFormattingToolbarItems().map((item) =>
+        item.key === "fileDownloadButton" ? (
+          // Both of ours land where the Download button was, so they sit with
+          // the rest of the picture controls rather than at the end of the
+          // strip past the text ones.
+          <Fragment key="fileDownloadButton">
+            <ExpandImageButton />
+            <SaveImageButton />
+          </Fragment>
+        ) : (
+          item
+        ),
+      )}
+    </FormattingToolbar>
+  );
+}
+
 type EditorProps = {
   nodeId: string;
   content: unknown[];
@@ -55,32 +94,11 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         slashMenu={false}
         className="wiki-body editor-shell"
         onKeyDownCapture={onKeyDownCapture}
-        // The default toolbar minus its Download button, which calls
-        // `window.open` and so does nothing in a Tauri window. Swapped by key
-        // rather than by listing every other item out, so anything BlockNote
-        // adds to that strip in a future version arrives on its own.
+        // Off, so PageFormattingToolbar above is the one on screen.
         formattingToolbar={false}
         onChange={handleChange}
       >
-        <FormattingToolbarController
-          formattingToolbar={() => (
-            <FormattingToolbar>
-              {getFormattingToolbarItems().map((item) =>
-                item.key === "fileDownloadButton" ? (
-                  // Both of ours land where the Download button was, so they
-                  // sit with the rest of the picture controls rather than at
-                  // the end of the strip past the text ones.
-                  <Fragment key="fileDownloadButton">
-                    <ExpandImageButton />
-                    <SaveImageButton />
-                  </Fragment>
-                ) : (
-                  item
-                ),
-              )}
-            </FormattingToolbar>
-          )}
-        />
+        <FormattingToolbarController formattingToolbar={PageFormattingToolbar} />
         {/* All three take the same floating options — see use-editor.ts. Without
             them a menu opened near the bottom of the window is positioned while
             it's still an empty loading strip and then grows off the screen. */}

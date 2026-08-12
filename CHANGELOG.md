@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-12 — captioning a picture works
+
+### Fixes
+
+- **You can type a caption on a picture now.** Clicking the caption button opened the box, and then the first letter closed it again and dumped you back into the page — so a caption was only ever one character long, if that. It stays open until you're done with it.
+- **The Rename button beside it had the same problem**, for the same reason, and is fixed with it.
+
 ## 2026-08-12 — templates can be edited
 
 ### Additions
