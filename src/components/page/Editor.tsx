@@ -85,12 +85,20 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
   const insertImage = useCallback(
     (url: string, at: InsertAt) => {
       const blocks = [{ type: "image" as const, props: { url } }];
+      // Both of these read a block out of the document rather than being handed
+      // an id, because a page with nothing in it has neither. It always has at
+      // least one empty paragraph in practice, but "always in practice" is how
+      // a drop onto a brand new page throws.
       if (at === "end") {
         const last = editor.document[editor.document.length - 1];
-        // A page with nothing in it has no block to insert after. It always
-        // has at least one empty paragraph in practice, but "always in
-        // practice" is how a drop onto a brand new page throws.
         if (last) editor.insertBlocks(blocks, last, "after");
+        return;
+      }
+      // Dropped above the writing — on the title or the tab strip. The top of
+      // the page is where that was aimed, not the bottom of it.
+      if (at === "start") {
+        const first = editor.document[0];
+        if (first) editor.insertBlocks(blocks, first, "before");
         return;
       }
       editor.insertBlocks(blocks, at.blockId, "after");
