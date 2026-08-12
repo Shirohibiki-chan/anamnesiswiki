@@ -59,7 +59,6 @@ export function AssetsPanel() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
 
   const { shown, counts } = useFilteredAssets(entries, folders, filter);
-  const unusedCount = shown.filter((entry) => entry.isUnused).length;
 
   function handleCreateFolder() {
     const id = createAssetFolder("New folder");
@@ -162,13 +161,11 @@ export function AssetsPanel() {
   return (
     <div className="tree-assets">
       {toolbar}
-      <p className="tree-assets-note tree-assets-count">
-        {isLoading
-          ? "Reading your pictures…"
-          : `${shown.length} ${shown.length === 1 ? "picture" : "pictures"}${
-              !isUsageIncomplete && unusedCount > 0 ? ` · ${unusedCount} used by nothing` : ""
-            }`}
-      </p>
+      {/* No count line. It said "18 pictures · 1 used by nothing", which is the
+          number already on the All pictures chip plus a tally of something
+          every tile states for itself — and in a 180px column it wrapped to two
+          lines to do it. Both halves were readable somewhere better. */}
+      {isLoading && <p className="tree-assets-note tree-assets-count">Reading your pictures…</p>}
       {/* No folders means nothing to filter by, so the strip would be one chip
           saying "All pictures" above every picture. The way to make the first
           one is in the toolbar, not in here. */}

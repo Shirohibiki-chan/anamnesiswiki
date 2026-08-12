@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-12 — the Assets tab loses its count line
+
+### Adjustments
+
+- **"18 pictures · 1 used by nothing" is gone.** The total is already on the All pictures chip, and whether a picture is used is written under the picture — so it was a line repeating what's directly above and below it, and in a narrow sidebar it wrapped onto two lines to do it.
+
 ## 2026-08-12 — the Assets tab keeps its buttons where you left them
 
 ### Fixes
