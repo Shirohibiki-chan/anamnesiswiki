@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
-import { listTemplates } from "../services/template-library";
+import { buildTemplateTree, listTemplates, type TemplateTreeItem } from "../services/template-library";
 import type { Node } from "../constants/schema";
 
 // Subscribes to the *whole* store: any change anywhere re-renders the caller.
@@ -108,4 +108,17 @@ export function useIsPinned(nodeId: string): boolean {
 export function useCustomTemplates(): Node[] {
   const templates = useProjectStore((state) => state.templates);
   return useMemo(() => listTemplates(templates), [templates]);
+}
+
+/**
+ * The same templates nested, for the Templates tab.
+ *
+ * Separate from `useCustomTemplates` rather than replacing it: the new-page
+ * screen genuinely only wants the roots, and handing it a tree it has to
+ * flatten again would make every page-creation render pay for a shape only one
+ * view uses.
+ */
+export function useCustomTemplateTree(): TemplateTreeItem[] {
+  const templates = useProjectStore((state) => state.templates);
+  return useMemo(() => buildTemplateTree(templates), [templates]);
 }

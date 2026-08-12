@@ -89,6 +89,48 @@ export function listTemplates(library: TemplateLibrary): Node[] {
   });
 }
 
+export type TemplateTreeItem = {
+  node: Node;
+  children: TemplateTreeItem[];
+};
+
+/**
+ * The library as a nested tree, for the Templates tab to draw.
+ *
+ * Roots come from `listTemplates`, so the tab and the new-page screen offer
+ * them in the same order. Children fall back to creation order — a template's
+ * sub-pages have no stored order of their own, since `rootOrder` covers only
+ * the roots and nothing has ever needed to reorder inside one.
+ *
+ * **Cycles are guarded against rather than assumed away.** This file sits in
+ * the user's project folder where she can open it, `parseTemplateLibrary` is
+ * deliberately forgiving about what it finds there, and it repairs a parent
+ * that's *missing* but can't see one that points back down at its own
+ * descendant. A hand-edit making two pages each other's parent would hang the
+ * app on render, which is a worse answer than drawing one of them once.
+ */
+export function buildTemplateTree(library: TemplateLibrary): TemplateTreeItem[] {
+  const childrenByParent = new Map<string, Node[]>();
+  for (const node of Object.values(library.nodes)) {
+    if (!node.parentId) continue;
+    const siblings = childrenByParent.get(node.parentId) ?? [];
+    siblings.push(node);
+    childrenByParent.set(node.parentId, siblings);
+  }
+  for (const siblings of childrenByParent.values()) {
+    siblings.sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+  }
+
+  const seen = new Set<string>();
+  const build = (node: Node): TemplateTreeItem => {
+    seen.add(node.id);
+    const children = (childrenByParent.get(node.id) ?? []).filter((child) => !seen.has(child.id));
+    return { node, children: children.map(build) };
+  };
+
+  return listTemplates(library).map(build);
+}
+
 /**
  * A template plus everything under it, removed from the library.
  *

@@ -817,3 +817,123 @@ button.tree-path-crumb:hover {
   outline: 2px solid var(--color-accent-light);
   outline-offset: 1px;
 }
+
+/* --- TemplatesPanel (Phase 17) --- */
+
+.tree-templates {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-md) 0;
+}
+
+.tree-templates-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Left padding is set inline per row, from the item's depth — the same job
+   react-arborist does for the tree. Everything else matches .tree-row so the
+   two panels read as one sidebar rather than two designs. */
+.tree-templates-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: 28px;
+  padding-right: var(--space-md);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.tree-templates-row:hover {
+  background: var(--color-hover);
+}
+
+.tree-templates-twisty {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.tree-templates-twisty-open {
+  transform: rotate(90deg);
+}
+
+.tree-templates-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+/* `min-width: 0` is what lets the ellipsis happen at all — a flex item's
+   default `min-width: auto` floors it at its own content width, so without it
+   a long template name pushes the kind label out of the panel instead of
+   clipping. Same trap .tree-move-option documents. */
+.tree-templates-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What kind of page this template makes — Character, Location. Quiet, because
+   it's an answer to a question you only sometimes have, and the name is the
+   thing being scanned for. */
+.tree-templates-kind {
+  flex-shrink: 0;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* `display: none`, never `opacity: 0` — see the long note on the tree row's
+   hover controls above. An invisible button still takes its width, and this
+   panel is as narrow as that one. */
+.tree-templates-delete {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.tree-templates-row:hover .tree-templates-delete,
+.tree-templates-row:focus-within .tree-templates-delete {
+  display: flex;
+}
+
+/* Sits inside a row that's already hovered, so it takes the bigger step. */
+.tree-templates-delete:hover {
+  background: var(--color-hover-strong);
+  color: var(--color-destructive);
+}
+
+.tree-templates-empty {
+  padding: var(--space-2xl) var(--space-xl);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.tree-templates-empty p {
+  margin: 0 0 var(--space-md);
+}
+
+.tree-templates-empty strong {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
