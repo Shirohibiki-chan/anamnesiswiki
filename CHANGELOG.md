@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-12 — folders in the picture library
+
+### Additions
+
+- **Folders, in the Assets tab and in the picker.** Make one with the folder button, name it, and drag pictures onto its name to file them. Clicking a folder shows just what's in it; **All pictures** and **Unsorted** are always there beside your own. Adding a picture while a folder is open puts it straight in that folder.
+- **The picker has the same folders**, so choosing a portrait can start from "the map ones" rather than from everything you've ever uploaded.
+- **Rename and delete a folder** with the two buttons that appear under the row when you've opened one.
+
+### Worth knowing
+
+- **A folder is a label, not a place.** Your pictures all stay in one `assets/` folder on disk and nothing moves when you file one — which is what makes moving a picture between folders safe. If it worked the other way, every page showing that picture would have to be rewritten to point at its new home, and a rewrite that stops halfway is a broken picture.
+- **Deleting a folder never deletes a picture.** Everything in it goes back to Unsorted, and the delete is undoable anyway.
+- Pictures can only be dragged into folders from the Assets tab. The picker is open because something's waiting on an answer, so it lets you make and rename folders but not reorganise the library.
+
 ## 2026-08-12 — the Assets tab does things
 
 ### Additions

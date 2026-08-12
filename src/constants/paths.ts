@@ -12,6 +12,24 @@ export const PAGE_META_FILE = "_page.json";
 export const ASSETS_DIR = "assets";
 
 /**
+ * The picture library's folders, kept inside `ASSETS_DIR` rather than at the
+ * project root beside `.templates.json`.
+ *
+ * Two reasons, both about the load walk. A `.json` at the root is read as a
+ * page unless it's named in `walkEntries`' skip list, and that list is one more
+ * thing to get right in the one function that must never lose a file. Inside
+ * `assets/` the question doesn't arise: the walk skips that directory whole.
+ *
+ * **A folder here is organisation, not location.** The pictures stay flat in
+ * `assets/` and a reference stays `anamnesis-asset:<filename>`, so moving one
+ * between folders touches nothing but this file. Real subdirectories would put
+ * the folder name inside every reference to the picture, and moving it would
+ * mean rewriting every page that shows it — where a half-finished rewrite is a
+ * broken picture. The filename is the identity; this is a view over it.
+ */
+export const ASSET_FOLDERS_FILE = ".folders.json";
+
+/**
  * How a picture inside a page's writing is written down (Phase 16). The
  * editor's image block stores a string in `props.url` and there is nowhere
  * else to put one, so what goes in there is `anamnesis-asset:<filename>` —

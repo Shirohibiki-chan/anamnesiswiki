@@ -30,7 +30,19 @@
 import { ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
-import { describeSize, describeUses, useAssetActions, useAssets, useUploadPicture, type AssetEntry } from "../../hooks/use-assets";
+import {
+  ALL_PICTURES,
+  describeSize,
+  describeUses,
+  useAssetActions,
+  useAssetFolders,
+  useAssets,
+  useFilteredAssets,
+  useUploadPicture,
+  type AssetEntry,
+  type FolderFilter,
+} from "../../hooks/use-assets";
+import { AssetFolderStrip } from "./AssetFolderStrip";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenSingleImage } from "../../hooks/use-lightbox";
 import { useNodeImage } from "../../hooks/use-node-image";
@@ -40,10 +52,34 @@ export function AssetsPanel() {
   const { deleteAsset } = useAssetActions();
   const { confirmDestructive } = useDialogs();
   const uploadPicture = useUploadPicture();
+  const { folders, createAssetFolder, renameAssetFolder, deleteAssetFolder, setAssetFolder } = useAssetFolders();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FolderFilter>(ALL_PICTURES);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
-  const unusedCount = entries.filter((entry) => entry.isUnused).length;
+  const { shown, counts } = useFilteredAssets(entries, folders, filter);
+  const unusedCount = shown.filter((entry) => entry.isUnused).length;
+
+  function handleCreateFolder() {
+    const id = createAssetFolder("New folder");
+    // Straight into its name box and straight into the folder itself, so the
+    // next thing she does — naming it, then dropping pictures in — needs no
+    // click in between.
+    setFilter({ kind: "folder", id });
+    setRenamingId(id);
+  }
+
+  async function handleDeleteFolder(id: string) {
+    const folder = folders.folders.find((f) => f.id === id);
+    if (!folder) return;
+    const ok = await confirmDestructive(
+      `Delete the folder “${folder.name}”? The pictures in it stay — they go back to Unsorted. You can undo this.`,
+    );
+    if (!ok) return;
+    deleteAssetFolder(id);
+    setFilter(ALL_PICTURES);
+  }
 
   async function handleDelete(fileName: string) {
     const ok = await confirmDestructive(
@@ -57,7 +93,11 @@ export function AssetsPanel() {
   async function handleUpload(file: File | undefined) {
     if (!file) return;
     try {
-      await uploadPicture(file);
+      const fileName = await uploadPicture(file);
+      // Straight into the folder that's open, because that's what having one
+      // open means. Adding a picture while looking at "Maps" and finding it in
+      // Unsorted would make the folder a filter and not a place.
+      if (filter.kind === "folder" && fileName) setAssetFolder(fileName, filter.id);
       setError(null);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "That picture couldn't be added.");
@@ -76,7 +116,7 @@ export function AssetsPanel() {
       <p className="tree-assets-note">
         {isLoading
           ? "Reading your pictures…"
-          : `${entries.length} ${entries.length === 1 ? "picture" : "pictures"}${
+          : `${shown.length} ${shown.length === 1 ? "picture" : "pictures"}${
               !isUsageIncomplete && unusedCount > 0 ? ` · ${unusedCount} used by nothing` : ""
             }`}
       </p>
@@ -108,6 +148,19 @@ export function AssetsPanel() {
   return (
     <div className="tree-assets">
       {header}
+      <AssetFolderStrip
+        folders={folders}
+        counts={counts}
+        filter={filter}
+        onFilter={setFilter}
+        onCreate={handleCreateFolder}
+        onRename={renameAssetFolder}
+        onStartRename={setRenamingId}
+        onDelete={handleDeleteFolder}
+        onDropAsset={setAssetFolder}
+        renamingId={renamingId}
+        onRenamingDone={() => setRenamingId(null)}
+      />
       {error && <p className="tree-assets-note tree-assets-error">{error}</p>}
       {isUsageIncomplete && (
         <p className="tree-assets-note tree-assets-warning">
@@ -115,14 +168,15 @@ export function AssetsPanel() {
           is off until it can.
         </p>
       )}
-      {!isLoading && entries.length === 0 && (
+      {!isLoading && shown.length === 0 && (
         <p className="tree-assets-note">
-          No pictures yet. Add one with the button above, or upload one as a page&rsquo;s portrait or cover — they all
-          land here.
+          {entries.length === 0
+            ? "No pictures yet. Add one with the button above, or upload one as a page’s portrait or cover — they all land here."
+            : "Nothing in here yet. Drag a picture onto this folder’s name to file it."}
         </p>
       )}
       <ul className="tree-assets-grid">
-        {entries.map((entry) => (
+        {shown.map((entry) => (
           <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} usageIsCertain={!isUsageIncomplete} />
         ))}
       </ul>
@@ -185,7 +239,12 @@ function AssetTile({
           that, and the picture block's own Library tab is the other route. */}
       <div className="tree-assets-thumb">
         {status === "ready" && url ? (
-          <img src={url} alt="" className="tree-assets-image" />
+          // Not draggable itself: an `<img>` is a drag source by default, and
+          // its drag carries the picture's own data rather than ours. It sits
+          // under the overlay button so the pointer never reaches it anyway,
+          // but the whole tile being the drag source shouldn't depend on that
+          // stacking staying exactly as it is.
+          <img src={url} alt="" className="tree-assets-image" draggable={false} />
         ) : (
           // A file that won't read is still a file taking up room, so it stays
           // in the grid. Saying so beats an empty square that reads as a
