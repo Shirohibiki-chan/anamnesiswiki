@@ -993,31 +993,61 @@ button.tree-path-crumb:hover {
    itself against — see the note there. `inline-size` and not `size`: the
    panel's height comes from its content, and a container that queries height
    can't take its height from what's inside it. */
+/* The panel itself no longer scrolls — `.tree-assets-scroll` below does. The
+   toolbar, the count and the folder chips used to sit inside the scrolling box
+   with the grid, so going looking through the pictures took the way to add one
+   and the way to change folder off the top of the panel with it. */
 .tree-assets {
   container-type: inline-size;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding: 0 0 var(--space-md);
-}
-
-/* The count and the add button on one line. `align-items: baseline` rather
-   than centre so the icon sits with the text rather than floating above a
-   sentence that has wrapped to two lines in a narrow sidebar. */
-.tree-assets-header {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-sm);
-  padding-right: var(--space-md);
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* The count takes the room and pushes the button to the edge. `min-width: 0`
-   so a long count wraps instead of shoving the button off the panel — the
-   sidebar goes down to 180px. */
-.tree-assets-header .tree-assets-note {
+/* `min-height: 0` for the usual flex reason: without it this refuses to shrink
+   below its content and the grid pushes the whole panel past the sidebar's
+   bottom instead of scrolling inside it. */
+.tree-assets-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--space-md);
+}
+
+/* Add picture / new folder. Real buttons, because `.ui-icon-btn` is
+   transparent until hovered and the add button had gone unfindable — see the
+   note in AssetsPanel.tsx. */
+.tree-assets-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+/* Smaller than the app's standard button, which is sized for dialogs and empty
+   states. This one shares a 180px column with a second control. */
+.tree-assets-bar .ui-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-xs);
+}
+
+/* Takes the width so the folder button lands on the right edge, and shrinks
+   rather than pushing it off at the sidebar's minimum. */
+.tree-assets-add {
   flex: 1;
   min-width: 0;
-  padding-right: 0;
+}
+
+.tree-assets-new-folder {
+  flex-shrink: 0;
+}
+
+/* Directly under the toolbar, so the two read as one block rather than as a
+   sentence with a gap above it. */
+.tree-assets-count {
+  padding-top: 0;
 }
 
 /* Also the empty and loading states, which are the same kind of sentence in
