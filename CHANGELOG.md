@@ -9,7 +9,14 @@
 
 ### Worth knowing
 
-- Whether the built-in ones should be editable too is an open question, not a decision. It'd mean each world keeping its own changed copy, and a way back to the original — worth doing, but worth deciding on purpose.
+- **Making the built-in ones editable too is decided and comes next**, so this listing is a step rather than the finished shape.
+
+## 2026-08-12 — captioning a picture works
+
+### Fixes
+
+- **You can type a caption on a picture now.** Clicking the caption button opened the box, and then the first letter closed it again and dumped you back into the page — so a caption was only ever one character long, if that. It stays open until you're done with it.
+- **The Rename button beside it had the same problem**, for the same reason, and is fixed with it.
 
 ## 2026-08-12 — templates can be edited
 

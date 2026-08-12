@@ -538,6 +538,23 @@ is below.
   both `setState` inside an effect and `Date.now()` during render, so the usual
   approaches don't lint. This is deliberate, not incidental.
 
+- **A BlockNote controller prop that takes a *component* must be a stable
+  reference, declared at module level.** `FormattingToolbarController` renders
+  `formattingToolbar` as an element type, so an arrow function written inline in
+  the JSX is a new type every render, and React discards and rebuilds the whole
+  subtree whenever a type changes. `Editor` re-renders on every keystroke — the
+  document goes to the store and comes back — so the toolbar was being rebuilt
+  continuously. It looked fine, because a rebuilt toolbar looks identical; what
+  died was state *inside* it. BlockNote's caption and rename boxes are popovers
+  held open by a `useState` in its own button, so they closed on the first
+  character typed and dropped focus back into the page. It arrived with the
+  toolbar customisation on 2026-08-11 and took a bug report to find, because the
+  symptom ("typing a caption doesn't work") points nowhere near the cause.
+  `components/page/Editor.tsx` declares `PageFormattingToolbar` outside the
+  component for this reason. `getItems` on `SuggestionMenuController` is an
+  ordinary callback prop and is not affected — the rule is about props rendered
+  as element types.
+
 - **The tree's selection-sync effect must not fire for an already-selected
   node.** `treeApi.select()` replaces the whole selection with one node, and
   that effect runs whenever `project.selectedId` changes — including when it

@@ -332,14 +332,11 @@ ones are listed but not clickable, because they're seed data in
 `template-registry.ts` with nowhere to hold an edit; the section says so rather
 than offering a row that does nothing when pressed.
 
-**Open question — should the built-in templates be editable too?** The LK-parity
-argument that settled her own templates points the same way here, and the answer
-isn't obvious from the code: a built-in is the same for every world, so an edit
-would have to be an override stored per project (keyed by template key in
-`.templates.json`), which `applyTemplate`, the new-page screen and "revert to
-default" would all have to learn. That's real work and a real decision, not a
-judgement call to make while building something else. **Not started; ask before
-building it.**
+**The built-in templates become editable too — decided by the user, 2026-08-12,
+on the same LK-parity reasoning that settled her own.** A built-in is the same
+for every world, so an edit is a per-project *override* keyed by template key in
+`.templates.json`, which `applyTemplate`, the new-page screen and a way back to
+the original all have to learn. Its own step, after this listing lands.
 
 - **Open one and edit it.** Clicking a template opens it in the main area as a
   page — its title, tabs, properties and pictures — and edits save back to the
