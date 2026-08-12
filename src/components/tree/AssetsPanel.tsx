@@ -32,10 +32,12 @@ import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import {
   ALL_PICTURES,
-  describeSize,
+  assetDisplayName,
   describeUses,
+  MAX_ASSET_NAME,
   useAssetActions,
   useAssetFolders,
+  useAssetNames,
   useAssets,
   useFilteredAssets,
   useUploadPicture,
@@ -53,6 +55,7 @@ export function AssetsPanel() {
   const { confirmDestructive } = useDialogs();
   const uploadPicture = useUploadPicture();
   const { folders, createAssetFolder, renameAssetFolder, deleteAssetFolder, setAssetFolder } = useAssetFolders();
+  const { names, renameAsset } = useAssetNames();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FolderFilter>(ALL_PICTURES);
@@ -204,7 +207,14 @@ export function AssetsPanel() {
         )}
         <ul className="tree-assets-grid">
           {shown.map((entry) => (
-            <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} usageIsCertain={!isUsageIncomplete} />
+            <AssetTile
+              key={entry.fileName}
+              entry={entry}
+              name={assetDisplayName(names, entry.fileName)}
+              onRename={renameAsset}
+              onDelete={handleDelete}
+              usageIsCertain={!isUsageIncomplete}
+            />
           ))}
         </ul>
       </div>
@@ -213,27 +223,38 @@ export function AssetsPanel() {
 }
 
 /**
- * One picture: the thumbnail, and under it what's using it rather than what
- * it's called — the filename is a UUID, which identifies it to the app and to
- * nobody else. The picture is the label here; the caption is the part you
- * couldn't have worked out by looking.
+ * One picture: the thumbnail with its name written across the bottom of it,
+ * and under the square what's using it.
  *
- * `title` carries the long version, because "3 pages" is the answer you scan
- * for and "Valera, The Amber Coast, Her Sword" is the one you want once you've
- * found the picture you care about.
+ * The two captions are in two different places on purpose, and that's her
+ * layout rather than mine. A name belongs *to* the picture, so it sits on it
+ * the way a file manager writes a filename on a thumbnail; what's using it is a
+ * fact about the rest of the project, so it sits outside the square with the
+ * rest of the panel's own text. The file size used to be down there too and is
+ * gone — it answered a question nobody was asking.
+ *
+ * `title` carries the long version of the usage, because "3 pages" is the
+ * answer you scan for and "Valera, The Amber Coast, Her Sword" is the one you
+ * want once you've found the picture you care about.
  */
 function AssetTile({
   entry,
+  name,
+  onRename,
   onDelete,
   usageIsCertain,
 }: {
   entry: AssetEntry;
+  /** "" for a picture that hasn't got one — never the UUID it's stored under. */
+  name: string;
+  onRename: (fileName: string, name: string) => void;
   onDelete: (fileName: string) => void;
   /** False when a page didn't load, which makes `isUnused` a guess. */
   usageIsCertain: boolean;
 }) {
   const { url, status } = useNodeImage(entry.fileName);
   const openImage = useOpenSingleImage();
+  const [isNaming, setIsNaming] = useState(false);
   const names = [...new Set(entry.uses.map((use) => use.nodeName))];
   // "Not used anywhere" is a much stronger sentence than the app can back up
   // when a page didn't load, and it's the one she'd act on. Softened rather
@@ -253,7 +274,12 @@ function AssetTile({
       // A file that hasn't read isn't draggable, because the drop would write a
       // reference to something that doesn't work and the empty box would turn
       // up on the page rather than here.
-      draggable={status === "ready"}
+      //
+      // Nor is one being named. A drag beginning anywhere inside a draggable
+      // element wins over selecting text, so with this left on you couldn't
+      // swipe across the name to replace it — the tile picked itself up
+      // instead.
+      draggable={status === "ready" && !isNaming}
       onDragStart={(event) => {
         event.dataTransfer.setData(ASSET_DRAG_TYPE, entry.fileName);
         event.dataTransfer.effectAllowed = "copy";
@@ -309,12 +335,77 @@ function AssetTile({
             <Trash2 size={13} />
           </button>
         )}
+
+        {/* The name, written across the bottom of the picture. Last in the DOM
+            so it takes the clicks in the strip it covers rather than the
+            open-full-size overlay underneath — clicking a name should edit it,
+            which is the one gesture here that isn't "show me this bigger".
+
+            A picture with no name still gets the strip, because an empty one is
+            the only thing on the tile that says a name is a thing it could
+            have. It only draws while you're pointing at it — see the CSS. */}
+        {isNaming ? (
+          <NameBox
+            initial={name}
+            onCommit={(next) => {
+              onRename(entry.fileName, next);
+              setIsNaming(false);
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className={`tree-assets-name${name ? "" : " tree-assets-name-empty"}`}
+            title={name ? `${name} — click to rename` : "Give this picture a name"}
+            onClick={() => setIsNaming(true)}
+          >
+            {name || "Name this"}
+          </button>
+        )}
       </div>
 
       <span className="tree-assets-text">
         <span className="tree-assets-uses">{unknown ? "Not sure yet" : describeUses(entry.uses)}</span>
-        <span className="tree-assets-size">{describeSize(entry.size)}</span>
       </span>
     </li>
+  );
+}
+
+/**
+ * The box a picture's name is typed into.
+ *
+ * Deliberately the same behaviour as the folder strip's name box — Enter and
+ * blur commit, Escape puts back what was there — rather than a shared
+ * component. They look nothing alike (one is a pill in a row, this is a strip
+ * lying over a photograph) and the only thing they'd share is four lines of key
+ * handling; a component taking a className to render two unrelated shapes is
+ * the worse of the two duplications.
+ *
+ * Committing an unchanged name is a no-op all the way down: the store compares
+ * and skips both the write and the undo entry.
+ */
+function NameBox({ initial, onCommit }: { initial: string; onCommit: (name: string) => void }) {
+  const [value, setValue] = useState(initial);
+
+  return (
+    <input
+      className="tree-assets-name-input"
+      value={value}
+      autoFocus
+      maxLength={MAX_ASSET_NAME}
+      placeholder="Name this picture"
+      onChange={(event) => setValue(event.target.value)}
+      onBlur={() => onCommit(value)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          onCommit(value);
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          onCommit(initial);
+        }
+      }}
+    />
   );
 }

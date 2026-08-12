@@ -19,6 +19,7 @@ import { FOLDER_TEMPLATE_KEY, type Node, type Project, type TemplateLibrary } fr
 import { alwaysDirectory } from "./template-registry";
 import {
   ASSET_FOLDERS_FILE,
+  ASSET_NAMES_FILE,
   ASSETS_DIR,
   BACKUPS_DIR,
   FOLDER_META_FILE as FOLDER_FILE,
@@ -1291,7 +1292,7 @@ export async function listAssetImages(rootPath: string): Promise<{ fileName: str
     // Ours, not a picture. It's the only non-image this directory is allowed
     // to hold, and listing it would put a broken thumbnail in the grid with a
     // delete button on it — nothing points at it, so it would read as unused.
-    if (entry.name === ASSET_FOLDERS_FILE) continue;
+    if (entry.name === ASSET_FOLDERS_FILE || entry.name === ASSET_NAMES_FILE) continue;
     try {
       const info = await stat(joinPath(assetsDir, entry.name));
       files.push({ fileName: entry.name, size: info.size });
@@ -1322,6 +1323,29 @@ export async function loadAssetFolders(rootPath: string): Promise<unknown> {
 export async function saveAssetFolders(rootPath: string, folders: unknown): Promise<void> {
   await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
   await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_FOLDERS_FILE), JSON.stringify(folders, null, 2));
+}
+
+/**
+ * What each picture is called. Its own file rather than another key in the
+ * folders one, so a name and a filing are never lost together — and so either
+ * file can be opened, read and understood on its own.
+ *
+ * Missing is the normal state for a project that predates names, and reads as
+ * "nothing is named yet" rather than as an error.
+ */
+export async function loadAssetNames(rootPath: string): Promise<unknown> {
+  const path = joinPath(rootPath, ASSETS_DIR, ASSET_NAMES_FILE);
+  if (!(await exists(path))) return null;
+  try {
+    return JSON.parse(await readTextFile(path));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAssetNames(rootPath: string, names: unknown): Promise<void> {
+  await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
+  await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_NAMES_FILE), JSON.stringify(names, null, 2));
 }
 
 export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {

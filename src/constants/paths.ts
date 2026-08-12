@@ -65,6 +65,25 @@ export const ASSET_REF_PREFIX = "anamnesis-asset:";
 export const ASSET_DRAG_TYPE = "application/x-anamnesis-asset";
 
 /**
+ * What each picture is *called*, kept beside the pictures themselves.
+ *
+ * A picture's filename is a UUID and always has been: it's generated at upload
+ * and every page that shows the picture holds that string, so the name on disk
+ * is an identifier and can never safely become a label. Renaming the file would
+ * mean rewriting every page pointing at it, and a rewrite that stops halfway is
+ * a broken picture on a page nobody was looking at — the same argument that
+ * made folders labels rather than locations. See ASSET_FOLDERS_FILE.
+ *
+ * So the name lives here, as `{ "<uuid>.png": "Valera's sword" }`. Losing this
+ * file loses the names and nothing else: every picture, every folder and every
+ * page still works, and the tiles fall back to unnamed.
+ *
+ * Dotted, so `listAssetImages` can skip it by name and it never turns up in the
+ * grid as a picture that won't load.
+ */
+export const ASSET_NAMES_FILE = ".names.json";
+
+/**
  * The world's own templates — "Convert to template" writes here. One file
  * holding a forest of pages, rather than a directory of them like the tree
  * itself: templates are scaffolding rather than writing, there are a dozen at

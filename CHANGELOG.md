@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-12 — pictures have names
+
+### Additions
+
+- **Pictures can be named, and the name sits on the picture** — across the bottom of the thumbnail, the way a file manager writes a filename under a thumbnail. Click it to change it. Enter or clicking away saves; Escape puts back what was there. Undo covers it.
+- **A picture you add from your computer keeps the name of the file you picked.** "Valera sword.png" arrives called "Valera sword".
+- A picture with no name shows a faint **Name this** while you're pointing at its tile, and nothing when you aren't.
+
+### Adjustments
+
+- **The file size under each picture is gone.**
+- What's using a picture stays where it was, under the square.
+
+### Worth knowing
+
+- **Pictures you added before today have no name**, and there's no way to work one out — the app has only ever stored them under a generated id, and the name of the file you originally picked was never written down anywhere. You can name them yourself, and once named it sticks.
+- **Naming a picture doesn't rename the file on disk.** It can't: every page showing that picture points at it by its filename, so renaming the file would mean rewriting every one of those pages, and a rewrite that stops halfway is a broken picture on a page you weren't looking at. The names live in their own small file next to the pictures. Losing it loses the names and nothing else.
+
 ## 2026-08-12 — the Assets tab reads down the middle
 
 ### Adjustments
