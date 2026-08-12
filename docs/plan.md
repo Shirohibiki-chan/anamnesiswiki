@@ -326,6 +326,18 @@ The world's own templates — `.templates.json`, kept in the store's `templates`
 record, never in `nodes`. Rendered as a list in `rootOrder`, each with its kind's
 icon; a template saved with its sub-pages shows them nested underneath.
 
+**Two sections: the built-in templates first, then hers** — her instruction,
+2026-08-12, and the same order the new-page screen already uses. The built-in
+ones are listed but not clickable, because they're seed data in
+`template-registry.ts` with nowhere to hold an edit; the section says so rather
+than offering a row that does nothing when pressed.
+
+**The built-in templates become editable too — decided by the user, 2026-08-12,
+on the same LK-parity reasoning that settled her own.** A built-in is the same
+for every world, so an edit is a per-project *override* keyed by template key in
+`.templates.json`, which `applyTemplate`, the new-page screen and a way back to
+the original all have to learn. Its own step, after this listing lands.
+
 - **Open one and edit it.** Clicking a template opens it in the main area as a
   page — its title, tabs, properties and pictures — and edits save back to the
   library.
