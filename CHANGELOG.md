@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-11 — the trail sits under the banner properly
+
+### Adjustments
+
+- **The path above a page title moves up under the banner.** It was carrying a full page margin under a cover image that already fades into the page, so the two together left about 70px of nothing between the picture and the trail. Under a cover it's now 8px; on a page with no cover yet, 12px.
+- **The trail is brighter.** It was the same grey as a field hint — switched-off looking, for a row of links you're meant to click. Every step is a clear step up from the background now, and the page you're actually on is at full strength.
+
 ## 2026-08-11 — the trail above a page title stays on one line
 
 ### Fixes
