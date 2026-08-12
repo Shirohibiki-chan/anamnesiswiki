@@ -1,5 +1,12 @@
 // The sidebar's Assets tab — every picture in the project's `assets/` folder,
-// and an honest answer to "is anything using this".
+// an honest answer to "is anything using this", and the two ways of acting on
+// one: add a picture from your computer, and drag a picture onto a page.
+//
+// **Dragging is the deliberate gesture, and clicking is not.** A tile is a 77px
+// square packed six to a screen, so the thing you do while working out what a
+// picture *is* must not be the thing that edits your writing — clicking opens
+// it full size. Dragging can't happen by accident, so it means what it looks
+// like it means. The drop end is hooks/use-asset-drop.ts.
 //
 // Until now nothing in the app could even list that directory: pictures went in
 // when you uploaded one and never came out, so a portrait you replaced six
@@ -20,8 +27,10 @@
 // fixed (see `setAsideSupersededCopies`), and this is the belt to its braces:
 // whatever the next way of losing a page turns out to be, it must not arrive
 // as a delete button.
-import { Trash2 } from "lucide-react";
-import { describeSize, describeUses, useAssetActions, useAssets, type AssetEntry } from "../../hooks/use-assets";
+import { ImagePlus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { ASSET_DRAG_TYPE } from "../../constants/paths";
+import { describeSize, describeUses, useAssetActions, useAssets, useUploadPicture, type AssetEntry } from "../../hooks/use-assets";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenSingleImage } from "../../hooks/use-lightbox";
 import { useNodeImage } from "../../hooks/use-node-image";
@@ -30,6 +39,9 @@ export function AssetsPanel() {
   const { entries, isLoading, isUsageIncomplete, refresh } = useAssets();
   const { deleteAsset } = useAssetActions();
   const { confirmDestructive } = useDialogs();
+  const uploadPicture = useUploadPicture();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const unusedCount = entries.filter((entry) => entry.isUnused).length;
 
@@ -42,38 +54,76 @@ export function AssetsPanel() {
     refresh();
   }
 
-  if (isLoading) {
-    return <p className="tree-assets-note">Reading your pictures&hellip;</p>;
+  async function handleUpload(file: File | undefined) {
+    if (!file) return;
+    try {
+      await uploadPicture(file);
+      setError(null);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "That picture couldn't be added.");
+    }
+    // After the failure as well as the success: a rejected file changes
+    // nothing on disk, but a *partly* written one would, and the grid should
+    // show what's actually in the folder either way.
+    refresh();
   }
 
-  if (entries.length === 0) {
-    return (
+  // The header is outside the loading and empty branches below, because "add a
+  // picture" is the one thing that has to be reachable when the tab is empty —
+  // which is exactly when she has nothing else to click.
+  const header = (
+    <div className="tree-assets-header">
       <p className="tree-assets-note">
-        No pictures yet. Anything you upload as a page&rsquo;s portrait or cover, or drop into a page, lands here.
+        {isLoading
+          ? "Reading your pictures…"
+          : `${entries.length} ${entries.length === 1 ? "picture" : "pictures"}${
+              !isUsageIncomplete && unusedCount > 0 ? ` · ${unusedCount} used by nothing` : ""
+            }`}
       </p>
-    );
-  }
+      <button
+        type="button"
+        className="ui-icon-btn ui-icon-btn-sm"
+        title="Add a picture from your computer"
+        aria-label="Add a picture from your computer"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <ImagePlus size={14} />
+      </button>
+      {/* Value cleared on every pick, so choosing the same file twice in a row
+          still fires a change event the second time. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          void handleUpload(file);
+        }}
+      />
+    </div>
+  );
 
   return (
     <div className="tree-assets">
-      <p className="tree-assets-note">
-        {entries.length} {entries.length === 1 ? "picture" : "pictures"}
-        {!isUsageIncomplete && unusedCount > 0 && ` · ${unusedCount} used by nothing`}
-      </p>
+      {header}
+      {error && <p className="tree-assets-note tree-assets-error">{error}</p>}
       {isUsageIncomplete && (
         <p className="tree-assets-note tree-assets-warning">
           One of your pages wouldn&rsquo;t open, so this can&rsquo;t say for certain what&rsquo;s using what. Deleting
           is off until it can.
         </p>
       )}
+      {!isLoading && entries.length === 0 && (
+        <p className="tree-assets-note">
+          No pictures yet. Add one with the button above, or upload one as a page&rsquo;s portrait or cover — they all
+          land here.
+        </p>
+      )}
       <ul className="tree-assets-grid">
         {entries.map((entry) => (
-          <AssetTile
-            key={entry.fileName}
-            entry={entry}
-            onDelete={handleDelete}
-            usageIsCertain={!isUsageIncomplete}
-          />
+          <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} usageIsCertain={!isUsageIncomplete} />
         ))}
       </ul>
     </div>
@@ -110,14 +160,29 @@ function AssetTile({
   const detail = names.length > 0 ? `Used by ${names.join(", ")}` : unknown ? "Not sure yet" : "Not used anywhere";
 
   return (
-    <li className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`} title={detail}>
+    <li
+      className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`}
+      title={detail}
+      // Dragging one onto a page puts it there — the deliberate gesture that
+      // *clicking* isn't (see below). It carries the filename under a type of
+      // our own rather than as text, so nothing else in the app can mistake it
+      // for a dropped word; hooks/use-asset-drop.ts is the other end.
+      //
+      // A file that hasn't read isn't draggable, because the drop would write a
+      // reference to something that doesn't work and the empty box would turn
+      // up on the page rather than here.
+      draggable={status === "ready"}
+      onDragStart={(event) => {
+        event.dataTransfer.setData(ASSET_DRAG_TYPE, entry.fileName);
+        event.dataTransfer.effectAllowed = "copy";
+      }}
+    >
       {/* Clicking opens it full size, in the same viewer a picture inside a
           page opens in. Deliberately *not* "put this on the page you're
           looking at": these are 77px squares packed six to a screen, and a
           gesture that edits your writing shouldn't be the one you make while
-          trying to see what something is. Putting a picture into a page is the
-          picture block's own Library tab, where you've already said where it
-          goes. */}
+          trying to see what something is. Dragging is the deliberate version of
+          that, and the picture block's own Library tab is the other route. */}
       <div className="tree-assets-thumb">
         {status === "ready" && url ? (
           <img src={url} alt="" className="tree-assets-image" />
