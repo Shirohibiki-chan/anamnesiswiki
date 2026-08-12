@@ -117,6 +117,11 @@ export function AppLayout() {
         <SaveWarning />
         {/* An open template takes the centre panel, and the page underneath
             stays selected — closing it puts you back exactly where you were.
+            What it does *not* do is outlive a move to a page: going anywhere
+            clears it (the store's applySelection), as does returning to the
+            sidebar's Project tab (TreeSidebar). Both exist because this panel
+            shows one thing while the other two columns show another, and a
+            template that stayed put made a click on a tree row look ignored.
             Keyed by template id for the same reason PageView is keyed by node
             id: the tab strip's state resets on a switch without an effect. */}
         <main className="app-layout-page">
