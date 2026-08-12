@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-11 — pick a tag instead of retyping it
+
+### Additions
+
+- **A + at the end of the tag chips opens every tag in the project.** Search it, tick the ones this page should carry, untick one to take it off. Each tag shows how many pages already use it, so you can tell a real one from something typed once and forgotten.
+- **Typing a tag that already exists in a different capitalisation now uses the one you've got.** Type `SEAFARING` where the project has `Seafaring` and you get `Seafaring` — the whole point of being able to see the list is not ending up with three spellings no filter can find at once.
+- Typing an entirely new tag still creates it, from the picker or from the box above it as before.
+
 ## 2026-08-11 — pictures answer the keyboard
 
 ### Additions

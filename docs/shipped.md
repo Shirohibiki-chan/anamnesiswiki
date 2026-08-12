@@ -1423,3 +1423,88 @@ eyeballed, as with Phase 14.
 Templates surface only in the new-page screen, with a hover × to delete one.
 That's enough to make them usable and to undo a mistake; browsing, renaming and
 reorganising them is the Templates tab's job.
+
+---
+
+# Phase 16 — Images & Tags — 2026-08-11
+
+Pictures inside a page, the four buttons the sidebar portrait was missing, a
+lightbox, keyboard control of a selected picture, and a picker over the
+project's tags. Shipped as a run of PRs across 2026-08-11 (#126–#140). What
+still governs the code is in `docs/handoff.md`; this is the record.
+
+## What was in it
+
+- ~~**Pictures in a page at all**~~ — #126. BlockNote's image block holds one
+  string, so `uploadFile` decides what's written there and `resolveFileUrl`
+  turns it back into something the webview can paint. Providing `uploadFile` is
+  also what makes BlockNote render its Upload tab: its panel builds the tab list
+  as `uploadFile === undefined ? [] : [upload]` plus embed, which is why that
+  block used to offer a web address and nothing else.
+
+  **Embedding by URL stayed**, after being removed and put back the same day.
+  It crosses the "button-pressed, named host" rule on both counts and it is
+  hers — recorded as the one standing exception in `CLAUDE.md`.
+
+- ~~**The sidebar portrait's buttons**~~ — #127, #135. Change · reposition ·
+  open full size · describe · set as cover, with the remove × on hover. Click-
+  to-browse moved to the *empty* slot alone: with a reposition drag living on
+  the picture, a stray click opening a file dialog would fight it.
+
+- ~~**Save a copy, and quieter captions**~~ — #130. BlockNote's Download button
+  is `resolveFileUrl(url).then(window.open)`, which does nothing in a Tauri
+  window — replaced with the OS save dialog. On an embedded picture the same
+  button says **Open in browser** instead, because there are no bytes here to
+  copy. Captions went centred and muted, per her GitBook screenshot.
+
+- ~~**The lightbox**~~ — #135. Filename, arrows across every picture on the
+  page, scroll-to-zoom toward the pointer, drag to pan, Esc/←/→/+/−/0. Taken
+  from Obsidian 1.13/1.14 rather than designed from nothing.
+
+- ~~**Two fixes on the shipped lightbox**~~ — #136. Opening moved from click to
+  double-click, because a single click is what raises the formatting toolbar
+  and a window over it made the toolbar unreachable; a discoverable **Open full
+  size** button went into that toolbar. The `/` menu's positioning bug was
+  root-caused and fixed in the same PR (see `handoff.md`).
+
+- ~~**Keyboard control of a selected picture**~~ — #139. `+`/`-` resize by a
+  tenth, `0` restores its own size, Enter opens the Upload/Embed panel.
+  **Backspace and Ctrl/Cmd-C/X were already ProseMirror's** — measured before
+  building, not assumed. The auto-expand-on-cursor-near that Obsidian removed
+  was deliberately never built.
+
+- ~~**Tag picker**~~ — #140. A search box over every tag in the project, off a
+  **+** at the end of the chips, with the number of pages carrying each. It's a
+  spelling feature before it's a convenience: typing every tag by hand is how
+  one page ends up "seafaring", another "Seafaring" and a third "sea-faring",
+  after which no filter finds all three. Typing a tag that exists under a
+  different capitalisation adopts that spelling rather than minting a second.
+
+## Also fixed in the phase, from her testing
+
+Tree names getting the full sidebar width back (#128); the breadcrumb trail
+staying on one line, folding its middle away past four steps, and sitting under
+the banner at the right distance and brightness (#137, #138). The stale
+260-character path warning in `CLAUDE.md` was corrected against the measurement
+in `constants/limits.ts`.
+
+## Verification
+
+Lint, build and the full suite green on each PR; 771 tests at the phase's
+start, **806 at its end**.
+
+CSS and DOM behaviour measured rather than eyeballed, since `pnpm dev` can't
+open a project. Two things needed the *real* editor mounted in a browser to
+find at all: the `/` menu was placed while it was still a one-line loading
+strip and never re-measured (498px of it off screen, y=601 → y=10 after one
+forced reposition), and the keyboard work was driven against a real image block
+to confirm what BlockNote already did before adding anything.
+
+**Not run in the desktop app**, as with Phases 14 and 15.
+
+## Left queued deliberately
+
+LK-style hover buttons over a picture in a page, and its block dots menu — both
+in Queued Adjustments. The hover buttons mean rendering into BlockNote's own
+block markup, and half that menu (Layout, Link to page, Insert row below) is
+really Phase 18 sidebar-block work.

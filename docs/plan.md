@@ -288,10 +288,11 @@ Everything below comes out of one planning session: the user brought a list of r
 
 ---
 
-**Phases 11, 11.5, 12, 13, 14 and 15 are done** — the identity pass, the design
-system beneath it, themes, property types, everyday navigation, and the
-right-click menu's full pass. Their detail is in `docs/shipped.md`; what still
-binds the code is in `docs/handoff.md`. **Phase 16 is next.**
+**Phases 11, 11.5, 12, 13, 14, 15 and 16 are done** — the identity pass, the
+design system beneath it, themes, property types, everyday navigation, the
+right-click menu's full pass, and pictures and tags. Their detail is in
+`docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
+**Phase 17 is next.**
 
 One thing Phase 15 left for **Phase 17** on purpose: this world's own templates
 surface only in the new-page screen, with a hover × to delete one. Enough to
@@ -300,18 +301,6 @@ them is the Templates tab's job.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 16 — Images & Tags
-
-- **Image slot buttons**, per the user's screenshot: change image, reposition, expand to lightbox, ALT text, Set cover. The remove **×** becomes hover-only. Note the *banner* already has upload, drag-to-reposition and hover-× (`PageBanner.tsx`) — this phase is about the sidebar portrait, which doesn't.
-- **What the lightbox actually does**, taken from Obsidian 1.13/1.14 rather than designed from nothing — the bullet above said "expand to lightbox" and stopped there. Three details, and they're what separates a big picture from something usable on a character page with six portraits on it:
-  - **the file name of the current image is shown**;
-  - **arrow between every image embedded in the current page**, not just the one clicked;
-  - **click and drag to pan** within a zoomed image.
-- **Keyboard control of images in the editor**, same source. Select an image with the keyboard; `+`/`-` resize it, `0` resets, backspace deletes it, `Enter` edits, `Ctrl/Cmd-C`/`X` copy or cut. Paired with a change worth copying for its own sake: Obsidian *stopped* auto-expanding an image to reveal its filename when the cursor moves near it. That flicker is cheaper never to build than to remove later, so **don't build the auto-expand**.
-- **Tag picker** — a search box over a checkbox list of every tag in the project, reached from a **+** next to the existing chips.
 
 ---
 
