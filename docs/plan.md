@@ -136,11 +136,74 @@ What comes across: headings, bold/italic/underline/strikethrough, nested lists, 
 
 **Pictures embedded in a `.docx` are inside the zip, and that is one of the very few later moments a picture's real name exists** — the archive stores original media filenames. They extract into `assets/` down the same path an upload takes, and the name goes into `.names.json` at that moment or is lost for good. See handoff §Editor & templates.
 
+**Keep the formatting is only half of it — keep the *characters* is the other half.** A lot of what these documents hold isn't prose, it's prompt text: `{{char}}`, `{{user}}`, square and angle brackets, and whatever syntax the target platform uses. Google Docs also curls quotes and dashes silently as you type, so a prompt can already be subtly wrong before it's exported. The importer must pass text through unchanged — **no smart-quote conversion, no whitespace collapsing, no escaping of braces, no tidying of any kind.** Anything that reads as a "clean up the text" helper is the bug.
+
+---
+
+**Import and paste fidelity — what actually goes wrong**
+
+Notes from botmakers and fic writers describing their current tool, 2026-08-12,
+gathered by the user in a chat she was in. Paraphrased; no handles recorded,
+because this is a public repo and they were talking to each other rather than
+to us. **The complaints were unprompted and specific, which is what makes them
+worth keeping** — this is the failure everyone downstream of a document
+importer actually hits, and it is not the one you'd design against from
+imagination.
+
+What they reported, in the order it hurt:
+
+- **Paragraph spacing is the first casualty and the most-reported one.** Blank
+  lines between paragraphs vanish and a carefully spaced document arrives as
+  one wall of text. Reported on three separate paths with the same symptom:
+  pasting *in*, pasting *out*, and importing a file.
+- **Formatting that was never in the source gets added.** Headings that don't
+  exist, bold that wasn't bold, doubled spaces. **This is worse than losing
+  formatting, and the plan should treat it as worse**: losing it is visible and
+  fixable in a minute, inventing it means editing a document you no longer
+  recognise, and one of them described re-doing every heading and section by
+  hand after each import.
+- **Pasting *out* matters as much as importing in.** Their text goes on to
+  lorebook builders and other people's editors, so a page that can't leave
+  cleanly is as broken as one that can't be filled. One of them named a
+  specific round trip — write here, paste into a lorebook tool, watch the line
+  breaks die.
+- **Hand-repairing the formatting inside the tool made it worse**, which is how
+  a formatting bug turns into an abandoned document.
+- **The cost isn't annoyance.** One of them said the fight with formatting is
+  part of why they stopped finishing their bots. That is the actual stake here:
+  not polish, but whether the work gets done at all.
+
+**Anti-goals, written down so nobody has to rediscover them:**
+
+1. **Never invent formatting.** No heading, bold run or emphasis that the source
+   didn't have. Where a mapping is ambiguous, emit a plain paragraph — being
+   boring is recoverable, being wrong is not.
+2. **An empty paragraph is content.** Preserve blank lines exactly; never
+   normalise runs of them.
+3. **Never touch the characters** — see the `{{char}}` note above.
+4. **Round trip is the test, not import.** The acceptance question is "paste it
+   out and is it the same", not "does it look right on screen".
+
+**Paste is a different code path from file import and has to be checked
+separately.** BlockNote does its own clipboard handling and nothing here has
+ever tested it — see Queued Adjustments.
+
+**Two things about the tools they're leaving, both worth not repeating:**
+
+- **An "export to AO3" button is a reason people pick a writing app.** One of
+  them said it outright — it's why they use that site. That upgrades the AO3
+  entry below from a nice-to-have to a draw.
+- **They left Google Docs because it has a length limit and their current tool
+  doesn't.** Whatever Anamnesis does, it must not introduce one. Nothing here
+  currently does; keep it that way.
+
 ---
 
 **Export to AO3**
 
 Asked for by the user 2026-08-12. Wanted, unscheduled.
+
+Raised half as a joke and it shouldn't be taken as one: a competing tool's AO3 export is the stated reason one of the writers above uses that tool at all. See the fidelity entry.
 
 **There is nothing to post to.** AO3 has no public write API, and posting on her behalf would need her account plus a network call — both out. So this produces something she pastes into AO3's rich-text box, or a file she uploads. No host is ever contacted, which keeps it inside the Policy Boundary without an argument.
 
@@ -157,6 +220,22 @@ Asked for by the user 2026-08-12. Wanted, unscheduled.
 ---
 
 ## Queued Adjustments
+
+- **Find out what our own copy and paste actually does, before building any
+  importer on top of it.** Raised 2026-08-12 by what botmakers said about the
+  tool they're leaving (see Future Features → Import and paste fidelity): the
+  formatting complaints were as much about pasting in and out as about file
+  import, and paste is a code path nothing here has ever looked at. BlockNote
+  handles the clipboard itself.
+
+  This is a measurement, not a build, and it's cheap: paste a spaced document
+  in from Google Docs, from Word, and from a plain text editor, and check
+  whether blank lines survive and whether any heading or bold appears that
+  wasn't there. Then copy a page *out* into a plain textarea and see what comes
+  with it. **Write the answer down either way** — if it's already right, that's
+  a baseline the importer must not regress; if it's wrong, it's a bug we ship
+  today and don't know about, and it makes the whole import feature moot until
+  fixed.
 
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
   2026-08-11 as the shape to match.** Two parts, neither built here yet:
