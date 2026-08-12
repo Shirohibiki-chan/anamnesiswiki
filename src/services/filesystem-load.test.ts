@@ -248,6 +248,77 @@ describe("loadProject", () => {
   });
 });
 
+// The exact shape found in the user's own project on 2026-08-12: a page that
+// changed storage shape, whose old flat file was never carried into the new
+// directory. Two files, one id — and the graph is keyed by id, so one of them
+// was being dropped on a coin toss, taking its portrait and cover out of the
+// Assets tab's usage count with it.
+describe("loadProject with two files claiming one node id", () => {
+  function copy(id: string, name: string, updatedAt: number, extra: Record<string, unknown> = {}) {
+    return { ...nodeJson(id, name, "blank"), updatedAt, ...extra };
+  }
+
+  it("keeps the copy that was written most recently", async () => {
+    put("Untitled.json", copy("dup", "Untitled", 100));
+    put("Untitled/_page.json", copy("dup", "Untitled", 900, { image: "portrait.png" }));
+
+    const result = await loadProject(ROOT);
+    expect(result!.nodes).toHaveLength(1);
+    expect(result!.nodes[0].image).toBe("portrait.png");
+  });
+
+  // The whole reason this matters: the losing copy's pictures were invisible
+  // to `indexAssetUsage`, which is what put a delete button on them.
+  it("keeps the newest copy even when it's the flat file rather than the marker", async () => {
+    put("Untitled.json", copy("dup", "Untitled", 900, { image: "portrait.png" }));
+    put("Untitled/_page.json", copy("dup", "Untitled", 100));
+
+    const result = await loadProject(ROOT);
+    expect(result!.nodes).toHaveLength(1);
+    expect(result!.nodes[0].image).toBe("portrait.png");
+  });
+
+  it("sets the losing flat file aside and says whose it was", async () => {
+    put("Untitled.json", copy("dup", "Untitled", 100));
+    put("Untitled/_page.json", copy("dup", "Untitled", 900));
+
+    const result = await loadProject(ROOT);
+    expect(renames).toEqual([[`${ROOT}/Untitled.json`, `${ROOT}/Untitled.json.old-copy`]]);
+    expect(result!.supersededNames).toEqual(["Untitled"]);
+  });
+
+  // Taking the marker would leave its children with no owner, and the next
+  // load would hoist them up a level — a rearranged tree in exchange for a
+  // tidier folder. Dropping it from the graph is enough.
+  it("leaves a losing marker file alone on disk, children and all", async () => {
+    put("Untitled.json", copy("dup", "Untitled", 900));
+    put("Untitled/_page.json", copy("dup", "Untitled", 100));
+    put("Untitled/Inside.json", nodeJson("inside", "Inside", "note"));
+
+    const result = await loadProject(ROOT);
+    expect(renames).toEqual([]);
+    expect(result!.supersededNames).toEqual([]);
+    expect(result!.nodes.map((n) => n.id).sort()).toEqual(["dup", "inside"]);
+  });
+
+  // A directory-storage node and a same-named leaf page are two legitimate
+  // nodes that never collide on disk — see CLAUDE.md's collision rules. This
+  // must not be what merges them.
+  it("leaves two different nodes that happen to share a name alone", async () => {
+    put("Untitled.json", copy("leaf", "Untitled", 100));
+    put("Untitled/_page.json", copy("nested", "Untitled", 900));
+
+    const result = await loadProject(ROOT);
+    expect(renames).toEqual([]);
+    expect(result!.nodes.map((n) => n.id).sort()).toEqual(["leaf", "nested"]);
+  });
+
+  it("reports nothing on a project with no duplicates", async () => {
+    put("Letter.json", nodeJson("letter", "Letter", "note"));
+    expect((await loadProject(ROOT))!.supersededNames).toEqual([]);
+  });
+});
+
 // Every one of these is real IPC into Rust in the running app, and they're what
 // the user waits through when opening a project. The counts are asserted
 // exactly, not as an upper bound, so a change that quietly reintroduces a probe

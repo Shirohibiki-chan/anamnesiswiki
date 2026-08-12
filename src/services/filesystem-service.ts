@@ -337,6 +337,12 @@ export type LoadedProject = {
    * differently, and "your work is under *this*" is the useful half.
    */
   reunited: string[];
+  /**
+   * Names of pages that had a second, older copy of themselves on disk. The
+   * older file has been renamed `.old-copy` and the newer one kept. Names
+   * again, not a count: the page is open in her tree and she can check it.
+   */
+  supersededNames: string[];
 };
 
 // A project folder is plain JSON on the user's own disk, synced by whatever
@@ -356,20 +362,101 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     return null;
   }
 
-  const skipped: string[] = [];
-  const recovered: StrandedNode[] = [];
-  const reunited: string[] = [];
-  const limited = createReadLimiter(READ_CONCURRENCY);
-  const rootEntries = await limited(() => readDir(rootPath));
-  const nodes = await walkEntries(rootPath, rootEntries, null, skipped, recovered, reunited, limited);
+  const ctx: WalkContext = {
+    skipped: [],
+    recovered: [],
+    reunited: [],
+    sources: new Map(),
+    limited: createReadLimiter(READ_CONCURRENCY),
+  };
+  const rootEntries = await ctx.limited(() => readDir(rootPath));
+  const walked = await walkEntries(rootPath, rootEntries, null, ctx);
+
+  // Before anything else looks at the graph: two files claiming one id have to
+  // become one node, or every count taken off the graph is taken off a
+  // coin toss.
+  const { nodes, supersededNames } = await setAsideSupersededCopies(walked, ctx.sources);
+
   // Directories are read in parallel, so the order files finish in is down to
   // timing. Sorting keeps the lists the user sees stable between two loads of
   // the same damaged project.
-  skipped.sort();
-  reunited.sort();
+  ctx.skipped.sort();
+  ctx.reunited.sort();
+  supersededNames.sort();
 
-  const recoveredCount = await repairStrandedNodes(rootPath, nodes, recovered);
-  return { project, nodes, skipped, recoveredCount, reunited };
+  const recoveredCount = await repairStrandedNodes(rootPath, nodes, ctx.recovered);
+  return { project, nodes, skipped: ctx.skipped, recoveredCount, reunited: ctx.reunited, supersededNames };
+}
+
+// Two files on disk, one node id. The graph is a `Record<string, Node>` keyed
+// by id, so without this one of them simply wins on load order and the other's
+// portraits, covers and writing are invisible — while still sitting on disk
+// under a delete button, since nothing in the app can see they're in use.
+// That's how the user's Assets tab called five pictures unused on 2026-08-12
+// when only two of them were.
+//
+// It happens when a page changes storage shape — gaining its first child, or
+// taking a template that's a directory even when empty — and the rename that
+// should have carried its file into the new directory didn't land. The write
+// path is where that's prevented (see `clearSupersededCopy`); this is for the
+// projects already holding one, and for the next time a rename loses a fight
+// with a sync client.
+//
+// **The newest write wins**, on `updatedAt` rather than the file's own
+// timestamp: it's the node's own record of when its content last changed, it
+// survives a copy or a sync, and a leftover is by definition the copy that
+// stopped being written to. Ties go to the marker file, which is the shape the
+// app converts *towards*.
+//
+// Only a flat `Name.json` is moved out of the way on disk. A losing marker
+// file is dropped from the graph and left where it is: its directory may hold
+// children, and taking the marker would have the next load hoist them up a
+// level — trading a wrong picture count for a rearranged tree.
+async function setAsideSupersededCopies(
+  walked: Node[],
+  sources: Map<Node, string>,
+): Promise<{ nodes: Node[]; supersededNames: string[] }> {
+  const byId = new Map<string, Node[]>();
+  for (const node of walked) byId.set(node.id, [...(byId.get(node.id) ?? []), node]);
+  if (byId.size === walked.length) return { nodes: walked, supersededNames: [] };
+
+  const isMarker = (node: Node): boolean => {
+    const path = sources.get(node) ?? "";
+    return path.endsWith(PAGE_META_FILE) || path.endsWith(FOLDER_FILE);
+  };
+
+  const kept: Node[] = [];
+  const supersededNames: string[] = [];
+  for (const copies of byId.values()) {
+    if (copies.length === 1) {
+      kept.push(copies[0]);
+      continue;
+    }
+    const ranked = [...copies].sort(
+      (a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0) || Number(isMarker(b)) - Number(isMarker(a)),
+    );
+    kept.push(ranked[0]);
+    for (const loser of ranked.slice(1)) {
+      const path = sources.get(loser);
+      // Nothing was moved, so nothing is reported: the graph is right either
+      // way, and a notice that reappears on every load with no action behind
+      // it teaches the user to dismiss notices.
+      if (!path || isMarker(loser)) continue;
+      // Renamed rather than deleted, and to something the walk won't read
+      // again: this is the user's own writing, however stale, and a load
+      // shouldn't be the thing that throws any of it away. `.old-copy` doesn't
+      // end in `.json`, so it's inert on the next load and still openable by
+      // hand if the app picked wrong.
+      try {
+        await rename(path, `${path}.old-copy`);
+        supersededNames.push(ranked[0].name);
+      } catch {
+        // Already set aside by an earlier load, or locked. It's out of the
+        // graph either way, which is the half that matters.
+      }
+    }
+  }
+  return { nodes: kept, supersededNames };
 }
 
 // Puts anything left parked under a move's temp name back at its real path.
@@ -409,16 +496,17 @@ type ReadLimiter = <T>(task: () => Promise<T>) => Promise<T>;
 // rest of the app indexes it by. A file that parses into something shapeless
 // would otherwise land in the graph as an `undefined` id and break the tree
 // far away from the actual cause.
-async function readNodeFile(path: string, skipped: string[], limited: ReadLimiter): Promise<Node | null> {
+async function readNodeFile(path: string, ctx: WalkContext): Promise<Node | null> {
   try {
-    const parsed = JSON.parse(await limited(() => readTextFile(path))) as Node;
+    const parsed = JSON.parse(await ctx.limited(() => readTextFile(path))) as Node;
     if (!parsed || typeof parsed.id !== "string" || typeof parsed.name !== "string") {
-      skipped.push(path);
+      ctx.skipped.push(path);
       return null;
     }
+    ctx.sources.set(parsed, path);
     return parsed;
   } catch {
-    skipped.push(path);
+    ctx.skipped.push(path);
     return null;
   }
 }
@@ -437,6 +525,24 @@ async function readNodeFile(path: string, skipped: string[], limited: ReadLimite
 // Sibling entries are read in parallel (they're independent files) with the
 // shared limiter capping how many are actually in flight.
 type StrandedNode = { tempPath: string; nodeId: string };
+
+// The walk's four accumulators and its read limiter, passed as one value.
+// They were five separate parameters threaded through three recursive call
+// sites, which is how `sources` — the fifth — would have gone in unnoticed at
+// two of them and silently held half the project.
+type WalkContext = {
+  skipped: string[];
+  recovered: StrandedNode[];
+  reunited: string[];
+  /**
+   * Where each node was read from, keyed by the node object rather than its
+   * id — the whole point is the case where one id arrives twice, and a map
+   * keyed by id would drop exactly the half that matters. Object identity is
+   * safe here because `readNodeFile` parses a fresh object per file.
+   */
+  sources: Map<Node, string>;
+  limited: ReadLimiter;
+};
 
 function markerFileOf(entries: DirEntry[]): string | null {
   if (entries.some((child) => !child.isDirectory && child.name === FOLDER_FILE)) return FOLDER_FILE;
@@ -472,10 +578,7 @@ async function walkEntries(
   dirPath: string,
   entries: DirEntry[],
   parentId: string | null,
-  skipped: string[],
-  recovered: StrandedNode[],
-  reunited: string[],
-  limited: ReadLimiter,
+  ctx: WalkContext,
 ): Promise<Node[]> {
   // Every subdirectory at this level is listed before anything here is read.
   // Pairing a flat `Name.json` with a `Name/` beside it needs to know whether
@@ -490,7 +593,7 @@ async function walkEntries(
       // a world's worth of images is the one place where that would cost
       // something for nothing.
       if (!entry.isDirectory || (parentId === null && entry.name === ASSETS_DIR)) return;
-      listings.set(entry.name, await limited(() => readDir(joinPath(dirPath, entry.name))));
+      listings.set(entry.name, await ctx.limited(() => readDir(joinPath(dirPath, entry.name))));
     }),
   );
 
@@ -528,11 +631,11 @@ async function walkEntries(
         // with no marker in it. The whole subtree then vanished from the tree
         // on the next load while sitting perfectly intact on disk.
         if (!markerFile) {
-          const hoisted = await walkEntries(entryPath, childEntries, parentId, skipped, recovered, reunited, limited);
+          const hoisted = await walkEntries(entryPath, childEntries, parentId, ctx);
           const ownerFileName = `${entry.name}.json`;
           if (!ownerFileNames.has(ownerFileName)) return hoisted;
 
-          const owner = await readNodeFile(joinPath(dirPath, ownerFileName), skipped, limited);
+          const owner = await readNodeFile(joinPath(dirPath, ownerFileName), ctx);
           if (!owner) return hoisted;
           owner.parentId = parentId;
 
@@ -546,12 +649,17 @@ async function walkEntries(
           // the page into it would move a file for no reason.
           if (adoptees.length > 0 && (await reuniteOwnerFile(joinPath(dirPath, ownerFileName), entryPath, owner))) {
             for (const child of adoptees) child.parentId = owner.id;
-            reunited.push(owner.name);
+            ctx.reunited.push(owner.name);
+            // It lives inside the directory now. Left pointing at the flat
+            // path it came from, the duplicate pass below would set aside a
+            // file that is no longer there — or worse, one a later save had
+            // recreated.
+            ctx.sources.set(owner, joinPath(entryPath, ownMetaFileName(owner)));
           }
           return [owner, ...hoisted];
         }
 
-        const node = await readNodeFile(joinPath(entryPath, markerFile), skipped, limited);
+        const node = await readNodeFile(joinPath(entryPath, markerFile), ctx);
         // An unreadable marker still leaves a real directory that may hold
         // perfectly good children. Keep walking into it, reparented to this
         // level, so a single bad `_folder.json` costs one node and not the
@@ -561,16 +669,8 @@ async function walkEntries(
         // fine — but it's still sitting at the wrong path, and its odd name
         // would survive every future save. Reported for the same repair as a
         // stranded file.
-        if (node && entry.name.startsWith(MOVE_TEMP_PREFIX)) recovered.push({ tempPath: entryPath, nodeId: node.id });
-        const children = await walkEntries(
-          entryPath,
-          childEntries,
-          node?.id ?? parentId,
-          skipped,
-          recovered,
-          reunited,
-          limited,
-        );
+        if (node && entry.name.startsWith(MOVE_TEMP_PREFIX)) ctx.recovered.push({ tempPath: entryPath, nodeId: node.id });
+        const children = await walkEntries(entryPath, childEntries, node?.id ?? parentId, ctx);
         return node ? [node, ...children] : children;
       }
 
@@ -599,10 +699,10 @@ async function walkEntries(
       const isStrandedMove = entry.name.startsWith(MOVE_TEMP_PREFIX);
       if (!isStrandedMove && !entry.name.endsWith(".json")) return [];
 
-      const node = await readNodeFile(entryPath, skipped, limited);
+      const node = await readNodeFile(entryPath, ctx);
       if (!node) return [];
       node.parentId = parentId;
-      if (isStrandedMove) recovered.push({ tempPath: entryPath, nodeId: node.id });
+      if (isStrandedMove) ctx.recovered.push({ tempPath: entryPath, nodeId: node.id });
       return [node];
     }),
   );
@@ -739,6 +839,52 @@ export async function saveNode(rootPath: string, node: Node, graph: Node[] | Pat
       error instanceof Error ? error.message : String(error),
       await supportsLongPaths(rootPath),
     );
+  }
+
+  // Only reached on a successful write — the catch above always rethrows.
+  await clearSupersededCopy(rootPath, node, dirSegments, fileName);
+}
+
+// A node that has just been written into its own directory must not still have
+// its old flat file sitting beside that directory.
+//
+// Storage shape changes under a page — it gains its first child, or takes a
+// template that's a directory even when empty — and `planRelocations` moves
+// its file into the new directory to match. When that rename doesn't land (the
+// OS refused, or a sync client had the file open and `exists` then said it was
+// gone), the relocation is skipped but the *save* still goes ahead at the new
+// path. Two files, one node id, and the load after that can only keep one of
+// them. This is the moment where the leftover is provably stale, because the
+// current content was just written elsewhere — so it's also the cheapest place
+// to be sure of it. `setAsideSupersededCopies` is the load-side counterpart,
+// for the copies already made.
+//
+// The id is checked before anything is touched: a directory-storage node and a
+// same-named leaf page are two legitimate nodes that never collide on disk
+// (see the sibling-collision rules in CLAUDE.md), and this must not be what
+// deletes one of them. Failures are silent — the load pass catches what's
+// left, and a save must never fail over tidying.
+async function clearSupersededCopy(
+  rootPath: string,
+  node: Node,
+  dirSegments: string[],
+  fileName: string,
+): Promise<void> {
+  // Only the directory form has a flat twin to worry about. The other
+  // direction — a page going back to flat, leaving its old `_page.json`
+  // behind — is left to `pruneEmptyDir`, because that directory can still
+  // hold children and its marker is what keeps them attached.
+  if (fileName !== PAGE_META_FILE && fileName !== FOLDER_FILE) return;
+
+  const flatPath = joinPath(rootPath, ...dirSegments.slice(0, -1), `${dirSegments[dirSegments.length - 1]}.json`);
+  try {
+    if (!(await exists(flatPath))) return;
+    const stale = JSON.parse(await readTextFile(flatPath)) as Node;
+    if (!stale || stale.id !== node.id) return;
+    await rename(flatPath, `${flatPath}.old-copy`);
+  } catch {
+    // Unreadable, locked, or already set aside. The load pass reports what's
+    // still there, and this one is not worth failing a save over.
   }
 }
 

@@ -102,6 +102,40 @@ is below.
   **`saveNodes` is not the same thing** and is only for writing into a graph
   that already accounts for the nodes — an import building a world from nothing.
 
+- **Two files claiming one node id is the failure this module is shaped around,
+  and it is now caught at both ends.** The graph is a `Record<string, Node>`
+  keyed by id, so a duplicate isn't an error — one copy simply wins on load
+  order and the other's writing, portraits and covers become invisible while
+  still on disk. It reached the user on 2026-08-12 as an Assets tab offering to
+  delete a live page's portrait, which is the shape of damage to expect from it:
+  not a crash, a confidently wrong answer somewhere far away.
+
+  The two guards are deliberately different. `clearSupersededCopy` runs after
+  every successful write of a marker file and clears the node's own flat twin
+  beside the directory — that's the moment the leftover is *provably* stale,
+  because the current content was just written elsewhere. `setAsideSupersededCopies`
+  runs on load for the copies already made, keeping the highest `updatedAt` and
+  renaming the loser to `.old-copy`. Both check the id inside the file first: a
+  directory-storage node and a same-named leaf page are two legitimate nodes
+  that never collide, and neither guard may be what merges them.
+
+  **A losing *marker* file is dropped from the graph and left on disk.** Its
+  directory may hold children, and taking the marker has the next load hoist
+  them up a level — a rearranged tree in exchange for a tidier folder. Only a
+  flat `Name.json` is moved aside.
+
+  **Nothing is deleted, ever.** `.old-copy` doesn't end in `.json`, so the walk
+  ignores it and the user still has the file. A load is the last place that
+  should be throwing any of her writing away.
+
+- **Anything derived from "every page" has to know when the load wasn't
+  complete.** The Assets tab's `isUnused` is the first of these and won't be the
+  last: it's a claim about all pages, so one unreadable file makes it a guess,
+  and it had a delete button hanging off it. `loadWasIncomplete` on the store is
+  separate from `skippedFiles` because that list is emptied when she dismisses
+  the notice — and dismissing a notice must never be what re-enables a
+  destructive control.
+
 - **Deleting or moving several nodes is one call, never a loop over the
   single-node one.** This follows directly from the line above: every delete and
   every move ends by renumbering colliding siblings across the *whole* graph, so

@@ -73,7 +73,7 @@ const fsMock = vi.hoisted(() => {
 });
 vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 
-import { addNodes, moveNodes, renameNode } from "./filesystem-service";
+import { addNodes, moveNodes, renameNode, saveNode } from "./filesystem-service";
 import { enqueueWrite, whenWritesSettle } from "./write-queue";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
@@ -207,5 +207,57 @@ describe("relocations that do have something to move", () => {
     await moveNodes("/root", [folder, first, second], [folder, first, nested], ["b"]);
 
     expect(layout()).toEqual(["F/Untitled/Untitled.json", "F/Untitled/_page.json", "F/_folder.json"]);
+  });
+});
+
+// What's left when a conversion's rename doesn't land but the save goes ahead
+// anyway: the page's old flat file sitting beside the directory holding its new
+// one, both claiming the same id. The load can only keep one of them, and the
+// one it drops takes its pictures out of the Assets tab's usage count — which
+// is how three of the user's five "unused" pictures on 2026-08-12 were a live
+// page's portrait and cover.
+describe("a stale copy of a node left beside its own directory", () => {
+  const page = node({ id: "p", name: "New Note", parentId: "f", templateKey: "note" });
+  const child = node({ id: "c", name: "Untitled", parentId: "p", templateKey: "blank" });
+  const graph = [folder, page, child];
+
+  beforeEach(() => {
+    disk.dirs.add("/root/F");
+    disk.dirs.add("/root/F/New Note");
+    disk.files.set("/root/F/_folder.json", "{}");
+    disk.files.set("/root/F/New Note/Untitled.json", "{}");
+  });
+
+  it("sets the leftover aside when the node saves", async () => {
+    disk.files.set("/root/F/New Note.json", JSON.stringify({ id: "p", name: "New Note" }));
+
+    await saveNode("/root", page, graph);
+
+    expect(layout()).toEqual([
+      "F/New Note.json.old-copy",
+      "F/New Note/Untitled.json",
+      "F/New Note/_page.json",
+      "F/_folder.json",
+    ]);
+  });
+
+  // A directory-storage node and a same-named leaf page are two legitimate
+  // nodes that never collide on disk — see CLAUDE.md's collision rules. The id
+  // is what separates the two cases, and checking it is the whole reason this
+  // reads the file instead of trusting the name.
+  it("leaves a different node that happens to share the name alone", async () => {
+    disk.files.set("/root/F/New Note.json", JSON.stringify({ id: "other", name: "New Note" }));
+
+    await saveNode("/root", page, graph);
+
+    expect(layout()).toContain("F/New Note.json");
+  });
+
+  it("saves anyway when the leftover can't be moved", async () => {
+    disk.files.set("/root/F/New Note.json", JSON.stringify({ id: "p", name: "New Note" }));
+    locked.path = "/root/F/New Note.json";
+
+    await expect(saveNode("/root", page, graph)).resolves.toBeUndefined();
+    expect(layout()).toContain("F/New Note/_page.json");
   });
 });
