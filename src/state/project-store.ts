@@ -660,6 +660,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     const leavesFocus = Boolean(focusedId) && (!id || !isDescendantOf(id, focusedId!, nodes));
     set({
       project: nextProject,
+      // Going to a page closes an open template. The centre panel shows one
+      // thing at a time, and every route into here is a deliberate move to a
+      // page — a tree row, a mention, a search result, back/forward/home.
+      // Without this the move half-lands: the selection changes, the sidebar
+      // follows it, the properties panel redraws for the new page, and the
+      // centre keeps editing the template, which reads as the click doing
+      // nothing at all.
+      openTemplateId: null,
       pendingFocus: id && tabId ? { nodeId: id, tabId } : null,
       // Survives only the one selection that opens the page it names — which
       // is the selection the create hook makes a line after asking. Every

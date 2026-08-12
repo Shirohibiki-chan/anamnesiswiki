@@ -9,6 +9,7 @@
 // doesn't persist across launches either: the sidebar is the app's main
 // navigation and it should open showing the tree.
 import { useState } from "react";
+import { useTemplateActions } from "../../hooks/use-template-editing";
 import { AssetsPanel } from "./AssetsPanel";
 import { ProjectHeader } from "./ProjectHeader";
 import { TemplatesPanel } from "./TemplatesPanel";
@@ -19,13 +20,33 @@ type SidebarTab = "project" | "templates" | "assets";
 
 export function TreeSidebar() {
   const [tab, setTab] = useState<SidebarTab>("project");
+  const { openTemplate } = useTemplateActions();
+
+  /**
+   * Arriving on the Project tab closes whatever template was open.
+   *
+   * That tab *is* the page navigator — it exists to choose what the centre
+   * panel shows — so standing on it while the centre still edits a template is
+   * the sidebar and the page disagreeing about where you are. Selecting a page
+   * closes the template too (see the store's applySelection), but that only
+   * fires once you've clicked a row, and the first click is exactly the one
+   * that looked broken.
+   *
+   * Assets deliberately doesn't do this. It's a source panel you open *for*
+   * whatever's in the centre rather than a way of getting somewhere, and a
+   * picture can be dragged into a template as readily as into a page.
+   */
+  function selectTab(next: SidebarTab) {
+    setTab(next);
+    if (next === "project") openTemplate(null);
+  }
 
   return (
     <div className="tree-sidebar">
       <div className="tree-sidebar-tabs" role="tablist">
-        <SidebarTabButton label="Project" tab="project" current={tab} onSelect={setTab} />
-        <SidebarTabButton label="Templates" tab="templates" current={tab} onSelect={setTab} />
-        <SidebarTabButton label="Assets" tab="assets" current={tab} onSelect={setTab} />
+        <SidebarTabButton label="Project" tab="project" current={tab} onSelect={selectTab} />
+        <SidebarTabButton label="Templates" tab="templates" current={tab} onSelect={selectTab} />
+        <SidebarTabButton label="Assets" tab="assets" current={tab} onSelect={selectTab} />
       </div>
 
       {/* The project header and search belong to the tree, not to the sidebar —

@@ -878,6 +878,19 @@ is below.
   one of them looking up an id that isn't in `nodes`. Not persisted either: the
   template you last had open isn't a fact about the world.
 
+- **An open template must not survive a move to a page.** `openTemplateId` is
+  the only thing deciding whether the centre panel is `TemplateView` or
+  `PageView`, and while it's set the other two columns carry on obeying
+  `selectedId` — so a tree click updated the sidebar highlight and redrew the
+  properties panel while the centre kept editing the template, which reads as
+  the click having done nothing. Cleared in two places: `applySelection` (every
+  navigation there is — tree row, mention, search result, back/forward/home)
+  and TreeSidebar when the Project tab is opened, since that tab exists to
+  choose what the centre shows and standing on it is already the disagreement.
+  **Switching to Assets deliberately doesn't clear it** — that tab is a source
+  you open *for* whatever's in the centre, and a picture dragged out of it
+  belongs in a template as readily as in a page.
+
 - **`indexAssetUsage` must see the template library, and it takes it as an
   argument so a caller can't forget.** A picture is in use in four places, not
   three: portrait, cover, inside a page's writing, and all three again in
