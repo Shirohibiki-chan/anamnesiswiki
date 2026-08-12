@@ -5,13 +5,16 @@ import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
 import { useProject } from "./use-project";
 import { useCallback } from "react";
+import { BREADCRUMB_MAX_ANCESTORS } from "../constants/limits";
 import {
   buildTreeData,
+  collapseBreadcrumb,
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
   isHiddenByAncestor,
   moveDestinations,
+  type BreadcrumbTrail,
   type EffectiveColor,
   type MoveDestination,
   type TreeNodeData,
@@ -24,6 +27,7 @@ import type { Node } from "../constants/schema";
 export { TREE_SEARCH_MODES } from "../services/tree-service";
 export type { TreeSearchMode } from "../services/tree-service";
 export type { MoveDestination } from "../services/tree-service";
+export type { BreadcrumbTrail } from "../services/tree-service";
 
 export function useTreeData(): {
   treeData: TreeNodeData[];
@@ -72,6 +76,17 @@ export function useEffectiveColor(nodeId: string): EffectiveColor {
 
 export function useAncestorChain(nodeId: string): Node[] {
   return useProjectStore(useShallow((state) => getAncestorChain(nodeId, state.nodes)));
+}
+
+/**
+ * The same chain, with its middle folded away once it's longer than the bar
+ * can show. Memoised off the shallow-compared chain above, so the trail keeps
+ * its identity between renders and the breadcrumb doesn't rebuild whenever
+ * anything anywhere in the project is edited.
+ */
+export function useBreadcrumbTrail(nodeId: string): BreadcrumbTrail {
+  const ancestors = useAncestorChain(nodeId);
+  return useMemo(() => collapseBreadcrumb(ancestors, BREADCRUMB_MAX_ANCESTORS), [ancestors]);
 }
 
 // A plain boolean, so no shallow compare needed — this only re-renders the row

@@ -80,6 +80,17 @@ export const LIGHTBOX_MIN_SCALE = 1;
 export const LIGHTBOX_MAX_SCALE = 8;
 export const LIGHTBOX_ZOOM_STEP = 1.3;
 
+// How many steps the page's breadcrumb trail shows before it folds its middle
+// away behind an ellipsis. Counts the ancestors only — the project name at the
+// front and the page itself at the end are always shown, so four here is a
+// six-crumb bar at its widest.
+//
+// Four rather than two because the trail is also the answer to "where am I",
+// and a page three levels down is common enough in this user's worlds that
+// hiding a step there would fold something away far more often than not. Past
+// four it stops being read as a path and starts being read as a wall.
+export const BREADCRUMB_MAX_ANCESTORS = 4;
+
 // How long the pointer has to stay on a link before its preview appears. This
 // number is the difference between a convenience and something you learn to
 // steer around: with no delay, a card fires on every link the pointer crosses

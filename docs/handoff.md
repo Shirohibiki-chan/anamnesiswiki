@@ -1171,6 +1171,22 @@ is below.
   `applySelection`, which is `selectNode` minus the recording; anything else
   that skips the recording is a page you can't get back from.
 
+- **The page breadcrumb is one line by contract, and it takes two separate
+  mechanisms to keep it there.** A trail is too long for two unrelated reasons:
+  too many steps, and one step whose name is a sentence. `collapseBreadcrumb`
+  in `tree-service.ts` answers the first by folding the middle away; the
+  `max-width` and ellipsis in `page.css` answer the second. Dropping either one
+  brings the two-row bar back. The cap in particular isn't decoration —
+  flexbox shrinks by proportion, so without it a bar 30px too wide takes a
+  slice off *every* crumb rather than off the one that's actually too long.
+
+- **The fold is decided by how many ancestors there are, not by how much room
+  the bar has**, and that's the cheap version on purpose. Measuring would mean
+  a ResizeObserver on a bar that moves whenever a panel is toggled or the
+  window is dragged, to save an ellipsis on a page five levels down. If it ever
+  does need to be width-aware, the shape to keep is the service returning
+  `{ leading, hidden, trailing }` — only the number feeding it would change.
+
 - **This is not the undo history and must never share a key or a button with
   it.** `history-service.ts` reverses *edits*; this reverses *location*.
   Pressing Back after a rename goes to the previous page with the rename
