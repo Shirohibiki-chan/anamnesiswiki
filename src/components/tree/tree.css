@@ -1052,11 +1052,18 @@ button.tree-path-crumb:hover {
 
 /* Also the empty and loading states, which are the same kind of sentence in
    the same place. */
+/* Centred, along with the chips and the tile captions below — her call, and
+   it's the panel's own rule rather than the app's: everywhere else in the
+   sidebar is a list of rows that read down a left edge, and this is a grid of
+   squares with the text belonging to the square above it. The two toolbar
+   buttons were already centred; this is the rest of the panel agreeing with
+   them. Nothing outside `.tree-assets` is affected. */
 .tree-assets-note {
   margin: 0;
   padding: var(--space-md) var(--space-md) var(--space-sm);
   font-size: var(--fs-xs);
   line-height: 1.5;
+  text-align: center;
   color: var(--color-text-muted);
 }
 
@@ -1135,6 +1142,24 @@ button.tree-path-crumb:hover {
   flex-shrink: 0;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* The centring, scoped to the sidebar rather than put on the shared rules
+   above. The picker draws the same strip inside a wide dialog, where a row of
+   chips floating in the middle of several hundred pixels would read as
+   unfinished — this is a 180–420px column where everything is stacked anyway.
+   Her call, 2026-08-12: the tab's text should sit under the two toolbar
+   buttons rather than beside them. */
+.tree-assets .asset-folders-chips,
+.tree-assets .asset-folders-actions {
+  justify-content: center;
+}
+
+/* `flex: 1` on the name pushed the two buttons to the panel's right edge,
+   which is the one thing a centred row can't have. It shrinks instead, so a
+   long folder name still ellipsises rather than shoving them off. */
+.tree-assets .asset-folders-actions-name {
+  flex: 0 1 auto;
 }
 
 /* Sized like a chip so the strip doesn't jump when the box replaces one. */
@@ -1246,11 +1271,16 @@ button.tree-path-crumb:hover {
   border-color: var(--color-accent-faint-border);
 }
 
+/* `text-align` and not `align-items: center`: the caption's first line clamps
+   to two lines with an ellipsis, and centring the *box* would shrink it to its
+   content and take the width the clamp measures against with it. Aligning the
+   text inside a full-width box leaves the clamp alone. */
 .tree-assets-text {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
+  text-align: center;
 }
 
 /* Two lines and then an ellipsis, rather than one. At the narrow end a tile is
