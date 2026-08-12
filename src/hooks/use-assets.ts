@@ -1,0 +1,61 @@
+// Everything the Assets tab needs: what's in `assets/`, what uses it, and
+// getting rid of one that nothing does.
+//
+// The listing is read on demand rather than held in the store, and that's the
+// choice worth explaining. `assets/` is a directory on disk, not app state —
+// the store has never modelled it, and a copy of it kept in memory would be one
+// more thing to invalidate on every upload, delete, page duplicate and template
+// save. Reading it when the tab opens is a `readDir` and a `stat` per file, on
+// a panel the user has just chosen to look at.
+//
+// The *usage* half is the opposite: it's derived from records the store already
+// holds, so it recomputes with them and needs no refreshing at all.
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { buildAssetEntries, indexAssetUsage, type AssetEntry, type AssetFile } from "../services/asset-usage";
+import { useProjectStore } from "../state/project-store";
+
+export type { AssetEntry, AssetUse } from "../services/asset-usage";
+export { describeSize, describeUses } from "../services/asset-usage";
+
+export function useAssets(): {
+  entries: AssetEntry[];
+  isLoading: boolean;
+  /** Re-reads the directory. Called after anything that changes what's in it. */
+  refresh: () => void;
+} {
+  const { nodes, templates, listAssets } = useProjectStore(
+    useShallow((state) => ({ nodes: state.nodes, templates: state.templates, listAssets: state.listAssets })),
+  );
+
+  const [files, setFiles] = useState<AssetFile[] | null>(null);
+  // Bumped to ask for another read. A counter rather than a boolean so two
+  // refreshes in a row are two reads — with a flag, the second would be
+  // swallowed while the first was still in flight.
+  const [reloads, setReloads] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void listAssets().then((found) => {
+      if (!cancelled) setFiles(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [listAssets, reloads]);
+
+  const usage = useMemo(() => indexAssetUsage(nodes, templates), [nodes, templates]);
+  const entries = useMemo(() => buildAssetEntries(files ?? [], usage), [files, usage]);
+
+  return {
+    entries,
+    // Null until the first read lands, so the tab shows "reading" rather than
+    // "no pictures yet" for the moment before the answer arrives.
+    isLoading: files === null,
+    refresh: useCallback(() => setReloads((count) => count + 1), []),
+  };
+}
+
+export function useAssetActions() {
+  return useProjectStore(useShallow((state) => ({ deleteAsset: state.deleteAsset })));
+}

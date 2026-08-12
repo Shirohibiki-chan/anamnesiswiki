@@ -422,10 +422,20 @@ thumbnails where the wrong one is a mis-click away.
 
 ### Sequencing
 
-Roughly one PR each. **The tab strip and the Templates list shipped 2026-08-12**
-(#143). Then: template editing (which brings rename with it); reorder and new-
-page-from; the assets listing and usage index in services, with tests; the
-Assets grid with delete and undo; remove-from-every-page; insert-into-page.
+Roughly one PR each. **Shipped 2026-08-12:** the tab strip and the Templates
+list (#143), template editing with rename (#144), the built-in templates listed
+(#146) and made editable per world (#147), and the Assets listing with its usage
+index and delete-with-undo (#148).
+
+**Left in this phase:** remove-from-every-page; insert-into-page; reorder
+templates and start-a-new-page-from one.
+
+**The Assets listing is a list of rows, not a grid of thumbnails**, and the plan
+said grid because the plan hadn't measured the sidebar. A grid was built first:
+at the 180px minimum `auto-fill` collapsed to one 156px tile per row, and at
+420px it gave four 95px columns whose captions clipped. The caption is the whole
+point — a filename here is a UUID, so what's using a picture is its only useful
+label — so the row won. Don't put it back.
 
 ---
 

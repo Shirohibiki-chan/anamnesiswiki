@@ -9,6 +9,7 @@ import {
   readTextFile,
   remove,
   rename,
+  stat,
   watch,
   writeFile,
   writeTextFile,
@@ -1117,6 +1118,37 @@ export async function saveAssetImage(rootPath: string, fileName: string, data: U
 
 export async function readAssetImage(rootPath: string, fileName: string): Promise<Uint8Array> {
   return readFile(joinPath(rootPath, ASSETS_DIR, fileName));
+}
+
+/**
+ * Every file in `assets/`, with its size. Phase 17's Assets tab.
+ *
+ * A project with no `assets/` yet has no pictures, which is an empty list
+ * rather than an error — the directory is made on the first upload, so its
+ * absence is the ordinary state of a world nobody has put a picture in.
+ *
+ * Directories are skipped: nothing writes one there, but the tab draws every
+ * entry as a picture and a stray folder would be listed as a broken one. A file
+ * whose size won't read is listed at 0 rather than dropped, on the same
+ * reasoning `captureAssets` skips an unreadable picture — a number missing off
+ * a row is better than a picture missing off the screen.
+ */
+export async function listAssetImages(rootPath: string): Promise<{ fileName: string; size: number }[]> {
+  const assetsDir = joinPath(rootPath, ASSETS_DIR);
+  if (!(await exists(assetsDir))) return [];
+
+  const entries = await readDir(assetsDir);
+  const files: { fileName: string; size: number }[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile) continue;
+    try {
+      const info = await stat(joinPath(assetsDir, entry.name));
+      files.push({ fileName: entry.name, size: info.size });
+    } catch {
+      files.push({ fileName: entry.name, size: 0 });
+    }
+  }
+  return files;
 }
 
 export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {
