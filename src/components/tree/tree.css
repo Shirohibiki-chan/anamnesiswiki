@@ -820,17 +820,47 @@ button.tree-path-crumb:hover {
 
 /* --- TemplatesPanel (Phase 17) --- */
 
+/* No top padding of its own since Phase 17 gave the panel section headings —
+   the first heading brings its own, and both together read as a gap. */
 .tree-templates {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-md) 0;
+  padding: 0 0 var(--space-md);
 }
 
 .tree-templates-list {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* Which of the two lists you're looking at. Small and quiet — it's a label on
+   a section, not a title, and the sidebar is the narrow side of the window. */
+.tree-templates-heading {
+  margin: 0;
+  padding: var(--space-md) var(--space-md) var(--space-xs);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* The line under a heading that says what the section is, and the empty state
+   for the custom one — the same treatment, because they answer the same
+   question and reading as two different things would be noise. */
+.tree-templates-note {
+  margin: 0 0 var(--space-sm);
+  padding: 0 var(--space-md);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.tree-templates-note strong {
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 /* Left padding is set inline per row, from the item's depth — the same job
@@ -848,6 +878,17 @@ button.tree-path-crumb:hover {
 
 .tree-templates-row:hover {
   background: var(--color-hover);
+}
+
+/* A built-in template's row. Nothing to press, so nothing lights up under the
+   pointer — a row that answers a hover the way a clickable one does is a
+   promise it can't keep. Carries its own left padding because the rows that
+   can be opened take theirs inline, from their depth. */
+.tree-templates-row-static,
+.tree-templates-row-static:hover {
+  padding-left: var(--space-md);
+  background: none;
+  cursor: default;
 }
 
 /* The template currently open in the centre panel. Matches how a selected tree
@@ -951,18 +992,3 @@ button.tree-path-crumb:hover {
   color: var(--color-destructive);
 }
 
-.tree-templates-empty {
-  padding: var(--space-2xl) var(--space-xl);
-  font-size: var(--fs-sm);
-  line-height: 1.6;
-  color: var(--color-text-muted);
-}
-
-.tree-templates-empty p {
-  margin: 0 0 var(--space-md);
-}
-
-.tree-templates-empty strong {
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}

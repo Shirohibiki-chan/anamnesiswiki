@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-12 — the Templates tab lists all of them
+
+### Additions
+
+- **The Templates tab now shows the built-in templates as well as your own**, in two sections: the kinds a new page can start as (Character, Location, Faction and the rest), then the ones you've saved yourself. Same order as the screen a new page opens with, so the answer to "what templates have I got" doesn't change shape depending on where you asked it.
+- The built-in ones are there to be read, not opened — they come with the app and are the same in every world. Yours are still the ones you click to edit.
+
+### Worth knowing
+
+- Whether the built-in ones should be editable too is an open question, not a decision. It'd mean each world keeping its own changed copy, and a way back to the original — worth doing, but worth deciding on purpose.
+
 ## 2026-08-12 — templates can be edited
 
 ### Additions
