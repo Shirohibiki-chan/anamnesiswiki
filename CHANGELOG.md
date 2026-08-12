@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-12 — more room to drop a picture on a page
+
+### Fixes
+
+- **The bottom of a page refused pictures.** Dragging one down towards the end of your writing turned the cursor into the no-entry symbol before you got near the bottom of the window — the last 32 pixels are the page's margin, and only the writing itself was accepting drops. That band is the natural place to aim when you mean "put it after everything", so it was the worst possible strip to have switched off.
+- **The whole page column takes a drop now**, top to bottom: the margin under your writing, the empty space beside it, the title, and the tab strip.
+- **A drop that doesn't land on a line goes next to the nearest line above it**, instead of always going to the very end. Dropping beside the third paragraph of a long page used to send the picture to the bottom, out of sight the moment it arrived.
+- **Dropping above your writing** — on the title or the tabs — puts the picture at the top of the page rather than at the end.
+
+### Worth knowing
+
+- The banner still doesn't take a drop. Dropping a picture on a banner looks like it should *become* the banner, and quietly sliding it into your writing instead would be worse than not accepting it.
+
 ## 2026-08-12 — clicking a page opens that page again
 
 ### Fixes

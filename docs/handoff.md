@@ -954,6 +954,23 @@ is below.
   drop listener is native and on the capture phase, because ProseMirror has real
   drop behaviour inside that subtree and takes the event first otherwise.
 
+- **That drop listener goes on `.page-view`, not on the editor's own wrapper,
+  and the size of the target is the feature.** BlockNote's editable area
+  shrink-wraps its content and the reading column keeps its page margin outside
+  it, so the wrapper stopped `--space-3xl` (32px, measured) short of the bottom
+  of the window — and the bottom is exactly where you aim to mean "after
+  everything". The drag went to the no-entry cursor with the edge still in
+  sight. `use-asset-drop.ts` finds the column with `closest` and falls back to
+  the wrapper, so renaming that class shrinks the target back rather than
+  breaking the drop outright — which is the failure nobody would notice in
+  review. **The banner is deliberately not inside it**: dropping a picture on a
+  banner reads as setting the banner, and putting it into the writing instead
+  would be worse than refusing. A drop that lands on no block at all — the
+  margin, the title, the tab strip, the space under the last line — resolves to
+  the nearest block *above* the pointer rather than appending, because
+  appending from beside paragraph 5 of a long page scrolls the picture out of
+  sight as it lands.
+
 - **A built-in template's override is a root in `templates.nodes` that must
   never be in `rootOrder`.** `rootOrder` is her own templates — the extras
   offered on the new-page screen — and an override isn't an extra, it's what
