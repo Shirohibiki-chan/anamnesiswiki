@@ -900,3 +900,101 @@
   color: var(--color-text-muted);
   line-height: var(--lh-normal);
 }
+
+/* --- TemplateView (Phase 17) --- */
+
+/* The strip above a template being edited. Says what you're looking at and how
+   to leave, because a template opens into the same centre panel a page does and
+   nothing else on screen would tell the two apart. */
+.template-view-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-accent-faint-border);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-faint);
+}
+
+.template-view-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.template-view-back:hover {
+  text-decoration: underline;
+}
+
+.template-view-note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Wraps rather than squeezing. A long name in a narrow centre panel otherwise
+   pushes "Character template" flush against the right edge with nowhere left to
+   go; letting it drop to its own line costs a row of height only when it's
+   actually needed. */
+.template-view-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.template-view-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+/* Click-to-rename, the same gesture a page title has — so a template is renamed
+   where its name is, and no separate rename control is needed in the sidebar. */
+.template-view-title-text {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: text;
+}
+
+.template-view-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-light);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.template-view-title-input:focus {
+  outline: none;
+}
+
+/* What kind of page this template makes. Sits after the name rather than under
+   it so the title line reads as one thing at one height. */
+.template-view-kind {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}

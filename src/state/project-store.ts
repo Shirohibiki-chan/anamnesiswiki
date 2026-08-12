@@ -5,7 +5,6 @@ import { join } from "@tauri-apps/api/path";
 import {
   createNode,
   createProject,
-  createTab,
   DEFAULT_STATUS_OPTIONS,
   FOLDER_TEMPLATE_KEY,
   type CustomPropertySpec,
@@ -16,10 +15,19 @@ import {
   type Tab,
 } from "../constants/schema";
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
+import { TEMPLATES_FILE } from "../constants/paths";
 import * as fsService from "../services/filesystem-service";
 import { assetRef, releaseAssetUrls } from "../services/asset-urls";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
+import {
+  withTabAdded,
+  withTabContent,
+  withTabDeleted,
+  withTabHiddenToggled,
+  withTabRenamed,
+  withTabsReordered,
+} from "../services/tab-service";
 import { getDefaultTabs } from "../services/template-registry";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
@@ -108,6 +116,20 @@ export type ProjectStoreState = {
   // constants/schema.ts's TemplateLibrary. Always an object, empty before a
   // project is open, so no reader has to null-check it.
   templates: TemplateLibrary;
+  /**
+   * Which template is open for editing in the centre panel, if any.
+   *
+   * Deliberately not `project.selectedId`. That field is a *project* node id —
+   * the tree, the properties panel, breadcrumbs, search and every walker read
+   * it that way — and putting a template id in it would have all of them
+   * looking up an id that isn't in `nodes`. This is its own piece of state for
+   * the same reason templates are their own record.
+   *
+   * Not persisted: which template you last had open isn't a fact about the
+   * world, and reopening a project into a template rather than a page would be
+   * a surprise.
+   */
+  openTemplateId: string | null;
   isLoaded: boolean;
   lastSavedAt: number | null;
   // Node files that couldn't be read on the last load (corrupt JSON, wrong
@@ -238,6 +260,18 @@ export type ProjectStoreState = {
    */
   saveAsTemplate: (nodeId: string, includeDescendants: boolean) => Promise<void>;
   deleteTemplate: (rootId: string) => void;
+  /** Opens a template for editing, or closes whatever is open with `null`. */
+  openTemplate: (templateNodeId: string | null) => void;
+  /**
+   * Patches one node inside the template library — the `updateNode` of the
+   * other record.
+   *
+   * Saves the whole library debounced, the same way editing a page debounces
+   * that page's file, because this runs per keystroke through the editor. No
+   * undo entry per call, also matching `updateNode`: history is for structural
+   * moves, and an undo stack with one entry per character isn't one.
+   */
+  updateTemplateNode: (nodeId: string, patch: Partial<Omit<Node, "id">>) => void;
   /**
    * Pours one of this world's templates into an existing page — the same shape
    * `applyTemplate` has for the built-in ones, because it answers the same
@@ -547,6 +581,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     project: null,
     nodes: {},
     templates: createTemplateLibrary(),
+    openTemplateId: null,
     isLoaded: false,
     lastSavedAt: null,
     skippedFiles: [],
@@ -593,6 +628,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         project: result.project,
         nodes,
         templates,
+        // Opening a world never opens a template — see the field's own note.
+        openTemplateId: null,
         isLoaded: true,
         skippedFiles: result.skipped,
         recoveredCount: result.recoveredCount,
@@ -638,6 +675,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         project,
         nodes: {},
         templates: createTemplateLibrary(),
+        openTemplateId: null,
         isLoaded: true,
         navHistory: EMPTY_NAV_HISTORY,
       });
@@ -739,6 +777,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         project: null,
         nodes: {},
         templates: createTemplateLibrary(),
+        openTemplateId: null,
         isLoaded: false,
         lastSavedAt: null,
         skippedFiles: [],
@@ -816,58 +855,50 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       });
     },
 
+    // The six below are thin: the tab transforms themselves live in
+    // services/tab-service.ts, because a template's tabs are edited by the same
+    // six operations and a second copy against `templates.nodes` is the one
+    // that drifts. What stays here is what a pure service can't do — reading
+    // the record, writing it back, and the undo and disk write that follow.
     updateTabContent(nodeId, tabId, content) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
+      const existing = get().nodes[nodeId];
       if (!existing) return;
-      const tabs = existing.tabs.map((tab) => (tab.id === tabId ? { ...tab, content } : tab));
-      get().updateNode(nodeId, { tabs });
+      get().updateNode(nodeId, { tabs: withTabContent(existing.tabs, tabId, content) });
     },
 
     toggleTabHidden(nodeId, tabId) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
+      const existing = get().nodes[nodeId];
       if (!existing) return;
-      const tabs = existing.tabs.map((tab) => (tab.id === tabId ? { ...tab, hidden: !tab.hidden } : tab));
-      get().updateNode(nodeId, { tabs });
+      get().updateNode(nodeId, { tabs: withTabHiddenToggled(existing.tabs, tabId) });
     },
 
     addTab(nodeId, label) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
+      const existing = get().nodes[nodeId];
       if (!existing) throw new Error("addTab: node not found");
-      const tab = createTab({ id: crypto.randomUUID(), label });
-      get().updateNode(nodeId, { tabs: [...existing.tabs, tab] });
+      const { tabs, tab } = withTabAdded(existing.tabs, crypto.randomUUID(), label);
+      get().updateNode(nodeId, { tabs });
       return tab;
     },
 
     renameTab(nodeId, tabId, label) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
+      const existing = get().nodes[nodeId];
       if (!existing) return;
-      const tabs = existing.tabs.map((tab) => (tab.id === tabId ? { ...tab, label } : tab));
-      get().updateNode(nodeId, { tabs });
+      get().updateNode(nodeId, { tabs: withTabRenamed(existing.tabs, tabId, label) });
     },
 
     deleteTab(nodeId, tabId) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
+      const existing = get().nodes[nodeId];
       if (!existing) return;
-      const tabs = existing.tabs.filter((tab) => tab.id !== tabId);
-      get().updateNode(nodeId, { tabs });
+      get().updateNode(nodeId, { tabs: withTabDeleted(existing.tabs, tabId) });
     },
 
-    // Takes the full post-drag tab id order (dnd-kit's arrayMove already
-    // computed it in PageTabs.tsx) rather than a from/to pair — simpler and
-    // unambiguous versus re-deriving insert-before-or-after from two ids.
     reorderTabs(nodeId, orderedTabIds) {
-      const { nodes } = get();
-      const existing = nodes[nodeId];
+      const existing = get().nodes[nodeId];
       if (!existing) return;
-      const byId = new Map(existing.tabs.map((tab) => [tab.id, tab]));
-      const tabs = orderedTabIds.map((id) => byId.get(id)).filter((tab): tab is Tab => Boolean(tab));
-      if (tabs.length !== existing.tabs.length) return;
-      get().updateNode(nodeId, { tabs });
+      // Null means the order didn't describe these exact tabs. Writing it would
+      // drop one and everything in it, so the drag is abandoned instead.
+      const tabs = withTabsReordered(existing.tabs, orderedTabIds);
+      if (tabs) get().updateNode(nodeId, { tabs });
     },
 
     // Sets a page's template and adds that template's default tabs — but
@@ -1546,6 +1577,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextTemplates = removeTemplate(templates, rootId);
       applyTemplates(nextTemplates);
 
+      // Deleting a template while it's the thing on screen would leave the
+      // centre panel editing a record that no longer exists. Checked against
+      // the whole subtree, not just the root — a sub-page of the template can
+      // be what's open, and it goes with its parent.
+      const { openTemplateId } = get();
+      if (openTemplateId && removed.some((node) => node.id === openTemplateId)) {
+        set({ openTemplateId: null });
+      }
+
       record(
         `deleting the "${name}" template`,
         () => {
@@ -1560,6 +1600,33 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         },
         () => applyTemplates(removeTemplate(get().templates, rootId)),
       );
+    },
+
+    openTemplate(templateNodeId) {
+      // A template that's just been deleted mustn't stay open behind the
+      // dialog that deleted it. Closing is always allowed.
+      if (templateNodeId !== null && !get().templates.nodes[templateNodeId]) return;
+      set({ openTemplateId: templateNodeId });
+    },
+
+    updateTemplateNode(nodeId, patch) {
+      const { rootPath, templates } = get();
+      const existing = templates.nodes[nodeId];
+      if (!rootPath || !existing) return;
+
+      const updated: Node = { ...existing, ...patch, updatedAt: Date.now() };
+      set({ templates: { ...templates, nodes: { ...templates.nodes, [nodeId]: updated } } });
+
+      // Keyed on the library file, not the node: templates all live in one
+      // file, so two edited in quick succession must debounce onto one write
+      // rather than two racing writes of the same path. Re-read at fire time
+      // for the same reason `updateNode` does — the value 300ms ago may not be
+      // the value being saved.
+      scheduleSave(TEMPLATES_FILE, () => {
+        const { rootPath: currentRootPath, templates: currentTemplates } = get();
+        if (!currentRootPath) return;
+        return fsService.saveTemplateLibrary(currentRootPath, currentTemplates).then(markSaved);
+      });
     },
 
     // The page itself is patched in place and its saved sub-pages arrive as
