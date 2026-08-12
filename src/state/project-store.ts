@@ -22,6 +22,16 @@ import { isAssetInUse } from "../services/asset-usage";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
 import {
+  addAssetFolder,
+  assignAsset,
+  createAssetFolders,
+  parseAssetFolders,
+  pruneAssignments,
+  removeAssetFolder,
+  renameAssetFolder as renameFolder,
+  type AssetFolders,
+} from "../services/asset-folders";
+import {
   withTabAdded,
   withTabContent,
   withTabDeleted,
@@ -275,6 +285,23 @@ export type ProjectStoreState = {
    * held by the undo entry, the same way deleting a page holds its pictures.
    */
   deleteAsset: (fileName: string) => Promise<void>;
+  /**
+   * The picture library's folders. A folder is a label on a file, never a
+   * place it lives — see services/asset-folders.ts, and constants/paths.ts for
+   * why. Held in the store rather than read on demand like the listing itself,
+   * because unlike the directory it is *edited* here, and the grid has to
+   * redraw the moment a picture is dropped into a folder.
+   */
+  assetFolders: AssetFolders;
+  /** Returns the new folder's id, so the caller can put it into rename. */
+  createAssetFolder: (name: string) => string;
+  renameAssetFolder: (id: string, name: string) => void;
+  /** Removes the folder. **Every picture in it stays** — see the service. */
+  deleteAssetFolder: (id: string) => void;
+  /** `null` puts it back in Unsorted. */
+  setAssetFolder: (fileName: string, folderId: string | null) => void;
+  /** Drops labels for files no longer in `assets/`. Called with the listing. */
+  pruneAssetFolders: (files: { fileName: string; size: number }[]) => void;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   /** The cover's half of `setNodeImageFromLibrary`. */
   setNodeBannerFromLibrary: (nodeId: string, fileName: string) => void;
@@ -457,6 +484,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     const { rootPath } = get();
     set({ templates });
     if (rootPath) track(() => fsService.saveTemplateLibrary(rootPath, templates));
+  };
+
+  // Set and written together, always — the same pairing as `applyTemplates`
+  // above and for the same reason: one file, several call sites, and each one
+  // forgetting the save independently is how the tab and the disk drift apart.
+  const applyAssetFolders = (assetFolders: AssetFolders): void => {
+    const { rootPath } = get();
+    set({ assetFolders });
+    if (rootPath) track(() => fsService.saveAssetFolders(rootPath, assetFolders));
   };
 
   /**
@@ -665,6 +701,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     openTemplateId: null,
     isLoaded: false,
     lastSavedAt: null,
+    assetFolders: createAssetFolders(),
     skippedFiles: [],
     loadWasIncomplete: false,
     saveErrors: [],
@@ -704,6 +741,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // reads as an empty library (see fsService.loadTemplateLibrary). Neither
       // is allowed to be the reason a world doesn't open.
       const templates = parseTemplateLibrary(await fsService.loadTemplateLibrary(rootPath));
+      // Same forgiveness, same reason. A world with no folders yet is the
+      // normal case and reads identically to one whose folder file is damaged:
+      // every picture shows up under All pictures either way.
+      const assetFolders = parseAssetFolders(await fsService.loadAssetFolders(rootPath));
 
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
       set({
@@ -711,6 +752,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         project: result.project,
         nodes,
         templates,
+        assetFolders,
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
         isLoaded: true,
@@ -764,6 +806,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         isLoaded: true,
         // A brand new folder has nothing in it to have failed to read, and
         // whatever the last project reported has nothing to do with this one.
+        assetFolders: createAssetFolders(),
         skippedFiles: [],
         loadWasIncomplete: false,
         navHistory: EMPTY_NAV_HISTORY,
@@ -869,6 +912,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         openTemplateId: null,
         isLoaded: false,
         lastSavedAt: null,
+        assetFolders: createAssetFolders(),
         skippedFiles: [],
         loadWasIncomplete: false,
         saveErrors: [],
@@ -1253,6 +1297,47 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { rootPath } = get();
       if (!rootPath) return [];
       return fsService.listAssetImages(rootPath);
+    },
+
+    createAssetFolder(name) {
+      const id = crypto.randomUUID();
+      applyAssetFolders(addAssetFolder(get().assetFolders, id, name));
+      return id;
+    },
+
+    renameAssetFolder(id, name) {
+      applyAssetFolders(renameFolder(get().assetFolders, id, name));
+    },
+
+    deleteAssetFolder(id) {
+      const before = get().assetFolders;
+      const folder = before.folders.find((f) => f.id === id);
+      if (!folder) return;
+      applyAssetFolders(removeAssetFolder(before, id));
+      // Undoable like everything else that removes something she made. Cheap
+      // to hold in full: this record is a handful of names and labels, not
+      // pages — and restoring it by id is what puts the pictures that were in
+      // the folder back into it rather than leaving them loose.
+      record(
+        `deleting the folder ${folder.name}`,
+        () => applyAssetFolders(before),
+        () => applyAssetFolders(removeAssetFolder(get().assetFolders, id)),
+      );
+    },
+
+    setAssetFolder(fileName, folderId) {
+      applyAssetFolders(assignAsset(get().assetFolders, fileName, folderId));
+    },
+
+    pruneAssetFolders(files) {
+      const before = get().assetFolders;
+      const pruned = pruneAssignments(before, files);
+      // Identity, not a deep compare: the service returns the same object when
+      // there was nothing to drop, which is every call but the rare one. This
+      // runs on each read of the directory, so it has to cost nothing when the
+      // answer is "no change" — and writing the file every time would put a
+      // disk touch behind opening a tab.
+      if (pruned !== before) applyAssetFolders(pruned);
     },
 
     async deleteAsset(fileName) {

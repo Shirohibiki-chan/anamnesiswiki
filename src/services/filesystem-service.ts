@@ -18,6 +18,7 @@ import {
 import { FOLDER_TEMPLATE_KEY, type Node, type Project, type TemplateLibrary } from "../constants/schema";
 import { alwaysDirectory } from "./template-registry";
 import {
+  ASSET_FOLDERS_FILE,
   ASSETS_DIR,
   BACKUPS_DIR,
   FOLDER_META_FILE as FOLDER_FILE,
@@ -1287,6 +1288,10 @@ export async function listAssetImages(rootPath: string): Promise<{ fileName: str
   const files: { fileName: string; size: number }[] = [];
   for (const entry of entries) {
     if (!entry.isFile) continue;
+    // Ours, not a picture. It's the only non-image this directory is allowed
+    // to hold, and listing it would put a broken thumbnail in the grid with a
+    // delete button on it — nothing points at it, so it would read as unused.
+    if (entry.name === ASSET_FOLDERS_FILE) continue;
     try {
       const info = await stat(joinPath(assetsDir, entry.name));
       files.push({ fileName: entry.name, size: info.size });
@@ -1295,6 +1300,28 @@ export async function listAssetImages(rootPath: string): Promise<{ fileName: str
     }
   }
   return files;
+}
+
+/**
+ * The picture library's folders. Absent or unreadable both read as "no folders
+ * yet" — same forgiveness `loadTemplateLibrary` extends, and for the same
+ * reason: this file sits where she can open it, and a bad edit to it must
+ * never be what stops her seeing her pictures. `parseAssetFolders` takes it
+ * from there and drops individual entries that don't hold up.
+ */
+export async function loadAssetFolders(rootPath: string): Promise<unknown> {
+  const path = joinPath(rootPath, ASSETS_DIR, ASSET_FOLDERS_FILE);
+  if (!(await exists(path))) return null;
+  try {
+    return JSON.parse(await readTextFile(path));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAssetFolders(rootPath: string, folders: unknown): Promise<void> {
+  await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
+  await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_FOLDERS_FILE), JSON.stringify(folders, null, 2));
 }
 
 export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {

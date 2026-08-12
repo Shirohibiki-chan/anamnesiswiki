@@ -15,7 +15,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ImagePlus, Search } from "lucide-react";
-import { describeSize, describeUses, useAssets, useUploadPicture, type AssetEntry } from "../../hooks/use-assets";
+import {
+  ALL_PICTURES,
+  describeSize,
+  describeUses,
+  useAssetFolders,
+  useAssets,
+  useFilteredAssets,
+  useUploadPicture,
+  type AssetEntry,
+  type FolderFilter,
+} from "../../hooks/use-assets";
+import { AssetFolderStrip } from "../tree/AssetFolderStrip";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useNodeImage } from "../../hooks/use-node-image";
 
@@ -34,6 +45,9 @@ export function AssetPickerDialog() {
 function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName: string | null) => void }) {
   const { entries, isLoading, refresh } = useAssets();
   const uploadPicture = useUploadPicture();
+  const { folders, createAssetFolder, renameAssetFolder, deleteAssetFolder } = useAssetFolders();
+  const [filter, setFilter] = useState<FolderFilter>(ALL_PICTURES);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,14 +69,17 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
    * matching on one would be a search box that never finds anything. "valera"
    * finds the pictures on her page; "unused" finds the ones going spare.
    */
+  // Folder first, then search — so searching inside a folder searches that
+  // folder, which is what a folder being *open* has to mean.
+  const { shown: inFolder, counts } = useFilteredAssets(entries, folders, filter);
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return entries;
-    return entries.filter((entry) => {
+    if (!needle) return inFolder;
+    return inFolder.filter((entry) => {
       if (entry.isUnused && "unused".startsWith(needle)) return true;
       return entry.uses.some((use) => use.nodeName.toLowerCase().includes(needle));
     });
-  }, [entries, query]);
+  }, [inFolder, query]);
 
   async function handleUpload(file: File | undefined) {
     if (!file) return;
@@ -95,6 +112,32 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
+
+        {/* No drop target here: a picture is dragged into a folder from the
+            Assets tab, where the grid is the thing you're working in. This
+            dialog is open because something is waiting for an answer, and
+            reorganising the library is not that answer. Making and renaming
+            folders stays, because "this doesn't belong anywhere yet" is a
+            thing you notice while looking for a picture. */}
+        <AssetFolderStrip
+          folders={folders}
+          counts={counts}
+          filter={filter}
+          onFilter={setFilter}
+          onCreate={() => {
+            const id = createAssetFolder("New folder");
+            setFilter({ kind: "folder", id });
+            setRenamingId(id);
+          }}
+          onRename={renameAssetFolder}
+          onStartRename={setRenamingId}
+          onDelete={(id) => {
+            deleteAssetFolder(id);
+            setFilter(ALL_PICTURES);
+          }}
+          renamingId={renamingId}
+          onRenamingDone={() => setRenamingId(null)}
+        />
 
         <div className="asset-picker-body">
           {isLoading ? (

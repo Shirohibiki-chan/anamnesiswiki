@@ -921,6 +921,26 @@ is below.
   have; listing from the index would put phantom rows in the tab and offer to
   delete files that don't exist.
 
+- **A library folder is a label on a file, never a place it lives.** The
+  pictures stay flat in `assets/` and a reference stays
+  `anamnesis-asset:<filename>`, so filing one touches `assets/.folders.json` and
+  nothing else. Real subdirectories would put the folder name inside every
+  reference to the picture, and moving it between folders would mean rewriting
+  every page that shows it — where a rewrite that stops halfway is a broken
+  picture on a page she wasn't looking at. Two rules follow and both are load-
+  bearing: **deleting a folder never deletes a picture** (its contents return to
+  Unsorted), and a label pointing at a folder that's gone reads as unsorted
+  rather than as an error. The worst a damaged `.folders.json` can do is put a
+  picture in the wrong folder; it can never hide one.
+
+- **Anything dragged out of the picture library carries `ASSET_DRAG_TYPE`, not
+  `text/plain`.** The editor is already a drop target for text and for real
+  files, and both mean something there. A filename read out of `text/plain`
+  would make every dragged word of prose look like a picture; one written into
+  it would have a drop anywhere else in the app paste a UUID. The editor's own
+  drop listener is native and on the capture phase, because ProseMirror has real
+  drop behaviour inside that subtree and takes the event first otherwise.
+
 - **A built-in template's override is a root in `templates.nodes` that must
   never be in `rootOrder`.** `rootOrder` is her own templates — the extras
   offered on the new-page screen — and an override isn't an extra, it's what

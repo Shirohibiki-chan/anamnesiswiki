@@ -13,12 +13,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { assetFileName, assetRef } from "../services/asset-urls";
+import { countByFilter, matchesFilter, type AssetFolders, type FolderFilter } from "../services/asset-folders";
 import { buildAssetEntries, indexAssetUsage, type AssetEntry, type AssetFile } from "../services/asset-usage";
 import { readImageFile } from "../services/image-file";
 import { useProjectStore } from "../state/project-store";
 
 export type { AssetEntry, AssetUse } from "../services/asset-usage";
 export { describeSize, describeUses } from "../services/asset-usage";
+export { ALL_PICTURES, type AssetFolder, type FolderFilter } from "../services/asset-folders";
 
 export function useAssets(): {
   entries: AssetEntry[];
@@ -32,12 +34,13 @@ export function useAssets(): {
   /** Re-reads the directory. Called after anything that changes what's in it. */
   refresh: () => void;
 } {
-  const { nodes, templates, listAssets, loadWasIncomplete } = useProjectStore(
+  const { nodes, templates, listAssets, loadWasIncomplete, pruneAssetFolders } = useProjectStore(
     useShallow((state) => ({
       nodes: state.nodes,
       templates: state.templates,
       listAssets: state.listAssets,
       loadWasIncomplete: state.loadWasIncomplete,
+      pruneAssetFolders: state.pruneAssetFolders,
     })),
   );
 
@@ -56,6 +59,15 @@ export function useAssets(): {
       cancelled = true;
     };
   }, [listAssets, reloads]);
+
+  // Labels for files that have left `assets/` are dropped here rather than on
+  // delete, because a picture can also leave by being removed in Explorer —
+  // and a stale label keeps a folder's count wrong forever with nothing on
+  // screen to explain it. No-ops unless something actually went, so the
+  // ordinary read of the directory stays a read.
+  useEffect(() => {
+    if (files) pruneAssetFolders(files);
+  }, [files, pruneAssetFolders]);
 
   const usage = useMemo(() => indexAssetUsage(nodes, templates), [nodes, templates]);
   const entries = useMemo(() => buildAssetEntries(files ?? [], usage), [files, usage]);
@@ -106,4 +118,41 @@ export function useUploadPicture(): (file: File) => Promise<string> {
  */
 export function useAssetRef(): (fileName: string) => string {
   return assetRef;
+}
+
+/**
+ * The library's folders, the actions that change them, and the filtering the
+ * two grids do with them.
+ *
+ * One hook rather than a `useAssetFolders` and a `useAssetFolderActions`,
+ * unlike the split above: both grids that read the folders also edit them, so
+ * separating them would only mean two calls at every call site. The store's
+ * actions are stable references, so what re-renders is the record itself —
+ * which is exactly when the chips and the grid need redrawing.
+ */
+export function useAssetFolders() {
+  return useProjectStore(
+    useShallow((state) => ({
+      folders: state.assetFolders,
+      createAssetFolder: state.createAssetFolder,
+      renameAssetFolder: state.renameAssetFolder,
+      deleteAssetFolder: state.deleteAssetFolder,
+      setAssetFolder: state.setAssetFolder,
+    })),
+  );
+}
+
+/** The entries one view shows, and how many each of the others would. */
+export function useFilteredAssets(
+  entries: AssetEntry[],
+  folders: AssetFolders,
+  filter: FolderFilter,
+): { shown: AssetEntry[]; counts: ReturnType<typeof countByFilter> } {
+  return useMemo(
+    () => ({
+      shown: entries.filter((entry) => matchesFilter(folders, entry.fileName, filter)),
+      counts: countByFilter(folders, entries),
+    }),
+    [entries, folders, filter],
+  );
 }

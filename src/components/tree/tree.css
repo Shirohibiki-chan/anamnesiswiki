@@ -1039,6 +1039,104 @@ button.tree-path-crumb:hover {
   color: var(--color-palette-amber);
 }
 
+/* ---- Folder chips ----------------------------------------------------
+   Shared by the Assets tab and the picker dialog, and living here rather than
+   in shell.css because the component does: tree.css is a plain global import
+   from TreeSidebar, which is on screen whenever a project is open — and the
+   picker can't be open without one. */
+
+.asset-folders {
+  padding: 0 var(--space-md) var(--space-sm);
+}
+
+/* Wrapping, not scrolling. A horizontal scroller in a 180px column hides
+   folders behind a gesture, and the whole point of the strip is that you can
+   see where a picture could go. */
+.asset-folders-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.asset-folder-chip {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  max-width: 100%;
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.asset-folder-chip:hover {
+  background: var(--color-hover);
+}
+
+.asset-folder-chip-active {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+/* While a picture is held over it. A border colour rather than a size or a
+   position, so nothing under the pointer moves while she's aiming at it —
+   a chip that grows on hover is a chip that runs away from the drop. */
+.asset-folder-chip-over {
+  border-color: var(--color-accent-light);
+  background: var(--color-accent-hover);
+}
+
+/* `min-width: 0` on the label is what lets the ellipsis happen at all — a
+   flex item's default `min-width: auto` refuses to shrink below its content,
+   so without it a long folder name pushes the count off the chip. */
+.asset-folder-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-folder-chip-count {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sized like a chip so the strip doesn't jump when the box replaces one. */
+.asset-folder-name {
+  min-width: 0;
+  width: 7rem;
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-accent-light);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-2xs);
+  font-family: inherit;
+}
+
+.asset-folders-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.asset-folders-actions-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
 /* A picture that wouldn't be added — the wrong kind of file, or too big. Sits
    where the warning does and reads the same way, because from here they're the
    same kind of sentence: something you asked for didn't happen. */

@@ -450,12 +450,11 @@ picture library (#150), and the library reaching pictures inside a page plus
 clickable thumbnails (#151).
 
 **Also shipped 2026-08-12:** the duplicate-node-file repair that was making
-portraits and covers look unused (#152), and the Assets tab's own upload button
-and drag-onto-a-page (#153).
+portraits and covers look unused (#152), the Assets tab's own upload button and
+drag-onto-a-page (#153), and folders in the picture library (#154).
 
 **Left in this phase:** remove-from-every-page; reorder templates and
-start-a-new-page-from one; and folders in the picture library (asked for by the
-user, 2026-08-12, alongside the two #153 covers).
+start-a-new-page-from one.
 
 **Dragging a tile onto a page is the second route in, and it carries its own
 MIME type (#153).** `ASSET_DRAG_TYPE`, not `text/plain`: the editor is already a
@@ -483,6 +482,28 @@ picture was wanted, so nothing arrived unused and a picture wanted twice was
 uploaded twice. #150 makes the library the thing you choose from — portrait and
 cover so far — with "add from computer" inside it, so uploading is one of the
 ways of answering rather than a separate path.
+
+**A library folder is a label on a file, never a place it lives (#154), and
+that is not a shortcut.** The pictures stay flat in `assets/` and a reference
+stays `anamnesis-asset:<filename>`, so filing one touches only
+`assets/.folders.json`. Real subdirectories would put the folder name inside
+every reference to the picture, and moving it between folders would mean
+rewriting every page that shows it — where a rewrite that stops halfway is a
+broken picture, across pages she wasn't even looking at. The filename is the
+identity; a folder is a view over it. Two consequences worth keeping: deleting a
+folder can never delete a picture (they return to Unsorted), and a label
+pointing at a folder that's gone reads as unsorted rather than as an error.
+
+The folder file lives *inside* `assets/` rather than at the project root beside
+`.templates.json`, because a `.json` at the root is read as a page unless
+`walkEntries` is told otherwise — and that skip list is one more thing to get
+right in the one function that must never lose a file. The walk skips `assets/`
+whole, so the question doesn't arise.
+
+**Chips that wrap, not a folder column.** LK puts folders down the side of a
+window many times wider than this sidebar, which goes to 180px; a column there
+would leave the pictures one per row, which is the mistake #149 already
+corrected once.
 
 **Unsplash and Pinterest, which LK's picker offers beside My Files, are out —
 her call, same day.** They'd each be a live connection to someone else's
