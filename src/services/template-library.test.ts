@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  addOverride,
   addTemplate,
+  buildOverrideNode,
   buildTemplateTree,
   cloneSubtree,
   collectSubtree,
+  isOverrideModified,
   listTemplates,
+  overrideFor,
   parseTemplateLibrary,
+  removeOverride,
   removeTemplate,
 } from "./template-library";
 import { createTemplateLibrary, FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
@@ -173,7 +178,7 @@ describe("addTemplate / removeTemplate / listTemplates", () => {
 
 describe("buildTemplateTree", () => {
   function library(nodes: Node[], rootOrder: string[]) {
-    return { version: 1 as const, nodes: byId(nodes), rootOrder };
+    return { version: 1 as const, nodes: byId(nodes), rootOrder, overrides: {} };
   }
 
   it("nests a template's sub-pages under it", () => {
@@ -324,5 +329,125 @@ describe("parseTemplateLibrary", () => {
       rootOrder: ["a", "ghost"],
     };
     expect(parseTemplateLibrary(raw).rootOrder).toEqual(["a"]);
+  });
+});
+
+describe("built-in template overrides", () => {
+  const seedTabs = [
+    { id: "overview", label: "Overview", hidden: false, content: [{ type: "paragraph", content: [] }] },
+    { id: "story", label: "Story", hidden: false, content: [] },
+  ];
+
+  function override(patch: Partial<Node> = {}): Node {
+    const built = buildOverrideNode("character", "ovr", "Character", structuredClone(seedTabs) as Node["tabs"]);
+    return { ...built, ...patch };
+  }
+
+  function libraryWithOverride(patch: Partial<Node> = {}) {
+    return addOverride(createTemplateLibrary(), "character", override(patch));
+  }
+
+  it("builds a root node of the right kind, named after the built-in it replaces", () => {
+    const built = buildOverrideNode("character", "ovr", "Character", structuredClone(seedTabs) as Node["tabs"]);
+    expect(built.templateKey).toBe("character");
+    expect(built.parentId).toBeNull();
+    expect(built.name).toBe("Character");
+    expect(built.tabs.map((tab) => tab.id)).toEqual(["overview", "story"]);
+  });
+
+  it("finds this world's version of a built-in by key, and nothing for one it doesn't have", () => {
+    const library = libraryWithOverride();
+    expect(overrideFor(library, "character")?.id).toBe("ovr");
+    expect(overrideFor(library, "location")).toBeUndefined();
+  });
+
+  it("keeps an override out of the templates she saved herself", () => {
+    const library = libraryWithOverride();
+    expect(listTemplates(library)).toEqual([]);
+    expect(buildTemplateTree(library)).toEqual([]);
+  });
+
+  it("still lists her own templates alongside an override", () => {
+    const hers = node({ id: "hers", name: "Valera sheet", parentId: null, templateKey: "character" });
+    const library = addTemplate(libraryWithOverride(), [hers], "hers");
+    expect(listTemplates(library).map((n) => n.id)).toEqual(["hers"]);
+  });
+
+  it("removing an override takes its node and its key together", () => {
+    const library = libraryWithOverride();
+    const after = removeOverride(library, "character");
+    expect(after.overrides).toEqual({});
+    expect(after.nodes.ovr).toBeUndefined();
+  });
+
+  it("removing an override takes the sub-pages someone added inside it", () => {
+    const library = libraryWithOverride();
+    const child = node({ id: "child", name: "Inside", parentId: "ovr", templateKey: "note" });
+    const withChild = { ...library, nodes: { ...library.nodes, child } };
+    const after = removeOverride(withChild, "character");
+    // Left behind, they'd become roots and surface as templates she never made.
+    expect(after.nodes.child).toBeUndefined();
+  });
+
+  it("leaves a library alone when asked to remove an override it doesn't have", () => {
+    const library = createTemplateLibrary();
+    expect(removeOverride(library, "character")).toBe(library);
+  });
+
+  it("counts an untouched copy as unmodified, so looking at one doesn't mark it edited", () => {
+    const untouched = override();
+    expect(isOverrideModified(untouched, "Character", structuredClone(seedTabs) as Node["tabs"])).toBe(false);
+  });
+
+  it("notices a renamed template, a renamed tab, a hidden tab and edited writing", () => {
+    const original = () => structuredClone(seedTabs) as Node["tabs"];
+    expect(isOverrideModified(override({ name: "Person" }), "Character", original())).toBe(true);
+
+    const renamedTab = override();
+    renamedTab.tabs[0] = { ...renamedTab.tabs[0], label: "Summary" };
+    expect(isOverrideModified(renamedTab, "Character", original())).toBe(true);
+
+    const hiddenTab = override();
+    hiddenTab.tabs[1] = { ...hiddenTab.tabs[1], hidden: true };
+    expect(isOverrideModified(hiddenTab, "Character", original())).toBe(true);
+
+    const rewritten = override();
+    rewritten.tabs[0] = { ...rewritten.tabs[0], content: [{ type: "paragraph", content: [{ type: "text", text: "hi" }] }] };
+    expect(isOverrideModified(rewritten, "Character", original())).toBe(true);
+  });
+
+  it("notices tabs added, removed and reordered", () => {
+    const original = () => structuredClone(seedTabs) as Node["tabs"];
+
+    const added = override();
+    added.tabs = [...added.tabs, { id: "extra", label: "Extra", hidden: false, content: [] }];
+    expect(isOverrideModified(added, "Character", original())).toBe(true);
+
+    const removed = override();
+    removed.tabs = removed.tabs.slice(0, 1);
+    expect(isOverrideModified(removed, "Character", original())).toBe(true);
+
+    const reordered = override();
+    reordered.tabs = [reordered.tabs[1], reordered.tabs[0]];
+    expect(isOverrideModified(reordered, "Character", original())).toBe(true);
+  });
+
+  it("reads overrides back off disk, and drops one pointing at a node that didn't survive", () => {
+    const raw = {
+      version: 1,
+      nodes: { real: { id: "real", name: "Character", templateKey: "character", tabs: [], parentId: null } },
+      rootOrder: ["real"],
+      overrides: { character: "real", location: "ghost", item: 7 },
+    };
+    const parsed = parseTemplateLibrary(raw);
+    expect(parsed.overrides).toEqual({ character: "real" });
+    // An override is never also one of her own templates, however the file on
+    // disk got that way.
+    expect(parsed.rootOrder).toEqual([]);
+  });
+
+  it("reads a file written before overrides existed as a world that changes nothing", () => {
+    const raw = { version: 1, nodes: {}, rootOrder: [] };
+    expect(parseTemplateLibrary(raw).overrides).toEqual({});
   });
 });

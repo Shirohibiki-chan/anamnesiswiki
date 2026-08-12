@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-12 — the built-in templates are yours to change
+
+### Additions
+
+- **Click a built-in template — Character, Location, any of them — and you can edit it, the same as one of your own.** Rewrite the prompts, rename a tab, add one, take one out.
+- **What you're editing is this world's copy.** Your other worlds keep the original, and the original is always still there underneath.
+- **Put back to the original** undoes the whole thing, from the template itself or from the sidebar. It asks first, and it's undoable after that.
+- The sidebar marks a built-in template **Edited** once it actually differs from the original — opening one to have a look doesn't count.
+- Pages you've already made are never touched, by an edit or by putting it back. Same as with your own templates: making a page from a template gives the page its own copy.
+
+### Worth knowing
+
+- This changes a template's tabs and its name — the headings and prompts a new page starts with. The properties in the right-hand panel aren't part of it yet; that's a separate thing, because changing those would also change what pages you've already written show.
+
 ## 2026-08-12 — the Templates tab lists all of them
 
 ### Additions
@@ -9,7 +23,7 @@
 
 ### Worth knowing
 
-- **Making the built-in ones editable too is decided and comes next**, so this listing is a step rather than the finished shape.
+- **Making the built-in ones editable too is decided and comes next** — see the section above, which is it.
 
 ## 2026-08-12 — captioning a picture works
 

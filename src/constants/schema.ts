@@ -235,10 +235,29 @@ export type TemplateLibrary = {
   // way the shortcut rail appends rather than prepends: a list that reorders
   // itself every time you add to it can't be learned.
   rootOrder: string[];
+  /**
+   * This world's replacements for the built-in templates: a template key
+   * ("character") → the id of the node in `nodes` that stands in for it.
+   *
+   * The built-in ones are seed data in `template-registry.ts` and are the same
+   * in every world, so "edit the Character template" can only mean *this
+   * world's* Character — an override, kept beside her own templates because it
+   * is one, in the same file, of the same shape.
+   *
+   * **An overridden node is a root in `nodes` but must never be in
+   * `rootOrder`.** That list is her own templates, the ones offered as extras
+   * on the new-page screen; an override isn't an extra, it's what Character
+   * already means here. `listTemplates` filters these out and everything that
+   * draws her templates goes through it.
+   *
+   * Removing the entry (and its node) is what "put it back to the original"
+   * does — the registry is untouched and always still there underneath.
+   */
+  overrides: Record<string, string>;
 };
 
 export function createTemplateLibrary(): TemplateLibrary {
-  return { version: 1, nodes: {}, rootOrder: [] };
+  return { version: 1, nodes: {}, rootOrder: [], overrides: {} };
 }
 
 export function createTab(input: { id: string; label: string; hidden?: boolean; content?: BlockNoteDocument }): Tab {
