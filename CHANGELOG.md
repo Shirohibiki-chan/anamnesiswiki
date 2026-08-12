@@ -15,6 +15,31 @@
 - Pictures used only by a template count as in use. A template and the page it came from can genuinely share a picture, and deleting it would empty the template.
 - Pictures inside hidden tabs count too, and so do ones tucked inside a bullet list.
 
+## 2026-08-12 — the built-in templates are yours to change
+
+### Additions
+
+- **Click a built-in template — Character, Location, any of them — and you can edit it, the same as one of your own.** Rewrite the prompts, rename a tab, add one, take one out.
+- **What you're editing is this world's copy.** Your other worlds keep the original, and the original is always still there underneath.
+- **Put back to the original** undoes the whole thing, from the template itself or from the sidebar. It asks first, and it's undoable after that.
+- The sidebar marks a built-in template **Edited** once it actually differs from the original — opening one to have a look doesn't count.
+- Pages you've already made are never touched, by an edit or by putting it back. Same as with your own templates: making a page from a template gives the page its own copy.
+
+### Worth knowing
+
+- This changes a template's tabs and its name — the headings and prompts a new page starts with. The properties in the right-hand panel aren't part of it yet; that's a separate thing, because changing those would also change what pages you've already written show.
+
+## 2026-08-12 — the Templates tab lists all of them
+
+### Additions
+
+- **The Templates tab now shows the built-in templates as well as your own**, in two sections: the kinds a new page can start as (Character, Location, Faction and the rest), then the ones you've saved yourself. Same order as the screen a new page opens with, so the answer to "what templates have I got" doesn't change shape depending on where you asked it.
+- The built-in ones are there to be read, not opened — they come with the app and are the same in every world. Yours are still the ones you click to edit.
+
+### Worth knowing
+
+- **Making the built-in ones editable too is decided and comes next** — see the section above, which is it.
+
 ## 2026-08-12 — captioning a picture works
 
 ### Fixes

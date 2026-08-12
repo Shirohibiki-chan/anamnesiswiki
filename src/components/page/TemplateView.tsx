@@ -11,10 +11,11 @@
 // that's driven by the project's selection and is the next thing to reach for
 // if template properties ever need editing.
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
-import { useTemplateActions, useTemplateEditing } from "../../hooks/use-template-editing";
+import { useDialogs } from "../../hooks/use-dialogs";
+import { useOpenBuiltInKey, useTemplateActions, useTemplateEditing } from "../../hooks/use-template-editing";
 import { useTemplates } from "../../hooks/use-templates";
 import { Editor } from "./Editor";
 import { PageTabs } from "./PageTabs";
@@ -24,9 +25,13 @@ import "./page.css";
 // fresh when a different template is opened — the same remount trick PageView
 // uses instead of resetting state in an effect.
 export function TemplateView({ template }: { template: Node }) {
-  const { openTemplate } = useTemplateActions();
+  const { openTemplate, resetBuiltInTemplate } = useTemplateActions();
   const editing = useTemplateEditing(template.id);
   const { getLabel } = useTemplates();
+  const { confirmDestructive } = useDialogs();
+  // Set when this is this world's version of a built-in template rather than
+  // one she saved herself — the only case with an original to go back to.
+  const builtInKey = useOpenBuiltInKey();
 
   const [activeTabId, setActiveTabId] = useState<string | null>(template.tabs[0]?.id ?? null);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -37,6 +42,14 @@ export function TemplateView({ template }: { template: Node }) {
   function handleAddTab() {
     const tab = editing.addTab("New Tab");
     if (tab) setActiveTabId(tab.id);
+  }
+
+  async function handleReset(templateKey: string) {
+    const label = getLabel(templateKey);
+    const ok = await confirmDestructive(
+      `Put the ${label} template back to the original? Your changes to it are lost, and pages already made from it aren't affected.`,
+    );
+    if (ok) resetBuiltInTemplate(templateKey);
   }
 
   function commitName(value: string) {
@@ -51,16 +64,32 @@ export function TemplateView({ template }: { template: Node }) {
   return (
     <div className="page-view-shell">
       <div className="page-view">
-        <div className="template-view-bar">
+        {/* Two rows when there's a Put back button — back and the button on
+            one line, the note under them. One row without it, as before. The
+            modifier is on the bar rather than a `:has()` rule so the layout is
+            decided in the component that knows, and it's the only stylesheet
+            in the app that would have needed one. */}
+        <div className={`template-view-bar${builtInKey ? " template-view-bar-resettable" : ""}`}>
           <button type="button" className="template-view-back" onClick={() => openTemplate(null)}>
             <ArrowLeft size={14} />
             Back to templates
           </button>
+          {/* Offered here as well as in the sidebar because this is where she'd
+              be when she decides the edit was a mistake, and the sidebar row is
+              behind whatever the panel is showing. */}
+          {builtInKey && (
+            <button type="button" className="template-view-reset" onClick={() => void handleReset(builtInKey)}>
+              <RotateCcw size={13} />
+              Put back to the original
+            </button>
+          )}
           {/* Said plainly because "template" reads like a live link and isn't
               one: applying a template deep-copies it, so a page made earlier
               has its own copy and nothing here can reach it. */}
           <p className="template-view-note">
-            You're editing a template. Pages you've already made from it aren't affected.
+            {builtInKey
+              ? "This is this world's copy of a built-in template. Other worlds keep the original, and pages you've already made aren't affected."
+              : "You're editing a template. Pages you've already made from it aren't affected."}
           </p>
         </div>
 

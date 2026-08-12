@@ -859,6 +859,31 @@ is below.
   have; listing from the index would put phantom rows in the tab and offer to
   delete files that don't exist.
 
+- **A built-in template's override is a root in `templates.nodes` that must
+  never be in `rootOrder`.** `rootOrder` is her own templates — the extras
+  offered on the new-page screen — and an override isn't an extra, it's what
+  Character means in this world. `listTemplates` is the one place that filters
+  them out, and everything drawing or offering her templates goes through it, so
+  a new caller that reaches into `library.nodes` directly puts scaffolding back
+  on the new-page screen. `parseTemplateLibrary` strips an override id out of
+  `rootOrder` too, since the file is hand-editable.
+
+- **"Has an override" and "has been changed" are different questions.** Opening
+  a built-in template is what creates its override — that's what let
+  `TemplateView` stay unchanged, since editing a template is already "patch the
+  node with this id" — so an override exists the moment she looks at one.
+  `isOverrideModified` compares it against the registry seed, and that's what
+  decides the sidebar's "Edited" marker and whether Put back is offered. Don't
+  substitute the cheaper check.
+
+- **An override carries tabs and a name, never the property schema.**
+  `getPropertySchema` is read by `lk-export`, `lk-import` and the property index,
+  none of which can see the store; and the properties panel derives its fields
+  from `templateKey` rather than from a copy on the node, so overriding the
+  schema would silently change what pages *already written* display. Overriding
+  tabs only affects pages made afterwards. If template properties are ever
+  wanted, that asymmetry is the thing to design around, not to discover.
+
 - **Tab transforms live in `services/tab-service.ts` because tabs stopped
   belonging only to pages.** A template is a copied page, so editing one runs
   the same six operations against `templates.nodes` instead of `nodes`. The
