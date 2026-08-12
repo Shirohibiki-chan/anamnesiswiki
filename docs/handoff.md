@@ -16,18 +16,29 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–13 are done. The app is shippable**, and **Phase 14 (Everyday
-Navigation) is next.** `docs/plan.md` has phases 14–26 plus the unscheduled
+**Phases 0–16 are done. The app is shippable**, and **Phase 17 (Templates &
+Assets Tabs) is next.** `docs/plan.md` has phases 17–26 plus the unscheduled
 Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
 
 The most recent ones are the ones a new session is most likely to touch.
-**Phase 12 — Themes & Appearance — closed 2026-08-09**: user-writable `.css`
-themes, seven built-ins, in-app colour and gradient pickers, snippets, text
-scaling, and search in Settings. **Phase 13 — Property Types — closed
-2026-08-10**: number/select/multi-select/status, per-page reordering, and the
-project-wide All properties & tags view. The parts of both still binding on the
-code are in §Product decisions below — the CSS-vetting rule, the contrast floor,
-and everything under properties and chip options.
+**Phase 14 — Everyday Navigation — closed 2026-08-11**: eleven small things
+felt daily, one PR each. **Phase 15 — Right-Click Menu, Full Pass — closed
+2026-08-11**:
+Convert to template, per-node export, Move ▸, Sort sub-pages ▸, Hide, collapse
+and expand all. **Phase 16 — Images & Tags — closed 2026-08-12**: pictures inside a page, the
+sidebar portrait's missing buttons, the lightbox, keyboard control of a selected
+picture, and a picker over the project's tags. What still binds the code from
+all three is in §React patterns and §Editor & templates below — the tree-row
+`display: none` rule, the lightbox's DOM-not-document reasoning, the picture
+key handling, and everything about `uploadFile` and BlockNote's file panel.
+
+Further back, **Phase 12 — Themes & Appearance — closed 2026-08-09**:
+user-writable `.css` themes, seven built-ins, in-app colour and gradient
+pickers, snippets, text scaling, and search in Settings. **Phase 13 — Property
+Types — closed 2026-08-10**: number/select/multi-select/status, per-page
+reordering, and the project-wide All properties & tags view. The parts of both
+still binding on the code are in §Product decisions below — the CSS-vetting
+rule, the contrast floor, and everything under properties and chip options.
 
 Further back but still load-bearing: **Phase 9 — LK Export — shipped
 2026-07-31**, so the format goes both ways; §LK export has the constraints that
