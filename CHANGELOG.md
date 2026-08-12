@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-12 — templates can be edited
+
+### Additions
+
+- **Click a template in the Templates tab to open it and edit it.** Its title, its tabs, and everything written in them, in the same editor a page uses. Change a heading, fix a typo, add a tab — it's a page, so it edits like one.
+- **Rename a template by clicking its name**, the same way you rename a page.
+- **A template you saved with sub-pages lets you edit those too** — open the template, click the arrow, and click whichever sub-page you want.
+- **Editing a template doesn't touch pages you already made from it.** That was already true — applying a template gives the page its own copy — but the screen now says so, because "template" reads like a live link and it isn't one.
+- **Back to templates** returns you to whatever page you were on. Opening a template doesn't lose your place.
+
+### Fixes
+
+- **Reordering tabs by dragging is stricter about what it accepts.** The old check only counted the tabs, so an order that named the same tab twice would have been written — duplicating one tab and throwing away another, along with everything written in it. Dragging could never produce that, so this was never something you could hit; it's now impossible rather than unreachable.
+
 ## 2026-08-12 — your templates have somewhere to live
 
 ### Additions

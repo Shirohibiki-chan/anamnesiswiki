@@ -3,7 +3,8 @@
 //
 // Until now they only surfaced as a strip on the new-page screen, which meant
 // the only way to see what you'd saved was to make a page you might not want.
-// This is where they live.
+// This is where they live, and since Phase 17 clicking one opens it for
+// editing in the centre panel.
 //
 // They are deliberately *not* the project tree: they come from the store's
 // `templates` record, never from `nodes`, and nothing here may put them in one.
@@ -13,6 +14,7 @@ import { ChevronRight, X } from "lucide-react";
 import { useState } from "react";
 import { getTemplateIcon } from "../../constants/icons";
 import { useCustomTemplateTree, useProjectActions } from "../../hooks/use-project";
+import { useOpenTemplateId, useTemplateActions } from "../../hooks/use-template-editing";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
 import type { TemplateTreeItem } from "../../services/template-library";
@@ -20,6 +22,8 @@ import type { TemplateTreeItem } from "../../services/template-library";
 export function TemplatesPanel() {
   const templates = useCustomTemplateTree();
   const { deleteTemplate } = useProjectActions();
+  const { openTemplate } = useTemplateActions();
+  const openTemplateId = useOpenTemplateId();
   const { confirmDestructive } = useDialogs();
   const { getLabel } = useTemplates();
 
@@ -64,9 +68,11 @@ export function TemplatesPanel() {
             key={item.node.id}
             item={item}
             depth={0}
-            isExpanded={expanded.has(item.node.id)}
+            expanded={expanded}
             onToggle={toggle}
             onDelete={handleDelete}
+            onOpen={openTemplate}
+            openTemplateId={openTemplateId}
             getLabel={getLabel}
           />
         ))}
@@ -75,30 +81,42 @@ export function TemplatesPanel() {
   );
 }
 
-function TemplateRow({
-  item,
-  depth,
-  isExpanded,
-  onToggle,
-  onDelete,
-  getLabel,
-}: {
+type RowProps = {
   item: TemplateTreeItem;
   depth: number;
-  isExpanded: boolean;
+  expanded: Set<string>;
   onToggle: (id: string) => void;
   onDelete: (id: string, name: string) => void;
+  onOpen: (id: string) => void;
+  openTemplateId: string | null;
   getLabel: (key: string) => string;
-}) {
+};
+
+/**
+ * One row, and its sub-pages beneath it when open.
+ *
+ * Recursive rather than two components: a template's sub-page is editable in
+ * exactly the way its root is — it's a page either way — so the only thing
+ * depth changes is the indent and whether Delete is offered. Deleting a
+ * sub-page on its own would leave the template describing a shape it no longer
+ * has, so only a whole template can go.
+ */
+function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTemplateId, getLabel }: RowProps) {
   const { node, children } = item;
   const Icon = getTemplateIcon(node.templateKey);
-  const isRoot = depth === 0;
+  const isExpanded = expanded.has(node.id);
+  const isOpen = openTemplateId === node.id;
 
   return (
     <li>
-      <div className="tree-templates-row" style={{ paddingLeft: `calc(var(--space-md) + ${depth} * var(--space-lg))` }}>
-        {/* Only a template with sub-pages gets a twisty; the space is held
-            either way so the icons below it line up. */}
+      <div
+        className={`tree-templates-row${isOpen ? " tree-templates-row-open" : ""}`}
+        style={{ paddingLeft: `calc(var(--space-md) + ${depth} * var(--space-lg))` }}
+      >
+        {/* Only a row with sub-pages gets a twisty; the space is held either
+            way so the icons below it line up. It's a separate button from the
+            name so opening a template and looking inside it stay two
+            different gestures. */}
         {children.length > 0 ? (
           <button
             type="button"
@@ -113,14 +131,14 @@ function TemplateRow({
           <span className="tree-templates-twisty" aria-hidden="true" />
         )}
 
-        {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
-        <Icon size={14} className="tree-templates-icon" />
-        <span className="tree-templates-name">{node.name}</span>
-        <span className="tree-templates-kind">{getLabel(node.templateKey)}</span>
+        <button type="button" className="tree-templates-open" onClick={() => onOpen(node.id)}>
+          {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
+          <Icon size={14} className="tree-templates-icon" />
+          <span className="tree-templates-name">{node.name}</span>
+          <span className="tree-templates-kind">{getLabel(node.templateKey)}</span>
+        </button>
 
-        {/* Deleting a sub-page on its own would leave the template describing a
-            shape it no longer has, so only a whole template can go. */}
-        {isRoot && (
+        {depth === 0 && (
           <button
             type="button"
             className="tree-templates-delete"
@@ -136,45 +154,17 @@ function TemplateRow({
       {isExpanded && children.length > 0 && (
         <ul className="tree-templates-list">
           {children.map((child) => (
-            <TemplateSubtree key={child.node.id} item={child} depth={depth + 1} getLabel={getLabel} />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
-
-/**
- * A template's sub-pages, always shown once their template is open.
- *
- * They have no twisty of their own — a template three levels deep is rare and a
- * second collapse level inside a panel this narrow buys less than it costs.
- */
-function TemplateSubtree({
-  item,
-  depth,
-  getLabel,
-}: {
-  item: TemplateTreeItem;
-  depth: number;
-  getLabel: (key: string) => string;
-}) {
-  const { node, children } = item;
-  const Icon = getTemplateIcon(node.templateKey);
-
-  return (
-    <li>
-      <div className="tree-templates-row" style={{ paddingLeft: `calc(var(--space-md) + ${depth} * var(--space-lg))` }}>
-        <span className="tree-templates-twisty" aria-hidden="true" />
-        {/* eslint-disable-next-line react-hooks/static-components -- as above: a fixed lookup, stable per templateKey */}
-        <Icon size={14} className="tree-templates-icon" />
-        <span className="tree-templates-name">{node.name}</span>
-        <span className="tree-templates-kind">{getLabel(node.templateKey)}</span>
-      </div>
-      {children.length > 0 && (
-        <ul className="tree-templates-list">
-          {children.map((child) => (
-            <TemplateSubtree key={child.node.id} item={child} depth={depth + 1} getLabel={getLabel} />
+            <TemplateRow
+              key={child.node.id}
+              item={child}
+              depth={depth + 1}
+              expanded={expanded}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              onOpen={onOpen}
+              openTemplateId={openTemplateId}
+              getLabel={getLabel}
+            />
           ))}
         </ul>
       )}

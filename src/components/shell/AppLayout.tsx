@@ -5,6 +5,7 @@ import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useHistoryActions } from "../../hooks/use-history";
 import { useNavigationActions } from "../../hooks/use-navigation";
+import { useOpenTemplate } from "../../hooks/use-template-editing";
 import { usePanelWidthActions, usePanelWidths } from "../../hooks/use-panel-widths";
 import {
   PROPERTIES_MAX_WIDTH,
@@ -20,6 +21,7 @@ import { useCreatePage } from "../../hooks/use-new-page";
 import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
+import { TemplateView } from "../page/TemplateView";
 import { AllPropertiesModal } from "../properties/AllPropertiesModal";
 import { PropertiesPanel } from "../properties/PropertiesPanel";
 import { LoadWarning } from "./LoadWarning";
@@ -30,6 +32,7 @@ import "./shell.css";
 
 export function AppLayout() {
   const { project, closeProject } = useProject();
+  const openTemplate = useOpenTemplate();
   const { clearLastOpenedProject } = useAppSettings();
   // Raised from a tree row's right-click menu, rendered here — react-arborist
   // owns row rendering, so there's nothing to thread a callback through.
@@ -112,8 +115,16 @@ export function AppLayout() {
         <LoadWarning />
         <RecoveryNotice />
         <SaveWarning />
+        {/* An open template takes the centre panel, and the page underneath
+            stays selected — closing it puts you back exactly where you were.
+            Keyed by template id for the same reason PageView is keyed by node
+            id: the tab strip's state resets on a switch without an effect. */}
         <main className="app-layout-page">
-          <PageView key={project?.selectedId ?? "none"} />
+          {openTemplate ? (
+            <TemplateView key={openTemplate.id} template={openTemplate} />
+          ) : (
+            <PageView key={project?.selectedId ?? "none"} />
+          )}
         </main>
       </div>
 

@@ -819,6 +819,36 @@ is below.
   starts being "some things, sort of". Page titles, tab strips and callout
   labels are interface and belong on `--fs-scale`.
 
+- **`openTemplateId` is not `project.selectedId`, and the two must never be
+  merged.** A template is open in the centre panel while a *page* stays
+  selected, which is what makes closing it put you back where you were.
+  `selectedId` is a project node id — the tree, breadcrumbs, the properties
+  panel and search all read it that way — so a template id in it sends every
+  one of them looking up an id that isn't in `nodes`. Not persisted either: the
+  template you last had open isn't a fact about the world.
+
+- **Tab transforms live in `services/tab-service.ts` because tabs stopped
+  belonging only to pages.** A template is a copied page, so editing one runs
+  the same six operations against `templates.nodes` instead of `nodes`. The
+  store's page actions and `use-template-editing`'s handlers are both thin
+  wrappers over the same pure functions; a second copy for the other record is
+  the one that drifts.
+
+- **`withTabsReordered` returns `null` to mean refusal, and the caller must not
+  write it.** It tests that the given order is a *permutation* of exactly these
+  tabs, not that it's the same length — which is what the store checked before
+  the extraction, and it isn't enough: `["a", "a", "b"]` against tabs a/b/c
+  passes a length check having duplicated one tab and dropped another, taking
+  everything written in it. `arrayMove` permutes, so this was never reachable
+  from the drag; it's reachable from anything else that ever computes an order.
+
+- **A template edit debounces on the library file, not on the node.** All
+  templates live in one `.templates.json`, so keying `scheduleSave` by node id
+  would let two templates edited in quick succession race two writes of the
+  same path. `updateTemplateNode` keys on `TEMPLATES_FILE` and re-reads the
+  library when the debounce fires, for the same reason `updateNode` re-reads the
+  graph.
+
 - **`applyTemplate` merges only the tabs a page doesn't already have, by id.** It
   must never overwrite existing content.
 

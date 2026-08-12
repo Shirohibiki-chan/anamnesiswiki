@@ -326,23 +326,31 @@ The world's own templates — `.templates.json`, kept in the store's `templates`
 record, never in `nodes`. Rendered as a list in `rootOrder`, each with its kind's
 icon; a template saved with its sub-pages shows them nested underneath.
 
-- **Rename, reorder, delete.** Delete already exists (`deleteTemplate`, with
-  undo); the other two are new and are the "browsing, renaming and reorganising"
-  the Phase 15 note left here. Reordering writes `rootOrder`, which is already
-  the field that decides the offer order on the new-page screen.
-- **Start a new page from one**, without going through the new-page screen.
 - **Open one and edit it.** Clicking a template opens it in the main area as a
-  page — its tabs, properties and pictures — and edits save back to the library.
+  page — its title, tabs, properties and pictures — and edits save back to the
+  library.
+- **Reorder and delete.** Delete already exists (`deleteTemplate`, with undo);
+  reordering writes `rootOrder`, which is already the field deciding the offer
+  order on the new-page screen.
+- **Start a new page from one**, without going through the new-page screen.
 
-**The last of those reverses half of the 2026-07-31 decision, deliberately, and
-the reasoning that decision rested on still stands.** That call was "no second
-editing surface to build or maintain", and it bought a real thing: templates get
-*designed* in a real page, which is still how they're made. What it didn't
-answer is fixing one — a typo, a renamed property, one more tab — where the only
-route today is building the page again and saving a second template over the
-first. Asked directly on 2026-08-12, the user chose editing. So the surface
-arrives, and what stops it being a second editing surface in the expensive sense
-is that it is literally the page editor pointed at a different record.
+**Templates are editable because LegendKeeper's are, and its absence would read
+as a missing feature — the user, 2026-08-12, and that settles it.** Don't
+re-open it.
+
+This supersedes the "no second editing surface to build or maintain" half of the
+2026-07-31 decision. That phrase meant a bespoke template-editing *screen* — a
+settings form with its own fields, standing alongside the page editor and
+needing maintenance beside it. **That's still not what gets built**, and the
+rest of that decision is untouched: templates are still *designed* by building a
+real page and saving it, which is why there's no "new template" button anywhere.
+What arrives is the page editor pointed at a different record, which is why this
+costs a fraction of what the original phrasing was guarding against.
+
+**Renaming a template needs no affordance of its own** — it's the page title,
+edited the way every other page title is. The earlier draft of this entry listed
+rename as separate work; opening a template as a page is what makes it free, and
+a second rename control in the sidebar would be a second way to do one thing.
 
 **The one thing not to do here is put templates into `nodes` to make that
 easier.** Their separation is the whole safety argument for the feature —
@@ -414,10 +422,10 @@ thumbnails where the wrong one is a mis-click away.
 
 ### Sequencing
 
-Roughly one PR each: the tab strip; the Templates list (rename, reorder, delete,
-new page from); template editing; the assets listing and usage index in
-services, with tests; the Assets grid with delete and undo; remove-from-every-
-page; insert-into-page.
+Roughly one PR each. **The tab strip and the Templates list shipped 2026-08-12**
+(#143). Then: template editing (which brings rename with it); reorder and new-
+page-from; the assets listing and usage index in services, with tests; the
+Assets grid with delete and undo; remove-from-every-page; insert-into-page.
 
 ---
 

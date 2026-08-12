@@ -850,6 +850,13 @@ button.tree-path-crumb:hover {
   background: var(--color-hover);
 }
 
+/* The template currently open in the centre panel. Matches how a selected tree
+   row reads, so "this is the thing on screen" means one thing in both panels. */
+.tree-templates-row-open {
+  background: var(--gradient-sel, none), var(--color-accent-faint);
+  color: var(--color-accent-light);
+}
+
 .tree-templates-twisty {
   flex-shrink: 0;
   width: 14px;
@@ -866,6 +873,28 @@ button.tree-path-crumb:hover {
 
 .tree-templates-twisty-open {
   transform: rotate(90deg);
+}
+
+/* The whole name-and-kind area is the button that opens the template, so the
+   target is the row rather than a word in it — the same reason a tree row is
+   clickable along its length. Laid out as the flex child the three spans used
+   to be, so nothing about the row's measurements changed when it became a
+   button. */
+.tree-templates-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .tree-templates-icon {
