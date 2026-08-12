@@ -124,6 +124,38 @@ Supabase-backed sync for users who want multi-device access without shared-folde
 
 ---
 
+**Import Word and Google Docs, formatting intact**
+
+Asked for by the user 2026-08-12. Wanted, unscheduled.
+
+**Google Docs is a file import, not an integration, and that isn't a compromise — it's the only version that can exist here.** Reaching Google's API means a third network call *and* an account to authenticate against, and both sit on the wrong side of the Policy Boundary; the account half is Phase 2 territory at best. She exports from Google Docs (File → Download → `.docx`, or `.odt`) and imports the file. That is the same importer, so there is one thing to build rather than two, and it works with no internet.
+
+**`.docx` is a zip of XML and is parseable offline.** `mammoth` (BSD-2) converts it to HTML through an explicit style-mapping table, which is the part that makes formatting survive rather than being guessed at. From HTML the path is HTML → BlockNote blocks — **work Phase 20 needs anyway** for its own HTML import, so build that converter once and let both use it. `.odt` is the same shape (zip + XML) and is the fallback if Google's `.docx` export turns out lossy.
+
+What comes across: headings, bold/italic/underline/strikethrough, nested lists, links, blockquotes, tables, horizontal rules. What has no home here and must be *reported* rather than silently dropped — the LK importer's lossy-list preview is the pattern: page layout and columns, fonts and text colour, comments, tracked changes, text boxes and drawing objects, footnotes (land as trailing text at best).
+
+**Pictures embedded in a `.docx` are inside the zip, and that is one of the very few later moments a picture's real name exists** — the archive stores original media filenames. They extract into `assets/` down the same path an upload takes, and the name goes into `.names.json` at that moment or is lost for good. See handoff §Editor & templates.
+
+---
+
+**Export to AO3**
+
+Asked for by the user 2026-08-12. Wanted, unscheduled.
+
+**There is nothing to post to.** AO3 has no public write API, and posting on her behalf would need her account plus a network call — both out. So this produces something she pastes into AO3's rich-text box, or a file she uploads. No host is ever contacted, which keeps it inside the Policy Boundary without an argument.
+
+**The work is the subset, not the export.** AO3 runs everything through a tag whitelist and strips class and style attributes outright, so this emits a narrow HTML dialect — `p`, `br`, `em`, `strong`, `b`, `i`, `u`, `s`, `a`, `blockquote`, `h1`–`h6`, `ul`/`ol`/`li`, `hr`, `table`, `center` — and anything with no equivalent has to **degrade visibly and be listed**, the way LK export already lists what it flattens. The custom Info/Quote/Secret callouts are the obvious case: they become blockquotes and lose their colour, and a Secret callout silently becoming an ordinary quote is a spoiler published by accident.
+
+**Pictures can't come with it, and that's the headline rather than a footnote.** AO3 hosts no images; an `<img>` there must point at a file on someone else's server. Her library is local files with no public URL, so every picture in an exported page is a broken link or an omission. Say which, up front, before the export runs.
+
+`[[wikilinks]]` and mentions have nothing to point at either — they should become plain text rather than links to nothing.
+
+**Open question worth settling before building: what's a work?** One page is the easy answer; a **Phase 25 storyline exported as chapters** maps onto AO3's own chapter model and is probably what she actually wants. That pairing decides the shape, so don't build the single-page version in a way that can't grow chapters.
+
+**Third of a kind.** `lk-export.ts`, Phase 1.5's static publish and this are all "walk BlockNote blocks, emit another format". By the third one the shared walker is worth extracting; it wasn't at the second.
+
+---
+
 ## Queued Adjustments
 
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
