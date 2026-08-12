@@ -23,11 +23,22 @@ export { describeSize, describeUses } from "../services/asset-usage";
 export function useAssets(): {
   entries: AssetEntry[];
   isLoading: boolean;
+  /**
+   * True when a page couldn't be read on the last load. "Nothing is using this
+   * picture" is a claim about *every* page, so a page the app couldn't open is
+   * enough to make it a guess — and the delete button hangs off that claim.
+   */
+  isUsageIncomplete: boolean;
   /** Re-reads the directory. Called after anything that changes what's in it. */
   refresh: () => void;
 } {
-  const { nodes, templates, listAssets } = useProjectStore(
-    useShallow((state) => ({ nodes: state.nodes, templates: state.templates, listAssets: state.listAssets })),
+  const { nodes, templates, listAssets, loadWasIncomplete } = useProjectStore(
+    useShallow((state) => ({
+      nodes: state.nodes,
+      templates: state.templates,
+      listAssets: state.listAssets,
+      loadWasIncomplete: state.loadWasIncomplete,
+    })),
   );
 
   const [files, setFiles] = useState<AssetFile[] | null>(null);
@@ -54,6 +65,7 @@ export function useAssets(): {
     // Null until the first read lands, so the tab shows "reading" rather than
     // "no pictures yet" for the moment before the answer arrives.
     isLoading: files === null,
+    isUsageIncomplete: loadWasIncomplete,
     refresh: useCallback(() => setReloads((count) => count + 1), []),
   };
 }

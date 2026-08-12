@@ -449,8 +449,13 @@ index and delete-with-undo (#148), that listing rebuilt as a grid (#149), the
 picture library (#150), and the library reaching pictures inside a page plus
 clickable thumbnails (#151).
 
+**Also shipped 2026-08-12:** the duplicate-node-file repair that was making
+portraits and covers look unused (#152).
+
 **Left in this phase:** remove-from-every-page; reorder templates and
-start-a-new-page-from one.
+start-a-new-page-from one; and the Assets tab's own actions — an upload button,
+dragging a tile onto a page, and folders (all three asked for by the user,
+2026-08-12).
 
 **Putting a picture into a page is the image block's own Library tab (#151),
 not a click in the Assets tab.** The plan originally said clicking a thumbnail
@@ -490,6 +495,23 @@ gave one tile per row and 420px gave five clipped ones. Counting columns — two
 three past 302px of panel — lets the tile grow with the panel instead: 77px,
 117px, 129px at the three widths in `constants/layout.ts`. Re-measured
 2026-08-12. Don't reach for `auto-fill` here again.
+
+**The usage index is only as complete as the load, and #152 is what made that
+concrete.** Two files on disk claimed the same page id, the graph is keyed by
+id, so one of them was dropped on load — and its portrait and cover fell out of
+the count, putting a delete button on two pictures a live page was displaying.
+The storage side is fixed at both ends (see `docs/handoff.md` §Storage), but the
+standing rule from it is in the tab: **the delete buttons switch off entirely
+when the load couldn't read every page.** "Nothing is using this" is a claim
+about all of them, and any future way of losing one must not surface as a
+delete. Don't make that conditional on the user having dismissed the warning —
+`loadWasIncomplete` exists separately from `skippedFiles` for exactly that
+reason.
+
+**The tab's delete button is always visible on an unused picture, not revealed
+on hover.** Deleting one reflows the grid under a stationary cursor and the
+browser doesn't re-run `:hover` until the pointer moves, so the control
+disappeared from tiles it was still over. Reported 2026-08-12.
 
 ---
 

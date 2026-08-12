@@ -1011,6 +1011,15 @@ button.tree-path-crumb:hover {
   color: var(--color-text-muted);
 }
 
+/* The one note that isn't just information — it's the reason the delete
+   buttons are missing, so it has to read as a different kind of sentence from
+   the count above it. Sits directly under that count with its own top padding
+   removed, so the two read as one block. */
+.tree-assets-warning {
+  padding-top: 0;
+  color: var(--color-palette-amber);
+}
+
 /* A grid, with a fixed column count per width rather than `auto-fill`.
    `repeat(auto-fill, minmax(84px, 1fr))` was tried first and is the trap: it
    keeps tiles at the minimum and spends every extra pixel on more columns, so
@@ -1137,9 +1146,18 @@ button.tree-path-crumb:hover {
   cursor: default;
 }
 
-/* `display: none`, never `opacity: 0` — the rule the tree rows document. It
-   costs nothing here, since the button is positioned out of flow, but a hidden
-   control that still answers to a click is its own bug.
+/* Always on, not revealed on hover — and that's a correction, not a
+   preference. Hover-reveal is right for the tree rows, where the row under the
+   pointer stays put; here, deleting one picture reflows the grid under a
+   stationary cursor, and the browser doesn't re-run `:hover` until the pointer
+   actually moves. So the button vanished from tiles that were still under it,
+   which is what the user hit on 2026-08-12 — "the trashcan disappeared for
+   some of them when I clicked it on one".
+
+   It only exists on a picture nothing is using, which is a small minority of
+   the grid and the exact thing the tab is there to point at, so showing it
+   isn't the noise it would be on every tile. And it's positioned out of flow
+   over the picture's corner, so it costs no layout either way.
 
    Opaque rather than transparent: this one sits *on* the picture, and a
    transparent button over a photograph is a button you can't see. */
@@ -1149,7 +1167,7 @@ button.tree-path-crumb:hover {
   right: var(--space-xs);
   width: 20px;
   height: 20px;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   border: none;
@@ -1157,11 +1175,6 @@ button.tree-path-crumb:hover {
   background: var(--color-panel);
   color: var(--color-text-secondary);
   cursor: pointer;
-}
-
-.tree-assets-tile:hover .tree-assets-delete,
-.tree-assets-tile:focus-within .tree-assets-delete {
-  display: flex;
 }
 
 .tree-assets-delete:hover {

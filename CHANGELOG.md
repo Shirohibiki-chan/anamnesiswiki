@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-12 — the Assets tab stops calling pictures unused when they aren't
+
+### Fixes
+
+- **Portraits and covers that are plainly in use were being listed as "used by nothing".** The pictures were never the problem. A page can end up with two files on disk claiming to be the same page — it happens when a page changes shape in your folder, usually because it gained something inside it or you gave it a different template, and the file didn't get carried across. The app can only keep one of the two, and the one it dropped took its portrait and cover out of the count with it. Which mattered more than the wrong number, because those pictures were then sitting under a delete button.
+- **Opening a project now spots that and repairs it.** The version with your most recent work is the one kept. The older file is renamed with `.old-copy` on the end and left next to it in your project folder, so nothing is thrown away, and you get told which page it was.
+- **And saving no longer leaves one behind in the first place** — a page written into its own folder now clears out its own leftover copy beside it.
+- **The delete buttons in the Assets tab switch off when a page won't open.** "Nothing is using this" is a claim about every page you have, so one page the app can't read makes it a guess — and that's not something to hang a delete on. The tab says so instead of quietly guessing.
+- **The trashcan no longer vanishes when you delete a picture.** It used to only appear while your mouse was over a tile, and deleting one shuffles the rest, so the button would disappear from tiles the pointer was still sitting on. It's just always there now, on the pictures nothing is using.
+- **A deleted picture actually leaves the tab.** The list was being re-read a moment before the delete finished, so the picture you'd just removed drew itself straight back in and stayed until you left the tab.
+
 ## 2026-08-12 — the library reaches pictures in a page, and the Assets tab does something
 
 ### Additions

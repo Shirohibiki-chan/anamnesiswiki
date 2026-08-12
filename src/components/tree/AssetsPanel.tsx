@@ -10,6 +10,16 @@
 // page keeps its reference and draws an empty box, with nothing to say why.
 // "Remove from every page", which turns a picture in use into one that isn't,
 // is the next step of this phase and is what makes that reachable.
+//
+// It also disappears entirely when the load couldn't read every page, because
+// "nothing is using this" is a claim about all of them and one unreadable file
+// makes it a guess. That isn't hypothetical: on 2026-08-12 the tab offered to
+// delete five pictures, three of which were a live page's portrait and cover —
+// two files on disk claimed the same page and only one of them could be kept,
+// so the other's pictures fell out of the count. The storage side of that is
+// fixed (see `setAsideSupersededCopies`), and this is the belt to its braces:
+// whatever the next way of losing a page turns out to be, it must not arrive
+// as a delete button.
 import { Trash2 } from "lucide-react";
 import { describeSize, describeUses, useAssetActions, useAssets, type AssetEntry } from "../../hooks/use-assets";
 import { useDialogs } from "../../hooks/use-dialogs";
@@ -17,7 +27,7 @@ import { useOpenSingleImage } from "../../hooks/use-lightbox";
 import { useNodeImage } from "../../hooks/use-node-image";
 
 export function AssetsPanel() {
-  const { entries, isLoading, refresh } = useAssets();
+  const { entries, isLoading, isUsageIncomplete, refresh } = useAssets();
   const { deleteAsset } = useAssetActions();
   const { confirmDestructive } = useDialogs();
 
@@ -48,11 +58,22 @@ export function AssetsPanel() {
     <div className="tree-assets">
       <p className="tree-assets-note">
         {entries.length} {entries.length === 1 ? "picture" : "pictures"}
-        {unusedCount > 0 && ` · ${unusedCount} used by nothing`}
+        {!isUsageIncomplete && unusedCount > 0 && ` · ${unusedCount} used by nothing`}
       </p>
+      {isUsageIncomplete && (
+        <p className="tree-assets-note tree-assets-warning">
+          One of your pages wouldn&rsquo;t open, so this can&rsquo;t say for certain what&rsquo;s using what. Deleting
+          is off until it can.
+        </p>
+      )}
       <ul className="tree-assets-grid">
         {entries.map((entry) => (
-          <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} />
+          <AssetTile
+            key={entry.fileName}
+            entry={entry}
+            onDelete={handleDelete}
+            usageIsCertain={!isUsageIncomplete}
+          />
         ))}
       </ul>
     </div>
@@ -69,11 +90,24 @@ export function AssetsPanel() {
  * for and "Valera, The Amber Coast, Her Sword" is the one you want once you've
  * found the picture you care about.
  */
-function AssetTile({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName: string) => void }) {
+function AssetTile({
+  entry,
+  onDelete,
+  usageIsCertain,
+}: {
+  entry: AssetEntry;
+  onDelete: (fileName: string) => void;
+  /** False when a page didn't load, which makes `isUnused` a guess. */
+  usageIsCertain: boolean;
+}) {
   const { url, status } = useNodeImage(entry.fileName);
   const openImage = useOpenSingleImage();
   const names = [...new Set(entry.uses.map((use) => use.nodeName))];
-  const detail = names.length > 0 ? `Used by ${names.join(", ")}` : "Not used anywhere";
+  // "Not used anywhere" is a much stronger sentence than the app can back up
+  // when a page didn't load, and it's the one she'd act on. Softened rather
+  // than hidden: the picture is still there and still worth showing.
+  const unknown = names.length === 0 && !usageIsCertain;
+  const detail = names.length > 0 ? `Used by ${names.join(", ")}` : unknown ? "Not sure yet" : "Not used anywhere";
 
   return (
     <li className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`} title={detail}>
@@ -107,12 +141,12 @@ function AssetTile({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName
           onClick={() => url && openImage(url, "")}
         />
 
-        {/* Sits on the picture's top corner, hidden until the tile is hovered
-            or focused — `display: none`, the same rule the tree rows follow.
-            On the picture rather than beside it because a grid has no spare
-            width to reserve for a button that's usually invisible. After the
-            overlay in the DOM so it takes the clicks in the corner it covers. */}
-        {entry.isUnused && (
+        {/* Sits on the picture's top corner, and stays there — see the CSS for
+            why it isn't revealed on hover the way the tree rows' controls are.
+            On the picture rather than beside it because a grid this narrow has
+            no spare width to give a button its own column. After the overlay in
+            the DOM so it takes the clicks in the corner it covers. */}
+        {entry.isUnused && usageIsCertain && (
           <button
             type="button"
             className="tree-assets-delete"
@@ -126,7 +160,7 @@ function AssetTile({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName
       </div>
 
       <span className="tree-assets-text">
-        <span className="tree-assets-uses">{describeUses(entry.uses)}</span>
+        <span className="tree-assets-uses">{unknown ? "Not sure yet" : describeUses(entry.uses)}</span>
         <span className="tree-assets-size">{describeSize(entry.size)}</span>
       </span>
     </li>

@@ -140,6 +140,13 @@ export type ProjectStoreState = {
   // Node files that couldn't be read on the last load (corrupt JSON, wrong
   // shape). Surfaced once by the shell, then dismissed — see LoadWarning.tsx.
   skippedFiles: string[];
+  // Whether the last load failed to read at least one page file. Deliberately
+  // *not* the same thing as `skippedFiles.length > 0`: that list is emptied
+  // when she dismisses the notice, and dismissing a notice must not be what
+  // re-enables a button whose safety depends on the graph being complete —
+  // "nothing is using this picture" is a claim about every page there is.
+  // Cleared only by the next load.
+  loadWasIncomplete: boolean;
   // Writes that didn't happen. Debounced saves run with no caller left to
   // catch anything, so without this a failed write is invisible and the app
   // goes on claiming "Saved" from the last one that worked — see SaveWarning.
@@ -153,6 +160,11 @@ export type ProjectStoreState = {
   // above, plus one of its own: the tree these pages come back into is not the
   // one she was last looking at, and nothing else would explain the change.
   reunitedNames: string[];
+  // Pages that had a second, older copy of themselves on disk, which the last
+  // load renamed aside. Same notice as the two above, and the same reason:
+  // until it's said out loud, the only visible symptom is a page missing work
+  // it should have — or a picture the app thinks nothing is using.
+  supersededNames: string[];
   dismissRecovered: () => void;
   // Which tab to open on, when a page is being reached from somewhere that
   // knows the answer — a search result naming the tab its match came from.
@@ -654,9 +666,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     isLoaded: false,
     lastSavedAt: null,
     skippedFiles: [],
+    loadWasIncomplete: false,
     saveErrors: [],
     recoveredCount: 0,
     reunitedNames: [],
+    supersededNames: [],
     pendingFocus: null,
     pendingRenameId: null,
     focusedId: null,
@@ -701,8 +715,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         openTemplateId: null,
         isLoaded: true,
         skippedFiles: result.skipped,
+        loadWasIncomplete: result.skipped.length > 0,
         recoveredCount: result.recoveredCount,
         reunitedNames: result.reunited,
+        supersededNames: result.supersededNames,
         // Seeded with wherever the project was left, not left empty — so the
         // first page opened this session has somewhere to go Back *to*, which
         // is the page that's on screen when the window appears.
@@ -728,7 +744,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
     // One dismissal for both, because they're one notice on screen.
     dismissRecovered() {
-      set({ recoveredCount: 0, reunitedNames: [] });
+      set({ recoveredCount: 0, reunitedNames: [], supersededNames: [] });
     },
 
     dismissSaveErrors() {
@@ -746,6 +762,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         templates: createTemplateLibrary(),
         openTemplateId: null,
         isLoaded: true,
+        // A brand new folder has nothing in it to have failed to read, and
+        // whatever the last project reported has nothing to do with this one.
+        skippedFiles: [],
+        loadWasIncomplete: false,
         navHistory: EMPTY_NAV_HISTORY,
       });
       markSaved();
@@ -850,9 +870,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         isLoaded: false,
         lastSavedAt: null,
         skippedFiles: [],
+        loadWasIncomplete: false,
         saveErrors: [],
         recoveredCount: 0,
         reunitedNames: [],
+        supersededNames: [],
         pendingFocus: null,
         pendingRenameId: null,
         focusedId: null,
@@ -1244,7 +1266,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // nothing.
       const bytes = await fsService.readAssetImage(rootPath, fileName).catch(() => null);
 
-      track(() => fsService.deleteAssetImage(rootPath, fileName));
+      // Awaited, not just queued. Every other asset delete happens behind a
+      // change the user can already see, so the queue landing a moment later
+      // costs nothing — but this one *is* the change, and the tab re-reads the
+      // folder the instant this resolves. Returning early had it read the
+      // directory before the delete landed and draw the picture straight back,
+      // which then sat there looking undeleted until she left the tab.
+      await enqueueWrite(() => fsService.deleteAssetImage(rootPath, fileName)).then(markSaved).catch(recordSaveError);
       if (!bytes) return;
 
       const restored = bytes;
