@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-12 — the Assets tab is a grid
+
+### Adjustments
+
+- **The Assets tab shows your pictures as a grid of thumbnails**, not a single column of little ones. Two across normally, three when you widen the sidebar, and the thumbnails grow as you widen it rather than staying small and multiplying.
+- **The pictures are big enough to recognise now** — from 44px to between 77px and 129px depending on how wide you've pulled the sidebar. What a picture is called is a UUID and no help to anyone, so being able to see it is the whole point.
+- What's using it still sits under each one, and the delete button moved onto the picture's corner.
+
 ## 2026-08-12 — the Assets tab
 
 ### Additions

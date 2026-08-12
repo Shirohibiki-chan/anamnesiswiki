@@ -49,9 +49,9 @@ export function AssetsPanel() {
         {entries.length} {entries.length === 1 ? "picture" : "pictures"}
         {unusedCount > 0 && ` · ${unusedCount} used by nothing`}
       </p>
-      <ul className="tree-assets-list">
+      <ul className="tree-assets-grid">
         {entries.map((entry) => (
-          <AssetRow key={entry.fileName} entry={entry} onDelete={handleDelete} />
+          <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} />
         ))}
       </ul>
     </div>
@@ -59,29 +59,46 @@ export function AssetsPanel() {
 }
 
 /**
- * One picture. The line beside it says what's using it rather than what it's
- * called — the filename is a UUID, which identifies it to the app and to nobody
- * else.
+ * One picture: the thumbnail, and under it what's using it rather than what
+ * it's called — the filename is a UUID, which identifies it to the app and to
+ * nobody else. The picture is the label here; the caption is the part you
+ * couldn't have worked out by looking.
  *
  * `title` carries the long version, because "3 pages" is the answer you scan
  * for and "Valera, The Amber Coast, Her Sword" is the one you want once you've
- * found the row you care about.
+ * found the picture you care about.
  */
-function AssetRow({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName: string) => void }) {
+function AssetTile({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName: string) => void }) {
   const { url, status } = useNodeImage(entry.fileName);
   const names = [...new Set(entry.uses.map((use) => use.nodeName))];
   const detail = names.length > 0 ? `Used by ${names.join(", ")}` : "Not used anywhere";
 
   return (
-    <li className={`tree-assets-row${entry.isUnused ? " tree-assets-row-unused" : ""}`} title={detail}>
+    <li className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`} title={detail}>
       <div className="tree-assets-thumb">
         {status === "ready" && url ? (
           <img src={url} alt="" className="tree-assets-image" />
         ) : (
           // A file that won't read is still a file taking up room, so it stays
-          // in the list. Saying so beats an empty square that reads as a
+          // in the grid. Saying so beats an empty square that reads as a
           // picture still loading.
           <span className="tree-assets-broken">{status === "loading" ? "" : "?"}</span>
+        )}
+
+        {/* Sits on the picture's top corner, hidden until the tile is hovered
+            or focused — `display: none`, the same rule the tree rows follow.
+            On the picture rather than beside it because a grid has no spare
+            width to reserve for a button that's usually invisible. */}
+        {entry.isUnused && (
+          <button
+            type="button"
+            className="tree-assets-delete"
+            title="Delete this picture"
+            aria-label="Delete this picture"
+            onClick={() => void onDelete(entry.fileName)}
+          >
+            <Trash2 size={13} />
+          </button>
         )}
       </div>
 
@@ -89,20 +106,6 @@ function AssetRow({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName:
         <span className="tree-assets-uses">{describeUses(entry.uses)}</span>
         <span className="tree-assets-size">{describeSize(entry.size)}</span>
       </span>
-
-      {/* Hidden until the row is hovered or focused, the same `display: none`
-          rule the tree rows follow — see the note in tree.css. */}
-      {entry.isUnused && (
-        <button
-          type="button"
-          className="tree-assets-delete"
-          title="Delete this picture"
-          aria-label="Delete this picture"
-          onClick={() => void onDelete(entry.fileName)}
-        >
-          <Trash2 size={13} />
-        </button>
-      )}
     </li>
   );
 }

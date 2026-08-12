@@ -450,12 +450,16 @@ index and delete-with-undo (#148).
 **Left in this phase:** remove-from-every-page; insert-into-page; reorder
 templates and start-a-new-page-from one.
 
-**The Assets listing is a list of rows, not a grid of thumbnails**, and the plan
-said grid because the plan hadn't measured the sidebar. A grid was built first:
-at the 180px minimum `auto-fill` collapsed to one 156px tile per row, and at
-420px it gave four 95px columns whose captions clipped. The caption is the whole
-point — a filename here is a UUID, so what's using a picture is its only useful
-label — so the row won. Don't put it back.
+**The Assets listing is a grid of thumbnails, with a counted number of columns
+rather than `auto-fill`.** It shipped as a list of rows in #148 and the user
+rejected that on sight; #149 is the grid the plan asked for in the first place.
+The measurement that had argued for rows was real but the conclusion drawn from
+it was wrong: `auto-fill` was the fault, not the grid. It pins tiles to their
+minimum and spends every extra pixel on more columns, so the panel's 180px floor
+gave one tile per row and 420px gave five clipped ones. Counting columns — two,
+three past 302px of panel — lets the tile grow with the panel instead: 77px,
+117px, 129px at the three widths in `constants/layout.ts`. Re-measured
+2026-08-12. Don't reach for `auto-fill` here again.
 
 ---
 
