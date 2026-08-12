@@ -8,6 +8,7 @@
 // hooks/use-editor.ts, per CLAUDE.md's rule that components never import
 // services directly.
 import {
+  FilePanelController,
   FormattingToolbar,
   FormattingToolbarController,
   SuggestionMenuController,
@@ -19,6 +20,7 @@ import { Fragment } from "react";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { ExpandImageButton } from "./ExpandImageButton";
+import { PageFilePanel } from "./PageFilePanel";
 import { SaveImageButton } from "./SaveImageButton";
 
 /**
@@ -96,9 +98,12 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         onKeyDownCapture={onKeyDownCapture}
         // Off, so PageFormattingToolbar above is the one on screen.
         formattingToolbar={false}
+        // Off for the same reason: PageFilePanel below adds the library tab.
+        filePanel={false}
         onChange={handleChange}
       >
         <FormattingToolbarController formattingToolbar={PageFormattingToolbar} />
+        <FilePanelController filePanel={PageFilePanel} />
         {/* All three take the same floating options — see use-editor.ts. Without
             them a menu opened near the bottom of the window is positioned while
             it's still an empty loading strip and then grows off the screen. */}

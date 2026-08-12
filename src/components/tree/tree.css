@@ -1118,6 +1118,25 @@ button.tree-path-crumb:hover {
   color: var(--color-text-muted);
 }
 
+/* The click target that opens the picture full size: the whole thumbnail, laid
+   over it. No fill of its own — the picture underneath is the button as far as
+   anyone can see — but it takes a focus ring, which a click handler on the
+   `<img>` could not. */
+.tree-assets-open {
+  position: absolute;
+  inset: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* A file that won't read has nothing to open, so the overlay stops being a
+   button rather than opening an empty viewer. */
+.tree-assets-open:disabled {
+  cursor: default;
+}
+
 /* `display: none`, never `opacity: 0` — the rule the tree rows document. It
    costs nothing here, since the button is positioned out of flow, but a hidden
    control that still answers to a click is its own bug.

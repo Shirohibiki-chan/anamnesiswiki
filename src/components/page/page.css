@@ -1029,3 +1029,27 @@
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
+
+/* --- PageFilePanel's Library tab (Phase 17) ---
+
+   The panel is BlockNote's, and its tabs are sized by its own stylesheet. This
+   is only the inside of the one tab we add, which is a sentence and a button. */
+
+.file-panel-library {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  padding: var(--space-md) 0;
+  /* Keeps the popover from snapping narrower on this tab than on Upload and
+     Embed beside it, which would move the tab strip under the pointer as she
+     switches between them. */
+  min-width: 18rem;
+}
+
+.file-panel-library-note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}

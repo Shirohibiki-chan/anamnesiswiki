@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-12 — the library reaches pictures in a page, and the Assets tab does something
+
+### Additions
+
+- **Pictures inside a page can come from your library now.** Add a picture block and it opens on **Library** — everything the world already has — with Upload and the paste-a-web-address option still there beside it. Putting the same map on six pages is one file, the same as portraits and covers.
+- **Clicking a thumbnail in the Assets tab opens it full size**, in the same viewer you get double-clicking a picture in a page. Until now the tab was the one place you could see all your pictures and not actually look at any of them.
+
+### Worth knowing
+
+- Clicking a thumbnail deliberately doesn't drop it into whatever page you're on. They're small and there are a lot of them, and the gesture for "what is this one" shouldn't be the one that edits your writing. The picture block's Library tab is where you've already said where it goes.
+- Dragging a picture from the tab onto a page isn't in yet.
+
 ## 2026-08-12 — a picture library
 
 ### Additions

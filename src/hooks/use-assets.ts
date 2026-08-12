@@ -12,7 +12,7 @@
 // holds, so it recomputes with them and needs no refreshing at all.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { assetFileName } from "../services/asset-urls";
+import { assetFileName, assetRef } from "../services/asset-urls";
 import { buildAssetEntries, indexAssetUsage, type AssetEntry, type AssetFile } from "../services/asset-usage";
 import { readImageFile } from "../services/image-file";
 import { useProjectStore } from "../state/project-store";
@@ -82,4 +82,16 @@ export function useUploadPicture(): (file: File) => Promise<string> {
     },
     [uploadAsset],
   );
+}
+
+/**
+ * A library filename turned into the reference an image block holds.
+ *
+ * A hook around one pure function, purely so components don't import the
+ * service — CLAUDE.md's layer order. The alternative was a component building
+ * the `anamnesis-asset:` string itself, which is how a prefix ends up written
+ * out by hand in two places and typo'd in one.
+ */
+export function useAssetRef(): (fileName: string) => string {
+  return assetRef;
 }

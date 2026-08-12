@@ -445,12 +445,22 @@ thumbnails where the wrong one is a mis-click away.
 Roughly one PR each. **Shipped 2026-08-12:** the tab strip and the Templates
 list (#143), template editing with rename (#144), the built-in templates listed
 (#146) and made editable per world (#147), the Assets listing with its usage
-index and delete-with-undo (#148), that listing rebuilt as a grid (#149), and
-the picture library (#150).
+index and delete-with-undo (#148), that listing rebuilt as a grid (#149), the
+picture library (#150), and the library reaching pictures inside a page plus
+clickable thumbnails (#151).
 
-**Left in this phase:** the editor's own image block picking from the library;
-insert-into-page by clicking or dragging a picture from the Assets tab;
-remove-from-every-page; reorder templates and start-a-new-page-from one.
+**Left in this phase:** remove-from-every-page; reorder templates and
+start-a-new-page-from one.
+
+**Putting a picture into a page is the image block's own Library tab (#151),
+not a click in the Assets tab.** The plan originally said clicking a thumbnail
+would insert it into the open page. That was reconsidered when the tiles
+actually got behaviour: they're 77px squares packed six to a screen, and the
+gesture you make to see what one *is* should not be the one that edits your
+writing. Clicking a tile opens it full size instead. The block's panel is where
+"put a picture here" is already unambiguous, because you've said where. Dragging
+a tile onto a page is still open, and is the shape worth building if a
+second route is ever wanted.
 
 **The library is why the Assets tab is worth having, and the user is the one
 who said so** (2026-08-12, with a screenshot of LK's asset picker). The tab as
