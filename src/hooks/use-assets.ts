@@ -12,7 +12,9 @@
 // holds, so it recomputes with them and needs no refreshing at all.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { assetFileName } from "../services/asset-urls";
 import { buildAssetEntries, indexAssetUsage, type AssetEntry, type AssetFile } from "../services/asset-usage";
+import { readImageFile } from "../services/image-file";
 import { useProjectStore } from "../state/project-store";
 
 export type { AssetEntry, AssetUse } from "../services/asset-usage";
@@ -58,4 +60,26 @@ export function useAssets(): {
 
 export function useAssetActions() {
   return useProjectStore(useShallow((state) => ({ deleteAsset: state.deleteAsset })));
+}
+
+/**
+ * Add a picture to the project and get back its filename in `assets/`.
+ *
+ * The one upload path for anything that then *points* at the file — the picker
+ * and the portrait slot both. `uploadAsset` hands back an
+ * `anamnesis-asset:` reference because the editor writes that straight into a
+ * block; a slot stores the bare filename, so it's unwrapped here rather than at
+ * each call site.
+ *
+ * Throws with a showable sentence — see services/image-file.ts.
+ */
+export function useUploadPicture(): (file: File) => Promise<string> {
+  const uploadAsset = useProjectStore((state) => state.uploadAsset);
+  return useCallback(
+    async (file: File) => {
+      const { bytes, extension } = await readImageFile(file);
+      return assetFileName(await uploadAsset(bytes, extension)) ?? "";
+    },
+    [uploadAsset],
+  );
 }

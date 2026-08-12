@@ -444,11 +444,31 @@ thumbnails where the wrong one is a mis-click away.
 
 Roughly one PR each. **Shipped 2026-08-12:** the tab strip and the Templates
 list (#143), template editing with rename (#144), the built-in templates listed
-(#146) and made editable per world (#147), and the Assets listing with its usage
-index and delete-with-undo (#148).
+(#146) and made editable per world (#147), the Assets listing with its usage
+index and delete-with-undo (#148), that listing rebuilt as a grid (#149), and
+the picture library (#150).
 
-**Left in this phase:** remove-from-every-page; insert-into-page; reorder
-templates and start-a-new-page-from one.
+**Left in this phase:** the editor's own image block picking from the library;
+insert-into-page by clicking or dragging a picture from the Assets tab;
+remove-from-every-page; reorder templates and start-a-new-page-from one.
+
+**The library is why the Assets tab is worth having, and the user is the one
+who said so** (2026-08-12, with a screenshot of LK's asset picker). The tab as
+first built could only ever *report*: uploads all happened at the spot a
+picture was wanted, so nothing arrived unused and a picture wanted twice was
+uploaded twice. #150 makes the library the thing you choose from — portrait and
+cover so far — with "add from computer" inside it, so uploading is one of the
+ways of answering rather than a separate path.
+
+**Unsplash and Pinterest, which LK's picker offers beside My Files, are out —
+her call, same day.** They'd each be a live connection to someone else's
+server, which CLAUDE.md's Policy Boundary makes a decision to raise rather than
+a judgement call; it was raised and declined. Don't reopen it by treating a
+search box as a small feature.
+
+**What #150 changed underneath:** an asset file no longer has one owner. See
+`docs/handoff.md` — every delete asks `isAssetInUse` first, and the copies that
+existed only to work around single-ownership (`setBannerFromImage`) are gone.
 
 **The Assets listing is a grid of thumbnails, with a counted number of columns
 rather than `auto-fill`.** It shipped as a list of rows in #148 and the user

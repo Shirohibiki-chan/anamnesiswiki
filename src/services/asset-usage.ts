@@ -118,6 +118,31 @@ export function indexAssetUsage(nodes: Record<string, Node>, templates: Template
   return index;
 }
 
+/**
+ * Is anything still pointing at this file?
+ *
+ * **This is what makes a shared picture safe, and it has to be asked *after*
+ * the change that might have orphaned the file, not before.** Until the
+ * library shipped, every asset file had exactly one owner: `setNodeImage`
+ * replaced a portrait and deleted the old file outright, because nothing else
+ * could possibly have been holding it. Picking a picture that's already in the
+ * project breaks that assumption on purpose — one file, any number of
+ * references — so an unconditional delete became a way to empty someone else's
+ * page. Every delete of an asset file now goes through this first.
+ *
+ * Early-exits rather than building the whole index: the callers are asking
+ * about one file at a time, on a path that's about to touch the disk anyway.
+ */
+export function isAssetInUse(nodes: Record<string, Node>, templates: TemplateLibrary, fileName: string): boolean {
+  for (const node of Object.values(nodes)) {
+    if (usesIn(node).some((use) => use.fileName === fileName)) return true;
+  }
+  for (const node of Object.values(templates.nodes)) {
+    if (usesIn(node).some((use) => use.fileName === fileName)) return true;
+  }
+  return false;
+}
+
 /** One file in `assets/`, as the tab lists it. */
 export type AssetFile = {
   fileName: string;

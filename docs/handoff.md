@@ -854,6 +854,25 @@ is below.
   picture. It walks nested blocks too — a picture indented under a list item is
   as much in use as one at the top level.
 
+- **An asset file has no single owner any more, and nothing may delete one
+  without asking `isAssetInUse` first.** Until the picture library, every file
+  in `assets/` was pointed at by exactly one slot, so replacing a portrait
+  deleted the old bytes outright and `setBannerFromImage` had to *copy* the
+  portrait's file to avoid being emptied by the next replacement. The library
+  inverts that on purpose: one file, any number of portraits, covers, pages and
+  templates. Every delete now goes through the store's `releaseAsset`, which
+  deletes only when nothing is left holding the file. **Ask after the change
+  that dropped the reference, never before** — asking early sees the reference
+  on its way out and keeps the file forever, and the delete-a-page path is the
+  one where that ordering is easy to get wrong.
+
+- **The copies that existed only to dodge that hazard should not be
+  reintroduced.** `setBannerFromImage` now shares the portrait's file rather
+  than duplicating it. `duplicateNodes` and `saveAsTemplate` still copy, which
+  is a deliberate difference and not an oversight: a duplicate is meant to be
+  independent of its original, whereas "set as cover" is the same picture in a
+  second slot on the same page.
+
 - **The Assets listing is driven by the directory, never by the usage index.** A
   reference to a file that isn't there is a broken picture, not a picture you
   have; listing from the index would put phantom rows in the tab and offer to

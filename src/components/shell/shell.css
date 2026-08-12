@@ -2234,3 +2234,171 @@ ol.release-notes-list {
 .lightbox-arrow-next {
   right: var(--space-lg);
 }
+
+/* --- AssetPickerDialog (Phase 17) ---
+
+   `ui-modal-lg`, not `xl`. The width note in controls.css is explicit that xl
+   is for Settings — seven screens behind one frame — and that a dialog wanting
+   60rem for a single decision probably shouldn't be a dialog. This is a single
+   decision: which picture. */
+
+.asset-picker {
+  gap: var(--space-lg);
+}
+
+.asset-picker-title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.asset-picker-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.asset-picker-search-icon {
+  position: absolute;
+  left: var(--space-md);
+  color: var(--color-text-placeholder);
+  pointer-events: none;
+}
+
+.asset-picker-search-input {
+  width: 100%;
+  /* Clears the magnifier inside the field, the same arithmetic the tree's
+     search box documents: icon at --space-md, 12px wide, so the caret starts
+     one --space-xl further in. */
+  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-md) + var(--space-xl));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+}
+
+.asset-picker-search-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* The scrolling part, and the only one. `.ui-modal` sets a max-height and
+   deliberately no overflow — its comment says each dialog manages its own —
+   so the grid scrolls while the title, search and buttons stay put. `min-height`
+   keeps the modal from collapsing to nothing while the directory is being read,
+   which otherwise makes it jump to full size a moment after it opens. */
+.asset-picker-body {
+  flex: 1;
+  min-height: 180px;
+  overflow-y: auto;
+}
+
+.asset-picker-note {
+  margin: 0;
+  padding: var(--space-xl) 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* Four counted columns rather than `auto-fill`, for the reason written out at
+   length over the Assets tab's own grid in tree.css: auto-fill pins tiles to
+   their minimum and spends spare width on more of them. This modal has one
+   width, so the count can simply be the right one — 4 across 32rem gives a
+   ~104px tile. */
+.asset-picker-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.asset-picker-tile {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.asset-picker-tile:hover {
+  background: var(--color-hover);
+}
+
+/* The selected one is outlined *and* tinted. An outline alone is a 1px
+   difference across a grid of photographs, several of which may have a light
+   edge of their own. */
+.asset-picker-tile-selected,
+.asset-picker-tile-selected:hover {
+  border-color: var(--color-accent-light);
+  background: var(--color-accent-faint);
+}
+
+.asset-picker-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+}
+
+.asset-picker-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.asset-picker-broken {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+/* Two lines then an ellipsis, and a reserved height for both, so a row of
+   tiles keeps its captions on one baseline — same treatment, same reason, as
+   the Assets tab's. */
+.asset-picker-uses {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2 * 1.35 * var(--fs-2xs));
+  font-size: var(--fs-2xs);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+
+.asset-picker-error {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--color-destructive);
+}
+
+.asset-picker-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Pushes Cancel and Confirm to the right and leaves "Add from computer" on the
+   left. They aren't the same kind of thing — one adds to the library, the other
+   two answer the dialog — and a row of three equal buttons says they are. */
+.asset-picker-spacer {
+  flex: 1;
+}
+
+.asset-picker-file {
+  display: none;
+}

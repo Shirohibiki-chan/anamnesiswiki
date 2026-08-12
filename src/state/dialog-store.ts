@@ -42,6 +42,19 @@ type Notice = { message: string };
 export type TemplateScope = "all" | "one";
 type PendingTemplateScope = { pageName: string; resolve: (scope: TemplateScope | null) => void };
 
+/**
+ * The picture library, opened from wherever a picture is being chosen — the
+ * sidebar portrait, the page cover. Resolves with a filename in `assets/`, or
+ * null if she backed out.
+ *
+ * A *filename* rather than an upload result, because uploading is one of the
+ * ways the dialog answers the question: a new file is added to the library and
+ * then picked, so every caller has one thing to handle instead of two. `title`
+ * is the only thing that differs between the places it opens from, and it's
+ * there because "Choose a portrait" and "Choose a cover" land on the same grid.
+ */
+type PendingAssetPick = { title: string; resolve: (fileName: string | null) => void };
+
 type DialogStoreState = {
   pendingConfirm: PendingConfirm | null;
   requestConfirm: (message: string) => Promise<boolean>;
@@ -55,6 +68,9 @@ type DialogStoreState = {
   pendingTemplateScope: PendingTemplateScope | null;
   requestTemplateScope: (pageName: string) => Promise<TemplateScope | null>;
   resolveTemplateScope: (scope: TemplateScope | null) => void;
+  pendingAssetPick: PendingAssetPick | null;
+  requestAssetPick: (title: string) => Promise<string | null>;
+  resolveAssetPick: (fileName: string | null) => void;
 };
 
 export const useDialogStore = create<DialogStoreState>((set, get) => ({
@@ -62,6 +78,20 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
   exportRequest: null,
   notice: null,
   pendingTemplateScope: null,
+  pendingAssetPick: null,
+
+  requestAssetPick(title) {
+    return new Promise<string | null>((resolve) => {
+      set({ pendingAssetPick: { title, resolve } });
+    });
+  },
+
+  resolveAssetPick(fileName) {
+    const pending = get().pendingAssetPick;
+    if (!pending) return;
+    set({ pendingAssetPick: null });
+    pending.resolve(fileName);
+  },
 
   requestTemplateScope(pageName) {
     return new Promise<TemplateScope | null>((resolve) => {

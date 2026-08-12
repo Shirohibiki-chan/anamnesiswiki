@@ -145,15 +145,6 @@
   color: var(--color-text-primary);
 }
 
-.page-banner-error {
-  font-size: var(--fs-xs);
-  color: var(--color-destructive);
-}
-
-.page-banner-input {
-  display: none;
-}
-
 /* --- PageTitle --- */
 
 /* Stays one line whatever it's given. Without `nowrap` the crumbs kept their
