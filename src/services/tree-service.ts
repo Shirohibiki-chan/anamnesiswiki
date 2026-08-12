@@ -304,6 +304,44 @@ export function getAncestorChain(nodeId: string, nodes: Record<string, Node>): N
 }
 
 /**
+ * A breadcrumb trail with its middle folded away — `leading › … › trailing`.
+ *
+ * Two different things make a trail too long, and each needs its own answer.
+ * A page buried eight levels down has *too many* steps, which is this; a page
+ * whose name is a sentence has one step that's *too wide*, which is CSS's
+ * problem and is solved by letting each crumb shorten with an ellipsis. Fixing
+ * only the width would leave twelve two-character stubs; fixing only the count
+ * would leave four crumbs still overrunning the column.
+ *
+ * The topmost ancestor survives rather than being folded in with the rest,
+ * because it's the one that says which part of the world this is — losing
+ * "Locations" tells you much less than losing a step in the middle of it.
+ */
+export type BreadcrumbTrail = {
+  /** Nearest the project name. */
+  leading: Node[];
+  /** Folded behind the ellipsis. Empty when the trail fits as it is. */
+  hidden: Node[];
+  /** Nearest the page itself. */
+  trailing: Node[];
+};
+
+export function collapseBreadcrumb(ancestors: Node[], maxVisible: number): BreadcrumbTrail {
+  // Below two there's no trail left to shorten — one crumb and an ellipsis is
+  // longer than the two crumbs it replaced.
+  if (maxVisible < 2 || ancestors.length <= maxVisible) {
+    return { leading: ancestors, hidden: [], trailing: [] };
+  }
+
+  const trailingCount = maxVisible - 1;
+  return {
+    leading: ancestors.slice(0, 1),
+    hidden: ancestors.slice(1, ancestors.length - trailingCount),
+    trailing: ancestors.slice(ancestors.length - trailingCount),
+  };
+}
+
+/**
  * What the tree filter is looking at. `all` is both fields, which is the
  * default and what a plain query has always done.
  *

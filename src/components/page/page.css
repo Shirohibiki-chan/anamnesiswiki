@@ -141,13 +141,28 @@
 
 /* --- PageTitle --- */
 
+/* Stays one line whatever it's given. Without `nowrap` the crumbs kept their
+   own width and wrapped their text instead, so a page called a whole sentence
+   turned the bar into two rows of half-names — each one squeezed narrow and
+   broken mid-phrase, which is unreadable in a way a plain ellipsis isn't. */
 .page-title-breadcrumb {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-xs);
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
   margin-bottom: var(--space-xl);
+  overflow: hidden;
+}
+
+/* Where the space is taken from. Every crumb can shrink, but the ancestors
+   give theirs up three times as fast as the page's own name — so the last
+   crumb, the one naming what she's reading, is the last to lose letters. */
+.page-title-breadcrumb-item,
+.page-title-breadcrumb > .page-title-breadcrumb-link {
+  min-width: 0;
+  flex-shrink: 3;
 }
 
 .page-title-breadcrumb-item {
@@ -158,6 +173,29 @@
 
 .page-title-breadcrumb-current {
   color: var(--color-text-secondary);
+  flex-shrink: 1;
+}
+
+/* The chevrons and the ellipsis keep their size — they're what makes the row
+   read as a path, and a half-drawn arrow buys back four pixels. */
+.page-title-breadcrumb-sep,
+.page-title-breadcrumb-more {
+  flex-shrink: 0;
+}
+
+/* The cap is what keeps one sentence-long page name from being the reason
+   every *other* crumb loses letters. Flexbox shrinks by proportion, so without
+   it a bar that's 30px too wide takes a slice off all six — "Locations" and
+   "Untitled" included, which is a worse bar than one where the 44-character
+   name alone is cut. 24 characters is the widest cap that still leaves a
+   six-crumb trail whole in a 660px column, measured 2026-08-11. */
+.page-title-breadcrumb-link,
+.page-title-breadcrumb-leaf {
+  min-width: 0;
+  max-width: 24ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .page-title-breadcrumb-link {

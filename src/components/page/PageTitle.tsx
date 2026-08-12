@@ -6,7 +6,7 @@ import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useProjectActions, useProjectHomeId, useProjectName } from "../../hooks/use-project";
-import { useAncestorChain, useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
+import { useBreadcrumbTrail, useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
 
 type PageTitleProps = {
   node: Node;
@@ -27,9 +27,34 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
   const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const Icon = getTemplateIcon(node.templateKey);
-  const ancestors = useAncestorChain(node.id);
+  const trail = useBreadcrumbTrail(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const looksHidden = Boolean(node.hidden) || hiddenByAncestor;
+
+  // Reset per page for free: PageView keys this component by node id, so
+  // opening a deep page never inherits an expansion from the last one.
+  const [showWholeTrail, setShowWholeTrail] = useState(false);
+  const isFolded = trail.hidden.length > 0 && !showWholeTrail;
+
+  function crumb(ancestor: Node) {
+    return (
+      <span key={ancestor.id} className="page-title-breadcrumb-item">
+        <ChevronRight size={10} className="page-title-breadcrumb-sep" />
+        {/* The full name on hover, since the one on screen may be cut. Worth
+            having even when it isn't: these are page names she wrote, and the
+            trail is often the only place a parent's whole name appears while
+            she's reading the child. */}
+        <button
+          type="button"
+          className="page-title-breadcrumb-link"
+          title={ancestor.name}
+          onClick={() => selectNode(ancestor.id)}
+        >
+          {ancestor.name}
+        </button>
+      </span>
+    );
+  }
 
   function commit(value: string) {
     const trimmed = value.trim();
@@ -39,23 +64,45 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
 
   return (
     <div className="page-title">
-      <div className="page-title-breadcrumb">
-        <button type="button" className="page-title-breadcrumb-link" onClick={() => selectNode(null)}>
+      {/* One line, always. A crumb too wide for its share is cut with an
+          ellipsis rather than wrapped, and a trail with too many steps folds
+          its middle away — see collapseBreadcrumb in tree-service.ts for why
+          those are two problems and not one. */}
+      <nav className="page-title-breadcrumb" aria-label="Breadcrumb">
+        <button
+          type="button"
+          className="page-title-breadcrumb-link"
+          title={projectName}
+          onClick={() => selectNode(null)}
+        >
           {projectName}
         </button>
-        {ancestors.map((ancestor) => (
-          <span key={ancestor.id} className="page-title-breadcrumb-item">
-            <ChevronRight size={10} />
-            <button type="button" className="page-title-breadcrumb-link" onClick={() => selectNode(ancestor.id)}>
-              {ancestor.name}
+        {trail.leading.map(crumb)}
+        {isFolded ? (
+          <span className="page-title-breadcrumb-item">
+            <ChevronRight size={10} className="page-title-breadcrumb-sep" />
+            {/* Expands in place rather than opening a menu of the hidden
+                steps: they're all one click away in the sidebar anyway, so the
+                only thing a menu would add here is a popover to dismiss. */}
+            <button
+              type="button"
+              className="page-title-breadcrumb-link page-title-breadcrumb-more"
+              aria-label={`Show ${trail.hidden.length} more steps`}
+              title={trail.hidden.map((ancestor) => ancestor.name).join(" › ")}
+              onClick={() => setShowWholeTrail(true)}
+            >
+              …
             </button>
           </span>
-        ))}
-        <span className="page-title-breadcrumb-item page-title-breadcrumb-current">
-          <ChevronRight size={10} />
-          {node.name}
+        ) : (
+          trail.hidden.map(crumb)
+        )}
+        {trail.trailing.map(crumb)}
+        <span className="page-title-breadcrumb-item page-title-breadcrumb-current" title={node.name}>
+          <ChevronRight size={10} className="page-title-breadcrumb-sep" />
+          <span className="page-title-breadcrumb-leaf">{node.name}</span>
         </span>
-      </div>
+      </nav>
 
       <div className="page-title-row">
         {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}

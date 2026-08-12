@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTreeData,
+  collapseBreadcrumb,
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
@@ -174,6 +175,53 @@ describe("getAncestorChain", () => {
 
   it("returns an empty array for an unknown node id", () => {
     expect(getAncestorChain("missing", {})).toEqual([]);
+  });
+});
+
+describe("collapseBreadcrumb", () => {
+  const chain = (count: number): Node[] =>
+    Array.from({ length: count }, (_, index) =>
+      node({ id: `n${index}`, name: `N${index}`, parentId: null, templateKey: FOLDER_TEMPLATE_KEY }),
+    );
+
+  const names = (nodes: Node[]) => nodes.map((n) => n.name);
+
+  it("leaves a trail alone when it already fits", () => {
+    const trail = collapseBreadcrumb(chain(4), 4);
+    expect(names(trail.leading)).toEqual(["N0", "N1", "N2", "N3"]);
+    expect(trail.hidden).toEqual([]);
+    expect(trail.trailing).toEqual([]);
+  });
+
+  it("handles a page with no ancestors at all", () => {
+    expect(collapseBreadcrumb([], 4)).toEqual({ leading: [], hidden: [], trailing: [] });
+  });
+
+  it("keeps the topmost ancestor and the ones nearest the page", () => {
+    const trail = collapseBreadcrumb(chain(6), 4);
+    expect(names(trail.leading)).toEqual(["N0"]);
+    expect(names(trail.hidden)).toEqual(["N1", "N2"]);
+    expect(names(trail.trailing)).toEqual(["N3", "N4", "N5"]);
+  });
+
+  it("shows exactly maxVisible crumbs however deep the page is", () => {
+    for (const depth of [5, 9, 40]) {
+      const trail = collapseBreadcrumb(chain(depth), 4);
+      expect(trail.leading.length + trail.trailing.length).toBe(4);
+      expect(trail.hidden.length).toBe(depth - 4);
+    }
+  });
+
+  it("loses nothing — the three parts put the original chain back in order", () => {
+    const original = chain(9);
+    const trail = collapseBreadcrumb(original, 4);
+    expect([...trail.leading, ...trail.hidden, ...trail.trailing]).toEqual(original);
+  });
+
+  it("folds nothing when there's no room for both an ellipsis and a crumb", () => {
+    const trail = collapseBreadcrumb(chain(6), 1);
+    expect(names(trail.leading)).toEqual(["N0", "N1", "N2", "N3", "N4", "N5"]);
+    expect(trail.hidden).toEqual([]);
   });
 });
 

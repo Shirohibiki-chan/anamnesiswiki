@@ -1,6 +1,11 @@
 # Changelog
 
-## 2026-08-11 — the / menu stops falling off the bottom
+## 2026-08-11 — the trail above a page title stays on one line
+
+### Fixes
+
+- **The path above a page title no longer wraps into two rows of broken half-names.** Each step now stays on one line and is shortened with a **…** if there isn't room for all of it, and the name of the page you're actually on is the last one to lose letters. **Hover any step to see its full name.**
+- **A page buried deep folds the middle of its path away.** Past four steps it shows the top one, then **…**, then the last three; clicking the **…** opens the whole path out. Nothing is lost — every step in a path is still a click away in the sidebar.
 
 ### Fixes
 
