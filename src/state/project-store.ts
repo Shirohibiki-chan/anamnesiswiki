@@ -28,13 +28,17 @@ import {
   withTabRenamed,
   withTabsReordered,
 } from "../services/tab-service";
-import { getDefaultTabs } from "../services/template-registry";
+import { getDefaultTabs, getTemplate } from "../services/template-registry";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
+  addOverride,
   addTemplate,
+  buildOverrideNode,
   cloneSubtree,
   collectSubtree,
+  overrideFor,
   parseTemplateLibrary,
+  removeOverride,
   removeTemplate,
 } from "../services/template-library";
 import {
@@ -262,6 +266,25 @@ export type ProjectStoreState = {
   deleteTemplate: (rootId: string) => void;
   /** Opens a template for editing, or closes whatever is open with `null`. */
   openTemplate: (templateNodeId: string | null) => void;
+  /**
+   * Opens one of the built-in templates for editing, making this world's own
+   * copy of it the first time.
+   *
+   * **The copy is made on open, not on the first edit**, and that's the whole
+   * reason `TemplateView` needed no changes: editing a template is already
+   * "patch the node with this id in the library", so a built-in only has to
+   * become a node in the library for all of it to work. The cost is that
+   * looking at one creates a copy identical to the original, which is why
+   * "changed" is asked as *does it still match the built-in* rather than *does
+   * an override exist* — see isOverrideModified.
+   */
+  openBuiltInTemplate: (templateKey: string) => void;
+  /**
+   * Throws away this world's version of a built-in template, so the key means
+   * the original again. Undoable, unlike editing one, because it's the step
+   * that loses work.
+   */
+  resetBuiltInTemplate: (templateKey: string) => void;
   /**
    * Patches one node inside the template library — the `updateNode` of the
    * other record.
@@ -925,7 +948,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
       const allNodesBefore = Object.values(nodesAfter);
       const existingTabIds = new Set(existing.tabs.map((tab) => tab.id));
-      const newTabs = getDefaultTabs(templateKey).filter((tab) => !existingTabIds.has(tab.id));
+      // This world's own version of the template if it has one, the shipped one
+      // otherwise. Deep-copied either way — an override's tabs are live objects
+      // in the library, and handing them straight to a page would have the page
+      // and the template editing one array between them.
+      const override = overrideFor(get().templates, templateKey);
+      const seedTabs = override ? (structuredClone(override.tabs) as Tab[]) : getDefaultTabs(templateKey);
+      const newTabs = seedTabs.filter((tab) => !existingTabIds.has(tab.id));
       const updated: Node = {
         ...existing,
         templateKey,
@@ -1607,6 +1636,55 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // dialog that deleted it. Closing is always allowed.
       if (templateNodeId !== null && !get().templates.nodes[templateNodeId]) return;
       set({ openTemplateId: templateNodeId });
+    },
+
+    openBuiltInTemplate(templateKey) {
+      const { rootPath, templates } = get();
+      const definition = getTemplate(templateKey);
+      if (!rootPath || !definition) return;
+
+      const existing = overrideFor(templates, templateKey);
+      if (existing) {
+        set({ openTemplateId: existing.id });
+        return;
+      }
+
+      // Named after the built-in it replaces rather than "Copy of Character",
+      // because it isn't a copy from her side — it's what Character means in
+      // this world now, and the sidebar row it opens from says Character.
+      const node = buildOverrideNode(templateKey, crypto.randomUUID(), definition.label, getDefaultTabs(templateKey));
+      const nextTemplates = addOverride(templates, templateKey, node);
+      set({ templates: nextTemplates, openTemplateId: node.id });
+      track(() => fsService.saveTemplateLibrary(rootPath, nextTemplates));
+    },
+
+    resetBuiltInTemplate(templateKey) {
+      const { rootPath, templates } = get();
+      const override = overrideFor(templates, templateKey);
+      if (!rootPath || !override) return;
+
+      const label = getTemplate(templateKey)?.label ?? templateKey;
+      const removed = collectSubtree(override.id, templates.nodes, true);
+      applyTemplates(removeOverride(templates, templateKey));
+
+      // Same reasoning as deleteTemplate: the thing on screen mustn't outlive
+      // the record behind it, and a sub-page of the override can be what's
+      // open rather than its root.
+      const { openTemplateId } = get();
+      if (openTemplateId && removed.some((node) => node.id === openTemplateId)) {
+        set({ openTemplateId: null });
+      }
+
+      record(
+        `putting the ${label} template back to the original`,
+        () => {
+          const current = get().templates;
+          const nodes = { ...current.nodes };
+          for (const node of removed) nodes[node.id] = node;
+          applyTemplates({ ...current, nodes, overrides: { ...current.overrides, [templateKey]: override.id } });
+        },
+        () => applyTemplates(removeOverride(get().templates, templateKey)),
+      );
     },
 
     updateTemplateNode(nodeId, patch) {

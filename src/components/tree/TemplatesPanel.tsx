@@ -7,10 +7,11 @@
 // is where they live, and since Phase 17 clicking one opens it for editing in
 // the centre panel.
 //
-// The built-in ones are listed but not clickable, because they aren't stored
-// anywhere that could hold an edit — they're seed data in
-// services/template-registry.ts, the same for every world. That's why the
-// section says so instead of leaving a row that does nothing when pressed.
+// Both sections open the same way. A built-in template is seed data in
+// services/template-registry.ts and the same in every world, so editing one
+// can only mean editing *this world's* version of it — clicking the row makes
+// that version the first time and opens it, and "Put back" throws it away
+// again. See docs/plan.md Phase 17.
 //
 // The two sections are in the same order as the new-page screen (built-in
 // first, hers under their own heading) so the answer to "which templates do I
@@ -20,12 +21,12 @@
 // `templates` record, never from `nodes`, and nothing here may put them in one.
 // See docs/handoff.md §Editor & templates for why that separation is the whole
 // safety argument for the feature.
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 import { getTemplateIcon } from "../../constants/icons";
 import { TEMPLATE_KEYS } from "../../constants/schema";
 import { useCustomTemplateTree, useProjectActions } from "../../hooks/use-project";
-import { useOpenTemplateId, useTemplateActions } from "../../hooks/use-template-editing";
+import { useBuiltInTemplateStates, useOpenTemplateId, useTemplateActions } from "../../hooks/use-template-editing";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
 import type { TemplateTreeItem } from "../../services/template-library";
@@ -33,8 +34,9 @@ import type { TemplateTreeItem } from "../../services/template-library";
 export function TemplatesPanel() {
   const templates = useCustomTemplateTree();
   const { deleteTemplate } = useProjectActions();
-  const { openTemplate } = useTemplateActions();
+  const { openTemplate, openBuiltInTemplate, resetBuiltInTemplate } = useTemplateActions();
   const openTemplateId = useOpenTemplateId();
+  const builtInStates = useBuiltInTemplateStates();
   const { confirmDestructive } = useDialogs();
   const { getLabel } = useTemplates();
 
@@ -58,14 +60,37 @@ export function TemplatesPanel() {
     if (ok) deleteTemplate(templateId);
   }
 
+  // Asked for the same reason deleting one is: it throws away writing, and
+  // there's no sign of how much until it's gone.
+  async function handleReset(templateKey: string, label: string) {
+    const ok = await confirmDestructive(
+      `Put the ${label} template back to the original? Your changes to it are lost, and pages already made from it aren't affected.`,
+    );
+    if (ok) resetBuiltInTemplate(templateKey);
+  }
+
   return (
     <div className="tree-templates">
       <h3 className="tree-templates-heading">Built in</h3>
-      <p className="tree-templates-note">The kinds a new page can start as. They come with Anamnesis and can&rsquo;t be edited.</p>
+      <p className="tree-templates-note">
+        The kinds a new page can start as. Edit one and you&rsquo;re editing this world&rsquo;s version of it — other
+        worlds keep the original.
+      </p>
       <ul className="tree-templates-list">
-        {TEMPLATE_KEYS.map((key) => (
-          <BuiltInRow key={key} templateKey={key} label={getLabel(key)} />
-        ))}
+        {TEMPLATE_KEYS.map((key) => {
+          const state = builtInStates[key];
+          return (
+            <BuiltInRow
+              key={key}
+              templateKey={key}
+              label={getLabel(key)}
+              isModified={state?.modified ?? false}
+              isOpen={!!state && state.nodeId === openTemplateId}
+              onOpen={openBuiltInTemplate}
+              onReset={handleReset}
+            />
+          );
+        })}
       </ul>
 
       <h3 className="tree-templates-heading">This world&rsquo;s own</h3>
@@ -97,29 +122,64 @@ export function TemplatesPanel() {
 }
 
 /**
- * One of the templates the app ships with. A plain row rather than a button:
- * there's nothing to open, and a control that looks pressable and isn't is
- * worse than one that never claimed to be.
+ * One of the templates the app ships with, and this world's version of it once
+ * there is one.
  *
- * No label on the right where a saved template shows its kind, and that's the
- * correct emptiness rather than a gap: hers needs it because a template called
- * "Valera's sheet" doesn't say what kind of page it makes, and a built-in one
- * is named after its kind already. A count of what it sets up went there
- * briefly and was taken back out — measured at the sidebar's minimum width
- * (180px), "4 tabs · 6 properties" left 12px for the name, and the name is the
- * thing being read.
+ * Nothing on the right where a saved template shows its kind, until it's been
+ * changed. That emptiness is correct rather than a gap: hers needs a kind label
+ * because a template called "Valera's sheet" doesn't say what kind of page it
+ * makes, and a built-in is named after its kind already. A count of what it
+ * sets up went in that slot briefly and came back out — measured at the
+ * sidebar's minimum width (180px), "4 tabs · 6 properties" left 12px for the
+ * name, and the name is the thing being read. "Edited" fits where that didn't,
+ * and only appears when it's true.
  *
  * It carries the same twisty-width spacer as a row that could have sub-pages,
  * so the icons in both sections line up down a panel this narrow.
  */
-function BuiltInRow({ templateKey, label }: { templateKey: string; label: string }) {
+function BuiltInRow({
+  templateKey,
+  label,
+  isModified,
+  isOpen,
+  onOpen,
+  onReset,
+}: {
+  templateKey: string;
+  label: string;
+  isModified: boolean;
+  isOpen: boolean;
+  onOpen: (templateKey: string) => void;
+  onReset: (templateKey: string, label: string) => void;
+}) {
   const Icon = getTemplateIcon(templateKey);
+
   return (
-    <li className="tree-templates-row tree-templates-row-static">
-      <span className="tree-templates-twisty" aria-hidden="true" />
-      {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
-      <Icon size={14} className="tree-templates-icon" />
-      <span className="tree-templates-name">{label}</span>
+    <li>
+      <div className={`tree-templates-row tree-templates-row-flush${isOpen ? " tree-templates-row-open" : ""}`}>
+        <span className="tree-templates-twisty" aria-hidden="true" />
+        <button type="button" className="tree-templates-open" onClick={() => onOpen(templateKey)}>
+          {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
+          <Icon size={14} className="tree-templates-icon" />
+          <span className="tree-templates-name">{label}</span>
+          {isModified && <span className="tree-templates-kind">Edited</span>}
+        </button>
+
+        {/* Only offered once there's something to undo. A Put back on an
+            untouched template is a button whose only effect is to look like it
+            did something. */}
+        {isModified && (
+          <button
+            type="button"
+            className="tree-templates-delete"
+            title={`Put the ${label} template back to the original`}
+            aria-label={`Put the ${label} template back to the original`}
+            onClick={() => void onReset(templateKey, label)}
+          >
+            <RotateCcw size={13} />
+          </button>
+        )}
+      </div>
     </li>
   );
 }

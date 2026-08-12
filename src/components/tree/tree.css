@@ -880,15 +880,10 @@ button.tree-path-crumb:hover {
   background: var(--color-hover);
 }
 
-/* A built-in template's row. Nothing to press, so nothing lights up under the
-   pointer — a row that answers a hover the way a clickable one does is a
-   promise it can't keep. Carries its own left padding because the rows that
-   can be opened take theirs inline, from their depth. */
-.tree-templates-row-static,
-.tree-templates-row-static:hover {
+/* A built-in template's row. Carries its own left padding because a saved
+   template's row takes that inline, from its depth in the list. */
+.tree-templates-row-flush {
   padding-left: var(--space-md);
-  background: none;
-  cursor: default;
 }
 
 /* The template currently open in the centre panel. Matches how a selected tree

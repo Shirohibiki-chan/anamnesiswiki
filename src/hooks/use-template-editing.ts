@@ -21,6 +21,8 @@ import {
   withTabRenamed,
   withTabsReordered,
 } from "../services/tab-service";
+import { isOverrideModified } from "../services/template-library";
+import { getDefaultTabs, getTemplate } from "../services/template-registry";
 import type { BlockNoteDocument, Node, Tab } from "../constants/schema";
 
 /** The template currently open for editing, or undefined. */
@@ -36,10 +38,60 @@ export function useTemplateActions() {
   return useProjectStore(
     useShallow((state) => ({
       openTemplate: state.openTemplate,
+      openBuiltInTemplate: state.openBuiltInTemplate,
+      resetBuiltInTemplate: state.resetBuiltInTemplate,
       updateTemplateNode: state.updateTemplateNode,
       deleteTemplate: state.deleteTemplate,
     })),
   );
+}
+
+export type BuiltInTemplateState = {
+  /** The node standing in for this built-in template in this world. */
+  nodeId: string;
+  /** Whether it still matches the built-in it replaces. */
+  modified: boolean;
+};
+
+/**
+ * Which built-in templates this world has its own version of, and which of
+ * those have actually been changed.
+ *
+ * The second half is the one the sidebar shows and the one that decides whether
+ * there's anything to put back, because opening a built-in is what creates its
+ * copy — so "has a copy" would mark a template as edited for having been looked
+ * at once. See the store's openBuiltInTemplate.
+ */
+export function useBuiltInTemplateStates(): Record<string, BuiltInTemplateState> {
+  const templates = useProjectStore((state) => state.templates);
+
+  return useMemo(() => {
+    const states: Record<string, BuiltInTemplateState> = {};
+    for (const [key, nodeId] of Object.entries(templates.overrides ?? {})) {
+      const node = templates.nodes[nodeId];
+      const definition = getTemplate(key);
+      if (!node || !definition) continue;
+      states[key] = { nodeId, modified: isOverrideModified(node, definition.label, getDefaultTabs(key)) };
+    }
+    return states;
+  }, [templates]);
+}
+
+/**
+ * The built-in template the open one replaces, if it replaces one — what tells
+ * `TemplateView` whether to offer a way back to the original.
+ *
+ * Only the override's root answers. A sub-page added inside one has no built-in
+ * of its own to be put back to, and offering the button there would read as
+ * resetting that page rather than the whole template.
+ */
+export function useOpenBuiltInKey(): string | null {
+  return useProjectStore((state) => {
+    const openId = state.openTemplateId;
+    if (!openId) return null;
+    const found = Object.entries(state.templates.overrides ?? {}).find(([, id]) => id === openId);
+    return found ? found[0] : null;
+  });
 }
 
 /**

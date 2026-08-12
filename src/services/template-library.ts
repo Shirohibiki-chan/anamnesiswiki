@@ -5,7 +5,7 @@
 // A template is a copied page, not a description of one. See
 // constants/schema.ts's TemplateLibrary for why it reuses `Node` wholesale, and
 // why templates live in their own record rather than among the project's pages.
-import { createTemplateLibrary, type Node, type TemplateLibrary } from "../constants/schema";
+import { createTemplateLibrary, type Node, type Tab, type TemplateLibrary } from "../constants/schema";
 
 /**
  * `rootId` and everything beneath it, breadth-first, with the root first.
@@ -70,10 +70,19 @@ export function cloneSubtree(sources: Node[], newParentId: string | null, newId:
   return { clones, idMap };
 }
 
-/** The template roots, in the order the library says to offer them. */
+/**
+ * The template roots, in the order the library says to offer them.
+ *
+ * Overrides of the built-in templates are roots too, and are deliberately not
+ * here: they aren't extra templates she made, they're what Character already
+ * means in this world. Everything that draws or offers her own templates goes
+ * through this function, so filtering once here is what keeps an override out
+ * of the sidebar's second section and off the new-page screen's extras strip.
+ */
 export function listTemplates(library: TemplateLibrary): Node[] {
   const byId = library.nodes;
-  const roots = Object.values(byId).filter((node) => node.parentId === null);
+  const overridden = new Set(Object.values(library.overrides ?? {}));
+  const roots = Object.values(byId).filter((node) => node.parentId === null && !overridden.has(node.id));
   const position = new Map(library.rootOrder.map((id, index) => [id, index]));
   // Anything the order doesn't mention sorts to the end by creation time, the
   // same fallback orderSiblings uses for pages — a template added by hand to
@@ -155,6 +164,87 @@ export function addTemplate(library: TemplateLibrary, clones: Node[], rootId: st
   return { ...library, nodes, rootOrder: [...library.rootOrder, rootId] };
 }
 
+/** This world's node standing in for a built-in template, if it has one. */
+export function overrideFor(library: TemplateLibrary, templateKey: string): Node | undefined {
+  const id = library.overrides?.[templateKey];
+  return id ? library.nodes[id] : undefined;
+}
+
+/**
+ * The node a world's Character template *starts* as: the registry's seed,
+ * copied into the same shape her own templates have.
+ *
+ * A copy, not a reference. The point of an override is that the original stays
+ * underneath untouched, so this must never hand back anything the registry
+ * still holds — `getDefaultTabs` already deep-copies its blocks for exactly
+ * this reason.
+ */
+export function buildOverrideNode(templateKey: string, id: string, name: string, tabs: Tab[]): Node {
+  const now = Date.now();
+  return {
+    id,
+    parentId: null,
+    templateKey,
+    name,
+    tabs,
+    properties: {},
+    customProperties: [],
+    propertyOrder: [],
+    tags: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/** A library with `node` recorded as this world's version of `templateKey`. */
+export function addOverride(library: TemplateLibrary, templateKey: string, node: Node): TemplateLibrary {
+  return {
+    ...library,
+    nodes: { ...library.nodes, [node.id]: node },
+    overrides: { ...(library.overrides ?? {}), [templateKey]: node.id },
+  };
+}
+
+/**
+ * A library with this world's version of `templateKey` gone, so the built-in
+ * one is what the key means again.
+ *
+ * Takes the override's whole subtree, the same as deleting one of her
+ * templates — an override that grew sub-pages would otherwise leave them
+ * behind as roots, and they'd surface in the sidebar as templates she never
+ * made.
+ */
+export function removeOverride(library: TemplateLibrary, templateKey: string): TemplateLibrary {
+  const id = library.overrides?.[templateKey];
+  if (!id) return library;
+  const overrides = { ...library.overrides };
+  delete overrides[templateKey];
+  return { ...removeTemplate(library, id), overrides };
+}
+
+/**
+ * Whether an override actually differs from the built-in it replaces.
+ *
+ * Opening a built-in template is what creates its override, so "has an
+ * override" and "has been changed" aren't the same question — and the one the
+ * sidebar asks, and the one that decides whether there's anything to put back,
+ * is the second. Compared on the parts editing a template can reach: its name
+ * and its tabs. Nothing else on the node is editable from `TemplateView`.
+ */
+export function isOverrideModified(override: Node, defaultName: string, defaultTabs: Tab[]): boolean {
+  if (override.name !== defaultName) return true;
+  if (override.tabs.length !== defaultTabs.length) return true;
+  return override.tabs.some((tab, index) => {
+    const original = defaultTabs[index];
+    return (
+      tab.id !== original.id ||
+      tab.label !== original.label ||
+      tab.hidden !== original.hidden ||
+      JSON.stringify(tab.content) !== JSON.stringify(original.content)
+    );
+  });
+}
+
 /**
  * Reads whatever was on disk into a library, dropping anything malformed.
  *
@@ -188,5 +278,20 @@ export function parseTemplateLibrary(raw: unknown): TemplateLibrary {
     ? candidate.rootOrder.filter((id): id is string => typeof id === "string" && !!nodes[id])
     : [];
 
-  return { version: 1, nodes, rootOrder };
+  // An override pointing at a node that didn't survive is dropped, which reads
+  // as "this world doesn't change Character" — the built-in one underneath is
+  // still there, so the worst case is losing an edit that was already broken
+  // rather than a key that resolves to nothing.
+  const overrides: Record<string, string> = {};
+  const rawOverrides = (candidate as { overrides?: unknown }).overrides;
+  if (rawOverrides && typeof rawOverrides === "object") {
+    for (const [key, id] of Object.entries(rawOverrides as Record<string, unknown>)) {
+      if (typeof id === "string" && nodes[id]) overrides[key] = id;
+    }
+  }
+
+  // A file older than overrides has none, which is the same as this world
+  // changing nothing — no migration needed, and the field simply appears the
+  // first time one is made.
+  return { version: 1, nodes, rootOrder: rootOrder.filter((id) => !Object.values(overrides).includes(id)), overrides };
 }

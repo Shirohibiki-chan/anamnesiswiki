@@ -327,16 +327,24 @@ record, never in `nodes`. Rendered as a list in `rootOrder`, each with its kind'
 icon; a template saved with its sub-pages shows them nested underneath.
 
 **Two sections: the built-in templates first, then hers** — her instruction,
-2026-08-12, and the same order the new-page screen already uses. The built-in
-ones are listed but not clickable, because they're seed data in
-`template-registry.ts` with nowhere to hold an edit; the section says so rather
-than offering a row that does nothing when pressed.
+2026-08-12, and the same order the new-page screen already uses.
 
-**The built-in templates become editable too — decided by the user, 2026-08-12,
-on the same LK-parity reasoning that settled her own.** A built-in is the same
-for every world, so an edit is a per-project *override* keyed by template key in
-`.templates.json`, which `applyTemplate`, the new-page screen and a way back to
-the original all have to learn. Its own step, after this listing lands.
+**The built-in templates are editable too**, decided by the user on 2026-08-12
+on the same LK-parity reasoning that settled her own. A built-in is seed data in
+`template-registry.ts` and identical in every world, so an edit is a per-project
+*override*: `TemplateLibrary.overrides` maps a template key to the id of a node
+in the same file, made from the registry's seed the first time she opens one.
+`applyTemplate` prefers it, and removing it is what "put it back to the
+original" means — the registry is never written to.
+
+**What an override does not carry is the property schema.** Editing a template
+means its title and its tabs, for a built-in exactly as for one of hers, because
+that's all `TemplateView` edits. Overriding `getPropertySchema` would be a
+different feature with a different shape: it's read by `lk-export`, `lk-import`
+and the property index, none of which can see the store, and — unlike tabs —
+changing it would alter what pages *already made* display, since the panel
+derives its fields from the key rather than from a copy on the node. Not scoped;
+ask before starting it.
 
 - **Open one and edit it.** Clicking a template opens it in the main area as a
   page — its title, tabs, properties and pictures — and edits save back to the
