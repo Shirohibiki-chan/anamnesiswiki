@@ -32,10 +32,10 @@ export function assetRef(fileName: string): string {
  * what the user will recognise if they ever look in `assets/`, falling back to
  * the half of the MIME type that names the format.
  *
- * ImageSlot and PageBanner each carry their own copy of this, written before
- * there was a service it could live in — they're components, and CLAUDE.md's
- * layer order stops them importing this file. Worth folding together the next
- * time either is opened.
+ * Components can't reach this file — CLAUDE.md's layer order — so ImageSlot and
+ * PageBanner each carried their own copy of it. Both now go through
+ * services/image-file.ts's `readImageFile`, which calls this one, via the
+ * upload hook in use-assets.ts.
  */
 export function extensionFor(file: File): string {
   const match = /\.([a-zA-Z0-9]+)$/.exec(file.name);

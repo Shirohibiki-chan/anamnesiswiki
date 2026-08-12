@@ -16,7 +16,13 @@ export function useDialogs() {
   const pendingTemplateScope = useDialogStore((s) => s.pendingTemplateScope);
   const requestTemplateScope = useDialogStore((s) => s.requestTemplateScope);
   const resolveTemplateScope = useDialogStore((s) => s.resolveTemplateScope);
+  const pendingAssetPick = useDialogStore((s) => s.pendingAssetPick);
+  const requestAssetPick = useDialogStore((s) => s.requestAssetPick);
+  const resolveAssetPick = useDialogStore((s) => s.resolveAssetPick);
   return {
+    pendingAssetPick,
+    requestAssetPick,
+    resolveAssetPick,
     notice,
     dismissNotice,
     pendingTemplateScope,

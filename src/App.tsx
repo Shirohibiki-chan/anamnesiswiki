@@ -1,3 +1,4 @@
+import { AssetPickerDialog } from "./components/shell/AssetPickerDialog";
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
@@ -34,6 +35,10 @@ function App() {
           and it portals like the three above, so it belongs at the root for
           the same reason they do. */}
       <Lightbox />
+      {/* The picture library. Opened from the properties panel and the page
+          cover so far, and the list will grow — which is the reason it sits up
+          here with the others rather than beside either one of them. */}
+      <AssetPickerDialog />
     </>
   );
 }

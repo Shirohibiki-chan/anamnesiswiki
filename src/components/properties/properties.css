@@ -681,10 +681,6 @@
   color: var(--color-destructive);
 }
 
-.property-image-input {
-  display: none;
-}
-
 /* --- Add property (per-page custom properties) --- */
 
 .property-add-trigger {

@@ -11,7 +11,7 @@
 // file dialog would fight it.
 import { useRef, useState, type PointerEvent } from "react";
 import { Expand, Image as ImageIcon, Move, PanelTop, Type, Upload, X } from "lucide-react";
-import { MAX_IMAGE_BYTES } from "../../constants/limits";
+import { useUploadPicture } from "../../hooks/use-assets";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenSingleImage } from "../../hooks/use-lightbox";
 import { useNodeImage } from "../../hooks/use-node-image";
@@ -25,41 +25,43 @@ type ImageSlotProps = {
   hasBanner: boolean;
 };
 
-function extensionFor(file: File): string {
-  const match = /\.([a-zA-Z0-9]+)$/.exec(file.name);
-  if (match) return match[1].toLowerCase();
-  return file.type.split("/")[1] ?? "png";
-}
-
 export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: ImageSlotProps) {
-  const { setNodeImage, clearNodeImage, setImageAlt, setImageFocus, clearImageFocus, setBannerFromImage } = useProject();
-  const { confirmDestructive } = useDialogs();
+  const { setNodeImageFromLibrary, clearNodeImage, setImageAlt, setImageFocus, clearImageFocus, setBannerFromImage } =
+    useProject();
+  const { confirmDestructive, requestAssetPick } = useDialogs();
+  const uploadPicture = useUploadPicture();
   const openImage = useOpenSingleImage();
   const { url: imageUrl, status: imageStatus } = useNodeImage(image);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [isDescribing, setIsDescribing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startY: number; startFocus: number } | null>(null);
   const cancelDescribe = useRef(false);
 
   const isCropped = imageFocusY !== undefined;
 
+  // A file dragged from the desktop onto the slot. It joins the library and is
+  // then pointed at, which is the same two steps the picker takes — dropping a
+  // picture here and choosing the same picture there must not produce two
+  // different things on disk.
   async function acceptFile(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("That's not an image file.");
-      return;
+    try {
+      const fileName = await uploadPicture(file);
+      setError(null);
+      setNodeImageFromLibrary(nodeId, fileName);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "That picture couldn't be added.");
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setError("That image is too large (10MB max).");
-      return;
-    }
-    setError(null);
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    await setNodeImage(nodeId, bytes, extensionFor(file));
+  }
+
+  // The other way in, and now the one the buttons use: the library, with "add
+  // from computer" inside it.
+  async function pickImage() {
+    const picked = await requestAssetPick("Choose a picture for this page");
+    if (picked) setNodeImageFromLibrary(nodeId, picked);
   }
 
   // Entering reposition mode crops the slot even before the first drag, so
@@ -119,7 +121,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
       <div
         ref={frameRef}
         className={slotClasses}
-        onClick={imageUrl ? undefined : () => inputRef.current?.click()}
+        onClick={imageUrl ? undefined : () => void pickImage()}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragOver(true);
@@ -182,7 +184,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
                   className="property-image-tool"
                   aria-label="Change image"
                   title="Change image"
-                  onClick={() => inputRef.current?.click()}
+                  onClick={() => void pickImage()}
                 >
                   <Upload size={13} />
                 </button>
@@ -235,7 +237,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
         ) : (
           <div className="property-image-empty">
             <ImageIcon size={22} />
-            <span>{imageStatus === "error" ? "Image file missing" : "Drop image here"}</span>
+            <span>{imageStatus === "error" ? "Image file missing" : "Choose or drop a picture"}</span>
           </div>
         )}
       </div>
@@ -263,16 +265,6 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
         />
       )}
       {error && <div className="property-image-error">{error}</div>}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="property-image-input"
-        onChange={(e) => {
-          void acceptFile(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
     </div>
   );
 }

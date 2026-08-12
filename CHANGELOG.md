@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-12 — a picture library
+
+### Additions
+
+- **Every place that takes a picture now offers the ones you already have.** Click a page's portrait or its cover and you get your library — every picture in the world, with what's using each one — instead of straight to a file browser. Adding one from your computer is a button inside it, so it's still one click away.
+- **Using the same picture twice stops making a second copy of it.** One map on six pages is one file now. Change your mind about the map and you're replacing one thing, not hunting six.
+- **Search by what a picture's used for** — type a page's name and you get its pictures. Filenames here are gibberish by design, so searching them was never going to help.
+- **"Set as cover" stopped duplicating the picture too.** It now points at the same file as the portrait instead of writing a second copy of it.
+
+### Fixes
+
+- **Replacing a page's picture no longer leaves the old one's web address attached to the new one.** Only affected pages imported from LegendKeeper, and only showed up on export — where the wrong address would have gone out with the new picture.
+
+### Worth knowing
+
+- Deleting a picture from one page won't remove the file while another page is still using it. That's the point of sharing, but it does mean the Assets tab is the place to go when you actually want a picture gone.
+- Unsplash and Pinterest, which LegendKeeper offers alongside your own files, aren't here and aren't planned. Both would mean the app talking to someone else's server.
+
 ## 2026-08-12 — the Assets tab is a grid
 
 ### Adjustments

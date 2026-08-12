@@ -18,6 +18,7 @@ import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import { TEMPLATES_FILE } from "../constants/paths";
 import * as fsService from "../services/filesystem-service";
 import { assetRef, releaseAssetUrls } from "../services/asset-urls";
+import { isAssetInUse } from "../services/asset-usage";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
 import { enqueueWrite } from "../services/write-queue";
 import {
@@ -228,6 +229,16 @@ export type ProjectStoreState = {
   recolourOptionEverywhere: (propertyLabel: string, optionLabel: string, color: string) => void;
   deleteOptionEverywhere: (propertyLabel: string, optionLabel: string) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
+  /**
+   * Point the portrait at a picture the project already has, rather than
+   * uploading another copy of it. Phase 17's library.
+   *
+   * Not async, and that's the point of the whole feature: there's no file to
+   * write. The same filename can now be held by any number of slots, pages and
+   * templates at once, which is why nothing deletes an asset without asking
+   * `isAssetInUse` first.
+   */
+  setNodeImageFromLibrary: (nodeId: string, fileName: string) => void;
   clearNodeImage: (nodeId: string) => Promise<void>;
   setImageAlt: (nodeId: string, alt: string) => void;
   setImageFocus: (nodeId: string, focusY: number) => void;
@@ -253,6 +264,8 @@ export type ProjectStoreState = {
    */
   deleteAsset: (fileName: string) => Promise<void>;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
+  /** The cover's half of `setNodeImageFromLibrary`. */
+  setNodeBannerFromLibrary: (nodeId: string, fileName: string) => void;
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
   renameNode: (id: string, name: string) => void;
@@ -432,6 +445,28 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     const { rootPath } = get();
     set({ templates });
     if (rootPath) track(() => fsService.saveTemplateLibrary(rootPath, templates));
+  };
+
+  /**
+   * Let go of an asset file: delete it, but only if nothing points at it any
+   * more.
+   *
+   * **Call this after the state change that dropped the reference, never
+   * before** — it asks the store what the world looks like now, and asking too
+   * early sees the reference that's on its way out and keeps the file forever.
+   *
+   * Every asset delete that isn't the Assets tab's own goes through here, and
+   * the check is the whole reason it exists. Before the picture library, a file
+   * had exactly one owner and replacing a portrait could delete the old bytes
+   * outright. Now that the same picture can sit in a portrait, a cover, six
+   * pages and a template at once, an unconditional delete is a way to empty
+   * five of them — see services/asset-usage.ts's isAssetInUse.
+   */
+  const releaseAsset = (rootPath: string, fileName: string | undefined): void => {
+    if (!fileName) return;
+    const { nodes, templates } = get();
+    if (isAssetInUse(nodes, templates, fileName)) return;
+    track(() => fsService.deleteAssetImage(rootPath, fileName));
   };
 
   /**
@@ -1120,8 +1155,34 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // Drop the old file only after the new one is safely written, and only
       // if this node still exists (it could have been deleted mid-upload).
       const previousImage = get().nodes[nodeId]?.image;
-      get().updateNode(nodeId, { image: fileName });
-      if (previousImage) track(() => fsService.deleteAssetImage(rootPath, previousImage));
+      // `imageSource` goes with the picture that's leaving. It's the web
+      // address an LK-imported picture came from, and schema.ts is explicit
+      // that anything uploaded here has none — so leaving the old one behind
+      // makes LK export hand out the previous picture's address for this one.
+      get().updateNode(nodeId, { image: fileName, imageSource: undefined });
+      releaseAsset(rootPath, previousImage);
+    },
+
+    // Point this node's portrait at a picture the project already has. The
+    // whole difference from setNodeImage above is that no file is written:
+    // one file, any number of references. See docs/handoff.md on the library.
+    setNodeImageFromLibrary(nodeId, fileName) {
+      const { rootPath, nodes } = get();
+      if (!rootPath || !nodes[nodeId]) return;
+
+      const previousImage = nodes[nodeId]?.image;
+      if (previousImage === fileName) return;
+      // The crop travels with the slot, not with the file — a different
+      // picture in the same slot is a different shape, and keeping the old
+      // offset would crop the new one somewhere arbitrary. `imageSource` goes
+      // for the reason described in setNodeImage above.
+      get().updateNode(nodeId, {
+        image: fileName,
+        imageAlt: undefined,
+        imageFocusY: undefined,
+        imageSource: undefined,
+      });
+      releaseAsset(rootPath, previousImage);
     },
 
     async clearNodeImage(nodeId) {
@@ -1133,7 +1194,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // to the slot — leaving either behind would apply them to whatever is
       // uploaded next.
       get().updateNode(nodeId, { image: undefined, imageAlt: undefined, imageFocusY: undefined });
-      await fsService.deleteAssetImage(rootPath, previousImage);
+      releaseAsset(rootPath, previousImage);
     },
 
     setImageAlt(nodeId, alt) {
@@ -1200,21 +1261,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const existing = nodes[nodeId];
       if (!rootPath || !existing?.image) return;
 
-      // The cover gets its own copy of the file rather than a second reference
-      // to the portrait's. Sharing one filename would have setNodeImage's
-      // cleanup delete the cover's bytes the next time the portrait is
-      // replaced — the same reasoning duplicateNodes and saveAsTemplate carry.
-      const bytes = await fsService.readAssetImage(rootPath, existing.image);
-      const extension = existing.image.split(".").pop() ?? "png";
-      const fileName = `${crypto.randomUUID()}.${extension}`;
-      await fsService.saveAssetImage(rootPath, fileName, bytes);
-
+      // The cover points at the portrait's own file now, and no longer takes a
+      // copy of it. The copy existed because setNodeImage's cleanup deleted the
+      // old file outright, so a shared filename meant replacing the portrait
+      // silently emptied the cover; `releaseAsset` is what removed that hazard,
+      // and with it gone a second identical file on disk is pure waste — and
+      // one that would show up twice over in the Assets tab.
       const previousBanner = get().nodes[nodeId]?.banner;
       // `imageSource` carries across because it describes this exact picture,
       // and LK export needs an address for the cover as much as for the
       // portrait — same picture, same address, nothing invented.
-      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: existing.imageSource });
-      if (previousBanner) track(() => fsService.deleteAssetImage(rootPath, previousBanner));
+      get().updateNode(nodeId, { banner: existing.image, bannerFocusY: 50, bannerSource: existing.imageSource });
+      releaseAsset(rootPath, previousBanner);
     },
 
     // The page-header cover image (Phase 8's PageBanner) — a separate slot
@@ -1228,8 +1286,21 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const fileName = `${crypto.randomUUID()}.${extension}`;
       await fsService.saveAssetImage(rootPath, fileName, data);
       const previousBanner = get().nodes[nodeId]?.banner;
-      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50 });
-      if (previousBanner) track(() => fsService.deleteAssetImage(rootPath, previousBanner));
+      // `bannerSource` clears with it — same reasoning as setNodeImage's.
+      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: undefined });
+      releaseAsset(rootPath, previousBanner);
+    },
+
+    // The cover's half of setNodeImageFromLibrary — same trade, no file
+    // written.
+    setNodeBannerFromLibrary(nodeId, fileName) {
+      const { rootPath, nodes } = get();
+      if (!rootPath || !nodes[nodeId]) return;
+
+      const previousBanner = nodes[nodeId]?.banner;
+      if (previousBanner === fileName) return;
+      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: undefined });
+      releaseAsset(rootPath, previousBanner);
     },
 
     setBannerFocus(nodeId, focusY) {
@@ -1242,7 +1313,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (!rootPath || !existing?.banner) return;
       const previousBanner = existing.banner;
       get().updateNode(nodeId, { banner: undefined, bannerFocusY: undefined });
-      await fsService.deleteAssetImage(rootPath, previousBanner);
+      releaseAsset(rootPath, previousBanner);
     },
 
     async renameNode(id, name) {
@@ -1469,14 +1540,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // PageBanner Phase 8) lives in the flat assets/ dir, not inside the
       // node's own file/directory, so fsService.deleteNodes above never
       // touches either — clean them up here or they orphan forever.
+      //
+      // `releaseAsset` runs after `set` above, so it reads the tree with these
+      // pages already gone. That ordering is the whole correctness argument:
+      // deleting a page that shared its portrait with three others must take
+      // the reference and leave the file, and asking a moment earlier would
+      // see the page's own reference and always decide to keep it.
       for (const removedId of toRemove) {
         const removed = nodes[removedId];
         // Pulled out of the node first: the write runs later now that it's
         // queued, and a narrowed optional property doesn't survive into a
         // closure the way a plain local does.
         const { image, banner } = removed ?? {};
-        if (image) track(() => fsService.deleteAssetImage(rootPath, image));
-        if (banner) track(() => fsService.deleteAssetImage(rootPath, banner));
+        releaseAsset(rootPath, image);
+        releaseAsset(rootPath, banner);
       }
 
       // Descendants as well as what was selected — undoing a folder delete has

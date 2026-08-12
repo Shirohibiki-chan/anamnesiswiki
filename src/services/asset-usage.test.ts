@@ -8,6 +8,7 @@ import {
   describeSize,
   describeUses,
   indexAssetUsage,
+  isAssetInUse,
   type AssetUsageIndex,
 } from "./asset-usage";
 import { createTemplateLibrary, type Node, type TemplateLibrary } from "../constants/schema";
@@ -198,5 +199,57 @@ describe("describeSize", () => {
     expect(describeSize(2048)).toBe("2 KB");
     expect(describeSize(1024 * 1024)).toBe("1.0 MB");
     expect(describeSize(1024 * 1024 * 2.5)).toBe("2.5 MB");
+  });
+});
+
+// `isAssetInUse` is the guard every asset delete now passes through, so these
+// are written as the questions a delete asks: after this change, is anyone
+// still holding the file? A false here deletes bytes someone is using.
+describe("isAssetInUse", () => {
+  it("is false when nothing points at the file", () => {
+    expect(isAssetInUse(byId([node({ id: "a", name: "Valera" })]), empty, "map.png")).toBe(false);
+  });
+
+  it("finds it in a portrait", () => {
+    const nodes = byId([node({ id: "a", name: "Valera", image: "map.png" })]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+  });
+
+  it("finds it in a cover", () => {
+    const nodes = byId([node({ id: "a", name: "Valera", banner: "map.png" })]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+  });
+
+  it("finds it inside a page, including a hidden tab", () => {
+    const nodes = byId([node({ id: "a", name: "Valera", tabs: [tab([imageBlock("map.png")], { hidden: true })] })]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+  });
+
+  it("finds it nested inside another block", () => {
+    const nodes = byId([
+      node({ id: "a", name: "Valera", tabs: [tab([{ type: "bulletListItem", children: [imageBlock("map.png")] }])] }),
+    ]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+  });
+
+  // The one a caller forgets, which is why the parameter is required.
+  it("finds it in a template even when no page uses it", () => {
+    const templates = library([node({ id: "t", name: "Character", image: "map.png" })]);
+    expect(isAssetInUse({}, templates, "map.png")).toBe(true);
+  });
+
+  // The whole point of the library: one file, many references. Deleting the
+  // page that happened to be asked about must not take the file with it.
+  it("is true while a second page still holds the same file", () => {
+    const nodes = byId([
+      node({ id: "b", name: "The Amber Coast", image: "map.png" }),
+      node({ id: "c", name: "Her Sword", banner: "map.png" }),
+    ]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+  });
+
+  it("does not match a different file", () => {
+    const nodes = byId([node({ id: "a", name: "Valera", image: "other.png" })]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(false);
   });
 });
