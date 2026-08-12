@@ -32,6 +32,14 @@ import {
   type AssetFolders,
 } from "../services/asset-folders";
 import {
+  createAssetNames,
+  nameAsset,
+  parseAssetNames,
+  pruneAssetNames,
+  suggestedAssetName,
+  type AssetNames,
+} from "../services/asset-names";
+import {
   withTabAdded,
   withTabContent,
   withTabDeleted,
@@ -273,7 +281,13 @@ export type ProjectStoreState = {
    * block, inside the tab's content, and the ordinary content autosave is what
    * persists it.
    */
-  uploadAsset: (data: Uint8Array, extension: string) => Promise<string>;
+  /**
+   * `originalName` is the name of the file she picked, and it is only ever a
+   * starting name for the tile — the file lands in `assets/` under a UUID
+   * either way. Optional because two of the four callers have no file to have
+   * a name (a picture pasted into a page, and one pulled from a `.lk` import).
+   */
+  uploadAsset: (data: Uint8Array, extension: string, originalName?: string) => Promise<string>;
   /** Every file in `assets/`, with its size. Read on demand — see useAssets. */
   listAssets: () => Promise<{ fileName: string; size: number }[]>;
   /**
@@ -293,6 +307,18 @@ export type ProjectStoreState = {
    * redraw the moment a picture is dropped into a folder.
    */
   assetFolders: AssetFolders;
+  /**
+   * What each picture is called, keyed by filename. A label, never the file's
+   * own name — see constants/paths.ts ASSET_NAMES_FILE for why that isn't a
+   * shortcut worth taking. Held here rather than read on demand for the same
+   * reason the folders are: the grid edits it, and a tile has to redraw the
+   * moment a name is committed.
+   */
+  assetNames: AssetNames;
+  /** Names a picture. An empty name takes the name away rather than storing one. */
+  renameAsset: (fileName: string, name: string) => void;
+  /** Drops names for pictures that are no longer on disk. */
+  pruneAssetNames: (present: string[]) => void;
   /** Returns the new folder's id, so the caller can put it into rename. */
   createAssetFolder: (name: string) => string;
   renameAssetFolder: (id: string, name: string) => void;
@@ -493,6 +519,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     const { rootPath } = get();
     set({ assetFolders });
     if (rootPath) track(() => fsService.saveAssetFolders(rootPath, assetFolders));
+  };
+
+  // Same pairing again, for the other half of what the library knows about a
+  // picture that isn't in the picture.
+  const applyAssetNames = (assetNames: AssetNames): void => {
+    const { rootPath } = get();
+    set({ assetNames });
+    if (rootPath) track(() => fsService.saveAssetNames(rootPath, assetNames));
   };
 
   /**
@@ -710,6 +744,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     isLoaded: false,
     lastSavedAt: null,
     assetFolders: createAssetFolders(),
+    assetNames: createAssetNames(),
     skippedFiles: [],
     loadWasIncomplete: false,
     saveErrors: [],
@@ -753,6 +788,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // normal case and reads identically to one whose folder file is damaged:
       // every picture shows up under All pictures either way.
       const assetFolders = parseAssetFolders(await fsService.loadAssetFolders(rootPath));
+      // And again for the names. A world made before pictures had names has no
+      // file here at all, which reads as "nothing is named yet" — the state
+      // every picture starts in regardless.
+      const assetNames = parseAssetNames(await fsService.loadAssetNames(rootPath));
 
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
       set({
@@ -761,6 +800,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         nodes,
         templates,
         assetFolders,
+        assetNames,
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
         isLoaded: true,
@@ -815,6 +855,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         // A brand new folder has nothing in it to have failed to read, and
         // whatever the last project reported has nothing to do with this one.
         assetFolders: createAssetFolders(),
+        assetNames: createAssetNames(),
         skippedFiles: [],
         loadWasIncomplete: false,
         navHistory: EMPTY_NAV_HISTORY,
@@ -921,6 +962,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         isLoaded: false,
         lastSavedAt: null,
         assetFolders: createAssetFolders(),
+        assetNames: createAssetNames(),
         skippedFiles: [],
         loadWasIncomplete: false,
         saveErrors: [],
@@ -1293,11 +1335,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // still wanted" isn't a question any single edit can answer. Removing an
     // image block therefore leaves its file in assets/ — see docs/handoff.md,
     // and Phase 17's Assets tab is where unused files get to be visible.
-    async uploadAsset(data, extension) {
+    async uploadAsset(data, extension, originalName) {
       const { rootPath } = get();
       if (!rootPath) throw new Error("No project is open.");
       const fileName = `${crypto.randomUUID()}.${extension}`;
       await fsService.saveAssetImage(rootPath, fileName, data);
+      // The name she picked the file under, kept as its starting name. This is
+      // the only moment it's knowable — the file on disk is a UUID from here
+      // on, and nothing later can work back to "Valera sword.png". Written
+      // after the picture itself, so a failed upload leaves no name behind for
+      // a file that isn't there.
+      const suggested = originalName ? suggestedAssetName(originalName) : "";
+      if (suggested) applyAssetNames(nameAsset(get().assetNames, fileName, suggested));
       return assetRef(fileName);
     },
 
@@ -1305,6 +1354,29 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { rootPath } = get();
       if (!rootPath) return [];
       return fsService.listAssetImages(rootPath);
+    },
+
+    renameAsset(fileName, name) {
+      const before = get().assetNames;
+      const next = nameAsset(before, fileName, name);
+      // Same object means she opened the name box and committed it unchanged,
+      // which is most of the times it's opened. No write, and no undo entry
+      // for a step that didn't happen.
+      if (next === before) return;
+      applyAssetNames(next);
+      record(
+        name.trim() ? `renaming a picture to "${name.trim()}"` : "clearing a picture's name",
+        () => applyAssetNames(before),
+        () => applyAssetNames(nameAsset(get().assetNames, fileName, name)),
+      );
+    },
+
+    pruneAssetNames(present) {
+      const before = get().assetNames;
+      const pruned = pruneAssetNames(before, new Set(present));
+      // Not undoable and deliberately silent: the pictures are already gone,
+      // and this is the record catching up rather than an edit she made.
+      if (pruned !== before) applyAssetNames(pruned);
     },
 
     createAssetFolder(name) {

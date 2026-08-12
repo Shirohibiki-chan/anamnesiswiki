@@ -946,6 +946,17 @@ is below.
   rather than as an error. The worst a damaged `.folders.json` can do is put a
   picture in the wrong folder; it can never hide one.
 
+- **A picture's name is a label in `.names.json`, never the file's own name,
+  and this is the same argument as folders.** The filename is a UUID and every
+  page showing the picture holds that exact string, so renaming the file means
+  rewriting every page that points at it — and a rewrite that stops halfway is
+  a broken picture on a page nobody was looking at. `assets/.names.json` maps
+  filename → name; losing it loses the names and nothing else. **The only
+  moment a picture's real name exists is the upload**, from `file.name`: what
+  lands on disk is a UUID, and nothing later can work back to "Valera
+  sword.png". That's why `uploadAsset` takes an optional `originalName` and why
+  pictures added before Phase 17 can never be given one automatically.
+
 - **`.ui-icon-btn` is transparent until it's hovered, so it must never be the
   only way into a feature.** That style is right for a control sitting beside
   the thing it acts on, where the row it's in already tells you something is

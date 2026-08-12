@@ -21,6 +21,7 @@ import { useProjectStore } from "../state/project-store";
 export type { AssetEntry, AssetUse } from "../services/asset-usage";
 export { describeSize, describeUses } from "../services/asset-usage";
 export { ALL_PICTURES, type AssetFolder, type FolderFilter } from "../services/asset-folders";
+export { assetDisplayName, MAX_ASSET_NAME, type AssetNames } from "../services/asset-names";
 
 export function useAssets(): {
   entries: AssetEntry[];
@@ -34,13 +35,14 @@ export function useAssets(): {
   /** Re-reads the directory. Called after anything that changes what's in it. */
   refresh: () => void;
 } {
-  const { nodes, templates, listAssets, loadWasIncomplete, pruneAssetFolders } = useProjectStore(
+  const { nodes, templates, listAssets, loadWasIncomplete, pruneAssetFolders, pruneAssetNames } = useProjectStore(
     useShallow((state) => ({
       nodes: state.nodes,
       templates: state.templates,
       listAssets: state.listAssets,
       loadWasIncomplete: state.loadWasIncomplete,
       pruneAssetFolders: state.pruneAssetFolders,
+      pruneAssetNames: state.pruneAssetNames,
     })),
   );
 
@@ -68,6 +70,13 @@ export function useAssets(): {
   useEffect(() => {
     if (files) pruneAssetFolders(files);
   }, [files, pruneAssetFolders]);
+
+  // And the names, for the same reason and on the same read. Separate effect
+  // rather than one that does both, so a change to either record's shape can't
+  // quietly stop the other one running.
+  useEffect(() => {
+    if (files) pruneAssetNames(files.map((file) => file.fileName));
+  }, [files, pruneAssetNames]);
 
   const usage = useMemo(() => indexAssetUsage(nodes, templates), [nodes, templates]);
   const entries = useMemo(() => buildAssetEntries(files ?? [], usage), [files, usage]);
@@ -102,7 +111,9 @@ export function useUploadPicture(): (file: File) => Promise<string> {
   return useCallback(
     async (file: File) => {
       const { bytes, extension } = await readImageFile(file);
-      return assetFileName(await uploadAsset(bytes, extension)) ?? "";
+      // `file.name` is the only place the picture's own name exists. It goes in
+      // here or it's gone — what lands in `assets/` is a UUID.
+      return assetFileName(await uploadAsset(bytes, extension, file.name)) ?? "";
     },
     [uploadAsset],
   );
@@ -138,6 +149,23 @@ export function useAssetFolders() {
       renameAssetFolder: state.renameAssetFolder,
       deleteAssetFolder: state.deleteAssetFolder,
       setAssetFolder: state.setAssetFolder,
+    })),
+  );
+}
+
+/**
+ * What the pictures are called, and the one action that changes it.
+ *
+ * Split from `useAssetFolders` rather than folded into it because the picker
+ * reads names and never edits them, and the two records are written to two
+ * different files — a component holding both would redraw for a filing change
+ * it doesn't care about.
+ */
+export function useAssetNames() {
+  return useProjectStore(
+    useShallow((state) => ({
+      names: state.assetNames,
+      renameAsset: state.renameAsset,
     })),
   );
 }
