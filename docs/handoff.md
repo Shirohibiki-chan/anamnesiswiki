@@ -854,6 +854,15 @@ is below.
   picture. It walks nested blocks too — a picture indented under a list item is
   as much in use as one at the top level.
 
+- **`PageFilePanel` must stay at the module level, for the same reason
+  `PageFormattingToolbar` does.** `FilePanelController` renders what it's given
+  as a component *type*, so a panel defined inside a rendering component is a
+  new type every render and React rebuilds it rather than updating it. That is
+  precisely the bug that made the picture caption box close on every keystroke.
+  The symptom here would be different — a panel that resets its open tab, or a
+  dialog that loses what it was told — but the cause is one line in the same
+  shape. Every BlockNote `*Controller` prop is in this category.
+
 - **An asset file has no single owner any more, and nothing may delete one
   without asking `isAssetInUse` first.** Until the picture library, every file
   in `assets/` was pointed at by exactly one slot, so replacing a portrait

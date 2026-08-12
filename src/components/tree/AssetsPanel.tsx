@@ -13,6 +13,7 @@
 import { Trash2 } from "lucide-react";
 import { describeSize, describeUses, useAssetActions, useAssets, type AssetEntry } from "../../hooks/use-assets";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useOpenSingleImage } from "../../hooks/use-lightbox";
 import { useNodeImage } from "../../hooks/use-node-image";
 
 export function AssetsPanel() {
@@ -70,11 +71,19 @@ export function AssetsPanel() {
  */
 function AssetTile({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName: string) => void }) {
   const { url, status } = useNodeImage(entry.fileName);
+  const openImage = useOpenSingleImage();
   const names = [...new Set(entry.uses.map((use) => use.nodeName))];
   const detail = names.length > 0 ? `Used by ${names.join(", ")}` : "Not used anywhere";
 
   return (
     <li className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`} title={detail}>
+      {/* Clicking opens it full size, in the same viewer a picture inside a
+          page opens in. Deliberately *not* "put this on the page you're
+          looking at": these are 77px squares packed six to a screen, and a
+          gesture that edits your writing shouldn't be the one you make while
+          trying to see what something is. Putting a picture into a page is the
+          picture block's own Library tab, where you've already said where it
+          goes. */}
       <div className="tree-assets-thumb">
         {status === "ready" && url ? (
           <img src={url} alt="" className="tree-assets-image" />
@@ -85,10 +94,24 @@ function AssetTile({ entry, onDelete }: { entry: AssetEntry; onDelete: (fileName
           <span className="tree-assets-broken">{status === "loading" ? "" : "?"}</span>
         )}
 
+        {/* An empty button laid over the picture rather than a click handler on
+            the picture itself, so the thing you click is focusable and reachable
+            by keyboard. It has to be a sibling of the delete button below and
+            not its parent — a button inside a button is invalid, and the browser
+            drops one of them. */}
+        <button
+          type="button"
+          className="tree-assets-open"
+          aria-label={`Open this picture full size — ${detail}`}
+          disabled={status !== "ready" || !url}
+          onClick={() => url && openImage(url, "")}
+        />
+
         {/* Sits on the picture's top corner, hidden until the tile is hovered
             or focused — `display: none`, the same rule the tree rows follow.
             On the picture rather than beside it because a grid has no spare
-            width to reserve for a button that's usually invisible. */}
+            width to reserve for a button that's usually invisible. After the
+            overlay in the DOM so it takes the clicks in the corner it covers. */}
         {entry.isUnused && (
           <button
             type="button"
