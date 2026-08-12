@@ -946,6 +946,21 @@ is below.
   rather than as an error. The worst a damaged `.folders.json` can do is put a
   picture in the wrong folder; it can never hide one.
 
+- **`.ui-icon-btn` is transparent until it's hovered, so it must never be the
+  only way into a feature.** That style is right for a control sitting beside
+  the thing it acts on, where the row it's in already tells you something is
+  there. The Assets tab shipped its add-a-picture button that way and it went
+  unfound — the tab read as a list you could look at and not touch. Anything
+  that is the entry point to a feature gets a `.ui-btn` with a word on it.
+
+- **The Assets panel's toolbar, count and folder chips live outside
+  `.tree-assets-scroll`, and that split is the fix for a real complaint.**
+  `.tree-assets` used to be the scroll container with everything inside it, so
+  scrolling the grid took the way to add a picture and the way to change folder
+  off the top of the panel. Only the grid scrolls now. Verified against a DOM
+  replica at 180/260px: the toolbar moves 0px on scroll and the button label
+  doesn't clip at the sidebar's minimum.
+
 - **Anything dragged out of the picture library carries `ASSET_DRAG_TYPE`, not
   `text/plain`.** The editor is already a drop target for text and for real
   files, and both mean something there. A filename read out of `text/plain`

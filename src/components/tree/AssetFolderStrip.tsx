@@ -23,7 +23,13 @@ export type AssetFolderStripProps = {
   counts: Counts;
   filter: FolderFilter;
   onFilter: (filter: FolderFilter) => void;
-  onCreate: () => void;
+  /**
+   * Omitted by the Assets tab, which has its own button in the toolbar above.
+   * Left in for the picker, where there's no toolbar to put one in — and where
+   * the strip appears whether or not any folders exist, because the only way
+   * to make the first one has to be somewhere.
+   */
+  onCreate?: () => void;
   onRename: (id: string, name: string) => void;
   onStartRename: (id: string) => void;
   onDelete: (id: string) => void;
@@ -65,7 +71,11 @@ export function AssetFolderStrip({
           // would read as a bug rather than as a rule.
           onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
         />
-        {counts.unsorted > 0 && (
+        {/* Only once filing something has actually made a difference. With
+            nothing filed yet, Unsorted holds every picture there is, so the
+            chip is a second button for the one beside it wearing a different
+            name and the same number. */}
+        {counts.unsorted > 0 && counts.unsorted < counts.all && (
           <Chip
             label="Unsorted"
             count={counts.unsorted}
@@ -95,15 +105,17 @@ export function AssetFolderStrip({
             />
           ),
         )}
-        <button
-          type="button"
-          className="ui-icon-btn ui-icon-btn-sm asset-folders-new"
-          title="New folder"
-          aria-label="New folder"
-          onClick={onCreate}
-        >
-          <FolderPlus size={14} />
-        </button>
+        {onCreate && (
+          <button
+            type="button"
+            className="ui-icon-btn ui-icon-btn-sm asset-folders-new"
+            title="New folder"
+            aria-label="New folder"
+            onClick={onCreate}
+          >
+            <FolderPlus size={14} />
+          </button>
+        )}
       </div>
 
       {/* Rename and delete live here rather than on every chip. A chip is a

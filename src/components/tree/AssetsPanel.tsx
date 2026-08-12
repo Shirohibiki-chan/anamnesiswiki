@@ -27,7 +27,7 @@
 // fixed (see `setAsideSupersededCopies`), and this is the belt to its braces:
 // whatever the next way of losing a page turns out to be, it must not arrive
 // as a delete button.
-import { ImagePlus, Trash2 } from "lucide-react";
+import { FolderPlus, ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import {
@@ -108,26 +108,40 @@ export function AssetsPanel() {
     refresh();
   }
 
-  // The header is outside the loading and empty branches below, because "add a
-  // picture" is the one thing that has to be reachable when the tab is empty —
-  // which is exactly when she has nothing else to click.
-  const header = (
-    <div className="tree-assets-header">
-      <p className="tree-assets-note">
-        {isLoading
-          ? "Reading your pictures…"
-          : `${shown.length} ${shown.length === 1 ? "picture" : "pictures"}${
-              !isUsageIncomplete && unusedCount > 0 ? ` · ${unusedCount} used by nothing` : ""
-            }`}
-      </p>
+  // Both ways of putting something into the library, as buttons that look like
+  // buttons.
+  //
+  // Adding a picture used to be a bare `.ui-icon-btn` at the end of the count
+  // sentence, and those are transparent until they're hovered — deliberately,
+  // for a control sitting beside the thing it acts on. It is the wrong shape
+  // for the only door into a feature: the tab read as a list you could look at
+  // and not touch, and the button went unfound.
+  //
+  // Outside the loading and empty branches below, because adding a picture is
+  // the one thing that has to be reachable when the tab is empty — which is
+  // exactly when there's nothing else to click.
+  const toolbar = (
+    <div className="tree-assets-bar">
       <button
         type="button"
-        className="ui-icon-btn ui-icon-btn-sm"
-        title="Add a picture from your computer"
-        aria-label="Add a picture from your computer"
+        className="ui-btn ui-btn-secondary tree-assets-add"
         onClick={() => fileInputRef.current?.click()}
       >
         <ImagePlus size={14} />
+        Add picture
+      </button>
+      {/* Its own control up here rather than the last item in the row of folder
+          chips. Down there it sat immediately after a folder called "New
+          folder" — a chip and a button, same size, one of them named after
+          what the other one does. */}
+      <button
+        type="button"
+        className="ui-btn ui-btn-secondary tree-assets-new-folder"
+        title="Make a folder"
+        aria-label="Make a folder"
+        onClick={handleCreateFolder}
+      >
+        <FolderPlus size={14} />
       </button>
       {/* Value cleared on every pick, so choosing the same file twice in a row
           still fires a change event the second time. */}
@@ -147,39 +161,56 @@ export function AssetsPanel() {
 
   return (
     <div className="tree-assets">
-      {header}
-      <AssetFolderStrip
-        folders={folders}
-        counts={counts}
-        filter={filter}
-        onFilter={setFilter}
-        onCreate={handleCreateFolder}
-        onRename={renameAssetFolder}
-        onStartRename={setRenamingId}
-        onDelete={handleDeleteFolder}
-        onDropAsset={setAssetFolder}
-        renamingId={renamingId}
-        onRenamingDone={() => setRenamingId(null)}
-      />
-      {error && <p className="tree-assets-note tree-assets-error">{error}</p>}
-      {isUsageIncomplete && (
-        <p className="tree-assets-note tree-assets-warning">
-          One of your pages wouldn&rsquo;t open, so this can&rsquo;t say for certain what&rsquo;s using what. Deleting
-          is off until it can.
-        </p>
+      {toolbar}
+      <p className="tree-assets-note tree-assets-count">
+        {isLoading
+          ? "Reading your pictures…"
+          : `${shown.length} ${shown.length === 1 ? "picture" : "pictures"}${
+              !isUsageIncomplete && unusedCount > 0 ? ` · ${unusedCount} used by nothing` : ""
+            }`}
+      </p>
+      {/* No folders means nothing to filter by, so the strip would be one chip
+          saying "All pictures" above every picture. The way to make the first
+          one is in the toolbar, not in here. */}
+      {folders.folders.length > 0 && (
+        <AssetFolderStrip
+          folders={folders}
+          counts={counts}
+          filter={filter}
+          onFilter={setFilter}
+          onRename={renameAssetFolder}
+          onStartRename={setRenamingId}
+          onDelete={handleDeleteFolder}
+          onDropAsset={setAssetFolder}
+          renamingId={renamingId}
+          onRenamingDone={() => setRenamingId(null)}
+        />
       )}
-      {!isLoading && shown.length === 0 && (
-        <p className="tree-assets-note">
-          {entries.length === 0
-            ? "No pictures yet. Add one with the button above, or upload one as a page’s portrait or cover — they all land here."
-            : "Nothing in here yet. Drag a picture onto this folder’s name to file it."}
-        </p>
-      )}
-      <ul className="tree-assets-grid">
-        {shown.map((entry) => (
-          <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} usageIsCertain={!isUsageIncomplete} />
-        ))}
-      </ul>
+      {/* Only this part scrolls. The toolbar, the count and the folders stay
+          put — everything above used to scroll away with the grid, so the way
+          to add a picture or change folder disappeared the moment you went
+          looking through the pictures. */}
+      <div className="tree-assets-scroll">
+        {error && <p className="tree-assets-note tree-assets-error">{error}</p>}
+        {isUsageIncomplete && (
+          <p className="tree-assets-note tree-assets-warning">
+            One of your pages wouldn&rsquo;t open, so this can&rsquo;t say for certain what&rsquo;s using what. Deleting
+            is off until it can.
+          </p>
+        )}
+        {!isLoading && shown.length === 0 && (
+          <p className="tree-assets-note">
+            {entries.length === 0
+              ? "No pictures yet. Add one with the button above, or upload one as a page’s portrait or cover — they all land here."
+              : "Nothing in here yet. Drag a picture onto this folder’s name to file it."}
+          </p>
+        )}
+        <ul className="tree-assets-grid">
+          {shown.map((entry) => (
+            <AssetTile key={entry.fileName} entry={entry} onDelete={handleDelete} usageIsCertain={!isUsageIncomplete} />
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
