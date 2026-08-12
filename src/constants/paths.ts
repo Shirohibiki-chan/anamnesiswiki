@@ -32,6 +32,21 @@ export const ASSETS_DIR = "assets";
 export const ASSET_REF_PREFIX = "anamnesis-asset:";
 
 /**
+ * The drag type a picture dragged out of the Assets tab carries.
+ *
+ * A custom MIME type rather than `text/plain`, and that's load-bearing: the
+ * editor is a drop target for real files and for text, and both of those have
+ * their own meaning there. Reading a filename out of `text/plain` would make
+ * every dragged word of prose look like a picture, and putting one *in* would
+ * have a drop anywhere else in the app paste a UUID. This type means exactly
+ * one thing, and nothing but the Assets tab writes it.
+ *
+ * The payload is the bare filename in `ASSETS_DIR` — the same string a slot
+ * stores — so the drop side wraps it in `ASSET_REF_PREFIX` itself.
+ */
+export const ASSET_DRAG_TYPE = "application/x-anamnesis-asset";
+
+/**
  * The world's own templates — "Convert to template" writes here. One file
  * holding a forest of pages, rather than a directory of them like the tree
  * itself: templates are scaffolding rather than writing, there are a dozen at

@@ -450,15 +450,24 @@ picture library (#150), and the library reaching pictures inside a page plus
 clickable thumbnails (#151).
 
 **Also shipped 2026-08-12:** the duplicate-node-file repair that was making
-portraits and covers look unused (#152).
+portraits and covers look unused (#152), and the Assets tab's own upload button
+and drag-onto-a-page (#153).
 
 **Left in this phase:** remove-from-every-page; reorder templates and
-start-a-new-page-from one; and the Assets tab's own actions — an upload button,
-dragging a tile onto a page, and folders (all three asked for by the user,
-2026-08-12).
+start-a-new-page-from one; and folders in the picture library (asked for by the
+user, 2026-08-12, alongside the two #153 covers).
 
-**Putting a picture into a page is the image block's own Library tab (#151),
-not a click in the Assets tab.** The plan originally said clicking a thumbnail
+**Dragging a tile onto a page is the second route in, and it carries its own
+MIME type (#153).** `ASSET_DRAG_TYPE`, not `text/plain`: the editor is already a
+drop target for text and for real files, and both mean something there. A
+filename read out of `text/plain` would make every dragged word of prose look
+like a picture, and one written *into* it would have a drop anywhere else in the
+app paste a UUID. The drop listener is native and on the capture phase for the
+same reason the lightbox's double-click is — ProseMirror has real drop behaviour
+and would otherwise take the event first.
+
+**Putting a picture into a page by *clicking* is the image block's own Library
+tab (#151), not a click in the Assets tab.** The plan originally said clicking a thumbnail
 would insert it into the open page. That was reconsidered when the tiles
 actually got behaviour: they're 77px squares packed six to a screen, and the
 gesture you make to see what one *is* should not be the one that edits your

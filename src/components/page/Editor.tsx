@@ -16,7 +16,8 @@ import {
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
-import { Fragment } from "react";
+import { Fragment, useCallback } from "react";
+import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { ExpandImageButton } from "./ExpandImageButton";
@@ -76,6 +77,27 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
   // rather than on anything BlockNote renders, so it covers every picture in
   // the tab without a custom image block — see hooks/use-lightbox.ts.
   const imageLightboxRef = useEditorImageLightbox();
+
+  // Dragged out of the sidebar's Assets tab. The picture is already in the
+  // project, so this points at the file rather than uploading a second copy of
+  // it — see hooks/use-asset-drop.ts. The same wrapper carries both listeners,
+  // which is why the hook takes the lightbox's ref instead of making its own.
+  const insertImage = useCallback(
+    (url: string, at: InsertAt) => {
+      const blocks = [{ type: "image" as const, props: { url } }];
+      if (at === "end") {
+        const last = editor.document[editor.document.length - 1];
+        // A page with nothing in it has no block to insert after. It always
+        // has at least one empty paragraph in practice, but "always in
+        // practice" is how a drop onto a brand new page throws.
+        if (last) editor.insertBlocks(blocks, last, "after");
+        return;
+      }
+      editor.insertBlocks(blocks, at.blockId, "after");
+    },
+    [editor],
+  );
+  useAssetDropTarget(imageLightboxRef, insertImage);
 
   return (
     <div

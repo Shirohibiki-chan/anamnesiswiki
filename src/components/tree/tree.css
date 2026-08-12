@@ -1001,6 +1001,25 @@ button.tree-path-crumb:hover {
   padding: 0 0 var(--space-md);
 }
 
+/* The count and the add button on one line. `align-items: baseline` rather
+   than centre so the icon sits with the text rather than floating above a
+   sentence that has wrapped to two lines in a narrow sidebar. */
+.tree-assets-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding-right: var(--space-md);
+}
+
+/* The count takes the room and pushes the button to the edge. `min-width: 0`
+   so a long count wraps instead of shoving the button off the panel — the
+   sidebar goes down to 180px. */
+.tree-assets-header .tree-assets-note {
+  flex: 1;
+  min-width: 0;
+  padding-right: 0;
+}
+
 /* Also the empty and loading states, which are the same kind of sentence in
    the same place. */
 .tree-assets-note {
@@ -1018,6 +1037,14 @@ button.tree-path-crumb:hover {
 .tree-assets-warning {
   padding-top: 0;
   color: var(--color-palette-amber);
+}
+
+/* A picture that wouldn't be added — the wrong kind of file, or too big. Sits
+   where the warning does and reads the same way, because from here they're the
+   same kind of sentence: something you asked for didn't happen. */
+.tree-assets-error {
+  padding-top: 0;
+  color: var(--color-destructive);
 }
 
 /* A grid, with a fixed column count per width rather than `auto-fill`.

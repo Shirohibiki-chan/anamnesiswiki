@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-12 — the Assets tab does things
+
+### Additions
+
+- **An add-a-picture button, right there in the tab.** Pictures used to only get into the project at the moment you wanted one somewhere — as a portrait, a cover, or in a page. Now you can put one in the library first and decide where it goes later. The button is in the tab's header and stays there when the tab is empty, which is when you most need it.
+- **Drag a picture from the tab onto a page.** It drops in after whatever you're pointing at, or at the end if you let go below your writing. It points at the file that's already there rather than making a second copy, so one map on six pages is still one file.
+
+### Worth knowing
+
+- Clicking a picture still opens it full size rather than dropping it into your page. Dragging is the version of that gesture you can't do by accident, which is why it's the one that edits your writing.
+- A picture that won't load can't be dragged — the page would just get an empty box, and you'd have to come back here to work out why.
+
 ## 2026-08-12 — the Assets tab stops calling pictures unused when they aren't
 
 ### Fixes
