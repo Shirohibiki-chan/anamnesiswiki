@@ -388,6 +388,50 @@
   padding: var(--space-2xs) var(--space-md);
 }
 
+/* Shaped like a chip rather than like an icon button, because it sits at the
+   end of a row of chips and reads as the next one — the empty slot you fill,
+   which is the same shape Notion and LK both use for this. */
+.property-tag-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  padding: var(--space-2xs) var(--space-md);
+  cursor: pointer;
+  /* A chip's own height, for the page that has no tags yet: with nothing
+     beside it to stretch against, an icon and its padding come out shorter
+     than the slot it's meant to look like. */
+  min-height: 1.375rem;
+}
+
+.property-tag-add:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.property-tag-picker-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+/* How many pages carry the tag. Muted and narrow: it's there to tell an
+   established tag from one typed once, not to be read on every row. */
+.property-tag-picker-count {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* --- Refs --- */
 
 .property-refs-list {

@@ -32,7 +32,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
-import { useKnownOptions } from "../../hooks/use-property-index";
+import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
 import { useTemplates } from "../../hooks/use-templates";
 import { orderProperties, type RenderableProperty } from "../../services/property-service";
 import { TemplatePicker } from "../tree/TemplatePicker";
@@ -63,6 +63,7 @@ export function PropertiesPanel() {
   } = useProject();
   const { getPropertySchema } = useTemplates();
   const knownOptions = useKnownOptions();
+  const allTags = useAllTags();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -319,7 +320,12 @@ export function PropertiesPanel() {
         </button>
       )}
 
-      <TagsProperty label="Tags" tags={node.tags} onChange={(tags) => updateNodeTags(node.id, tags)} />
+      <TagsProperty
+        label="Tags"
+        tags={node.tags}
+        allTags={allTags}
+        onChange={(tags) => updateNodeTags(node.id, tags)}
+      />
       <PropertyTimestamps createdAt={node.createdAt} updatedAt={node.updatedAt} />
     </div>
   );
