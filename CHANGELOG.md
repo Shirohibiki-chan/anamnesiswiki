@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-14
+
+### Fixes
+
+- **The language menu opens dark instead of white.** Picking a language meant a white list flashing up over a dark page, and the names on it were a muted grey that was hard to read at that size. The list is dark now, the names are the same colour as the code, and the language the block is currently set to is picked out in the accent colour so it's findable in a list of fifteen.
+
 ## 2026-08-13 — code blocks get a header, and a copy button
 
 ### Additions
