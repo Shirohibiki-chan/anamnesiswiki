@@ -223,9 +223,9 @@ Raised half as a joke and it shouldn't be taken as one: a competing tool's AO3 e
 
 Asked for by the user 2026-08-12; **styling, syntax highlighting and the LK round trip shipped the same day** (see `docs/shipped.md`). What's still open is the part that has nothing to do with the block itself:
 
-**Nobody can find it.** A code block is reachable only by knowing to type `/code`. That's the same failure the Assets tab's add button had — the only door into a feature being one nobody would try — and it's why the block felt missing for months while it was sitting there. The fix isn't "she'll remember the slash command", and it isn't obviously a toolbar button either; the formatting toolbar only appears over a selection, and inserting a code block is something you do at an empty line. Worth solving together with any other block that has the same problem rather than one-off.
+**Discoverability is smaller than it looked, and the claim that `/code` was the only door was wrong.** Typing ` ``` ` and a space makes a code block — BlockNote ships that shortcut, it has always worked here, and it's the door she asked for by name when she requested the feature. She found it on her own the first day. So this isn't "nobody can reach it", it's the narrower question of whether someone who *doesn't* already know markdown would, and that's the same question every other block raises. Still worth solving as one piece across all of them rather than bolting a button onto this one; the formatting toolbar isn't the place, since it only appears over a selection and a code block is inserted at an empty line.
 
-**Still worth checking once: does her existing world contain any code blocks?** Until 2026-08-12 importing one lost its text entirely, so if `Valeraverse.lk` has any, the pages that came from them are missing content that the fixed importer would now bring across. A re-import of just those pages would recover it. If the answer is no, this line can go.
+That's the whole of what's left. The question this section used to carry — whether her existing world had code blocks the old importer had emptied — is answered and gone; see `docs/shipped.md`.
 
 ---
 

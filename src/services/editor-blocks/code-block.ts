@@ -180,6 +180,25 @@ export const codeBlockSpec = {
       if (select) header.append(select);
       if (oldWrapper && oldWrapper !== header) oldWrapper.remove();
 
+      // A language the picker has no entry for leaves it showing *nothing* —
+      // `selectedIndex` is -1 and the corner of the block is simply empty.
+      // That's reachable by typing, not just by a bad file: BlockNote's own
+      // ``` shortcut keeps whatever word follows the backticks, checked
+      // against nothing, so ```wjatever makes a block whose language is
+      // `wjatever`. Found in her own writing on 2026-08-13.
+      //
+      // Showing plain text is honest rather than cosmetic — an unknown
+      // language gets no highlighting, so the block already *is* plain text on
+      // screen and the label now says so. This deliberately doesn't rewrite
+      // the block's stored language: editing the document from inside a render
+      // pass would mark the page dirty and queue a save for a page she only
+      // opened to read. LK export normalises the same value on its way out, so
+      // nothing downstream sees the stray word either.
+      //
+      // The bare ``` case needs nothing — an empty language already resolves
+      // to the default before it reaches here, verified in the real editor.
+      if (select && select.selectedIndex === -1) select.value = DEFAULT_CODE_LANGUAGE;
+
       const copy = buildCopyButton(() => pre.textContent ?? "");
       header.append(copy.element);
       pre.parentElement.insertBefore(header, pre);
