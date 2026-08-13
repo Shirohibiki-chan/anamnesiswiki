@@ -748,6 +748,48 @@ is below.
   come from `@shikijs/langs-precompiled` and the engine is
   `createJavaScriptRawEngine`, which only works with precompiled grammars —
   swapping either half alone fails at runtime, not at build time.
+- **The code block wraps upstream's `render` and replaces nothing else.**
+  `code-block.ts` calls `createCodeBlockSpec`'s implementation and inserts a
+  header strip in front of the `<pre>` it rendered, moving the language
+  `<select>` into it. `extensions` and the rest of `implementation` pass
+  through, and they must: they carry the syntax-highlighting plugin, the
+  keyboard shortcuts that keep Tab and Enter inside the block, the parse rules,
+  and the `toExternalHTML` that decides what a copied block puts on the
+  clipboard. **The highlight plugin is keyed on the node type name
+  `codeBlock`** — a custom block by another name silently stops being
+  highlighted, with no error. The `<select>` is *moved* rather than recreated so
+  upstream's change listener and its `destroy` still find it.
+- **Three things about wrapping a BlockNote `render`, each of which broke the
+  app once on 2026-08-13.** Any future wrapper of any block hits the same three.
+  1. **It reads `this`.** BlockNote invokes a block's render as
+     `render.call({ blockContentDOMAttributes, renderType, props, propSchema }, block, editor)`
+     — those arrive as context, not arguments. Calling it plainly leaves `this`
+     undefined and it throws on the first property read, which blanked the whole
+     window the moment a page holding a code block was opened. So the wrapper is
+     a method, not an arrow, and forwards its own `this`.
+  2. **`rendered.dom` is the block, not the content.** `wrapInBlockStructure`
+     has already put the rendered fragment inside the
+     `div.bn-block-content[data-content-type="…"]` that every BlockNote selector
+     and parse rule is written against. **Rearrange what's inside it; never
+     return a different element in its place.**
+  3. **BlockNote's own CSS still reaches the elements you moved, and outranks a
+     short selector.** Its
+     `.bn-block-content[data-content-type=codeBlock]>div>select` is two
+     class-level parts plus two elements; a plain `.editor-code-header > select`
+     loses to it, and the picker goes on floating invisibly over the first line
+     of code while the stylesheet looks right. Every rule in that section of
+     `page.css` carries the full block selector for this reason.
+- **A DOM replica is only evidence if it carries the *whole* upstream
+  stylesheet.** The specificity bug above was measured as fixed in a replica
+  that had been trimmed to the rules that seemed relevant — which silently
+  dropped the one that was winning. Verify against the real editor: a throwaway
+  `probe.html` plus a `src/probe.tsx` that mounts `BlockNoteView` with
+  `editorSchema` is served by the running dev server at
+  `localhost:1420/probe.html`, needs no project on disk, and takes a minute.
+- **Hover states in the code block's header belong to the controls, not the
+  block.** Keying them on the block's `:hover` is what made the language picker
+  read as a grey smear appearing over her writing whenever the pointer went
+  past — reported from use, 2026-08-12.
 - **Nothing in the highlighter touches the network, and it has to stay that
   way.** Shiki *can* fetch grammars from a CDN; this path declares every one as
   a static `import()` that Vite turns into a local chunk. A change that

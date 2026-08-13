@@ -1591,9 +1591,101 @@ has to belong to the same set of surfaces. Syntax colour does the rest, landing
 between 10 and 13 against the fill.
 
 Also changed from BlockNote's defaults: the language picker moved to the top
-right at a resting `opacity: 0.65` instead of top-left and invisible; `<pre>`
-switched from `white-space: pre` to `pre-wrap`, so a prompt pasted as one long
-line wraps instead of running off the right edge with the rest unreachable.
+right at a resting `opacity: 0.65` instead of top-left and invisible
+(**superseded the same day — see below**); `<pre>` switched from
+`white-space: pre` to `pre-wrap`, so a prompt pasted as one long line wraps
+instead of running off the right edge with the rest unreachable.
+
+## The header bar — same day, from her testing
+
+The picker-in-the-corner version lasted one screenshot. Two things were wrong
+with it and both were mine rather than BlockNote's:
+
+- **It reacted to the block's hover, not its own.** Moving the mouse anywhere
+  over the code lit the `<select>` up as a filled grey rectangle sitting over
+  the writing. Her words were that it shouldn't "randomly highlight if you're
+  just hovering over the box in general", which is exactly right — hover
+  belongs on the control.
+- **There was nowhere to put anything else.** She asked for a Copy button in the
+  top right, and an absolutely-positioned `<select>` floating over line one has
+  no room for a neighbour.
+
+So the block's `render` is now wrapped: `code-block.ts` calls upstream's,
+lifts the `<pre>` and the `<select>` out of the fragment it returns, and
+reassembles them as a header strip plus the code. **Only `render` is replaced.**
+`extensions` and the rest of `implementation` pass through untouched, which is
+what keeps the syntax-highlighting plugin, the Tab-indents-inside-the-block
+shortcuts, the parse rules and `toExternalHTML`. Rebuilding this as a custom
+block would have meant owning all of it — and the highlight plugin is keyed on
+the node type name `codeBlock`, so a block named anything else silently stops
+being highlighted.
+
+Side effect worth knowing: both elements are now a level deeper than BlockNote's
+own selectors (`>div>select`, `>pre`) can reach, so none of its code-block CSS
+applies any more and `page.css` styles from scratch rather than overriding.
+
+The Copy button reads the text out of the `<pre>` at click time rather than
+closing over the block `render` was handed, which is a snapshot from when the
+block first appeared. `navigator.clipboard` with an `execCommand` fallback,
+because the Tauri webview's origin isn't `https:` and the modern API wants a
+secure context — it works today, and this degrades rather than going silent if a
+webview update changes that.
+
+### Three bugs on the way, and what they cost
+
+The first version of this went out on a replica measurement and **blanked the
+whole app** the moment she opened a page with a code block on it. Worth writing
+down in full, because all three are traps for any future wrapper of any block.
+
+1. **`render` reads `this`.** BlockNote calls it as
+   `render.call({ blockContentDOMAttributes, renderType, props, propSchema }, block, editor)`.
+   Calling it plainly threw on the first property read. The code comment
+   claiming it didn't touch `this` was written from reading the *inner* render
+   in the minified bundle and missing the wrapper around it — the wrong half of
+   two functions with the same name.
+2. **`rendered.dom` is `.bn-block-content`, not the code.**
+   `wrapInBlockStructure` runs before we see it. Returning a wrapper of our own
+   in its place discarded the class, the `data-content-type`, and everything
+   BlockNote's selectors and parse rules hang off. Fixed by inserting the header
+   *into* what came back.
+3. **BlockNote's CSS still outranked ours.** With the header now a `div` that is
+   a direct child of `.bn-block-content`, its
+   `.bn-block-content[data-content-type=codeBlock]>div>select` matches again —
+   and at two class-level parts plus two elements it beats
+   `.editor-code-header > select`. The picker stayed absolutely positioned at
+   `opacity: 0` over the first line while every rule we'd written looked
+   correct.
+
+**The replica is what let all three through.** It was hand-assembled from the
+rules that looked relevant, so it didn't contain the one that was winning, and
+it ran no JavaScript at all — a measurement of a drawing of the thing.
+
+### Verified against the real editor instead
+
+A throwaway `probe.html` plus a `src/probe.tsx` mounting `BlockNoteView` with
+the real `editorSchema`, served by the dev server that was already running. No
+project on disk needed, so it sidesteps the reason `pnpm dev` normally can't
+show the editor at all. Both files deleted afterwards.
+
+What it confirmed, with the real block mounted:
+
+- `.bn-block-content` intact, children `[header, pre]`, `<code>` still carrying
+  `bn-inline-content`; 15 languages in the picker, `json` selected.
+- The picker computes to `position: static`, `opacity: 1`, our grey — i.e. our
+  rules now win. Header 26px, no overlap with the code, language name and Copy
+  label both 8px in from their own edge.
+- **Typing into the block** leaves the header, the picker and the button in
+  place and the structure unchanged.
+- **Switching a block from Plain text to Markdown** produced highlight spans
+  where there had been none, left the text identical, and left the header
+  intact through the re-render. The zero-spans-on-plain-text half is the one
+  that matters: it's the direct evidence that `{{char}}` and `**asterisks**` are
+  untouched.
+- The Copy button's three states switch on one attribute as designed. **The copy
+  itself could not be proven here** — `navigator.clipboard.writeText` rejects
+  with `NotAllowedError: Document is not focused` when the pane isn't displayed,
+  and `execCommand` fails for the same reason. Secure context is `true` and the
+  API is present, so the path is sound; it wants one real click to confirm.
 
 ## Verification
 

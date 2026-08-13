@@ -568,30 +568,165 @@
 
 /* The code block.
    ---------------
-   BlockNote ships this one already styled — a flat `#161616` box with white
-   text, no border, and a language dropdown that fades in at half opacity in the
-   top-*left* corner. Those are literals inside its stylesheet, so they ignore
-   the theme entirely and there is no token to point at them. Everything below
-   is an override of a rule that already exists rather than styling from
-   nothing, which is why it's written against BlockNote's own selectors instead
-   of a class of ours: the block is a built-in and renders `<pre><code>` with no
-   class on either element.
+   BlockNote ships this one already styled, and all of it is literals inside its
+   own stylesheet that no theme can reach: a flat `#161616` box, white text, no
+   border, and a bare `<select>` positioned absolutely over the first line of
+   code at `opacity: 0`, revealed at half opacity whenever the mouse is anywhere
+   in the block. That last part is what made it feel broken — a grey smear
+   appearing over your writing as the pointer went past.
+
+   `services/editor-blocks/code-block.ts` wraps the block's render and inserts a
+   header strip in front of the `<pre>`, moving the `<select>` into it and adding
+   a Copy button. It inserts *into* `.bn-block-content` rather than replacing it,
+   so BlockNote's own rules still apply to the same elements and everything here
+   is an override rather than a fresh start.
 
    The colours stay dark on every theme on purpose — see `--color-code-*` in
    index.css for why that's an exception rather than an oversight. */
 .editor-shell .bn-block-content[data-content-type="codeBlock"] {
+  /* `.bn-block-content` is a flex row, and the header is now a sibling of the
+     `<pre>` rather than an absolutely-positioned overlay. Without this they sit
+     side by side. */
+  flex-direction: column;
   background-color: var(--color-code-bg);
   color: var(--color-code-text);
   border: 1px solid var(--color-code-border);
   border-radius: var(--radius-lg);
   margin: var(--space-md) 0;
+  padding: 0;
+}
+
+/* The header. Its own faint wash rather than the block's fill, so the strip
+   reads as a bar and not as empty space above the code. The radius is the box's
+   minus its border, which is what keeps the wash from squaring off the top two
+   corners.
+
+   Even padding on both sides: the strip's 4px plus each control's own 4px puts
+   the language name and the Copy label the same 8px in from either edge. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-2xs) var(--space-xs);
+  border-bottom: 1px solid var(--color-code-border);
+  border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+  background-color: rgba(255, 255, 255, 0.035);
+  user-select: none;
+}
+
+/* The language picker. `position: static` and `opacity: 1` undo BlockNote's
+   absolute placement and its hidden-until-hovered fade, both of which still
+   reach this element — it's a `<select>` inside a `<div>` inside
+   `.bn-block-content`, which is exactly the shape its selector matches. The
+   chevron is drawn here because `appearance: none` removes the platform's.
+
+   **Every rule in this section carries the full block selector, and that isn't
+   decoration.** BlockNote's is
+   `.bn-block-content[data-content-type=codeBlock]>div>select` — two class-level
+   parts and two elements. A plain `.editor-code-header > select` is one and
+   one, so it loses, and the picker goes on floating invisibly over line one
+   while the stylesheet looks correct. Measured in the running editor after
+   exactly that happened. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select {
+  position: static;
+  opacity: 1;
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8b9c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2xs) center;
+  background-size: 10px 10px;
+  padding: 1px var(--space-md) 1px var(--space-xs);
+  color: var(--color-code-label);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+  outline: none;
+  transition: none;
+}
+
+/* Hover and focus belong to the control, never to the block. Reacting to the
+   block's hover is what made this look like it was flashing at you — and the
+   `:hover` here has to beat BlockNote's own block-level rule, which is why it
+   repeats the block selector. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select:hover,
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select:focus-visible {
+  opacity: 1;
+  color: var(--color-code-text);
+  border-color: var(--color-code-border);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* The dropdown's list is drawn by the OS on its own background, so its options
+   need a colour that works there rather than the block's — BlockNote sets
+   `color: #000`, which on a dark Windows theme is black on near-black.
+   `inherit` hands the decision back to the platform. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select > option {
+  color: inherit;
+}
+
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: 1px var(--space-xs);
+  color: var(--color-code-label);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+/* All three states ship in the DOM and one is shown, so a click changes a
+   single attribute instead of rewriting the button's contents — see
+   `buildCopyButton` for why that matters inside a ProseMirror node view. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy > [data-when] {
+  display: none;
+}
+
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy > svg[data-when] {
+  width: 12px;
+  height: 12px;
+}
+
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="idle"] > [data-when="idle"],
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="copied"] > [data-when="copied"],
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="failed"] > [data-when="failed"] {
+  display: inline-block;
+}
+
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy:hover,
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy:focus-visible {
+  color: var(--color-code-text);
+  border-color: var(--color-code-border);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Held for a moment after a copy, then dropped. The accent rather than the
+   plain text colour, because "it worked" has to be readable from the corner of
+   your eye — a label changing from Copy to Copied is not, on a strip this
+   small. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="copied"],
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="copied"]:hover {
+  color: var(--color-accent-light);
+  border-color: transparent;
+  background-color: transparent;
 }
 
 .editor-shell .bn-block-content[data-content-type="codeBlock"] > pre {
-  /* Room at the top for the language picker to sit in its own strip rather
-     than on top of the first line of code. */
-  padding: var(--space-2xl) var(--space-xl) var(--space-xl);
+  margin: 0;
+  padding: var(--space-xl);
+  width: 100%;
   min-width: 0;
+  tab-size: 2;
   font-family: var(--font-mono);
   font-size: calc(var(--fs-content) * 0.875);
   line-height: 1.55;
@@ -603,39 +738,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   overflow-x: auto;
-}
-
-/* The language picker. BlockNote parks it top-left at `opacity: 0` until the
-   block is hovered, which puts it exactly where the first line of code starts
-   and makes it invisible until you happen to be over it. Moved to the right,
-   given a resting opacity so it can be seen without hunting for it, and given
-   the mono face so it reads as part of the block. */
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > div > select {
-  top: var(--space-sm);
-  left: auto;
-  right: var(--space-md);
-  opacity: 0.65;
-  color: var(--color-code-label);
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
-  letter-spacing: 0.02em;
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-2xs);
-}
-
-.editor-shell .bn-block-content[data-content-type="codeBlock"]:hover > div > select,
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > div > select:focus {
-  opacity: 1;
-  color: var(--color-code-text);
-  background-color: var(--color-code-border);
-}
-
-/* The dropdown's own list is drawn by the OS, on its own background — so its
-   options need a colour that works there rather than the block's. BlockNote
-   sets `color: #000` for this; on a dark Windows theme that's black on
-   near-black. `inherit` hands it back to the platform. */
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > div > select > option {
-  color: inherit;
 }
 
 .editor-mention {
