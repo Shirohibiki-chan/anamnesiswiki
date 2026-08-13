@@ -1751,3 +1751,73 @@ DOM and doesn't composite into a screenshot. What's verified is that the only
 two properties capable of reaching it hold the right values.
 
 Lint, typecheck and 925 tests green. No test covers this — it's CSS.
+
+## Unknown code-block languages, and two questions closed — 2026-08-13
+
+Found by reading her actual running app for the first time (`pnpm tauri:inspect`,
+added the same day), then by grepping her project folders on disk.
+
+### The import bug never cost her anything
+
+`Valeraverse.lk` contains **zero** code blocks. Until 2026-08-12 importing one
+dropped its text entirely, so the open question was whether pages in her world
+were sitting there missing content. They aren't, there's nothing to re-import,
+and the plan line is gone. The only code blocks anywhere in her projects are two
+she made while testing the feature on 2026-08-12.
+
+### ``` already worked, and the plan said otherwise
+
+The plan recorded that `/code` was the only way to reach a code block. That was
+wrong: BlockNote ships a ``` input rule, it has always been active here, and it
+is precisely the door she named when she asked for the feature. She used it on
+day one without being told. The discoverability item survives in a much smaller
+form — whether someone who doesn't already know markdown would find either door
+— which is a question about every block, not this one.
+
+### An unknown language showed nothing at all
+
+One of her two test blocks is saved with a language of `` gdfgfd``` ``. The
+picker rendered it with `selectedIndex === -1`: the corner of the block simply
+empty, no name, no fallback.
+
+It's reachable by typing rather than only by a bad file. Upstream's rule is
+`find: /^```(.*?)\s$/` with `props: { language: Mn(e, n) ?? n }` — the lookup
+against `supportedLanguages` falls back to **the raw typed string** when it
+misses, so ```` ```wjatever ```` stores `wjatever`. She'd typed the closing
+fence too, which is why hers carries the backticks.
+
+Fixed by showing plain text when the picker has no entry for the stored value.
+That's honest rather than cosmetic: an unknown language gets no highlighting, so
+the block already *is* plain text on screen and the label now agrees. It
+deliberately does **not** rewrite the stored language — editing the document
+from inside a render pass would mark the page dirty and queue a save for a page
+she only opened to read. LK export already normalises the same value on its way
+out, so nothing downstream sees the stray word either.
+
+Upstream's typing shortcut is untouched. Replacing an input rule is the category
+of change that produced three bugs in one PR on 2026-08-13, and the payoff here
+didn't justify it.
+
+### Verification
+
+Real editor, five blocks: the stray language, a real one, a bare fence, plain
+text, and JSON.
+
+| stored language | picker shows | highlight spans |
+| --- | --- | --- |
+| `` gdfgfd``` `` | Plain text | 0 |
+| `lua` | Lua | 4 |
+| `` (empty) `` | Plain text | 0 |
+| `text` (with `{{char}}` and `**asterisks**`) | Plain text | 0 |
+| `json` | JSON | 6 |
+
+The empty case needed no code — BlockNote resolves it to the default before the
+wrapper sees it, which is what makes a bare ``` behave correctly.
+
+Then the case that would actually bite: switching the stray-language block to
+JSON through the picker. It took the change, re-rendered as JSON, and kept both
+the header and the Copy button — so setting `.value` from the render pass
+doesn't break the listener upstream attached to that element.
+
+Lint, typecheck and 925 tests green. No test covers this; it's a DOM state the
+suite has no jsdom to reach.

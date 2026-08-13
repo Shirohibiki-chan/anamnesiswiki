@@ -5,6 +5,11 @@
 ### Fixes
 
 - **The language menu opens dark instead of white.** Picking a language meant a white list flashing up over a dark page, and the names on it were a muted grey that was hard to read at that size. The list is dark now, the names are the same colour as the code, and the language the block is currently set to is picked out in the accent colour so it's findable in a list of fifteen.
+- **A code block no longer shows a blank space where its language should be.** Starting a block by typing three backticks lets you name the language after them — but any word that isn't one of the fifteen was kept as-is, and the corner of the block ended up empty. Those blocks say **Plain text** now, which is what they were already behaving as. Picking a real language from the list still works on them.
+
+### Worth knowing
+
+- **Three backticks and a space makes a code block**, the same as typing `/code`. It's always worked; nothing said so.
 
 ## 2026-08-13 — code blocks get a header, and a copy button
 
