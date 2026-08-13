@@ -401,6 +401,22 @@ is below.
 - **`window.confirm()` silently no-ops in Tauri's webview** — it doesn't block, so
   Delete once deleted with no prompt at all. Use `confirmDestructive()`.
 
+- **`pnpm tauri:inspect` opens a port that reads the running window, and it must
+  never reach a build she can install.** It's the answer to a long-standing
+  problem — a browser has no disk so it stops at the project picker, and a
+  hand-built copy of a component is a drawing of the thing, which cost three
+  bugs in one PR on 2026-08-13. The real window answers questions directly:
+  proven 2026-08-14 by reading her live tree and active theme. **The safety
+  argument is entirely structural** — `scripts/tauri-dev-inspect.mjs` sets an
+  environment variable for one child process and runs `tauri dev`; there is no
+  path from it to `tauri build`, and nothing is written to any config file.
+  Don't "simplify" it into `tauri.conf.json`, a `.env`, or a Rust-side default,
+  and don't reach for it from CI. This is the mirror image of the rest of the
+  Policy Boundary: nothing is sent anywhere, but anything already on the machine
+  could drive the app, which is why it lives behind a command she chooses to
+  type. Read-only use is the norm; it can edit pages and trigger saves as easily
+  as measure things.
+
 - **The HTTP plugin is scoped to `https://assets.legendkeeper.com/*` only.** This
   is the single authorised network call in the whole app (LK import images, on
   explicit user confirmation). Widening that scope crosses the policy boundary in

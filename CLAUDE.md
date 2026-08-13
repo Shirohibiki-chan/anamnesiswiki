@@ -50,6 +50,7 @@ Updating these is part of completing a change, not a follow-up. Show them in the
 pnpm install
 pnpm dev             # Vite only, browser-only — fast UI iteration, no Rust rebuild
 pnpm tauri dev       # full desktop app, hot reload
+pnpm tauri:inspect   # same, plus a local port to read the running window from — dev only
 pnpm build           # Vite production build → dist/
 pnpm tauri build     # installers → src-tauri/target/release/bundle/
 pnpm lint            # ESLint

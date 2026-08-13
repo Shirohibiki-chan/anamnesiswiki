@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "tauri:inspect": "node scripts/tauri-dev-inspect.mjs",
     "lint": "eslint .",
     "test": "vitest run"
   },
