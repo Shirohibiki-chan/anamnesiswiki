@@ -229,6 +229,37 @@ That's the whole of what's left. The question this section used to carry — whe
 
 ---
 
+**A picture placed in a page's body is dropped on import**
+
+Measured 2026-08-13 across both of her LK exports. LK writes a picture in the text as `mediaSingle` wrapping a `media` node, and `lk-import.ts`'s block switch has a case for neither — so it falls to `default`, which recurses into children the block-level switch then discards. The picture doesn't arrive broken; it doesn't arrive.
+
+Only *body* pictures. A page's portrait and banner come through a different path entirely (`properties[].data.url` and `banner.url`), and those work.
+
+| export | pictures in page bodies | portraits | banners |
+| --- | --- | --- | --- |
+| `Valeraverse.lk` | **0** | 33 | 20 |
+| `test.lk` (her second account) | **28** | 9 | 3 |
+
+**So her main world is unaffected** — it has no body pictures at all — and the second one would lose 28. That's why this is queued rather than urgent, but it's the largest known import gap and it's silent, which is the worst property an import bug can have.
+
+The work: a `mediaSingle`/`media` case producing BlockNote's image block, and its URL added to `pendingImages` so the picture is downloaded like a portrait is. `mediaSingle` also carries `attrs.width` (a percentage — 38.6905 in one of hers) and `attrs.layout`, which BlockNote's image block can express and which nothing currently reads.
+
+---
+
+**The picture library — what LK has that we don't**
+
+Raised by the user 2026-08-13 after comparing directly against LK.
+
+**Nested folders.** Ours are flat labels; LK's nest, with a breadcrumb (`Media / asdasdasda / hjhgkhkjh`). Her words for the flat version were that it feels cheap. `asset-folders.ts` stores a folder as an id and a name and a picture as a folder id, so nesting is a parent id on the folder plus a breadcrumb — the pictures themselves don't move, since a folder is a label and not a location.
+
+**A full-window library manager**, like LK's Project Settings → Assets: a filter box, a grid/list toggle, breadcrumbs, and folders as tiles in the same grid as the pictures. The 180px sidebar can't be this and shouldn't try. The picker dialog is the closest thing we already have and is where this probably grows from.
+
+**What we can't take from LK, and it's settled:** the export contains **no asset library at all**. Both of her accounts, checked field by field — no filenames, no folder names, no media section; a picture exists only as a bare CDN URL inside a page, with `attrs.id` empty. So imported pictures can never arrive named or filed, and the names she gives them here are hers alone. See `docs/lk-format.md`.
+
+**Folder shape in the sidebar** is the smaller open question: chips meant to flow and wrap take a row each at 180px, because a name plus a count is wider than half the column. Options offered — squat tiles pinned to the top (recommended), LK's full-size tiles, or compact list rows.
+
+---
+
 ## Queued Adjustments
 
 - **Find out what our own copy and paste actually does, before building any
