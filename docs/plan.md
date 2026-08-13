@@ -219,6 +219,23 @@ Raised half as a joke and it shouldn't be taken as one: a competing tool's AO3 e
 
 ---
 
+**Code blocks — somewhere to keep a prompt exactly as written**
+
+Asked for by the user 2026-08-12. **Half of this already ships — read the next paragraph before building anything.**
+
+What she asked for: a block where backticks work and the markdown *shows* rather than turning into formatting. The content she has in mind is bot prompts, character-card guts, intros and lorebook JSON — text whose job is to be pasted somewhere else and act on it. A `**` that silently becomes bold on the way in doesn't look wrong, it makes the text stop working, and she won't find out until the bot behaves oddly.
+
+**The block already exists and is reachable today.** BlockNote ships a code block in `defaultBlockSpecs`, `services/editor-blocks/editor-schema.ts` spreads that whole, and it's one of the default slash-menu items — typing `/code` inserts one right now. Nothing has to be built for the basic case. What's missing is everything around it:
+
+1. **It has never been styled.** There is not one code-related rule in any of this repo's stylesheets, so a code block renders in BlockNote's stock look and ignores the theme entirely — wrong background, wrong border, wrong everything, in a page whose colours she chose. This is the piece that makes it feel unfinished, and it's also the cheapest: `--font-mono` already exists in `index.css`, and the bundled font library already carries eight monospace faces, so nothing new has to be shipped to do it.
+2. **Nobody can find it.** It's discoverable only by knowing to type `/code` — the same failure the Assets tab's add button had, where the only door into a feature was one nobody would try. Whatever the fix is, it isn't "she'll remember the slash command".
+3. **No syntax highlighting.** BlockNote keeps its highlighter in a separate package (`@blocknote/code-block`, built on Shiki) which isn't installed, so the language dropdown on the block currently changes a label and nothing else. Check what it costs to bundle before adding it — Shiki carries grammars and themes, and this app must work with no internet, so nothing may be fetched at runtime. Worth noting where it actually pays: highlighting does nothing for a prompt, which has no syntax, and quite a lot for **lorebook JSON**, which does. If the bundle is fat, a JSON-only build is a legitimate answer.
+4. **A code block cannot survive a trip through LK, in either direction.** `lk-import.ts` has no `codeBlock` case, so one falls to the default branch, gets counted as an unknown block, and then **loses its text outright** — the default recurses into the node's children, and a code block's children are `text` nodes, which the block-level switch discards on purpose. Not mangled formatting: an empty space where the code was. `lk-export.ts` has no case either. Both need one, and `docs/lk-format.md` needs the mapping. Worth checking whether her existing world has any before this is scheduled, because if it does this is data loss on import rather than a missing feature.
+
+**This is the fidelity entry above, arriving from the other end.** Everywhere else in the app "keep the formatting" is the goal; in a code block the goal is *keep the characters and apply no formatting at all*, which is the same promise stated backwards. It's also the strictest test of the round trip: if a prompt can go in, sit there, and come back out byte for byte, the ordinary paste path is very likely fine too.
+
+---
+
 ## Queued Adjustments
 
 - **Find out what our own copy and paste actually does, before building any
