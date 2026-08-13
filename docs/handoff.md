@@ -790,6 +790,20 @@ is below.
   block.** Keying them on the block's `:hover` is what made the language picker
   read as a grey smear appearing over her writing whenever the pointer went
   past — reported from use, 2026-08-12.
+- **The app sets `color-scheme` nowhere, so every native control draws from the
+  light palette.** That default is what made the language picker's list open
+  white on a black page — a popup is drawn outside the document, so no amount of
+  styling in `page.css` reaches it, and `color-scheme` is one of only two things
+  that does. The other is `color`/`background-color` on the `<option>`s
+  themselves, and both are needed: `color-scheme` supplies defaults, but
+  BlockNote's `color: #000` on the picker inherits straight into the list and
+  wins. Reported from use, 2026-08-14. **Anything else native — a date input, a
+  scrollbar, another `<select>` — will land in the same hole.** The declaration
+  sits on the code block's picker rather than on `:root` because that block is
+  the only part of the app that's dark on every theme; hoisting it would be a
+  claim about the light themes that this file can't check. **A popup cannot be
+  inspected**, so the fix was confirmed by reading the applied values, not by
+  looking at the menu.
 - **Nothing in the highlighter touches the network, and it has to stay that
   way.** Shiki *can* fetch grammars from a CDN; this path declares every one as
   a static `import()` that Vite turns into a local chunk. A change that

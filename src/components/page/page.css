@@ -661,12 +661,38 @@
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* The dropdown's list is drawn by the OS on its own background, so its options
-   need a colour that works there rather than the block's — BlockNote sets
-   `color: #000`, which on a dark Windows theme is black on near-black.
-   `inherit` hands the decision back to the platform. */
+/* The open menu. It's a native popup drawn outside the page, so almost nothing
+   in this file reaches it — and the two things that do had to be found the hard
+   way, because a popup can't be inspected.
+
+   `color-scheme` is the one that matters. It's what tells the engine which set
+   of built-in colours to draw native UI with, and nothing in the app had ever
+   set it, so the default of `light` stood: a white list, on a black page, in a
+   dark app. It's declared here rather than on `:root` because the block is the
+   only part of the app that's dark on *every* theme — hoisting it would be a
+   guess about the light themes that isn't ours to make from here.
+
+   The options then need both colours stated. `color-scheme` only supplies
+   defaults, and the `color: #000` BlockNote sets on the picker was being
+   inherited straight into the list — near-black text, which is what turned the
+   names to mush. Inheriting was the old fix and it was the wrong one: it just
+   handed the list whatever the *closed* control was wearing, which is the muted
+   label grey, deliberately quiet and unreadable at full size. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select {
+  color-scheme: dark;
+}
+
 .editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select > option {
-  color: inherit;
+  background-color: var(--color-code-menu-bg);
+  color: var(--color-code-text);
+}
+
+/* The one that's already open. The platform draws its own highlight over the
+   hovered row, but the row you're *on* gets no marker of its own once the
+   options are painted, so the block's language stops being findable in a list
+   of fifteen. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select > option:checked {
+  color: var(--color-accent-light);
 }
 
 .editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy {

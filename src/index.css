@@ -339,6 +339,12 @@
   --color-code-border: #3d3d4f;
   --color-code-text: #dfdfe8;
   --color-code-label: #8b8b9c;
+  /* The language menu's own fill. The list is a native popup drawn *outside* the
+     page, so it can't be `--color-code-bg` plus a translucent lift the way an
+     in-page menu would be — there's nothing behind it to lift off. A flat value
+     a few steps above the block, so the list reads as sitting over the code
+     rather than as a hole cut in it. */
+  --color-code-menu-bg: #16161f;
 
   --color-palette-teal: #5eead4;
   --color-palette-sky: #7dd3fc;

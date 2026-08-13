@@ -1700,3 +1700,54 @@ CSS measured in a DOM replica carrying BlockNote's real rules alongside ours, to
 confirm each override actually wins and to get the contrast numbers above.
 Screenshots still don't composite in this environment, so nothing here was
 eyeballed. **Not run in the desktop app.**
+
+## The language menu — 2026-08-14, from her testing
+
+She opened the picker and got a **white list on a black page**, with the
+language names in a muted grey that was hard to read at 11px.
+
+Both from the same root: **the app has never set `color-scheme` anywhere.** Its
+initial value is `normal`, which for a native control means the light palette,
+so every popup this app has ever opened would have drawn light — nothing had
+opened one before. `<select>`'s list is painted by the engine outside the
+document, so none of the ~15 rules `page.css` already had for that control could
+reach it. Two things can: `color-scheme`, and `color`/`background-color` set on
+the `<option>`s.
+
+Both were needed. `color-scheme: dark` alone still left grey text, because the
+previous rule was `option { color: inherit }` — written on the theory that
+inheriting hands the decision back to the platform. It doesn't; it hands the
+list whatever the *closed* control is wearing, and the closed control is
+deliberately quiet at `--color-code-label`. That's the grey she saw. What it was
+protecting against was real, though: BlockNote sets `color: #000` on the picker,
+which inherits into the list and is unreadable on any dark background. Stating
+both colours outright is the only thing that answers both.
+
+`color-scheme` is declared on the picker rather than on `:root`. Hoisting it
+would be right for the six dark themes and wrong for Daylight, and getting it
+right globally means auditing every native control the app has — a separate
+piece of work. The code block is the one region that is dark on every theme, so
+the narrow declaration is true without qualification.
+
+Added `--color-code-menu-bg: #16161f`. A flat literal and not
+`--color-code-bg` plus a translucent lift, because the popup floats outside the
+page and has nothing behind it to lift off. A few steps above the block so the
+list reads as sitting over the code rather than as a hole in it.
+`option:checked` also takes the accent, since the platform's highlight follows
+the pointer and the row you're actually on otherwise has no marker in a list of
+fifteen.
+
+### Verification
+
+Real editor again, `probe.html` + `src/probe.tsx` on the running dev server.
+Confirmed applied: `color-scheme: dark` on the picker, `rgb(22, 22, 31)` and
+`rgb(223, 223, 232)` on the options, the accent on the checked one, `:root`
+still `normal` so nothing outside the block moved. The header, the Copy button
+and the structure all re-checked in the same pass, and the plain-text block
+still renders **zero** highlight spans against JSON's 14.
+
+**The menu itself was not looked at, and can't be.** A native popup isn't in the
+DOM and doesn't composite into a screenshot. What's verified is that the only
+two properties capable of reaching it hold the right values.
+
+Lint, typecheck and 925 tests green. No test covers this — it's CSS.
