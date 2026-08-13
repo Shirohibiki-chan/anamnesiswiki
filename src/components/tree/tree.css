@@ -1155,13 +1155,6 @@ button.tree-path-crumb:hover {
   justify-content: center;
 }
 
-/* `flex: 1` on the name pushed the two buttons to the panel's right edge,
-   which is the one thing a centred row can't have. It shrinks instead, so a
-   long folder name still ellipsises rather than shoving them off. */
-.tree-assets .asset-folders-actions-name {
-  flex: 0 1 auto;
-}
-
 /* Sized like a chip so the strip doesn't jump when the box replaces one. */
 .asset-folder-name {
   min-width: 0;
@@ -1180,16 +1173,6 @@ button.tree-path-crumb:hover {
   align-items: center;
   gap: var(--space-xs);
   margin-top: var(--space-xs);
-}
-
-.asset-folders-actions-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fs-2xs);
-  color: var(--color-text-muted);
 }
 
 /* A picture that wouldn't be added — the wrong kind of file, or too big. Sits

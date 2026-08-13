@@ -120,12 +120,18 @@ export function AssetFolderStrip({
 
       {/* Rename and delete live here rather than on every chip. A chip is a
           name and a number in a 180px column; three controls inside one would
-          leave no room for the name, which is the part you're reading. Showing
-          them only for the folder you've opened is also the answer to "which
-          one does this delete" without a confirmation that names it. */}
+          leave no room for the name, which is the part you're reading.
+
+          These used to carry the folder's name alongside them, on the reasoning
+          that it answered "which one does this delete". It didn't — it printed
+          the selected folder's name directly beneath the selected chip bearing
+          that same name, and with several folders called "New folder (4)" the
+          honest reading was that the folder was in the list twice. Reported
+          2026-08-13. The highlighted chip is what says which folder this is;
+          the buttons' own tooltips name it for anyone who wants it spelled
+          out. */}
       {selected && (
         <div className="asset-folders-actions">
-          <span className="asset-folders-actions-name">{selected.name}</span>
           <button
             type="button"
             className="ui-icon-btn ui-icon-btn-sm"
