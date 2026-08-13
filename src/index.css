@@ -307,6 +307,39 @@
   --color-callout-secret-bg: rgba(167, 139, 250, 0.12);
   --color-callout-secret-text: #ede9fe;
 
+  /* The code block. Flat literals rather than a mix of the surface tokens, and
+     **dark in every theme** — the same exception `--color-scrim-*` above makes,
+     for a related reason.
+
+     A code block isn't a surface, it's a terminal. What's written on it is
+     coloured by Shiki's `github-dark` palette, which BlockNote picks rather
+     than us: there's no hook to hand it a theme, so the syntax colours are
+     fixed whatever the rest of the app is wearing. Letting the box follow a
+     light theme would put `github-dark`'s mid-blues and reds on near-white and
+     make JSON unreadable in exactly the case highlighting was added for.
+
+     Darker than `--color-bg` rather than lighter, so the block reads as
+     recessed into the page instead of floating above it.
+
+     **The border is what actually draws the box, and that's measured, not a
+     preference.** On the dark themes there is no room left below the page
+     colour: `#08080d` against Midnight's `#0f0f14` is a contrast ratio of 1.05,
+     and even pure black only reaches 1.10 — invisible either way, which is also
+     why BlockNote's own `#161616` fill (1.06) reads as nothing here. So the
+     fill's job is only to not be *lighter*, and the edge does the separating.
+     `#3d3d4f` scores 1.80 against the page: a shade stronger than
+     `--color-border-strong` (1.66, the app's loudest border elsewhere) because
+     this is the one block that's meant to interrupt the writing, and not more
+     than that because it still has to belong to the same set of surfaces.
+
+     The other thing that makes it read as a block is the syntax colour, which
+     lands between 10 and 13 against this fill — the highlighting isn't only a
+     convenience, it's half of what tells you where the block is. */
+  --color-code-bg: #08080d;
+  --color-code-border: #3d3d4f;
+  --color-code-text: #dfdfe8;
+  --color-code-label: #8b8b9c;
+
   --color-palette-teal: #5eead4;
   --color-palette-sky: #7dd3fc;
   --color-palette-purple: #c4b5fd;

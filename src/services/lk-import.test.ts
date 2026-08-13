@@ -332,6 +332,41 @@ describe("buildImportPlan", () => {
       expect((plan.nodes[0].tabs[0].content as Record<string, unknown>[])[0]).toEqual({ type: "divider" });
     });
 
+    // Regression: before a codeBlock case existed, one fell to the default
+    // branch, which recurses into children — and a code block's children are
+    // bare text nodes, which the block-level switch drops. The code arrived
+    // empty rather than unformatted, which is data loss on import.
+    it("keeps a code block's text, newlines and all", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "Page", "A", {
+            documents: [
+              doc("d1", "Main", "A", [
+                { type: "codeBlock", attrs: { language: "json" }, content: [text('{\n  "name": "Valera"\n}')] },
+              ]),
+            ],
+          }),
+        ]),
+      );
+      expect((plan.nodes[0].tabs[0].content as Record<string, unknown>[])[0]).toEqual({
+        type: "codeBlock",
+        props: { language: "json" },
+        content: [{ type: "text", text: '{\n  "name": "Valera"\n}', styles: {} }],
+      });
+    });
+
+    it("falls back to plain text for a language the app doesn't offer", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "Page", "A", {
+            documents: [doc("d1", "Main", "A", [{ type: "codeBlock", attrs: { language: "brainfuck" }, content: [text("+++")] }])],
+          }),
+        ]),
+      );
+      const block = (plan.nodes[0].tabs[0].content as Record<string, unknown>[])[0];
+      expect(block).toMatchObject({ type: "codeBlock", props: { language: "text" } });
+    });
+
     it("converts nested bullet lists into bulletListItem blocks with children", () => {
       const plan = buildImportPlan(
         withRoot([

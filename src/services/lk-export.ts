@@ -6,6 +6,7 @@
 // No network access of any kind lives in this file. An export is a pure
 // conversion plus one local file write — see docs/handoff.md on why images
 // therefore can't travel inside a `.lk` at all.
+import { normalizeCodeLanguage } from "../constants/code-languages";
 import { COLOR_PALETTE } from "../constants/palette";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project, type Tab } from "../constants/schema";
 import type { RenderableProperty } from "./property-service";
@@ -133,6 +134,27 @@ function pushTextRun(out: LkNode[], value: string, marks: LkMark[] | undefined):
   });
 }
 
+/**
+ * A block's content flattened to characters, for the blocks that hold text
+ * rather than formatting — the code block, so far.
+ *
+ * Newlines are kept as newlines rather than split into `hardBreak` nodes the
+ * way `pushTextRun` does above, and the difference is real: ProseMirror forbids
+ * a literal newline in an ordinary text node, which is what that split exists
+ * to work around, but a code block's text node is exactly where newlines are
+ * allowed. Splitting them here would turn one code block into a stack of line
+ * fragments with break nodes wedged between them.
+ */
+function plainTextOf(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  let text = "";
+  for (const raw of content as InlineRun[]) {
+    if (raw && typeof raw === "object" && typeof raw.text === "string") text += raw.text;
+  }
+  return text;
+}
+
 function convertInline(content: unknown, idMap: Map<string, string>): LkNode[] {
   const out: LkNode[] = [];
   if (!Array.isArray(content)) return out;
@@ -226,6 +248,24 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
     }
     case "divider":
       return [{ type: "rule" }];
+    case "codeBlock": {
+      // The matching half of import's codeBlock case. `plainTextOf` rather than
+      // `inline()` because a code block's content is plain by definition and LK
+      // wants one text run, not a list of styled ones.
+      //
+      // An empty code block still exports as a code block with no content
+      // rather than being skipped: it's a block she deliberately made, and a
+      // round trip that quietly loses empty ones is a round trip that changes
+      // the document.
+      const text = plainTextOf(block.content);
+      return [
+        {
+          type: "codeBlock",
+          attrs: { language: normalizeCodeLanguage(block.props?.language) },
+          ...(text ? { content: [{ type: "text", text }] } : {}),
+        },
+      ];
+    }
     case "quote":
       // Import maps LK's plain blockquote here and its panel type="note" to the
       // Quote *callout*; this is the matching half of that split.

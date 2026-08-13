@@ -250,6 +250,20 @@ describe("buildExportFile", () => {
       expect(out[1]).toEqual({ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "Said so." }] }] });
     });
 
+    // The newline is the point. Everywhere else in this file a "\n" is split
+    // into hardBreak nodes, because ProseMirror forbids a literal newline in an
+    // ordinary text node — but a code block's text node is the one place it's
+    // allowed, and splitting there would shatter one block into line fragments.
+    it("converts a code block to an LK code block, keeping its newlines whole", () => {
+      const out = blocksOf([
+        { type: "codeBlock", props: { language: "json" }, content: [{ type: "text", text: '{\n  "a": 1\n}', styles: {} }] },
+        { type: "codeBlock", props: { language: "text" }, content: [] },
+      ]);
+      expect(out[0]).toEqual({ type: "codeBlock", attrs: { language: "json" }, content: [{ type: "text", text: '{\n  "a": 1\n}' }] });
+      // An empty one still exports, rather than vanishing from the document.
+      expect(out[1]).toEqual({ type: "codeBlock", attrs: { language: "text" } });
+    });
+
     it("maps the info and quote callouts back to LK panels, and secret to LK's own Secret block", () => {
       const out = blocksOf([
         { type: "calloutInfo", content: [{ type: "text", text: "note", styles: {} }] },

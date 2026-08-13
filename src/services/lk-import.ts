@@ -6,6 +6,7 @@
 // docs/handoff.md) is isolated in fetchLkImage so it's easy to find and
 // audit against the app's normal zero-network-calls policy.
 import { fetch as httpFetch } from "@tauri-apps/plugin-http";
+import { normalizeCodeLanguage } from "../constants/code-languages";
 import { COLOR_PALETTE } from "../constants/palette";
 import { createTab, FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
 import { getPropertySchema, type TemplateKey } from "./template-registry";
@@ -281,6 +282,24 @@ function convertList(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
   return (node.content ?? []).filter((c) => c.type === "listItem").map((item) => convertListItem(item, itemType, ctx));
 }
 
+/**
+ * Every character a node holds, marks ignored, hard breaks as newlines.
+ *
+ * For blocks whose content is text rather than formatting — a code block is the
+ * only one so far. `convertInline` is the wrong tool there: it produces styled
+ * runs, and a code block's content is plain by definition, so bold inside one
+ * would be silently dropped a layer later rather than here where it's obvious.
+ */
+function plainTextOf(node: LkNode): string {
+  let text = "";
+  for (const child of node.content ?? []) {
+    if (child.type === "text" && typeof child.text === "string") text += child.text;
+    else if (child.type === "hardBreak") text += "\n";
+    else text += plainTextOf(child);
+  }
+  return text;
+}
+
 const PANEL_TYPE_TO_CALLOUT: Record<string, string> = {
   info: "calloutInfo",
   note: "calloutQuote",
@@ -299,6 +318,25 @@ function convertBlock(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
     }
     case "rule":
       return [{ type: "divider" }];
+    case "codeBlock": {
+      // A direct match: BlockNote's code block is in our schema, so this is
+      // lossless apart from a language we don't offer.
+      //
+      // **This case is a fix, not an addition.** Without it a code block fell
+      // to `default`, which recurses into the node's children — and a code
+      // block's children are bare `text` nodes, which the switch below drops as
+      // inline content appearing where a block should be. The result wasn't
+      // code arriving unformatted; it was the code arriving *empty*. Anything
+      // added to this switch that holds text directly rather than in
+      // paragraphs has the same trap waiting for it.
+      return [
+        {
+          type: "codeBlock",
+          props: { language: normalizeCodeLanguage(node.attrs?.language) },
+          content: [{ type: "text", text: plainTextOf(node), styles: {} }],
+        },
+      ];
+    }
     case "bulletList":
     case "orderedList":
       return convertList(node, ctx);
