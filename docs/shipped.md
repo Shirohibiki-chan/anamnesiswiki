@@ -1508,3 +1508,103 @@ LK-style hover buttons over a picture in a page, and its block dots menu — bot
 in Queued Adjustments. The hover buttons mean rendering into BlockNote's own
 block markup, and half that menu (Layout, Link to page, Insert row below) is
 really Phase 18 sidebar-block work.
+
+---
+
+# Code blocks — 2026-08-12
+
+Asked for as "somewhere to put prompts and bot guts with the markdown showing".
+The first useful finding was that **the block already existed** — BlockNote
+ships one in `defaultBlockSpecs`, which `editor-schema.ts` has always spread
+whole, and it's a default slash-menu item. `/code` inserted one in every build
+this app has ever had. Nobody knew, because nothing pointed at it and it looked
+like it had fallen in from another program.
+
+## What was wrong with it
+
+Four things, measured before anything was written:
+
+1. **Never styled.** BlockNote's own stylesheet paints it `#161616` with white
+   text, an 8px radius, no border, and a language picker at `opacity: 0` in the
+   top-*left* corner. All literals inside its CSS, so no theme could reach them.
+2. **No highlighting at all.** The highlighter lives in a separate package that
+   wasn't installed. Without it there is no language dropdown either — the
+   picker only renders when `supportedLanguages` is set, so the block had no
+   visible controls whatsoever.
+3. **LK import lost the code.** Not mangled — *lost*. With no `codeBlock` case
+   it fell to `default`, which recurses into a node's children; a code block's
+   children are bare `text` nodes, which the block-level switch drops as inline
+   content in a block position. Import counted an unknown block and produced
+   nothing. `lk-export.ts` had no case either.
+4. **Unfindable.** Left open; see `docs/plan.md`.
+
+## The bundle, which drove the design
+
+Taking `@blocknote/code-block`'s highlighter whole cost **+4.6 MB** (dist 7.4 MB
+→ 12 MB). Its bundle names all 48 of its languages as `import()` calls, and a
+bundler emits a chunk for each one whether or not anything asks for it — a
+1.0 MB C++ grammar for a worldbuilding wiki, among others.
+
+Rewriting the bundle by hand with only the fifteen languages the dropdown
+offers, and dropping the package entirely, brought that to **+1.0 MB** (dist
+8.4 MB). Two separate savings inside that:
+
+- **The grammars we don't offer**, ~2.8 MB. The fifteen we do offer measure
+  ~0.8 MB together, half of which is JavaScript and TypeScript.
+- **The regex compiler**, 424 KB. `@shikijs/langs-precompiled` grammars have
+  already had their Oniguruma regexes converted, so `createJavaScriptRawEngine`
+  replaces the default engine's compiler with nothing. The two halves must move
+  together — raw engine plus non-precompiled grammars fails at runtime.
+
+Cost of doing it this way: four `@shikijs/*` packages are direct dependencies
+now, pinned to the major BlockNote asks for. Recorded in `handoff.md`.
+
+## The look
+
+Language list cut from 48 to 15, ordered by what this app's writing actually
+holds — plain text first and default, then JSON/JSONC/YAML (the reason
+highlighting was worth adding: lorebook entries and character cards travel as
+JSON), regular expressions (lorebook triggers), Markdown/XML/HTML (prompt
+formats), CSS (this app's own themes are hand-written CSS), then the
+general-purpose ones.
+
+Colours stay dark on every Anamnesis theme. That's not laziness: BlockNote hands
+the highlighter to `prosemirror-highlight` without naming a theme, so
+`github-dark` paints every block regardless, and a light box would put mid-blues
+and reds on near-white.
+
+**The border draws the box, not the fill**, and that was the measurement that
+changed the design. Against Midnight's `#0f0f14` page:
+
+| | contrast vs page |
+|---|---|
+| `#08080d`, the fill shipped | 1.05 |
+| pure black | 1.10 |
+| BlockNote's `#161616` | 1.06 |
+| `#3d3d4f`, the border shipped | 1.80 |
+| `--color-border-strong`, the app's loudest border elsewhere | 1.66 |
+
+There is no "darker" left on a near-black page — the fill's only job is to not
+be lighter. The border went a shade past `--color-border-strong` because this is
+the one block meant to interrupt the writing, and no further because it still
+has to belong to the same set of surfaces. Syntax colour does the rest, landing
+between 10 and 13 against the fill.
+
+Also changed from BlockNote's defaults: the language picker moved to the top
+right at a resting `opacity: 0.65` instead of top-left and invisible; `<pre>`
+switched from `white-space: pre` to `pre-wrap`, so a prompt pasted as one long
+line wraps instead of running off the right edge with the rest unreachable.
+
+## Verification
+
+Lint, typecheck and the full suite green — 914 tests before, **925 after**.
+Eleven new: the LK round trip both ways (including that a code block's newlines
+survive as newlines rather than being split into `hardBreak` nodes, which is the
+opposite of what every other block in that file needs), language normalisation
+and its aliases, and a pair that fail the build if the dropdown and the shipped
+grammars ever disagree.
+
+CSS measured in a DOM replica carrying BlockNote's real rules alongside ours, to
+confirm each override actually wins and to get the contrast numbers above.
+Screenshots still don't composite in this environment, so nothing here was
+eyeballed. **Not run in the desktop app.**

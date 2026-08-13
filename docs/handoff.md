@@ -733,6 +733,37 @@ is below.
 
 ## Editor & templates
 
+- **The code block's grammars are a hand-written list, and the dropdown and the
+  list must not drift apart.** `constants/code-languages.ts` names what the
+  dropdown offers; `services/editor-blocks/code-block.ts` names the Shiki
+  grammar for each one. Offering a language with no grammar renders as plain
+  text with no error anywhere, so `code-block.test.ts` fails the build if the
+  two disagree — don't loosen that test, add the missing half. **The list is
+  hand-written rather than taken from `@blocknote/code-block` because upstream's
+  bundle names all 48 of its languages, and a bundler emits a chunk for every
+  `import()` it can see: taking theirs cost 3.6 MB of grammars, ours costs
+  0.8 MB.** The price is that four `@shikijs/*` packages are now direct
+  dependencies pinned to the major version BlockNote asks for; if those drift,
+  two copies of Shiki get bundled and the saving is gone. Also: the grammars
+  come from `@shikijs/langs-precompiled` and the engine is
+  `createJavaScriptRawEngine`, which only works with precompiled grammars —
+  swapping either half alone fails at runtime, not at build time.
+- **Nothing in the highlighter touches the network, and it has to stay that
+  way.** Shiki *can* fetch grammars from a CDN; this path declares every one as
+  a static `import()` that Vite turns into a local chunk. A change that
+  introduces a remote source crosses the Policy Boundary — see CLAUDE.md.
+- **Plain text is the code block's default because highlighting is skipped
+  entirely for it.** That's BlockNote's behaviour, not ours, and it's what makes
+  the block safe for what she keeps in one: a prompt full of `{{char}}`,
+  asterisks and braces goes through untouched. Don't change the default
+  language to something "more useful".
+- **The code block's colours stay dark on every theme**, like `--color-scrim-*`
+  and for a related reason: BlockNote hands the highlighter to
+  `prosemirror-highlight` without naming a theme, so `github-dark` paints every
+  block whatever the app is wearing. A light box would put mid-blues and reds on
+  near-white. **The border is what draws the box, not the fill** — measured on
+  the dark themes, `#08080d` against the page is a contrast ratio of 1.05 and
+  even pure black only reaches 1.10, so there is no "darker" left to use.
 - **The world's own templates are never in `project-store`'s `nodes`.** They
   live in their own `templates: TemplateLibrary` record (`services/template-
   library.ts`), and that separation is the whole safety argument for the
