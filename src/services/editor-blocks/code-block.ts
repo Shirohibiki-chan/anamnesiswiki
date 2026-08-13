@@ -103,9 +103,9 @@ const baseSpec = createCodeBlockSpec({
 });
 
 /**
- * Our code block: upstream's, with a header bar built around it.
+ * Our code block: upstream's, with a header bar inserted into what it renders.
  *
- * **Only `render` is replaced, and the rest of the spec is passed through
+ * **Only `render` is wrapped, and the rest of the spec is passed through
  * untouched — that's the whole reason this is a wrapper rather than a block of
  * our own.** `extensions` carries the syntax-highlighting plugin and the
  * keyboard shortcuts (Tab indents instead of leaving the block, Enter doesn't
@@ -122,49 +122,76 @@ const baseSpec = createCodeBlockSpec({
  * put a Copy button. A real strip across the top gives the language a place to
  * sit that isn't on top of the text, and gives the block somewhere to grow
  * controls.
+ *
+ * **Two things about wrapping this function, both learned by breaking the app
+ * with them.**
+ *
+ * 1. **It reads `this`.** Upstream's wrapper reaches for
+ *    `this.blockContentDOMAttributes`, `this.renderType`, `this.props` and
+ *    `this.propSchema`, and BlockNote supplies them by calling
+ *    `render.call({...})` rather than as arguments. Calling it plainly makes
+ *    `this` undefined and throws on the first property read — which took the
+ *    whole window blank the moment a page containing a code block was opened.
+ *    So `render` here is a method, not an arrow, and forwards its own `this`.
+ * 2. **`rendered.dom` is not the code, it's the block.** By the time we see it,
+ *    `wrapInBlockStructure` has already put the fragment inside the
+ *    `div.bn-block-content[data-content-type="codeBlock"]` that every one of
+ *    BlockNote's own selectors and parse rules is written against. Returning a
+ *    different element in its place throws all of that away. **Rearrange what's
+ *    inside it; never replace it.**
  */
 type CodeRender = typeof baseSpec.implementation.render;
+type CodeRendered = ReturnType<CodeRender>;
 
-// `render` is declared with a `this` context that only its own implementation
-// object satisfies, so calling it from a spread copy needs the cast. It doesn't
-// read `this` — see the source — and the cast is the narrowest way to say so.
+// The declared `this` type is satisfied only by upstream's own implementation
+// object, so forwarding our caller's `this` needs the cast. `unknown` rather
+// than `any` so nothing here can accidentally read a property off it.
 const baseRender = baseSpec.implementation.render as unknown as (
+  this: unknown,
   block: Parameters<CodeRender>[0],
   editor: Parameters<CodeRender>[1],
-) => ReturnType<CodeRender>;
+) => CodeRendered;
 
 export const codeBlockSpec = {
   ...baseSpec,
   implementation: {
     ...baseSpec.implementation,
-    render: (block: Parameters<CodeRender>[0], editor: Parameters<CodeRender>[1]) => {
-      const rendered = baseRender(block, editor);
-      const source = rendered.dom as unknown as ParentNode;
+    render(this: unknown, block: Parameters<CodeRender>[0], editor: Parameters<CodeRender>[1]): CodeRendered {
+      const rendered = baseRender.call(this, block, editor);
+      const root = rendered.dom as ParentNode;
+      const pre = root.querySelector("pre");
 
-      // Both come out of upstream's fragment by moving rather than copying, so
-      // the language `<select>` keeps the change listener upstream attached to
-      // it and its `destroy` still finds it.
-      const pre = source.querySelector("pre");
-      const select = source.querySelector("select");
+      // If upstream ever stops rendering a `<pre>`, hand back exactly what it
+      // gave us rather than guessing. An unstyled code block is a bad day; a
+      // blank window is a lost afternoon.
+      if (!pre?.parentElement) return rendered;
 
       const header = document.createElement("div");
       header.className = "editor-code-header";
       // ProseMirror must not treat any of this as content. Without it the
       // header becomes a place the caret can land and backspace can delete.
       header.contentEditable = "false";
+
+      // Moved rather than recreated, so the change listener upstream attached
+      // to the `<select>` — and the `destroy` that removes it — still find it.
+      // Its old wrapper goes once it's empty.
+      const select = root.querySelector("select");
+      const oldWrapper = select?.parentElement;
       if (select) header.append(select);
+      if (oldWrapper && oldWrapper !== header) oldWrapper.remove();
 
-      const copy = buildCopyButton(() => pre?.textContent ?? "");
+      const copy = buildCopyButton(() => pre.textContent ?? "");
       header.append(copy.element);
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "editor-code";
-      wrapper.append(header);
-      if (pre) wrapper.append(pre);
+      pre.parentElement.insertBefore(header, pre);
 
       return {
         ...rendered,
-        dom: wrapper,
+        // The Copy button changes its own `data-state` when clicked, and
+        // ProseMirror watches this subtree for mutations. Left unclaimed, that
+        // attribute change marks the node dirty and can cost the block a
+        // redraw mid-click. Anything outside the header falls through to
+        // whatever the answer was before, so the editable half is untouched.
+        ignoreMutation: (mutation) => header.contains(mutation.target) || (rendered.ignoreMutation?.(mutation) ?? false),
         destroy: () => {
           copy.destroy();
           rendered.destroy?.();
@@ -183,8 +210,8 @@ export const HIGHLIGHTED_LANGUAGES = Object.keys(langs);
 const COPY_ICON = '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>';
 const CHECK_ICON = '<path d="M20 6 9 17l-5-5"/>';
 
-function icon(paths: string): string {
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+function icon(paths: string, state: string): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-when="${state}">${paths}</svg>`;
 }
 
 /**
@@ -199,23 +226,30 @@ function icon(paths: string): string {
  * secure context, and the Tauri webview's origin isn't `https:`. It works
  * today; if a webview update ever changes that, this degrades to the old API
  * instead of a button that silently does nothing.
+ *
+ * **All three states are in the DOM from the start and CSS shows one of them.**
+ * The obvious version rewrites `innerHTML` on each click, but this subtree lives
+ * inside a ProseMirror node view that watches for exactly that; one attribute
+ * changing is the smallest thing that can say "it worked" without handing the
+ * editor a pile of added and removed nodes to interpret mid-click.
  */
 function buildCopyButton(getText: () => string): { element: HTMLButtonElement; destroy: () => void } {
   const element = document.createElement("button");
   element.type = "button";
   element.className = "editor-code-copy";
   element.title = "Copy";
-  element.innerHTML = `${icon(COPY_ICON)}<span>Copy</span>`;
+  element.dataset.state = "idle";
+  element.innerHTML =
+    `${icon(COPY_ICON, "idle")}${icon(CHECK_ICON, "copied")}${icon(COPY_ICON, "failed")}` +
+    `<span data-when="idle">Copy</span><span data-when="copied">Copied</span><span data-when="failed">Couldn't copy</span>`;
 
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const confirm = (ok: boolean): void => {
-    element.classList.toggle("is-copied", ok);
-    element.innerHTML = ok ? `${icon(CHECK_ICON)}<span>Copied</span>` : `${icon(COPY_ICON)}<span>Couldn't copy</span>`;
+    element.dataset.state = ok ? "copied" : "failed";
     clearTimeout(timer);
     timer = setTimeout(() => {
-      element.classList.remove("is-copied");
-      element.innerHTML = `${icon(COPY_ICON)}<span>Copy</span>`;
+      element.dataset.state = "idle";
     }, 1600);
   };
 

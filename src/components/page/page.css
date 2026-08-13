@@ -575,39 +575,39 @@
    in the block. That last part is what made it feel broken — a grey smear
    appearing over your writing as the pointer went past.
 
-   `services/editor-blocks/code-block.ts` wraps the block's render so the
-   `<select>` sits in a real header strip with a Copy button instead. That also
-   moves both elements a level deeper than BlockNote's own selectors reach
-   (`>div>select`, `>pre`), so none of its rules apply any more and everything
-   below is styling from scratch rather than an override — except the box
-   itself, which is still `.bn-block-content`.
+   `services/editor-blocks/code-block.ts` wraps the block's render and inserts a
+   header strip in front of the `<pre>`, moving the `<select>` into it and adding
+   a Copy button. It inserts *into* `.bn-block-content` rather than replacing it,
+   so BlockNote's own rules still apply to the same elements and everything here
+   is an override rather than a fresh start.
 
    The colours stay dark on every theme on purpose — see `--color-code-*` in
    index.css for why that's an exception rather than an oversight. */
 .editor-shell .bn-block-content[data-content-type="codeBlock"] {
+  /* `.bn-block-content` is a flex row, and the header is now a sibling of the
+     `<pre>` rather than an absolutely-positioned overlay. Without this they sit
+     side by side. */
+  flex-direction: column;
   background-color: var(--color-code-bg);
   color: var(--color-code-text);
   border: 1px solid var(--color-code-border);
   border-radius: var(--radius-lg);
   margin: var(--space-md) 0;
-}
-
-.editor-code {
-  width: 100%;
-  min-width: 0;
+  padding: 0;
 }
 
 /* The header. Its own faint wash rather than the block's fill, so the strip
-   reads as a bar and not as empty space above the code. The radius is the
-   box's minus its border, which is what keeps the wash from squaring off the
-   top two corners. */
-.editor-code-header {
+   reads as a bar and not as empty space above the code. The radius is the box's
+   minus its border, which is what keeps the wash from squaring off the top two
+   corners.
+
+   Even padding on both sides: the strip's 4px plus each control's own 4px puts
+   the language name and the Copy label the same 8px in from either edge. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  /* Even on both sides: the strip's own 4px plus each control's own 4px puts
-     the language name and the Copy label the same 8px in from either edge. */
   padding: var(--space-2xs) var(--space-xs);
   border-bottom: 1px solid var(--color-code-border);
   border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
@@ -615,12 +615,20 @@
   user-select: none;
 }
 
-/* The language picker. `position: static` and `opacity: 1` are belt and braces:
-   BlockNote's absolute-positioning rule can't reach this deep today, and if a
-   future version's selector does, the picker should stay in the bar rather than
-   fly back over the code. The chevron is drawn here because `appearance: none`
-   removes the platform's own. */
-.editor-code-header > select {
+/* The language picker. `position: static` and `opacity: 1` undo BlockNote's
+   absolute placement and its hidden-until-hovered fade, both of which still
+   reach this element — it's a `<select>` inside a `<div>` inside
+   `.bn-block-content`, which is exactly the shape its selector matches. The
+   chevron is drawn here because `appearance: none` removes the platform's.
+
+   **Every rule in this section carries the full block selector, and that isn't
+   decoration.** BlockNote's is
+   `.bn-block-content[data-content-type=codeBlock]>div>select` — two class-level
+   parts and two elements. A plain `.editor-code-header > select` is one and
+   one, so it loses, and the picker goes on floating invisibly over line one
+   while the stylesheet looks correct. Measured in the running editor after
+   exactly that happened. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select {
   position: static;
   opacity: 1;
   appearance: none;
@@ -638,12 +646,16 @@
   font-size: var(--fs-2xs);
   letter-spacing: 0.02em;
   outline: none;
+  transition: none;
 }
 
-/* Hover and focus are on the control itself, never on the block. Reacting to
-   the block's hover is what made this look like it was flashing at you. */
-.editor-code-header > select:hover,
-.editor-code-header > select:focus-visible {
+/* Hover and focus belong to the control, never to the block. Reacting to the
+   block's hover is what made this look like it was flashing at you — and the
+   `:hover` here has to beat BlockNote's own block-level rule, which is why it
+   repeats the block selector. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select:hover,
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select:focus-visible {
+  opacity: 1;
   color: var(--color-code-text);
   border-color: var(--color-code-border);
   background-color: rgba(255, 255, 255, 0.05);
@@ -653,11 +665,11 @@
    need a colour that works there rather than the block's — BlockNote sets
    `color: #000`, which on a dark Windows theme is black on near-black.
    `inherit` hands the decision back to the platform. */
-.editor-code-header > select > option {
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > select > option {
   color: inherit;
 }
 
-.editor-code-copy {
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
@@ -673,13 +685,26 @@
   transition: color 120ms ease, background-color 120ms ease;
 }
 
-.editor-code-copy > svg {
+/* All three states ship in the DOM and one is shown, so a click changes a
+   single attribute instead of rewriting the button's contents — see
+   `buildCopyButton` for why that matters inside a ProseMirror node view. */
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy > [data-when] {
+  display: none;
+}
+
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy > svg[data-when] {
   width: 12px;
   height: 12px;
 }
 
-.editor-code-copy:hover,
-.editor-code-copy:focus-visible {
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="idle"] > [data-when="idle"],
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="copied"] > [data-when="copied"],
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="failed"] > [data-when="failed"] {
+  display: inline-block;
+}
+
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy:hover,
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy:focus-visible {
   color: var(--color-code-text);
   border-color: var(--color-code-border);
   background-color: rgba(255, 255, 255, 0.05);
@@ -687,18 +712,19 @@
 
 /* Held for a moment after a copy, then dropped. The accent rather than the
    plain text colour, because "it worked" has to be readable from the corner of
-   your eye — the label changing from Copy to Copied is not, on a strip this
+   your eye — a label changing from Copy to Copied is not, on a strip this
    small. */
-.editor-code-copy.is-copied,
-.editor-code-copy.is-copied:hover {
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="copied"],
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > .editor-code-header > .editor-code-copy[data-state="copied"]:hover {
   color: var(--color-accent-light);
   border-color: transparent;
   background-color: transparent;
 }
 
-.editor-code > pre {
+.editor-shell .bn-block-content[data-content-type="codeBlock"] > pre {
   margin: 0;
   padding: var(--space-xl);
+  width: 100%;
   min-width: 0;
   tab-size: 2;
   font-family: var(--font-mono);
