@@ -96,11 +96,164 @@ const themes = {
  */
 const createHighlighter = createBundledHighlighter({ langs, themes, engine: () => createJavaScriptRawEngine() });
 
-export const codeBlockSpec = createCodeBlockSpec({
+const baseSpec = createCodeBlockSpec({
   defaultLanguage: DEFAULT_CODE_LANGUAGE,
   supportedLanguages: CODE_LANGUAGES,
   createHighlighter: () => createHighlighter({ themes: ["github-dark", "github-light"], langs: [] }),
 });
 
+/**
+ * Our code block: upstream's, with a header bar built around it.
+ *
+ * **Only `render` is replaced, and the rest of the spec is passed through
+ * untouched — that's the whole reason this is a wrapper rather than a block of
+ * our own.** `extensions` carries the syntax-highlighting plugin and the
+ * keyboard shortcuts (Tab indents instead of leaving the block, Enter doesn't
+ * escape it), and `implementation` carries the parse rules and the
+ * `toExternalHTML` that decides what lands on the clipboard. Rebuilding this as
+ * a custom block would mean owning all of that, and the highlighting plugin is
+ * keyed on the node type name `codeBlock`, so a differently-named block silently
+ * stops being highlighted at all.
+ *
+ * What the header is for: upstream renders a bare `<select>` absolutely
+ * positioned over the first line of code at `opacity: 0`, revealed at half
+ * opacity when anything in the block is hovered. That reads as a grey smear
+ * appearing over your writing when the mouse passes by, and there's nowhere to
+ * put a Copy button. A real strip across the top gives the language a place to
+ * sit that isn't on top of the text, and gives the block somewhere to grow
+ * controls.
+ */
+type CodeRender = typeof baseSpec.implementation.render;
+
+// `render` is declared with a `this` context that only its own implementation
+// object satisfies, so calling it from a spread copy needs the cast. It doesn't
+// read `this` — see the source — and the cast is the narrowest way to say so.
+const baseRender = baseSpec.implementation.render as unknown as (
+  block: Parameters<CodeRender>[0],
+  editor: Parameters<CodeRender>[1],
+) => ReturnType<CodeRender>;
+
+export const codeBlockSpec = {
+  ...baseSpec,
+  implementation: {
+    ...baseSpec.implementation,
+    render: (block: Parameters<CodeRender>[0], editor: Parameters<CodeRender>[1]) => {
+      const rendered = baseRender(block, editor);
+      const source = rendered.dom as unknown as ParentNode;
+
+      // Both come out of upstream's fragment by moving rather than copying, so
+      // the language `<select>` keeps the change listener upstream attached to
+      // it and its `destroy` still finds it.
+      const pre = source.querySelector("pre");
+      const select = source.querySelector("select");
+
+      const header = document.createElement("div");
+      header.className = "editor-code-header";
+      // ProseMirror must not treat any of this as content. Without it the
+      // header becomes a place the caret can land and backspace can delete.
+      header.contentEditable = "false";
+      if (select) header.append(select);
+
+      const copy = buildCopyButton(() => pre?.textContent ?? "");
+      header.append(copy.element);
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "editor-code";
+      wrapper.append(header);
+      if (pre) wrapper.append(pre);
+
+      return {
+        ...rendered,
+        dom: wrapper,
+        destroy: () => {
+          copy.destroy();
+          rendered.destroy?.();
+        },
+      };
+    },
+  },
+} as typeof baseSpec;
+
 /** What the highlighter can actually paint. Exported for the test above. */
 export const HIGHLIGHTED_LANGUAGES = Object.keys(langs);
+
+// Lucide's `copy` and `check`, inlined. The rest of the app gets its icons as
+// React components from `constants/icons.ts`, which is no use here — a block's
+// render is plain DOM, called by ProseMirror rather than by React.
+const COPY_ICON = '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>';
+const CHECK_ICON = '<path d="M20 6 9 17l-5-5"/>';
+
+function icon(paths: string): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+
+/**
+ * The Copy button, and the confirmation that it worked.
+ *
+ * The text is read from the `<pre>` at click time rather than from the block
+ * that was passed to `render`, and that's deliberate: `render` runs once and the
+ * block it was given is a snapshot, so a button closing over it would copy
+ * whatever the code said when the block first appeared.
+ *
+ * `execCommand` is kept as a fallback because `navigator.clipboard` needs a
+ * secure context, and the Tauri webview's origin isn't `https:`. It works
+ * today; if a webview update ever changes that, this degrades to the old API
+ * instead of a button that silently does nothing.
+ */
+function buildCopyButton(getText: () => string): { element: HTMLButtonElement; destroy: () => void } {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = "editor-code-copy";
+  element.title = "Copy";
+  element.innerHTML = `${icon(COPY_ICON)}<span>Copy</span>`;
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const confirm = (ok: boolean): void => {
+    element.classList.toggle("is-copied", ok);
+    element.innerHTML = ok ? `${icon(CHECK_ICON)}<span>Copied</span>` : `${icon(COPY_ICON)}<span>Couldn't copy</span>`;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      element.classList.remove("is-copied");
+      element.innerHTML = `${icon(COPY_ICON)}<span>Copy</span>`;
+    }, 1600);
+  };
+
+  const write = async (text: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const scratch = document.createElement("textarea");
+      scratch.value = text;
+      scratch.setAttribute("aria-hidden", "true");
+      scratch.style.cssText = "position:fixed;top:-1000px;opacity:0";
+      document.body.append(scratch);
+      scratch.select();
+      const ok = document.execCommand("copy");
+      scratch.remove();
+      return ok;
+    }
+  };
+
+  const onClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    void write(getText()).then(confirm);
+  };
+
+  // Without this, pressing the button moves the caret out of whatever you were
+  // writing before the click ever fires.
+  const onMouseDown = (event: MouseEvent): void => event.preventDefault();
+
+  element.addEventListener("click", onClick);
+  element.addEventListener("mousedown", onMouseDown);
+
+  return {
+    element,
+    destroy: () => {
+      clearTimeout(timer);
+      element.removeEventListener("click", onClick);
+      element.removeEventListener("mousedown", onMouseDown);
+    },
+  };
+}

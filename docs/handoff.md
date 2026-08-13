@@ -748,6 +748,24 @@ is below.
   come from `@shikijs/langs-precompiled` and the engine is
   `createJavaScriptRawEngine`, which only works with precompiled grammars —
   swapping either half alone fails at runtime, not at build time.
+- **The code block wraps upstream's `render` and replaces nothing else.**
+  `code-block.ts` calls `createCodeBlockSpec`'s implementation, lifts the
+  `<pre>` and the language `<select>` out of the fragment it returns, and
+  rebuilds them as a header strip plus the code. `extensions` and the rest of
+  `implementation` pass through, and they must: they carry the
+  syntax-highlighting plugin, the keyboard shortcuts that keep Tab and Enter
+  inside the block, the parse rules, and the `toExternalHTML` that decides what
+  a copied block puts on the clipboard. **The highlight plugin is keyed on the
+  node type name `codeBlock`** — a custom block by another name silently stops
+  being highlighted, with no error. The `<select>` is *moved* rather than
+  recreated so upstream's change listener and its `destroy` still find it.
+  Because both elements now sit a level deeper than BlockNote's own selectors
+  (`>div>select`, `>pre`) reach, none of its code-block CSS applies and
+  `page.css` styles from scratch.
+- **Hover states in the code block's header belong to the controls, not the
+  block.** Keying them on the block's `:hover` is what made the language picker
+  read as a grey smear appearing over her writing whenever the pointer went
+  past — reported from use, 2026-08-12.
 - **Nothing in the highlighter touches the network, and it has to stay that
   way.** Shiki *can* fetch grammars from a CDN; this path declares every one as
   a static `import()` that Vite turns into a local chunk. A change that

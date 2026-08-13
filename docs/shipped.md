@@ -1591,9 +1591,49 @@ has to belong to the same set of surfaces. Syntax colour does the rest, landing
 between 10 and 13 against the fill.
 
 Also changed from BlockNote's defaults: the language picker moved to the top
-right at a resting `opacity: 0.65` instead of top-left and invisible; `<pre>`
-switched from `white-space: pre` to `pre-wrap`, so a prompt pasted as one long
-line wraps instead of running off the right edge with the rest unreachable.
+right at a resting `opacity: 0.65` instead of top-left and invisible
+(**superseded the same day — see below**); `<pre>` switched from
+`white-space: pre` to `pre-wrap`, so a prompt pasted as one long line wraps
+instead of running off the right edge with the rest unreachable.
+
+## The header bar — same day, from her testing
+
+The picker-in-the-corner version lasted one screenshot. Two things were wrong
+with it and both were mine rather than BlockNote's:
+
+- **It reacted to the block's hover, not its own.** Moving the mouse anywhere
+  over the code lit the `<select>` up as a filled grey rectangle sitting over
+  the writing. Her words were that it shouldn't "randomly highlight if you're
+  just hovering over the box in general", which is exactly right — hover
+  belongs on the control.
+- **There was nowhere to put anything else.** She asked for a Copy button in the
+  top right, and an absolutely-positioned `<select>` floating over line one has
+  no room for a neighbour.
+
+So the block's `render` is now wrapped: `code-block.ts` calls upstream's,
+lifts the `<pre>` and the `<select>` out of the fragment it returns, and
+reassembles them as a header strip plus the code. **Only `render` is replaced.**
+`extensions` and the rest of `implementation` pass through untouched, which is
+what keeps the syntax-highlighting plugin, the Tab-indents-inside-the-block
+shortcuts, the parse rules and `toExternalHTML`. Rebuilding this as a custom
+block would have meant owning all of it — and the highlight plugin is keyed on
+the node type name `codeBlock`, so a block named anything else silently stops
+being highlighted.
+
+Side effect worth knowing: both elements are now a level deeper than BlockNote's
+own selectors (`>div>select`, `>pre`) can reach, so none of its code-block CSS
+applies any more and `page.css` styles from scratch rather than overriding.
+
+The Copy button reads the text out of the `<pre>` at click time rather than
+closing over the block `render` was handed, which is a snapshot from when the
+block first appeared. `navigator.clipboard` with an `execCommand` fallback,
+because the Tauri webview's origin isn't `https:` and the modern API wants a
+secure context — it works today, and this degrades rather than going silent if a
+webview update changes that.
+
+Measured in the replica again: header 22px tall, no overlap with the code, the
+language name and the Copy label both 8px in from their own edge, and no rule
+anywhere keyed on the block's hover.
 
 ## Verification
 

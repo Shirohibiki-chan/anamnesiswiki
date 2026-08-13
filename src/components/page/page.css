@@ -568,14 +568,19 @@
 
 /* The code block.
    ---------------
-   BlockNote ships this one already styled — a flat `#161616` box with white
-   text, no border, and a language dropdown that fades in at half opacity in the
-   top-*left* corner. Those are literals inside its stylesheet, so they ignore
-   the theme entirely and there is no token to point at them. Everything below
-   is an override of a rule that already exists rather than styling from
-   nothing, which is why it's written against BlockNote's own selectors instead
-   of a class of ours: the block is a built-in and renders `<pre><code>` with no
-   class on either element.
+   BlockNote ships this one already styled, and all of it is literals inside its
+   own stylesheet that no theme can reach: a flat `#161616` box, white text, no
+   border, and a bare `<select>` positioned absolutely over the first line of
+   code at `opacity: 0`, revealed at half opacity whenever the mouse is anywhere
+   in the block. That last part is what made it feel broken — a grey smear
+   appearing over your writing as the pointer went past.
+
+   `services/editor-blocks/code-block.ts` wraps the block's render so the
+   `<select>` sits in a real header strip with a Copy button instead. That also
+   moves both elements a level deeper than BlockNote's own selectors reach
+   (`>div>select`, `>pre`), so none of its rules apply any more and everything
+   below is styling from scratch rather than an override — except the box
+   itself, which is still `.bn-block-content`.
 
    The colours stay dark on every theme on purpose — see `--color-code-*` in
    index.css for why that's an exception rather than an oversight. */
@@ -587,11 +592,115 @@
   margin: var(--space-md) 0;
 }
 
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > pre {
-  /* Room at the top for the language picker to sit in its own strip rather
-     than on top of the first line of code. */
-  padding: var(--space-2xl) var(--space-xl) var(--space-xl);
+.editor-code {
+  width: 100%;
   min-width: 0;
+}
+
+/* The header. Its own faint wash rather than the block's fill, so the strip
+   reads as a bar and not as empty space above the code. The radius is the
+   box's minus its border, which is what keeps the wash from squaring off the
+   top two corners. */
+.editor-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  /* Even on both sides: the strip's own 4px plus each control's own 4px puts
+     the language name and the Copy label the same 8px in from either edge. */
+  padding: var(--space-2xs) var(--space-xs);
+  border-bottom: 1px solid var(--color-code-border);
+  border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+  background-color: rgba(255, 255, 255, 0.035);
+  user-select: none;
+}
+
+/* The language picker. `position: static` and `opacity: 1` are belt and braces:
+   BlockNote's absolute-positioning rule can't reach this deep today, and if a
+   future version's selector does, the picker should stay in the bar rather than
+   fly back over the code. The chevron is drawn here because `appearance: none`
+   removes the platform's own. */
+.editor-code-header > select {
+  position: static;
+  opacity: 1;
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8b9c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2xs) center;
+  background-size: 10px 10px;
+  padding: 1px var(--space-md) 1px var(--space-xs);
+  color: var(--color-code-label);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+  outline: none;
+}
+
+/* Hover and focus are on the control itself, never on the block. Reacting to
+   the block's hover is what made this look like it was flashing at you. */
+.editor-code-header > select:hover,
+.editor-code-header > select:focus-visible {
+  color: var(--color-code-text);
+  border-color: var(--color-code-border);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* The dropdown's list is drawn by the OS on its own background, so its options
+   need a colour that works there rather than the block's — BlockNote sets
+   `color: #000`, which on a dark Windows theme is black on near-black.
+   `inherit` hands the decision back to the platform. */
+.editor-code-header > select > option {
+  color: inherit;
+}
+
+.editor-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: 1px var(--space-xs);
+  color: var(--color-code-label);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.editor-code-copy > svg {
+  width: 12px;
+  height: 12px;
+}
+
+.editor-code-copy:hover,
+.editor-code-copy:focus-visible {
+  color: var(--color-code-text);
+  border-color: var(--color-code-border);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Held for a moment after a copy, then dropped. The accent rather than the
+   plain text colour, because "it worked" has to be readable from the corner of
+   your eye — the label changing from Copy to Copied is not, on a strip this
+   small. */
+.editor-code-copy.is-copied,
+.editor-code-copy.is-copied:hover {
+  color: var(--color-accent-light);
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.editor-code > pre {
+  margin: 0;
+  padding: var(--space-xl);
+  min-width: 0;
+  tab-size: 2;
   font-family: var(--font-mono);
   font-size: calc(var(--fs-content) * 0.875);
   line-height: 1.55;
@@ -603,39 +712,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   overflow-x: auto;
-}
-
-/* The language picker. BlockNote parks it top-left at `opacity: 0` until the
-   block is hovered, which puts it exactly where the first line of code starts
-   and makes it invisible until you happen to be over it. Moved to the right,
-   given a resting opacity so it can be seen without hunting for it, and given
-   the mono face so it reads as part of the block. */
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > div > select {
-  top: var(--space-sm);
-  left: auto;
-  right: var(--space-md);
-  opacity: 0.65;
-  color: var(--color-code-label);
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
-  letter-spacing: 0.02em;
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-2xs);
-}
-
-.editor-shell .bn-block-content[data-content-type="codeBlock"]:hover > div > select,
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > div > select:focus {
-  opacity: 1;
-  color: var(--color-code-text);
-  background-color: var(--color-code-border);
-}
-
-/* The dropdown's own list is drawn by the OS, on its own background — so its
-   options need a colour that works there rather than the block's. BlockNote
-   sets `color: #000` for this; on a dark Windows theme that's black on
-   near-black. `inherit` hands it back to the platform. */
-.editor-shell .bn-block-content[data-content-type="codeBlock"] > div > select > option {
-  color: inherit;
 }
 
 .editor-mention {
