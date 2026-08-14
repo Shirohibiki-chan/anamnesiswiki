@@ -8,6 +8,8 @@ Anamnesis is a Tauri v2 desktop app for local-first worldbuilding. React 19 + Ty
 
 Work phases top-down. Do not start a phase until the previous one is complete and usable. Each phase should end with the app in a coherent, working state — not mid-refactor. Phases are sized to be reviewable as user-facing changes.
 
+**Position is the running order; the number is only a name.** A phase gets its number when it's written down, so a phase that gets pulled forward keeps its number and moves up the file — Phase 27 sits above Phase 18 for exactly that reason. Read the order off the page, not off the digits, and when something moves, move the section rather than renumbering everything below it.
+
 See `docs/spec.md` for the full spec, `CLAUDE.md` for architecture rules, and `docs/prototype/anamnesis.jsx` for a reference React prototype that demonstrates layout and tree behavior (its template content is filler — the real copy lives in `src/services/template-registry.ts`).
 
 ---
@@ -697,175 +699,16 @@ disappeared from tiles it was still over. Reported 2026-08-12.
 
 ---
 
-## Phase 18 — Sidebar Blocks
-
-The big one, and a genuinely new concept: the right panel becomes a second block canvas rather than a fixed list of fields.
-
-Keep the distinction sharp — **properties** are labelled facts (`Age: 26`); **blocks** are arranged widgets (a 75% purple bar called "Hollow Emperor's Influence"). They share a column and nothing else.
-
-- Node gains an ordered block list. **Add, remove and reorder are requirements from the start**, not follow-ups — build the panel as an ordered collection or this gets rewritten.
-- Per-block context menu: title / no-title, colour, duplicate, move, remove.
-- **Blocks:** Text Box · Tags · Alias · Link Block · Tag Index · Subpage Index · Backlinks · Image.
-- **Meters:** Progress Bar · Circle · Semi-circle · Gauge · Token Pool · Rating.
-- **Backlinks, Tag Index and Subpage Index are one job underneath** — an index of what points at what. Build that service once; it serves all three blocks and is the same data Phase 24's graphs need.
-- **Alias** punches above its weight — alternate names that feed search and `[[wikilinks]]`, so "Val" finds Valera Jiang.
-- **No YouTube or Spotify embeds.** The user's reason, 2026-07-31, was aesthetic — LK's are ugly — not the offline policy, which she has never personally agreed with. If embeds come back, that's a policy conversation to have with her, and she'll likely wave it through; ask anyway, because the boundary is still written strict in `CLAUDE.md` at her request.
-
----
-
-## Phase 19 — Safety Net
-
-Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
-
-- **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else. **Obsidian's "File Recovery" is the shape to copy**, rather than designing one: automatic periodic snapshots kept on disk, a per-file list of past versions you can browse and restore, and arrow-key navigation through that list (the keyboard part is new in 1.13). Copying a known-good model matters more here than anywhere else in this document, because this is the feature that exists to catch the failure that already happened once (`docs/handoff.md` §Storage) and a half-designed version of it is worse than none — it would be trusted.
-- **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
-
----
-
-## Phase 20 — Markdown & Folder Import
-
-**Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
-
-**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
-
-JSON and HTML are separate and lower priority. World Anvil is dropped (see Future Features).
-
----
-
-## Phase 21 — Shell Rework
-
-The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` and it should only happen once, after the features it has to arrange actually exist.
-
-- Left rail replacing the top bar, with Project / Templates / Assets moved into it.
-- Splittable columns — open to the right, open in new tab, open in new window, split right, split down.
-
----
-
-## Phase 22 — Universes
-
-Decided 2026-08-08. A universe is a top-level container for one version of the world — Canon, Demonic AU, Merfolk AU, Pokemon AU, Timeswap AU — plus a switcher that says which one you're working in.
-
-**A universe is not a row in the tree.** Confirmed by the user 2026-08-08 and it's the load-bearing decision: you change universe from a *selector*, a separate piece of UI, the way Obsidian's vault switcher sits at the bottom of its sidebar rather than as a folder inside it. Obsidian is the reference she pointed at; match that shape.
-
-The tree then shows one universe at a time, at the root. Today an AU character is `AUs / Demonic AU / Characters / Valera Jiang` — four levels of indent before a name, and the `AUs` folder at the top exists only to hold the other folders. In Demonic AU it becomes `Characters / Valera Jiang`. Two levels gone, nothing deleted, and the `AUs` wrapper stops existing.
-
-**Why not just a folder:** a folder can sit anywhere, nest into anything, and means nothing in particular — which is how it got four deep in the first place. Universes can't nest inside each other, can't be dragged into anything, and never appear as a row you can navigate into by accident. Search, collections, graphs and storylines all scope to whatever the selector says, with an "all universes" setting for when she wants the whole project at once.
-
-**Pages true everywhere live in a Shared universe** — a species, a map, a magic system, a language. Decided 2026-08-08 over the alternative of loose pages at the project root. It's always visible alongside whichever universe is selected, so shared lore is never something you have to go and switch to. Keep it visually distinct in the tree; the one thing that must never be ambiguous is which universe the page you're typing into belongs to.
-
-**Following a link out of the current universe switches to it** rather than refusing to open the page. Blocking would be worse than moving, and silently showing a page from a universe you aren't in is how you edit the wrong Valera.
-
-**Cheap on disk, which is the point.** Each universe stays a directory of its own; the container's JSON just gets a template key marking it a universe. `template-registry.ts` already carries `canHaveChildren` per template, so this is a ninth template plus a root-only rule in the reparent guard (`project-store.ts`) and the drop-target check (`TreePanel.tsx`). Nothing about how a page is read or written changes. Existing projects need a one-time migration that lifts each AU out of the `AUs/` folder and marks it — fold it into the Valeraverse re-import already queued above rather than shipping a separate one-off.
-
-**"Universe" is the word**, chosen 2026-08-08 over "AU": Canon isn't an alternate anything, and one word has to cover both.
-
-**Explicitly not building: base profiles with per-AU overrides.** Proposed and rejected by the user the same day, and worth not re-opening. Overrides only pay off when the variants are mostly identical, and hers diverge on species, appearance, history, relationships and most of the prose — the base profile would be pure indirection. It would also put "am I editing canon or this AU?" in front of every keystroke, and turn a character on disk into a base plus a stack of patches, which cuts against the plain-JSON promise. If cross-universe navigation is ever wanted, the cheap version is a plain "variant of" link between pages, no inheritance.
-
-**Sequenced before the three big views** so Collections, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wants somewhere to live, and Phase 21 is what builds the left rail it belongs in. Putting it before that means placing it twice.
-
----
-
-## Phase 23 — Collections
-
-A filtered table or gallery view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
-
----
-
-## Phase 24 — Graphs
-
-Both, per the user's decision 2026-07-31, and in this order:
-
-1. **Relationship graph, scoped to one page** — who she knows, who she serves, what she owns. This is the one that earns its keep.
-2. **Global graph** — a view of the whole project at once. Still second, because the relationship graph is smaller and lands sooner, but **it is meant to be a tool, not a poster.** An earlier draft of this entry wrote it off as the thing people screenshot and never use; the user corrected that 2026-08-08 — she wants somewhere to see the whole project, and she specifically doesn't like how Obsidian's is set up.
-
-Obsidian's graph is the thing to beat, so what's wrong with it is the spec. Five commitments, none of them "make it prettier":
-
-- **Nodes have to look like her tree, not like dots.** Obsidian draws every note as the same grey circle, which throws away the one thing this app knows and Obsidian doesn't: templates. Characters, locations, factions and species carry their sidebar icon and her chosen node colour into the graph. This is the single biggest legibility win available and it's nearly free — `constants/icons.ts` and the colour cascade already exist.
-- **The same project has to look the same every time you open it.** Force-directed layouts settle differently on every run, so there's no building a memory of where anything is. Seed the simulation deterministically and remember pinned positions.
-- **Scoped by default, not everything at once.** One universe (Phase 22), widened on request. Five AUs rendered together is precisely the hairball that makes people close the tab.
-- **Filters are visible controls, not a query syntax.** Filter by template and by tag using Phase 23's Collections filter model rather than inventing a second language for the same job.
-- **Clicking a node must not throw the graph away.** It opens a preview beside the graph; going to the page is a deliberate second action.
-
-Both run on the reference index built in Phase 18, so neither starts from nothing. D3-force is the likely library.
-
-**Don't ask her to describe what it should look like** — she's said she's picky and has no visual direction in the abstract. Build it against the five points above and let her react to something running.
-
----
-
-## Phase 25 — Storylines
-
-Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer to "what happened next," and it replaces the calendar timeline** rather than sitting beside it — see Future Features → Timeline visualization.
-
-**The distinction that drives the design:** a timeline is date-locked and linear; a storyline is sequence-driven and date-optional. Nodes connect by what leads to what, not by year. Dates are the reason the timeline never got built — a blank the user can't fill and won't guess at stops the writing. Storylines have no such field. Where a date happens to be known it's just another property on the page.
-
-**The view** is a zoomable, pannable, drag-and-drop graph. Each node is a scene or an event; edges run in narrative order. The tree branches for parallel plot threads or alternate viewpoints and reconverges at shared events — so it's a DAG, not a strict tree, and a node can have two parents. Nothing else in the app has that shape; the sidebar tree's model does not fit it.
-
-**Where a node sits is her decision, and the app never overrules it.** Added
-2026-08-10. Positions are authored and saved (see Storage below) — a scene goes
-where she puts it and stays there. **This rules out inheriting Phase 24's
-force-directed layout**, whatever else is shared with it: a force simulation
-exists precisely to choose positions for you, and it would spend the session
-undoing her arrangement. Phase 24 is right to use one — a relationship graph is
-explored, not composed — and that's the difference. What Storylines can take
-from Phase 24 is the pan/zoom surface and the edge drawing, not the layout.
-Offer a tidy-up as a button she presses, never as behaviour that just happens.
-
-**Loose notes can be dropped anywhere on the canvas.** Asked for 2026-08-10, and
-it's the one place a storyline borrows from a whiteboard. Her case is a branch
-that stops: a thread ends and the story continues somewhere else, and without
-somewhere to say so the reader just finds a dead end. **A note holds links, not
-only text** — `continued in [[Demonic AU — Valera's Fall]]` is the whole point,
-and it costs nearly nothing because wikilinks already exist and Phase 22 already
-decided that following one into another universe switches to it. That turns a
-dangling branch into an exit rather than a note-to-self. Notes are annotations,
-not nodes: no edges, no page behind them, never counted as part of the sequence.
-**Her framing was other people reading it**, which is also the argument for
-labelling clusters ("Act 2") — for someone who didn't write the thing, an
-unlabelled fork and a fork that stops look identical.
-
-**Every node is also a page.** Opening a node opens a full editor where the whole scene gets written — a storyline is somewhere she writes, not just a map of writing kept elsewhere. Creating a node makes a lightweight page for it by default; pointing a node at an existing page is the other option, and both are first-class, because half the nodes in a real storyline are events that already have pages.
-
-**Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure, and the loose notes — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
-
-**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom and edge rendering from Phase 24 — its *layout*, per the note above, is the one thing not to inherit. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
-
----
-
-## Phase 26 — Teach It To Someone Else
-
-Asked for 2026-08-10 and deliberately placed last: a first-run tutorial for
-people who open this app without having watched it get built.
-
-**Not for the user.** She knows it. This is for the people she shares a world
-with and for anyone who installs a release — the audience Phase 1.5 (Publish)
-serves read-only, and the one person outside this project who has already
-installed a build and had to debug it himself.
-
-**Last is the right place, not a parking space.** Phase 21 rewrites the app
-shell and Phase 22 changes what sits at the root of the tree, so a tutorial
-written before either describes an app that no longer exists. A tutorial that
-points at the wrong thing is worse than none — someone following it concludes
-the app is broken, not the instructions. Wait for the surfaces to stop moving.
-
-**Nothing is designed here yet, on purpose.** Whether it's an interactive
-overlay, a sample project that opens on first launch, or a page inside the app
-is a decision for whoever picks this up, with her. The one constraint that's
-already fixed: whether someone has seen it is a local setting like every other
-(`app-settings-service.ts`) — there is no "did they finish onboarding" to
-report anywhere, per the policy boundary in `CLAUDE.md`.
-
----
-
 ## Phase 27 — The World Library
 
 Raised 2026-08-14, from her opening the app and finding the start screen
 remembers eight worlds and offers Explorer for the ninth. Everything here is
 one screen and the identity that screen needs to work.
 
-**Pull this forward** — she wants the start screen done promptly (her call,
-2026-08-14). It's numbered last because that's where new work goes, not because
-it belongs last. It runs next, ahead of Phase 28 and interleaved with whatever
-of 17–20 is in flight.
+**This is the next thing built** — she wants the start screen done promptly
+(her call, 2026-08-14), so it sits here, directly after the phase in flight,
+rather than at the bottom where it was written. It keeps the number 27 because
+the number is a name, not a position; see the note in Project Overview.
 
 ### Worlds get an id
 
@@ -1098,6 +941,165 @@ path, so moving them by hand costs nothing but re-opening each once, and she
 has two real worlds and one other user. Once ids and the scan exist, a moved
 world is re-found rather than lost from the recent list. Reserve `themes` and
 `snippets` as world names regardless of layout.
+
+---
+
+## Phase 18 — Sidebar Blocks
+
+The big one, and a genuinely new concept: the right panel becomes a second block canvas rather than a fixed list of fields.
+
+Keep the distinction sharp — **properties** are labelled facts (`Age: 26`); **blocks** are arranged widgets (a 75% purple bar called "Hollow Emperor's Influence"). They share a column and nothing else.
+
+- Node gains an ordered block list. **Add, remove and reorder are requirements from the start**, not follow-ups — build the panel as an ordered collection or this gets rewritten.
+- Per-block context menu: title / no-title, colour, duplicate, move, remove.
+- **Blocks:** Text Box · Tags · Alias · Link Block · Tag Index · Subpage Index · Backlinks · Image.
+- **Meters:** Progress Bar · Circle · Semi-circle · Gauge · Token Pool · Rating.
+- **Backlinks, Tag Index and Subpage Index are one job underneath** — an index of what points at what. Build that service once; it serves all three blocks and is the same data Phase 24's graphs need.
+- **Alias** punches above its weight — alternate names that feed search and `[[wikilinks]]`, so "Val" finds Valera Jiang.
+- **No YouTube or Spotify embeds.** The user's reason, 2026-07-31, was aesthetic — LK's are ugly — not the offline policy, which she has never personally agreed with. If embeds come back, that's a policy conversation to have with her, and she'll likely wave it through; ask anyway, because the boundary is still written strict in `CLAUDE.md` at her request.
+
+---
+
+## Phase 19 — Safety Net
+
+Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
+
+- **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else. **Obsidian's "File Recovery" is the shape to copy**, rather than designing one: automatic periodic snapshots kept on disk, a per-file list of past versions you can browse and restore, and arrow-key navigation through that list (the keyboard part is new in 1.13). Copying a known-good model matters more here than anywhere else in this document, because this is the feature that exists to catch the failure that already happened once (`docs/handoff.md` §Storage) and a half-designed version of it is worse than none — it would be trusted.
+- **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
+
+---
+
+## Phase 20 — Markdown & Folder Import
+
+**Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
+
+**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
+
+JSON and HTML are separate and lower priority. World Anvil is dropped (see Future Features).
+
+---
+
+## Phase 21 — Shell Rework
+
+The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` and it should only happen once, after the features it has to arrange actually exist.
+
+- Left rail replacing the top bar, with Project / Templates / Assets moved into it.
+- Splittable columns — open to the right, open in new tab, open in new window, split right, split down.
+
+---
+
+## Phase 22 — Universes
+
+Decided 2026-08-08. A universe is a top-level container for one version of the world — Canon, Demonic AU, Merfolk AU, Pokemon AU, Timeswap AU — plus a switcher that says which one you're working in.
+
+**A universe is not a row in the tree.** Confirmed by the user 2026-08-08 and it's the load-bearing decision: you change universe from a *selector*, a separate piece of UI, the way Obsidian's vault switcher sits at the bottom of its sidebar rather than as a folder inside it. Obsidian is the reference she pointed at; match that shape.
+
+The tree then shows one universe at a time, at the root. Today an AU character is `AUs / Demonic AU / Characters / Valera Jiang` — four levels of indent before a name, and the `AUs` folder at the top exists only to hold the other folders. In Demonic AU it becomes `Characters / Valera Jiang`. Two levels gone, nothing deleted, and the `AUs` wrapper stops existing.
+
+**Why not just a folder:** a folder can sit anywhere, nest into anything, and means nothing in particular — which is how it got four deep in the first place. Universes can't nest inside each other, can't be dragged into anything, and never appear as a row you can navigate into by accident. Search, collections, graphs and storylines all scope to whatever the selector says, with an "all universes" setting for when she wants the whole project at once.
+
+**Pages true everywhere live in a Shared universe** — a species, a map, a magic system, a language. Decided 2026-08-08 over the alternative of loose pages at the project root. It's always visible alongside whichever universe is selected, so shared lore is never something you have to go and switch to. Keep it visually distinct in the tree; the one thing that must never be ambiguous is which universe the page you're typing into belongs to.
+
+**Following a link out of the current universe switches to it** rather than refusing to open the page. Blocking would be worse than moving, and silently showing a page from a universe you aren't in is how you edit the wrong Valera.
+
+**Cheap on disk, which is the point.** Each universe stays a directory of its own; the container's JSON just gets a template key marking it a universe. `template-registry.ts` already carries `canHaveChildren` per template, so this is a ninth template plus a root-only rule in the reparent guard (`project-store.ts`) and the drop-target check (`TreePanel.tsx`). Nothing about how a page is read or written changes. Existing projects need a one-time migration that lifts each AU out of the `AUs/` folder and marks it — fold it into the Valeraverse re-import already queued above rather than shipping a separate one-off.
+
+**"Universe" is the word**, chosen 2026-08-08 over "AU": Canon isn't an alternate anything, and one word has to cover both.
+
+**Explicitly not building: base profiles with per-AU overrides.** Proposed and rejected by the user the same day, and worth not re-opening. Overrides only pay off when the variants are mostly identical, and hers diverge on species, appearance, history, relationships and most of the prose — the base profile would be pure indirection. It would also put "am I editing canon or this AU?" in front of every keystroke, and turn a character on disk into a base plus a stack of patches, which cuts against the plain-JSON promise. If cross-universe navigation is ever wanted, the cheap version is a plain "variant of" link between pages, no inheritance.
+
+**Sequenced before the three big views** so Collections, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wants somewhere to live, and Phase 21 is what builds the left rail it belongs in. Putting it before that means placing it twice.
+
+---
+
+## Phase 23 — Collections
+
+A filtered table or gallery view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
+
+---
+
+## Phase 24 — Graphs
+
+Both, per the user's decision 2026-07-31, and in this order:
+
+1. **Relationship graph, scoped to one page** — who she knows, who she serves, what she owns. This is the one that earns its keep.
+2. **Global graph** — a view of the whole project at once. Still second, because the relationship graph is smaller and lands sooner, but **it is meant to be a tool, not a poster.** An earlier draft of this entry wrote it off as the thing people screenshot and never use; the user corrected that 2026-08-08 — she wants somewhere to see the whole project, and she specifically doesn't like how Obsidian's is set up.
+
+Obsidian's graph is the thing to beat, so what's wrong with it is the spec. Five commitments, none of them "make it prettier":
+
+- **Nodes have to look like her tree, not like dots.** Obsidian draws every note as the same grey circle, which throws away the one thing this app knows and Obsidian doesn't: templates. Characters, locations, factions and species carry their sidebar icon and her chosen node colour into the graph. This is the single biggest legibility win available and it's nearly free — `constants/icons.ts` and the colour cascade already exist.
+- **The same project has to look the same every time you open it.** Force-directed layouts settle differently on every run, so there's no building a memory of where anything is. Seed the simulation deterministically and remember pinned positions.
+- **Scoped by default, not everything at once.** One universe (Phase 22), widened on request. Five AUs rendered together is precisely the hairball that makes people close the tab.
+- **Filters are visible controls, not a query syntax.** Filter by template and by tag using Phase 23's Collections filter model rather than inventing a second language for the same job.
+- **Clicking a node must not throw the graph away.** It opens a preview beside the graph; going to the page is a deliberate second action.
+
+Both run on the reference index built in Phase 18, so neither starts from nothing. D3-force is the likely library.
+
+**Don't ask her to describe what it should look like** — she's said she's picky and has no visual direction in the abstract. Build it against the five points above and let her react to something running.
+
+---
+
+## Phase 25 — Storylines
+
+Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer to "what happened next," and it replaces the calendar timeline** rather than sitting beside it — see Future Features → Timeline visualization.
+
+**The distinction that drives the design:** a timeline is date-locked and linear; a storyline is sequence-driven and date-optional. Nodes connect by what leads to what, not by year. Dates are the reason the timeline never got built — a blank the user can't fill and won't guess at stops the writing. Storylines have no such field. Where a date happens to be known it's just another property on the page.
+
+**The view** is a zoomable, pannable, drag-and-drop graph. Each node is a scene or an event; edges run in narrative order. The tree branches for parallel plot threads or alternate viewpoints and reconverges at shared events — so it's a DAG, not a strict tree, and a node can have two parents. Nothing else in the app has that shape; the sidebar tree's model does not fit it.
+
+**Where a node sits is her decision, and the app never overrules it.** Added
+2026-08-10. Positions are authored and saved (see Storage below) — a scene goes
+where she puts it and stays there. **This rules out inheriting Phase 24's
+force-directed layout**, whatever else is shared with it: a force simulation
+exists precisely to choose positions for you, and it would spend the session
+undoing her arrangement. Phase 24 is right to use one — a relationship graph is
+explored, not composed — and that's the difference. What Storylines can take
+from Phase 24 is the pan/zoom surface and the edge drawing, not the layout.
+Offer a tidy-up as a button she presses, never as behaviour that just happens.
+
+**Loose notes can be dropped anywhere on the canvas.** Asked for 2026-08-10, and
+it's the one place a storyline borrows from a whiteboard. Her case is a branch
+that stops: a thread ends and the story continues somewhere else, and without
+somewhere to say so the reader just finds a dead end. **A note holds links, not
+only text** — `continued in [[Demonic AU — Valera's Fall]]` is the whole point,
+and it costs nearly nothing because wikilinks already exist and Phase 22 already
+decided that following one into another universe switches to it. That turns a
+dangling branch into an exit rather than a note-to-self. Notes are annotations,
+not nodes: no edges, no page behind them, never counted as part of the sequence.
+**Her framing was other people reading it**, which is also the argument for
+labelling clusters ("Act 2") — for someone who didn't write the thing, an
+unlabelled fork and a fork that stops look identical.
+
+**Every node is also a page.** Opening a node opens a full editor where the whole scene gets written — a storyline is somewhere she writes, not just a map of writing kept elsewhere. Creating a node makes a lightweight page for it by default; pointing a node at an existing page is the other option, and both are first-class, because half the nodes in a real storyline are events that already have pages.
+
+**Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure, and the loose notes — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
+
+**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom and edge rendering from Phase 24 — its *layout*, per the note above, is the one thing not to inherit. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
+
+---
+
+## Phase 26 — Teach It To Someone Else
+
+Asked for 2026-08-10 and deliberately placed last: a first-run tutorial for
+people who open this app without having watched it get built.
+
+**Not for the user.** She knows it. This is for the people she shares a world
+with and for anyone who installs a release — the audience Phase 1.5 (Publish)
+serves read-only, and the one person outside this project who has already
+installed a build and had to debug it himself.
+
+**Last is the right place, not a parking space.** Phase 21 rewrites the app
+shell and Phase 22 changes what sits at the root of the tree, so a tutorial
+written before either describes an app that no longer exists. A tutorial that
+points at the wrong thing is worse than none — someone following it concludes
+the app is broken, not the instructions. Wait for the surfaces to stop moving.
+
+**Nothing is designed here yet, on purpose.** Whether it's an interactive
+overlay, a sample project that opens on first launch, or a page inside the app
+is a decision for whoever picks this up, with her. The one constraint that's
+already fixed: whether someone has seen it is a local setting like every other
+(`app-settings-service.ts`) — there is no "did they finish onboarding" to
+report anywhere, per the policy boundary in `CLAUDE.md`.
 
 ---
 
