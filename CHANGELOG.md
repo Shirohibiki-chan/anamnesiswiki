@@ -1,16 +1,5 @@
 # Changelog
 
-## 2026-08-14
-
-### Worth knowing
-
-- **Ctrl+P prints the page you're on, and can save it as a PDF.** This has always worked — the print dialog opens with Microsoft Print to PDF among the printers — and nothing said so. It prints the whole window as it appears, side panels and all, which is not what anyone wants from it; a proper print layout that puts the page on the paper and leaves the furniture out is now scheduled.
-
-### Coming next
-
-- **The start screen is being rebuilt, and it's the next thing to be built rather than a someday item.** It currently remembers eight worlds and offers you File Explorer for the ninth, which is the whole problem. What replaces it: every world it can find, pinned ones across the top, a grid or a list whichever you prefer, filter, archive, and covers — with a generated one for worlds that don't have a picture yet. Worlds get an identity of their own along the way, so pins and groups survive a folder being moved or renamed, and a copied world can record what it was forked from. A reference mock lives in `docs/mockups/start-screen.html`.
-- **Getting a world back out of the app** is planned in full: Markdown, one big file, a zip of the world's own JSON files, and print. Templates will be shareable as files too, carrying their pictures — or without them, if you'd rather hand someone a small file.
-
 ## 2026-08-13
 
 ### Fixes
