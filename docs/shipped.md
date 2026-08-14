@@ -1893,3 +1893,90 @@ exactly one pending download. Valeraverse's three numbers are identical to the
 2026-08-13 measurement, so nothing on the working paths moved.
 
 935 tests pass, 10 of them new.
+
+---
+
+## A picture in the writing can go back to LegendKeeper — 2026-08-14
+
+Asked for the same day, straight after the import fix landed: if pictures now
+come *in*, can they go back *out*?
+
+### The split that made it answerable
+
+Two cases, and only one of them is a wall.
+
+A picture uploaded from her own disk genuinely cannot go into a `.lk` — the
+format stores addresses of things on LK's servers, never bytes. Putting one
+there means uploading to LK, which means her account, her password and her files
+leaving the machine. Closed by the Policy Boundary, and it stays closed.
+
+A picture that *came* from LK is a different question entirely, because the
+address it came from still exists — we just weren't writing it down. Portraits
+and banners already did exactly this, via `Node.imageSource` and `bannerSource`,
+and had since Phase 8. The body case simply had no equivalent.
+
+### Why a third record rather than reusing the first two
+
+`assets/.sources.json`, keyed by filename, beside `.names.json` and
+`.folders.json`.
+
+Keyed by *file* because that's what the fact is about: the same picture used on
+four pages came from one place, and the exporter holding an image block only
+knows the filename. Not stored on the block, because BlockNote's image block has
+a fixed prop set — an extra prop wouldn't survive a document load — and putting
+it there would mean replacing their image block wholesale, which is forking a
+component the project has a rule against forking.
+
+Not merged with `imageSource`/`bannerSource` either, and that's the choice most
+worth defending: those work, they predate this, and two records of one fact is
+how they drift. Unifying all three is a real option one day. Doing it halfway is
+strictly worse than three honest records.
+
+Values are re-validated as `http(s)` on read. The file sits in her project
+folder, is hand-editable, and its contents are written straight into an export
+as addresses — a `file:` or `javascript:` value carried through would be put
+somewhere something could follow it.
+
+### The export side
+
+`ALIGNMENT_TO_MEDIA_LAYOUT` runs the import mapping backwards, and is
+deliberately not a perfect inverse: LK's `wrap-left`/`wrap-right` and
+`wide`/`full-width` have no equivalent here, so a wrapped picture comes in
+left-aligned and goes home left-aligned. **That is the only loss left in the
+picture round trip.** Width goes back as a percentage of `READING_COLUMN_WIDTH`,
+omitted when the picture was never resized.
+
+An image block pointing at a plain web address needs no lookup — it already is
+one, and LK can fetch it from wherever we do.
+
+`sources` is threaded through the converters alongside `idMap` and `lossy`, and
+`buildExportFile` takes it as optional: every test and every never-imported
+project has none, and absent means "every picture here is local", which is what
+the code did before this existed.
+
+### Verification
+
+Her second account's real export, imported and exported and imported again:
+
+| | first import | written on export | second import |
+| --- | --- | --- | --- |
+| pictures in page bodies | 27 | 27 | 27 |
+| portraits | 7 | 7 | 7 |
+| banners | 3 | 3 | 3 |
+
+Same addresses throughout, and the export's "picture can't go" note is gone
+entirely — it had been the only one. 952 tests pass, 17 new.
+
+### The one question left open, and it isn't ours to answer
+
+Whether LK's own importer accepts a `data:` URI — the whole picture written into
+the address field, nothing uploaded anywhere. If it does, local pictures
+round-trip too. Answering it needs a real import into a real LK account, which
+this app never contacts, so it needed her.
+
+A probe file was built and handed over: three pictures on one page, a real LK
+address as the control and two `data:` URI squares, one as `type: "external"`
+and one as `type: "file"`, since both types appear in her real exports. Verified
+to parse through our own importer first, so a failure in LK means something
+about LK rather than something about the file. Generator lives in the session
+scratchpad, not the repo — it answers one question once.

@@ -84,6 +84,35 @@ export const ASSET_DRAG_TYPE = "application/x-anamnesis-asset";
 export const ASSET_NAMES_FILE = ".names.json";
 
 /**
+ * Where a picture came from, for the ones that came from somewhere.
+ *
+ * `{ "<uuid>.png": "https://assets.legendkeeper.com/<uuid>.png" }`. Only
+ * pictures downloaded during a LegendKeeper import have an entry; one uploaded
+ * from her own disk has no address in the world and never gets one.
+ *
+ * **This exists so a LK import can be exported back to LK.** A `.lk` file
+ * cannot contain a picture — it contains the *address* of a picture on LK's own
+ * servers — so a picture in a page's writing can only go home if we remember
+ * the address it arrived from. Without this the round trip loses it, which is
+ * the shape of loss the whole import/export pair is meant to avoid.
+ *
+ * Keyed by filename rather than stored on the block that shows the picture,
+ * because the origin belongs to the *file*: the same picture used on four pages
+ * came from one place, and BlockNote's image block has a fixed set of props
+ * that an extra one couldn't survive a load through.
+ *
+ * A page's portrait and banner answer the same question with `imageSource` and
+ * `bannerSource` on the node itself, which predate this and still work. Not
+ * merged into here on purpose — two records of one fact is how they drift.
+ *
+ * Losing this file costs nothing that's on screen: every picture still shows,
+ * and only a re-export back to LK is poorer for it.
+ *
+ * Dotted, so `listAssetImages` skips it the same way it skips the other two.
+ */
+export const ASSET_SOURCES_FILE = ".sources.json";
+
+/**
  * The world's own templates — "Convert to template" writes here. One file
  * holding a forest of pages, rather than a directory of them like the tree
  * itself: templates are scaffolding rather than writing, there are a dozen at

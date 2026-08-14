@@ -20,6 +20,7 @@ import { alwaysDirectory } from "./template-registry";
 import {
   ASSET_FOLDERS_FILE,
   ASSET_NAMES_FILE,
+  ASSET_SOURCES_FILE,
   ASSETS_DIR,
   BACKUPS_DIR,
   FOLDER_META_FILE as FOLDER_FILE,
@@ -1289,10 +1290,11 @@ export async function listAssetImages(rootPath: string): Promise<{ fileName: str
   const files: { fileName: string; size: number }[] = [];
   for (const entry of entries) {
     if (!entry.isFile) continue;
-    // Ours, not a picture. It's the only non-image this directory is allowed
-    // to hold, and listing it would put a broken thumbnail in the grid with a
-    // delete button on it — nothing points at it, so it would read as unused.
-    if (entry.name === ASSET_FOLDERS_FILE || entry.name === ASSET_NAMES_FILE) continue;
+    // Ours, not pictures. They're the only non-images this directory is
+    // allowed to hold, and listing one would put a broken thumbnail in the grid
+    // with a delete button on it — nothing points at it, so it would read as
+    // unused. Anything added beside them has to be added here too.
+    if (entry.name === ASSET_FOLDERS_FILE || entry.name === ASSET_NAMES_FILE || entry.name === ASSET_SOURCES_FILE) continue;
     try {
       const info = await stat(joinPath(assetsDir, entry.name));
       files.push({ fileName: entry.name, size: info.size });
@@ -1346,6 +1348,29 @@ export async function loadAssetNames(rootPath: string): Promise<unknown> {
 export async function saveAssetNames(rootPath: string, names: unknown): Promise<void> {
   await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
   await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_NAMES_FILE), JSON.stringify(names, null, 2));
+}
+
+/**
+ * Where each picture came from — a third file beside the names and the folders,
+ * on the same reasoning: three small files that can each be read on their own,
+ * rather than one that loses everything when it goes.
+ *
+ * Missing is the normal state. Every project that predates this has no such
+ * file, and so does every project that has never imported from LegendKeeper.
+ */
+export async function loadAssetSources(rootPath: string): Promise<unknown> {
+  const path = joinPath(rootPath, ASSETS_DIR, ASSET_SOURCES_FILE);
+  if (!(await exists(path))) return null;
+  try {
+    return JSON.parse(await readTextFile(path));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAssetSources(rootPath: string, sources: unknown): Promise<void> {
+  await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
+  await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_SOURCES_FILE), JSON.stringify(sources, null, 2));
 }
 
 export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {

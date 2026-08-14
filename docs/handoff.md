@@ -741,6 +741,29 @@ is below.
 
 ## LK export
 
+- **Three separate records answer "where did this picture come from", and they
+  must not be merged casually.** `Node.imageSource` for the portrait,
+  `Node.bannerSource` for the banner, `assets/.sources.json` for a picture in
+  the writing. The third is keyed by filename because the origin belongs to the
+  file, not to the block or the page showing it — and because BlockNote's image
+  block has a fixed prop set that an extra prop wouldn't survive a document load
+  through. Unifying them is a real option one day; doing it half way leaves two
+  records of one fact, which is how they drift apart.
+
+- **`.sources.json` values are re-validated as `http(s)` on read.** The file
+  sits in her project folder, is hand-editable, and its values are written
+  straight into an export as addresses. A `file:` or `javascript:` value carried
+  through would be put somewhere something could follow it. Dropping an entry
+  costs one picture in a re-export; carrying a bad one costs more.
+
+- **A picture uploaded from her own disk still cannot go into a `.lk`, and this
+  is the format's limit rather than ours.** A `.lk` holds addresses of things on
+  LK's servers, never bytes. Putting one there would mean uploading to LK — an
+  account, a password, and her files leaving the machine — which the Policy
+  Boundary rules out. Whether a `data:` URI would be accepted by LK's importer
+  instead is an open question that only she can settle, since it needs a real
+  import into a real LK account; see `docs/plan.md`.
+
 - **`pos` keys are fixed-width, always two characters.** Import compares them
   as plain strings, and variable-length keys don't sort under that: index 75
   ("00") lands before index 1 ("1"), because comparison is character by

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildExportFile, collectSubtree, packLkBytes, positionKey } from "./lk-export";
-import { buildImportPlan, parseLkBytes } from "./lk-import";
+import { applyBodyImage, buildImportPlan, parseLkBytes } from "./lk-import";
 import { createProject, type Node, type Project } from "../constants/schema";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" | "templateKey">): Node {
@@ -239,6 +239,54 @@ describe("buildExportFile", () => {
       expect(out[0]).toEqual({ type: "paragraph", content: [{ type: "text", text: "Valera, age 19" }] });
       expect(out[1]).toEqual({ type: "paragraph", content: [{ type: "text", text: "after" }] });
       expect(plan.lossyNotes.some((n) => n.includes("1 picture"))).toBe(true);
+    });
+
+    describe("a picture that knows where it came from", () => {
+      const pageWith = (props: Record<string, unknown>) => [
+        node({ id: "a", name: "Page", parentId: null, templateKey: "note", tabs: [tab("Main", [{ type: "image", props }])] }),
+      ];
+      const exportWithSources = (nodes: Node[], assetSources: Record<string, string>) =>
+        buildExportFile({ project: project(), nodes, rootIds: ["a"], orderedIdsFor: ordererFor(nodes), assetSources });
+
+      it("goes home as a mediaSingle pointing at the address it was downloaded from", () => {
+        const plan = exportWithSources(pageWith({ url: "anamnesis-asset:cat.png" }), {
+          "cat.png": "https://assets.legendkeeper.com/cat.png",
+        });
+        expect(firstDocContent(plan, "Page")[0]).toEqual({
+          type: "mediaSingle",
+          attrs: { layout: "center" },
+          content: [
+            {
+              type: "media",
+              attrs: { id: "", type: "external", collection: "", url: "https://assets.legendkeeper.com/cat.png", __external: false },
+            },
+          ],
+        });
+        expect(plan.lossyNotes).toEqual([]);
+      });
+
+      it("turns the pixel width back into a percentage of the text column", () => {
+        const plan = exportWithSources(pageWith({ url: "anamnesis-asset:cat.png", previewWidth: 440, textAlignment: "right" }), {
+          "cat.png": "https://assets.legendkeeper.com/cat.png",
+        });
+        // 440 is half of READING_COLUMN_WIDTH — the inverse of the import test.
+        expect(firstDocContent(plan, "Page")[0].attrs).toEqual({ layout: "align-end", width: 50 });
+      });
+
+      it("sends a picture embedded by web address straight back, with no lookup needed", () => {
+        const plan = exportWithSources(pageWith({ url: "https://example.com/cat.png" }), {});
+        const media = firstDocContent(plan, "Page")[0].content![0];
+        expect(media.attrs!.url).toBe("https://example.com/cat.png");
+        expect(plan.lossyNotes).toEqual([]);
+      });
+
+      it("still reports a picture uploaded here, which has no address to go back to", () => {
+        const plan = exportWithSources(pageWith({ url: "anamnesis-asset:local.png", caption: "Mine" }), {
+          "cat.png": "https://assets.legendkeeper.com/cat.png",
+        });
+        expect(firstDocContent(plan, "Page")[0]).toEqual({ type: "paragraph", content: [{ type: "text", text: "Mine" }] });
+        expect(plan.lossyNotes.some((n) => n.includes("1 picture"))).toBe(true);
+      });
     });
 
     it("converts a divider to a rule and a quote block to a blockquote", () => {
@@ -491,5 +539,68 @@ describe("round trip through LK format", () => {
     const mentions = JSON.stringify(after.tabs[0].content);
     expect(mentions).toContain('"type":"mention"');
     expect(second.lossyNotes.some((note) => note.includes("cross-reference"))).toBe(false);
+  });
+
+  // The whole point of the sources file. Import can't do this leg itself — the
+  // download happens in the store — so the filename it would have produced is
+  // stood in for here, which is exactly what `importLkProject` records.
+  it("sends a picture in the writing back to the address it came from", () => {
+    const withPicture = {
+      version: 1,
+      resources: [
+        { id: "root", parentId: null, name: "Valeraverse", pos: "A", documents: [{ id: "d", name: "Main", pos: "A", content: { type: "doc", content: [] } }] },
+        {
+          id: "page",
+          parentId: "root",
+          name: "Valera Jiang",
+          pos: "A",
+          documents: [
+            {
+              id: "d1",
+              name: "Main",
+              pos: "A",
+              content: {
+                type: "doc",
+                content: [
+                  {
+                    type: "mediaSingle",
+                    attrs: { layout: "center", width: 50 },
+                    content: [{ type: "media", attrs: { id: "", type: "external", collection: "", url: "https://assets.legendkeeper.com/sword.png", __external: false } }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const first = buildImportPlan(withPicture);
+    const pending = first.pendingImages.find((p) => p.field === "body")!;
+    expect(pending.url).toBe("https://assets.legendkeeper.com/sword.png");
+
+    // Stand in for the download: the store writes the bytes to a UUID
+    // filename, points the block at it, and records where it came from.
+    const page = first.nodes.find((n) => n.name === "Valera Jiang")!;
+    applyBodyImage(page, pending.blockId, "9f8c.png");
+    const assetSources = { "9f8c.png": pending.url };
+
+    const exported = buildExportFile({
+      project: { ...createProject({ name: first.projectName, rootOrder: first.rootOrder }), homeNodeId: first.homeNodeId },
+      nodes: first.nodes,
+      rootIds: first.rootOrder,
+      orderedIdsFor: (parentId) => (parentId === null ? first.rootOrder : first.nodes.filter((n) => n.parentId === parentId).map((n) => n.id)),
+      assetSources,
+    });
+
+    const out = findResource(exported, "Valera Jiang").documents[0].content.content!;
+    expect(out[0].type).toBe("mediaSingle");
+    expect(out[0].attrs).toEqual({ layout: "center", width: 50 });
+    expect(out[0].content![0].attrs!.url).toBe("https://assets.legendkeeper.com/sword.png");
+    expect(exported.lossyNotes).toEqual([]);
+
+    // And it survives a second lap, which is the actual promise.
+    const second = buildImportPlan(JSON.parse(JSON.stringify(exported.file)));
+    expect(second.pendingImages.filter((p) => p.field === "body").map((p) => p.url)).toEqual(["https://assets.legendkeeper.com/sword.png"]);
   });
 });
