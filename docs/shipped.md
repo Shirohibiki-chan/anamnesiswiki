@@ -1821,3 +1821,75 @@ doesn't break the listener upstream attached to that element.
 
 Lint, typecheck and 925 tests green. No test covers this; it's a DOM state the
 suite has no jsdom to reach.
+
+---
+
+## Pictures in the writing survive an LK import — 2026-08-14
+
+Queued after measuring both of her exports on 2026-08-13; she picked it as the
+next build over the library work because this one loses data and the other only
+annoys her.
+
+### What was wrong
+
+LK writes a picture placed in a page's text as `mediaSingle` wrapping `media`.
+`convertBlock` had a case for neither, so it fell to `default` — which recurses
+into children the block-level switch then discards. The picture didn't arrive
+damaged; it didn't arrive, and nothing in the import preview mentioned it. A
+silent drop is the worst shape an import bug can take, because the only way to
+find it is to already know what the page used to look like.
+
+Portraits and banners were never affected: those come through
+`properties[].data.url` and `banner.url`, a different path entirely.
+
+### What it took
+
+`ImportPendingImage` grew a third slot. A portrait and a banner are fields on
+the Node, so naming the node says where the filename goes; a body picture is a
+block inside a tab and there can be many per page, so it carries the id of its
+block and `applyBodyImage` reunites them after the download.
+
+`ConvertCtx` gained `bodyImages`, a per-page outbox. `convertBlock` runs several
+frames below `walk` and can't see which page it's converting, so it drops what
+it finds there and `walk` empties the list against the node it just built. **It
+has to be emptied every page** — a leak would give page two page one's pictures,
+which is why there's a test for exactly that.
+
+Two attrs that had never been read now are. `attrs.width` is a percentage of
+LK's text column and becomes `previewWidth` in pixels of ours, against the new
+`READING_COLUMN_WIDTH` — an approximation by construction, since LK's column
+isn't this one, but it keeps a thumbnail a thumbnail. Left unset when LK
+recorded none, because `previewWidth`'s own default means "the size the file
+is". `attrs.layout` becomes `textAlignment`; `wrap-left`/`wrap-right` lose their
+text wrap and `wide`/`full-width` stay inside the column, because our image
+block always sits on its own line.
+
+A `media` node with no `url` is counted and reported rather than dropped. One
+exists in her second export — LK had lost track of it itself.
+
+### A second silent drop, found by a test written for the first
+
+`convertListItem` filtered an item's remaining children to paragraphs and nested
+lists. Anything else inside a list item — a picture, a code block, a callout —
+was thrown away without a word. The nested-picture test failed and that's why.
+The rest now goes through `convertBlocks` like every other container, which also
+fixes the ordering: the old two-pass version put every paragraph ahead of every
+sub-list regardless of how they were written.
+
+### Verification
+
+Both real exports run through `buildImportPlan` in a throwaway test, deleted
+after.
+
+| export | image blocks produced | queued for download | portraits | banners |
+| --- | --- | --- | --- | --- |
+| `Valeraverse.lk` | 0 | 0 | 33 | 20 |
+| `test.lk` | 27 | 27 | 7 | 3 |
+
+27 rather than 28 is the addressless one, which now appears in the preview's
+lossy notes as a picture that couldn't be brought across. Every block id unique,
+every queued URL an `https://` one, and every image block in a tab matched by
+exactly one pending download. Valeraverse's three numbers are identical to the
+2026-08-13 measurement, so nothing on the working paths moved.
+
+935 tests pass, 10 of them new.

@@ -34,3 +34,16 @@ export const TREE_DEFAULT_WIDTH = 260;
 export const PROPERTIES_MIN_WIDTH = 220;
 export const PROPERTIES_MAX_WIDTH = 560;
 export const PROPERTIES_DEFAULT_WIDTH = 300;
+
+/**
+ * How wide a page's text column actually is, in pixels — `--reading-width`
+ * (60rem) less both `--page-gutter`s (2.5rem each). The CSS is the real one;
+ * this is the same number where TypeScript has to know it, so change both.
+ *
+ * Only the LK importer reads it, and only to turn a percentage into pixels: LK
+ * stores a picture's size as a share of its own text column, our image block
+ * stores pixels, and there is no other way across. It's an approximation by
+ * construction — LK's column is not this one — but it keeps a thumbnail a
+ * thumbnail, which is the part a reader would notice going wrong.
+ */
+export const READING_COLUMN_WIDTH = 880;

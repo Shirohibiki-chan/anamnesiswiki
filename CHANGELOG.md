@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-14
+
+### Fixes
+
+- **Pictures you'd placed inside a page's text now come across when you import from LegendKeeper.** They used to vanish — not arrive broken, just not arrive, with the words closed up over the gap and nothing to tell you it had happened. They arrive as real pictures in your project's own `assets/` folder now, at roughly the size and alignment they had before. Your Valeraverse world has none of these, so it was never affected; the other export you sent has 27.
+- **A picture, code block or callout tucked inside a bullet point survives the import too.** Only paragraphs and sub-lists were kept before; anything else in a bullet was thrown away silently. Things inside a bullet also stay in the order you wrote them, where sub-lists used to get shuffled to the bottom.
+- **The import summary now mentions a picture it couldn't bring across.** If LegendKeeper's export doesn't store an address for one, the preview says so instead of leaving you to find the hole later.
+
 ## 2026-08-13
 
 ### Fixes

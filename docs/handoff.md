@@ -709,6 +709,29 @@ is below.
   arrival — and putting home at the front of it only moved every array index in
   the tests by one for no gain.
 
+- **`ctx.bodyImages` must be emptied every page.** It's the outbox
+  `convertBlock` uses to report a picture it found in the writing, and the ctx
+  is shared across the whole walk — `walk` drains it with `.splice(0)` against
+  the node it just built. Leave it filling and page two inherits page one's
+  pictures, which is a data corruption nobody would notice until they opened the
+  page. Same reasoning applies to anything else added to the ctx that isn't a
+  running total.
+
+- **A block that a pending download has to find again needs an explicit `id`.**
+  BlockNote assigns ids itself when it loads a document, which is far too late —
+  `ImportPendingImage`'s `body` variant carries the id `convertMediaSingle`
+  minted, and `applyBodyImage` matches on it. Don't let anything renumber block
+  ids between `buildImportPlan` and `importLkProject`.
+
+- **Adding a case to `convertBlock` for a node with no children is a fix, not an
+  addition.** The `default` branch recurses into children, so a childless node
+  type disappears without a trace — that's how both `codeBlock` (empty on
+  arrival) and `mediaSingle` (absent entirely) got through. Every container that
+  filters its children has the same trap: `convertListItem` was dropping
+  pictures and code blocks inside list items for exactly this reason until
+  2026-08-14. **Pass children through `convertBlocks` rather than filtering to
+  the types you expect.**
+
 - **LK's stock "Welcome to LegendKeeper" page is not imported.** Every fresh LK
   project ships the identical tutorial there, and importing it verbatim drops
   LK's onboarding copy (with links to their demo world) into the middle of the

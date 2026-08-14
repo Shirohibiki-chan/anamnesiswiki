@@ -916,7 +916,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
           const fileName = `${crypto.randomUUID()}.${lkImportService.extensionFromUrl(pending.url)}`;
           await fsService.saveAssetImage(rootPath, fileName, bytes);
           const node = nodes.find((n) => n.id === pending.nodeId);
-          if (node) node[pending.field] = fileName;
+          if (!node) return;
+          // A portrait and a banner are fields on the node; a picture in the
+          // writing is a block inside a tab, found by the id the plan gave it.
+          if (pending.field === "body") lkImportService.applyBodyImage(node, pending.blockId, fileName);
+          else node[pending.field] = fileName;
         } catch {
           // Ignore — see comment above.
         } finally {
