@@ -170,6 +170,22 @@ Phase 13's four new types therefore flatten on the way out, in `printableValue`:
 
 **The trap this replaced:** the guard used to be `if (typeof value !== "string") continue`, which was correct only while every property this app could hold *was* a string. The moment a value could be a number or an array of option ids, that same line silently dropped it from the export.
 
-**Images can't travel.** A `.lk` stores URLs pointing at LK's own servers, never image data, so a file added in Anamnesis has nowhere to go. Import therefore records `Node.imageSource` / `bannerSource` — the address a picture was downloaded from — purely so export can hand it back. Anything without one is left out and counted in the export's lossy list. Projects imported before this existed have no sources and need a re-import to gain them.
+**Images can't travel, so addresses are remembered instead.** A `.lk` stores URLs pointing at LK's own servers, never image data, so a file added in Anamnesis has nowhere to go. What can go back is a picture that *came* from LK, because the address it was downloaded from was written down. Three records do this, and they are not one mechanism:
+
+| picture | where its address lives | since |
+| --- | --- | --- |
+| sidebar portrait | `Node.imageSource` | Phase 8 |
+| page banner | `Node.bannerSource` | Phase 8 |
+| a picture in the writing | `assets/.sources.json`, keyed by filename | 2026-08-14 |
+
+The third is keyed by *file* rather than stored on the block, because the origin belongs to the file — the same picture used on four pages came from one place — and because BlockNote's image block has a fixed set of props that an extra one wouldn't survive a load through. See `constants/paths.ts` `ASSET_SOURCES_FILE` and `services/asset-sources.ts`. Not merged with the other two on purpose: two records of one fact is how they drift.
+
+An image block pointing at a plain `http(s)` address needs no lookup — it already is one, and LK can fetch it from wherever we do.
+
+Anything with no address is a file from her own disk, left out and counted in the export's lossy list. **Projects imported before each record existed have no sources and need a re-import to gain them.**
+
+`ALIGNMENT_TO_MEDIA_LAYOUT` runs the layout mapping backwards on the way out, and is deliberately not a perfect inverse: LK's wrapping and full-width layouts have no equivalent here, so a wrapped picture comes in left-aligned and goes home left-aligned. That is the only loss in the picture round trip. Width goes back as a percentage of `READING_COLUMN_WIDTH`, omitted when the picture was never resized.
+
+**Verified end to end 2026-08-14** against her second account's real export: 27 pictures in page bodies imported, 27 `mediaSingle` nodes written back, 27 read again on a second import, same addresses throughout, and no lossy note at all. Portraits (7) and banners (3) unchanged across the same trip.
 
 **Round-trip status.** Import → export → import over the real 75-resource `Valeraverse.lk` returns 75 pages with identical tree shape, templates, tabs and tags. That proves the mapping is self-consistent; **nothing has yet been imported into real LegendKeeper from a file we wrote.**

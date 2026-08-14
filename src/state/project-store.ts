@@ -81,6 +81,13 @@ import {
   planTagRename,
 } from "../services/property-service";
 import * as lkImportService from "../services/lk-import";
+import {
+  createAssetSources,
+  parseAssetSources,
+  pruneAssetSources,
+  recordAssetSource,
+  type AssetSources,
+} from "../services/asset-sources";
 import type { ImportPendingImage } from "../services/lk-import";
 import { countLabel } from "../services/history-service";
 import { useHistoryStore } from "./history-store";
@@ -315,6 +322,16 @@ export type ProjectStoreState = {
    * moment a name is committed.
    */
   assetNames: AssetNames;
+  /**
+   * Where each picture came from, keyed by filename — only ever written by a
+   * LegendKeeper import, and only read when exporting back to one. See
+   * constants/paths.ts ASSET_SOURCES_FILE.
+   *
+   * Held here rather than read on demand purely so the export path can have it
+   * synchronously; nothing on screen shows it, and nothing but an import edits
+   * it.
+   */
+  assetSources: AssetSources;
   /** Names a picture. An empty name takes the name away rather than storing one. */
   renameAsset: (fileName: string, name: string) => void;
   /** Drops names for pictures that are no longer on disk. */
@@ -745,6 +762,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     lastSavedAt: null,
     assetFolders: createAssetFolders(),
     assetNames: createAssetNames(),
+    assetSources: createAssetSources(),
     skippedFiles: [],
     loadWasIncomplete: false,
     saveErrors: [],
@@ -792,6 +810,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // file here at all, which reads as "nothing is named yet" — the state
       // every picture starts in regardless.
       const assetNames = parseAssetNames(await fsService.loadAssetNames(rootPath));
+      // And the third: where the pictures came from. Absent for every project
+      // that has never imported from LegendKeeper, which is most of them.
+      const assetSources = parseAssetSources(await fsService.loadAssetSources(rootPath));
 
       const nodes = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
       set({
@@ -801,6 +822,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         templates,
         assetFolders,
         assetNames,
+        assetSources,
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
         isLoaded: true,
@@ -856,6 +878,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         // whatever the last project reported has nothing to do with this one.
         assetFolders: createAssetFolders(),
         assetNames: createAssetNames(),
+        assetSources: createAssetSources(),
         skippedFiles: [],
         loadWasIncomplete: false,
         navHistory: EMPTY_NAV_HISTORY,
@@ -910,11 +933,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       let fetched = 0;
       onProgress?.({ phase: "images", done: 0, total: pendingImages.length });
 
+      // Where every downloaded picture came from, so an export back to LK can
+      // send it home — a `.lk` holds addresses, not files. Built here rather
+      // than through the store's setter because the workers run concurrently
+      // and the project isn't loaded yet; it's written once, below.
+      let assetSources = createAssetSources();
+
       async function fetchOne(pending: ImportPendingImage): Promise<void> {
         try {
           const bytes = await lkImportService.fetchLkImage(pending.url);
           const fileName = `${crypto.randomUUID()}.${lkImportService.extensionFromUrl(pending.url)}`;
           await fsService.saveAssetImage(rootPath, fileName, bytes);
+          assetSources = recordAssetSource(assetSources, fileName, pending.url);
           const node = nodes.find((n) => n.id === pending.nodeId);
           if (!node) return;
           // A portrait and a banner are fields on the node; a picture in the
@@ -943,12 +973,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       useHistoryStore.getState().clear();
       const project = { ...createProject({ name: trimmed, rootOrder }), homeNodeId };
       const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
-      set({ rootPath, project, nodes: nodesRecord, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
+      set({ rootPath, project, nodes: nodesRecord, isLoaded: true, assetSources, navHistory: EMPTY_NAV_HISTORY });
 
       await fsService.saveProject(rootPath, project);
       // One shared path index for the whole import rather than one per node —
       // an LK world is the largest single write this app ever does.
       await fsService.saveNodes(rootPath, nodes, nodes);
+      // Written only when something was actually downloaded, so an import of a
+      // world with no pictures doesn't leave an empty file behind.
+      if (Object.keys(assetSources).length > 0) await fsService.saveAssetSources(rootPath, assetSources);
       markSaved();
 
       return { ok: true, rootPath };
@@ -967,6 +1000,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         lastSavedAt: null,
         assetFolders: createAssetFolders(),
         assetNames: createAssetNames(),
+        assetSources: createAssetSources(),
         skippedFiles: [],
         loadWasIncomplete: false,
         saveErrors: [],
@@ -1376,11 +1410,24 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     },
 
     pruneAssetNames(present) {
+      const { rootPath } = get();
+      const stillHere = new Set(present);
+
       const before = get().assetNames;
-      const pruned = pruneAssetNames(before, new Set(present));
+      const pruned = pruneAssetNames(before, stillHere);
       // Not undoable and deliberately silent: the pictures are already gone,
       // and this is the record catching up rather than an edit she made.
       if (pruned !== before) applyAssetNames(pruned);
+
+      // The sources file rides along on the same sweep rather than having its
+      // own. It's the same question — which filenames still exist — and a
+      // second pass would be a second chance to disagree.
+      const sourcesBefore = get().assetSources;
+      const sourcesPruned = pruneAssetSources(sourcesBefore, stillHere);
+      if (sourcesPruned !== sourcesBefore) {
+        set({ assetSources: sourcesPruned });
+        if (rootPath) track(() => fsService.saveAssetSources(rootPath, sourcesPruned));
+      }
     },
 
     createAssetFolder(name) {

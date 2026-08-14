@@ -247,6 +247,32 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 ## Queued Adjustments
 
+- **Does LegendKeeper's importer accept a picture stored inside the `.lk`
+  file?** Open, and only the user can close it — answering needs a real import
+  into a real LK account, which this app never contacts.
+
+  A `.lk` holds *addresses* of pictures on LK's servers, never bytes, which is
+  why a picture uploaded here can't go back. Uploading to LK would need her
+  account and her password and would send her files off the machine, so that
+  route is closed by the Policy Boundary. A `data:` URI is the one remaining
+  possibility: the whole picture written into the address field, nothing
+  uploaded anywhere, the file handed to LK by hand as always.
+
+  A probe file was built 2026-08-14 and given to her — three pictures on one
+  page: a real LK address as the control, a teal square as a `data:` URI with
+  `type: "external"`, a pink square as a `data:` URI with `type: "file"`. Both
+  media types appear in her real exports, so both are worth trying. Verified to
+  parse through our own importer before handing it over; the generator is in the
+  session scratchpad, not the repo.
+
+  **If it works**, local pictures round-trip and the export's biggest lossy note
+  goes away — at the cost of file size, since base64 is a third larger than the
+  file and gzip barely touches already-compressed image data. A world with a few
+  hundred photos would run to hundreds of megabytes, so it would want to be a
+  choice at export time rather than the default. **If it doesn't**, the question
+  is settled permanently and the lossy note stands as the final answer.
+
+
 - **Find out what our own copy and paste actually does, before building any
   importer on top of it.** Raised 2026-08-12 by what botmakers said about the
   tool they're leaving (see Future Features → Import and paste fidelity): the

@@ -7,10 +7,27 @@
 // conversion plus one local file write — see docs/handoff.md on why images
 // therefore can't travel inside a `.lk` at all.
 import { normalizeCodeLanguage } from "../constants/code-languages";
+import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { COLOR_PALETTE } from "../constants/palette";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project, type Tab } from "../constants/schema";
+import { sourceUrlFor, type AssetSources } from "./asset-sources";
 import type { RenderableProperty } from "./property-service";
 import { getPropertySchema } from "./template-registry";
+
+/**
+ * The inverse of import's `MEDIA_LAYOUT_ALIGNMENT`, and deliberately not a
+ * perfect one. LK's wrapping and full-width layouts have no equivalent here, so
+ * import folds them onto the side they lean towards and export can only send
+ * back the side. A picture that was wrapped in LK comes here as left-aligned
+ * and goes home left-aligned rather than wrapped — a real, one-way loss, and
+ * the only one in the picture round trip.
+ */
+const ALIGNMENT_TO_MEDIA_LAYOUT: Record<string, string> = {
+  left: "align-start",
+  center: "center",
+  right: "align-end",
+  justify: "center",
+};
 
 // ---- Raw .lk shapes we produce (mirrors lk-import's reader-side types) ----
 type LkMark = { type: string; attrs?: Record<string, unknown> };
@@ -208,8 +225,8 @@ function paragraphOf(content: LkNode[]): LkNode {
   return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
 }
 
-function childBlocks(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker): LkNode[] {
-  return Array.isArray(block.children) ? convertBlocks(block.children, idMap, lossy) : [];
+function childBlocks(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkNode[] {
+  return Array.isArray(block.children) ? convertBlocks(block.children, idMap, lossy, sources) : [];
 }
 
 function convertListRun(
@@ -217,11 +234,12 @@ function convertListRun(
   listType: "bulletList" | "orderedList",
   idMap: Map<string, string>,
   lossy: LossyTracker,
+  sources: AssetSources,
 ): LkNode {
   return {
     type: listType,
     content: blocks.map((block) => {
-      const nested = childBlocks(block, idMap, lossy);
+      const nested = childBlocks(block, idMap, lossy, sources);
       return { type: "listItem", content: [paragraphOf(convertInline(block.content, idMap)), ...nested] };
     }),
   };
@@ -235,7 +253,7 @@ function captionRuns(block: BlockNoteBlock): LkNode[] {
   return [{ type: "text", text: caption }];
 }
 
-function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker): LkNode[] {
+function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkNode[] {
   const inline = () => convertInline(block.content, idMap);
 
   switch (block.type) {
@@ -276,7 +294,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
         {
           type: "panel",
           attrs: { panelType: CALLOUT_TO_PANEL_TYPE[block.type] },
-          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy)],
+          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, sources)],
         },
       ];
     case "calloutSecret":
@@ -288,10 +306,45 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
         {
           type: "bodiedExtension",
           attrs: { extensionKey: "block-secret", extensionType: "com.legendkeeper.block", parameters: {} },
-          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy)],
+          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, sources)],
         },
       ];
-    case "image":
+    case "image": {
+      // A picture can go home if it knows where home is. One imported from LK
+      // was downloaded from an address on their servers and that address was
+      // written down (see constants/paths.ts ASSET_SOURCES_FILE); one embedded
+      // by web address already is one. Either way LK can fetch the same bytes
+      // we did, which is all a `.lk` ever carries.
+      const source = sourceUrlFor(sources, block.props?.url);
+      if (!source) {
+        // Uploaded from her own disk. Falls through to the same wall the
+        // portrait hits — see below.
+        bump(lossy, "localImages");
+        return [paragraphOf(captionRuns(block))];
+      }
+
+      const attrs: Record<string, unknown> = { layout: ALIGNMENT_TO_MEDIA_LAYOUT[block.props?.textAlignment as string] ?? "center" };
+      // Back to a percentage of the text column, the inverse of what import
+      // does. Omitted when the picture has never been resized, so LK is left
+      // to show it at its own size rather than at a number we invented.
+      const previewWidth = block.props?.previewWidth;
+      if (typeof previewWidth === "number" && previewWidth > 0) {
+        attrs.width = Math.min(100, (previewWidth / READING_COLUMN_WIDTH) * 100);
+      }
+
+      return [
+        {
+          type: "mediaSingle",
+          attrs,
+          // `id` and `collection` are empty strings in every media node in both
+          // of her real exports, and `__external: false` is what LK writes even
+          // for `type: "external"`. Copied rather than reasoned about — this is
+          // their format, and the shape that's known to load is the one they
+          // produce themselves.
+          content: [{ type: "media", attrs: { id: "", type: "external", collection: "", url: source, __external: false } }],
+        },
+      ];
+    }
     case "video":
     case "audio":
     case "file":
@@ -308,7 +361,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
       const title = convertInline(block.content, idMap)
         .map((node) => node.text ?? "")
         .join("");
-      return [{ type: "expand", attrs: { title }, content: childBlocks(block, idMap, lossy) }];
+      return [{ type: "expand", attrs: { title }, content: childBlocks(block, idMap, lossy, sources) }];
     }
     default:
       // Unknown block types keep their text rather than vanishing — the same
@@ -317,7 +370,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
   }
 }
 
-export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy: LossyTracker): LkNode[] {
+export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkNode[] {
   if (!Array.isArray(blocks)) return [];
   const out: LkNode[] = [];
 
@@ -334,11 +387,11 @@ export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy
     if (listType) {
       const run: BlockNoteBlock[] = [];
       while (index < typed.length && typed[index]?.type === block.type) run.push(typed[index++]);
-      out.push(convertListRun(run, listType, idMap, lossy));
+      out.push(convertListRun(run, listType, idMap, lossy, sources));
       continue;
     }
 
-    out.push(...convertBlock(block, idMap, lossy));
+    out.push(...convertBlock(block, idMap, lossy, sources));
     index++;
   }
 
@@ -425,13 +478,13 @@ function paletteHexFor(colorKey: string | undefined): string | undefined {
 }
 
 // ---- Tabs -> documents ----
-function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTracker): LkDocument[] {
+function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkDocument[] {
   return tabs.map((tab, index) => ({
     id: crypto.randomUUID(),
     name: tab.label,
     pos: positionKey(index),
     isHidden: tab.hidden,
-    content: emptyDoc(convertBlocks(tab.content, idMap, lossy)),
+    content: emptyDoc(convertBlocks(tab.content, idMap, lossy, sources)),
   }));
 }
 
@@ -476,8 +529,16 @@ export function buildExportFile(input: {
   nodes: Node[];
   rootIds: string[];
   orderedIdsFor: (parentId: string | null) => string[];
+  /**
+   * Where each picture in `assets/` came from. Optional because most callers —
+   * every test, and any project that has never imported from LegendKeeper —
+   * have none, and an absent map means every picture in the writing is treated
+   * as local, which is what it was before this existed.
+   */
+  assetSources?: AssetSources;
 }): ExportPlan {
   const { project, nodes, rootIds, orderedIdsFor } = input;
+  const sources = input.assetSources ?? {};
   const lossy: LossyTracker = new Map();
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
@@ -526,7 +587,7 @@ export function buildExportFile(input: {
     // has somehow ended up with no tabs at all.
     const documents =
       node.tabs.length > 0
-        ? convertTabs(node.tabs, idMap, lossy)
+        ? convertTabs(node.tabs, idMap, lossy, sources)
         : [{ id: crypto.randomUUID(), name: "Main", pos: positionKey(0), isHidden: false, content: emptyDoc([]) }];
 
     resources.push({
