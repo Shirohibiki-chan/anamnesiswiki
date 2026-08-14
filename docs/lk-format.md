@@ -182,7 +182,13 @@ The third is keyed by *file* rather than stored on the block, because the origin
 
 An image block pointing at a plain `http(s)` address needs no lookup — it already is one, and LK can fetch it from wherever we do.
 
-Anything with no address is a file from her own disk, left out and counted in the export's lossy list. **Projects imported before each record existed have no sources and need a re-import to gain them.**
+**A picture with no address can travel as a `data:` URI, and this is measured rather than assumed.** LK's importer accepts the whole file written into the address field, and renders it — verified against a real LegendKeeper account on 2026-08-14, for **both** media types LK writes (`type: "external"` and the stricter `type: "file"`). So a picture from her own disk can go after all, at the cost of size: base64 adds a third, and gzip can't win it back on an already-compressed image. Her Valeraverse `assets/` is 48 MB, which would be ~64 MB inside a `.lk` — hence a checkbox at export time rather than always-on. `buildExportFile` takes `assetData` (filename → data URI) and reports `localAssetFiles` so a caller can build that map in a second pass; `dataUriFor` in `asset-sources.ts` does the encoding.
+
+**An imported address always wins over the bytes**, even when both are available: it's a fraction of the size and points at the same picture.
+
+Anything with no address *and* no carried bytes is left out and counted. **Projects imported before each record existed have no sources and need a re-import to gain them.**
+
+**How that was established, because the first attempt was a broken experiment.** A hand-built `.lk` was tried first and LK hung on it, reporting "? pages" — but it was missing a dozen fields LK writes (`schemaVersion`, `createdBy`, `iconGlyph`, `iconShape`, `showPropertyBar`, and per document `createdAt`, `updatedAt`, `locatorId`, `type`, `isFirst`, `transforms`, `sources`), plus a top-level `hash` whose derivation could not be reproduced from either export. A malformed file and a rejected picture look identical from outside. The second attempt started from her own real export and changed exactly four values — two media URLs and the two page names holding them — leaving the other 25 pictures as the control inside the same file, and the untouched `hash` proving LK does not verify it. **Build any future format probe that way: mutate a real export minimally, never construct one.**
 
 `ALIGNMENT_TO_MEDIA_LAYOUT` runs the layout mapping backwards on the way out, and is deliberately not a perfect inverse: LK's wrapping and full-width layouts have no equivalent here, so a wrapped picture comes in left-aligned and goes home left-aligned. That is the only loss in the picture round trip. Width goes back as a percentage of `READING_COLUMN_WIDTH`, omitted when the picture was never resized.
 

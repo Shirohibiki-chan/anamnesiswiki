@@ -11,8 +11,23 @@ import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { COLOR_PALETTE } from "../constants/palette";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project, type Tab } from "../constants/schema";
 import { sourceUrlFor, type AssetSources } from "./asset-sources";
+import { assetFileName } from "./asset-urls";
 import type { RenderableProperty } from "./property-service";
 import { getPropertySchema } from "./template-registry";
+
+/**
+ * How the converters ask "what address can LegendKeeper fetch this picture
+ * from?" — the one question the whole picture-export problem reduces to.
+ *
+ * A resolver rather than the raw sources map, because there are three possible
+ * answers and only one of them is a lookup: the address it was imported from,
+ * the picture's own bytes written into a `data:` URI when she asked for that,
+ * or nothing. Counting the nothings is the resolver's job too, so no caller can
+ * forget to.
+ */
+type PictureLookup = {
+  addressFor: (url: unknown) => string | undefined;
+};
 
 /**
  * The inverse of import's `MEDIA_LAYOUT_ALIGNMENT`, and deliberately not a
@@ -69,6 +84,24 @@ export type ExportPlan = {
   pageCount: number;
   /** Plain-language notes about anything that won't survive the trip. */
   lossyNotes: string[];
+  /**
+   * The one about pictures from her own disk, or null when there are none.
+   *
+   * Separate from `lossyNotes` because it's the only note she can act on: it
+   * stops being true if she asks for the files to be carried inside the export.
+   * A caller offering that choice shows this only while the choice is "no".
+   */
+  localPictureNote: string | null;
+  /**
+   * Filenames in `assets/` that had to be left out, because they came from her
+   * own disk and have no address to send LK to.
+   *
+   * Deduplicated, and the caller's cue for the "carry them inside the file"
+   * offer: it can size exactly these, and pass them back as `assetData` for a
+   * second pass. Empty when everything had an address, which is the whole of an
+   * unmodified LK import.
+   */
+  localAssetFiles: string[];
 };
 
 // The schema version LK's own exports carried when this was written, against
@@ -106,14 +139,23 @@ function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
+/**
+ * The note about pictures that can't travel, kept out of `lossyNotes` on
+ * purpose.
+ *
+ * It's the one note the user can *do* something about — carrying the files
+ * inside the export makes it untrue — so it can't sit in a list the UI renders
+ * unconditionally. The caller decides whether it still applies. See
+ * `ExportPlan.localPictureNote`.
+ */
+function describeLocalPictures(tracker: LossyTracker): string | null {
+  const localImages = tracker.get("localImages");
+  if (!localImages) return null;
+  return `${plural(localImages, "picture")} you added in Anamnesis won't go into this LegendKeeper file. The format normally only stores web addresses of pictures already on LegendKeeper's own servers. Your pictures stay where they are — they're just not in this export.`;
+}
+
 function describeLossy(tracker: LossyTracker): string[] {
   const notes: string[] = [];
-  const localImages = tracker.get("localImages");
-  if (localImages) {
-    notes.push(
-      `${plural(localImages, "picture")} you added in Anamnesis can't go into a LegendKeeper file. The format only stores web addresses of pictures already on LegendKeeper's own servers, so there's nowhere to put a file from your computer. Your pictures stay where they are — they're just not in this export.`,
-    );
-  }
   const folders = tracker.get("folderTabs");
   if (folders) {
     notes.push(`${plural(folders, "folder")} export as pages with an empty Main tab — LegendKeeper has no folder-only concept.`);
@@ -225,8 +267,8 @@ function paragraphOf(content: LkNode[]): LkNode {
   return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
 }
 
-function childBlocks(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkNode[] {
-  return Array.isArray(block.children) ? convertBlocks(block.children, idMap, lossy, sources) : [];
+function childBlocks(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkNode[] {
+  return Array.isArray(block.children) ? convertBlocks(block.children, idMap, lossy, pictures) : [];
 }
 
 function convertListRun(
@@ -234,12 +276,12 @@ function convertListRun(
   listType: "bulletList" | "orderedList",
   idMap: Map<string, string>,
   lossy: LossyTracker,
-  sources: AssetSources,
+  pictures: PictureLookup,
 ): LkNode {
   return {
     type: listType,
     content: blocks.map((block) => {
-      const nested = childBlocks(block, idMap, lossy, sources);
+      const nested = childBlocks(block, idMap, lossy, pictures);
       return { type: "listItem", content: [paragraphOf(convertInline(block.content, idMap)), ...nested] };
     }),
   };
@@ -253,7 +295,7 @@ function captionRuns(block: BlockNoteBlock): LkNode[] {
   return [{ type: "text", text: caption }];
 }
 
-function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkNode[] {
+function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkNode[] {
   const inline = () => convertInline(block.content, idMap);
 
   switch (block.type) {
@@ -294,7 +336,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
         {
           type: "panel",
           attrs: { panelType: CALLOUT_TO_PANEL_TYPE[block.type] },
-          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, sources)],
+          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, pictures)],
         },
       ];
     case "calloutSecret":
@@ -306,7 +348,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
         {
           type: "bodiedExtension",
           attrs: { extensionKey: "block-secret", extensionType: "com.legendkeeper.block", parameters: {} },
-          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, sources)],
+          content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, pictures)],
         },
       ];
     case "image": {
@@ -315,11 +357,11 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
       // written down (see constants/paths.ts ASSET_SOURCES_FILE); one embedded
       // by web address already is one. Either way LK can fetch the same bytes
       // we did, which is all a `.lk` ever carries.
-      const source = sourceUrlFor(sources, block.props?.url);
+      const source = pictures.addressFor(block.props?.url);
       if (!source) {
-        // Uploaded from her own disk. Falls through to the same wall the
-        // portrait hits — see below.
-        bump(lossy, "localImages");
+        // Uploaded from her own disk, and she didn't ask for it to be carried
+        // inside the file. Same wall the portrait hits — see below. The
+        // resolver has already counted it.
         return [paragraphOf(captionRuns(block))];
       }
 
@@ -361,7 +403,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
       const title = convertInline(block.content, idMap)
         .map((node) => node.text ?? "")
         .join("");
-      return [{ type: "expand", attrs: { title }, content: childBlocks(block, idMap, lossy, sources) }];
+      return [{ type: "expand", attrs: { title }, content: childBlocks(block, idMap, lossy, pictures) }];
     }
     default:
       // Unknown block types keep their text rather than vanishing — the same
@@ -370,7 +412,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
   }
 }
 
-export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkNode[] {
+export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkNode[] {
   if (!Array.isArray(blocks)) return [];
   const out: LkNode[] = [];
 
@@ -387,11 +429,11 @@ export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy
     if (listType) {
       const run: BlockNoteBlock[] = [];
       while (index < typed.length && typed[index]?.type === block.type) run.push(typed[index++]);
-      out.push(convertListRun(run, listType, idMap, lossy, sources));
+      out.push(convertListRun(run, listType, idMap, lossy, pictures));
       continue;
     }
 
-    out.push(...convertBlock(block, idMap, lossy, sources));
+    out.push(...convertBlock(block, idMap, lossy, pictures));
     index++;
   }
 
@@ -478,13 +520,13 @@ function paletteHexFor(colorKey: string | undefined): string | undefined {
 }
 
 // ---- Tabs -> documents ----
-function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTracker, sources: AssetSources): LkDocument[] {
+function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkDocument[] {
   return tabs.map((tab, index) => ({
     id: crypto.randomUUID(),
     name: tab.label,
     pos: positionKey(index),
     isHidden: tab.hidden,
-    content: emptyDoc(convertBlocks(tab.content, idMap, lossy, sources)),
+    content: emptyDoc(convertBlocks(tab.content, idMap, lossy, pictures)),
   }));
 }
 
@@ -536,9 +578,54 @@ export function buildExportFile(input: {
    * as local, which is what it was before this existed.
    */
   assetSources?: AssetSources;
+  /**
+   * Filenames in `assets/` mapped to the picture's own bytes as a `data:` URI,
+   * for the pictures that have no address to go back to.
+   *
+   * Only ever populated when she has asked for it, because it makes the file
+   * enormous — base64 costs a third on top, and gzip can't win that back on an
+   * already-compressed picture. Build the plan once without this to learn which
+   * files are needed (`localAssetFiles`), then build it again with them.
+   */
+  assetData?: Record<string, string>;
 }): ExportPlan {
   const { project, nodes, rootIds, orderedIdsFor } = input;
   const sources = input.assetSources ?? {};
+  const embedded = input.assetData ?? {};
+
+  // Every picture that had to be left behind, by filename. A Set because one
+  // file can be on six pages and the caller is going to size these.
+  const localAssetFiles = new Set<string>();
+
+  /**
+   * The single place that decides whether a picture can travel.
+   *
+   * Order matters. An address it was imported from is preferred over the
+   * picture's own bytes even when both are available: it's a fraction of the
+   * size, LK can fetch it, and it's the same file.
+   */
+  const pictures: PictureLookup = {
+    addressFor(url) {
+      const known = sourceUrlFor(sources, url);
+      if (known) return known;
+
+      const fileName = typeof url === "string" ? assetFileName(url) : null;
+      if (fileName && embedded[fileName]) return embedded[fileName];
+
+      if (fileName) localAssetFiles.add(fileName);
+      bump(lossy, "localImages");
+      return undefined;
+    },
+  };
+
+  /** The same question for a portrait or a banner, which hold a bare filename. */
+  const addressForSlot = (fileName: string, knownSource: string | undefined): string | undefined => {
+    if (knownSource) return knownSource;
+    if (embedded[fileName]) return embedded[fileName];
+    localAssetFiles.add(fileName);
+    bump(lossy, "localImages");
+    return undefined;
+  };
   const lossy: LossyTracker = new Map();
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
@@ -562,21 +649,18 @@ export function buildExportFile(input: {
   function imageProperties(node: Node): LkProperty[] {
     if (!node.image) return [];
     // A picture that came from LK still knows the address it came from, so it
-    // can go home. One added here is a local file with no address at all.
-    if (!node.imageSource) {
-      bump(lossy, "localImages");
-      return [];
-    }
-    return [{ id: crypto.randomUUID(), title: "Image", type: "IMAGE", data: { url: node.imageSource } }];
+    // can go home. One added here has no address — unless she asked for the
+    // file itself to be carried, which is what `assetData` is.
+    const url = addressForSlot(node.image, node.imageSource);
+    if (!url) return [];
+    return [{ id: crypto.randomUUID(), title: "Image", type: "IMAGE", data: { url } }];
   }
 
   function bannerFor(node: Node): LkResource["banner"] {
     if (!node.banner) return undefined;
-    if (!node.bannerSource) {
-      bump(lossy, "localImages");
-      return undefined;
-    }
-    return { enabled: true, url: node.bannerSource, yPosition: node.bannerFocusY ?? 50 };
+    const url = addressForSlot(node.banner, node.bannerSource);
+    if (!url) return undefined;
+    return { enabled: true, url, yPosition: node.bannerFocusY ?? 50 };
   }
 
   function emit(node: Node, parentLkId: string | null, pos: string): void {
@@ -587,7 +671,7 @@ export function buildExportFile(input: {
     // has somehow ended up with no tabs at all.
     const documents =
       node.tabs.length > 0
-        ? convertTabs(node.tabs, idMap, lossy, sources)
+        ? convertTabs(node.tabs, idMap, lossy, pictures)
         : [{ id: crypto.randomUUID(), name: "Main", pos: positionKey(0), isHidden: false, content: emptyDoc([]) }];
 
     resources.push({
@@ -668,7 +752,7 @@ export function buildExportFile(input: {
     calendars: [],
   };
 
-  return { file, pageCount: includedNodes.length, lossyNotes: describeLossy(lossy) };
+  return { file, pageCount: includedNodes.length, lossyNotes: describeLossy(lossy), localPictureNote: describeLocalPictures(lossy), localAssetFiles: [...localAssetFiles] };
 }
 
 /**

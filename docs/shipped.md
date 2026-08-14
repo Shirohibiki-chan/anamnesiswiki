@@ -1980,3 +1980,84 @@ and one as `type: "file"`, since both types appear in her real exports. Verified
 to parse through our own importer first, so a failure in LK means something
 about LK rather than something about the file. Generator lives in the session
 scratchpad, not the repo — it answers one question once.
+
+---
+
+## Pictures from her own disk can go to LegendKeeper — 2026-08-14
+
+The last piece of the picture round trip, and the one that needed an experiment
+rather than a decision.
+
+### The question, and getting it wrong the first time
+
+A `.lk` holds addresses of pictures on LK's servers, never bytes. Uploading to
+LK would need her account and her password and would send her files off the
+machine — ruled out, and it stays ruled out. The one remaining possibility was a
+`data:` URI: the whole picture written into the address field, nothing uploaded,
+the file handed over by hand as always. Whether LK's importer accepts that could
+only be answered by a real import into a real LK account, which this app never
+contacts. So it needed her.
+
+**The first probe was hand-built and it taught us nothing.** LK hung on it and
+reported "? pages". But the file was missing a dozen fields LK writes —
+`schemaVersion`, `createdBy`, `iconGlyph`, `iconShape`, `showPropertyBar`, and
+per document `createdAt`, `updatedAt`, `locatorId`, `type`, `isFirst`,
+`transforms`, `sources` — plus a top-level `hash` whose derivation couldn't be
+reproduced from either of her exports. **A malformed file and a rejected picture
+look identical from outside.**
+
+**The second probe started from her own real export and changed four values:**
+two media URLs swapped for `data:` URIs, and the two page names holding them, so
+she could find them. Diffed leaf by leaf to confirm nothing else moved. The other
+25 pictures were the control, inside the same file.
+
+It imported, and both squares rendered. Two facts for the price of one: LK
+accepts `data:` URIs for **both** media types it writes — the loose
+`type: "external"` and the strict `type: "file"` — and LK does not verify that
+hash, since it was left untouched over changed content.
+
+**The lesson is in `handoff.md`: probe a format by mutating a real export, never
+by constructing one.**
+
+### What got built
+
+`dataUriFor` in `asset-sources.ts`, chunked at 32k because spreading a
+multi-megabyte array into `String.fromCharCode` overflows the stack. An unknown
+extension gets `application/octet-stream`, which no browser will draw — the right
+outcome, since a picture mislabelled as another format is a broken image
+somewhere else later with nothing pointing back.
+
+The three drop sites in `lk-export.ts` — body block, portrait, banner — now go
+through one `PictureLookup` resolver instead of each deciding for itself. Three
+possible answers, one of them a lookup: the address it was imported from, the
+bytes as a `data:` URI, or nothing. Counting the nothings is the resolver's job,
+so no caller can forget. **An imported address always wins over the bytes** —
+a fraction of the size, same picture.
+
+`buildExportFile` reports `localAssetFiles` so the caller can size exactly the
+files that need carrying, then build the plan a second time with `assetData`.
+Two passes rather than one, because the first pass is what discovers the list.
+
+`localPictureNote` was pulled out of `lossyNotes` into its own field. It's the
+only note the user can act on — ticking the box makes it untrue — so it can't
+sit in a list the dialog renders unconditionally.
+
+### Verification
+
+The dialog was mounted for real against her running dev server (a throwaway
+`probe.html` + `src/probe.tsx` with a seeded store, deleted after), rather than
+reasoned about:
+
+| checked | result |
+| --- | --- |
+| picture count | 3 — two in a tab, one portrait |
+| block geometry | 462×108 inside a 512 modal, no horizontal overflow |
+| checkbox alignment | sits on the first line of a three-line label, not above it |
+| ticking the box | the picture note disappears, the folder note stays |
+
+**One real bug caught by looking.** The checkbox was styled `accent-color:
+var(--color-accent)` — which is 15% opaque, the token for washes *behind*
+things, giving a barely visible tick. Every other checkbox in the app uses
+`--color-accent-light`. Confirmed `rgb(94, 234, 212)` after the fix.
+
+960 tests pass, 8 new.

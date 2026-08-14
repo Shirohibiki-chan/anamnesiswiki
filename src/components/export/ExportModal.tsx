@@ -4,8 +4,9 @@
 // live account), so what's exported is decided before this opens, by what was
 // right-clicked. This shows what's about to happen, names anything that won't
 // survive the trip, and asks where to put the file.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { describeSize } from "../../hooks/use-assets";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useLkExport } from "../../hooks/use-lk-export";
 import { useProjectName } from "../../hooks/use-project";
@@ -13,9 +14,17 @@ import "./export.css";
 
 type Status = "preview" | "saving" | "done" | "error";
 
+/**
+ * How much bigger a picture gets when it's written into the file as text.
+ * Base64 encodes three bytes as four, and gzip won't win it back on a PNG or a
+ * JPEG that's already compressed — so this is close to the truth rather than a
+ * worst case, and it's better she sees the real number before ticking the box.
+ */
+const BASE64_OVERHEAD = 4 / 3;
+
 export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: () => void }) {
   const { pickLkSavePath } = useDialogs();
-  const { planExport, writeExport } = useLkExport();
+  const { planExport, sizeOfLocalPictures, loadLocalPictures, writeExport } = useLkExport();
   const projectName = useProjectName();
 
   // Built once per opening: it's a pure conversion of a snapshot, and
@@ -25,6 +34,30 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
   const [error, setError] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
 
+  // Off by default. The pictures that need it are hers alone, so this can't
+  // silently turn a 50KB file into a 60MB one on an export she didn't think
+  // twice about.
+  const [carryPictures, setCarryPictures] = useState(false);
+  const [pictureBytes, setPictureBytes] = useState<number | null>(null);
+
+  const localPictures = plan?.localAssetFiles ?? [];
+
+  // The picture note stops being true the moment she ticks the box, so it's
+  // added to the list rather than living in it.
+  const notes = [...(plan?.lossyNotes ?? []), ...(!carryPictures && plan?.localPictureNote ? [plan.localPictureNote] : [])];
+
+  useEffect(() => {
+    if (localPictures.length === 0) return;
+    let cancelled = false;
+    void sizeOfLocalPictures(localPictures).then((bytes) => {
+      if (!cancelled) setPictureBytes(bytes);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the plan is built once per opening, so this list is stable
+  }, [plan]);
+
   async function handleExport() {
     if (!plan) return;
     const path = await pickLkSavePath(projectName ?? "Export");
@@ -33,7 +66,14 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
     setStatus("saving");
     setError(null);
     try {
-      await writeExport(plan, path);
+      // Built a second time when the pictures are coming along, because the
+      // first pass is what discovered which ones were needed. Everything else
+      // about the file is the same conversion of the same snapshot.
+      let finalPlan = plan;
+      if (carryPictures && localPictures.length > 0) {
+        finalPlan = planExport(rootIds, await loadLocalPictures(localPictures)) ?? plan;
+      }
+      await writeExport(finalPlan, path);
       setSavedTo(path);
       setStatus("done");
     } catch (e) {
@@ -57,11 +97,33 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
               way; there's no way to leave the sub-pages behind.
             </p>
 
-            {plan.lossyNotes.length > 0 && (
+            {localPictures.length > 0 && (
+              <label className="export-modal-pictures">
+                <input
+                  type="checkbox"
+                  checked={carryPictures}
+                  onChange={(event) => setCarryPictures(event.target.checked)}
+                  disabled={status === "saving"}
+                />
+                <span>
+                  <strong>
+                    Carry {localPictures.length} picture{localPictures.length === 1 ? "" : "s"} from your computer
+                    inside the file
+                  </strong>
+                  <span className="export-modal-pictures-note">
+                    {pictureBytes === null
+                      ? "Working out how big that would be…"
+                      : `Adds about ${describeSize(pictureBytes * BASE64_OVERHEAD)} to a file that's otherwise tiny. Without this they're left out — LegendKeeper files normally only hold addresses of pictures on their servers, not the pictures.`}
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {notes.length > 0 && (
               <div className="export-modal-lossy">
                 <h3 className="ui-eyebrow">A few things won't come across:</h3>
                 <ul>
-                  {plan.lossyNotes.map((note) => (
+                  {notes.map((note) => (
                     <li key={note}>{note}</li>
                   ))}
                 </ul>

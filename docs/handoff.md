@@ -756,13 +756,24 @@ is below.
   through would be put somewhere something could follow it. Dropping an entry
   costs one picture in a re-export; carrying a bad one costs more.
 
-- **A picture uploaded from her own disk still cannot go into a `.lk`, and this
-  is the format's limit rather than ours.** A `.lk` holds addresses of things on
-  LK's servers, never bytes. Putting one there would mean uploading to LK — an
-  account, a password, and her files leaving the machine — which the Policy
-  Boundary rules out. Whether a `data:` URI would be accepted by LK's importer
-  instead is an open question that only she can settle, since it needs a real
-  import into a real LK account; see `docs/plan.md`.
+- **A picture uploaded from her own disk travels as a `data:` URI, and this is
+  measured.** LK's importer accepts the whole file written into the address
+  field and renders it — verified against a real account 2026-08-14 for both
+  media types LK writes. Uploading to LK remains ruled out (an account, a
+  password, her files leaving the machine); nothing is uploaded here, the file
+  simply carries itself. **Off by default and offered as a checkbox**, because
+  base64 costs a third on top and gzip can't win it back on an
+  already-compressed picture: her 48 MB `assets/` would be ~64 MB inside a
+  `.lk`. An imported address always beats the bytes when both exist.
+
+- **Probe a file format by mutating a real export, never by building one.** The
+  first `data:` URI test was hand-built, LK hung on it, and it proved nothing —
+  it was missing a dozen fields LK writes plus a top-level `hash` that couldn't
+  be reproduced, so a malformed file and a rejected picture were
+  indistinguishable. The second changed four values inside her own export and
+  left the other 25 pictures as a control in the same file. That one answered
+  the question in a single try, and incidentally proved LK doesn't verify the
+  hash.
 
 - **`pos` keys are fixed-width, always two characters.** Import compares them
   as plain strings, and variable-length keys don't sort under that: index 75

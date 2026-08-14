@@ -76,3 +76,49 @@ export function sourceUrlFor(sources: AssetSources, url: unknown): string | unde
   if (!url.startsWith(ASSET_REF_PREFIX)) return undefined;
   return sources[url.slice(ASSET_REF_PREFIX.length)];
 }
+
+/**
+ * The MIME type for a picture's filename, for building a `data:` URI.
+ *
+ * A short list rather than a lookup library: these are the formats the upload
+ * path accepts, and an unknown extension gets `application/octet-stream`, which
+ * a browser refuses to draw. That refusal is the right outcome — a picture
+ * labelled as the wrong format would be a broken image somewhere else, later,
+ * with nothing pointing back to here.
+ */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+  bmp: "image/bmp",
+};
+
+/**
+ * A picture's bytes as a `data:` URI — the whole file written into an address.
+ *
+ * **This is what lets a picture uploaded here travel inside a `.lk`.** The
+ * format stores addresses rather than data, so the only way to carry a file
+ * from her disk is to make the file *be* the address. Verified against a real
+ * LegendKeeper account 2026-08-14, for both media types LK writes.
+ *
+ * Costs a third in size on top of the file, and gzip won't win it back on a
+ * PNG or a JPEG that is already compressed — which is why the caller asks
+ * before doing this rather than doing it always.
+ */
+export function dataUriFor(fileName: string, bytes: Uint8Array): string {
+  const extension = fileName.slice(fileName.lastIndexOf(".") + 1).toLowerCase();
+  const mime = MIME_BY_EXTENSION[extension] ?? "application/octet-stream";
+
+  // Chunked rather than one spread into String.fromCharCode: a multi-megabyte
+  // picture is millions of arguments in one call, which overflows the stack.
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let at = 0; at < bytes.length; at += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(at, at + CHUNK));
+  }
+  return `data:${mime};base64,${btoa(binary)}`;
+}

@@ -73,3 +73,43 @@
   justify-content: flex-end;
   gap: var(--space-md);
 }
+
+/* The offer to carry pictures inside the file. A bordered block rather than a
+   bare checkbox in the stack: it's the one thing in this dialog that changes
+   what gets written, and everything around it is text that only describes. */
+.export-modal-pictures {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  cursor: pointer;
+}
+
+.export-modal-pictures input {
+  /* Nudged down to sit on the first line of text rather than above it — the
+     label wraps to three lines and a top-aligned box floats free of all of
+     them. */
+  margin-top: 2px;
+  flex: none;
+  /* `--color-accent-light`, not `--color-accent` — the latter is 15% opaque
+     and is the token for washes behind things, so a checkbox wearing it has a
+     barely-visible tick. Every other checkbox in the app uses this one. */
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.export-modal-pictures > span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.export-modal-pictures-note {
+  color: var(--color-text-secondary);
+  line-height: var(--lh-normal);
+}
