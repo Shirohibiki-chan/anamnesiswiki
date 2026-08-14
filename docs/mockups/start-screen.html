@@ -1,0 +1,1025 @@
+<title>Anamnesis Start Screen</title>
+<style>
+@font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url(../../public/fonts/inter-400.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-style:normal;font-weight:500;font-display:swap;src:url(../../public/fonts/inter-500.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-style:normal;font-weight:600;font-display:swap;src:url(../../public/fonts/inter-600.woff2) format("woff2")}
+@font-face{font-family:"Sora";font-style:normal;font-weight:100 900;font-display:swap;src:url(../../public/fonts/library/sora-400.woff2) format("woff2")}
+@font-face{font-family:"Epilogue";font-style:normal;font-weight:100 900;font-display:swap;src:url(../../public/fonts/library/epilogue-400.woff2) format("woff2")}
+@font-face{font-family:"Outfit";font-style:normal;font-weight:100 900;font-display:swap;src:url(../../public/fonts/library/outfit-400.woff2) format("woff2")}
+@font-face{font-family:"Space Grotesk";font-style:normal;font-weight:100 900;font-display:swap;src:url(../../public/fonts/library/space-grotesk-400.woff2) format("woff2")}
+  :root {
+    --bg: #0f0f14;
+    --panel: #1a1a22;
+    --panel-alt: #1f1f28;
+    --panel-edge: #252530;
+    --border: #2a2a35;
+    --border-strong: #383848;
+    --text: #e8e8ee;
+    --text-2: #9a9aaa;
+    --text-3: #84848f;
+    --teal: #5eead4;
+    --teal-dark: #0d9488;
+    --teal-faint: rgba(20, 184, 166, 0.15);
+    --teal-edge: rgba(20, 184, 166, 0.30);
+    /* Borders that sit on top of artwork read better as light at low opacity
+       than as a flat grey — grey next to a saturated cover looks dirty. */
+    --edge: rgba(233, 233, 245, 0.13);
+    --edge-hot: rgba(94, 234, 212, 0.55);
+    /* Real faces from the app's own font library, embedded so this page shows
+       what it would actually look like. Swap the display face with the pills
+       above the "Yours" mock. */
+    --display: "Sora", "Inter", system-ui, sans-serif;
+    --ui: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--ui);
+    line-height: 1.6;
+    margin: 0;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 4.5rem; }
+
+  .pagehead { display: flex; flex-direction: column; gap: 0.6rem; border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
+  .pagehead h1 { font-family: var(--display); font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+  .pagehead p { color: var(--text-2); margin: 0; max-width: 62ch; }
+
+  .dir { display: flex; flex-direction: column; gap: 1.1rem; }
+  .dirhead { display: flex; align-items: baseline; gap: 0.9rem; flex-wrap: wrap; }
+  .dirname { font-family: var(--display); font-size: 1.45rem; font-weight: 500; margin: 0; }
+  .dirtag { font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--teal); background: var(--teal-faint); border: 1px solid var(--teal-edge); border-radius: 999px; padding: 0.15rem 0.7rem; }
+  .dirnote { color: var(--text-2); margin: 0; max-width: 70ch; font-size: 0.95rem; }
+
+  .frame { border: 1px solid var(--border-strong); border-radius: 12px; overflow: hidden; background: var(--bg); }
+  .chrome { display: flex; align-items: center; gap: 0.45rem; padding: 0.6rem 0.85rem; background: var(--panel); border-bottom: 1px solid var(--border); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
+  .screen { padding: 2rem; display: flex; flex-direction: column; gap: 1.6rem; min-height: 400px; }
+
+  .brand { font-family: var(--display); font-size: 1.6rem; font-weight: 500; letter-spacing: -0.01em; }
+  .brand small { display: block; font-family: var(--ui); font-size: 0.78rem; color: var(--text-3); letter-spacing: 0.04em; font-weight: 400; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-3); margin: 0; }
+
+  .btn { font-family: var(--ui); font-size: 0.88rem; border-radius: 8px; padding: 0.55rem 1.1rem; border: 1px solid var(--border-strong); background: var(--panel-alt); color: var(--text); display: inline-flex; align-items: center; gap: 0.45rem; }
+  .btn-primary { background: var(--teal-faint); border-color: var(--teal-edge); color: var(--teal); }
+
+  /* Direction 1 — Hearth */
+  .h-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .h-main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.1rem; }
+  .h-continue { border: 1px solid var(--teal-edge); border-radius: 12px; background: linear-gradient(140deg, rgba(20,184,166,0.10), rgba(20,184,166,0.02) 55%, transparent); padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1.6rem; min-height: 210px; }
+  .h-continue .world { font-family: var(--display); font-size: 2rem; font-weight: 500; margin: 0.35rem 0 0; letter-spacing: -0.01em; }
+  .h-continue .page { color: var(--text-2); font-size: 0.92rem; margin: 0.35rem 0 0; }
+  .h-side { display: flex; flex-direction: column; gap: 0.55rem; }
+  .h-world { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); padding: 0.75rem 0.9rem; display: flex; align-items: center; gap: 0.75rem; }
+  .h-swatch { width: 8px; align-self: stretch; border-radius: 999px; background: var(--teal-dark); flex: none; }
+  .h-world .nm { font-size: 0.9rem; }
+  .h-world .mt { font-size: 0.74rem; color: var(--text-3); font-family: var(--mono); }
+  .h-new { border: 1px dashed var(--border-strong); border-radius: 10px; background: none; color: var(--text-2); padding: 0.75rem 0.9rem; font-size: 0.9rem; text-align: left; }
+  .h-feat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; border-top: 1px solid var(--border); padding-top: 1.3rem; }
+  .h-card { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); padding: 0.95rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .h-card b { font-weight: 500; font-size: 0.9rem; }
+  .h-card span { font-size: 0.8rem; color: var(--text-3); line-height: 1.5; }
+
+  /* Direction 2 — Atlas */
+  .a-body { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 1.5rem; }
+  .a-rail { display: flex; flex-direction: column; gap: 1.4rem; border-right: 1px solid var(--border); padding-right: 1.3rem; }
+  .a-nav { display: flex; flex-direction: column; gap: 0.15rem; }
+  .a-nav div { font-size: 0.87rem; color: var(--text-2); padding: 0.4rem 0.6rem; border-radius: 7px; }
+  .a-nav div.on { background: var(--panel-alt); color: var(--text); }
+  .a-whatsnew { border: 1px solid var(--teal-edge); background: var(--teal-faint); border-radius: 10px; padding: 0.8rem 0.85rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .a-whatsnew b { font-size: 0.82rem; font-weight: 500; color: var(--teal); }
+  .a-whatsnew span { font-size: 0.78rem; color: var(--text-2); line-height: 1.5; }
+  .a-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.9rem; }
+  .a-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--panel); display: flex; flex-direction: column; }
+  .a-cover { height: 112px; }
+  .a-c1 { background: linear-gradient(150deg, #1c4f4a, #0d9488 60%, #134e4a); }
+  .a-c2 { background: linear-gradient(150deg, #3f2b56, #6d5091 65%, #2c2140); }
+  .a-c3 { background: var(--panel-alt); display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 1.6rem; font-family: var(--display); }
+  .a-meta { padding: 0.75rem 0.9rem; display: flex; flex-direction: column; gap: 0.15rem; }
+  .a-meta b { font-weight: 500; font-size: 0.92rem; }
+  .a-meta span { font-size: 0.75rem; color: var(--text-3); }
+  .a-newcard { border: 1px dashed var(--border-strong); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.3rem; color: var(--text-2); font-size: 0.88rem; min-height: 186px; }
+
+  /* Direction 3 — Codex */
+  .c-body { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 2.4rem; }
+  .c-list { display: flex; flex-direction: column; }
+  .c-row { display: flex; align-items: baseline; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+  .c-row:first-of-type { border-top: 1px solid var(--border); }
+  .c-title { font-family: var(--display); font-size: 1.75rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; }
+  .c-row.lead .c-title { color: var(--teal); }
+  .c-when { margin-left: auto; font-family: var(--mono); font-size: 0.74rem; color: var(--text-3); white-space: nowrap; }
+  .c-new { margin-top: 1.1rem; align-self: flex-start; }
+  .c-aside { display: flex; flex-direction: column; gap: 1.1rem; }
+  .c-block { display: flex; flex-direction: column; gap: 0.5rem; }
+  .c-item { border-left: 2px solid var(--border-strong); padding: 0.1rem 0 0.1rem 0.8rem; display: flex; flex-direction: column; gap: 0.1rem; }
+  .c-item b { font-weight: 500; font-size: 0.87rem; }
+  .c-item span { font-size: 0.78rem; color: var(--text-3); line-height: 1.5; }
+  .c-item.hot { border-left-color: var(--teal); }
+  .c-item.hot b { color: var(--teal); }
+
+  .s-grouphead { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.7rem; }
+  .s-count { font-family: var(--mono); font-size: 0.74rem; color: var(--text-3); }
+  .c-row.dim .c-title { color: var(--text-3); }
+  .s-more { font-size: 0.8rem; color: var(--text-3); margin: 0.7rem 0 0; }
+  .s-filter { font-family: var(--ui); font-size: 0.8rem; background: var(--panel-alt); border: 1px solid var(--border); border-radius: 7px; color: var(--text); padding: 0.3rem 0.7rem; width: 8rem; }
+  .s-filter::placeholder { color: var(--text-3); }
+  .s-tail { display: flex; flex-direction: column; margin-top: 0.2rem; }
+  .s-trow { display: flex; align-items: baseline; gap: 1rem; padding: 0.42rem 0; border-bottom: 1px solid var(--border); }
+  .s-tname { font-size: 0.95rem; color: var(--text-2); }
+  .s-twhen { margin-left: auto; font-family: var(--mono); font-size: 0.72rem; color: var(--text-3); white-space: nowrap; }
+  .s-elsewhere { margin-top: 1.6rem; }
+
+  .t-stage { position: relative; min-height: 440px; overflow: hidden; background: var(--bg); }
+  .t-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .t-scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(15,15,20,0.94) 0%, rgba(15,15,20,0.82) 42%, rgba(15,15,20,0.34) 100%); }
+  .t-content { position: relative; height: 100%; min-height: 440px; padding: 2rem 2.2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .t-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .t-mid { flex: 1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 2rem; align-items: center; }
+  .t-name { font-family: var(--display); font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 500; letter-spacing: -0.02em; line-height: 1.05; margin: 0.5rem 0 0; }
+  .t-sub { color: var(--text-2); font-size: 0.92rem; margin: 0.55rem 0 0; }
+  .t-actions { display: flex; gap: 0.6rem; margin-top: 1.3rem; }
+  .t-list { display: flex; flex-direction: column; gap: 0.1rem; }
+  .t-item { display: flex; align-items: baseline; gap: 0.9rem; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); padding: 0.55rem 0.6rem; color: var(--text-2); font-family: var(--ui); font-size: 0.92rem; cursor: pointer; }
+  .t-item em { margin-left: auto; font-family: var(--mono); font-style: normal; font-size: 0.72rem; color: var(--text-3); }
+  .t-item:hover, .t-item:focus-visible { color: var(--text); background: rgba(255,255,255,0.04); outline: none; }
+  .t-item.is-on { color: var(--teal); border-bottom-color: var(--teal-edge); }
+  .t-item-new { color: var(--text-3); border-bottom: none; margin-top: 0.5rem; }
+  .t-bottom { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .t-chip { font-size: 0.76rem; color: var(--text-2); background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.75rem; }
+  @media (max-width: 760px) { .t-mid { grid-template-columns: minmax(0, 1fr); } .t-content { padding: 1.2rem; } }
+
+  .r-switch { display: flex; gap: 0.4rem; }
+  .r-btn { font-family: var(--ui); font-size: 0.82rem; padding: 0.35rem 0.9rem; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text-2); cursor: pointer; }
+  .r-btn:hover { color: var(--text); }
+  .r-btn.is-on { background: var(--teal-faint); border-color: var(--teal-edge); color: var(--teal); }
+  .r-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .r-body { display: grid; gap: 2.4rem; }
+  .r-aside { display: flex; flex-direction: column; gap: 1.1rem; }
+  .r-roomy { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); }
+  .r-narrow { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 1.8rem; }
+  .r-narrow .c-item b { font-size: 0.82rem; }
+  .r-narrow .r-hide { display: none; }
+  .r-tucked { grid-template-columns: minmax(0, 1fr); gap: 1.6rem; }
+  .r-tucked .r-aside { flex-direction: row; flex-wrap: wrap; gap: 1.6rem; border-top: 1px solid var(--border); padding-top: 1.2rem; }
+  .r-tucked .c-block { flex-direction: row; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  .r-tucked .c-item { border-left: none; padding-left: 0; }
+  .r-tucked .r-hide { display: none; }
+  .r-tucked .c-item b { font-size: 0.82rem; color: var(--text-2); }
+  .r-tucked .c-item.hot b { color: var(--teal); }
+  @media (max-width: 760px) { .r-roomy, .r-narrow { grid-template-columns: minmax(0, 1fr); } }
+
+  .y-shell { display: grid; grid-template-columns: minmax(0, 1fr) 232px; min-height: 500px; }
+  .y-main { padding: 1.6rem 1.7rem 1.9rem; display: flex; flex-direction: column; gap: 1.4rem; min-width: 0; }
+  /* The one action that makes a new thing sits in the middle by itself. */
+  .y-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; }
+  .y-head .btn-primary { justify-self: center; padding: 0.6rem 1.5rem; font-size: 0.92rem; }
+  .y-tools { display: flex; align-items: center; gap: 0.5rem; justify-self: end; }
+
+  :root.f-epilogue { --display: "Epilogue", system-ui, sans-serif; }
+  :root.f-outfit { --display: "Outfit", system-ui, sans-serif; }
+  :root.f-grotesk { --display: "Space Grotesk", system-ui, sans-serif; }
+  .fontbar { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.9rem; }
+  .fontbar span { font-size: 0.78rem; color: var(--text-3); margin-right: 0.2rem; }
+
+  /* Sections get real headings. A badge was too small to do a heading's job. */
+  .y-label { margin: 0 0 0.85rem; display: flex; align-items: baseline; gap: 0.7rem; }
+  .y-badge { font-family: var(--display); font-size: 1.22rem; font-weight: 500; letter-spacing: -0.01em; color: var(--text); }
+  .y-count { font-family: var(--mono); font-size: 0.72rem; color: var(--text-3); }
+  .y-pill { font-family: var(--ui); font-size: 0.78rem; color: var(--text-2); background: var(--panel-alt); border: 1px solid var(--edge); border-radius: 999px; padding: 0.3rem 0.85rem; cursor: pointer; }
+  .y-pill:hover { color: var(--text); border-color: var(--edge-hot); background: rgba(45,212,191,0.08); }
+  .y-pill:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .y-label .y-right { margin-left: auto; display: flex; gap: 0.4rem; align-self: center; }
+  /* Rail headings were invisible: same face as the section titles, just smaller,
+     with a rule to separate them from the block above. */
+  .y-rail .y-label { margin: 0 0 0.6rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--edge); }
+  .y-rail .y-badge { font-size: 0.98rem; color: var(--text); }
+
+  /* Covers carry their own label: no bar, the picture fades into the dark
+     underneath it, so a world with a real photo isn't wearing a black stripe. */
+  .y-tile { position: relative; display: block; border: 1px solid var(--edge); padding: 0; border-radius: 12px; overflow: hidden; cursor: pointer; text-align: left; font-family: var(--ui); background: var(--panel-alt); }
+  .y-tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,8,12,0.94) 0%, rgba(8,8,12,0.72) 32%, rgba(8,8,12,0.16) 66%, rgba(8,8,12,0) 100%); }
+  .y-tile:hover { border-color: var(--edge-hot); }
+  .y-tile:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .y-fill { position: absolute; inset: 0; }
+  .y-cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; display: flex; flex-direction: column; gap: 0.3rem; padding: 0.7rem 0.75rem 0.7rem; }
+  .y-cap b { font-weight: 500; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; }
+  .y-cap em { font-style: normal; font-family: var(--mono); font-size: 0.66rem; color: rgba(255,255,255,0.62); line-height: 1.2; }
+  .y-flag { position: absolute; z-index: 1; top: 0.5rem; right: 0.6rem; font-size: 0.72rem; color: var(--teal); text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+
+  /* The pinned row is the one thing on this screen that isn't in a box: the
+     picture bleeds off the top with nothing containing it, and the only edge
+     it has is a coloured rule under the name. */
+  /* Whole cards per page, always. The card width is a fraction of the row, so
+     a page never ends on half a world and the dots mean what they say. */
+  /* Real pages, not a scroller: a page holds four whole cards and the last one
+     is short rather than repeating the ones you just looked at. Nothing is ever
+     cut in half, so the dots mean exactly what they say. */
+  .y-carousel { position: relative; }
+  .y-row { display: flex; gap: 0.75rem; padding: 0.1rem 0 0.2rem; transition: opacity 0.16s ease; }
+  .y-row.turning { opacity: 0; }
+  .y-row > .off { display: none; }
+
+  /* Arrows without the pill: a chevron sitting on a soft edge fade, reaching
+     in over the artwork rather than stealing width beside the row. */
+  /* Radial rather than a linear wipe: a rectangle of scrim over artwork shows
+     its own top and bottom edges, and you end up looking at the box instead of
+     the arrow. This one has no edges anywhere. */
+  .y-nav { position: absolute; top: 0; bottom: 1.1rem; width: 62px; border: 0; padding: 0; background: none; cursor: pointer; z-index: 3; display: grid; place-items: center; color: rgba(255,255,255,0.9); transition: color 0.2s; }
+  .y-nav::before { content: ""; position: absolute; inset: -8% -4%; pointer-events: none; }
+  .y-nav.prev { left: -0.5rem; }
+  .y-nav.next { right: -0.5rem; }
+  .y-nav.prev::before { background: radial-gradient(58% 46% at 6% 50%, rgba(8,8,12,0.52), rgba(8,8,12,0.28) 48%, rgba(8,8,12,0) 78%); }
+  .y-nav.next::before { background: radial-gradient(58% 46% at 94% 50%, rgba(8,8,12,0.52), rgba(8,8,12,0.28) 48%, rgba(8,8,12,0) 78%); }
+  .y-nav svg { position: relative; width: 19px; height: 19px; filter: drop-shadow(0 1px 5px rgba(0,0,0,0.75)); }
+  .y-nav:hover { color: var(--teal); }
+  .y-nav:focus-visible { outline: 2px solid var(--teal); outline-offset: -4px; border-radius: 8px; }
+  .y-nav[hidden] { display: none; }
+  .y-dots { display: flex; justify-content: center; gap: 0.15rem; margin-top: 0.5rem; }
+  .y-dot { width: 26px; height: 20px; border-radius: 6px; background: none; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center; }
+  .y-dot::before { content: ""; width: 18px; height: 4px; border-radius: 999px; background: var(--border-strong); transition: background 0.15s; }
+  .y-dot:hover::before { background: var(--text-3); }
+  .y-dot.on::before { background: var(--teal); }
+  .y-dot:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+  /* Four to a page: 3 gaps of 0.75rem shared out. */
+  .y-pin, .y-addpin { flex: 0 0 calc((100% - 2.25rem) / 4); height: 208px; }
+  .y-pin { position: relative; border: 0; padding: 0; background: none; cursor: pointer; text-align: left; font-family: var(--ui); }
+  /* The border runs up the sides and fades out with the picture. Many stops so
+     the ramp is smooth, but it's done by the top third — any further and the
+     card stops looking like a card. */
+  .y-pinart, .y-pinedge { position: absolute; inset: 0; border-radius: 0 0 11px 11px;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 6%, rgba(0,0,0,0.16) 11%, rgba(0,0,0,0.33) 17%, rgba(0,0,0,0.55) 23%, rgba(0,0,0,0.76) 29%, rgba(0,0,0,0.92) 35%, #000 42%);
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 6%, rgba(0,0,0,0.16) 11%, rgba(0,0,0,0.33) 17%, rgba(0,0,0,0.55) 23%, rgba(0,0,0,0.76) 29%, rgba(0,0,0,0.92) 35%, #000 42%); }
+  .y-pinedge { border: 1px solid var(--edge); }
+  .y-pinscrim { position: absolute; inset: 0; border-radius: 0 0 11px 11px; background: linear-gradient(to top, rgba(8,8,12,0.9) 0%, rgba(8,8,12,0.4) 28%, rgba(8,8,12,0) 52%); }
+  .y-pinrule { position: absolute; left: 1px; right: 1px; bottom: 0; height: 2px; border-radius: 0 0 11px 11px; }
+  .y-pincap { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 0.75rem 0.75rem; display: flex; flex-direction: column; gap: 0.32rem; }
+  .y-pincap b { font-weight: 500; font-size: 0.92rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; }
+  .y-pincap em { font-style: normal; font-family: var(--mono); font-size: 0.66rem; color: rgba(255,255,255,0.58); line-height: 1.2; }
+  .y-pin:hover .y-pinart { filter: brightness(1.14); }
+  .y-pin:hover .y-pinedge { border-color: var(--teal-edge); }
+  .y-pin:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+  .y-addpin { border: 1px dashed var(--edge); border-radius: 11px; background: none; color: var(--text-3); font-family: var(--ui); font-size: 0.8rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.45rem; }
+  .y-addpin b { font-size: 1.2rem; font-weight: 400; }
+  .y-addpin:hover { border-color: var(--teal-edge); color: var(--teal); }
+
+  .y-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.65rem; }
+  .y-grid .y-tile { width: auto; height: 104px; }
+  .y-grid .y-cap b { font-size: 0.8rem; }
+
+  /* The view that scales: thirty covers is a wall, thirty rows is a list. */
+  .y-views { display: flex; gap: 0.15rem; background: var(--panel-alt); border: 1px solid var(--edge); border-radius: 999px; padding: 0.12rem; }
+  .y-view { width: 28px; height: 24px; border: 0; border-radius: 999px; background: none; color: var(--text-3); cursor: pointer; display: grid; place-items: center; padding: 0; }
+  .y-view svg { width: 13px; height: 13px; }
+  .y-view:hover { color: var(--text-2); }
+  .y-view.is-on { background: rgba(94,234,212,0.16); color: var(--teal); }
+  .y-view:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+  .y-all.as-list .y-grid { display: flex; flex-direction: column; gap: 0.3rem; }
+  .y-all.as-list .y-tile { width: auto; height: auto; display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem 0.75rem 0.5rem 0.5rem; border-radius: 9px; background: var(--panel); }
+  .y-all.as-list .y-tile::after { display: none; }
+  .y-all.as-list .y-fill { position: static; flex: 0 0 auto; width: 44px; height: 32px; border-radius: 6px; }
+  .y-all.as-list .y-cap { position: static; flex-direction: row; align-items: baseline; gap: 0.8rem; padding: 0; min-width: 0; flex: 1; }
+  .y-all.as-list .y-cap b { color: var(--text); font-size: 0.88rem; }
+  .y-all.as-list .y-cap em { margin-left: auto; color: var(--text-3); white-space: nowrap; }
+  .y-body { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* The covers are deliberately loud. This is the escape hatch for anyone they
+     are too much for — one setting, applied everywhere a cover is drawn, and
+     turned on automatically for a reader who has asked their system for higher
+     contrast. Vibrancy stays the default. */
+  .y-fill, .y-pinart, .y-chip, .y-pinrule, .m-thumb, .m-cell .f { transition: filter 0.2s; }
+  :root.muted .y-fill, :root.muted .y-pinart, :root.muted .y-chip,
+  :root.muted .y-pinrule, :root.muted .m-thumb, :root.muted .m-cell .f { filter: saturate(0.42) brightness(0.88); }
+  @media (prefers-contrast: more) {
+    .y-fill, .y-pinart, .y-chip, .y-pinrule, .m-thumb, .m-cell .f { filter: saturate(0.42) brightness(0.82); }
+  }
+
+  /* Lists belong in the rail, not floating in the middle of the screen. */
+  .y-line { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.4rem; border-radius: 7px; border: 0; background: none; cursor: pointer; text-align: left; font-family: var(--ui); width: 100%; }
+  .y-line:hover { background: rgba(94,234,212,0.13); }
+  .y-line:hover b { color: #fff; }
+  .y-line:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+  .y-chip { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 5px; }
+  .y-line b { font-weight: 400; font-size: 0.82rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .y-line em { font-style: normal; font-family: var(--mono); font-size: 0.63rem; color: var(--text-3); }
+  .y-linetext { display: flex; flex-direction: column; gap: 0.22rem; min-width: 0; }
+
+  /* A world with no picture gets one of these, picked from its id so it's the
+     same every time. Two real hues travelling diagonally, not one colour and a
+     lighter smudge of itself. */
+  .y-g1 { background: linear-gradient(135deg, #2dd4bf 0%, #0e7490 42%, #4c1d95 100%); }
+  .y-g2 { background: linear-gradient(135deg, #c084fc 0%, #7c3aed 42%, #be185d 100%); }
+  .y-g3 { background: linear-gradient(135deg, #22d3ee 0%, #2563eb 46%, #1e1b4b 100%); }
+  .y-g4 { background: linear-gradient(135deg, #fbbf24 0%, #ef4444 48%, #6d28d9 100%); }
+  .y-g5 { background: linear-gradient(135deg, #a5b4fc 0%, #4f46e5 44%, #0f766e 100%); }
+  .y-g6 { background: linear-gradient(135deg, #bef264 0%, #10b981 44%, #155e75 100%); }
+
+  .y-rail { border-left: 1px solid var(--edge); background: var(--panel); padding: 1.6rem 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 1.4rem; }
+  .y-railfoot { margin-top: auto; }
+  /* Colour bleeding right off the accent bar, per your note. */
+  .y-item { border-left: 2px solid var(--teal-dark); padding: 0.5rem 0.7rem 0.55rem 0.65rem; border-radius: 0 7px 7px 0; background: linear-gradient(to right, rgba(20,184,166,0.16), rgba(20,184,166,0) 78%); display: flex; flex-direction: column; gap: 0.3rem; cursor: pointer; }
+  .y-item + .y-item { margin-top: 0.3rem; }
+  .y-item:hover { background: linear-gradient(to right, rgba(20,184,166,0.28), rgba(20,184,166,0) 82%); }
+  .y-item b { font-weight: 500; font-size: 0.83rem; color: var(--text); }
+  .y-item span { font-size: 0.74rem; color: var(--text-3); line-height: 1.35; }
+  .y-item.mute { border-left-color: var(--border-strong); background: linear-gradient(to right, rgba(255,255,255,0.05), rgba(255,255,255,0) 78%); }
+  .y-item.mute:hover { background: linear-gradient(to right, rgba(255,255,255,0.09), rgba(255,255,255,0) 82%); }
+  /* Three most recent releases, each named by its version — the name is the
+     link, so it's obvious there's one page per release and which is current. */
+  .y-rel { display: block; border-left: 2px solid var(--edge); padding: 0.5rem 0.7rem 0.6rem 0.65rem; border-radius: 0 7px 7px 0; background: linear-gradient(to right, rgba(255,255,255,0.05), rgba(255,255,255,0) 78%); color: var(--text); text-decoration: none; }
+  .y-rel + .y-rel { margin-top: 0.3rem; }
+  .y-rel b { display: flex; align-items: baseline; gap: 0.45rem; font-family: var(--mono); font-size: 0.76rem; font-weight: 400; color: var(--text-2); }
+  .y-rel em { display: block; font-style: normal; font-size: 0.74rem; color: var(--text-3); line-height: 1.4; margin-top: 0.28rem; }
+  .y-rel:hover { background: linear-gradient(to right, rgba(255,255,255,0.09), rgba(255,255,255,0) 82%); }
+  .y-rel.now { border-left-color: var(--teal); background: linear-gradient(to right, rgba(20,184,166,0.2), rgba(20,184,166,0) 80%); }
+  .y-rel.now b { color: var(--teal); }
+  .y-rel.now em { color: var(--text-2); }
+  .y-rel.now:hover { background: linear-gradient(to right, rgba(20,184,166,0.32), rgba(20,184,166,0) 84%); }
+  .y-now { font-family: var(--ui); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+
+  /* The rule under a pin picks up both ends of its gradient. */
+  .y-r1 { background: linear-gradient(90deg, #2dd4bf, #4c1d95); }
+  .y-r2 { background: linear-gradient(90deg, #c084fc, #be185d); }
+  .y-r3 { background: linear-gradient(90deg, #22d3ee, #1e1b4b); }
+  .y-r4 { background: linear-gradient(90deg, #fbbf24, #6d28d9); }
+  .y-r5 { background: linear-gradient(90deg, #a5b4fc, #0f766e); }
+  .y-r6 { background: linear-gradient(90deg, #bef264, #155e75); }
+
+  /* Rearranging pins happens here, not by dragging a strip on the home screen. */
+  .m-scrim { background: rgba(6,6,10,0.72); padding: 1.6rem; display: grid; place-items: start center; min-height: 520px; }
+  .m-modal { width: min(560px, 100%); background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,0.55); overflow: hidden; }
+  .m-head { padding: 1.1rem 1.2rem 0.9rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 0.8rem; }
+  .m-head h3 { font-family: var(--display); font-size: 1.12rem; font-weight: 500; margin: 0; }
+  .m-head p { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--text-3); }
+  .m-x { margin-left: auto; background: none; border: 0; color: var(--text-3); font-size: 1rem; cursor: pointer; }
+  .m-x:hover { color: var(--text); }
+  .m-body { padding: 1rem 1.2rem 1.2rem; display: flex; flex-direction: column; gap: 1.1rem; }
+  .m-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .m-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem; border: 1px solid var(--edge); border-radius: 9px; background: var(--panel-alt); }
+  .m-row:hover { border-color: var(--edge-hot); }
+  .m-grip { color: var(--text-3); cursor: grab; font-size: 0.9rem; line-height: 1; letter-spacing: -1px; }
+  .m-thumb { width: 40px; height: 30px; border-radius: 5px; flex: 0 0 auto; }
+  .m-name { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+  .m-name b { font-weight: 500; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .m-name em { font-style: normal; font-family: var(--mono); font-size: 0.65rem; color: var(--text-3); }
+  .m-drop { margin-left: auto; background: none; border: 0; color: var(--text-3); cursor: pointer; font-size: 0.9rem; }
+  .m-drop:hover { color: #f87171; }
+  .m-add { border-top: 1px solid var(--border); padding-top: 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .m-tools { display: flex; gap: 0.5rem; }
+  .m-tools .s-filter { flex: 1; }
+  .m-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+  .m-cell { position: relative; height: 76px; border-radius: 8px; border: 0; padding: 0; overflow: hidden; cursor: pointer; font-family: var(--ui); text-align: left; }
+  .m-cell span.f { position: absolute; inset: 0; }
+  .m-cell span.t { position: absolute; left: 0; right: 0; bottom: 0; padding: 0.35rem 0.4rem; font-size: 0.7rem; color: #fff; background: linear-gradient(to top, rgba(8,8,12,0.92), rgba(8,8,12,0)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .m-cell:hover { box-shadow: 0 0 0 2px var(--edge-hot); }
+  .m-cell.has::before { content: "◆"; position: absolute; z-index: 1; top: 0.25rem; right: 0.35rem; color: var(--teal); font-size: 0.7rem; }
+  .m-foot { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+  @media (max-width: 860px) {
+    .y-shell { grid-template-columns: minmax(0, 1fr); }
+    .y-rail { border-left: none; border-top: 1px solid var(--border); }
+    .y-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .y-main { padding: 1.2rem; }
+    /* Three across stops fitting long before the window does. */
+    .y-head { grid-template-columns: minmax(0, 1fr) auto; }
+    .y-head .btn-primary { grid-row: 2; grid-column: 1 / -1; justify-self: stretch; justify-content: center; }
+    .y-pin, .y-addpin { flex-basis: calc((100% - 0.75rem) / 2); }
+  }
+
+  .verdict { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 1.4rem 1.6rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .verdict h2 { font-family: var(--display); font-size: 1.2rem; font-weight: 500; margin: 0; }
+  .verdict p { margin: 0; color: var(--text-2); font-size: 0.95rem; }
+  .verdict ul { margin: 0; padding-left: 1.1rem; color: var(--text-2); font-size: 0.95rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .verdict strong { color: var(--text); font-weight: 500; }
+
+  @media (max-width: 760px) {
+    .h-main, .a-body, .c-body { grid-template-columns: minmax(0, 1fr); }
+    .h-feat, .a-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .a-rail { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 1.2rem; }
+    .screen { padding: 1.2rem; }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="pagehead">
+    <h1>Ways into a world</h1>
+    <p style="color:var(--text-3);font-size:0.85rem;margin:0 0 0.4rem">Reference mock for Phase 27 — open this file from the repo so the fonts resolve. The first three directions were rejected; <strong style="color:var(--text-2);font-weight:500">Yours</strong> and <strong style="color:var(--text-2);font-weight:500">Manage pins</strong>, at the bottom, are the built ones.</p>
+    <p>Start screen directions for Anamnesis, built on the app's own palette and type. The first three were the opening pitch. <strong style="color:var(--text); font-weight:500">Yours</strong>, at the bottom, is the one assembled from what you actually picked out of them — pinned and recent along the top, covers for the rest, rail against the wall.</p>
+  </div>
+
+  <section class="dir">
+    <div class="dirhead">
+      <h2 class="dirname">Hearth</h2>
+      <span class="dirtag">Continue first</span>
+    </div>
+    <p class="dirnote">Leads with the world you were last in, and the page you were last on — one big click back to work. Everything else is smaller and quieter around it.</p>
+    <div class="frame">
+      <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="screen">
+        <div class="h-top">
+          <div class="brand">Anamnesis<small>0.3.0</small></div>
+          <button class="btn">Settings</button>
+        </div>
+        <div class="h-main">
+          <div class="h-continue">
+            <div>
+              <p class="eyebrow">Pick up where you left off</p>
+              <p class="world">Valeraverse</p>
+              <p class="page">Last open — Valera Jiang › Her Sword · 74 pages</p>
+            </div>
+            <div><button class="btn btn-primary">Open Valeraverse</button></div>
+          </div>
+          <div class="h-side">
+            <p class="eyebrow">Your other worlds</p>
+            <div class="h-world">
+              <span class="h-swatch"></span>
+              <div><div class="nm">this is the story of a girl</div><div class="mt">2 days ago</div></div>
+            </div>
+            <div class="h-world">
+              <span class="h-swatch" style="background:#6d5091"></span>
+              <div><div class="nm">TestWorld</div><div class="mt">3 weeks ago</div></div>
+            </div>
+            <button class="h-new">+ New world</button>
+            <button class="h-new">Open a folder…</button>
+          </div>
+        </div>
+        <div class="h-feat">
+          <div class="h-card"><b>What's new in 0.3.0</b><span>Picture library, asset folders, six themes.</span></div>
+          <div class="h-card"><b>Start from a template</b><span>Skeletons for characters, factions, places.</span></div>
+          <div class="h-card"><b>Bringing a world with you?</b><span>Import .lk, .md, or a folder.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dir">
+    <div class="dirhead">
+      <h2 class="dirname">Atlas</h2>
+      <span class="dirtag">Worlds as covers</span>
+    </div>
+    <p class="dirnote">A rail down the side, worlds as cover cards. The prettiest of the three, and the only one that needs a new feature — each world would need a cover picture, with a fallback for ones that don't have one yet.</p>
+    <div class="frame">
+      <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="screen">
+        <div class="a-body">
+          <div class="a-rail">
+            <div class="brand">Anamnesis<small>0.3.0</small></div>
+            <div class="a-nav">
+              <div class="on">Worlds</div>
+              <div>Templates</div>
+              <div>Themes</div>
+              <div>Settings</div>
+            </div>
+            <div class="a-whatsnew">
+              <b>New in 0.3.0</b>
+              <span>Picture library, asset folders, and six themes to try.</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:1rem;">
+              <p class="eyebrow">Your worlds</p>
+              <button class="btn btn-primary">+ New world</button>
+            </div>
+            <div class="a-grid">
+              <div class="a-card">
+                <div class="a-cover a-c1"></div>
+                <div class="a-meta"><b>Valeraverse</b><span>Edited 4 hours ago · 74 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c2"></div>
+                <div class="a-meta"><b>this is the story of a girl</b><span>Edited 2 days ago · 12 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">T</div>
+                <div class="a-meta"><b>TestWorld</b><span>Edited 3 weeks ago · 3 pages</span></div>
+              </div>
+              <div class="a-newcard"><span style="font-size:1.4rem">+</span><span>New world</span></div>
+              <div class="a-newcard"><span>Open a folder…</span></div>
+              <div class="a-newcard"><span>Import a world</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dir">
+    <div class="dirhead">
+      <h2 class="dirname">Codex</h2>
+      <span class="dirtag">Type-forward</span>
+    </div>
+    <p class="dirnote">Your worlds set large, as a list of titles rather than boxes — the display face doing the work instead of chrome. No cover images needed, and it stays handsome whether you have two worlds or twenty.</p>
+    <div class="frame">
+      <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="screen">
+        <div class="h-top">
+          <div class="brand">Anamnesis<small>0.3.0</small></div>
+          <button class="btn">Settings</button>
+        </div>
+        <div class="c-body">
+          <div>
+            <p class="eyebrow" style="margin-bottom:0.7rem">Your worlds</p>
+            <div class="c-list">
+              <div class="c-row lead"><span class="c-title">Valeraverse</span><span class="c-when">4 hours ago</span></div>
+              <div class="c-row"><span class="c-title">this is the story of a girl</span><span class="c-when">2 days ago</span></div>
+              <div class="c-row"><span class="c-title">TestWorld</span><span class="c-when">3 weeks ago</span></div>
+            </div>
+            <button class="btn btn-primary c-new">+ New world</button>
+          </div>
+          <div class="c-aside">
+            <div class="c-block">
+              <p class="eyebrow">New in 0.3.0</p>
+              <div class="c-item hot"><b>Picture library</b><span>Folders, names, and drag-in images.</span></div>
+              <div class="c-item"><b>Six themes</b><span>Switch the whole app's look.</span></div>
+            </div>
+            <div class="c-block">
+              <p class="eyebrow">Start Something</p>
+              <div class="c-item"><b>A template</b><span>Ready-made page skeletons.</span></div>
+              <div class="c-item"><b>An import</b><span>.lk, .md, or a folder of notes.</span></div>
+              <div class="c-item"><b>A folder on disk</b><span>Open a world you already have.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dir">
+    <div class="dirhead">
+      <h2 class="dirname">Every world, not eight</h2>
+      <span class="dirtag">At real scale</span>
+    </div>
+    <p class="dirnote">What the list looks like once the app reads your projects folder instead of remembering the last eight. These are your actual folders. Worlds kept somewhere else sit in their own group, so "my library" and "that one on the D drive" stay distinguishable.</p>
+
+    <div class="frame">
+      <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="screen">
+        <div class="h-top">
+          <div class="brand">Anamnesis<small>0.3.0</small></div>
+          <button class="btn">Settings</button>
+        </div>
+        <div class="c-body">
+          <div>
+            <div class="s-grouphead">
+              <p class="eyebrow">In your projects folder</p>
+              <input class="s-filter" type="text" placeholder="Filter…" aria-label="Filter worlds" />
+            </div>
+            <div class="c-list">
+              <div class="c-row lead"><span class="c-title">Valeraverse</span><span class="c-when">4 hours ago</span></div>
+              <div class="c-row"><span class="c-title">this is the story of a girl</span><span class="c-when">2 days ago</span></div>
+              <div class="c-row"><span class="c-title">Valeraverse3</span><span class="c-when">2 weeks ago</span></div>
+            </div>
+            <div class="s-tail">
+              <div class="s-trow"><span class="s-tname">byebyebye</span><span class="s-twhen">3 weeks ago</span></div>
+              <div class="s-trow"><span class="s-tname">TestWorld</span><span class="s-twhen">last month</span></div>
+              <div class="s-trow"><span class="s-tname">testval2</span><span class="s-twhen">last month</span></div>
+              <div class="s-trow"><span class="s-tname">test2</span><span class="s-twhen">last month</span></div>
+              <div class="s-trow"><span class="s-tname">test3434</span><span class="s-twhen">last month</span></div>
+              <div class="s-trow"><span class="s-tname">test</span><span class="s-twhen">last month</span></div>
+              <div class="s-trow"><span class="s-tname">TEStval</span><span class="s-twhen">last month</span></div>
+            </div>
+            <div class="s-elsewhere">
+              <div class="s-grouphead">
+                <p class="eyebrow">Elsewhere on disk</p>
+              </div>
+              <div class="c-list">
+                <div class="c-row"><span class="c-title">Shared Campaign</span><span class="c-when">D:\ · a week ago</span></div>
+              </div>
+            </div>
+            <button class="btn btn-primary c-new">+ New world</button>
+            <button class="btn c-new" style="margin-left:0.5rem">Open a folder…</button>
+          </div>
+          <div class="c-aside">
+            <div class="c-block">
+              <p class="eyebrow">New in 0.3.0</p>
+              <div class="c-item hot"><b>Picture library</b><span>Folders, names, and drag-in images.</span></div>
+              <div class="c-item"><b>Six themes</b><span>Switch the whole app's look.</span></div>
+            </div>
+            <div class="c-block">
+              <p class="eyebrow">Start Something</p>
+              <div class="c-item"><b>A template</b><span>Ready-made page skeletons.</span></div>
+              <div class="c-item"><b>An import</b><span>.lk, .md, or a folder of notes.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="dirnote" style="margin-top:0.4rem">The same list as covers. Worlds without a cover picture fall back to their initial, so a full folder never looks broken — but with ten worlds you're scrolling a grid rather than reading a list.</p>
+
+    <div class="frame">
+      <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="screen">
+        <div class="a-body">
+          <div class="a-rail">
+            <div class="brand">Anamnesis<small>0.3.0</small></div>
+            <div class="a-nav">
+              <div class="on">Worlds</div>
+              <div>Templates</div>
+              <div>Themes</div>
+              <div>Settings</div>
+            </div>
+            <div class="a-whatsnew">
+              <b>New in 0.3.0</b>
+              <span>Picture library, asset folders, and six themes to try.</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:1rem;">
+              <p class="eyebrow">In your projects folder · 10</p>
+              <button class="btn btn-primary">+ New world</button>
+            </div>
+            <div class="a-grid">
+              <div class="a-card">
+                <div class="a-cover a-c1"></div>
+                <div class="a-meta"><b>Valeraverse</b><span>4 hours ago · 74 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c2"></div>
+                <div class="a-meta"><b>this is the story of a girl</b><span>2 days ago · 12 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">V</div>
+                <div class="a-meta"><b>Valeraverse3</b><span>2 weeks ago · 74 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">b</div>
+                <div class="a-meta"><b>byebyebye</b><span>3 weeks ago · 1 page</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">T</div>
+                <div class="a-meta"><b>TestWorld</b><span>last month · 3 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">t</div>
+                <div class="a-meta"><b>testval2</b><span>last month · 2 pages</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">t</div>
+                <div class="a-meta"><b>test2</b><span>last month · 1 page</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">t</div>
+                <div class="a-meta"><b>test3434</b><span>last month · 1 page</span></div>
+              </div>
+              <div class="a-card">
+                <div class="a-cover a-c3">t</div>
+                <div class="a-meta"><b>test</b><span>last month · 1 page</span></div>
+              </div>
+            </div>
+            <p class="s-more" style="margin:0">Keeps going — the page scrolls. Nothing is hidden behind a link.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dir">
+    <div class="dirhead">
+      <h2 class="dirname">Yours</h2>
+      <span class="dirtag">Assembled from your notes</span>
+    </div>
+    <p class="dirnote">Pinned worlds dissolve at the top instead of sitting in a box — the border runs up the sides and fades out with the picture. Four to a page, never half a card — chevrons on a soft edge fade, and dots big enough to actually hit. Recents live in the rail, and the one button that makes something new is in the middle by itself. The faces below are real ones from the app's font library — pick the one the headings should use.</p>
+    <div class="fontbar" id="fontbar">
+      <span>Headings:</span>
+      <button class="r-btn is-on" data-font="">Sora</button>
+      <button class="r-btn" data-font="epilogue">Epilogue</button>
+      <button class="r-btn" data-font="outfit">Outfit</button>
+      <button class="r-btn" data-font="grotesk">Space Grotesk</button>
+      <span style="margin-left:1rem">Covers:</span>
+      <button class="r-btn" id="muteBtn">Muted covers</button>
+    </div>
+    <div class="frame">
+      <div class="y-shell">
+        <div class="y-main">
+          <div class="y-head">
+            <div class="brand">Anamnesis<small>0.3.0</small></div>
+            <button class="btn btn-primary">+ New world</button>
+            <div class="y-tools">
+              <input class="s-filter" type="text" placeholder="Filter…" aria-label="Filter worlds" />
+            </div>
+          </div>
+
+          <div class="y-body" id="yBody">
+            <div class="y-pinned">
+              <p class="y-label"><span class="y-badge">Pinned</span><span class="y-count">5 of 12</span><span class="y-right"><button class="y-pill">Manage pins</button></span></p>
+              <div class="y-carousel">
+                <button class="y-nav prev" aria-label="Previous page" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+                <button class="y-nav next" aria-label="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+                <div class="y-row">
+                  <button class="y-pin"><span class="y-pinart y-g1"></span><span class="y-pinedge"></span><span class="y-pinscrim"></span><span class="y-pinrule y-r1"></span><span class="y-pincap"><b>Valeraverse</b><em>74 pages · 4 hours ago</em></span></button>
+                  <button class="y-pin"><span class="y-pinart y-g2"></span><span class="y-pinedge"></span><span class="y-pinscrim"></span><span class="y-pinrule y-r2"></span><span class="y-pincap"><b>this is the story of a girl</b><em>12 pages · 2 days ago</em></span></button>
+                  <button class="y-pin"><span class="y-pinart y-g3"></span><span class="y-pinedge"></span><span class="y-pinscrim"></span><span class="y-pinrule y-r3"></span><span class="y-pincap"><b>Valeraverse3</b><em>74 pages · forked</em></span></button>
+                  <button class="y-pin"><span class="y-pinart y-g6"></span><span class="y-pinedge"></span><span class="y-pinscrim"></span><span class="y-pinrule y-r6"></span><span class="y-pincap"><b>Ashfall</b><em>31 pages · last month</em></span></button>
+                  <button class="y-pin"><span class="y-pinart y-g4"></span><span class="y-pinedge"></span><span class="y-pinscrim"></span><span class="y-pinrule y-r4"></span><span class="y-pincap"><b>byebyebye</b><em>1 page · 3 weeks ago</em></span></button>
+                  <button class="y-addpin"><b>+</b>Pin a world</button>
+                </div>
+              </div>
+              <div class="y-dots"><button class="y-dot on" aria-label="Page 1"></button><button class="y-dot" aria-label="Page 2"></button></div>
+            </div>
+
+            <div class="y-all">
+              <p class="y-label"><span class="y-badge">All Worlds</span><span class="y-count">12</span><span class="y-right"><button class="y-pill">Newest first ▾</button><span class="y-views"><button class="y-view is-on" data-view="grid" aria-label="Grid view"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button><button class="y-view" data-view="list" aria-label="List view"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="3" rx="1.5"/><rect x="3" y="10.5" width="18" height="3" rx="1.5"/><rect x="3" y="17" width="18" height="3" rx="1.5"/></svg></button></span></span></p>
+              <div class="y-grid">
+                <button class="y-tile"><span class="y-fill y-g1"></span><span class="y-cap"><b>Valeraverse</b><em>74 pages</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g2"></span><span class="y-cap"><b>this is the story of a girl</b><em>12 pages</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g3"></span><span class="y-cap"><b>Valeraverse3</b><em>forked</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g6"></span><span class="y-cap"><b>Ashfall</b><em>31 pages</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g4"></span><span class="y-cap"><b>byebyebye</b><em>1 page</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g5"></span><span class="y-cap"><b>TestWorld</b><em>3 pages</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g6"></span><span class="y-cap"><b>testval2</b><em>2 pages</em></span></button>
+                <button class="y-tile"><span class="y-fill y-g5"></span><span class="y-cap"><b>test3434</b><em>1 page</em></span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="y-rail">
+          <div>
+            <p class="y-label"><span class="y-badge">Recently Opened</span></p>
+            <button class="y-line"><span class="y-chip y-g1"></span><span class="y-linetext"><b>Valeraverse</b><em>4 hours ago</em></span></button>
+            <button class="y-line"><span class="y-chip y-g2"></span><span class="y-linetext"><b>this is the story of a girl</b><em>2 days ago</em></span></button>
+            <button class="y-line"><span class="y-chip y-g3"></span><span class="y-linetext"><b>Valeraverse3</b><em>2 weeks ago</em></span></button>
+          </div>
+          <div>
+            <p class="y-label"><span class="y-badge">Start Something</span></p>
+            <div class="y-item"><b>A template</b><span>Ready-made page skeletons.</span></div>
+            <div class="y-item mute"><b>A folder on disk</b><span>Open a world you already have.</span></div>
+            <div class="y-item mute"><b>Import</b><span>.lk, .md, or a folder of notes.</span></div>
+          </div>
+          <div>
+            <p class="y-label"><span class="y-badge">New Releases</span></p>
+            <a class="y-rel now" href="#"><b>0.3.0 <span class="y-now">Yours</span></b><em>Picture library, six themes, 40 fixes.</em></a>
+            <a class="y-rel" href="#"><b>0.2.9</b><em>Backlinks panel, faster search.</em></a>
+            <a class="y-rel" href="#"><b>0.2.8</b><em>Snippets and the properties panel.</em></a>
+          </div>
+          <div class="y-railfoot"><button class="btn">Settings</button></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="dir">
+    <div class="dirhead">
+      <h2 class="dirname">Manage pins</h2>
+      <span class="dirtag">Behind "Manage pins"</span>
+    </div>
+    <p class="dirnote">Reordering by dragging a card along a row is miserable, so the row doesn't do it. This does: full-width rows with a grip and a position, and every world you haven't pinned right underneath, so pinning and rearranging are the same trip. The dot on a cover means it's already up there.</p>
+    <div class="frame">
+      <div class="m-scrim">
+        <div class="m-modal">
+          <div class="m-head">
+            <div>
+              <h3>Pinned Worlds</h3>
+              <p>Drag to reorder. Pinned worlds stay at the top of the start screen.</p>
+            </div>
+            <button class="m-x" aria-label="Close">✕</button>
+          </div>
+          <div class="m-body">
+            <div class="m-list">
+              <div class="m-row"><span class="m-grip">⠿</span><span class="m-thumb y-g1"></span><span class="m-name"><b>Valeraverse</b><em>1 · 74 pages</em></span><button class="m-drop" aria-label="Unpin">✕</button></div>
+              <div class="m-row"><span class="m-grip">⠿</span><span class="m-thumb y-g2"></span><span class="m-name"><b>this is the story of a girl</b><em>2 · 12 pages</em></span><button class="m-drop" aria-label="Unpin">✕</button></div>
+              <div class="m-row"><span class="m-grip">⠿</span><span class="m-thumb y-g3"></span><span class="m-name"><b>Valeraverse3</b><em>3 · forked from Valeraverse</em></span><button class="m-drop" aria-label="Unpin">✕</button></div>
+              <div class="m-row"><span class="m-grip">⠿</span><span class="m-thumb y-g6"></span><span class="m-name"><b>Ashfall</b><em>4 · 31 pages</em></span><button class="m-drop" aria-label="Unpin">✕</button></div>
+              <div class="m-row"><span class="m-grip">⠿</span><span class="m-thumb y-g4"></span><span class="m-name"><b>byebyebye</b><em>5 · 1 page</em></span><button class="m-drop" aria-label="Unpin">✕</button></div>
+            </div>
+            <div class="m-add">
+              <p class="y-label"><span class="y-badge">Add a World</span><span class="y-count">7 not pinned</span></p>
+              <div class="m-tools">
+                <input class="s-filter" type="text" placeholder="Search worlds…" aria-label="Search worlds" />
+                <button class="r-btn">Newest ▾</button>
+              </div>
+              <div class="m-pick">
+                <button class="m-cell"><span class="f y-g5"></span><span class="t">TestWorld</span></button>
+                <button class="m-cell"><span class="f y-g6"></span><span class="t">testval2</span></button>
+                <button class="m-cell"><span class="f y-g5"></span><span class="t">test3434</span></button>
+                <button class="m-cell"><span class="f y-g2"></span><span class="t">Longvale</span></button>
+                <button class="m-cell has"><span class="f y-g1"></span><span class="t">Valeraverse</span></button>
+                <button class="m-cell"><span class="f y-g4"></span><span class="t">Emberwake</span></button>
+                <button class="m-cell"><span class="f y-g3"></span><span class="t">Saltmarch</span></button>
+                <button class="m-cell"><span class="f y-g6"></span><span class="t">test</span></button>
+              </div>
+            </div>
+            <div class="m-foot">
+              <button class="btn">Cancel</button>
+              <button class="btn btn-primary">Done</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="verdict">
+    <h2>What separates them</h2>
+    <ul>
+      <li><strong>Hearth</strong> is fastest to get back to writing, and best if you mostly live in one world. It gets emptier-looking the more worlds you have.</li>
+      <li><strong>Atlas</strong> looks the best in a screenshot and scales to many worlds, but leans on cover pictures — that's a real feature, not just styling.</li>
+      <li><strong>Codex</strong> needs no new features and holds up at any number of worlds. It's the most distinctive and the least like anything you showed me.</li>
+    </ul>
+    <p>All of them keep the second-window behaviour in mind: a world already open elsewhere would show as marked and unclickable, rather than letting you open it twice.</p>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var worlds = [
+    { name: "Valeraverse", kicker: "Last open · 4 hours ago", sub: "Valera Jiang › Her Sword · 74 pages", a: [13, 78, 72], b: [8, 40, 58] },
+    { name: "this is the story of a girl", kicker: "Opened 2 days ago", sub: "12 pages", a: [92, 60, 130], b: [38, 26, 62] },
+    { name: "Valeraverse3", kicker: "Opened 2 weeks ago", sub: "Forked from Valeraverse · 74 pages", a: [16, 92, 96], b: [10, 34, 52] },
+    { name: "byebyebye", kicker: "Opened 3 weeks ago", sub: "1 page", a: [110, 52, 44], b: [44, 22, 30] },
+    { name: "TestWorld", kicker: "Opened last month", sub: "3 pages", a: [58, 58, 74], b: [26, 26, 36] },
+    { name: "New world", kicker: "Start something", sub: "A blank world, or from a template", a: [40, 44, 52], b: [18, 18, 26] }
+  ];
+
+  var cv = document.getElementById("tCanvas");
+  if (!cv) return;
+  var ctx = cv.getContext("2d");
+  var cur = 0, blobs = [];
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function seed(i) {
+    var w = worlds[i], out = [];
+    for (var n = 0; n < 5; n++) {
+      out.push({
+        x: 0.18 + 0.72 * ((n * 0.37 + i * 0.19) % 1),
+        y: 0.14 + 0.72 * ((n * 0.61 + i * 0.43) % 1),
+        r: 0.20 + 0.20 * ((n * 0.29 + i * 0.11) % 1),
+        c: n % 2 ? w.b : w.a,
+        p: n * 1.7 + i
+      });
+    }
+    return out;
+  }
+
+  function size() {
+    var r = cv.getBoundingClientRect();
+    var d = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.max(1, Math.round(r.width * d));
+    cv.height = Math.max(1, Math.round(r.height * d));
+  }
+
+  function draw(t) {
+    var W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#0f0f14";
+    ctx.fillRect(0, 0, W, H);
+    for (var i = 0; i < blobs.length; i++) {
+      var b = blobs[i];
+      var dx = reduce ? 0 : Math.sin(t / 5200 + b.p) * 0.035;
+      var dy = reduce ? 0 : Math.cos(t / 6100 + b.p) * 0.03;
+      var x = (b.x + dx) * W, y = (b.y + dy) * H, r = b.r * Math.max(W, H);
+      var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, "rgba(" + b.c[0] + "," + b.c[1] + "," + b.c[2] + ",0.55)");
+      g.addColorStop(1, "rgba(" + b.c[0] + "," + b.c[1] + "," + b.c[2] + ",0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  function show(i) {
+    if (i === cur || i < 0 || i >= worlds.length) return;
+    cur = i;
+    var w = worlds[i];
+    document.getElementById("tName").textContent = w.name;
+    document.getElementById("tKicker").textContent = w.kicker;
+    document.getElementById("tSub").textContent = w.sub;
+    blobs = seed(i);
+    var items = list.querySelectorAll(".t-item");
+    for (var n = 0; n < items.length; n++) items[n].classList.toggle("is-on", n === i);
+  }
+
+  var list = document.getElementById("tList");
+  function pick(e) {
+    var el = e.target.closest(".t-item");
+    if (!el) return;
+    show(Array.prototype.indexOf.call(list.children, el));
+  }
+  list.addEventListener("mouseover", pick);
+  list.addEventListener("focusin", pick);
+
+  blobs = seed(0);
+  size();
+  window.addEventListener("resize", size);
+  requestAnimationFrame(draw);
+})();
+
+(function () {
+  var body = document.getElementById("railBody");
+  var sw = document.querySelector(".r-switch");
+  if (!body || !sw) return;
+  sw.addEventListener("click", function (e) {
+    var b = e.target.closest(".r-btn");
+    if (!b) return;
+    body.className = "r-body r-" + b.dataset.mode;
+    var all = sw.querySelectorAll(".r-btn");
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle("is-on", all[i] === b);
+  });
+})();
+
+(function () {
+  var row = document.querySelector(".y-pinned .y-row");
+  var car = document.querySelector(".y-carousel");
+  var dots = document.querySelector(".y-dots");
+  if (!row || !car || !dots) return;
+
+  var cards = [].filter.call(row.children, function (c) { return !c.classList.contains("y-nav"); });
+  var prev = car.querySelector(".y-nav.prev");
+  var next = car.querySelector(".y-nav.next");
+  var page = 0;
+
+  // Measured rather than assumed: the cards go two-up on a narrow window.
+  function perPage() {
+    var probe = cards[0];
+    var was = probe.classList.contains("off");
+    if (was) probe.classList.remove("off");
+    var step = probe.offsetWidth + 12;
+    if (was) probe.classList.add("off");
+    if (!row.clientWidth || !step) return cards.length || 1;
+    return Math.max(1, Math.round(row.clientWidth / step));
+  }
+
+  function render() {
+    var per = perPage();
+    var count = Math.max(1, Math.ceil(cards.length / per));
+    if (page > count - 1) page = count - 1;
+
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].classList.toggle("off", i < page * per || i >= (page + 1) * per);
+    }
+
+    while (dots.children.length < count) {
+      var d = document.createElement("button");
+      d.className = "y-dot";
+      d.setAttribute("aria-label", "Page " + (dots.children.length + 1));
+      dots.appendChild(d);
+    }
+    while (dots.children.length > count) dots.removeChild(dots.lastChild);
+    for (var j = 0; j < dots.children.length; j++) {
+      dots.children[j].classList.toggle("on", j === page);
+      dots.children[j].setAttribute("aria-current", j === page ? "true" : "false");
+    }
+    dots.style.visibility = count > 1 ? "visible" : "hidden";
+    prev.hidden = page === 0;
+    next.hidden = page >= count - 1;
+    car.dataset.pages = count;
+  }
+
+  function turn(to) {
+    if (to === page) return;
+    page = to;
+    row.classList.add("turning");
+    setTimeout(function () {
+      render();
+      row.classList.remove("turning");
+    }, 140);
+  }
+
+  dots.addEventListener("click", function (e) {
+    var d = e.target.closest(".y-dot");
+    if (d) turn([].indexOf.call(dots.children, d));
+  });
+  prev.addEventListener("click", function () { turn(Math.max(0, page - 1)); });
+  next.addEventListener("click", function () { turn(page + 1); });
+  window.addEventListener("resize", render);
+  render();
+})();
+
+(function () {
+  var bar = document.getElementById("fontbar");
+  var mute = document.getElementById("muteBtn");
+  if (!bar) return;
+  bar.addEventListener("click", function (e) {
+    var b = e.target.closest(".r-btn");
+    if (!b || b === mute) return;
+    document.documentElement.className = b.dataset.font ? "f-" + b.dataset.font : "";
+    if (mute.classList.contains("is-on")) document.documentElement.classList.add("muted");
+    var all = bar.querySelectorAll(".r-btn[data-font]");
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle("is-on", all[i] === b);
+  });
+  mute.addEventListener("click", function () {
+    var on = document.documentElement.classList.toggle("muted");
+    mute.classList.toggle("is-on", on);
+  });
+})();
+
+(function () {
+  var all = document.querySelector(".y-all");
+  if (!all) return;
+  all.addEventListener("click", function (e) {
+    var b = e.target.closest(".y-view");
+    if (!b) return;
+    all.classList.toggle("as-list", b.dataset.view === "list");
+    var each = all.querySelectorAll(".y-view");
+    for (var i = 0; i < each.length; i++) each[i].classList.toggle("is-on", each[i] === b);
+  });
+})();
+</script>

@@ -825,6 +825,332 @@ report anywhere, per the policy boundary in `CLAUDE.md`.
 
 ---
 
+## Phase 27 — The World Library
+
+Raised 2026-08-14, from her opening the app and finding the start screen
+remembers eight worlds and offers Explorer for the ninth. Everything here is
+one screen and the identity that screen needs to work.
+
+**Pull this forward** — she wants the start screen done promptly (her call,
+2026-08-14). It's numbered last because that's where new work goes, not because
+it belongs last. It runs next, ahead of Phase 28 and interleaved with whatever
+of 17–20 is in flight.
+
+### Worlds get an id
+
+`project.json` has `version`, `name`, `rootOrder`, `homeNodeId` — no id. A
+world's only identity is its folder path, so everything that refers to one
+breaks when it moves or is renamed. That is already biting: the recent list is
+a list of paths, and the folder reorganisation below moves every world.
+
+A random id in `project.json`, generated on create and backfilled the first
+time an existing world is opened. Pins, groups, archive state and the recent
+list all key on it. **In the project file rather than app settings** (her call,
+2026-08-14) so it travels with the world — which is what leaves the door open
+for links that reach across worlds later. Pages already have ids; this supplies
+the missing half of the address.
+
+**Copies get a fresh id, never a derived one.** A duplicated world (she keeps
+`Valeraverse` and `Valeraverse3`) would otherwise claim to be the world it was
+copied from. Appending a suffix was considered and rejected: the filename
+collision suffixes already in `filesystem-service.ts` are recomputed from
+creation order on every resolve, so siblings renumber each other — harmless for
+a filename, fatal for an id, because a renumber breaks every reference. The
+lineage her question was actually after lives in its own field: the copy
+records which world it came from, so identity stays meaningless and "this is a
+fork of that" stays real data.
+
+**The duplicate-id rule doubles as the fork detector.** Two worlds wearing the
+same id is not an error, it is evidence one was copied from the other:
+most-recently-modified keeps the id, the other is re-idded *and records the
+first as its parent*. This matters because her forking is done in File
+Explorer, not in the app — shown 2026-08-14 — so lineage recorded only on an
+in-app duplicate would miss the way she actually works. A world copied in
+Explorer gets correct lineage the next time the folder is scanned, with no
+change to her habit.
+
+**Forking a whole world is a workflow, not an edge case.** Demonstrated
+2026-08-14 with her CharSnap bot documents: duplicate the whole thing, work in
+the copy, keep the previous one in case the changes turn out wrong. The naming
+in that document is what a lineage field exists to replace — `Copy of Copy of
+Copy of Template`, `Copy of Val v5` ordered above `Val v6`, the actual
+descent recorded nowhere but her memory.
+
+Worth adding alongside: a **duplicate-world action** on this screen, so the
+fork can happen in the app rather than in Explorer, and worlds can show what
+they were forked from.
+
+**Newest at the top, and no tidying required** (her call, 2026-08-14). Her
+document tabs run oldest-first and she has never reorganised them because
+reorganising is work — which is the whole lesson. Any ordering that depends on
+upkeep will be wrong within a month. The default sort puts the newest first
+and a fresh fork lands above what it was forked from; manual arrangement, if it
+ever exists, is an option on top of a default that is already correct, never
+the thing holding it together.
+
+**Not the same thing as Phase 19.** Safety Net is per-file snapshots — restore
+a page to how it was an hour ago, automatic, invisible until needed. Forking is
+deliberate, whole-world, and both sides stay open and readable indefinitely.
+Neither substitutes for the other; don't let them merge into one item.
+
+### The projects folder gets read
+
+Nothing has ever looked inside it. `getProjectsDir` is used to decide where new
+worlds are *put*, to site `themes/` and `snippets/`, and as an import
+destination — never to find a world. Combined with `RECENT_PROJECTS_COUNT = 8`,
+a ninth world is unreachable except through the folder picker.
+
+Scan it. A world is any directory containing `project.json` — the same check
+`loadProject` already makes. Recent stops being a whitelist and becomes a sort
+order; the cap disappears rather than being raised. **Two levels deep**, so a
+world nested one further down still appears (hers currently sit at mixed
+depths, e.g. `TEStval/Valeraverse`).
+
+Worlds opened from outside the projects folder are remembered as now and shown
+**in the same list, marked** rather than in a section of their own (Q11,
+delegated to me 2026-08-14). A separate section makes the split the screen's
+main organising idea, when the split is a fact about where a folder happens to
+sit and nothing she thinks about. One list keeps the default sort meaningful
+and keeps groups as the thing that organises; the marker is there for the
+moment it matters, which is when a world has gone missing and the answer is
+that its drive isn't plugged in.
+
+### Opening a folder gets forgiving
+
+Her call, 2026-08-14. Unzipping commonly produces `Valeraverse/Valeraverse/`,
+and "Open folder" currently reports no project in the outer one, which is
+correct and useless. When the chosen folder has no `project.json`, look one
+level in: exactly one world below it opens directly, several says so and lets
+her pick. This matters more as worlds and templates get handed to other people.
+
+### Organising, without touching the disk
+
+All of it, per her 2026-08-14 call: filter, pin, archive, groups.
+
+**Groups are in the app, not folders on disk.** Real folders were considered
+and rejected by her, correctly: worlds already sit at mixed depths, group
+directories would add another level for the scan to disambiguate, and
+organising would mean leaving for File Explorer. Group membership is app state
+keyed on the world id, so it survives a world being moved or renamed.
+
+Pin floats a world up; archive folds one away without deleting it. Neither is a
+location, so both compose with groups rather than competing.
+
+**Nothing truncates.** A "4 more…" link is the same failure as the eight-world
+cap in better clothes. The list shows everything and the page scrolls; the
+filter box is the answer at scale, not a fold.
+
+**Groups can land after the first cut** (her call, 2026-08-14: not as important,
+unless it's cheap). It is cheap, but only in the right order — group membership
+is app state keyed on the world id, so the ids and the folder scan have to exist
+first, and once they do the whole feature is a row of chips above the grid that
+filters it plus a group field in the manage window. Ship the screen without
+groups if that's what gets it out sooner; don't design the grid in a way that
+can't grow a chip row.
+
+### The screen itself
+
+`docs/ui-audit.md` Part 3 has carried "the start screen's unaligned box stack
+and missing primary action" since Parts 1 and 2 were finished, and
+`shell.css` admits in a comment that its three actions are identical with no
+primary among them. This is that item, finally scheduled.
+
+**Settled 2026-08-14** (Q8 closed) after five rounds of mockups on the app's own
+palette and fonts. Three exploratory directions were rejected outright; what
+follows is what she picked, and the reasons are recorded because most of them
+are rules, not preferences.
+
+**Layout.** A main column with a rail down the right-hand side, flush to the
+edge with its own panel background and dividing line.
+
+- **Pinned worlds across the top**, as tall cover cards. These are the one
+  uncontained thing on the screen: no box, the picture dissolving upward into
+  the background, its border running up the sides and fading with it, and a
+  single rule under the name in the world's own colours. Everything else on the
+  screen sits in a box, and this deliberately doesn't.
+- **Real pagination, four to a page** — not a scroller. A scrolling row cannot
+  land on a page boundary, so its last page repeats cards you have already seen
+  and its dots lie about where you are. Her words for the app that does this to
+  her: she keeps exactly four favourites *because* of it. Pages hold whole
+  cards, the last page is short rather than overlapping, and it crossfades.
+  Chevrons sit on a soft radial glow, never a rectangular scrim — a rectangle
+  over artwork shows its own top and bottom edges and you end up looking at the
+  box. Page dots are ~26×20 hit targets, not 5px specks.
+- **All worlds below** as a bordered cover grid, newest first, with a **grid /
+  list toggle** beside the sort control (her call, 2026-08-14, after LegendKeeper's
+  — which offers the same pair). List view is one row per world: thumbnail,
+  name, when it was last edited. It is the view that scales — thirty worlds as
+  covers is a wall, thirty as rows is a list you can read — and it's also the
+  honest view for anyone who never sets a cover. Remember the choice; it's a
+  preference about how she reads, like the panel widths.
+- **The rail carries the lists**: recently opened (three), then Start Something
+  (template / folder on disk / import), then New Releases. A list of text
+  floating between two grids of pictures looked out of place and was moved here;
+  lists belong in the rail. **Start Something outranks release notes** (her
+  call): patch notes are not as important as the ways into the app.
+- **New world is centred on its own line**, brand left, filter right. It is the
+  only bright control on the screen, which answers Q9 without needing a rule.
+- **Release notes are three entries, each named by its version**, newest marked.
+  One unnamed "what's new" link reads as a single page; three unlabelled
+  features read as three pages that don't exist.
+
+**Cover images are load-bearing, not decoration.** This is the one thing the
+direction costs: worlds need somewhere to store a cover and a way to set one.
+The picture library from 0.3.0 does most of the work already.
+
+**Worlds without a cover get a generated one**, keyed off the id so it is the
+same every time. It must be a *real* gradient — at least two distinct hues,
+travelling diagonally. One hue with a lighter version of itself over it was
+tried and rejected in the strongest available terms. These are deliberately
+vibrant; that is the point and it is not up for softening.
+
+**"Muted covers" belongs in appearance settings.** Raised by her as a joke and
+kept because it is correct: bright colour is a taste question, and the answer to
+a taste question is a setting, not a compromise everybody lives with. One switch
+desaturating every cover, off by default, and on automatically for anyone whose
+system asks for higher contrast. The accessibility issue is text legibility on
+covers, which the scrim under every name already handles — not saturation.
+
+**Section headings are headings.** Badges were tried and are too small to do a
+heading's job. Title Case, the display face, ~20px; controls beside them
+(Manage pins, Newest first) are pills so they read as pressable.
+
+**Rearranging pins happens in a window, not by dragging the row.** A 150px card
+that can scroll out from under the cursor is the worst possible drag target. The
+manage window is full-width rows with a grip and a position, and every unpinned
+world underneath as covers, so pinning and reordering are one trip. The row
+itself carries a permanent dashed "Pin a world" tile — the section stays visible
+when nothing is pinned, because a feature that only appears once you know about
+it is invisible.
+
+**Borders over artwork are light at low opacity, never flat grey.** Grey next to
+a saturated cover goes muddy.
+
+Two things the mocks added that are missing today: the screen names the page you
+were last on, not just the world — the app already stores enough to say it — and
+it surfaces what changed in the release, which currently ships inside the app
+but has to be gone looking for.
+
+The mock lives at `docs/mockups/start-screen.html` for reference while this is
+built.
+
+### Second instance
+
+Verified 2026-08-14: two copies of the app run side by side, each with a real
+window; nothing blocks it. The trap is that both auto-open the last-opened
+world, so the default path puts two autosaving copies on the same files.
+
+`StartupRouter.tsx` already falls through to the picker whenever the last world
+can't be opened. Extend that: a world already open elsewhere isn't auto-opened,
+and the picker shows it as open rather than letting it be chosen. A marker file
+in the world's folder naming the holding process, treated as stale when that
+process is gone, so a crash doesn't lock her out of her own world. Check it on
+every open, not only at startup, or the picker is still a way in.
+
+This is the cheap 80% of Phase 21's "open in new window" and does not replace
+it. Worlds genuinely side by side in one window — tabs across worlds, dragging
+a page from one to another — remains Phase 21's job and is a rewrite of a
+2,300-line store built around there being exactly one world. Both reference
+apps she pointed at (LegendKeeper, Obsidian) do the window version, not the tab
+version; LegendKeeper gets it free from being a website.
+
+### Folder layout
+
+`themes/` and `snippets/` sit beside the worlds in the projects folder, which
+is deliberate — a theme belongs to no single world — but leaves worlds and app
+data indistinguishable, and nothing stops a world being named `themes` and
+quietly collecting stylesheets.
+
+`Projects/` underneath the projects folder; `themes/` and `snippets/` stay
+where they are. **No migrator** (her call, 2026-08-14): worlds open by absolute
+path, so moving them by hand costs nothing but re-opening each once, and she
+has two real worlds and one other user. Once ids and the scan exist, a moved
+world is re-found rather than lost from the recent list. Reserve `themes` and
+`snippets` as world names regardless of layout.
+
+---
+
+## Phase 28 — Getting It Back Out
+
+Raised 2026-08-14 against LegendKeeper's export menu, which offers five formats
+beside its own: HTML, print, Markdown (file or vault), one big text file, and
+JSON. Ours offers `.lk` and nothing else.
+
+**Build the shared walker first.** `lk-export.ts`, Phase 1.5's HTML publish and
+the queued AO3 export are already the same job — walk the pages, emit another
+format — and this adds three more. The note elsewhere in this plan about
+extracting the shared piece by the third one is now overdue at six.
+
+- **HTML** — already Phase 1.5 (Publish). Unchanged by this; noted so the two
+  don't get built twice. LK's version carries timelines and map pins, which we
+  don't have.
+- **Markdown** — a vault of `.md` files mirroring the page tree. **Build it
+  with Phase 20's importer, not separately.** Same map read in both directions,
+  and it supplies the round-trip test that phase wants: export a world,
+  re-import it, compare. Obsidian has no export because a vault *is* a folder
+  of markdown, so this is also the Obsidian route in both directions. Our
+  `[[wikilinks]]` are already Obsidian's syntax, which is the part that would
+  otherwise be painful.
+- **One big file** — the same walker, one file instead of many. Small addition
+  to the above, not its own item.
+- **Print** — the only one that isn't "walk and write". **Verified working
+  2026-08-14** (Q3 closed): Ctrl+P in the desktop window opens the system print
+  dialog and offers Microsoft Print to PDF. What it prints is the problem — the
+  whole interface goes onto the page, tree and side panels included. So this
+  isn't a capability question any more, it's a stylesheet: a print stylesheet
+  that drops every panel and prints the page body, with the title and nothing
+  else as furniture. Cheap, and the closest thing to a PDF export we get free.
+- **JSON** — **settled 2026-08-14** (Q2 closed): a zip of the world's folder,
+  since the data is already JSON files on disk and re-zipping is honest about
+  that. **Label it as JSON in the menu** (her call) — people coming from other
+  tools are looking for the word, and "Zip" alone doesn't tell them what's
+  inside. Something like "JSON (.zip)" with a line saying it's the world's own
+  files.
+
+### Templates as files
+
+Templates already copy a page *and everything nested under it*
+(`collectSubtree` in `template-library.ts`), so a template that is a whole
+folder skeleton is already the shape Phase 17 is building. What's missing is
+writing one to a file and reading one back — for handing skeletons to people
+who are struggling to set their own up. Themes already work this way, so
+there's a pattern to copy.
+
+**Templates carry their pictures** (her call, 2026-08-14, Q4 closed) — in case
+people want to share skeletons with images in them. So a template file is a
+bundle, not a single JSON document: the subtree plus whichever assets its pages
+reference, with the references rewritten to point inside the bundle.
+
+**With a switch to leave them out** (her call, same day), so a skeleton can stay
+a small file when the pictures aren't the point. That makes both versions the
+same format — a bundle whose asset list may be empty — rather than two file
+types, so importing doesn't have to care which one it was handed. Show the
+resulting size next to the switch; that's the whole reason it exists.
+
+Nothing here touches the network — a template is a file she hands over however
+she already hands over files.
+
+---
+
+## Open Questions — Phases 27 & 28
+
+**All closed 2026-08-14.** Kept as a record of what was decided and where the
+answer now lives, because several of these are rules rather than one-off calls.
+
+- **Q2** — JSON export → a zip of the world's folder, labelled as JSON. Phase 28.
+- **Q3** — printing → works; needs a print stylesheet, not a decision. Phase 28.
+- **Q4** — shared templates → carry their pictures. Phase 28.
+- **Q5 / sequencing** → Phase 27 runs next and promptly; the rest sits where it
+  makes sense, which is 28 after 20 so Markdown export and the Markdown importer
+  are built as one round trip.
+- **Q8** — start screen direction → settled; see "The screen itself" above.
+- **Q9** — the loud button → New world, centred and alone. Settled by the layout
+  rather than argued.
+- **Q11** — outside worlds → one list, marked. See "The projects folder gets
+  read" above.
+
+---
+
 ## Phase 2 — Cloud Sync (Deferred)
 
 Only if the shared-folder sync approach demonstrably stops working. Options in preference order: Supabase (hosted Postgres + auth), Yjs + y-webrtc (P2P CRDT), self-hosted sync server.
