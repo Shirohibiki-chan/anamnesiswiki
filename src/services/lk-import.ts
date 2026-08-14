@@ -7,7 +7,10 @@
 // audit against the app's normal zero-network-calls policy.
 import { fetch as httpFetch } from "@tauri-apps/plugin-http";
 import { normalizeCodeLanguage } from "../constants/code-languages";
+import { READING_COLUMN_WIDTH } from "../constants/layout";
+import { IMAGE_MIN_PREVIEW_WIDTH } from "../constants/limits";
 import { COLOR_PALETTE } from "../constants/palette";
+import { ASSET_REF_PREFIX } from "../constants/paths";
 import { createTab, FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
 import { getPropertySchema, type TemplateKey } from "./template-registry";
 
@@ -42,7 +45,19 @@ type LkExportFile = { resources: LkResource[] };
 type BlockSeed = Record<string, unknown>;
 
 // ---- Public result shapes ----
-export type ImportPendingImage = { nodeId: string; url: string; field: "image" | "banner" };
+/**
+ * A picture that still has to be downloaded before the import can be written.
+ *
+ * Three slots, not one, and the third is shaped differently on purpose. A
+ * portrait and a banner are fields on the Node, so naming the node is enough to
+ * say where the filename goes. A picture in the writing is a block inside a
+ * tab's content, and there can be any number of them in one page — so it
+ * carries the id of the block it belongs to, and `applyBodyImage` is what puts
+ * the two back together.
+ */
+export type ImportPendingImage =
+  | { nodeId: string; url: string; field: "image" | "banner" }
+  | { nodeId: string; url: string; field: "body"; blockId: string };
 export type ImportPreviewNode = { id: string; name: string; templateKey: string; children: ImportPreviewNode[] };
 export type ImportPlan = {
   projectName: string;
@@ -159,6 +174,8 @@ function describeLossy(tracker: LossyTracker): string[] {
   if (icons) notes.push(`${plural(icons, "decorative icon")} were removed — LegendKeeper's inline icon markers have no equivalent here.`);
   const mentions = tracker.get("brokenMentions");
   if (mentions) notes.push(`${plural(mentions, "cross-reference link")} pointed at a page that wasn't included, and became plain text.`);
+  const noAddress = tracker.get("picturesWithoutAddress");
+  if (noAddress) notes.push(`${plural(noAddress, "picture")} in your writing had no address stored in the export and couldn't be brought across.`);
   const unknown = tracker.get("unknownBlocks");
   if (unknown) notes.push(`${plural(unknown, "block")} used a LegendKeeper feature Anamnesis doesn't recognize — its text was kept, formatting may be off.`);
   if (tracker.get("welcomeBoilerplate")) {
@@ -167,7 +184,14 @@ function describeLossy(tracker: LossyTracker): string[] {
   return notes;
 }
 
-type ConvertCtx = { idMap: Map<string, string>; lossy: LossyTracker };
+/**
+ * `bodyImages` is a per-page outbox, not a running total. `convertBlock` can't
+ * see which page it's converting — it's several frames below `walk` — so a
+ * picture found in the writing is dropped here with the block id that will
+ * carry it, and `walk` empties the list against the node it just built. It has
+ * to be emptied every page or the next one inherits the last one's pictures.
+ */
+type ConvertCtx = { idMap: Map<string, string>; lossy: LossyTracker; bodyImages: { blockId: string; url: string }[] };
 
 function posCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -263,16 +287,23 @@ function convertContainerAsCallout(node: LkNode, blockType: string, ctx: Convert
   return [callout, ...convertBlocks(rest, ctx)];
 }
 
+/**
+ * The item's first paragraph becomes the bullet's own line; everything after it
+ * nests underneath.
+ *
+ * **The rest goes through `convertBlocks` rather than being filtered to
+ * paragraphs and nested lists.** It used to be filtered, which meant a list
+ * item holding anything else — a picture, a code block, a callout — lost it
+ * without a word. Found 2026-08-14 by a test written for the body-picture case,
+ * which is the same silent drop one level down. Passing everything through also
+ * keeps the children in the order they were written in, where the old two-pass
+ * version put every paragraph ahead of every sub-list.
+ */
 function convertListItem(item: LkNode, itemType: "bulletListItem" | "numberedListItem", ctx: ConvertCtx): BlockSeed {
   const children = item.content ?? [];
   const firstParagraph = children.find((c) => c.type === "paragraph");
-  const extraParagraphs = children.filter((c) => c !== firstParagraph && c.type === "paragraph");
-  const nestedLists = children.filter((c) => c.type === "bulletList" || c.type === "orderedList");
   const block: BlockSeed = { type: itemType, content: firstParagraph ? convertInline(firstParagraph.content, ctx) : [] };
-  const childBlocks: BlockSeed[] = [
-    ...extraParagraphs.map((p) => ({ type: "paragraph", content: convertInline(p.content, ctx) })),
-    ...nestedLists.flatMap((list) => convertList(list, ctx)),
-  ];
+  const childBlocks = convertBlocks(children.filter((c) => c !== firstParagraph), ctx);
   if (childBlocks.length > 0) block.children = childBlocks;
   return block;
 }
@@ -298,6 +329,102 @@ function plainTextOf(node: LkNode): string {
     else text += plainTextOf(child);
   }
   return text;
+}
+
+/**
+ * LK's `mediaSingle.attrs.layout` against our image block's `textAlignment`.
+ *
+ * LK's list is longer than ours because two of its entries describe things our
+ * image block has no way to be: `wrap-left`/`wrap-right` flow text around the
+ * picture, and `wide`/`full-width` break out past the text column. Both are
+ * mapped to the side or the centre they lean towards, which is the closest a
+ * block that always sits on its own line can get. Anything unlisted falls to
+ * "center", which is BlockNote's own look for a picture and LK's default.
+ */
+const MEDIA_LAYOUT_ALIGNMENT: Record<string, "left" | "center" | "right"> = {
+  center: "center",
+  wide: "center",
+  "full-width": "center",
+  "align-start": "left",
+  "wrap-left": "left",
+  "align-end": "right",
+  "wrap-right": "right",
+};
+
+/**
+ * A picture sitting in a page's writing.
+ *
+ * **This case is a fix, not an addition, and it was silent.** Before it, both
+ * node types fell to `default`, which recurses into children — and a `media`
+ * node has none, so the picture didn't arrive damaged, it didn't arrive. The
+ * page came across with the words closed up over the gap where it had been.
+ * Measured across the user's two exports 2026-08-13: 28 pictures in one, none
+ * in the other. See docs/lk-format.md.
+ *
+ * The URL is only queued here. It's on LegendKeeper's CDN, and the file has to
+ * be downloaded into the project's own `assets/` before the block can point at
+ * anything — that happens in `importLkProject`, which is why the block gets an
+ * explicit id rather than letting BlockNote assign one later.
+ */
+function convertMediaSingle(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
+  const media = node.type === "media" ? node : (node.content ?? []).find((child) => child.type === "media");
+  const url = typeof media?.attrs?.url === "string" ? media.attrs.url : "";
+  if (!url) {
+    // LK writes `type: "file"` pictures with a url too, so a media node with
+    // none is a picture LK itself had lost track of — one in the user's second
+    // export. Nothing to download and nothing to show.
+    bump(ctx.lossy, "picturesWithoutAddress");
+    return [];
+  }
+
+  const blockId = crypto.randomUUID();
+  ctx.bodyImages.push({ blockId, url });
+
+  const layout = typeof node.attrs?.layout === "string" ? node.attrs.layout : "";
+  const props: Record<string, unknown> = {
+    // The address it came from, replaced with the local file once that file
+    // exists. Left as the LK address if the download fails, which still draws
+    // the picture on a machine with internet rather than leaving a blank —
+    // the same fallback the portrait path has always had.
+    url,
+    textAlignment: MEDIA_LAYOUT_ALIGNMENT[layout] ?? "center",
+  };
+
+  // LK stores the size as a share of its own text column; ours stores pixels.
+  // Omitted entirely when LK didn't record one, because `previewWidth`'s own
+  // default of undefined means "the size the file is" — inventing a number
+  // there would resize a picture nobody had resized.
+  const percent = node.attrs?.width;
+  if (typeof percent === "number" && percent > 0) {
+    props.previewWidth = Math.max(IMAGE_MIN_PREVIEW_WIDTH, Math.round((percent / 100) * READING_COLUMN_WIDTH));
+  }
+
+  return [{ id: blockId, type: "image", props }];
+}
+
+/**
+ * Points a body picture's block at the file that was downloaded for it.
+ *
+ * Lives here rather than in the store because it's the other half of
+ * `ImportPendingImage` — the block id only means anything against the plan that
+ * issued it. Nested children are walked because a picture can be indented
+ * under a list item, same reason `assetRefsInContent` walks them.
+ */
+export function applyBodyImage(node: Node, blockId: string, fileName: string): void {
+  const walk = (blocks: unknown): boolean => {
+    if (!Array.isArray(blocks)) return false;
+    for (const block of blocks as { id?: unknown; props?: Record<string, unknown>; children?: unknown }[]) {
+      if (!block || typeof block !== "object") continue;
+      if (block.id === blockId && block.props) {
+        block.props.url = `${ASSET_REF_PREFIX}${fileName}`;
+        return true;
+      }
+      if (walk(block.children)) return true;
+    }
+    return false;
+  };
+
+  for (const tab of node.tabs) if (walk(tab.content)) return;
 }
 
 const PANEL_TYPE_TO_CALLOUT: Record<string, string> = {
@@ -337,6 +464,12 @@ function convertBlock(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
         },
       ];
     }
+    // A bare `media` at block level isn't something either of her exports
+    // contains, but it costs one line to not have it fall through to a
+    // recursion that would drop it without saying so.
+    case "mediaSingle":
+    case "media":
+      return convertMediaSingle(node, ctx);
     case "bulletList":
     case "orderedList":
       return convertList(node, ctx);
@@ -501,7 +634,7 @@ export function buildImportPlan(raw: unknown): ImportPlan {
   }
   for (const list of byParent.values()) list.sort((a, b) => posCompare(a.pos, b.pos));
 
-  const ctx: ConvertCtx = { idMap, lossy };
+  const ctx: ConvertCtx = { idMap, lossy, bodyImages: [] };
   const nodes: Node[] = [];
   const pendingImages: ImportPendingImage[] = [];
   const templateCounts: Partial<Record<TemplateKey, number>> = {};
@@ -535,6 +668,14 @@ export function buildImportPlan(raw: unknown): ImportPlan {
       const { properties, customProperties, imageUrl } = isFolder
         ? { properties: {}, customProperties: [], imageUrl: undefined }
         : convertProperties(resource, templateKey, ctx);
+
+      // Whatever the tabs just built found in the writing, claimed against
+      // this page and cleared so the next one starts empty. Read before the
+      // portrait and the banner only so the pictures download in the order
+      // they'd be read in.
+      for (const found of ctx.bodyImages.splice(0)) {
+        pendingImages.push({ nodeId: newId, url: found.url, field: "body", blockId: found.blockId });
+      }
 
       // Banner (a full-width page-header cover) and the IMAGE property (a
       // sidebar portrait) are two independent slots on our Node — see

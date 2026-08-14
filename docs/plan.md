@@ -231,23 +231,6 @@ That's the whole of what's left. The question this section used to carry — whe
 
 ---
 
-**A picture placed in a page's body is dropped on import**
-
-Measured 2026-08-13 across both of her LK exports. LK writes a picture in the text as `mediaSingle` wrapping a `media` node, and `lk-import.ts`'s block switch has a case for neither — so it falls to `default`, which recurses into children the block-level switch then discards. The picture doesn't arrive broken; it doesn't arrive.
-
-Only *body* pictures. A page's portrait and banner come through a different path entirely (`properties[].data.url` and `banner.url`), and those work.
-
-| export | pictures in page bodies | portraits | banners |
-| --- | --- | --- | --- |
-| `Valeraverse.lk` | **0** | 33 | 20 |
-| `test.lk` (her second account) | **28** | 9 | 3 |
-
-**So her main world is unaffected** — it has no body pictures at all — and the second one would lose 28. That's why this is queued rather than urgent, but it's the largest known import gap and it's silent, which is the worst property an import bug can have.
-
-The work: a `mediaSingle`/`media` case producing BlockNote's image block, and its URL added to `pendingImages` so the picture is downloaded like a portrait is. `mediaSingle` also carries `attrs.width` (a percentage — 38.6905 in one of hers) and `attrs.layout`, which BlockNote's image block can express and which nothing currently reads.
-
----
-
 **The picture library — what LK has that we don't**
 
 Raised by the user 2026-08-13 after comparing directly against LK.

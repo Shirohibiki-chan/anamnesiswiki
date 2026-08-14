@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildImportPlan } from "./lk-import";
+import { applyBodyImage, buildImportPlan } from "./lk-import";
+import type { Node } from "../constants/schema";
 
 type RawDoc = { id: string; name: string; pos: string; isHidden?: boolean; content?: unknown };
 type RawResource = {
@@ -592,6 +593,121 @@ describe("buildImportPlan", () => {
         withRoot([resource("a", "Page", "A", { banner: { enabled: true, url: "https://assets.legendkeeper.com/banner.png" } })]),
       );
       expect(plan.pendingImages).toEqual([{ nodeId: plan.nodes[0].id, url: "https://assets.legendkeeper.com/banner.png", field: "banner" }]);
+    });
+  });
+
+  describe("pictures in a page's writing", () => {
+    const media = (url: string, attrs: Record<string, unknown> = {}) => ({
+      type: "mediaSingle",
+      attrs,
+      content: [{ type: "media", attrs: { id: "", type: "external", collection: "", url, __external: false } }],
+    });
+
+    function planWith(content: unknown[]) {
+      return buildImportPlan(withRoot([resource("a", "Page", "A", { documents: [doc("a-main", "Main", "A", content)] })]));
+    }
+
+    it("brings a picture in the writing across as an image block, queued for download", () => {
+      const plan = planWith([paragraph([text("Before")]), media("https://assets.legendkeeper.com/cat.png"), paragraph([text("After")])]);
+      const blocks = plan.nodes[0].tabs[0].content as { id: string; type: string; props: Record<string, unknown> }[];
+
+      expect(blocks.map((b) => b.type)).toEqual(["paragraph", "image", "paragraph"]);
+      expect(blocks[1].props.url).toBe("https://assets.legendkeeper.com/cat.png");
+      expect(plan.pendingImages).toEqual([
+        { nodeId: plan.nodes[0].id, url: "https://assets.legendkeeper.com/cat.png", field: "body", blockId: blocks[1].id },
+      ]);
+    });
+
+    it("turns LK's percentage width into pixels of our own text column", () => {
+      const plan = planWith([media("https://assets.legendkeeper.com/cat.png", { layout: "center", width: 50 })]);
+      const block = (plan.nodes[0].tabs[0].content as { props: Record<string, unknown> }[])[0];
+      // Half of READING_COLUMN_WIDTH.
+      expect(block.props.previewWidth).toBe(440);
+      expect(block.props.textAlignment).toBe("center");
+    });
+
+    it("leaves the width alone when LK didn't record one, so the picture keeps its own size", () => {
+      const plan = planWith([media("https://assets.legendkeeper.com/cat.png")]);
+      const block = (plan.nodes[0].tabs[0].content as { props: Record<string, unknown> }[])[0];
+      expect("previewWidth" in block.props).toBe(false);
+    });
+
+    it("maps LK's wrapping and full-width layouts onto the side they lean towards", () => {
+      const plan = planWith([
+        media("https://assets.legendkeeper.com/a.png", { layout: "wrap-left" }),
+        media("https://assets.legendkeeper.com/b.png", { layout: "align-end" }),
+        media("https://assets.legendkeeper.com/c.png", { layout: "full-width" }),
+        media("https://assets.legendkeeper.com/d.png", { layout: "something-new" }),
+      ]);
+      const blocks = plan.nodes[0].tabs[0].content as { props: Record<string, unknown> }[];
+      expect(blocks.map((b) => b.props.textAlignment)).toEqual(["left", "right", "center", "center"]);
+    });
+
+    it("says so rather than silently dropping a picture the export has no address for", () => {
+      const plan = planWith([{ type: "mediaSingle", attrs: {}, content: [{ type: "media", attrs: { id: "", type: "file" } }] }]);
+      expect(plan.nodes[0].tabs[0].content).toEqual([]);
+      expect(plan.pendingImages).toEqual([]);
+      expect(plan.lossyNotes.join(" ")).toMatch(/1 picture .*no address/);
+    });
+
+    it("keeps each page's pictures to that page", () => {
+      // The collector is shared across the whole walk, so a page that leaked
+      // its pictures into the next one would be the obvious way to get this
+      // wrong — and the second page would import someone else's portrait.
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "First", "A", { documents: [doc("a-main", "Main", "A", [media("https://assets.legendkeeper.com/one.png")])] }),
+          resource("b", "Second", "B", { documents: [doc("b-main", "Main", "A", [media("https://assets.legendkeeper.com/two.png")])] }),
+        ]),
+      );
+      const first = plan.nodes.find((n) => n.name === "First")!;
+      const second = plan.nodes.find((n) => n.name === "Second")!;
+      expect(plan.pendingImages.filter((p) => p.nodeId === first.id).map((p) => p.url)).toEqual(["https://assets.legendkeeper.com/one.png"]);
+      expect(plan.pendingImages.filter((p) => p.nodeId === second.id).map((p) => p.url)).toEqual(["https://assets.legendkeeper.com/two.png"]);
+    });
+
+    it("finds a picture nested under a list item, not just one at the top level", () => {
+      const plan = planWith([
+        {
+          type: "bulletList",
+          content: [{ type: "listItem", content: [paragraph([text("Item")]), media("https://assets.legendkeeper.com/deep.png")] }],
+        },
+      ]);
+      // The list item keeps the paragraph; the picture flattens out beside it,
+      // which is what convertListItem does with anything that isn't a
+      // paragraph or a nested list.
+      expect(plan.pendingImages.map((p) => p.url)).toEqual(["https://assets.legendkeeper.com/deep.png"]);
+    });
+  });
+
+  describe("applyBodyImage", () => {
+    const nodeWith = (content: unknown[]): Node =>
+      ({ id: "n", tabs: [{ id: "t", label: "Main", content }] }) as unknown as Node;
+
+    it("points the block it was issued for at the downloaded file", () => {
+      const node = nodeWith([
+        { id: "one", type: "image", props: { url: "https://assets.legendkeeper.com/a.png" } },
+        { id: "two", type: "image", props: { url: "https://assets.legendkeeper.com/b.png" } },
+      ]);
+      applyBodyImage(node, "two", "9f8c.png");
+      const blocks = node.tabs[0].content as { props: { url: string } }[];
+      expect(blocks[0].props.url).toBe("https://assets.legendkeeper.com/a.png");
+      expect(blocks[1].props.url).toBe("anamnesis-asset:9f8c.png");
+    });
+
+    it("reaches a block nested inside another one", () => {
+      const node = nodeWith([
+        { id: "list", type: "bulletListItem", props: {}, children: [{ id: "deep", type: "image", props: { url: "https://x/y.png" } }] },
+      ]);
+      applyBodyImage(node, "deep", "9f8c.png");
+      const blocks = node.tabs[0].content as { children: { props: { url: string } }[] }[];
+      expect(blocks[0].children[0].props.url).toBe("anamnesis-asset:9f8c.png");
+    });
+
+    it("leaves the page alone when the block isn't there — a failed download shouldn't damage anything", () => {
+      const node = nodeWith([{ id: "one", type: "image", props: { url: "https://x/y.png" } }]);
+      applyBodyImage(node, "missing", "9f8c.png");
+      expect((node.tabs[0].content as { props: { url: string } }[])[0].props.url).toBe("https://x/y.png");
     });
   });
 
