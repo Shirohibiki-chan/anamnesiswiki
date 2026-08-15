@@ -2061,3 +2061,79 @@ things, giving a barely visible tick. Every other checkbox in the app uses
 `--color-accent-light`. Confirmed `rgb(94, 234, 212)` after the fix.
 
 960 tests pass, 8 new.
+
+---
+
+## The bin goes on every picture — 2026-08-14
+
+Her call, and it closes a complaint she'd raised twice.
+
+### What was wrong with the old rule
+
+The bin appeared only on a picture nothing pointed at. That was a real safety
+rule with a real reason, and it read as a broken button: she reported the
+trashcan as broken on 2026-08-12 and again on 2026-08-13, both times because it
+was on one tile and not the others. **A rule nobody can see is not a rule, it's
+a bug report waiting to happen.**
+
+### The LegendKeeper comparison, and why it didn't transfer
+
+She checked LK: deleting a picture from its library leaves every page that shows
+it rendering perfectly. That looks like LK doing the dangerous thing safely, and
+it isn't. **LK's pages hold a web address; its library is a separate list that
+happens to mention the same address.** Deleting the entry deletes a row nothing
+was reading through, so no page notices. Their delete is safe because it barely
+deletes.
+
+We have no such indirection — a page names a file in `assets/`. Copying LK's
+behaviour literally, deleting the file and leaving pages alone, produces broken
+boxes on pages, which is the one outcome LK never produces. So "LK does X" was
+the wrong argument here in both directions, and the question had to be answered
+on its own terms.
+
+### Why "remove from every page" was dropped rather than built
+
+It was the queued answer to "how do you delete a picture that's in use": clear
+every slot and block holding it, across the project, in one undoable step.
+
+Her objection killed it in one line — **who has a picture on thirty pages that
+they need to remove?** The feature existed to make a rare dead end escapable,
+at the cost of the riskiest change in the queue: `applyBulk`'s reverse patch
+understands four fields and removing a picture patches three others, so undo
+would have silently restored nothing until that was extended. Large, risky, and
+in service of a case nobody has.
+
+Deleting the file and telling her what it cost gets the same place for a
+fraction of the work, and the undo for it already existed.
+
+### What changed
+
+One gate removed in `AssetsPanel.tsx`, plus a confirm that names the pages when
+the picture is in use and truncates the list at three. `deleteAsset` in the
+store needed nothing — it already read the bytes before deleting so undo could
+put them back, and already worked on any file.
+
+A page whose picture is gone shows a broken picture rather than failing to
+render, which `resolveAssetUrl` has always done deliberately; that behaviour
+stops being an edge case and becomes a normal one, and it was already right.
+
+**Two stale justifications were rewritten rather than left to rot.** The CSS
+comment argued the always-on button wasn't noisy because it only appeared on a
+small minority of tiles — no longer true, and the actual reason (hover-reveal
+misses the reflow after a delete) is stronger anyway. And `handoff.md`'s
+usage-index bullet said a miss there would arm a delete button on something in
+use; now a miss makes the *confirm* lie instead, which is a smaller failure but
+still one worth naming.
+
+`releaseAsset` is untouched and must stay untouched: its job is to *not* delete
+a file something is using, which is the opposite of what this button is for.
+
+960 tests pass. No new ones — the change is a removed condition in a component,
+and components aren't the tested layer here.
+
+### Not verified by eye
+
+The grid was not looked at with bins on every tile. The button is the same
+element in the same absolute position it already occupied on unused tiles, so
+there's no new layout, but whether a 20px button on every thumbnail reads as
+busy is a judgement only she can make from the running app.
