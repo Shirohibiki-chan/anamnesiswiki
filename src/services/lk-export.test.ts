@@ -183,7 +183,7 @@ describe("buildExportFile", () => {
       const plan = exportOf(nodes, ["a"]);
 
       expect(findResource(plan, "Sampo").properties.filter((p) => p.type === "IMAGE")).toEqual([]);
-      expect(plan.lossyNotes.some((n) => n.includes("1 picture"))).toBe(true);
+      expect(plan.localPictureNote).toContain("1 picture");
     });
   });
 
@@ -238,7 +238,7 @@ describe("buildExportFile", () => {
 
       expect(out[0]).toEqual({ type: "paragraph", content: [{ type: "text", text: "Valera, age 19" }] });
       expect(out[1]).toEqual({ type: "paragraph", content: [{ type: "text", text: "after" }] });
-      expect(plan.lossyNotes.some((n) => n.includes("1 picture"))).toBe(true);
+      expect(plan.localPictureNote).toContain("1 picture");
     });
 
     describe("a picture that knows where it came from", () => {
@@ -285,7 +285,83 @@ describe("buildExportFile", () => {
           "cat.png": "https://assets.legendkeeper.com/cat.png",
         });
         expect(firstDocContent(plan, "Page")[0]).toEqual({ type: "paragraph", content: [{ type: "text", text: "Mine" }] });
-        expect(plan.lossyNotes.some((n) => n.includes("1 picture"))).toBe(true);
+        expect(plan.localPictureNote).toContain("1 picture");
+        // And it names the file, so the caller can offer to carry it.
+        expect(plan.localAssetFiles).toEqual(["local.png"]);
+      });
+    });
+
+    // Verified against a real LegendKeeper account 2026-08-14: a picture
+    // written into the address as a data: URI imports and renders, for both
+    // media types LK writes. See docs/lk-format.md.
+    describe("carrying a picture inside the file", () => {
+      const DATA_URI = "data:image/png;base64,iVBORw0KGgo=";
+
+      it("writes the picture's own bytes as the address when asked", () => {
+        const nodes = [
+          node({ id: "a", name: "Page", parentId: null, templateKey: "note", tabs: [tab("Main", [{ type: "image", props: { url: "anamnesis-asset:mine.png" } }])] }),
+        ];
+        const plan = buildExportFile({
+          project: project(),
+          nodes,
+          rootIds: ["a"],
+          orderedIdsFor: ordererFor(nodes),
+          assetData: { "mine.png": DATA_URI },
+        });
+
+        const media = firstDocContent(plan, "Page")[0];
+        expect(media.type).toBe("mediaSingle");
+        expect(media.content![0].attrs!.url).toBe(DATA_URI);
+        // Nothing was left behind, so there's nothing to report or to offer.
+        expect(plan.localPictureNote).toBeNull();
+        expect(plan.localAssetFiles).toEqual([]);
+      });
+
+      it("carries a portrait and a banner too, not just a picture in the writing", () => {
+        const nodes = [
+          node({ id: "a", name: "Page", parentId: null, templateKey: "note", tabs: [tab("Main")], image: "face.png", banner: "cover.png", bannerFocusY: 30 }),
+        ];
+        const plan = buildExportFile({
+          project: project(),
+          nodes,
+          rootIds: ["a"],
+          orderedIdsFor: ordererFor(nodes),
+          assetData: { "face.png": DATA_URI, "cover.png": DATA_URI },
+        });
+
+        const resource = findResource(plan, "Page");
+        expect(resource.properties.find((p) => p.type === "IMAGE")!.data.url).toBe(DATA_URI);
+        expect(resource.banner).toEqual({ enabled: true, url: DATA_URI, yPosition: 30 });
+        expect(plan.localPictureNote).toBeNull();
+      });
+
+      it("prefers the address it came from over the picture's own bytes", () => {
+        // Same file, both answers available. The address is a fraction of the
+        // size and points at the same image, so it wins.
+        const nodes = [
+          node({ id: "a", name: "Page", parentId: null, templateKey: "note", tabs: [tab("Main", [{ type: "image", props: { url: "anamnesis-asset:cat.png" } }])] }),
+        ];
+        const plan = buildExportFile({
+          project: project(),
+          nodes,
+          rootIds: ["a"],
+          orderedIdsFor: ordererFor(nodes),
+          assetSources: { "cat.png": "https://assets.legendkeeper.com/cat.png" },
+          assetData: { "cat.png": DATA_URI },
+        });
+        expect(firstDocContent(plan, "Page")[0].content![0].attrs!.url).toBe("https://assets.legendkeeper.com/cat.png");
+      });
+
+      it("names each missing file once even when it's on several pages", () => {
+        const picture = { type: "image", props: { url: "anamnesis-asset:map.png" } };
+        const nodes = [
+          node({ id: "a", name: "One", parentId: null, templateKey: "note", tabs: [tab("Main", [picture])] }),
+          node({ id: "b", name: "Two", parentId: null, templateKey: "note", tabs: [tab("Main", [picture])] }),
+        ];
+        const plan = buildExportFile({ project: project(), nodes, rootIds: ["a", "b"], orderedIdsFor: ordererFor(nodes) });
+        expect(plan.localAssetFiles).toEqual(["map.png"]);
+        // Counted twice in the note, though — two pages really do lose a picture.
+        expect(plan.localPictureNote).toContain("2 pictures");
       });
     });
 

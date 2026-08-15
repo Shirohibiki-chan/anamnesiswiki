@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createAssetSources, parseAssetSources, pruneAssetSources, recordAssetSource, sourceUrlFor } from "./asset-sources";
+import { createAssetSources, dataUriFor, parseAssetSources, pruneAssetSources, recordAssetSource, sourceUrlFor } from "./asset-sources";
 
 describe("parseAssetSources", () => {
   it("reads a plain filename-to-address map", () => {
@@ -81,5 +81,37 @@ describe("sourceUrlFor", () => {
     expect(sourceUrlFor(sources, "")).toBeUndefined();
     expect(sourceUrlFor(sources, undefined)).toBeUndefined();
     expect(sourceUrlFor(sources, 42)).toBeUndefined();
+  });
+});
+
+describe("dataUriFor", () => {
+  const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+
+  it("writes the picture's bytes into an address", () => {
+    expect(dataUriFor("cat.png", bytes)).toBe("data:image/png;base64,iVBORw==");
+  });
+
+  it("reads the format from the extension, case regardless", () => {
+    expect(dataUriFor("cat.JPG", bytes)).toContain("data:image/jpeg;base64,");
+    expect(dataUriFor("cat.jpeg", bytes)).toContain("data:image/jpeg;base64,");
+    expect(dataUriFor("cat.webp", bytes)).toContain("data:image/webp;base64,");
+    expect(dataUriFor("cat.gif", bytes)).toContain("data:image/gif;base64,");
+  });
+
+  it("refuses to guess at an unknown extension", () => {
+    // application/octet-stream is a format no browser will draw, which is the
+    // right outcome — better a picture that visibly doesn't load than one
+    // labelled as something it isn't.
+    expect(dataUriFor("cat.xyz", bytes)).toContain("data:application/octet-stream;base64,");
+    expect(dataUriFor("noextension", bytes)).toContain("data:application/octet-stream;base64,");
+  });
+
+  it("handles a picture far larger than one call's worth of arguments", () => {
+    // The chunking exists because spreading a multi-megabyte array into
+    // String.fromCharCode overflows the stack. 200k is well past that limit.
+    const big = new Uint8Array(200_000).fill(0x41);
+    const uri = dataUriFor("big.png", big);
+    expect(uri.startsWith("data:image/png;base64,")).toBe(true);
+    expect(atob(uri.slice("data:image/png;base64,".length)).length).toBe(200_000);
   });
 });
