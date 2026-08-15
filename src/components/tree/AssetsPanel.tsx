@@ -42,6 +42,7 @@ import {
   useFilteredAssets,
   useUploadPicture,
   type AssetEntry,
+  type AssetUse,
   type FolderFilter,
 } from "../../hooks/use-assets";
 import { AssetFolderStrip } from "./AssetFolderStrip";
@@ -83,9 +84,27 @@ export function AssetsPanel() {
     setFilter(ALL_PICTURES);
   }
 
-  async function handleDelete(fileName: string) {
+  /**
+   * Deleting a picture deletes the picture — including one that's in use.
+   *
+   * **The bin used to appear only on a picture nothing pointed at**, which read
+   * as a broken button rather than as a rule; the user reported it as broken
+   * twice, on 2026-08-12 and 2026-08-13. Her decision on 2026-08-14 was that
+   * the bin should just delete, and the case it was protecting against — a
+   * picture on thirty pages that she wants gone — is not one anybody has.
+   *
+   * LegendKeeper looks like it does this safely and doesn't: its pages hold a
+   * web address and its library is a separate list, so deleting a library entry
+   * deletes a row and no page notices. Ours has no such indirection, so the
+   * honest version is to say what it's on and make it undoable — which the
+   * store already does, restoring the bytes it read before deleting.
+   */
+  async function handleDelete(fileName: string, uses: AssetUse[]) {
+    const pages = [...new Set(uses.map((use) => use.nodeName))];
     const ok = await confirmDestructive(
-      "Delete this picture? Nothing is using it. You can undo this if it turns out something was.",
+      pages.length === 0
+        ? "Delete this picture? Nothing is using it. You can undo this if it turns out something was."
+        : `Delete this picture? It's on ${describeUses(uses)} — ${pages.slice(0, 3).join(", ")}${pages.length > 3 ? ` and ${pages.length - 3} more` : ""} — and they'll be left with an empty space. You can undo this.`,
     );
     if (!ok) return;
     await deleteAsset(fileName);
@@ -248,7 +267,7 @@ function AssetTile({
   /** "" for a picture that hasn't got one — never the UUID it's stored under. */
   name: string;
   onRename: (fileName: string, name: string) => void;
-  onDelete: (fileName: string) => void;
+  onDelete: (fileName: string, uses: AssetUse[]) => void;
   /** False when a page didn't load, which makes `isUnused` a guess. */
   usageIsCertain: boolean;
 }) {
@@ -324,17 +343,15 @@ function AssetTile({
             On the picture rather than beside it because a grid this narrow has
             no spare width to give a button its own column. After the overlay in
             the DOM so it takes the clicks in the corner it covers. */}
-        {entry.isUnused && usageIsCertain && (
-          <button
-            type="button"
-            className="tree-assets-delete"
-            title="Delete this picture"
-            aria-label="Delete this picture"
-            onClick={() => void onDelete(entry.fileName)}
-          >
-            <Trash2 size={13} />
-          </button>
-        )}
+        <button
+          type="button"
+          className="tree-assets-delete"
+          title="Delete this picture"
+          aria-label="Delete this picture"
+          onClick={() => void onDelete(entry.fileName, entry.uses)}
+        >
+          <Trash2 size={13} />
+        </button>
 
         {/* The name, written across the bottom of the picture. Last in the DOM
             so it takes the clicks in the strip it covers rather than the

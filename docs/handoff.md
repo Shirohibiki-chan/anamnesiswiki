@@ -1056,9 +1056,10 @@ is below.
   three: portrait, cover, inside a page's writing, and all three again in
   `templates`. `saveAsTemplate` copies a page's portrait and cover *files* but
   not the pictures written inside its tabs, so a template and its source page
-  legitimately share one. The Assets tab puts a delete button on anything this
-  reports as unused, so a miss here is a page or a template quietly losing its
-  picture. It walks nested blocks too — a picture indented under a list item is
+  legitimately share one. A miss here no longer arms a delete button — the bin
+  is on every tile since 2026-08-14 — but it still makes the confirm lie about
+  what a delete costs, and it still drives `releaseAsset`, which is where a miss
+  really does lose a picture. It walks nested blocks too — a picture indented under a list item is
   as much in use as one at the top level.
 
 - **`PageFilePanel` must stay at the module level, for the same reason
@@ -1076,11 +1077,19 @@ is below.
   deleted the old bytes outright and `setBannerFromImage` had to *copy* the
   portrait's file to avoid being emptied by the next replacement. The library
   inverts that on purpose: one file, any number of portraits, covers, pages and
-  templates. Every delete now goes through the store's `releaseAsset`, which
-  deletes only when nothing is left holding the file. **Ask after the change
-  that dropped the reference, never before** — asking early sees the reference
-  on its way out and keeps the file forever, and the delete-a-page path is the
-  one where that ordering is easy to get wrong.
+  templates. Every *automatic* delete now goes through the store's
+  `releaseAsset`, which deletes only when nothing is left holding the file.
+  **Ask after the change that dropped the reference, never before** — asking
+  early sees the reference on its way out and keeps the file forever, and the
+  delete-a-page path is the one where that ordering is easy to get wrong.
+
+  **The Assets tab's bin is the deliberate exception and must stay one.** From
+  2026-08-14 it deletes whatever she pointed it at, in use or not: the rule that
+  hid it read as a broken button, and she reported it as broken twice. That's an
+  explicit choice with a confirm naming the affected pages and an undo behind
+  it, which is a different thing from a page quietly dropping a reference. Don't
+  reintroduce the gate, and don't route this through `releaseAsset` — its whole
+  job is to *not* delete a file something is using.
 
 - **The copies that existed only to dodge that hazard should not be
   reintroduced.** `setBannerFromImage` now shares the portrait's file rather

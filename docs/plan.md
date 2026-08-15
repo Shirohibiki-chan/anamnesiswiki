@@ -544,15 +544,20 @@ nothing has ever deleted one — and this phase is what makes it reachable.
 
 - **Every file in `assets/`** with a thumbnail, its name, its size, and where
   it's used: the pages that carry it, or "not used anywhere".
-- **Delete a picture that's used nowhere.** One that *is* used has no delete
-  button — the user's call over deleting anything with a warning, on the grounds
-  that the failure there is quiet (a page keeps pointing at a file that's gone
-  and shows an empty box).
-- **"Remove from every page", so a picture in use can become one that isn't.**
-  The user's own answer, and better than either option offered: it clears the
-  portrait and cover slots that hold it and takes out the image blocks that show
-  it, across every page at once, leaving the file deletable. It routes through
-  `applyBulk`, so thirty pages is **one** undo rather than thirty.
+- **Delete a picture, whether or not it's in use — settled 2026-08-14.** The bin
+  used to appear only on a picture nothing pointed at, and a missing button
+  reads as a broken one: the user reported it as broken twice. Her decision was
+  that the bin should just delete, and that the case the gate protected against
+  — a picture on thirty pages she wants gone — is not one anybody has. The
+  confirm names what it's on, and the delete is undoable because the store reads
+  the bytes before removing the file.
+
+  **LegendKeeper is not the counter-example it looks like.** Deleting from its
+  library leaves every page rendering, but that's their indirection rather than
+  a safeguard: a page holds a web address and the library is a separate list, so
+  deleting the entry deletes a row nothing was reading through. Copying the
+  behaviour here would mean deleting the file and leaving broken boxes, which is
+  the one outcome LK never produces.
 - **Put a picture into the open page** by clicking it, or dragging it onto the
   page. It reuses the file that's already there rather than writing a second
   copy of the same bytes — which is the point, for one map that belongs on six
@@ -566,13 +571,6 @@ thumbnails where the wrong one is a mis-click away.
 
 ### Two things to know before starting
 
-- **`applyBulk`'s reverse patch only understands four fields** —
-  `customProperties`, `properties`, `propertyOrder`, `tags`. Removing a picture
-  patches `tabs`, `image` and `banner`, so undo would silently restore nothing
-  until those are added. It reads the fields rather than snapshotting nodes on
-  purpose (a page's tabs are the largest thing on it), and that reasoning holds:
-  the property actions run over the whole project, where this runs only over the
-  pages that carry one picture.
 - **Every write still goes through `track()` and the write queue.** Deleting a
   file and saving the pages that referenced it are two disk operations that must
   land in that order.
@@ -590,8 +588,14 @@ clickable thumbnails (#151).
 portraits and covers look unused (#152), the Assets tab's own upload button and
 drag-onto-a-page (#153), and folders in the picture library (#154).
 
-**Left in this phase:** remove-from-every-page; reorder templates and
-start-a-new-page-from one.
+**Also shipped 2026-08-14:** pictures in a page's writing surviving an LK
+import (#174), the same pictures going back out again (#175), carrying local
+pictures inside an export (#176), and the delete gate removed from the Assets
+grid.
+
+**Left in this phase:** reorder templates and start-a-new-page-from one.
+Remove-from-every-page was **dropped** 2026-08-14 — see the Assets tab section
+above.
 
 **Dragging a tile onto a page is the second route in, and it carries its own
 MIME type (#153).** `ASSET_DRAG_TYPE`, not `text/plain`: the editor is already a

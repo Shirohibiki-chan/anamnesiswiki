@@ -1379,10 +1379,13 @@ button.tree-path-crumb:hover {
    which is what the user hit on 2026-08-12 — "the trashcan disappeared for
    some of them when I clicked it on one".
 
-   It only exists on a picture nothing is using, which is a small minority of
-   the grid and the exact thing the tab is there to point at, so showing it
-   isn't the noise it would be on every tile. And it's positioned out of flow
-   over the picture's corner, so it costs no layout either way.
+   It is now on every tile, where it used to be only on pictures nothing was
+   using — that gate was removed 2026-08-14 because a missing button reads as a
+   broken one, which the user reported twice. The always-on reasoning above is
+   what makes that safe rather than worse: hover-reveal on every tile would hit
+   the same reflow bug far more often, not less.
+
+   Positioned out of flow over the picture's corner, so it costs no layout.
 
    Opaque rather than transparent: this one sits *on* the picture, and a
    transparent button over a photograph is a button you can't see. */
