@@ -6,12 +6,14 @@ import {
   assetRefsInContent,
   buildAssetEntries,
   describeSize,
+  describeAssetDeletion,
   describeUses,
   indexAssetUsage,
   isAssetInUse,
   type AssetUsageIndex,
 } from "./asset-usage";
 import { createTemplateLibrary, type Node, type TemplateLibrary } from "../constants/schema";
+import type { AssetUse } from "./asset-usage";
 
 function node(overrides: Partial<Node> & Pick<Node, "id" | "name">): Node {
   return {
@@ -251,5 +253,68 @@ describe("isAssetInUse", () => {
   it("does not match a different file", () => {
     const nodes = byId([node({ id: "a", name: "Valera", image: "other.png" })]);
     expect(isAssetInUse(nodes, empty, "map.png")).toBe(false);
+  });
+});
+
+describe("describeAssetDeletion", () => {
+  const use = (nodeId: string, nodeName: string, source: AssetUse["source"] = "project"): AssetUse => ({
+    where: "page",
+    nodeId,
+    nodeName,
+    source,
+  });
+
+  it("says a single page is an 'it', not a 'they'", () => {
+    // The bug the user caught on 2026-08-14: "it's on 1 page — Untitled — and
+    // they'll be left with an empty space".
+    const text = describeAssetDeletion([use("a", "Untitled")]);
+    expect(text).toBe("Delete this picture? It's used by Untitled, which will be left with an empty space. You can undo this.");
+    expect(text).not.toContain("they");
+    // One name in front of her doesn't need counting.
+    expect(text).not.toContain("1 page");
+  });
+
+  it("counts and names when there's more than one", () => {
+    const text = describeAssetDeletion([use("a", "Valera"), use("b", "Sampo")]);
+    expect(text).toContain("2 pages");
+    expect(text).toContain("Valera and Sampo");
+  });
+
+  it("stops naming after three and counts the rest", () => {
+    const text = describeAssetDeletion([
+      use("a", "Valera"),
+      use("b", "Sampo"),
+      use("c", "Orynthia"),
+      use("d", "Zeruel"),
+      use("e", "Kavaan"),
+    ]);
+    expect(text).toContain("5 pages");
+    expect(text).toContain("Valera, Sampo, Orynthia and 2 more");
+    expect(text).not.toContain("Zeruel");
+    expect(text).not.toContain("Kavaan");
+  });
+
+  it("keeps pages and templates apart, in prose rather than a middot", () => {
+    const text = describeAssetDeletion([use("a", "Valera"), use("t", "Character", "template")]);
+    expect(text).toContain("1 page and 1 template");
+    expect(text).not.toContain("·");
+  });
+
+  it("counts one page once, however many times the picture is on it", () => {
+    // A portrait and a picture in the writing on the same page is two uses of
+    // one file, and "2 pages" would be a lie.
+    const text = describeAssetDeletion([
+      { where: "portrait", nodeId: "a", nodeName: "Valera", source: "project" },
+      { where: "page", nodeId: "a", nodeName: "Valera", source: "project" },
+    ]);
+    expect(text).toContain("used by Valera, which");
+    expect(text).not.toContain("2 pages");
+  });
+
+  it("is confident about an unused picture only when every page actually loaded", () => {
+    expect(describeAssetDeletion([], true)).toContain("Nothing is using it.");
+    const unsure = describeAssetDeletion([], false);
+    expect(unsure).toContain("isn't certain");
+    expect(unsure).toContain("didn't load");
   });
 });

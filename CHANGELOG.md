@@ -12,6 +12,7 @@
 
 ### Fixes
 
+- **Fixed the wording when you delete a picture that's on one page.** It said "it's on 1 page — Untitled — and they'll be left with an empty space", which is one page too many pronouns. It now names the page and stops there. If a page failed to load, it also says so rather than claiming nothing is using the picture.
 - **The trashcan is on every picture now.** It used to appear only on a picture nothing was using, which looked like a broken button rather than a rule. Deleting one that's in use tells you which pages it's on first, and it's undoable either way — the pages it was on are left with an empty space, not a broken one.
 - **Pictures you'd placed inside a page's text now come across when you import from LegendKeeper.** They used to vanish — not arrive broken, just not arrive, with the words closed up over the gap and nothing to tell you it had happened. They arrive as real pictures in your project's own `assets/` folder now, at roughly the size and alignment they had before. Your Valeraverse world has none of these, so it was never affected; the other export you sent has 27.
 - **A picture, code block or callout tucked inside a bullet point survives the import too.** Only paragraphs and sub-lists were kept before; anything else in a bullet was thrown away silently. Things inside a bullet also stay in the order you wrote them, where sub-lists used to get shuffled to the bottom.

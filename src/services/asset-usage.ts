@@ -9,6 +9,7 @@
 // Pure, and deliberately takes both records as arguments rather than reaching
 // for the store: the template library is the one everything else forgets, and
 // making it a parameter means a caller cannot leave it out by accident.
+import { NAMES_IN_DELETE_CONFIRM } from "../constants/limits";
 import { ASSET_REF_PREFIX } from "../constants/paths";
 import type { Node, TemplateLibrary } from "../constants/schema";
 
@@ -185,6 +186,63 @@ export function buildAssetEntries(files: AssetFile[], usage: AssetUsageIndex): A
  * portrait and its banner is one page you'd have to go and look at, and "2
  * pages" pointing at the same page reads as a bug.
  */
+/**
+ * What deleting a picture is about to cost, as a sentence.
+ *
+ * Here rather than in the component because the hard part is grammar, and
+ * grammar is testable where a component isn't: the first version of this said
+ * "it's on 1 page — Untitled — and **they'll** be left with an empty space",
+ * which the user caught immediately. One page is an "it".
+ *
+ * Names rather than only counts, because the question she's actually answering
+ * is "will this hurt something I care about", and a page's name answers that
+ * where a number doesn't. Truncated at three so a picture used everywhere
+ * doesn't produce a dialog taller than the window.
+ */
+export function describeAssetDeletion(uses: AssetUse[], usageIsCertain = true): string {
+  const byNode = new Map(uses.map((use) => [use.nodeId, use]));
+  const distinct = [...byNode.values()];
+
+  if (distinct.length === 0) {
+    // "Nothing is using it" is a claim about every page, and one page that
+    // didn't load makes it a guess. This used to be handled by hiding the
+    // delete button altogether — on 2026-08-12 the tab offered to delete three
+    // pictures that were a live page's portrait and cover, because two files
+    // claimed the same page and only one could be kept. The button no longer
+    // hides, so the sentence has to carry that doubt instead of the UI.
+    return usageIsCertain
+      ? "Delete this picture? Nothing is using it. You can undo this if it turns out something was."
+      : "Delete this picture? Nothing seems to be using it — but a page didn't load, so that isn't certain. You can undo this.";
+  }
+
+  const names = distinct.map((use) => use.nodeName);
+  const shown = names.slice(0, NAMES_IN_DELETE_CONFIRM);
+  const listed = names.length > shown.length ? `${shown.join(", ")} and ${names.length - shown.length} more` : joinWithAnd(shown);
+
+  // A single user gets its name and nothing else — "It's used by 1 page —
+  // Untitled" is the count of a thing already in front of her.
+  if (distinct.length === 1) {
+    return `Delete this picture? It's used by ${listed}, which will be left with an empty space. You can undo this.`;
+  }
+  return `Delete this picture? It's used by ${countUses(distinct)} — ${listed} — which will be left with an empty space. You can undo this.`;
+}
+
+/** Oxford-comma-free, which is the house style everywhere else in the app. */
+function joinWithAnd(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** Like `describeUses`, but as prose rather than a tooltip's middot list. */
+function countUses(uses: AssetUse[]): string {
+  const pages = uses.filter((use) => use.source === "project").length;
+  const templates = uses.length - pages;
+  const parts: string[] = [];
+  if (pages > 0) parts.push(`${pages} ${pages === 1 ? "page" : "pages"}`);
+  if (templates > 0) parts.push(`${templates} ${templates === 1 ? "template" : "templates"}`);
+  return parts.join(" and ");
+}
+
 export function describeUses(uses: AssetUse[]): string {
   if (uses.length === 0) return "Not used anywhere";
 

@@ -2137,3 +2137,51 @@ The grid was not looked at with bins on every tile. The button is the same
 element in the same absolute position it already occupied on unused tiles, so
 there's no new layout, but whether a 20px button on every thumbnail reads as
 busy is a judgement only she can make from the running app.
+
+---
+
+## The delete confirm learns grammar — 2026-08-14
+
+Reported within minutes of the bin landing on every tile. The confirm read:
+
+> It's on 1 page — Untitled — and **they'll** be left with an empty space.
+
+One page is an "it". Two things came out of it.
+
+### The sentence moved into the service layer
+
+The grammar lived in a component, and components aren't the tested layer here —
+which is precisely why a plural bug shipped. `describeAssetDeletion` is in
+`asset-usage.ts` next to `describeUses`, with six tests covering exactly the
+cases that were wrong: one use, several, more than three, pages mixed with
+templates, one page holding the same picture twice, and the uncertain case.
+
+**A single use now gets its name and no count.** "It's used by 1 page —
+Untitled" counts a thing already in front of her.
+
+Names are listed to three, then counted, and pages and templates are separated
+in prose rather than with `describeUses`'s middot, which is right for a tooltip
+and wrong mid-sentence.
+
+### The doubt the hidden button used to carry
+
+Removing the `usageIsCertain` gate the day before quietly dropped something
+real. The button used to vanish when a page failed to load, because "nothing is
+using this" is a claim about *every* page — the 2026-08-12 incident where three
+of five offered deletions were a live page's portrait and cover. With the button
+always visible, that confidence had nowhere to go and the confirm would have
+said "Nothing is using it" on incomplete information.
+
+It now says "Nothing seems to be using it — but a page didn't load, so that
+isn't certain." Same protection, in the sentence rather than in a missing
+button.
+
+### And "Untitled" was not a bug
+
+Worth writing down since it was the reported symptom. It isn't from the LK
+import — both of her exports have zero blank-named resources, checked. It's
+`UNTITLED_PAGE_NAME`, the default for a page made in the app and never renamed.
+Her live projects hold several: Valeraverse3 has 3, "this is the story of a
+girl" has 8. The confirm was telling the truth.
+
+966 tests pass, 6 new.

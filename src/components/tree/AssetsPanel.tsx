@@ -12,27 +12,27 @@
 // when you uploaded one and never came out, so a portrait you replaced six
 // times left five files nobody could see or reach. See docs/plan.md Phase 17.
 //
-// **The delete button only appears on a picture nothing points at.** That's the
-// user's own call, on the grounds that deleting one in use fails quietly — the
-// page keeps its reference and draws an empty box, with nothing to say why.
-// "Remove from every page", which turns a picture in use into one that isn't,
-// is the next step of this phase and is what makes that reachable.
+// **The delete button is on every picture, including ones in use** — her call
+// on 2026-08-14, after the old rule (a bin only on pictures nothing pointed at)
+// was reported as a broken button twice. What the rule was protecting against
+// now lives in the confirm, which names the pages that will be left with an
+// empty space; the delete itself has always been undoable.
 //
-// It also disappears entirely when the load couldn't read every page, because
-// "nothing is using this" is a claim about all of them and one unreadable file
-// makes it a guess. That isn't hypothetical: on 2026-08-12 the tab offered to
-// delete five pictures, three of which were a live page's portrait and cover —
-// two files on disk claimed the same page and only one of them could be kept,
-// so the other's pictures fell out of the count. The storage side of that is
-// fixed (see `setAsideSupersededCopies`), and this is the belt to its braces:
-// whatever the next way of losing a page turns out to be, it must not arrive
-// as a delete button.
+// That confirm carries the doubt the hidden button used to. "Nothing is using
+// this" is a claim about every page, and one unreadable file makes it a guess —
+// which isn't hypothetical: on 2026-08-12 the tab offered to delete five
+// pictures, three of which were a live page's portrait and cover, because two
+// files on disk claimed the same page and only one could be kept. The storage
+// side is fixed (see `setAsideSupersededCopies`); `describeAssetDeletion` is
+// the belt to those braces, and says "that isn't certain" rather than the
+// confident sentence whenever a page failed to load.
 import { FolderPlus, ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import {
   ALL_PICTURES,
   assetDisplayName,
+  describeAssetDeletion,
   describeUses,
   MAX_ASSET_NAME,
   useAssetActions,
@@ -100,12 +100,7 @@ export function AssetsPanel() {
    * store already does, restoring the bytes it read before deleting.
    */
   async function handleDelete(fileName: string, uses: AssetUse[]) {
-    const pages = [...new Set(uses.map((use) => use.nodeName))];
-    const ok = await confirmDestructive(
-      pages.length === 0
-        ? "Delete this picture? Nothing is using it. You can undo this if it turns out something was."
-        : `Delete this picture? It's on ${describeUses(uses)} — ${pages.slice(0, 3).join(", ")}${pages.length > 3 ? ` and ${pages.length - 3} more` : ""} — and they'll be left with an empty space. You can undo this.`,
-    );
+    const ok = await confirmDestructive(describeAssetDeletion(uses, !isUsageIncomplete));
     if (!ok) return;
     await deleteAsset(fileName);
     refresh();

@@ -109,3 +109,14 @@ export const IMAGE_RESIZE_STEP = 1.1;
 // steer around: with no delay, a card fires on every link the pointer crosses
 // on its way somewhere else. Matches what Obsidian settled on.
 export const HOVER_PREVIEW_DELAY_MS = 350;
+
+/**
+ * How many page names the "delete this picture" confirm lists before it starts
+ * counting instead.
+ *
+ * Three because the dialog is a fixed-width box and a fourth name is usually
+ * the one that wraps it to another line — and past three the list has stopped
+ * being read as "these pages" and started being read as "a lot of pages",
+ * which the count says better.
+ */
+export const NAMES_IN_DELETE_CONFIRM = 3;

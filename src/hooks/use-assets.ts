@@ -19,7 +19,7 @@ import { readImageFile } from "../services/image-file";
 import { useProjectStore } from "../state/project-store";
 
 export type { AssetEntry, AssetUse } from "../services/asset-usage";
-export { describeSize, describeUses } from "../services/asset-usage";
+export { describeAssetDeletion, describeSize, describeUses } from "../services/asset-usage";
 export { ALL_PICTURES, type AssetFolder, type FolderFilter } from "../services/asset-folders";
 export { assetDisplayName, MAX_ASSET_NAME, type AssetNames } from "../services/asset-names";
 
