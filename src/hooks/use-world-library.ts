@@ -8,6 +8,12 @@ import { buildWorldList, type ListedWorld } from "../services/world-scan";
 
 export function useWorldLibrary() {
   const [worlds, setWorlds] = useState<ListedWorld[]>([]);
+  // When the list was read, for the screen that says "4 hours ago" against
+  // each project. It belongs to the scan rather than to the render: a clock
+  // read while drawing is a value that changes on a re-render nothing asked
+  // for, and forty tiles reading it separately can straddle a minute and
+  // disagree with each other about the same project.
+  const [scannedAt, setScannedAt] = useState(() => Date.now());
   // Starts true so the first paint says "looking" rather than "no worlds" —
   // the scan is disk work, and an empty list shown for a frame reads as an
   // empty projects folder.
@@ -29,6 +35,7 @@ export function useWorldLibrary() {
     setIsScanning(true);
     try {
       setWorlds(await readWorlds());
+      setScannedAt(Date.now());
     } finally {
       setIsScanning(false);
     }
@@ -44,6 +51,7 @@ export function useWorldLibrary() {
       .then((found) => {
         if (cancelled) return;
         setWorlds(found);
+        setScannedAt(Date.now());
         setIsScanning(false);
       });
     return () => {
@@ -51,5 +59,5 @@ export function useWorldLibrary() {
     };
   }, [readWorlds]);
 
-  return { worlds, isScanning, refreshWorlds };
+  return { worlds, isScanning, scannedAt, refreshWorlds };
 }

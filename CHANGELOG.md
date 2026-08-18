@@ -4,11 +4,18 @@
 
 ### Additions
 
+- **The start screen is a library now.** Every project is a cover you can see rather than a line of text, laid out in a grid with the rail down the side holding the three you opened most recently and the ways to start something that isn't already there. A project with no picture gets a colour of its own, made from the project itself, so it looks the same every time you come back and two projects never look alike. "New project" is the one bright button, in the middle. There's a filter box at the top right: type a few letters of a name and the grid narrows, and words in any order work, so "val 3" finds Valeraverse3.
+- **Covers or rows, whichever you prefer.** Two small buttons above the grid switch between them, and the app remembers which you picked. Thirty covers is a wall; thirty rows is a list.
+- **Pages instead of endless scrolling, and it's a setting.** The project grid comes a page at a time by default, with arrows and dots underneath. A page is however much fits your window, so there are no half-empty rows and the next page is exactly one screenful away. If you'd rather have one long scroll, Settings → Lists switches it, and the switch covers every long list in the app rather than just this one.
 - **Every project you have shows up on the start screen, not just the last eight.** The screen used to list the eight you had opened most recently, so a ninth was only reachable through "Open folder" — and a project you had never opened on this computer never appeared at all. The app looks in your projects folder now, including one folder deeper, so a project tidied into a subfolder still turns up. Newest first, going by whichever happened last: you opening it, or it changing. Nothing is trimmed off the end — the list is as long as it needs to be and the screen scrolls. A project living somewhere else, like another drive, sits in the same list with a small "Elsewhere" marker on it.
 - **Opening a folder now looks inside it.** Unzipping a world usually gives you a folder with the real one nested inside — `Valeraverse` holding another `Valeraverse` — and picking the outer one used to tell you there was no project in it, which was true and no help at all. It opens the one inside now. If the folder holds several projects, it lists them and lets you pick, rather than guessing.
 
 - **Start a new page from a template without going through the new-page screen.** Every row in the Templates tab has a page-with-a-plus button on hover — the built-in kinds and your own alike. The page arrives at the top of your tree with the template already poured into it, opens with its name ready to type, and the sidebar goes back to the Project tab so you can see where it landed. One press of undo takes the whole thing back.
 - **Drag your own templates into the order you want them offered in.** A grip appears on the right of a template's row in the Templates tab when you hover it; drag it up or down and the new-page screen offers them in that order too, since both read the same list. Undoable. The built-in ones don't move — they're the app's own list and the same in every world.
+
+### Renames
+
+- **"Import from LegendKeeper" is just "Import".** It sits in the rail on the start screen and says what it takes — a `.lk` file — rather than naming somebody else's app.
 
 ### Fixes
 

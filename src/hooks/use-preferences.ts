@@ -2,7 +2,7 @@
 // CLAUDE.md's layer order — components never import stores directly.
 import { useShallow } from "zustand/react/shallow";
 import { usePreferencesStore } from "../state/preferences-store";
-import type { TreeDoubleClickAction } from "../services/preferences-service";
+import type { ListPagingMode, ProjectView, TreeDoubleClickAction } from "../services/preferences-service";
 
 /**
  * Selected down to the one field rather than the whole preferences object,
@@ -14,10 +14,26 @@ export function useTreeDoubleClick(): TreeDoubleClickAction {
   return usePreferencesStore((state) => state.preferences.treeDoubleClick);
 }
 
+/**
+ * Whether a long grid comes in pages or one scroll. Read by every grid that
+ * can be long enough to need the answer — the projects on the start screen,
+ * the pictures in the asset picker.
+ */
+export function useListPaging(): ListPagingMode {
+  return usePreferencesStore((state) => state.preferences.listPaging);
+}
+
+/** Covers or rows on the start screen. Its control is on that screen, not in settings. */
+export function useProjectView(): ProjectView {
+  return usePreferencesStore((state) => state.preferences.projectView);
+}
+
 export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({
       setTreeDoubleClick: state.setTreeDoubleClick,
+      setListPaging: state.setListPaging,
+      setProjectView: state.setProjectView,
     })),
   );
 }

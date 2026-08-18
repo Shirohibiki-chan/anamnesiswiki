@@ -11,6 +11,14 @@ describe("parsePreferences", () => {
   it("keeps a value it recognises", () => {
     expect(parsePreferences({ treeDoubleClick: "rename" }).treeDoubleClick).toBe("rename");
     expect(parsePreferences({ treeDoubleClick: "expand" }).treeDoubleClick).toBe("expand");
+    expect(parsePreferences({ listPaging: "scroll" }).listPaging).toBe("scroll");
+    expect(parsePreferences({ listPaging: "pages" }).listPaging).toBe("pages");
+  });
+
+  it("reads each preference on its own, so one bad value doesn't cost the others", () => {
+    const parsed = parsePreferences({ treeDoubleClick: "rename", listPaging: "carousel" });
+    expect(parsed.treeDoubleClick).toBe("rename");
+    expect(parsed.listPaging).toBe(DEFAULT_PREFERENCES.listPaging);
   });
 
   // The file is plain JSON that outlives the version that wrote it, and a
@@ -26,5 +34,11 @@ describe("parsePreferences", () => {
   // reaches anyone who had the app before it.
   it("defaults to expanding, not to the behaviour it replaced", () => {
     expect(DEFAULT_PREFERENCES.treeDoubleClick).toBe("expand");
+  });
+
+  it("defaults to pages rather than to endless scrolling", () => {
+    // Her call, 2026-08-18. The switch exists because scrolling is a real
+    // way to work, not because it is the safe default.
+    expect(DEFAULT_PREFERENCES.listPaging).toBe("pages");
   });
 });

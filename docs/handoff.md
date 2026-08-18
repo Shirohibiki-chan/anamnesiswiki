@@ -90,6 +90,23 @@ is below.
   gone; the list now only says when each world was last opened. Anything that
   re-introduces a cap here hides worlds again.
 
+- **A page on the start screen is however much fits the window, and what is
+  remembered is the item, not the page number.** Both halves are load-bearing.
+  A fixed page size is either larger than the window, so the page itself
+  scrolls and pagination has bought nothing, or smaller, so a wide window
+  shows empty rows. And because the size moves with the window, a stored page
+  *number* points at different projects at different sizes — dragging the
+  window corner would walk the grid somewhere else. `usePagedList` stores the
+  index of the first item on screen and asks `pageContaining` where it is now.
+  The measured element clips rather than scrolls while paged, so a scrollbar
+  can never contradict the count the page size was worked out from.
+
+- **`PROJECT_TILE_*` in `constants/layout.ts` and the grid in `start.css` are
+  one set of numbers written twice.** The page size is arithmetic on the
+  constants; the layout is CSS. If they disagree, the last row of every page
+  is either clipped or missing, which looks like a paging bug and isn't.
+  Change both together.
+
 - **A copy gets a fresh id, and records its parent in `forkedFromId`.** Never
   derive one id from another: the collision suffixes in `filesystem-service.ts`
   are recomputed on every resolve, which is fine for a filename and fatal for

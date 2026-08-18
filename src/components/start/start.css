@@ -1,0 +1,546 @@
+/* --- The start screen ---
+   Every project the app can find, plus the ways to start one that isn't in the
+   list. See components/start/StartScreen.tsx.
+
+   Two columns: the library, and a rail against the wall for the shortcuts. The
+   rail is a fixed width because its contents are — a project name and a
+   timestamp — and letting it stretch would only make the names longer without
+   making them more useful. */
+
+.start {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 232px;
+  /* `minmax(0, 1fr)` and not the automatic row a grid would give this. An
+     auto row is sized by its content and grows straight past `height`, so
+     the column below it never learns how tall it is allowed to be and the
+     grid of covers runs off the bottom of the window instead of paging. */
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.start-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+}
+
+/* Brand left, the one bright button dead centre, the filter right. Three
+   columns rather than space-between so the button is centred on the screen
+   rather than on whatever is left over after the brand — the two sides are
+   different widths and always will be. */
+.start-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.start-brand {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.start-brand small {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.start-new {
+  justify-self: center;
+}
+
+.start-new-form {
+  display: flex;
+  gap: var(--space-2xs);
+  justify-self: center;
+}
+
+.start-new-form input {
+  min-width: 12rem;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+}
+
+.start-tools {
+  display: flex;
+  justify-self: end;
+  gap: var(--space-2xs);
+}
+
+.start-filter {
+  width: 9rem;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+}
+
+.start-filter::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* --- The library --- */
+
+.start-all {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.start-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-sm);
+}
+
+.start-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+
+.start-count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.start-label-right {
+  display: flex;
+  align-self: center;
+  gap: var(--space-2xs);
+  margin-left: auto;
+}
+
+/* The two views, as one control. Deliberately not a labelled pair of buttons:
+   it is a preference about density, checked at a glance and changed rarely. */
+.start-views {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+}
+
+.start-view {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.start-view:hover {
+  color: var(--color-text-secondary);
+}
+
+.start-view[aria-pressed="true"] {
+  background: var(--color-accent-faint);
+  color: var(--color-accent);
+}
+
+/* The measured element. It clips rather than scrolls while paged, so a page is
+   exactly what fits — a scrollbar appearing here would contradict the count
+   the page size was worked out from. In one-long-scroll mode it scrolls, which
+   is the whole of the difference between the two. */
+.start-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.start-area[data-paged="false"] {
+  overflow-y: auto;
+}
+
+/* The 190px and the 10px gap are PROJECT_TILE_MIN_WIDTH and PROJECT_TILE_GAP
+   in constants/layout.ts, which is where the page size is worked out from.
+   Change both together or the last row goes missing. */
+.start-tiles {
+  display: grid;
+  grid-auto-rows: 118px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.start-area[data-view="list"] .start-tiles {
+  grid-auto-rows: 48px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.start-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* --- One project --- */
+
+/* The cover carries its own label: no bar, the picture fades into the dark
+   under the name, so a project wearing a real photograph later isn't wearing a
+   black stripe with it. */
+.project-tile {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel-alt);
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(8, 8, 12, 0.94) 0%,
+    rgba(8, 8, 12, 0.72) 32%,
+    rgba(8, 8, 12, 0.16) 66%,
+    rgba(8, 8, 12, 0) 100%
+  );
+}
+
+.project-tile:hover {
+  border-color: var(--color-accent-faint-border);
+}
+
+.project-tile:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.project-tile-cover {
+  position: absolute;
+  inset: 0;
+}
+
+.project-tile-flag {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-2xs);
+  right: var(--space-xs);
+  font-size: var(--fs-2xs);
+  color: var(--color-accent-light);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+.project-tile-cap {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.project-tile-cap b {
+  overflow: hidden;
+  color: var(--color-on-scrim);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.project-tile-cap em {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  line-height: var(--lh-tight);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* The row is the same tile with the picture shrunk to a chip beside the name.
+   Thirty covers is a wall; thirty rows is a list. */
+.start-area[data-view="list"] .project-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+}
+
+.start-area[data-view="list"] .project-tile::after {
+  display: none;
+}
+
+.start-area[data-view="list"] .project-tile-cover {
+  position: static;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+}
+
+.start-area[data-view="list"] .project-tile-flag {
+  position: static;
+  order: 2;
+  text-shadow: none;
+}
+
+.start-area[data-view="list"] .project-tile-cap {
+  position: static;
+  flex: 1;
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: 0;
+}
+
+.start-area[data-view="list"] .project-tile-cap b {
+  color: var(--color-text-primary);
+}
+
+.start-area[data-view="list"] .project-tile-cap em {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* --- Pages --- */
+
+.start-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding-top: var(--space-sm);
+}
+
+.start-page-arrow {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.start-page-arrow:hover:not(:disabled) {
+  color: var(--color-accent);
+}
+
+.start-page-arrow:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.start-dots {
+  display: flex;
+  gap: 2px;
+}
+
+/* Big enough to actually hit: the target is 26 by 20 and the mark inside it is
+   a 4px bar. A dot you have to aim at is a dot you stop using. */
+.start-dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.start-dot::before {
+  content: "";
+  width: 18px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.start-dot:hover::before {
+  background: var(--color-text-muted);
+}
+
+.start-dot[aria-current="true"]::before {
+  background: var(--color-accent);
+}
+
+/* --- The rail --- */
+
+.start-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-height: 0;
+  padding: var(--space-xl) var(--space-md) var(--space-md);
+  border-left: 1px solid var(--color-panel-edge);
+  background: var(--color-panel);
+  overflow-y: auto;
+}
+
+/* The rail's headings are the section titles a size down, with a rule under
+   them — without one they read as loose text rather than as headings. */
+.start-rail-label {
+  margin: 0 0 var(--space-xs);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--color-panel-edge);
+}
+
+.start-rail-label .start-title {
+  font-size: var(--fs-md);
+}
+
+.start-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-2xs);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-line:hover {
+  background: var(--color-hover);
+}
+
+.start-chip {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+}
+
+.start-line-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.start-line b {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.start-line em {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+/* Colour bleeding off an accent bar rather than sitting in a box — these are
+   the quiet half of the screen, and a border on four sides would give them the
+   same weight as the covers. */
+.start-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-2xs) var(--space-xs);
+  border: 0;
+  border-left: 2px solid var(--color-accent-dark);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: linear-gradient(to right, var(--color-accent-faint), transparent 78%);
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-item + .start-item {
+  margin-top: 2px;
+}
+
+.start-item:hover {
+  background: linear-gradient(to right, var(--color-accent-faint), var(--color-accent-faint) 30%, transparent 88%);
+}
+
+.start-item b {
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+.start-item span {
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+}
+
+.start-rail-foot {
+  margin-top: auto;
+}
+
+/* --- The two things that only appear when something went sideways --- */
+
+.start-choices ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin: var(--space-xs) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.start-choices li button {
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.start-choices li button:hover {
+  border-color: var(--color-accent-faint-border);
+}
+
+.start-error {
+  margin: 0;
+  color: var(--color-destructive);
+  font-size: var(--fs-sm);
+}

@@ -7,7 +7,7 @@ import { useLoadShortcuts } from "../../hooks/use-shortcuts";
 import { useLoadPanelWidths } from "../../hooks/use-panel-widths";
 import { useLoadPreferences } from "../../hooks/use-preferences";
 import { AppLayout } from "./AppLayout";
-import { ProjectPicker } from "./ProjectPicker";
+import { StartScreen } from "../start/StartScreen";
 import "./shell.css";
 
 export function StartupRouter() {
@@ -63,5 +63,5 @@ export function StartupRouter() {
     );
   }
 
-  return isLoaded ? <AppLayout /> : <ProjectPicker />;
+  return isLoaded ? <AppLayout /> : <StartScreen />;
 }

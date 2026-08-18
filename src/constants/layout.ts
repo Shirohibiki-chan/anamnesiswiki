@@ -47,3 +47,20 @@ export const PROPERTIES_DEFAULT_WIDTH = 300;
  * thumbnail, which is the part a reader would notice going wrong.
  */
 export const READING_COLUMN_WIDTH = 880;
+
+/**
+ * A project cover on the start screen, in pixels, and the gap between two of
+ * them — the same numbers `start.css` lays the grid out with.
+ *
+ * TypeScript has to know them because the page size adapts to the window: how
+ * many covers fit is arithmetic on these, and the alternative is measuring a
+ * tile that only exists once the page it belongs to has been decided. The CSS
+ * is the real one; change both together.
+ *
+ * `MIN_WIDTH` because the grid stretches its columns to fill the row — a tile
+ * is never narrower than this, and usually a little wider.
+ */
+export const PROJECT_TILE_MIN_WIDTH = 190;
+export const PROJECT_TILE_HEIGHT = 118;
+export const PROJECT_ROW_HEIGHT = 48;
+export const PROJECT_TILE_GAP = 10;
