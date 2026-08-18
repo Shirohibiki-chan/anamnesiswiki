@@ -27,6 +27,11 @@ export type FolderFilter = { kind: "all" } | { kind: "unsorted" } | { kind: "fol
 
 export const ALL_PICTURES: FolderFilter = { kind: "all" };
 
+// Its counterpart, added when the folder dropdown started building its rows
+// from a list rather than writing each one out — the two fixed rows have to be
+// the same kind of thing as each other to sit in one array.
+export const UNSORTED_PICTURES: FolderFilter = { kind: "unsorted" };
+
 export function createAssetFolders(): AssetFolders {
   return { folders: [], assign: {} };
 }

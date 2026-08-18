@@ -1146,6 +1146,44 @@ button.tree-path-crumb:hover {
   overflow-y: auto;
 }
 
+/* The filter box, which only appears once there are enough folders to hunt
+   through (ASSET_FOLDER_FILTER_MIN). Sticky rather than scrolling away with
+   the rows: it's the thing shortening the list, and a list you've filtered to
+   three rows shouldn't make you scroll back up to change your mind. */
+.asset-folders-menu-filter {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: var(--space-2xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  /* Not transparent: it sits over rows scrolling underneath it. */
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-xs);
+  font-family: inherit;
+}
+
+.asset-folders-menu-filter::placeholder {
+  color: var(--color-text-muted);
+}
+
+.asset-folders-menu-filter:focus-visible {
+  outline: none;
+  border-color: var(--color-accent-light);
+}
+
+/* Says the query found nothing, in the space the rows would have been. Without
+   it a filtered-to-empty menu is a box with a text field and a void, which
+   reads as broken rather than as "no". */
+.asset-folders-menu-empty {
+  margin: 0;
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
 .asset-folders-menu-row {
   display: flex;
   align-items: center;

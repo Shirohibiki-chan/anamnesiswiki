@@ -1558,6 +1558,24 @@ is below.
   wrong in a panel whose job is showing pictures.** The dropdown floats over
   them instead, so the panel's cost is one line whatever the count.
 
+- **Nothing inside a `TreePopover` can take focus on mount, and there are two
+  wrong ways to discover that.** The popover renders itself under
+  `visibility: hidden` for a beat to measure its own box before choosing to
+  open downward or flip up, and a browser refuses focus to anything hidden that
+  way. So `autoFocus` fires into the gap — and so does a plain `useEffect`,
+  because the positioning `setState` forces a synchronous re-render and React
+  flushes pending passive effects at the start of it, still before the popover
+  turns visible. Both were measured leaving the folder menu's filter box
+  unfocused. **A `setTimeout(…, 0)` lands after all of it**, and is what the
+  filter box uses.
+
+  **Not `requestAnimationFrame`, which is the tidier-looking answer and the one
+  that can't be tested here.** rAF doesn't fire in a page the compositor isn't
+  drawing, which is exactly the state the browser pane runs in — `rafFires:
+  false, visibilityState: "hidden"`, measured. A timer fires either way, so the
+  behaviour is verifiable rather than merely plausible. That distinction
+  applies to anything else in this repo that wants to wait a beat.
+
 - **Three things about the dropdown that look optional and aren't.**
   - **`max-height` lives in CSS, not in a measured style.** `TreePopover`
     measures the rendered box to decide whether to open downward or flip up; a
