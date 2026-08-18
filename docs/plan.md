@@ -601,6 +601,23 @@ location, so both compose with groups rather than competing.
 cap in better clothes. The list shows everything and the page scrolls; the
 filter box is the answer at scale, not a fold.
 
+**Pages or one long scroll is hers to choose, and pagination is the default**
+— her call, 2026-08-18, in the strongest terms she has used about an
+interaction so far. This does not contradict the paragraph above: a fold hides
+projects behind a "4 more…" link and a page does not. Everything is still
+reachable either way; the question is only whether the grid ends at a page
+boundary or keeps going.
+
+The switch belongs in appearance settings, beside muted covers and for the same
+reason — how much scrolling a person wants is taste, and the answer to a taste
+question is a setting rather than a compromise everyone lives with. Default to
+pages, since that is what she wants and she is the user.
+
+**The pinned row keeps its own pagination regardless.** That one is not a
+preference: a scrolling row cannot land on a page boundary, so its last page
+repeats cards and its dots lie about where you are. The switch governs the
+all-projects grid below it.
+
 **Groups can land after the first cut** (her call, 2026-08-14: not as important,
 unless it's cheap). It is cheap, but only in the right order — group membership
 is app state keyed on the world id, so the ids and the folder scan have to exist
