@@ -40,6 +40,43 @@ Freeform spatial planning surface — LK ships one as "Board." Kept on the list 
 
 ---
 
+**Icons you choose yourself**
+
+Asked for by the user 2026-08-18. Wanted, unscheduled. Today a page's icon is
+its template's — every Character gets the same glyph — and the only thing she
+can change per page is its colour.
+
+**LegendKeeper does this, and her existing world is already full of her
+answers.** Every resource in a `.lk` carries `iconGlyph`, `iconShape` and
+`iconColor`; checked against her real export 2026-08-18, the glyphs are Font
+Awesome class names (`fas fa-tree-palm`, `fas fa-map-marked-alt`, `fas fa-sun`,
+`fas fa-water`, `fas fa-flag`), with a few bare names (`calendar`, `shapes`).
+**Our importer reads none of them**, so a world she decorated page by page
+arrives wearing eight template glyphs. That makes this an import fix as much as
+a feature, and it's the argument for doing it before she re-imports Valeraverse
+again rather than after.
+
+**The awkward part is that we don't ship Font Awesome and shouldn't start.**
+The app draws with `lucide-react`, which is bundled, offline and already the
+source of `constants/icons.ts`. So an imported glyph needs a name-to-name map,
+and it will be partial — Lucide has no palm tree. **A page whose glyph doesn't
+map keeps its template icon**, which is exactly what it has today, so a missing
+entry costs nothing and the map can grow. Don't reach for a Font Awesome
+package to close the gap: it's a second icon set in the bundle for a handful of
+pages, and the Policy Boundary rules out fetching one.
+
+`iconShape` and `iconColor` are atlas-pin styling — a pin's outline and its
+fill on a map. There's no atlas here (see the top of this file), and the colour
+is already a per-node thing we have. Read the glyph; leave the other two.
+
+**What's undecided and needs her, not a guess:** whether an icon replaces the
+template's or sits beside it, whether folders get one too, and how it's picked
+(a searchable list of every Lucide icon is the obvious answer and also ~1500
+things in a popover). Related but separate: the colour control's placement,
+below in Queued Adjustments.
+
+---
+
 **Collapsible group headers in the sidebar (GitBook-style)**
 
 Raised by the user 2026-08-11, with a GitBook screenshot: small uppercase muted
@@ -246,6 +283,17 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 ---
 
 ## Queued Adjustments
+
+- **The colour dot on every tree row is in the wrong place, and the folder
+  colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
+  a screenshot; she said plainly she'd deal with the overhaul later, so this is
+  a marker, not a brief. What's known: the circle sitting between a row's name
+  and its ⋯ menu (`tree-row-color-dot`, `TreeItem.tsx`) is unwanted *there* —
+  that's placement, not the ability to colour a page. **The overhaul itself is
+  undesigned and must be asked about rather than guessed at**, the same rule the
+  search scope controls carry below. Don't quietly move the dot into the ⋯ menu
+  as a fix; that's a design decision wearing a tidy-up's clothes, and it's hers.
+  Related: icons you choose yourself, in Future Features.
 
 - **Find out what our own copy and paste actually does, before building any
   importer on top of it.** Raised 2026-08-12 by what botmakers said about the

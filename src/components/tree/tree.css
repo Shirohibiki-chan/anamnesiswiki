@@ -1086,6 +1086,50 @@ button.tree-path-crumb:hover {
   padding: 0 var(--space-md) var(--space-sm);
 }
 
+/* The one line the strip folds down to: where you are, and how many are in it.
+   Full width and a row, against the tiles' column — it's a place marker rather
+   than one of the things being chosen between, and looking like a wide tile
+   would make it the fifth folder. */
+.asset-folders-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  text-align: left;
+  cursor: pointer;
+}
+
+.asset-folders-toggle:hover {
+  background: var(--color-hover);
+}
+
+.asset-folders-toggle-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+
+.asset-folders-toggle-count {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only the tiles are spaced off the line above them. Shut, the strip is that
+   line alone and shouldn't be carrying a gap under nothing. */
+.asset-folders-toggle + .asset-folders-grid {
+  margin-top: var(--space-xs);
+}
+
 /* Two per row in the sidebar at its narrowest, three as it's dragged out, more
    again in the picker dialog — `auto-fill` rather than a fixed count, so one
    rule serves both places and the folders track the picture grid below without
@@ -1096,6 +1140,7 @@ button.tree-path-crumb:hover {
    before, which sounded right and wasn't: a name plus a count is wider than
    half the column, so every one took a row to itself and four folders filled
    the panel. */
+
 .asset-folders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));

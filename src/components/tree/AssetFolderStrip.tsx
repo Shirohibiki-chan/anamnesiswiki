@@ -19,7 +19,18 @@
 //
 // Deliberately no folder icon. At roughly 72px a glyph costs about a third of
 // the name, and the name is the part being read.
-import { FolderPlus, Pencil, Trash2 } from "lucide-react";
+//
+// **In the sidebar it folds down to one line, and starts folded.** Even as
+// tiles the folders were taking the top of a panel whose whole job is showing
+// pictures — reported 2026-08-18, the day the tiles landed. Shut, it says which
+// folder you're in, which is the one thing worth a permanent line; open, every
+// folder is there. Choosing one shuts it again, so the ordinary errand costs
+// two clicks and no lasting space.
+//
+// The picker dialog doesn't get the toggle. It's several hundred pixels wide,
+// the folders fit on one row there, and it's a dialog you're looking at rather
+// than a panel you're working beside.
+import { ChevronDown, ChevronRight, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import type { AssetFolders, FolderFilter } from "../../services/asset-folders";
@@ -43,6 +54,11 @@ export type AssetFolderStripProps = {
   onDelete: (id: string) => void;
   /** Dropping a picture on a tile files it there. Omitted in the picker. */
   onDropAsset?: (fileName: string, folderId: string | null) => void;
+  /**
+   * Folds down to one line saying where you are. The sidebar's, not the
+   * picker's — see the note at the top of the file.
+   */
+  collapsible?: boolean;
   /** The folder just made, which opens straight into its own name box. */
   renamingId: string | null;
   onRenamingDone: () => void;
@@ -61,72 +77,121 @@ export function AssetFolderStrip({
   onStartRename,
   onDelete,
   onDropAsset,
+  collapsible = false,
   renamingId,
   onRenamingDone,
 }: AssetFolderStripProps) {
   const selected = filter.kind === "folder" ? folders.folders.find((f) => f.id === filter.id) : undefined;
+  const [open, setOpen] = useState(false);
+  // A folder just made opens straight into its name box, and that box is one of
+  // the tiles — so a rename in progress holds the strip open whatever the
+  // toggle says, or the box she's typing into is somewhere she can't see.
+  // Derived rather than an effect that opens it: an effect would leave the
+  // strip open afterwards, and `open` is then out of step with the chevron.
+  const showGrid = !collapsible || open || renamingId !== null;
+
+  const pick = (next: FolderFilter): void => {
+    onFilter(next);
+    // Choosing is the end of the errand, so the strip gets out of the way
+    // again. Only where there's a toggle at all — the picker never folds.
+    if (collapsible) setOpen(false);
+  };
+
+  // What the shut line says. `selected` is undefined for a folder id that no
+  // longer exists, which is a filter left pointing at a deleted folder — the
+  // grid shows everything in that case, so the line has to say so too.
+  const here =
+    filter.kind === "unsorted"
+      ? { label: "Unsorted", count: counts.unsorted }
+      : filter.kind === "folder" && selected
+        ? { label: selected.name, count: counts.byFolder[selected.id] ?? 0 }
+        : { label: "All pictures", count: counts.all };
 
   return (
     <div className="asset-folders">
-      <div className="asset-folders-grid">
-        <Tile
-          label="All pictures"
-          count={counts.all}
-          active={filter.kind === "all"}
-          onClick={() => onFilter({ kind: "all" })}
-          // Dropping on "All pictures" means "take it out of its folder" —
-          // there is nowhere else for it to go, and a drop that did nothing
-          // would read as a bug rather than as a rule.
-          onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
-        />
-        {/* Only once filing something has actually made a difference. With
-            nothing filed yet, Unsorted holds every picture there is, so the
-            tile is a second button for the one beside it wearing a different
-            name and the same number. */}
-        {counts.unsorted > 0 && counts.unsorted < counts.all && (
+      {collapsible && (
+        <button
+          type="button"
+          className="asset-folders-toggle"
+          aria-expanded={open}
+          title={open ? "Hide the folders" : "Show the folders"}
+          onClick={() => setOpen((was) => !was)}
+          // A picture dragged onto a shut strip opens it, rather than meeting
+          // one line that can't file it. The drop still happens on a tile;
+          // this only gets the tiles on screen to be dropped on.
+          onDragOver={(event) => {
+            if (!onDropAsset || !Array.from(event.dataTransfer.types).includes(ASSET_DRAG_TYPE)) return;
+            event.preventDefault();
+            setOpen(true);
+          }}
+        >
+          {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          <span className="asset-folders-toggle-label">{here.label}</span>
+          <span className="asset-folders-toggle-count">{here.count}</span>
+        </button>
+      )}
+
+      {showGrid && (
+        <div className="asset-folders-grid">
           <Tile
-            label="Unsorted"
-            count={counts.unsorted}
-            active={filter.kind === "unsorted"}
-            onClick={() => onFilter({ kind: "unsorted" })}
+            label="All pictures"
+            count={counts.all}
+            active={filter.kind === "all"}
+            onClick={() => pick({ kind: "all" })}
+            // Dropping on "All pictures" means "take it out of its folder" —
+            // there is nowhere else for it to go, and a drop that did nothing
+            // would read as a bug rather than as a rule.
             onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
           />
-        )}
-        {folders.folders.map((folder) =>
-          folder.id === renamingId ? (
-            <NameBox
-              key={folder.id}
-              initial={folder.name}
-              onCommit={(name) => {
-                onRename(folder.id, name);
-                onRenamingDone();
-              }}
-            />
-          ) : (
+          {/* Only once filing something has actually made a difference. With
+              nothing filed yet, Unsorted holds every picture there is, so the
+              tile is a second button for the one beside it wearing a different
+              name and the same number. */}
+          {counts.unsorted > 0 && counts.unsorted < counts.all && (
             <Tile
-              key={folder.id}
-              label={folder.name}
-              count={counts.byFolder[folder.id] ?? 0}
-              active={sameFilter(filter, { kind: "folder", id: folder.id })}
-              onClick={() => onFilter({ kind: "folder", id: folder.id })}
-              onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, folder.id))}
+              label="Unsorted"
+              count={counts.unsorted}
+              active={filter.kind === "unsorted"}
+              onClick={() => pick({ kind: "unsorted" })}
+              onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
             />
-          ),
-        )}
-        {/* A cell of its own rather than a small button trailing the last tile,
-            which in a grid would leave a ragged half-row wherever it landed. */}
-        {onCreate && (
-          <button
-            type="button"
-            className="asset-folder-tile asset-folders-new"
-            title="New folder"
-            aria-label="New folder"
-            onClick={onCreate}
-          >
-            <FolderPlus size={14} />
-          </button>
-        )}
-      </div>
+          )}
+          {folders.folders.map((folder) =>
+            folder.id === renamingId ? (
+              <NameBox
+                key={folder.id}
+                initial={folder.name}
+                onCommit={(name) => {
+                  onRename(folder.id, name);
+                  onRenamingDone();
+                }}
+              />
+            ) : (
+              <Tile
+                key={folder.id}
+                label={folder.name}
+                count={counts.byFolder[folder.id] ?? 0}
+                active={sameFilter(filter, { kind: "folder", id: folder.id })}
+                onClick={() => pick({ kind: "folder", id: folder.id })}
+                onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, folder.id))}
+              />
+            ),
+          )}
+          {/* A cell of its own rather than a small button trailing the last tile,
+              which in a grid would leave a ragged half-row wherever it landed. */}
+          {onCreate && (
+            <button
+              type="button"
+              className="asset-folder-tile asset-folders-new"
+              title="New folder"
+              aria-label="New folder"
+              onClick={onCreate}
+            >
+              <FolderPlus size={14} />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Rename and delete live here rather than on every tile. A tile is a
           name and a number in half of a 180px column; three controls inside one
