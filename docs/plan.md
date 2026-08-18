@@ -296,10 +296,18 @@ Raised by the user 2026-08-13 after comparing directly against LK.
   before touching it; a taste question with a screenshot attached is not a
   licence to guess.
 
-  **Where it got to:** she asked for a mockup 2026-08-18, so seven candidate
-  treatments were drawn against the real tokens and sent to her. Still queued —
-  what ships is whichever she picks, and until she does, nothing in
-  `controls.css` moves.
+  **The brief, once she saw the mockups** (2026-08-18, after a first round that
+  offered mostly gradient-free options and was rejected as a set):
+  - **Keep the gradient.** Removing it was never the ask. It needs to look
+    better — her word was *glossier*.
+  - **Stay in the deep half of the accent.** Teal is right; travelling up to
+    `--color-accent-light` is the part that looks bad. So the gradient lives
+    around `--color-accent-dark`, not between the two ends.
+  - **White text**, not `--color-bg`.
+
+  Still queued: a second round of glossy candidates is with her. **Whatever
+  wins has to be built from accent tokens**, or it ships teal on all seven
+  themes.
 
 - **The colour dot on every tree row is in the wrong place, and the folder
   colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
@@ -739,7 +747,7 @@ built. Read its labels as saying "project" — it was drawn before the naming
 pass and still says "world" on the buttons.
 
 **Built so far (2026-08-18):** the two-column shell, brand and version, the one
-centred New project button, the filter box, the all-projects cover grid with
+centred New Project button, the filter box, the all-projects cover grid with
 generated covers and the grid/list toggle, the pages/scroll switch, and the
 rail carrying Recently Opened, Add a Project and the cog. Section headings are
 Title Case in the display face at 20px, which is a new step in the type scale

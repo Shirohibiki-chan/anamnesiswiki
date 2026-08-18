@@ -1,6 +1,6 @@
 // The rail down the right of the start screen: the three projects she was in
 // most recently, the two ways to get a project into the library that are not
-// the New project button, and the cog.
+// the New Project button, and the cog.
 //
 // The second heading was "Start Something", which named a mood rather than an
 // errand — neither thing under it starts anything from scratch. Both point the

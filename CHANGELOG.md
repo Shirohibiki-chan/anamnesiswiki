@@ -20,6 +20,7 @@
 
 ### Renames
 
+- **"New project" is "New Project".** The one bright button on the start screen, now capitalised the same way as the headings around it.
 - **"Start Something" is "Add a Project".** It was a mood rather than an errand, and neither thing under it starts anything from scratch — both point the app at a project that already exists, one as a folder and one as a `.lk` file, and both end with it sitting in the list on the left.
 - **"Import from LegendKeeper" is just "Import".** It sits in the rail on the start screen and says what it takes — a `.lk` file — rather than naming somebody else's app. The dialog it opens is called "Import a project" for the same reason, and the note about pictures needing the internet no longer names the app they're coming from either. Export still says LegendKeeper, because that file is for that app.
 
