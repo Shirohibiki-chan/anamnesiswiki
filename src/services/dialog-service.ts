@@ -7,6 +7,46 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 /**
+ * Whether a native picker is already up.
+ *
+ * The OS dialog is modal to the app window, so the app cannot know the user
+ * clicked the button again — but React can, if the click landed before the
+ * dialog appeared. Asking the OS for a second dialog while the first is still
+ * open is how you get a picker that seems not to open at all: the second call
+ * is the one the caller is waiting on, and it never gets a window.
+ *
+ * A module-level flag rather than component state because the callers are in
+ * different trees — the import modal, the start screen, settings — and there
+ * is only ever one OS dialog to be had between them.
+ */
+let nativeDialogOpen = false;
+
+/**
+ * Runs one native dialog at a time, and lets its failures out.
+ *
+ * Both halves matter. Every caller reaches this through a click handler that
+ * discards the promise, so a rejection here used to end as an unhandled one in
+ * the console: the button did nothing, said nothing, and left no way to tell a
+ * cancelled dialog from a broken one. Returning `null` for a *repeat* press
+ * while keeping real errors throwing is the distinction — the caller reads
+ * `null` as "nothing chosen", which is exactly what a second press means.
+ */
+async function onePicker<T>(run: () => Promise<T>): Promise<T | null> {
+  if (nativeDialogOpen) return null;
+  nativeDialogOpen = true;
+  try {
+    return await run();
+  } finally {
+    nativeDialogOpen = false;
+  }
+}
+
+/** Whether a native picker is up, for callers that want to say so on screen. */
+export function isPickerOpen(): boolean {
+  return nativeDialogOpen;
+}
+
+/**
  * Hands a folder to the OS file manager. Phase 12's themes and snippets are
  * loose `.css` files, and "put a file in this folder" is only a usable
  * instruction if there's a button that goes there — otherwise it's a Windows
@@ -52,7 +92,7 @@ export function fileManagerName(): string {
 }
 
 export async function pickFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null> {
-  const result = await open({ directory: true, multiple: false, ...options });
+  const result = await onePicker(() => open({ directory: true, multiple: false, ...options }));
   return typeof result === "string" ? result : null;
 }
 
@@ -60,11 +100,16 @@ export async function pickFolder(options?: { title?: string; defaultPath?: strin
 // folder browser above: this is the look people expect from "save as", and it
 // puts the file wherever they point it rather than somewhere we chose.
 export async function pickLkSavePath(defaultName: string): Promise<string | null> {
-  return save({
-    title: "Export to LegendKeeper",
-    defaultPath: `${defaultName}.lk`,
-    filters: [{ name: "LegendKeeper export", extensions: ["lk"] }],
-  });
+  return onePicker(() =>
+    save({
+      // Still named here, unlike the import side: this file is *for* that
+      // app, and a generic label would hide the one thing she needs to know
+      // about it. The export modal behind it says the same.
+      title: "Export to LegendKeeper",
+      defaultPath: `${defaultName}.lk`,
+      filters: [{ name: "LegendKeeper export", extensions: ["lk"] }],
+    }),
+  );
 }
 
 /**
@@ -75,7 +120,7 @@ export async function pickLkSavePath(defaultName: string): Promise<string | null
  * right extension.
  */
 export async function pickImageSavePath(defaultName: string): Promise<string | null> {
-  return save({ title: "Save a copy of this picture", defaultPath: defaultName });
+  return onePicker(() => save({ title: "Save a copy of this picture", defaultPath: defaultName }));
 }
 
 /**
@@ -97,21 +142,47 @@ export async function openExternalUrl(url: string): Promise<void> {
  * file turns out to be is worked out from it afterwards.
  */
 export async function pickThemeFile(): Promise<string | null> {
-  const result = await open({
-    directory: false,
-    multiple: false,
-    title: "Import a theme or palette",
-    filters: [{ name: "Theme or palette", extensions: ["css", "json"] }],
-  });
+  const result = await onePicker(() =>
+    open({
+      directory: false,
+      multiple: false,
+      title: "Import a theme or palette",
+      filters: [
+        { name: "Theme or palette", extensions: ["css", "json"] },
+        { name: "All files", extensions: ["*"] },
+      ],
+    }),
+  );
   return typeof result === "string" ? result : null;
 }
 
-export async function pickLkFile(): Promise<string | null> {
-  const result = await open({
-    directory: false,
-    multiple: false,
-    title: "Import a LegendKeeper export",
-    filters: [{ name: "LegendKeeper export", extensions: ["lk"] }],
-  });
+/**
+ * The file to import a project from.
+ *
+ * **The second filter is not padding.** A single-extension filter hides every
+ * file that isn't named exactly right, and an export that arrived as
+ * `world.lk.zip`, or one whose extension Windows is hiding, is then invisible
+ * in a folder she can see it in — which reads as the picker being broken
+ * rather than as a filter doing its job. Letting her pick anything means a bad
+ * choice fails at the parse step with a message, which is a better place to
+ * fail than a file list that silently omits the file.
+ *
+ * `.lk` is the only format there is so far. When the Markdown, Obsidian and
+ * World Anvil importers land (docs/plan.md), they belong in this same picker
+ * as more entries rather than as separate buttons — the errand is "bring my
+ * world in", and which program it came out of is a detail of the file.
+ */
+export async function pickImportFile(): Promise<string | null> {
+  const result = await onePicker(() =>
+    open({
+      directory: false,
+      multiple: false,
+      title: "Import a project",
+      filters: [
+        { name: "Project export (.lk)", extensions: ["lk"] },
+        { name: "All files", extensions: ["*"] },
+      ],
+    }),
+  );
   return typeof result === "string" ? result : null;
 }

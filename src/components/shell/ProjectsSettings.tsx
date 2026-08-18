@@ -8,17 +8,25 @@ import { useDialogs } from "../../hooks/use-dialogs";
 
 export function ProjectsSettings() {
   const { projectsDir, isCustomProjectsDir, changeProjectsDir, prepareProjectsDir } = useAppSettings();
-  const { pickFolder } = useDialogs();
+  const { pickFolder, showNotice } = useDialogs();
 
   async function handleChange() {
     // Make the current folder before browsing from it — a native folder
     // browser can only start somewhere that exists, so a default nobody has
     // created yet drops you a level up to make it by hand.
-    const startFrom = await prepareProjectsDir();
-    const picked = await pickFolder({
-      title: "Choose where new projects are saved",
-      defaultPath: startFrom,
-    });
+    let picked: string | null;
+    try {
+      const startFrom = await prepareProjectsDir();
+      picked = await pickFolder({
+        title: "Choose where new projects are saved",
+        defaultPath: startFrom,
+      });
+    } catch (e) {
+      // Nowhere on this panel to put an error line, and a folder browser
+      // that silently does nothing is the failure worth naming.
+      showNotice(e instanceof Error ? e.message : "Couldn't open the folder picker.");
+      return;
+    }
     if (!picked) return;
     await changeProjectsDir(picked);
   }

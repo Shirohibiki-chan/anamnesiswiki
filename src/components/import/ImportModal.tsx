@@ -1,6 +1,6 @@
-// Phase 8 — bring a LegendKeeper `.lk` export in as a brand-new project. Four
-// steps in one modal: pick the file, preview what was found (tree + inferred
-// template counts + a plain-language list of anything that won't come across
+// Phase 8 — bring a `.lk` export in as a brand-new project. Four steps in one
+// modal: pick the file, preview what was found (tree + inferred template
+// counts + a plain-language list of anything that won't come across
 // perfectly), pick a destination folder, then write it all to disk. See
 // docs/lk-format.md for the field mapping this preview reflects.
 import { useState } from "react";
@@ -13,7 +13,12 @@ import { useTemplates } from "../../hooks/use-templates";
 import type { ImportPlan, ImportPreviewNode } from "../../services/lk-import";
 import "./import.css";
 
-type Status = "idle" | "parsing" | "preview" | "importing" | "error";
+// `picking` is a state of its own rather than a flag because the OS file
+// dialog is a window this app doesn't draw and can't see. Without it there is
+// no difference on screen between the picker being open behind something and
+// the button having done nothing at all — which is the complaint that put it
+// here. It also stops a second click reaching a picker that is already up.
+type Status = "idle" | "picking" | "parsing" | "preview" | "importing" | "error";
 
 function pluralizeLabel(label: string, count: number): string {
   if (count === 1) return label;
@@ -54,7 +59,7 @@ function progressHeadline(
 }
 
 export function ImportModal({ onClose }: { onClose: () => void }) {
-  const { pickLkFile, pickFolder } = useDialogs();
+  const { pickImportFile, pickFolder } = useDialogs();
   const { parseLkFile, importLkProject } = useLkImport();
   const { recordProjectOpened, projectsDir, prepareProjectsDir } = useAppSettings();
   const { getLabel } = useTemplates();
@@ -71,11 +76,28 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
   const destination = destinationOverride ?? projectsDir;
 
+  // One try around both halves on purpose. Opening the picker was outside it
+  // before, and the click handler discards this promise — so a picker that
+  // failed to open threw into nothing: no dialog, no message, no clue. Every
+  // way this can fail now ends on a line she can read.
   async function handlePickFile() {
-    const path = await pickLkFile();
-    if (!path) return;
-    setStatus("parsing");
     setError(null);
+    setStatus("picking");
+    let path: string | null;
+    try {
+      path = await pickImportFile();
+    } catch (e) {
+      setError(
+        `Couldn't open the file picker${e instanceof Error && e.message ? ` — ${e.message}` : "."}`,
+      );
+      setStatus("error");
+      return;
+    }
+    if (!path) {
+      setStatus("idle");
+      return;
+    }
+    setStatus("parsing");
     try {
       const result = await parseLkFile(path);
       setPlan(result);
@@ -88,13 +110,17 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   }
 
   async function handleChangeDestination() {
-    const startFrom = destinationOverride ?? (await prepareProjectsDir());
-    const picked = await pickFolder({
-      title: "Choose where to save this imported project",
-      defaultPath: startFrom,
-    });
-    if (!picked) return;
-    setDestinationOverride(picked);
+    try {
+      const startFrom = destinationOverride ?? (await prepareProjectsDir());
+      const picked = await pickFolder({
+        title: "Choose where to save this imported project",
+        defaultPath: startFrom,
+      });
+      if (!picked) return;
+      setDestinationOverride(picked);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open the folder picker.");
+    }
   }
 
   async function handleConfirm() {
@@ -131,20 +157,30 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     onClose();
   }
 
-  const isBusy = status === "parsing" || status === "importing";
+  // Closing the modal while the OS picker is up would strand it: the dialog
+  // stays on screen with nothing behind it left to receive the answer.
+  const isBusy = status === "picking" || status === "parsing" || status === "importing";
 
   return createPortal(
     <div className="ui-backdrop" onClick={isBusy ? undefined : onClose}>
       <div className="ui-modal ui-modal-lg import-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="import-modal-title">Import from LegendKeeper</h2>
+        <h2 className="import-modal-title">Import a project</h2>
 
-        {(status === "idle" || status === "parsing" || status === "error") && (
+        {(status === "idle" || status === "picking" || status === "parsing" || status === "error") && (
           <div className="import-modal-pick">
-            <p>Bring in your pages, tabs, and cross-references from a LegendKeeper .lk export.</p>
+            <p>Bring in your pages, tabs, and cross-references from a .lk export.</p>
             {error && <p className="import-modal-error">{error}</p>}
-            <button type="button" onClick={() => void handlePickFile()} disabled={status === "parsing"}>
-              {status === "parsing" ? "Reading file…" : "Choose a .lk file"}
+            <button type="button" onClick={() => void handlePickFile()} disabled={isBusy}>
+              {status === "picking" ? "Waiting for the file picker…" : status === "parsing" ? "Reading file…" : "Choose a file"}
             </button>
+            {/* The picker is an OS window this app doesn't draw, so when it
+                opens behind the app there is nothing on screen to say so. This
+                line is the only thing that can. */}
+            {status === "picking" && (
+              <p className="import-modal-progress-note">
+                The file picker is open. If you can't see it, it may be behind this window — check your taskbar.
+              </p>
+            )}
             {/* The button's own label was the only sign anything was happening,
                 and unpacking a large project holds the window still while it
                 runs — so it read as nothing having happened at all. */}
@@ -229,7 +265,9 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
             )}
-            <p className="import-modal-progress-note">Pictures come from LegendKeeper's servers, so this needs the internet.</p>
+            <p className="import-modal-progress-note">
+              Pictures are stored on the servers of whatever you exported from, so this part needs the internet.
+            </p>
           </div>
         )}
       </div>
