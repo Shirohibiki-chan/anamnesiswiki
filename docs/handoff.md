@@ -73,6 +73,23 @@ is below.
   A failed backfill write is swallowed — a world on read-only media still
   opens, carrying a session-only id.
 
+- **Listing worlds never writes, and never deduplicates by id.** The start
+  screen scans the projects folder rather than reading a remembered list, so
+  `readWorldSummary` deliberately does *not* mint a missing id the way
+  `loadProject` does — that would touch every world on disk each time the
+  screen opens, including read-only ones she never opens. A world without an id
+  is listed by path and gains one when it is opened. And two worlds wearing one
+  id are two worlds: that is what a folder copied in File Explorer looks like,
+  and collapsing them would hide her work over a bookkeeping field. Telling
+  those apart is the fork detector's job, which re-ids one rather than dropping
+  it.
+
+- **The recent-projects list is a sort order, not a whitelist.** It was capped
+  at eight and was the only way a world reached the start screen, which is how
+  her ninth world became reachable only through the folder picker. The cap is
+  gone; the list now only says when each world was last opened. Anything that
+  re-introduces a cap here hides worlds again.
+
 - **A copy gets a fresh id, and records its parent in `forkedFromId`.** Never
   derive one id from another: the collision suffixes in `filesystem-service.ts`
   are recomputed on every resolve, which is fine for a filename and fatal for

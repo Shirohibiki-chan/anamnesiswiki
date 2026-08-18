@@ -29,6 +29,10 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
       return { name, isDirectory, isFile: !isDirectory, isSymlink: false };
     });
   },
+  stat: async (path: string) => {
+    if (!files.has(path)) throw new Error(`ENOENT: ${path}`);
+    return { mtime: new Date(mtimes.get(path) ?? 0) };
+  },
   mkdir: async () => {},
   remove: async () => {},
   rename: async () => {},
@@ -40,7 +44,12 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
 // Folders `readDir` refuses — a drive that isn't plugged in, a permission wall.
 const unreadable = new Set<string>();
 
-const { scanForWorlds, resolveChosenFolder, isWorldDir } = await import("./filesystem-service");
+// When each file was last written, for the timestamps a world listing sorts on.
+const mtimes = new Map<string, number>();
+
+const { scanForWorlds, resolveChosenFolder, isWorldDir, readWorldSummary, collectWorldFiles } = await import(
+  "./filesystem-service"
+);
 
 const ROOT = "/Documents/Anamnesis";
 
@@ -53,6 +62,7 @@ beforeEach(() => {
   files.clear();
   readDirs.length = 0;
   unreadable.clear();
+  mtimes.clear();
 });
 
 describe("scanForWorlds", () => {
@@ -171,5 +181,72 @@ describe("isWorldDir", () => {
 
     expect(await isWorldDir("/a/World")).toBe(true);
     expect(await isWorldDir("/a/NotAWorld")).toBe(false);
+  });
+});
+
+describe("readWorldSummary", () => {
+  /** A world with a full project file, rather than the bare marker `world` writes. */
+  function namedWorld(path: string, project: Record<string, unknown>, modifiedAt = 0) {
+    const file = `${path}/project.json`;
+    files.set(file, JSON.stringify({ version: 1, rootOrder: [], ...project }));
+    mtimes.set(file, modifiedAt);
+  }
+
+  it("reads the name, the id and when the project file last changed", async () => {
+    namedWorld(`${ROOT}/Val`, { name: "Valeraverse", id: "abc" }, 1234);
+    expect(await readWorldSummary(`${ROOT}/Val`)).toEqual({
+      path: `${ROOT}/Val`,
+      id: "abc",
+      name: "Valeraverse",
+      modifiedAt: 1234,
+    });
+  });
+
+  it("reports no id for a world saved before ids existed, rather than minting one", async () => {
+    // Minting is a write, and a listing that writes touches every world on
+    // disk every time the start screen opens. `loadProject` does it when she
+    // actually opens the world.
+    namedWorld(`${ROOT}/Old`, { name: "Old" });
+    const before = files.get(`${ROOT}/Old/project.json`);
+    const summary = await readWorldSummary(`${ROOT}/Old`);
+    expect(summary?.id).toBeNull();
+    expect(files.get(`${ROOT}/Old/project.json`)).toBe(before);
+  });
+
+  it("falls back to the folder's name when the project file has none", async () => {
+    namedWorld(`${ROOT}/Untitled`, {});
+    expect((await readWorldSummary(`${ROOT}/Untitled`))?.name).toBe("Untitled");
+  });
+
+  it("reports nothing for a folder that isn't a world", async () => {
+    expect(await readWorldSummary(`${ROOT}/NotAWorld`)).toBeNull();
+  });
+
+  it("reports nothing for a project file that won't parse", async () => {
+    files.set(`${ROOT}/Broken/project.json`, "{ this is not json");
+    expect(await readWorldSummary(`${ROOT}/Broken`)).toBeNull();
+  });
+});
+
+describe("collectWorldFiles", () => {
+  it("returns the scanned worlds and the remembered ones together", async () => {
+    world(`${ROOT}/Home`);
+    world("D:/Elsewhere/Away");
+    const found = await collectWorldFiles(ROOT, ["D:/Elsewhere/Away"]);
+    expect(found.map((w) => w.path).sort()).toEqual([`${ROOT}/Home`, "D:/Elsewhere/Away"]);
+  });
+
+  it("reads a world found both ways only once", async () => {
+    world(`${ROOT}/Val`);
+    const found = await collectWorldFiles(ROOT, [`${ROOT}/Val`]);
+    expect(found).toHaveLength(1);
+  });
+
+  it("drops a remembered path that won't read, and keeps the rest", async () => {
+    // The unplugged-drive case. What to *show* for it is decided in
+    // buildWorldList, off the remembered list — not here.
+    world(`${ROOT}/Home`);
+    const found = await collectWorldFiles(ROOT, ["E:/Stick/Gone"]);
+    expect(found.map((w) => w.path)).toEqual([`${ROOT}/Home`]);
   });
 });

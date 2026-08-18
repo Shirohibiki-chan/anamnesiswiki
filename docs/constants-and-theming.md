@@ -18,7 +18,6 @@
   - `MAX_FILENAME_CHARS = 100` — truncate longer names when generating filenames
   - `MAX_TREE_DEPTH = 12` — soft cap; warn the user when nesting approaches this (Windows path length concern)
   - `MAX_TAG_LENGTH = 40` — cap for a single tag string
-  - `RECENT_PROJECTS_COUNT = 8` — how many recent projects to show in the picker
 
 - **`keyboard.ts`** — `SHORTCUTS` map from action name to keyboard shortcut string (`newPage: 'Mod+N'`, `search: 'Mod+K'`, `save: 'Mod+S'` — save is a no-op since autosave handles it, but the shortcut fires the save-indicator so the user gets feedback, `nextTab: 'Mod+Alt+ArrowRight'`, `prevTab: 'Mod+Alt+ArrowLeft'`). `Mod` resolves to Cmd on macOS and Ctrl elsewhere.
 
