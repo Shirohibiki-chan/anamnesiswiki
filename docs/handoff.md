@@ -1563,6 +1563,16 @@ is below.
   ellipsises — and a `max-height` on the grid in the sidebar, since folders
   reachable by scrolling beat pictures pushed off the bottom of the panel.
 
+- **The Assets tab's folder strip folds shut, and two things hold it open that
+  aren't the toggle.** A rename in progress is one: the name box *is* one of the
+  tiles, so `renamingId !== null` forces the grid open — **derived, not an
+  effect that calls `setOpen`.** An effect would leave the strip open after the
+  rename finished, with the chevron pointing the wrong way, and React's
+  `set-state-in-effect` rule rejects it anyway. The other is a picture dragged
+  over the shut line, which opens the tiles so there's something to drop on;
+  without it, folding the strip would quietly remove the only way to file a
+  picture. Anything else that hides these tiles has to answer both cases.
+
 - **The side panels' widths are custom properties on `.app-layout`, and the
   resize handles are positioned against the grid rather than inside the
   panels.** `--tree-w` / `--props-w` feed both `grid-template-columns` and the
