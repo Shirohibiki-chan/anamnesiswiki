@@ -1056,10 +1056,10 @@ is below.
   three: portrait, cover, inside a page's writing, and all three again in
   `templates`. `saveAsTemplate` copies a page's portrait and cover *files* but
   not the pictures written inside its tabs, so a template and its source page
-  legitimately share one. A miss here no longer arms a delete button — the bin
-  is on every tile since 2026-08-14 — but it still makes the confirm lie about
-  what a delete costs, and it still drives `releaseAsset`, which is where a miss
-  really does lose a picture. It walks nested blocks too — a picture indented under a list item is
+  legitimately share one. A miss here is what decides whether removing a picture
+  from the library deletes its file, and it drives `releaseAsset` — so a miss is
+  still how a page loses a picture, even though the bin itself can no longer
+  cost one. It walks nested blocks too — a picture indented under a list item is
   as much in use as one at the top level.
 
 - **`PageFilePanel` must stay at the module level, for the same reason
@@ -1083,13 +1083,15 @@ is below.
   early sees the reference on its way out and keeps the file forever, and the
   delete-a-page path is the one where that ordering is easy to get wrong.
 
-  **The Assets tab's bin is the deliberate exception and must stay one.** From
-  2026-08-14 it deletes whatever she pointed it at, in use or not: the rule that
-  hid it read as a broken button, and she reported it as broken twice. That's an
-  explicit choice with a confirm naming the affected pages and an undo behind
-  it, which is a different thing from a page quietly dropping a reference. Don't
-  reintroduce the gate, and don't route this through `releaseAsset` — its whole
-  job is to *not* delete a file something is using.
+  **The Assets tab's bin removes from the library and never from a page** — her
+  instruction 2026-08-14, arrived at after two wrong builds. The library is the
+  list of pictures she's looking at, not the folder on disk, and removing one
+  from a list changes the list. So `removeAssetFromLibrary` deletes the file
+  only when nothing is using it, and otherwise keeps the bytes and writes the
+  name into `.removed.json` so the grid stops showing it. Both paths look
+  identical to her, which is the design. **Don't make the bin delete a file a
+  page needs, and don't reintroduce the rule that hid it** — that one read as a
+  broken button and was reported as broken twice.
 
 - **The copies that existed only to dodge that hazard should not be
   reintroduced.** `setBannerFromImage` now shares the portrait's file rather
@@ -1097,6 +1099,14 @@ is below.
   is a deliberate difference and not an oversight: a duplicate is meant to be
   independent of its original, whereas "set as cover" is the same picture in a
   second slot on the same page.
+
+- **The removed list is pruned against the raw directory, before the grid
+  filters it — and that order is load-bearing.** `useAssets` prunes names,
+  sources and removals from the file listing, then hides removed pictures from
+  `entries`. Filter first and a hidden picture looks like one that left
+  `assets/`, so its own entry gets pruned and it reappears in the grid on the
+  next read. The same trap is waiting for anything else that both hides files
+  and prunes by "is it still on disk".
 
 - **The Assets listing is driven by the directory, never by the usage index.** A
   reference to a file that isn't there is a broken picture, not a picture you

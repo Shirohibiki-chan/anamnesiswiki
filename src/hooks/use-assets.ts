@@ -15,6 +15,7 @@ import { useShallow } from "zustand/react/shallow";
 import { assetFileName, assetRef } from "../services/asset-urls";
 import { countByFilter, matchesFilter, type AssetFolders, type FolderFilter } from "../services/asset-folders";
 import { buildAssetEntries, indexAssetUsage, type AssetEntry, type AssetFile } from "../services/asset-usage";
+import { isAssetRemoved } from "../services/asset-removed";
 import { readImageFile } from "../services/image-file";
 import { useProjectStore } from "../state/project-store";
 
@@ -29,13 +30,14 @@ export function useAssets(): {
   /**
    * True when a page couldn't be read on the last load. "Nothing is using this
    * picture" is a claim about *every* page, so a page the app couldn't open is
-   * enough to make it a guess — and the delete button hangs off that claim.
+   * enough to make it a guess — and the tile says "not sure yet" rather than
+   * "not used anywhere" while that's so.
    */
   isUsageIncomplete: boolean;
   /** Re-reads the directory. Called after anything that changes what's in it. */
   refresh: () => void;
 } {
-  const { nodes, templates, listAssets, loadWasIncomplete, pruneAssetFolders, pruneAssetNames } = useProjectStore(
+  const { nodes, templates, listAssets, loadWasIncomplete, pruneAssetFolders, pruneAssetNames, removedAssets } = useProjectStore(
     useShallow((state) => ({
       nodes: state.nodes,
       templates: state.templates,
@@ -43,6 +45,7 @@ export function useAssets(): {
       loadWasIncomplete: state.loadWasIncomplete,
       pruneAssetFolders: state.pruneAssetFolders,
       pruneAssetNames: state.pruneAssetNames,
+      removedAssets: state.removedAssets,
     })),
   );
 
@@ -79,7 +82,18 @@ export function useAssets(): {
   }, [files, pruneAssetNames]);
 
   const usage = useMemo(() => indexAssetUsage(nodes, templates), [nodes, templates]);
-  const entries = useMemo(() => buildAssetEntries(files ?? [], usage), [files, usage]);
+
+  // Pictures she took out of the library are hidden here rather than earlier,
+  // and the order matters: the prunes above run on the *directory*, and a file
+  // filtered out before them would look like one that had left `assets/` — so
+  // its own entry in the removed list would be pruned and it would reappear.
+  //
+  // The usage index is built from every file too, since a hidden picture is
+  // still on a page and that page still holds the only reason its file exists.
+  const entries = useMemo(
+    () => buildAssetEntries(files ?? [], usage).filter((entry) => !isAssetRemoved(removedAssets, entry.fileName)),
+    [files, usage, removedAssets],
+  );
 
   return {
     entries,
@@ -92,7 +106,7 @@ export function useAssets(): {
 }
 
 export function useAssetActions() {
-  return useProjectStore(useShallow((state) => ({ deleteAsset: state.deleteAsset })));
+  return useProjectStore(useShallow((state) => ({ removeAssetFromLibrary: state.removeAssetFromLibrary })));
 }
 
 /**

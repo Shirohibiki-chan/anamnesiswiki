@@ -12,21 +12,25 @@
 // when you uploaded one and never came out, so a portrait you replaced six
 // times left five files nobody could see or reach. See docs/plan.md Phase 17.
 //
-// **The delete button only appears on a picture nothing points at.** That's the
-// user's own call, on the grounds that deleting one in use fails quietly — the
-// page keeps its reference and draws an empty box, with nothing to say why.
-// "Remove from every page", which turns a picture in use into one that isn't,
-// is the next step of this phase and is what makes that reachable.
+// **The bin takes a picture out of the library and touches no page.** Her
+// instruction, 2026-08-14, and it took two wrong attempts to hear properly:
+// first a bin that hid itself on anything in use (which read as broken, twice),
+// then one that deleted the file and warned that pages would be left with an
+// empty space. Neither is what a library is. The library is the list of
+// pictures she's looking at; removing one from the list changes the list.
 //
-// It also disappears entirely when the load couldn't read every page, because
-// "nothing is using this" is a claim about all of them and one unreadable file
-// makes it a guess. That isn't hypothetical: on 2026-08-12 the tab offered to
-// delete five pictures, three of which were a live page's portrait and cover —
-// two files on disk claimed the same page and only one of them could be kept,
-// so the other's pictures fell out of the count. The storage side of that is
-// fixed (see `setAsideSupersededCopies`), and this is the belt to its braces:
-// whatever the next way of losing a page turns out to be, it must not arrive
-// as a delete button.
+// Whether the file on disk survives is the store's business, not hers —
+// `removeAssetFromLibrary` keeps it when a page still needs the bytes and
+// deletes it when nothing does. Both look identical from here, which is the
+// point. LegendKeeper behaves the same way and its pages never break either.
+//
+// **`isUsageIncomplete` no longer guards anything destructive**, and that's a
+// change worth noticing rather than a loose end. It used to hide the bin when a
+// page failed to read, because "nothing is using this" is a claim about all of
+// them — the 2026-08-12 case where three of five offered deletions were a live
+// page's portrait and cover. Removal can no longer cost a page its picture, so
+// the flag is down to what it always described: the tile says "not sure yet"
+// instead of "not used anywhere".
 import { FolderPlus, ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
@@ -42,7 +46,6 @@ import {
   useFilteredAssets,
   useUploadPicture,
   type AssetEntry,
-  type AssetUse,
   type FolderFilter,
 } from "../../hooks/use-assets";
 import { AssetFolderStrip } from "./AssetFolderStrip";
@@ -52,7 +55,7 @@ import { useNodeImage } from "../../hooks/use-node-image";
 
 export function AssetsPanel() {
   const { entries, isLoading, isUsageIncomplete, refresh } = useAssets();
-  const { deleteAsset } = useAssetActions();
+  const { removeAssetFromLibrary } = useAssetActions();
   const { confirmDestructive } = useDialogs();
   const uploadPicture = useUploadPicture();
   const { folders, createAssetFolder, renameAssetFolder, deleteAssetFolder, setAssetFolder } = useAssetFolders();
@@ -85,29 +88,25 @@ export function AssetsPanel() {
   }
 
   /**
-   * Deleting a picture deletes the picture — including one that's in use.
+   * Take a picture out of the library.
    *
-   * **The bin used to appear only on a picture nothing pointed at**, which read
-   * as a broken button rather than as a rule; the user reported it as broken
-   * twice, on 2026-08-12 and 2026-08-13. Her decision on 2026-08-14 was that
-   * the bin should just delete, and the case it was protecting against — a
-   * picture on thirty pages that she wants gone — is not one anybody has.
+   * **It does not touch a single page**, and that's the whole design — her
+   * instruction on 2026-08-14, after two attempts that got it wrong in
+   * different directions. The library is the list of pictures she's looking at.
+   * Removing one from that list changes the list.
    *
-   * LegendKeeper looks like it does this safely and doesn't: its pages hold a
-   * web address and its library is a separate list, so deleting a library entry
-   * deletes a row and no page notices. Ours has no such indirection, so the
-   * honest version is to say what it's on and make it undoable — which the
-   * store already does, restoring the bytes it read before deleting.
+   * So there's nothing to warn about and the confirm doesn't try: no page
+   * names, no talk of empty spaces, no counting what's in use. The store
+   * decides on its own whether the file can go or has to stay for a page that
+   * needs it, and she sees the same thing either way — the picture leaves the
+   * grid, and undo brings it back.
    */
-  async function handleDelete(fileName: string, uses: AssetUse[]) {
-    const pages = [...new Set(uses.map((use) => use.nodeName))];
+  async function handleRemove(fileName: string) {
     const ok = await confirmDestructive(
-      pages.length === 0
-        ? "Delete this picture? Nothing is using it. You can undo this if it turns out something was."
-        : `Delete this picture? It's on ${describeUses(uses)} — ${pages.slice(0, 3).join(", ")}${pages.length > 3 ? ` and ${pages.length - 3} more` : ""} — and they'll be left with an empty space. You can undo this.`,
+      "Take this picture out of the library? Any page already using it keeps it. You can undo this.",
     );
     if (!ok) return;
-    await deleteAsset(fileName);
+    await removeAssetFromLibrary(fileName);
     refresh();
   }
 
@@ -231,7 +230,7 @@ export function AssetsPanel() {
               entry={entry}
               name={assetDisplayName(names, entry.fileName)}
               onRename={renameAsset}
-              onDelete={handleDelete}
+              onRemove={handleRemove}
               usageIsCertain={!isUsageIncomplete}
             />
           ))}
@@ -260,14 +259,14 @@ function AssetTile({
   entry,
   name,
   onRename,
-  onDelete,
+  onRemove,
   usageIsCertain,
 }: {
   entry: AssetEntry;
   /** "" for a picture that hasn't got one — never the UUID it's stored under. */
   name: string;
   onRename: (fileName: string, name: string) => void;
-  onDelete: (fileName: string, uses: AssetUse[]) => void;
+  onRemove: (fileName: string) => void;
   /** False when a page didn't load, which makes `isUnused` a guess. */
   usageIsCertain: boolean;
 }) {
@@ -346,9 +345,9 @@ function AssetTile({
         <button
           type="button"
           className="tree-assets-delete"
-          title="Delete this picture"
-          aria-label="Delete this picture"
-          onClick={() => void onDelete(entry.fileName, entry.uses)}
+          title="Take out of the library"
+          aria-label="Take this picture out of the library"
+          onClick={() => void onRemove(entry.fileName)}
         >
           <Trash2 size={13} />
         </button>

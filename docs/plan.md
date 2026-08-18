@@ -544,20 +544,15 @@ nothing has ever deleted one — and this phase is what makes it reachable.
 
 - **Every file in `assets/`** with a thumbnail, its name, its size, and where
   it's used: the pages that carry it, or "not used anywhere".
-- **Delete a picture, whether or not it's in use — settled 2026-08-14.** The bin
-  used to appear only on a picture nothing pointed at, and a missing button
-  reads as a broken one: the user reported it as broken twice. Her decision was
-  that the bin should just delete, and that the case the gate protected against
-  — a picture on thirty pages she wants gone — is not one anybody has. The
-  confirm names what it's on, and the delete is undoable because the store reads
-  the bytes before removing the file.
+- **Take a picture out of the library — settled 2026-08-14, after two wrong
+  builds.** The bin used to hide on anything in use, which read as a broken
+  button and was reported as broken twice. The second attempt deleted the file
+  and warned that pages would be left with an empty space. Both missed what she
+  meant: **the library is the list of pictures she's looking at, and removing
+  one from it must not touch a page.** The file is deleted only when nothing
+  needs it; otherwise the bytes stay and the name goes into `.removed.json`.
+  LegendKeeper behaves the same way, which is why its pages never break either.
 
-  **LegendKeeper is not the counter-example it looks like.** Deleting from its
-  library leaves every page rendering, but that's their indirection rather than
-  a safeguard: a page holds a web address and the library is a separate list, so
-  deleting the entry deletes a row nothing was reading through. Copying the
-  behaviour here would mean deleting the file and leaving broken boxes, which is
-  the one outcome LK never produces.
 - **Put a picture into the open page** by clicking it, or dragging it onto the
   page. It reuses the file that's already there rather than writing a second
   copy of the same bytes — which is the point, for one map that belongs on six
