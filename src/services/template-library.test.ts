@@ -12,6 +12,7 @@ import {
   parseTemplateLibrary,
   removeOverride,
   removeTemplate,
+  withTemplatesReordered,
 } from "./template-library";
 import { createTemplateLibrary, FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
@@ -173,6 +174,71 @@ describe("addTemplate / removeTemplate / listTemplates", () => {
     const library = libraryWith(["a", "b"]);
     const orphaned = { ...library, rootOrder: ["b"] };
     expect(listTemplates(orphaned).map((t) => t.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("withTemplatesReordered", () => {
+  function libraryWith(names: string[]) {
+    let library = createTemplateLibrary();
+    for (const name of names) {
+      const root = node({ id: name, name, parentId: null, templateKey: "character" });
+      library = addTemplate(library, [root], name);
+    }
+    return library;
+  }
+
+  it("offers them in the order given", () => {
+    const after = withTemplatesReordered(libraryWith(["a", "b", "c"]), ["c", "a", "b"]);
+    expect(listTemplates(after).map((t) => t.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("does not mutate the library it was given", () => {
+    const library = libraryWith(["a", "b"]);
+    withTemplatesReordered(library, ["b", "a"]);
+    expect(library.rootOrder).toEqual(["a", "b"]);
+  });
+
+  // The half that stops a drag from losing a template. The list the caller
+  // drew can be one behind the library — another window, a load, a template
+  // saved a moment ago — and anything it didn't mention has to keep existing.
+  it("keeps a template the caller did not mention, at the end", () => {
+    const after = withTemplatesReordered(libraryWith(["a", "b", "c"]), ["c", "a"]);
+    expect(after.rootOrder).toEqual(["c", "a", "b"]);
+  });
+
+  // The other half. A sub-page is not a template, and an id that isn't a root
+  // in this library would otherwise sit in rootOrder claiming to be one.
+  it("ignores an id that is not one of her templates", () => {
+    let library = createTemplateLibrary();
+    library = addTemplate(
+      library,
+      [
+        node({ id: "root", name: "Root", parentId: null, templateKey: "character" }),
+        node({ id: "child", name: "Child", parentId: "root", templateKey: "item" }),
+      ],
+      "root",
+    );
+    expect(withTemplatesReordered(library, ["child", "root", "ghost"]).rootOrder).toEqual(["root"]);
+  });
+
+  // An override is a root in this file, but it's what Character means in this
+  // world rather than a template of hers — listTemplates hides it, so the
+  // order must not name it either.
+  it("leaves an override out of the order", () => {
+    const library = addOverride(
+      libraryWith(["a"]),
+      "character",
+      buildOverrideNode("character", "override", "Character", []),
+    );
+    expect(withTemplatesReordered(library, ["override", "a"]).rootOrder).toEqual(["a"]);
+  });
+
+  // Completing a partial order is what makes the first drag on an old library
+  // write a whole one, instead of leaving half the list on the creation-time
+  // fallback where the next drag would shuffle it again.
+  it("writes a complete order over a partial one", () => {
+    const library = { ...libraryWith(["a", "b", "c"]), rootOrder: ["b"] };
+    expect(withTemplatesReordered(library, ["c", "a", "b"]).rootOrder).toEqual(["c", "a", "b"]);
   });
 });
 

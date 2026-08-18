@@ -157,6 +157,26 @@ export function removeTemplate(library: TemplateLibrary, rootId: string): Templa
   };
 }
 
+/**
+ * A library with its own templates offered in the order given.
+ *
+ * `orderedRootIds` is filtered against `listTemplates` and then topped up from
+ * it, so what comes out is always exactly the roots that exist, once each.
+ * Both halves matter and for different reasons. Filtering keeps an id that
+ * isn't a template of hers — a sub-page, or one of the built-in overrides,
+ * which are roots in this file too — from landing in `rootOrder` and appearing
+ * in the sidebar as a template she saved. Topping up covers the other
+ * direction: `rootOrder` is allowed to be incomplete and `listTemplates` falls
+ * back to creation time for anything missing from it, so a caller working from
+ * a list drawn a moment ago can't drop a template out of the order by not
+ * mentioning it.
+ */
+export function withTemplatesReordered(library: TemplateLibrary, orderedRootIds: string[]): TemplateLibrary {
+  const roots = listTemplates(library).map((node) => node.id);
+  const named = orderedRootIds.filter((id) => roots.includes(id));
+  return { ...library, rootOrder: [...named, ...roots.filter((id) => !named.includes(id))] };
+}
+
 /** A library with `clones` added as a new template, its root placed last. */
 export function addTemplate(library: TemplateLibrary, clones: Node[], rootId: string): TemplateLibrary {
   const nodes = { ...library.nodes };

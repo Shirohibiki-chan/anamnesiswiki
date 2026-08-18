@@ -42,6 +42,7 @@ export function useTemplateActions() {
       resetBuiltInTemplate: state.resetBuiltInTemplate,
       updateTemplateNode: state.updateTemplateNode,
       deleteTemplate: state.deleteTemplate,
+      reorderTemplates: state.reorderTemplates,
     })),
   );
 }

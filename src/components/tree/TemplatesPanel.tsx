@@ -21,8 +21,19 @@
 // `templates` record, never from `nodes`, and nothing here may put them in one.
 // See docs/handoff.md §Editor & templates for why that separation is the whole
 // safety argument for the feature.
-import { ChevronRight, RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DraggableAttributes,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ChevronRight, GripVertical, RotateCcw, X } from "lucide-react";
+import { useState, type CSSProperties } from "react";
 import { getTemplateIcon } from "../../constants/icons";
 import { TEMPLATE_KEYS } from "../../constants/schema";
 import { useCustomTemplateTree, useProjectActions } from "../../hooks/use-project";
@@ -34,7 +45,7 @@ import type { TemplateTreeItem } from "../../services/template-library";
 export function TemplatesPanel() {
   const templates = useCustomTemplateTree();
   const { deleteTemplate } = useProjectActions();
-  const { openTemplate, openBuiltInTemplate, resetBuiltInTemplate } = useTemplateActions();
+  const { openTemplate, openBuiltInTemplate, resetBuiltInTemplate, reorderTemplates } = useTemplateActions();
   const openTemplateId = useOpenTemplateId();
   const builtInStates = useBuiltInTemplateStates();
   const { confirmDestructive } = useDialogs();
@@ -51,6 +62,24 @@ export function TemplatesPanel() {
       if (!next.delete(id)) next.add(id);
       return next;
     });
+  }
+
+  // 4px before a drag starts, the same threshold the tab strip and the
+  // properties panel use — the grip is small, and a press that moves a pixel
+  // is a click.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = templates.findIndex((item) => item.node.id === active.id);
+    const newIndex = templates.findIndex((item) => item.node.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    // The whole order goes up, not the one that moved: `rootOrder` is allowed
+    // to be missing templates and fall back to creation time, so writing it
+    // whole is what turns a partial order into a complete one on the first
+    // drag. Same reasoning as the properties panel's copy of this.
+    reorderTemplates(arrayMove(templates, oldIndex, newIndex).map((item) => item.node.id));
   }
 
   // Asked before it happens. Undo covers it, but undo is only a comfort if you
@@ -101,21 +130,31 @@ export function TemplatesPanel() {
           and on the screen every new page opens with.
         </p>
       ) : (
-        <ul className="tree-templates-list">
-          {templates.map((item) => (
-            <TemplateRow
-              key={item.node.id}
-              item={item}
-              depth={0}
-              expanded={expanded}
-              onToggle={toggle}
-              onDelete={handleDelete}
-              onOpen={openTemplate}
-              openTemplateId={openTemplateId}
-              getLabel={getLabel}
-            />
-          ))}
-        </ul>
+        // Only hers are draggable. The built-in list above is the app's own
+        // order and the same in every world — reordering it would be a
+        // per-world setting for something that isn't per-world.
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={templates.map((item) => item.node.id)} strategy={verticalListSortingStrategy}>
+            <ul className="tree-templates-list">
+              {templates.map((item) => (
+                <SortableTemplateRow
+                  key={item.node.id}
+                  item={item}
+                  depth={0}
+                  expanded={expanded}
+                  onToggle={toggle}
+                  onDelete={handleDelete}
+                  onOpen={openTemplate}
+                  openTemplateId={openTemplateId}
+                  getLabel={getLabel}
+                  // A grip on the only template in the list is a control whose
+                  // one gesture has nowhere to put anything.
+                  canReorder={templates.length > 1}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
@@ -193,7 +232,45 @@ type RowProps = {
   onOpen: (id: string) => void;
   openTemplateId: string | null;
   getLabel: (key: string) => string;
+  /** Whether this row can be dragged — only a root, and only when there's
+   *  somewhere to drag it to. Undefined everywhere below the top level. */
+  canReorder?: boolean;
+  /** What dnd-kit needs on the row it's sorting, handed down rather than taken
+   *  here: `useSortable` is a hook, and only one row in the recursion is
+   *  sortable. See SortableTemplateRow. */
+  drag?: {
+    setNodeRef: (element: HTMLElement | null) => void;
+    attributes: DraggableAttributes;
+    listeners: Record<string, unknown> | undefined;
+    style: CSSProperties;
+  };
 };
+
+/**
+ * A root template, wired for dragging.
+ *
+ * A wrapper rather than a `useSortable` inside `TemplateRow`, because that
+ * component draws sub-pages too and hooks can't be called for some rows and
+ * not others. This is the one row in the recursion that sorts, so it's the one
+ * that calls the hook.
+ */
+function SortableTemplateRow(props: RowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.item.node.id,
+  });
+
+  return (
+    <TemplateRow
+      {...props}
+      drag={{
+        setNodeRef,
+        attributes,
+        listeners,
+        style: { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 },
+      }}
+    />
+  );
+}
 
 /**
  * One row, and its sub-pages beneath it when open.
@@ -204,14 +281,17 @@ type RowProps = {
  * sub-page on its own would leave the template describing a shape it no longer
  * has, so only a whole template can go.
  */
-function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTemplateId, getLabel }: RowProps) {
+function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTemplateId, getLabel, canReorder, drag }: RowProps) {
   const { node, children } = item;
   const Icon = getTemplateIcon(node.templateKey);
   const isExpanded = expanded.has(node.id);
   const isOpen = openTemplateId === node.id;
 
   return (
-    <li>
+    // The whole item moves, sub-pages included — an open template sliding
+    // apart from the pages saved inside it would read as those pages being
+    // dragged out of it.
+    <li ref={drag?.setNodeRef} style={drag?.style} {...drag?.attributes}>
       <div
         className={`tree-templates-row${isOpen ? " tree-templates-row-open" : ""}`}
         style={{ paddingLeft: `calc(var(--space-md) + ${depth} * var(--space-lg))` }}
@@ -240,6 +320,18 @@ function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTe
           <span className="tree-templates-name">{node.name}</span>
           <span className="tree-templates-kind">{getLabel(node.templateKey)}</span>
         </button>
+
+        {/* On the right, beside Delete, rather than at the head of the row:
+            the left of this panel is the twisty column, and both sections'
+            icons line up down it. Its own element carrying the drag listeners
+            rather than the whole row, for the reason PageTabs gives — the row
+            is three buttons, and a press that moved a little would stop being
+            a click on one of them. */}
+        {canReorder && drag && (
+          <span className="tree-templates-grip" title="Drag to reorder" {...drag.listeners}>
+            <GripVertical size={12} />
+          </span>
+        )}
 
         {depth === 0 && (
           <button
