@@ -20,6 +20,7 @@ import { alwaysDirectory } from "./template-registry";
 import {
   ASSET_FOLDERS_FILE,
   ASSET_NAMES_FILE,
+  ASSET_REMOVED_FILE,
   ASSET_SOURCES_FILE,
   ASSETS_DIR,
   BACKUPS_DIR,
@@ -1294,7 +1295,8 @@ export async function listAssetImages(rootPath: string): Promise<{ fileName: str
     // allowed to hold, and listing one would put a broken thumbnail in the grid
     // with a delete button on it — nothing points at it, so it would read as
     // unused. Anything added beside them has to be added here too.
-    if (entry.name === ASSET_FOLDERS_FILE || entry.name === ASSET_NAMES_FILE || entry.name === ASSET_SOURCES_FILE) continue;
+    if (entry.name === ASSET_FOLDERS_FILE || entry.name === ASSET_NAMES_FILE || entry.name === ASSET_SOURCES_FILE || entry.name === ASSET_REMOVED_FILE)
+      continue;
     try {
       const info = await stat(joinPath(assetsDir, entry.name));
       files.push({ fileName: entry.name, size: info.size });
@@ -1371,6 +1373,26 @@ export async function loadAssetSources(rootPath: string): Promise<unknown> {
 export async function saveAssetSources(rootPath: string, sources: unknown): Promise<void> {
   await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
   await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_SOURCES_FILE), JSON.stringify(sources, null, 2));
+}
+
+/**
+ * The fourth and smallest of the library's side files: pictures taken out of
+ * the library that a page still needs. Absent for nearly every project, since
+ * removing a picture nothing uses deletes the file instead of listing it.
+ */
+export async function loadRemovedAssets(rootPath: string): Promise<unknown> {
+  const path = joinPath(rootPath, ASSETS_DIR, ASSET_REMOVED_FILE);
+  if (!(await exists(path))) return null;
+  try {
+    return JSON.parse(await readTextFile(path));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveRemovedAssets(rootPath: string, removed: unknown): Promise<void> {
+  await mkdir(joinPath(rootPath, ASSETS_DIR), { recursive: true });
+  await writeTextFile(joinPath(rootPath, ASSETS_DIR, ASSET_REMOVED_FILE), JSON.stringify(removed, null, 2));
 }
 
 export async function deleteAssetImage(rootPath: string, fileName: string): Promise<void> {

@@ -2137,3 +2137,85 @@ The grid was not looked at with bins on every tile. The button is the same
 element in the same absolute position it already occupied on unused tiles, so
 there's no new layout, but whether a 20px button on every thumbnail reads as
 busy is a judgement only she can make from the running app.
+
+---
+
+## Removing a picture removes it from the library — 2026-08-14
+
+Third attempt at one button, and the two wrong ones are the useful part of this
+entry.
+
+### What she asked for, and what I built instead
+
+**Attempt one** hid the bin on any picture in use, on the reasoning that
+deleting one would leave pages with an empty box. She reported the trashcan as
+broken twice — a rule nobody can see isn't a rule.
+
+**Attempt two** put the bin on everything and made it delete the file, with a
+confirm naming the pages that would lose their picture. She rejected the premise
+outright: *deleting it should ONLY REMOVE IT FROM THE LIBRARY.*
+
+**The mistake in both was one word.** I read "library" as `assets/` — the folder
+on disk. She meant the list of pictures she is looking at. Those are different
+things, and everything else followed from getting them confused: if the library
+is the folder, removal must delete a file and therefore must reckon with pages;
+if the library is a view, removal changes the view and pages never enter into
+it.
+
+She had also handed me the answer a day earlier, by checking LegendKeeper:
+deleting from its library leaves every page rendering. I had used that to argue
+*against* this, on the grounds that LK only gets away with it because its pages
+hold a CDN address. That was the right observation and the wrong conclusion —
+the outcome is reproducible here, it just needs the file kept rather than the
+address.
+
+### What got built
+
+`removeAssetFromLibrary` takes one of two paths and she sees no difference:
+
+| picture | file on disk | listed in `.removed.json` | in the grid | pages |
+| --- | --- | --- | --- | --- |
+| nothing uses it | deleted | no | gone | unaffected |
+| a page uses it | kept | yes | gone | unaffected |
+
+The second path is why `.removed.json` exists — the fourth of the library's side
+files, and the only one that's usually absent. An entry lives there exactly as
+long as some page needs the bytes: when the last page lets go, `releaseAsset`
+deletes the file and the next sweep prunes the name.
+
+The confirm lost everything it used to say. No page names, no counting, no
+warning about empty spaces — there is nothing to warn about. It reads: *Take
+this picture out of the library? Any page already using it keeps it. You can
+undo this.*
+
+`isUsageIncomplete` stops guarding anything destructive as a result, and is back
+to what it always described: the tile says "not sure yet" rather than "not used
+anywhere".
+
+### The trap, caught before it shipped
+
+`useAssets` prunes the names, sources and removals against the directory
+listing, then hides removed pictures from `entries`. **Doing those in the other
+order silently breaks the feature**: a picture filtered out early looks like one
+that has left `assets/`, so its own removal entry gets pruned and it reappears
+in the grid on the next read. Written into `handoff.md`, because it isn't
+visible from either piece of code on its own.
+
+### Verification
+
+The two paths were run for real against the dev server rather than reasoned
+about — a throwaway probe wiring the actual `isAssetInUse`, `removeAsset`,
+`pruneRemovedAssets` and `buildAssetEntries`, deleted after.
+
+Removing a picture a page uses: file still on disk, name in the removed list,
+gone from the grid, page still pointing at it. Removing one nothing uses: file
+gone, grid empty, **no leftover entry** — the prune cleared it because the file
+was no longer there. That last one is the trap above, confirmed working in the
+right order.
+
+968 tests pass, 8 new on the service.
+
+### Not verified by eye
+
+The grid was not looked at after a removal. The change to it is a filter over a
+list that already rendered, so nothing new draws.

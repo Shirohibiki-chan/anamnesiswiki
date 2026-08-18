@@ -40,6 +40,13 @@ import {
   type AssetNames,
 } from "../services/asset-names";
 import {
+  createRemovedAssets,
+  parseRemovedAssets,
+  pruneRemovedAssets,
+  removeAsset,
+  type RemovedAssets,
+} from "../services/asset-removed";
+import {
   withTabAdded,
   withTabContent,
   withTabDeleted,
@@ -298,14 +305,20 @@ export type ProjectStoreState = {
   /** Every file in `assets/`, with its size. Read on demand — see useAssets. */
   listAssets: () => Promise<{ fileName: string; size: number }[]>;
   /**
-   * Deletes one picture file. Phase 17's Assets tab, which only offers this for
-   * a file nothing points at.
+   * Takes one picture out of the library — a change to the library, never to a
+   * page. See the implementation for the two paths and why she sees neither.
    *
    * Undoable, and it has to be: this sits under a grid of thumbnails where the
-   * wrong one is a mis-click away. The bytes are read before the delete and
-   * held by the undo entry, the same way deleting a page holds its pictures.
+   * wrong one is a mis-click away.
    */
-  deleteAsset: (fileName: string) => Promise<void>;
+  removeAssetFromLibrary: (fileName: string) => Promise<void>;
+  /**
+   * Pictures taken out of the library that a page still needs, so the file had
+   * to stay. Almost always empty — see constants/paths.ts ASSET_REMOVED_FILE.
+   * Held here rather than read on demand for the same reason the folders and
+   * names are: the grid has to redraw the moment one is removed.
+   */
+  removedAssets: RemovedAssets;
   /**
    * The picture library's folders. A folder is a label on a file, never a
    * place it lives — see services/asset-folders.ts, and constants/paths.ts for
@@ -762,6 +775,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     lastSavedAt: null,
     assetFolders: createAssetFolders(),
     assetNames: createAssetNames(),
+    removedAssets: createRemovedAssets(),
     assetSources: createAssetSources(),
     skippedFiles: [],
     loadWasIncomplete: false,
@@ -810,6 +824,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // file here at all, which reads as "nothing is named yet" — the state
       // every picture starts in regardless.
       const assetNames = parseAssetNames(await fsService.loadAssetNames(rootPath));
+      // And the fourth: pictures she took out of the library that a page still
+      // needs. Absent for almost every project, which reads as "nothing is
+      // hidden" — the state everything starts in.
+      const removedAssets = parseRemovedAssets(await fsService.loadRemovedAssets(rootPath));
       // And the third: where the pictures came from. Absent for every project
       // that has never imported from LegendKeeper, which is most of them.
       const assetSources = parseAssetSources(await fsService.loadAssetSources(rootPath));
@@ -822,6 +840,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         templates,
         assetFolders,
         assetNames,
+        removedAssets,
         assetSources,
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
@@ -878,6 +897,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         // whatever the last project reported has nothing to do with this one.
         assetFolders: createAssetFolders(),
         assetNames: createAssetNames(),
+        removedAssets: createRemovedAssets(),
         assetSources: createAssetSources(),
         skippedFiles: [],
         loadWasIncomplete: false,
@@ -1000,6 +1020,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         lastSavedAt: null,
         assetFolders: createAssetFolders(),
         assetNames: createAssetNames(),
+        removedAssets: createRemovedAssets(),
         assetSources: createAssetSources(),
         skippedFiles: [],
         loadWasIncomplete: false,
@@ -1428,6 +1449,17 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         set({ assetSources: sourcesPruned });
         if (rootPath) track(() => fsService.saveAssetSources(rootPath, sourcesPruned));
       }
+
+      // And the removed list, on the same sweep. This is where a removal ends
+      // its life: the entry only exists while some page still needs the file,
+      // so once the last page lets go and `releaseAsset` deletes it, the name
+      // here has nothing left to hide and goes.
+      const removedBefore = get().removedAssets;
+      const removedPruned = pruneRemovedAssets(removedBefore, stillHere);
+      if (removedPruned !== removedBefore) {
+        set({ removedAssets: removedPruned });
+        if (rootPath) track(() => fsService.saveRemovedAssets(rootPath, removedPruned));
+      }
     },
 
     createAssetFolder(name) {
@@ -1471,9 +1503,48 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (pruned !== before) applyAssetFolders(pruned);
     },
 
-    async deleteAsset(fileName) {
-      const { rootPath } = get();
+    /**
+     * Take a picture out of the library.
+     *
+     * **This is a change to the library, not to any page.** Her instruction,
+     * 2026-08-14, after two rounds of me building the wrong thing: the library
+     * is the list of pictures she's looking at, and removing one from it must
+     * leave every page that shows it showing it. LegendKeeper behaves the same
+     * way, and for the same reason its pages never break — deleting a library
+     * entry there deletes a row nothing was reading through.
+     *
+     * So there are two paths and she sees no difference between them:
+     *
+     * - **Nothing is using it.** The file goes. Keeping bytes nothing points at
+     *   would be hoarding, and there's no page to protect.
+     * - **Something is using it.** The file stays, because a page needs those
+     *   bytes, and the name goes into `.removed.json` so the grid stops showing
+     *   it. `releaseAsset` deletes it later, when the last page lets go.
+     *
+     * Undo puts it back either way.
+     */
+    async removeAssetFromLibrary(fileName) {
+      const { rootPath, nodes, templates } = get();
       if (!rootPath) return;
+
+      const inUse = isAssetInUse(nodes, templates, fileName);
+      const before = get().removedAssets;
+      const after = removeAsset(before, fileName);
+
+      const applyRemoved = (next: RemovedAssets): void => {
+        set({ removedAssets: next });
+        track(() => fsService.saveRemovedAssets(rootPath, next));
+      };
+
+      if (inUse) {
+        applyRemoved(after);
+        record(
+          `removing the picture ${fileName} from the library`,
+          () => applyRemoved(before),
+          () => applyRemoved(removeAsset(get().removedAssets, fileName)),
+        );
+        return;
+      }
 
       // Read before the delete, so undo has something to put back. A file that
       // won't read is still deleted — refusing would leave her unable to clear
@@ -1493,7 +1564,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
       const restored = bytes;
       record(
-        `deleting the picture ${fileName}`,
+        `removing the picture ${fileName} from the library`,
         () => track(() => fsService.saveAssetImage(rootPath, fileName, restored)),
         () => track(() => fsService.deleteAssetImage(rootPath, fileName)),
       );

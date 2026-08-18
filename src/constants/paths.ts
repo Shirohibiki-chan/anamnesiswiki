@@ -113,6 +113,32 @@ export const ASSET_NAMES_FILE = ".names.json";
 export const ASSET_SOURCES_FILE = ".sources.json";
 
 /**
+ * Pictures taken out of the library that are still on a page.
+ *
+ * **The library is a view of the folder, not the folder itself**, and that
+ * distinction is the whole reason this file exists. Removing a picture from
+ * the library is a change to the library: the pages showing it carry on
+ * showing it, exactly as they would in LegendKeeper, where deleting a library
+ * entry deletes a row nothing was reading through.
+ *
+ * So a removed picture takes one of two paths. If nothing is using it, the file
+ * itself goes and there's nothing to remember. If something *is* using it, the
+ * file has to stay — a page needs those bytes — and its name is written here so
+ * the grid stops showing it. Only the second case ever appears in this file,
+ * which is why it's usually absent.
+ *
+ * A name here whose file is gone is dropped on the next sweep, the same as the
+ * names and the sources: once the last page stops using the picture,
+ * `releaseAsset` deletes the file and this entry has nothing left to hide.
+ *
+ * Losing this file un-hides a few pictures in the Assets tab and costs nothing
+ * else — every page still shows what it showed.
+ *
+ * Dotted, so `listAssetImages` skips it alongside the other three.
+ */
+export const ASSET_REMOVED_FILE = ".removed.json";
+
+/**
  * The world's own templates — "Convert to template" writes here. One file
  * holding a forest of pages, rather than a directory of them like the tree
  * itself: templates are scaffolding rather than writing, there are a dozen at
