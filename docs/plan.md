@@ -284,16 +284,6 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 ## Queued Adjustments
 
-- **The delete button no longer matches the button beside it.** The primary
-  button became a deep fill lit from the top with white text (2026-08-18);
-  `.ui-btn-danger` is still a flat red with `--color-bg` text, which is the
-  shape the primary one just stopped being. They sit next to each other in
-  every confirm dialog. **Not changed on the spot on purpose** — the brief was
-  about the main button, and giving the destructive one the same gloss is a
-  question about how loud a delete button should be, which is hers. Two ways
-  it could go: the same treatment mixed from `--color-destructive`, or leave
-  danger deliberately flat so it reads as a different kind of thing.
-
 - **The colour dot on every tree row is in the wrong place, and the folder
   colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
   a screenshot; she said plainly she'd deal with the overhaul later, so this is
