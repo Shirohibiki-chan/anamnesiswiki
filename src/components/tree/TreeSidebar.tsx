@@ -57,7 +57,7 @@ export function TreeSidebar() {
           <TreePanel />
         </>
       )}
-      {tab === "templates" && <TemplatesPanel />}
+      {tab === "templates" && <TemplatesPanel onPageCreated={() => selectTab("project")} />}
       {/* Remounted every time the tab is opened, which is deliberate: it reads
           `assets/` off disk on mount, and coming back to it after uploading a
           picture should show the picture. */}

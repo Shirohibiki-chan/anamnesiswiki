@@ -30,6 +30,45 @@ export function pushEntry(stack: readonly HistoryEntry[], entry: HistoryEntry, l
   return next.length > limit ? next.slice(next.length - limit) : next;
 }
 
+/**
+ * Everything recorded since `depth` folded into one entry under a new label.
+ *
+ * For a click that reaches the user as one thing but is built out of two that
+ * already record for themselves — making a page and pouring a template into
+ * it. Composing the two is what keeps the picture copying and the disk writes
+ * in one place with one set of tests; folding their entries afterwards is what
+ * stops undo taking two presses to reverse one press.
+ *
+ * **Undone backwards, redone forwards.** The last thing done is the first
+ * thing undone, or the reversal runs against a tree the other half hasn't put
+ * back yet — a page's sub-pages have to go before the page does.
+ *
+ * `depth` is the stack's length read before the work started. One entry gets
+ * folded too — it's still relabelled, so undo reads the same whether the click
+ * happened to record once or twice; whether the built-in path or hers took an
+ * extra step is not something the user should be able to feel. Nothing
+ * recorded means nothing to do, which is also the honest answer when
+ * `pushEntry`'s limit trimmed the stack in between and `depth` no longer
+ * points where it did.
+ */
+export function collapseSince(stack: readonly HistoryEntry[], depth: number, label: string): HistoryEntry[] {
+  if (depth < 0 || stack.length - depth < 1) return [...stack];
+  const folded = stack.slice(depth);
+
+  return [
+    ...stack.slice(0, depth),
+    {
+      label,
+      undo: async () => {
+        for (const entry of [...folded].reverse()) await entry.undo();
+      },
+      redo: async () => {
+        for (const entry of folded) await entry.redo();
+      },
+    },
+  ];
+}
+
 /** "3 pages" / "1 page" — used to build labels, and easy to get wrong inline. */
 export function countLabel(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;

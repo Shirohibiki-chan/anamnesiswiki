@@ -11,6 +11,8 @@
 // every row on every keystroke typed into the editor.
 import { useCallback } from "react";
 import { BLANK_TEMPLATE_KEY, UNTITLED_PAGE_NAME } from "../constants/schema";
+import { getTemplate } from "../services/template-registry";
+import { useHistoryStore } from "../state/history-store";
 import { useProjectStore } from "../state/project-store";
 
 /**
@@ -58,4 +60,59 @@ export function useCreatePage(): () => void {
     const selected = project.selectedId ? nodes[project.selectedId] : undefined;
     createPageIn(selected?.parentId ?? null);
   }, [createPageIn]);
+}
+
+/** What a page is being made from: one of the built-in kinds, or one of this
+ *  world's own templates. */
+export type NewPageTemplate = { builtInKey: string } | { templateRootId: string };
+
+/**
+ * Adds a page made from a template and opens it, ready to be named.
+ *
+ * **At the top level, always.** Every other route to a new page has something
+ * on screen that means "here" — the tree row whose "+" was pressed, the page
+ * the keyboard shortcut was pressed on. This one is pressed in the Templates
+ * tab, where the tree isn't drawn and nothing on screen is a place, so the one
+ * answer that can't surprise anyone is the top of the tree. The page opens and
+ * asks for its name straight away, so where it landed is visible rather than
+ * something to go and find.
+ *
+ * **Blank first, then the template poured in**, rather than a page built from
+ * the template up front. Applying is where this world's own version of a
+ * built-in is preferred over the shipped one, where a template's pictures get
+ * their own copies, and where the pages saved inside it arrive — a second path
+ * to all of that is the one that drifts out of step. It's also exactly the two
+ * steps the new-page screen takes, so this is a shortcut through a road that's
+ * already driven daily rather than a new one.
+ */
+export function useCreatePageFromTemplate(): (template: NewPageTemplate) => Promise<string | null> {
+  return useCallback(async (template: NewPageTemplate) => {
+    const { project, templates, addNode, applyTemplate, applyCustomTemplate, selectNode, requestRename } =
+      useProjectStore.getState();
+    if (!project) return null;
+
+    const label =
+      "builtInKey" in template
+        ? (getTemplate(template.builtInKey)?.label ?? "")
+        : (templates.nodes[template.templateRootId]?.name ?? "");
+    if (!label) return null;
+
+    // Read before either half runs, so what gets folded below is exactly what
+    // this made. Both halves record for themselves, which is right when
+    // they're used on their own and two presses of undo when they're used
+    // together — see history-service's collapseSince.
+    const depth = useHistoryStore.getState().past.length;
+
+    const node = addNode({ parentId: null, templateKey: BLANK_TEMPLATE_KEY, name: UNTITLED_PAGE_NAME });
+    if ("builtInKey" in template) await applyTemplate(node.id, template.builtInKey);
+    else await applyCustomTemplate(node.id, template.templateRootId);
+    useHistoryStore.getState().collapse(depth, `making a page from the ${label} template`);
+
+    // Same order and the same reason as useCreatePageIn: the rename is asked
+    // for before the selection that opens the page, because the title only
+    // asks whether it's being named once, at mount.
+    requestRename(node.id);
+    selectNode(node.id);
+    return node.id;
+  }, []);
 }

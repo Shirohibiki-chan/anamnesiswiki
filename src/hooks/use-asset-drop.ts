@@ -3,7 +3,7 @@
 // The other half of the sidebar's drag — see `AssetsPanel.tsx`. It reuses the
 // file that's already in `assets/` rather than writing a second copy of the
 // same bytes, which is the whole point of the library: one map on six pages is
-// one file. See docs/plan.md Phase 17.
+// one file. See docs/shipped.md Phase 17.
 //
 // **Native listeners on the capture phase, not React handlers**, for the same
 // reason the lightbox's double-click is (see use-lightbox.ts): ProseMirror runs
