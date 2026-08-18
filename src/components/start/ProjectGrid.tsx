@@ -48,7 +48,7 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
   return (
     <section className="start-all">
       <p className="start-label">
-        <span className="start-title">All projects</span>
+        <span className="start-title">All Projects</span>
         {!isScanning && <span className="start-count">{projects.length}</span>}
         <span className="start-label-right">
           <span className="start-views" role="group" aria-label="How to show projects">
