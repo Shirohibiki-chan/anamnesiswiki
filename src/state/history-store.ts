@@ -2,7 +2,7 @@
 // filesystem — project-store hands it closures and it runs them in order.
 // Never imported directly by components; use hooks/use-history.ts.
 import { create } from "zustand";
-import { pushEntry, type HistoryEntry } from "../services/history-service";
+import { collapseSince, pushEntry, type HistoryEntry } from "../services/history-service";
 
 export type HistoryStoreState = {
   past: HistoryEntry[];
@@ -18,6 +18,13 @@ export type HistoryStoreState = {
   /** What the last undo or redo did, for the status line. Cleared on the next one. */
   lastAction: { message: string; at: number } | null;
   record: (entry: HistoryEntry) => void;
+  /**
+   * Folds everything recorded since `depth` into one entry — for a single
+   * click built out of two actions that each record for themselves. `depth` is
+   * `past.length` read before the work started. See history-service's
+   * collapseSince for what the folded entry does.
+   */
+  collapse: (depth: number, label: string) => void;
   undo: () => Promise<void>;
   redo: () => Promise<void>;
   /** On project open and close — a stack of closures over the old project is worse than none. */
@@ -70,6 +77,14 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => {
       // mean offering to redo something that no longer fits the tree it was
       // recorded against.
       set({ past: pushEntry(get().past, entry), future: [] });
+    },
+
+    collapse(depth, label) {
+      // Same guard as `record`, and for the same reason: nothing that happens
+      // underneath an undo belongs on the stack, including a rearrangement of
+      // the stack itself.
+      if (get().isReplaying) return;
+      set({ past: collapseSince(get().past, depth, label) });
     },
 
     undo: () => replay("past"),

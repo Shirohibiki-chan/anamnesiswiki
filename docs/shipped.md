@@ -2219,3 +2219,272 @@ right order.
 
 The grid was not looked at after a removal. The change to it is a filter over a
 list that already rendered, so nothing new draws.
+
+---
+
+# Phase 17 — Templates & Assets Tabs — 2026-08-12 to 2026-08-18
+
+**Kept whole from `docs/plan.md` rather than summarised.** Twenty-one PRs over
+seven days, and most of what the section holds is *why* — three shapes of folder
+control that were built and replaced, two wrong answers to "remove this
+picture", a grid that shipped as a list and was rejected on sight. Boiling that
+down to what shipped would throw away the part that stops it being rebuilt the
+same way. What follows is the phase as it was planned and amended, with the
+decisions the amendments came from.
+
+Anything in here that still *governs* the code — the four places a picture can
+be in use, why a library folder is a label and not a place, why templates stay
+out of `nodes` — is in `docs/handoff.md` too. This is the record; that is the
+warning.
+
+The two greyed-out tabs in `TreeSidebar.tsx`. Both are views over things the
+project already has and can't currently see: the templates saved by "Convert to
+template", and the picture files in `assets/`.
+
+**Scoped 2026-08-12.** Three questions were put to the user and her answers are
+baked in below rather than left open.
+
+## The tab strip becomes real
+
+`TreeSidebar.tsx` has carried three buttons with two of them `disabled` since
+Phase 3. The strip starts switching what the sidebar shows: Project (the tree as
+it is now), Templates, Assets. The tree's own header and search belong to the
+Project view and don't follow the user into the other two.
+
+## Templates tab
+
+The world's own templates — `.templates.json`, kept in the store's `templates`
+record, never in `nodes`. Rendered as a list in `rootOrder`, each with its kind's
+icon; a template saved with its sub-pages shows them nested underneath.
+
+**Two sections: the built-in templates first, then hers** — her instruction,
+2026-08-12, and the same order the new-page screen already uses.
+
+**The built-in templates are editable too**, decided by the user on 2026-08-12
+on the same LK-parity reasoning that settled her own. A built-in is seed data in
+`template-registry.ts` and identical in every world, so an edit is a per-project
+*override*: `TemplateLibrary.overrides` maps a template key to the id of a node
+in the same file, made from the registry's seed the first time she opens one.
+`applyTemplate` prefers it, and removing it is what "put it back to the
+original" means — the registry is never written to.
+
+**What an override does not carry is the property schema.** Editing a template
+means its title and its tabs, for a built-in exactly as for one of hers, because
+that's all `TemplateView` edits. Overriding `getPropertySchema` would be a
+different feature with a different shape: it's read by `lk-export`, `lk-import`
+and the property index, none of which can see the store, and — unlike tabs —
+changing it would alter what pages *already made* display, since the panel
+derives its fields from the key rather than from a copy on the node. Not scoped;
+ask before starting it.
+
+- **Open one and edit it.** Clicking a template opens it in the main area as a
+  page — its title, tabs, properties and pictures — and edits save back to the
+  library.
+- **Reorder and delete.** Delete already exists (`deleteTemplate`, with undo);
+  reordering writes `rootOrder`, which is already the field deciding the offer
+  order on the new-page screen. Only her own reorder — the built-in list is the
+  app's, identical in every world, and a per-world order for it would be a
+  setting for something that isn't per-world.
+- **Start a new page from one**, without going through the new-page screen.
+  **At the top level**, and the sidebar returns to the Project tab so the page
+  is visible where it landed: this is the one route to a new page with nothing
+  on screen that means "here", since the tree isn't drawn while the Templates
+  tab is. Blank first and then the template applied, exactly as the new-page
+  screen does it — applying is where a built-in's per-world override is
+  preferred, where a template's pictures get their own copies and where its
+  saved sub-pages arrive, and a second path to that is the one that drifts.
+
+**Templates are editable because LegendKeeper's are, and its absence would read
+as a missing feature — the user, 2026-08-12, and that settles it.** Don't
+re-open it.
+
+This supersedes the "no second editing surface to build or maintain" half of the
+2026-07-31 decision. That phrase meant a bespoke template-editing *screen* — a
+settings form with its own fields, standing alongside the page editor and
+needing maintenance beside it. **That's still not what gets built**, and the
+rest of that decision is untouched: templates are still *designed* by building a
+real page and saving it, which is why there's no "new template" button anywhere.
+What arrives is the page editor pointed at a different record, which is why this
+costs a fraction of what the original phrasing was guarding against.
+
+**Renaming a template needs no affordance of its own** — it's the page title,
+edited the way every other page title is. The earlier draft of this entry listed
+rename as separate work; opening a template as a page is what makes it free, and
+a second rename control in the sidebar would be a second way to do one thing.
+
+**The one thing not to do here is put templates into `nodes` to make that
+easier.** Their separation is the whole safety argument for the feature —
+search, the property index, LK export and the Phase 1.5 publisher all walk every
+page they can see, and any one that forgot to filter would put scaffolding into
+her published world (`docs/handoff.md` §Editor & templates). The editor has to
+take its node from either record instead. `project.selectedId` is a project node
+id and must stay one, so which template is open is its own piece of state.
+
+**Editing a template must not touch pages already made from it.** Applying a
+template deep-copies (`applyCustomTemplate`), so this is already true of the
+data; it needs saying in the UI, because "template" reads like a live link and
+it isn't one.
+
+## Assets tab
+
+The image organiser over `assets/`. Nothing in the app can currently *list* that
+directory — `filesystem-service.ts` saves, reads and deletes one file at a time —
+so this starts with a listing and an honest answer to "is this picture in use".
+
+**A picture can be in use in four places, and a usage index that misses one is
+worse than none**, because the whole tab is built on trusting it:
+
+1. `Node.image` — the sidebar portrait.
+2. `Node.banner` — the cover.
+3. `anamnesis-asset:<filename>` inside any block of any tab of any page, hidden
+   tabs included.
+4. All three of the above again, in the template library.
+
+That fourth one is not optional. `saveAsTemplate` copies a page's `image` and
+`banner` files but not the pictures sitting *inside* its tabs, so a template and
+the page it came from can share an in-page picture file. Harmless until now —
+nothing has ever deleted one — and this phase is what makes it reachable.
+
+- **Every file in `assets/`** with a thumbnail, its name, its size, and where
+  it's used: the pages that carry it, or "not used anywhere".
+- **Take a picture out of the library — settled 2026-08-14, after two wrong
+  builds.** The bin used to hide on anything in use, which read as a broken
+  button and was reported as broken twice. The second attempt deleted the file
+  and warned that pages would be left with an empty space. Both missed what she
+  meant: **the library is the list of pictures she's looking at, and removing
+  one from it must not touch a page.** The file is deleted only when nothing
+  needs it; otherwise the bytes stay and the name goes into `.removed.json`.
+  LegendKeeper behaves the same way, which is why its pages never break either.
+
+- **Put a picture into the open page** by clicking it, or dragging it onto the
+  page. It reuses the file that's already there rather than writing a second
+  copy of the same bytes — which is the point, for one map that belongs on six
+  pages.
+
+**Deleting a file is undoable, and the machinery for it exists.** `CapturedAsset`
+already holds the bytes of a deleted page's pictures so undo can put them back;
+an asset deleted from this tab is the same problem and takes the same answer. A
+delete that can only be apologised for is not one to ship next to a grid of
+thumbnails where the wrong one is a mis-click away.
+
+## Two things to know before starting
+
+- **Every write still goes through `track()` and the write queue.** Deleting a
+  file and saving the pages that referenced it are two disk operations that must
+  land in that order.
+
+## Sequencing
+
+Roughly one PR each. **Shipped 2026-08-12:** the tab strip and the Templates
+list (#143), template editing with rename (#144), the built-in templates listed
+(#146) and made editable per world (#147), the Assets listing with its usage
+index and delete-with-undo (#148), that listing rebuilt as a grid (#149), the
+picture library (#150), and the library reaching pictures inside a page plus
+clickable thumbnails (#151).
+
+**Also shipped 2026-08-12:** the duplicate-node-file repair that was making
+portraits and covers look unused (#152), the Assets tab's own upload button and
+drag-onto-a-page (#153), and folders in the picture library (#154).
+
+**Also shipped 2026-08-14:** pictures in a page's writing surviving an LK
+import (#174), the same pictures going back out again (#175), carrying local
+pictures inside an export (#176), and the delete gate removed from the Assets
+grid (#177).
+
+**Also shipped 2026-08-18:** removing a picture from the library without
+touching a page (#179), the folder chips rebuilt as squat tiles (#180), those
+tiles folded down to one line (#181), that line turned into a dropdown that
+holds fifty folders as easily as four (#182), with a filter box in it (#183),
+drag-to-reorder on her own templates (#184), and starting a new page from a
+template (#185).
+
+**Phase 17 is complete.**
+Remove-from-every-page was **dropped** 2026-08-14 — see the Assets tab section
+above.
+
+**Dragging a tile onto a page is the second route in, and it carries its own
+MIME type (#153).** `ASSET_DRAG_TYPE`, not `text/plain`: the editor is already a
+drop target for text and for real files, and both mean something there. A
+filename read out of `text/plain` would make every dragged word of prose look
+like a picture, and one written *into* it would have a drop anywhere else in the
+app paste a UUID. The drop listener is native and on the capture phase for the
+same reason the lightbox's double-click is — ProseMirror has real drop behaviour
+and would otherwise take the event first.
+
+**Putting a picture into a page by *clicking* is the image block's own Library
+tab (#151), not a click in the Assets tab.** The plan originally said clicking a thumbnail
+would insert it into the open page. That was reconsidered when the tiles
+actually got behaviour: they're 77px squares packed six to a screen, and the
+gesture you make to see what one *is* should not be the one that edits your
+writing. Clicking a tile opens it full size instead. The block's panel is where
+"put a picture here" is already unambiguous, because you've said where. Dragging
+a tile onto a page is still open, and is the shape worth building if a
+second route is ever wanted.
+
+**The library is why the Assets tab is worth having, and the user is the one
+who said so** (2026-08-12, with a screenshot of LK's asset picker). The tab as
+first built could only ever *report*: uploads all happened at the spot a
+picture was wanted, so nothing arrived unused and a picture wanted twice was
+uploaded twice. #150 makes the library the thing you choose from — portrait and
+cover so far — with "add from computer" inside it, so uploading is one of the
+ways of answering rather than a separate path.
+
+**A library folder is a label on a file, never a place it lives (#154), and
+that is not a shortcut.** The pictures stay flat in `assets/` and a reference
+stays `anamnesis-asset:<filename>`, so filing one touches only
+`assets/.folders.json`. Real subdirectories would put the folder name inside
+every reference to the picture, and moving it between folders would mean
+rewriting every page that shows it — where a rewrite that stops halfway is a
+broken picture, across pages she wasn't even looking at. The filename is the
+identity; a folder is a view over it. Two consequences worth keeping: deleting a
+folder can never delete a picture (they return to Unsorted), and a label
+pointing at a folder that's gone reads as unsorted rather than as an error.
+
+The folder file lives *inside* `assets/` rather than at the project root beside
+`.templates.json`, because a `.json` at the root is read as a page unless
+`walkEntries` is told otherwise — and that skip list is one more thing to get
+right in the one function that must never lose a file. The walk skips `assets/`
+whole, so the question doesn't arise.
+
+**Chips that wrap, not a folder column.** LK puts folders down the side of a
+window many times wider than this sidebar, which goes to 180px; a column there
+would leave the pictures one per row, which is the mistake #149 already
+corrected once.
+
+**Unsplash and Pinterest, which LK's picker offers beside My Files, are out —
+her call, same day.** They'd each be a live connection to someone else's
+server, which CLAUDE.md's Policy Boundary makes a decision to raise rather than
+a judgement call; it was raised and declined. Don't reopen it by treating a
+search box as a small feature.
+
+**What #150 changed underneath:** an asset file no longer has one owner. See
+`docs/handoff.md` — every delete asks `isAssetInUse` first, and the copies that
+existed only to work around single-ownership (`setBannerFromImage`) are gone.
+
+**The Assets listing is a grid of thumbnails, with a counted number of columns
+rather than `auto-fill`.** It shipped as a list of rows in #148 and the user
+rejected that on sight; #149 is the grid the plan asked for in the first place.
+The measurement that had argued for rows was real but the conclusion drawn from
+it was wrong: `auto-fill` was the fault, not the grid. It pins tiles to their
+minimum and spends every extra pixel on more columns, so the panel's 180px floor
+gave one tile per row and 420px gave five clipped ones. Counting columns — two,
+three past 302px of panel — lets the tile grow with the panel instead: 77px,
+117px, 129px at the three widths in `constants/layout.ts`. Re-measured
+2026-08-12. Don't reach for `auto-fill` here again.
+
+**The usage index is only as complete as the load, and #152 is what made that
+concrete.** Two files on disk claimed the same page id, the graph is keyed by
+id, so one of them was dropped on load — and its portrait and cover fell out of
+the count, putting a delete button on two pictures a live page was displaying.
+The storage side is fixed at both ends (see `docs/handoff.md` §Storage), but the
+standing rule from it is in the tab: **the delete buttons switch off entirely
+when the load couldn't read every page.** "Nothing is using this" is a claim
+about all of them, and any future way of losing one must not surface as a
+delete. Don't make that conditional on the user having dismissed the warning —
+`loadWasIncomplete` exists separately from `skippedFiles` for exactly that
+reason.
+
+**The tab's delete button is always visible on an unused picture, not revealed
+on hover.** Deleting one reflows the grid under a stationary cursor and the
+browser doesn't re-run `:hover` until the pointer moves, so the control
+disappeared from tiles it was still over. Reported 2026-08-12.

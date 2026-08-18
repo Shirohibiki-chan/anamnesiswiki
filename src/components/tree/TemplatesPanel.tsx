@@ -11,7 +11,7 @@
 // services/template-registry.ts and the same in every world, so editing one
 // can only mean editing *this world's* version of it — clicking the row makes
 // that version the first time and opens it, and "Put back" throws it away
-// again. See docs/plan.md Phase 17.
+// again. See docs/shipped.md Phase 17.
 //
 // The two sections are in the same order as the new-page screen (built-in
 // first, hers under their own heading) so the answer to "which templates do I
@@ -32,17 +32,19 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronRight, GripVertical, RotateCcw, X } from "lucide-react";
+import { ChevronRight, FilePlus, GripVertical, RotateCcw, X } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { getTemplateIcon } from "../../constants/icons";
 import { TEMPLATE_KEYS } from "../../constants/schema";
 import { useCustomTemplateTree, useProjectActions } from "../../hooks/use-project";
 import { useBuiltInTemplateStates, useOpenTemplateId, useTemplateActions } from "../../hooks/use-template-editing";
+import { useCreatePageFromTemplate } from "../../hooks/use-new-page";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
+import type { NewPageTemplate } from "../../hooks/use-new-page";
 import type { TemplateTreeItem } from "../../services/template-library";
 
-export function TemplatesPanel() {
+export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void }) {
   const templates = useCustomTemplateTree();
   const { deleteTemplate } = useProjectActions();
   const { openTemplate, openBuiltInTemplate, resetBuiltInTemplate, reorderTemplates } = useTemplateActions();
@@ -50,6 +52,7 @@ export function TemplatesPanel() {
   const builtInStates = useBuiltInTemplateStates();
   const { confirmDestructive } = useDialogs();
   const { getLabel } = useTemplates();
+  const createPageFromTemplate = useCreatePageFromTemplate();
 
   // Which templates are showing their sub-pages. Collapsed to start: the list
   // is a list of templates, and a template that happens to carry four pages
@@ -80,6 +83,20 @@ export function TemplatesPanel() {
     // whole is what turns a partial order into a complete one on the first
     // drag. Same reasoning as the properties panel's copy of this.
     reorderTemplates(arrayMove(templates, oldIndex, newIndex).map((item) => item.node.id));
+  }
+
+  /**
+   * Makes the page, then leaves this tab for the one the page is in.
+   *
+   * Staying would mean typing a title into the centre panel with a list of
+   * templates beside it, and no sight of where in the tree the page landed —
+   * which is the one thing worth seeing about a page that was just made at the
+   * top level. Leaving also closes whatever template was open, which is
+   * `selectTab`'s own rule and the right one here: the centre is showing the
+   * new page now.
+   */
+  async function handleCreate(template: NewPageTemplate) {
+    if (await createPageFromTemplate(template)) onPageCreated();
   }
 
   // Asked before it happens. Undo covers it, but undo is only a comfort if you
@@ -117,6 +134,7 @@ export function TemplatesPanel() {
               isOpen={!!state && state.nodeId === openTemplateId}
               onOpen={openBuiltInTemplate}
               onReset={handleReset}
+              onCreate={handleCreate}
             />
           );
         })}
@@ -147,6 +165,7 @@ export function TemplatesPanel() {
                   onOpen={openTemplate}
                   openTemplateId={openTemplateId}
                   getLabel={getLabel}
+                  onCreate={handleCreate}
                   // A grip on the only template in the list is a control whose
                   // one gesture has nowhere to put anything.
                   canReorder={templates.length > 1}
@@ -183,6 +202,7 @@ function BuiltInRow({
   isOpen,
   onOpen,
   onReset,
+  onCreate,
 }: {
   templateKey: string;
   label: string;
@@ -190,6 +210,7 @@ function BuiltInRow({
   isOpen: boolean;
   onOpen: (templateKey: string) => void;
   onReset: (templateKey: string, label: string) => void;
+  onCreate: (template: NewPageTemplate) => void;
 }) {
   const Icon = getTemplateIcon(templateKey);
 
@@ -203,6 +224,8 @@ function BuiltInRow({
           <span className="tree-templates-name">{label}</span>
           {isModified && <span className="tree-templates-kind">Edited</span>}
         </button>
+
+        <NewPageButton label={label} onClick={() => onCreate({ builtInKey: templateKey })} />
 
         {/* Only offered once there's something to undo. A Put back on an
             untouched template is a button whose only effect is to look like it
@@ -232,6 +255,7 @@ type RowProps = {
   onOpen: (id: string) => void;
   openTemplateId: string | null;
   getLabel: (key: string) => string;
+  onCreate: (template: NewPageTemplate) => void;
   /** Whether this row can be dragged — only a root, and only when there's
    *  somewhere to drag it to. Undefined everywhere below the top level. */
   canReorder?: boolean;
@@ -281,7 +305,7 @@ function SortableTemplateRow(props: RowProps) {
  * sub-page on its own would leave the template describing a shape it no longer
  * has, so only a whole template can go.
  */
-function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTemplateId, getLabel, canReorder, drag }: RowProps) {
+function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTemplateId, getLabel, onCreate, canReorder, drag }: RowProps) {
   const { node, children } = item;
   const Icon = getTemplateIcon(node.templateKey);
   const isExpanded = expanded.has(node.id);
@@ -321,6 +345,13 @@ function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTe
           <span className="tree-templates-kind">{getLabel(node.templateKey)}</span>
         </button>
 
+        {/* Offered on a sub-page too, and that's deliberate: a page saved
+            inside a template is a page, and "one of these on its own" is a
+            reasonable thing to want from a template built as a set. It arrives
+            without the pages nested under it — those belong to the shape the
+            whole template describes. */}
+        <NewPageButton label={node.name} onClick={() => onCreate({ templateRootId: node.id })} />
+
         {/* On the right, beside Delete, rather than at the head of the row:
             the left of this panel is the twisty column, and both sections'
             icons line up down it. Its own element carrying the drag listeners
@@ -359,10 +390,32 @@ function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTe
               onOpen={onOpen}
               openTemplateId={openTemplateId}
               getLabel={getLabel}
+              onCreate={onCreate}
             />
           ))}
         </ul>
       )}
     </li>
+  );
+}
+
+/**
+ * "Start a new page from this one", on every row in both sections.
+ *
+ * The page lands at the top level and opens with its name selected — see
+ * useCreatePageFromTemplate for why the top level is the only honest answer
+ * from a tab that isn't showing the tree.
+ */
+function NewPageButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="tree-templates-new"
+      title={`New page from ${label}`}
+      aria-label={`New page from ${label}`}
+      onClick={onClick}
+    >
+      <FilePlus size={13} />
+    </button>
   );
 }
