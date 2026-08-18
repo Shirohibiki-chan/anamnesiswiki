@@ -1547,6 +1547,22 @@ is below.
 
 ## Layout
 
+- **A wrapping row of chips is the wrong shape in the 180px sidebar.** A chip
+  flows: the design pays off when several sit on a line together. Nothing does
+  here — a folder’s name plus its count is wider than half the column, so every
+  chip claimed a row and the Assets tab’s folder strip became a stack of
+  stretched pills, reported 2026-08-18. Replaced with a grid of squat tiles,
+  name over count (`.asset-folders-grid`).
+  **`repeat(auto-fill, minmax(4.5rem, 1fr))` rather
+  than a fixed column count**, because the same component draws inside the
+  picker dialog, which is several hundred pixels wide; a fixed two would look
+  broken there and a container query would need the component to know which of
+  the two places it was in. Two things a column of tiles needs that a row of
+  chips doesn't: `align-self: stretch` on the label — text in a column is only
+  as wide as it wants to be, and text that is never narrower than itself never
+  ellipsises — and a `max-height` on the grid in the sidebar, since folders
+  reachable by scrolling beat pictures pushed off the bottom of the panel.
+
 - **The side panels' widths are custom properties on `.app-layout`, and the
   resize handles are positioned against the grid rather than inside the
   panels.** `--tree-w` / `--props-w` feed both `grid-template-columns` and the

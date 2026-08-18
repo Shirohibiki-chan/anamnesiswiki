@@ -1,16 +1,24 @@
-// The picture library's folder chips — the row above both grids that show
+// The picture library's folder tiles — the block above both grids that show
 // pictures: the sidebar's Assets tab and the picker dialog.
 //
 // One component in two places on purpose. They are the same list of the same
 // folders with the same counts, and two copies would be two places to forget
-// that a folder is a *label*, not a location: dropping a picture on a chip
+// that a folder is a *label*, not a location: dropping a picture on a tile
 // moves nothing on disk. See services/asset-folders.ts.
 //
-// **Chips that wrap, not a column of rows.** The sidebar is 180px at its
-// narrowest, and a folder list down the side — which is the shape LegendKeeper
-// uses, in a window many times wider — would leave the pictures a single
-// column. Wrapping chips cost one line until there are enough folders to need
-// two.
+// **Tiles in a grid, not chips in a wrapping row.** Chips were the first shape
+// and they were wrong for the reason a chip is usually right: they flow, and
+// nothing here fits two to a line. A folder's name plus its count is wider than
+// half of a 180px sidebar, so every chip claimed a whole row anyway and the
+// strip became a column of stretched pills — reported 2026-08-18 with four
+// folders filling the panel. A grid says two per row and means it: the name
+// ellipsises instead of pushing the row apart, and the count sits under it
+// rather than competing for the same line. It widens to three and beyond as
+// the sidebar is dragged out, and again in the picker dialog, tracking the
+// picture grid below it.
+//
+// Deliberately no folder icon. At roughly 72px a glyph costs about a third of
+// the name, and the name is the part being read.
 import { FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
@@ -33,7 +41,7 @@ export type AssetFolderStripProps = {
   onRename: (id: string, name: string) => void;
   onStartRename: (id: string) => void;
   onDelete: (id: string) => void;
-  /** Dropping a picture on a chip files it there. Omitted in the picker. */
+  /** Dropping a picture on a tile files it there. Omitted in the picker. */
   onDropAsset?: (fileName: string, folderId: string | null) => void;
   /** The folder just made, which opens straight into its own name box. */
   renamingId: string | null;
@@ -60,8 +68,8 @@ export function AssetFolderStrip({
 
   return (
     <div className="asset-folders">
-      <div className="asset-folders-chips">
-        <Chip
+      <div className="asset-folders-grid">
+        <Tile
           label="All pictures"
           count={counts.all}
           active={filter.kind === "all"}
@@ -73,10 +81,10 @@ export function AssetFolderStrip({
         />
         {/* Only once filing something has actually made a difference. With
             nothing filed yet, Unsorted holds every picture there is, so the
-            chip is a second button for the one beside it wearing a different
+            tile is a second button for the one beside it wearing a different
             name and the same number. */}
         {counts.unsorted > 0 && counts.unsorted < counts.all && (
-          <Chip
+          <Tile
             label="Unsorted"
             count={counts.unsorted}
             active={filter.kind === "unsorted"}
@@ -95,7 +103,7 @@ export function AssetFolderStrip({
               }}
             />
           ) : (
-            <Chip
+            <Tile
               key={folder.id}
               label={folder.name}
               count={counts.byFolder[folder.id] ?? 0}
@@ -105,10 +113,12 @@ export function AssetFolderStrip({
             />
           ),
         )}
+        {/* A cell of its own rather than a small button trailing the last tile,
+            which in a grid would leave a ragged half-row wherever it landed. */}
         {onCreate && (
           <button
             type="button"
-            className="ui-icon-btn ui-icon-btn-sm asset-folders-new"
+            className="asset-folder-tile asset-folders-new"
             title="New folder"
             aria-label="New folder"
             onClick={onCreate}
@@ -118,16 +128,16 @@ export function AssetFolderStrip({
         )}
       </div>
 
-      {/* Rename and delete live here rather than on every chip. A chip is a
-          name and a number in a 180px column; three controls inside one would
-          leave no room for the name, which is the part you're reading.
+      {/* Rename and delete live here rather than on every tile. A tile is a
+          name and a number in half of a 180px column; three controls inside one
+          would leave no room for the name, which is the part you're reading.
 
           These used to carry the folder's name alongside them, on the reasoning
           that it answered "which one does this delete". It didn't — it printed
-          the selected folder's name directly beneath the selected chip bearing
+          the selected folder's name directly beneath the selected tile bearing
           that same name, and with several folders called "New folder (4)" the
           honest reading was that the folder was in the list twice. Reported
-          2026-08-13. The highlighted chip is what says which folder this is;
+          2026-08-13. The highlighted tile is what says which folder this is;
           the buttons' own tooltips name it for anyone who wants it spelled
           out. */}
       {selected && (
@@ -156,7 +166,7 @@ export function AssetFolderStrip({
   );
 }
 
-function Chip({
+function Tile({
   label,
   count,
   active,
@@ -176,8 +186,11 @@ function Chip({
   return (
     <button
       type="button"
-      className={`asset-folder-chip${active ? " asset-folder-chip-active" : ""}${over ? " asset-folder-chip-over" : ""}`}
+      className={`asset-folder-tile${active ? " asset-folder-tile-active" : ""}${over ? " asset-folder-tile-over" : ""}`}
       aria-pressed={active}
+      // The whole name on hover, since the tile shows as much of it as fits and
+      // several folders can start with the same word.
+      title={label}
       onClick={onClick}
       onDragOver={(event) => {
         if (!onDropAsset || !carries(event)) return;
@@ -196,8 +209,8 @@ function Chip({
         if (fileName) onDropAsset(fileName);
       }}
     >
-      <span className="asset-folder-chip-label">{label}</span>
-      <span className="asset-folder-chip-count">{count}</span>
+      <span className="asset-folder-tile-label">{label}</span>
+      <span className="asset-folder-tile-count">{count}</span>
     </button>
   );
 }

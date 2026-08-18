@@ -241,7 +241,7 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 **What we can't take from LK, and it's settled:** the export contains **no asset library at all**. Both of her accounts, checked field by field — no filenames, no folder names, no media section; a picture exists only as a bare CDN URL inside a page, with `attrs.id` empty. So imported pictures can never arrive named or filed, and the names she gives them here are hers alone. See `docs/lk-format.md`.
 
-**Folder shape in the sidebar** is the smaller open question: chips meant to flow and wrap take a row each at 180px, because a name plus a count is wider than half the column. Options offered — squat tiles pinned to the top (recommended), LK's full-size tiles, or compact list rows.
+**Folder shape in the sidebar** is settled and shipped 2026-08-18: squat tiles, two to a row in a grid that widens as the sidebar does. Her pick from three offered (LK’s full-size tiles and compact list rows were the others). The chips it replaced were the wrong instinct, not a rough draft — see `AssetFolderStrip.tsx`.
 
 ---
 
@@ -586,7 +586,10 @@ drag-onto-a-page (#153), and folders in the picture library (#154).
 **Also shipped 2026-08-14:** pictures in a page's writing surviving an LK
 import (#174), the same pictures going back out again (#175), carrying local
 pictures inside an export (#176), and the delete gate removed from the Assets
-grid.
+grid (#177).
+
+**Also shipped 2026-08-18:** removing a picture from the library without
+touching a page (#179), and the folder chips rebuilt as squat tiles (#180).
 
 **Left in this phase:** reorder templates and start-a-new-page-from one.
 Remove-from-every-page was **dropped** 2026-08-14 — see the Assets tab section
