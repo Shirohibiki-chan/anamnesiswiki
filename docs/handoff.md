@@ -16,9 +16,10 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–16 are done. The app is shippable**, and **Phase 17 (Templates &
-Assets Tabs) is next.** `docs/plan.md` has phases 17–26 plus the unscheduled
-Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
+**Phases 0–17 are done. The app is shippable**, and **Phase 27 (The World
+Library) is next**, by her call. `docs/plan.md` has the remaining phases plus
+the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
+phase delivered.
 
 The most recent ones are the ones a new session is most likely to touch.
 **Phase 14 — Everyday Navigation — closed 2026-08-11**: eleven small things
@@ -1744,6 +1745,17 @@ is below.
 - **The stack is cleared on every project boundary** — open, close, create,
   import. An entry closes over the project it was recorded in; running one
   afterwards would write pages from the old world into the new one.
+
+- **A click built out of two recording actions folds into one entry.**
+  `history-service.ts`'s `collapseSince` takes the stack's depth from before
+  the work and replaces everything since with a single entry that undoes its
+  parts backwards. "New page from this template" is why it exists: it's
+  `addNode` then `applyCustomTemplate`, both of which record for themselves —
+  correctly, since both are used alone elsewhere — and without folding, one
+  press of undo left an empty untitled page behind. Compose the actions and
+  fold the entries; don't write a third action that re-implements what they do
+  in order to record once. One entry gets relabelled too, so undo reads the
+  same whether the click happened to record once or twice.
 
 - **Colour has its own store action** rather than the tree looping `updateNode`.
   A loop is one undo entry per selected page for something the user did once.

@@ -3,7 +3,7 @@
 // Deliberately the page editor, not a form. A template *is* a copied page, so
 // editing one is editing a page's title, tabs and writing — building a separate
 // screen with its own fields would be a second editor to keep working, and it's
-// what the 2026-07-31 decision was actually against. See docs/plan.md Phase 17.
+// what the 2026-07-31 decision was actually against. See docs/shipped.md Phase 17.
 //
 // What it doesn't share with PageView, and why: no breadcrumb trail (a template
 // has no place in the tree), no home badge, no hidden-page state, no "what kind

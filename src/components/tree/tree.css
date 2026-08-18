@@ -959,6 +959,48 @@ button.tree-path-crumb:hover {
   color: var(--color-text-muted);
 }
 
+/* And gone the moment the row is hovered, because that's when the buttons
+   arrive and this panel is 180px wide. The trade is the right way round: the
+   kind is what you read while scanning a list, and the buttons are what you
+   want once you've stopped scanning and reached for one. Without this the
+   three controls plus a kind label leave the name — the thing being looked
+   for — about 30px to be read in. */
+.tree-templates-row:hover .tree-templates-kind,
+.tree-templates-row:focus-within .tree-templates-kind {
+  display: none;
+}
+
+/* Makes a page from this template. On every row in both sections — a built-in
+   is as good a starting point as one of hers, and this is the shortcut past
+   the new-page screen either way.
+
+   Hidden until hover, like everything else on the right of these rows. */
+.tree-templates-new {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.tree-templates-row:hover .tree-templates-new,
+.tree-templates-row:focus-within .tree-templates-new {
+  display: flex;
+}
+
+/* Sits inside a row that's already hovered, so it takes the bigger step —
+   same as the delete button below. */
+.tree-templates-new:hover {
+  background: var(--color-hover-strong);
+  color: var(--color-accent-light);
+}
+
 /* Drag-to-reorder, on her own templates only. Hidden until the row is hovered
    for the same reason Delete is: at the sidebar's 180px the name is what the
    width is for, and two controls parked on every row would spend 40px of it on

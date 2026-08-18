@@ -10,7 +10,7 @@
 //
 // Until now nothing in the app could even list that directory: pictures went in
 // when you uploaded one and never came out, so a portrait you replaced six
-// times left five files nobody could see or reach. See docs/plan.md Phase 17.
+// times left five files nobody could see or reach. See docs/shipped.md Phase 17.
 //
 // **The bin takes a picture out of the library and touches no page.** Her
 // instruction, 2026-08-14, and it took two wrong attempts to hear properly:
