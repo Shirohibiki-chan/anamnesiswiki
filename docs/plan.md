@@ -536,7 +536,9 @@ ask before starting it.
   library.
 - **Reorder and delete.** Delete already exists (`deleteTemplate`, with undo);
   reordering writes `rootOrder`, which is already the field deciding the offer
-  order on the new-page screen.
+  order on the new-page screen. Only her own reorder — the built-in list is the
+  app's, identical in every world, and a per-world order for it would be a
+  setting for something that isn't per-world.
 - **Start a new page from one**, without going through the new-page screen.
 
 **Templates are editable because LegendKeeper's are, and its absence would read
@@ -638,10 +640,11 @@ grid (#177).
 
 **Also shipped 2026-08-18:** removing a picture from the library without
 touching a page (#179), the folder chips rebuilt as squat tiles (#180), those
-tiles folded down to one line (#181), and that line turned into a dropdown that
-holds fifty folders as easily as four (#182), with a filter box in it (#183).
+tiles folded down to one line (#181), that line turned into a dropdown that
+holds fifty folders as easily as four (#182), with a filter box in it (#183),
+and drag-to-reorder on her own templates (#184).
 
-**Left in this phase:** reorder templates and start-a-new-page-from one.
+**Left in this phase:** start-a-new-page-from-a-template.
 Remove-from-every-page was **dropped** 2026-08-14 — see the Assets tab section
 above.
 

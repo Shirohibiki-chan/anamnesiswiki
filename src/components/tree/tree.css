@@ -959,6 +959,35 @@ button.tree-path-crumb:hover {
   color: var(--color-text-muted);
 }
 
+/* Drag-to-reorder, on her own templates only. Hidden until the row is hovered
+   for the same reason Delete is: at the sidebar's 180px the name is what the
+   width is for, and two controls parked on every row would spend 40px of it on
+   things you want twice a month.
+
+   `cursor: grab` and not `pointer` — it isn't a button, and the difference
+   between "press this" and "pick this up" is the one thing the cursor can say
+   before you've tried it. */
+.tree-templates-grip {
+  flex-shrink: 0;
+  width: 14px;
+  height: 16px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.tree-templates-row:hover .tree-templates-grip,
+.tree-templates-row:focus-within .tree-templates-grip {
+  display: flex;
+}
+
+.tree-templates-grip:active {
+  cursor: grabbing;
+}
+
 /* `display: none`, never `opacity: 0` — see the long note on the tree row's
    hover controls above. An invisible button still takes its width, and this
    panel is as narrow as that one. */

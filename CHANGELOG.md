@@ -2,6 +2,10 @@
 
 ## 2026-08-18
 
+### Additions
+
+- **Drag your own templates into the order you want them offered in.** A grip appears on the right of a template's row in the Templates tab when you hover it; drag it up or down and the new-page screen offers them in that order too, since both read the same list. Undoable. The built-in ones don't move — they're the app's own list and the same in every world.
+
 ### Fixes
 
 - **The folder dropdown grows a search box once you have eight folders or more.** Type a few letters and the list narrows to what matches; Enter takes the top one. Under eight it stays a plain list, because reading four rows is faster than typing at them. Escape closes the menu.

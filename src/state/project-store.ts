@@ -66,6 +66,7 @@ import {
   parseTemplateLibrary,
   removeOverride,
   removeTemplate,
+  withTemplatesReordered,
 } from "../services/template-library";
 import {
   EMPTY_NAV_HISTORY,
@@ -383,6 +384,18 @@ export type ProjectStoreState = {
    */
   saveAsTemplate: (nodeId: string, includeDescendants: boolean) => Promise<void>;
   deleteTemplate: (rootId: string) => void;
+  /**
+   * Rewrites the order this world's own templates are offered in — what the
+   * drag in the Templates tab writes, and the same list the new-page screen
+   * reads, so moving one moves it in both places at once.
+   *
+   * Takes the whole order rather than an id and an index. `rootOrder` is
+   * allowed to be incomplete — `listTemplates` falls back to creation time for
+   * anything it doesn't mention — so a diff would have to reason about
+   * templates that were never in it, where a whole list simply replaces the
+   * question.
+   */
+  reorderTemplates: (orderedRootIds: string[]) => void;
   /** Opens a template for editing, or closes whatever is open with `null`. */
   openTemplate: (templateNodeId: string | null) => void;
   /**
@@ -2059,6 +2072,28 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
           applyTemplates({ ...current, nodes, rootOrder });
         },
         () => applyTemplates(removeTemplate(get().templates, rootId)),
+      );
+    },
+
+    reorderTemplates(orderedRootIds) {
+      const { templates } = get();
+      const { rootOrder } = withTemplatesReordered(templates, orderedRootIds);
+      const previous = templates.rootOrder;
+
+      // A drag that put everything back where it was would otherwise leave an
+      // undo entry that reverses nothing, which reads as undo being broken.
+      // Same guard, same reason, as sortChildren's.
+      if (rootOrder.length === previous.length && rootOrder.every((id, index) => id === previous[index])) return;
+
+      applyTemplates({ ...templates, rootOrder });
+      // Re-read inside both halves rather than closing over the library: a
+      // template can be saved or deleted between the drag and the undo, and
+      // putting back a whole library from before that would take the new one
+      // with it. Only the order is restored.
+      record(
+        "reordering the templates",
+        () => applyTemplates({ ...get().templates, rootOrder: previous }),
+        () => applyTemplates({ ...get().templates, rootOrder }),
       );
     },
 
