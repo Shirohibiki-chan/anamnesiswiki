@@ -296,12 +296,10 @@ Raised by the user 2026-08-13 after comparing directly against LK.
   before touching it; a taste question with a screenshot attached is not a
   licence to guess.
 
-- **Section headings on the start screen are 16px, and this direction asks for
-  ~20px.** Title Case and the display face shipped 2026-08-18; the size did
-  not, because the type scale in `index.css` steps 18 → 28 with nothing
-  between, and adding a ninth size to a scale whose whole point is that the
-  ratios live in one place is a decision rather than a tweak. Either add the
-  token deliberately or accept `--fs-xl` at 18. Ask.
+  **Where it got to:** she asked for a mockup 2026-08-18, so seven candidate
+  treatments were drawn against the real tokens and sent to her. Still queued —
+  what ships is whichever she picks, and until she does, nothing in
+  `controls.css` moves.
 
 - **The colour dot on every tree row is in the wrong place, and the folder
   colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
@@ -683,11 +681,16 @@ edge with its own panel background and dividing line.
   covers is a wall, thirty as rows is a list you can read — and it's also the
   honest view for anyone who never sets a cover. Remember the choice; it's a
   preference about how she reads, like the panel widths.
-- **The rail carries the lists**: recently opened (three), then Start Something
+- **The rail carries the lists**: recently opened (three), then the ways in
   (template / folder on disk / import), then New Releases. A list of text
   floating between two grids of pictures looked out of place and was moved here;
-  lists belong in the rail. **Start Something outranks release notes** (her
-  call): patch notes are not as important as the ways into the app.
+  lists belong in the rail. **The ways in outrank release notes** (her call):
+  patch notes are not as important as the ways into the app.
+
+  That section was called **Start Something** and is now **Add a Project** (her,
+  2026-08-18: it named a mood rather than an errand). The rename is not just
+  wording — it also describes what is under it, which today is two entries and
+  not three: the template entry has never been built.
 - **New world is centred on its own line**, brand left, filter right. It is the
   only bright control on the screen, which answers Q9 without needing a rule.
 - **Release notes are three entries, each named by its version**, newest marked.
@@ -738,12 +741,15 @@ pass and still says "world" on the buttons.
 **Built so far (2026-08-18):** the two-column shell, brand and version, the one
 centred New project button, the filter box, the all-projects cover grid with
 generated covers and the grid/list toggle, the pages/scroll switch, and the
-rail carrying Recently Opened, Start Something and the cog.
+rail carrying Recently Opened, Add a Project and the cog. Section headings are
+Title Case in the display face at 20px, which is a new step in the type scale
+rather than the nearest existing one — see `--fs-2xl` in `index.css`.
 
-**Still to build:** the pinned row and its manage window; covers you set
-yourself, and the muted-covers switch; the sort control beside the view toggle;
-release notes in the rail; the page you were last on; groups and archive; the
-duplicate-world action.
+**Still to build:** the third entry under Add a Project — start from a
+template — which the direction above lists and the rail has never had; the
+pinned row and its manage window; covers you set yourself, and the muted-covers
+switch; the sort control beside the view toggle; release notes in the rail; the
+page you were last on; groups and archive; the duplicate-project action.
 
 ### Second instance
 
