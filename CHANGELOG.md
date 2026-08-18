@@ -13,6 +13,11 @@
 - **Start a new page from a template without going through the new-page screen.** Every row in the Templates tab has a page-with-a-plus button on hover — the built-in kinds and your own alike. The page arrives at the top of your tree with the template already poured into it, opens with its name ready to type, and the sidebar goes back to the Project tab so you can see where it landed. One press of undo takes the whole thing back.
 - **Drag your own templates into the order you want them offered in.** A grip appears on the right of a template's row in the Templates tab when you hover it; drag it up or down and the new-page screen offers them in that order too, since both read the same list. Undoable. The built-in ones don't move — they're the app's own list and the same in every world.
 
+### Adjustments
+
+- **The start screen's section headings are Title Case.** "Recently Opened", "Start Something", "All Projects" — they're headings, and they were shipped looking like sentences.
+- **The Import line in the rail says project, not world.** Everywhere else on that screen already did.
+
 ### Renames
 
 - **"Import from LegendKeeper" is just "Import".** It sits in the rail on the start screen and says what it takes — a `.lk` file — rather than naming somebody else's app. The dialog it opens is called "Import a project" for the same reason, and the note about pictures needing the internet no longer names the app they're coming from either. Export still says LegendKeeper, because that file is for that app.

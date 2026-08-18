@@ -284,6 +284,25 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 ## Queued Adjustments
 
+- **The primary button style needs redoing — the gradient and the text colour
+  both.** Flagged by her 2026-08-18 with a screenshot of "New project" on the
+  start screen; she set it aside rather than asking for it there and then, so
+  this is a marker and not a brief. What it actually is: `.ui-btn-primary` in
+  `controls.css`, laying `--gradient-accent` over `--color-accent-light` with
+  `--color-bg` as the text — near-black on teal. **It is not a start-screen
+  problem.** That rule is every primary button in the app, and both halves she
+  named come from theme tokens, so a change here lands on every theme at once
+  and on every dialog's confirm button. Ask what she wants it to look like
+  before touching it; a taste question with a screenshot attached is not a
+  licence to guess.
+
+- **Section headings on the start screen are 16px, and this direction asks for
+  ~20px.** Title Case and the display face shipped 2026-08-18; the size did
+  not, because the type scale in `index.css` steps 18 → 28 with nothing
+  between, and adding a ninth size to a scale whose whole point is that the
+  ratios live in one place is a decision rather than a tweak. Either add the
+  token deliberately or accept `--fs-xl` at 18. Ask.
+
 - **The colour dot on every tree row is in the wrong place, and the folder
   colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
   a screenshot; she said plainly she'd deal with the overhaul later, so this is

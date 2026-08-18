@@ -26,7 +26,7 @@ export function StartRail({ recent, now, disabled, onOpen, onOpenFolder, onImpor
       {recent.length > 0 && (
         <div>
           <p className="start-label start-rail-label">
-            <span className="start-title">Recently opened</span>
+            <span className="start-title">Recently Opened</span>
           </p>
           {recent.map((project) => (
             <button
@@ -49,7 +49,7 @@ export function StartRail({ recent, now, disabled, onOpen, onOpenFolder, onImpor
 
       <div>
         <p className="start-label start-rail-label">
-          <span className="start-title">Start something</span>
+          <span className="start-title">Start Something</span>
         </p>
         <button type="button" className="start-item" onClick={onOpenFolder} disabled={disabled}>
           <b>A folder on disk</b>
@@ -57,7 +57,7 @@ export function StartRail({ recent, now, disabled, onOpen, onOpenFolder, onImpor
         </button>
         <button type="button" className="start-item" onClick={onImport} disabled={disabled}>
           <b>Import</b>
-          <span>Bring in a world from a .lk file.</span>
+          <span>Bring in a project from a .lk file.</span>
         </button>
       </div>
 
