@@ -170,7 +170,14 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
           <div className="import-modal-pick">
             <p>Bring in your pages, tabs, and cross-references from a .lk export.</p>
             {error && <p className="import-modal-error">{error}</p>}
-            <button type="button" onClick={() => void handlePickFile()} disabled={isBusy}>
+            {/* `ui-btn` is not decoration here. Without it the app's reset leaves
+                this as bare text — no fill, no border, no padding, not even a
+                pointer cursor — so the one control that starts an import read as
+                a line of prose, and clicking anywhere near it did nothing. It
+                shipped that way from Phase 8 and was reported as the picker
+                failing to open, which is what missing a 21px-tall invisible
+                button looks like from the outside. */}
+            <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handlePickFile()} disabled={isBusy}>
               {status === "picking" ? "Waiting for the file picker…" : status === "parsing" ? "Reading file…" : "Choose a file"}
             </button>
             {/* The picker is an OS window this app doesn't draw, so when it
