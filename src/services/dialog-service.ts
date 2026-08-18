@@ -19,31 +19,35 @@ import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
  * different trees — the import modal, the start screen, settings — and there
  * is only ever one OS dialog to be had between them.
  */
-let nativeDialogOpen = false;
+let pending: Promise<unknown> | null = null;
 
 /**
  * Runs one native dialog at a time, and lets its failures out.
  *
- * Both halves matter. Every caller reaches this through a click handler that
- * discards the promise, so a rejection here used to end as an unhandled one in
- * the console: the button did nothing, said nothing, and left no way to tell a
- * cancelled dialog from a broken one. Returning `null` for a *repeat* press
- * while keeping real errors throwing is the distinction — the caller reads
- * `null` as "nothing chosen", which is exactly what a second press means.
+ * Every caller reaches this through a click handler that discards the promise,
+ * so a rejection here used to end as an unhandled one in the console: the
+ * button did nothing, said nothing, and left no way to tell a cancelled dialog
+ * from a broken one.
+ *
+ * **A repeat press joins the dialog that is already open rather than being
+ * turned away.** The first shape of this was a boolean and an early `null`,
+ * which is a trap: one call that never settles — and a dialog this app cannot
+ * see is exactly the kind that might not — would leave the flag stuck on, and
+ * every picker in the app dead until restart, silently, which is a worse
+ * version of the bug this file is trying to fix. Handing back the in-flight
+ * promise has no state to get stuck in. There is nothing to reset, because the
+ * promise itself is the record of whether a dialog is open.
  */
 async function onePicker<T>(run: () => Promise<T>): Promise<T | null> {
-  if (nativeDialogOpen) return null;
-  nativeDialogOpen = true;
+  if (pending) return (await pending) as T | null;
+  const call = run();
+  pending = call;
   try {
-    return await run();
+    return await call;
   } finally {
-    nativeDialogOpen = false;
+    // Only if it is still ours: a later call may already have replaced it.
+    if (pending === call) pending = null;
   }
-}
-
-/** Whether a native picker is up, for callers that want to say so on screen. */
-export function isPickerOpen(): boolean {
-  return nativeDialogOpen;
 }
 
 /**
