@@ -1,11 +1,18 @@
-// First-launch screen — recent projects, "Open folder" (any location on
-// disk), and "New project" (name only, created under the projects folder from
-// Settings → Projects). Rendered by StartupRouter when no project is loaded yet.
+// First-launch screen — every project the app can find, "Open folder" (any
+// location on disk), and "New project" (name only, created under the projects
+// folder from Settings → Projects). Rendered by StartupRouter when no project
+// is loaded yet.
+//
+// The list is no longer the recent eight: the projects folder is scanned and
+// what she has opened only decides the order (see use-world-library). Phase 27
+// rebuilds this screen properly — this is its list, in the shape the screen
+// already had.
 import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenFolder } from "../../hooks/use-open-folder";
+import { useWorldLibrary } from "../../hooks/use-world-library";
 import { ImportModal } from "../import/ImportModal";
 import { SettingsButton } from "./SettingsButton";
 import "./shell.css";
@@ -26,8 +33,8 @@ function folderNameOf(path: string): string {
 
 export function ProjectPicker() {
   const { loadProject, createProjectAt } = useProject();
-  const { recentProjects, recordProjectOpened, forgetProject, prepareProjectsDir, describeProjectLocation } =
-    useAppSettings();
+  const { recordProjectOpened, forgetProject, prepareProjectsDir, describeProjectLocation } = useAppSettings();
+  const { worlds, isScanning } = useWorldLibrary();
   const { pickFolder } = useDialogs();
   const resolveChosenFolder = useOpenFolder();
 
@@ -76,7 +83,7 @@ export function ProjectPicker() {
     await recordProjectOpened(path, result.name);
   }
 
-  async function handleOpenRecent(path: string, name: string) {
+  async function handleOpenWorld(path: string, name: string) {
     setIsBusy(true);
     const result = await loadProject(path).finally(() => setIsBusy(false));
 
@@ -122,27 +129,38 @@ export function ProjectPicker() {
         <p>Pick a project to open, or start a new one.</p>
       </div>
 
-      {recentProjects.length > 0 && (
-        <div className="project-picker-recent">
-          <h2 className="ui-eyebrow">Recent projects</h2>
-          <ul>
-            {recentProjects.map((p) => (
-              <li key={p.path}>
-                <button
-                  type="button"
-                  onClick={() => void handleOpenRecent(p.path, p.name)}
-                  disabled={isBusy}
-                  // The full path is still worth having, just not worth three
-                  // wrapped lines on every row.
-                  title={p.path}
-                >
-                  <span className="project-picker-recent-name">{p.name}</span>
-                  <span className="project-picker-recent-path">{describeProjectLocation(p.path)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {isScanning ? (
+        <p className="project-picker-scanning">Looking for your projects…</p>
+      ) : (
+        worlds.length > 0 && (
+          <div className="project-picker-recent">
+            <h2 className="ui-eyebrow">Your projects</h2>
+            <ul>
+              {worlds.map((world) => (
+                <li key={world.path}>
+                  <button
+                    type="button"
+                    onClick={() => void handleOpenWorld(world.path, world.name)}
+                    disabled={isBusy}
+                    // The full path is still worth having, just not worth three
+                    // wrapped lines on every row.
+                    title={world.path}
+                  >
+                    <span className="project-picker-recent-name">
+                      {world.name}
+                      {world.isOutsideProjectsFolder && (
+                        <span className="project-picker-elsewhere" title="Not in your projects folder">
+                          Elsewhere
+                        </span>
+                      )}
+                    </span>
+                    <span className="project-picker-recent-path">{describeProjectLocation(world.path)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
       )}
 
       <div className="project-picker-actions">

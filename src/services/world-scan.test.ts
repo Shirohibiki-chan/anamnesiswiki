@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { decideAmongNestedWorlds, isReservedWorldName, WORLD_SCAN_DEPTH } from "./world-scan";
+import {
+  buildWorldList,
+  decideAmongNestedWorlds,
+  isInsideProjectsFolder,
+  isReservedWorldName,
+  WORLD_SCAN_DEPTH,
+  type WorldFile,
+} from "./world-scan";
 
 describe("isReservedWorldName", () => {
   it("refuses the app's own folders", () => {
@@ -58,5 +65,139 @@ describe("WORLD_SCAN_DEPTH", () => {
     // so one level would miss them. Unbounded would walk every page of every
     // world to find one project.json each.
     expect(WORLD_SCAN_DEPTH).toBe(2);
+  });
+});
+
+describe("isInsideProjectsFolder", () => {
+  const DIR = "C:/Users/shiro/Documents/Anamnesis";
+
+  it("recognises a world sitting in the projects folder", () => {
+    expect(isInsideProjectsFolder(`${DIR}/Valeraverse`, DIR)).toBe(true);
+  });
+
+  it("recognises one tidied a folder further down", () => {
+    expect(isInsideProjectsFolder(`${DIR}/TEStval/Valeraverse`, DIR)).toBe(true);
+  });
+
+  it("marks a world living somewhere else", () => {
+    expect(isInsideProjectsFolder("D:/Backups/Valeraverse", DIR)).toBe(false);
+  });
+
+  it("copes with the two separators and the two cases Windows hands back", () => {
+    // The folder picker returns backslashes; the setting may hold either.
+    expect(isInsideProjectsFolder("C:\\Users\\shiro\\Documents\\Anamnesis\\Val", DIR)).toBe(true);
+    expect(isInsideProjectsFolder(`${DIR}/Val`, "c:/users/shiro/documents/anamnesis")).toBe(true);
+  });
+
+  it("ignores a trailing separator on either side", () => {
+    expect(isInsideProjectsFolder(`${DIR}/Val/`, `${DIR}/`)).toBe(true);
+  });
+
+  it("does not count a folder that merely starts with the same letters", () => {
+    // `Anamnesis Backups` is not inside `Anamnesis`.
+    expect(isInsideProjectsFolder(`${DIR} Backups/Valeraverse`, DIR)).toBe(false);
+  });
+});
+
+describe("buildWorldList", () => {
+  const DIR = "/Documents/Anamnesis";
+  const file = (path: string, extra: Partial<WorldFile> = {}): WorldFile => ({
+    path,
+    id: "id-" + path,
+    name: path.split("/").pop() ?? path,
+    modifiedAt: 0,
+    ...extra,
+  });
+
+  it("lists a world found on disk that has never been opened", () => {
+    // The whole point: the ninth world, which the recent list could not hold.
+    const list = buildWorldList({
+      onDisk: [file(`${DIR}/Ninth`)],
+      remembered: [],
+      projectsDir: DIR,
+    });
+    expect(list.map((w) => w.path)).toEqual([`${DIR}/Ninth`]);
+    expect(list[0].lastOpenedAt).toBeNull();
+  });
+
+  it("lists a world opened from outside the projects folder, marked", () => {
+    const list = buildWorldList({
+      onDisk: [file(`${DIR}/Home`), file("D:/Elsewhere/Away")],
+      remembered: [{ path: "D:/Elsewhere/Away", name: "Away", lastOpenedAt: 10 }],
+      projectsDir: DIR,
+    });
+    expect(list.find((w) => w.name === "Away")?.isOutsideProjectsFolder).toBe(true);
+    expect(list.find((w) => w.name === "Home")?.isOutsideProjectsFolder).toBe(false);
+  });
+
+  it("counts a scanned world and a remembered one at the same path as one world", () => {
+    const list = buildWorldList({
+      onDisk: [file(`${DIR}/Valeraverse`)],
+      remembered: [{ path: `${DIR}/Valeraverse`, name: "Valeraverse", lastOpenedAt: 500 }],
+      projectsDir: DIR,
+    });
+    expect(list).toHaveLength(1);
+    expect(list[0].lastOpenedAt).toBe(500);
+  });
+
+  it("keeps two worlds wearing the same id apart", () => {
+    // A folder copied in File Explorer. Collapsing these would hide one of her
+    // worlds over a bookkeeping field; re-idding one is the fork detector's job.
+    const list = buildWorldList({
+      onDisk: [file(`${DIR}/Valeraverse`, { id: "same" }), file(`${DIR}/Valeraverse3`, { id: "same" })],
+      remembered: [],
+      projectsDir: DIR,
+    });
+    expect(list).toHaveLength(2);
+  });
+
+  it("keeps a remembered world whose folder would not read just now", () => {
+    // An external drive that isn't plugged in. Dropping it would make her
+    // worlds flicker in and out of the list.
+    const list = buildWorldList({
+      onDisk: [],
+      remembered: [{ path: "E:/Stick/Valeraverse", name: "Valeraverse", lastOpenedAt: 90 }],
+      projectsDir: DIR,
+    });
+    expect(list).toEqual([
+      expect.objectContaining({ path: "E:/Stick/Valeraverse", name: "Valeraverse", id: null, activeAt: 90 }),
+    ]);
+  });
+
+  it("prefers the name on disk to the remembered one, since a rename changes it", () => {
+    const list = buildWorldList({
+      onDisk: [file(`${DIR}/Valeraverse`, { name: "Valeraverse v6" })],
+      remembered: [{ path: `${DIR}/Valeraverse`, name: "Valeraverse v5", lastOpenedAt: 1 }],
+      projectsDir: DIR,
+    });
+    expect(list[0].name).toBe("Valeraverse v6");
+  });
+
+  it("sorts newest first, on whichever of opened and edited is later", () => {
+    const list = buildWorldList({
+      onDisk: [
+        file(`${DIR}/Old`, { modifiedAt: 100 }),
+        file(`${DIR}/Edited`, { modifiedAt: 900 }),
+        file(`${DIR}/Opened`, { modifiedAt: 200 }),
+      ],
+      remembered: [{ path: `${DIR}/Opened`, name: "Opened", lastOpenedAt: 950 }],
+      projectsDir: DIR,
+    });
+    expect(list.map((w) => w.name)).toEqual(["Opened", "Edited", "Old"]);
+  });
+
+  it("breaks ties by name, so two looks at one folder read the same", () => {
+    const list = buildWorldList({
+      onDisk: [file(`${DIR}/Beta`, { modifiedAt: 5 }), file(`${DIR}/Alpha`, { modifiedAt: 5 })],
+      remembered: [],
+      projectsDir: DIR,
+    });
+    expect(list.map((w) => w.name)).toEqual(["Alpha", "Beta"]);
+  });
+
+  it("does not cap the list", () => {
+    // It used to stop at eight, which is the bug this replaces.
+    const onDisk = Array.from({ length: 20 }, (_, i) => file(`${DIR}/World${i}`));
+    expect(buildWorldList({ onDisk, remembered: [], projectsDir: DIR })).toHaveLength(20);
   });
 });

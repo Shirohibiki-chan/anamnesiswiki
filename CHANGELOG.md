@@ -4,6 +4,7 @@
 
 ### Additions
 
+- **Every project you have shows up on the start screen, not just the last eight.** The screen used to list the eight you had opened most recently, so a ninth was only reachable through "Open folder" — and a project you had never opened on this computer never appeared at all. The app looks in your projects folder now, including one folder deeper, so a project tidied into a subfolder still turns up. Newest first, going by whichever happened last: you opening it, or it changing. Nothing is trimmed off the end — the list is as long as it needs to be and the screen scrolls. A project living somewhere else, like another drive, sits in the same list with a small "Elsewhere" marker on it.
 - **Opening a folder now looks inside it.** Unzipping a world usually gives you a folder with the real one nested inside — `Valeraverse` holding another `Valeraverse` — and picking the outer one used to tell you there was no project in it, which was true and no help at all. It opens the one inside now. If the folder holds several projects, it lists them and lets you pick, rather than guessing.
 
 - **Start a new page from a template without going through the new-page screen.** Every row in the Templates tab has a page-with-a-plus button on hover — the built-in kinds and your own alike. The page arrives at the top of your tree with the template already poured into it, opens with its name ready to type, and the sidebar goes back to the Project tab so you can see where it landed. One press of undo takes the whole thing back.

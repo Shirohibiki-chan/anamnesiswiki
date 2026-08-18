@@ -32,7 +32,7 @@ import {
   TEMPLATES_FILE,
 } from "../constants/paths";
 import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
-import { decideAmongNestedWorlds, isReservedWorldName, WORLD_SCAN_DEPTH, type OpenFolderOutcome } from "./world-scan";
+import { decideAmongNestedWorlds, isReservedWorldName, WORLD_SCAN_DEPTH, type OpenFolderOutcome, type WorldFile } from "./world-scan";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -812,6 +812,73 @@ export async function resolveChosenFolder(path: string): Promise<OpenFolderOutco
       }),
   );
   return decideAmongNestedWorlds(inside);
+}
+
+/**
+ * One world's name and identity, without loading it.
+ *
+ * Two reads and no walk: `project.json` for the name and id, and its
+ * timestamp. A listing of every world on disk has to cost about as much as
+ * listing the folder, or the start screen pays a world's load time per world
+ * before she has picked one.
+ *
+ * **Never writes.** `loadProject` mints a missing id and saves it back, which
+ * is right when she opened that world and wrong here — a listing that writes
+ * would touch every world's file on every visit to the start screen, including
+ * ones she never opens and ones on read-only media. A world without an id yet
+ * comes back with `id: null` and gets one when it's opened.
+ *
+ * Null means the folder didn't yield a readable project file just now, which
+ * is not the same as "gone" — see `buildWorldList` on unplugged drives.
+ */
+export async function readWorldSummary(path: string): Promise<WorldFile | null> {
+  const projectPath = joinPath(path, PROJECT_FILE);
+
+  let project: Partial<Project>;
+  try {
+    project = JSON.parse(await readTextFile(projectPath)) as Partial<Project>;
+  } catch {
+    return null;
+  }
+
+  let modifiedAt: number | null = null;
+  try {
+    modifiedAt = (await stat(projectPath)).mtime?.getTime() ?? null;
+  } catch {
+    // A timestamp is a sort key, not the world. Losing it costs this world its
+    // place in the default order, never its place in the list.
+  }
+
+  const name = typeof project.name === "string" && project.name.trim() ? project.name : fileNameFromPath(path);
+  return { path, id: typeof project.id === "string" ? project.id : null, name, modifiedAt };
+}
+
+/**
+ * Every world the start screen should know about: the projects folder scanned,
+ * plus wherever else she has opened one from.
+ *
+ * The two lists are read together and deduplicated afterwards by
+ * `buildWorldList`, because a remembered path is very often also a scanned one
+ * and reading it twice would be two disk trips to learn the same thing.
+ *
+ * Reads are capped the same way a project load's are — a folder of thirty
+ * worlds is thirty file reads, and firing them all at once is how a listing
+ * becomes a stall.
+ */
+export async function collectWorldFiles(projectsDir: string, rememberedPaths: string[]): Promise<WorldFile[]> {
+  const scanned = await scanForWorlds(projectsDir);
+
+  const seen = new Set<string>();
+  const paths: string[] = [];
+  for (const path of [...scanned, ...rememberedPaths]) {
+    if (seen.has(path)) continue;
+    seen.add(path);
+    paths.push(path);
+  }
+
+  const limited = createReadLimiter(READ_CONCURRENCY);
+  const summaries = await Promise.all(paths.map((path) => limited(() => readWorldSummary(path))));
+  return summaries.filter((summary): summary is WorldFile => summary !== null);
 }
 
 export async function saveProject(rootPath: string, project: Project): Promise<void> {

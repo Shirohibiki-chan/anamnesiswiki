@@ -2,7 +2,6 @@
 // open last, which ones are recent) — persisted via Tauri's key-value store
 // in the app's own data dir, never inside a project folder.
 import { load, type Store } from "@tauri-apps/plugin-store";
-import { RECENT_PROJECTS_COUNT } from "../constants/limits";
 import { getDefaultProjectsDir } from "../constants/paths";
 
 const SETTINGS_FILE = "app-settings.json";
@@ -69,7 +68,13 @@ export async function addRecentProject(path: string, name: string): Promise<void
   const store = await getStore();
   const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];
   const withoutThis = existing.filter((p) => p.path !== path);
-  const updated = [{ path, name, lastOpenedAt: Date.now() }, ...withoutThis].slice(0, RECENT_PROJECTS_COUNT);
+  // Uncapped on purpose (Phase 27). This list used to be trimmed to eight and
+  // used as the only way a world reached the start screen, which is how her
+  // ninth world ended up reachable only through the folder picker. It is now a
+  // record of when each world was last opened — the start screen finds worlds
+  // by scanning the projects folder, and asks this only for the order to put
+  // them in.
+  const updated = [{ path, name, lastOpenedAt: Date.now() }, ...withoutThis];
   await store.set("recentProjects", updated);
   await store.save();
 }

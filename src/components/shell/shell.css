@@ -410,6 +410,28 @@
   background: var(--color-accent-hover);
 }
 
+/* Shown while the projects folder is being scanned. The list is disk work now,
+   and a start screen that renders empty for a beat says "you have no worlds" to
+   someone who has nine. */
+.project-picker-scanning {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* A project living somewhere other than the projects folder. Marked in place
+   rather than split into a section of its own — where a folder happens to sit
+   is not how she thinks about her worlds, and the marker is only really needed
+   the day one goes missing and the answer is an unplugged drive. */
+.project-picker-elsewhere {
+  margin-left: var(--space-sm);
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+
 .project-picker-recent-name {
   font-size: var(--fs-md);
 }
