@@ -366,6 +366,26 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     return null;
   }
 
+  // Every world saved before ids existed arrives here without one. Mint it and
+  // write it straight back, so the id a pin or a group is keyed on is the same
+  // id next time — a value invented fresh on each load would be no identity at
+  // all. Writing only when it's missing keeps this a one-time event per world
+  // rather than a write on every open.
+  //
+  // A failed write is not fatal: the world still opens, carrying the id it was
+  // just given for this session. A read-only folder — a world on a memory
+  // stick, or one inside a zip she opened in place — must not be unopenable
+  // because of bookkeeping. It simply gets a new id next time, which costs
+  // exactly the pins on a world she can't write to anyway.
+  if (!project.id) {
+    project = { ...project, id: crypto.randomUUID() };
+    try {
+      await saveProject(rootPath, project);
+    } catch {
+      // Keep going with the in-memory id.
+    }
+  }
+
   const ctx: WalkContext = {
     skipped: [],
     recovered: [],

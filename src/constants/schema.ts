@@ -175,6 +175,30 @@ export type Node = {
 
 export type Project = {
   version: 1;
+  // This world's own identity, independent of where its folder sits. Without
+  // it a world *is* its path, so renaming the folder or moving it to another
+  // drive makes it a different world to everything that refers to one — which
+  // is already the recent list's bug, and would be every pin, group and
+  // archive flag's bug the moment those exist.
+  //
+  // In `project.json` rather than app settings, deliberately: it travels with
+  // the world, so a world handed to someone else keeps the identity that
+  // in-world references were written against.
+  //
+  // Optional only for reading. Worlds saved before this existed have none, and
+  // `loadProject` mints one and writes it back the first time such a world is
+  // opened — so the field is absent on disk exactly once per world, and every
+  // caller downstream of a load can rely on it being there.
+  id?: string;
+  // Which world this one was copied from, by that world's `id`. Lineage is its
+  // own field precisely so `id` can stay meaningless: a copy gets a *fresh*
+  // id, never one derived from its parent's, because anything derived
+  // eventually gets recomputed and a recomputed id breaks every reference to
+  // it. "This is a fork of that" is real data and lives here.
+  //
+  // Absent means "not known to be a copy", which is also what an original
+  // reads as — there is no way to tell those apart and no need to.
+  forkedFromId?: string;
   name: string;
   rootOrder: string[];
   // Manual sibling order inside each parent, keyed by parent node id — the
@@ -295,9 +319,19 @@ export function createNode(input: {
   };
 }
 
-export function createProject(input: { name: string; rootOrder?: string[]; expandedIds?: string[] }): Project {
+export function createProject(input: {
+  name: string;
+  rootOrder?: string[];
+  expandedIds?: string[];
+  forkedFromId?: string;
+}): Project {
   return {
     version: 1,
+    id: crypto.randomUUID(),
+    // Spread rather than assigned, so an original has no `forkedFromId` key at
+    // all rather than one holding `undefined` — the same shape a world read
+    // back off disk has, since JSON drops undefined.
+    ...(input.forkedFromId ? { forkedFromId: input.forkedFromId } : {}),
     name: input.name,
     rootOrder: input.rootOrder ?? [],
     expandedIds: input.expandedIds ?? [],

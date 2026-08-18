@@ -9,6 +9,12 @@ const files = new Map<string, string>();
 // into Rust in the running app, so "how many" is the thing worth asserting on.
 const calls = { readDir: 0, exists: 0, readTextFile: 0 };
 const renames: [string, string][] = [];
+// Files a load wrote back. A load is overwhelmingly a read, so anything in
+// here is a repair — which is exactly what's worth asserting on.
+const writes: [string, string][] = [];
+// Set by the read-only-folder test. The fs plugin is a plain object here
+// rather than vi.fn()s, so a one-shot flag is how a write is made to fail.
+let failNextWrite = false;
 
 // The real `sep()` reads a value the Tauri runtime injects into the webview,
 // which doesn't exist here. "/" keeps the in-memory paths below readable.
@@ -52,7 +58,13 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
   },
   readFile: async () => new Uint8Array(),
   writeFile: async () => {},
-  writeTextFile: async () => {},
+  writeTextFile: async (path: string, contents: string) => {
+    if (failNextWrite) {
+      failNextWrite = false;
+      throw new Error("EACCES");
+    }
+    writes.push([path, contents]);
+  },
 }));
 
 const { loadProject } = await import("./filesystem-service");
@@ -74,6 +86,8 @@ beforeEach(() => {
   calls.exists = 0;
   calls.readTextFile = 0;
   renames.length = 0;
+  writes.length = 0;
+  failNextWrite = false;
   put("project.json", { version: 1, name: "World", rootOrder: [], expandedIds: [], selectedId: null, createdAt: 1 });
 });
 
@@ -355,5 +369,67 @@ describe("loadProject disk round trips", () => {
   it("still finds every node while making those reads", async () => {
     const result = await loadProject(ROOT);
     expect(result!.nodes.map((n) => n.id).sort()).toEqual(["aus", "canon", "story", "valera"]);
+  });
+});
+
+describe("loadProject and the world's id", () => {
+  it("gives a world saved before ids existed one, and writes it back", async () => {
+    const result = await loadProject(ROOT);
+
+    const id = result!.project.id;
+    expect(id).toBeTruthy();
+
+    const written = writes.find(([path]) => path === `${ROOT}/project.json`);
+    expect(written).toBeDefined();
+    // The id it reports and the id it stored have to be the same one, or the
+    // next load hands out a different identity to everything keyed on it.
+    expect(JSON.parse(written![1]).id).toBe(id);
+  });
+
+  it("leaves an existing id alone and writes nothing", async () => {
+    put("project.json", {
+      version: 1,
+      id: "already-mine",
+      name: "World",
+      rootOrder: [],
+      expandedIds: [],
+      selectedId: null,
+      createdAt: 1,
+    });
+
+    const result = await loadProject(ROOT);
+    expect(result!.project.id).toBe("already-mine");
+    expect(writes).toEqual([]);
+  });
+
+  it("keeps the rest of project.json when it backfills", async () => {
+    put("project.json", {
+      version: 1,
+      name: "World",
+      rootOrder: ["a"],
+      homeNodeId: "a",
+      pinnedIds: ["a"],
+      expandedIds: [],
+      selectedId: null,
+      createdAt: 1,
+    });
+
+    await loadProject(ROOT);
+
+    const written = JSON.parse(writes.find(([path]) => path === `${ROOT}/project.json`)![1]);
+    expect(written.homeNodeId).toBe("a");
+    expect(written.pinnedIds).toEqual(["a"]);
+    expect(written.rootOrder).toEqual(["a"]);
+  });
+
+  it("still opens a world it cannot write to", async () => {
+    failNextWrite = true;
+
+    // A world on a memory stick or inside a read-only folder must open. It
+    // carries the id it was just given, and gets a different one next time —
+    // which costs only the pins on a world she can't write to anyway.
+    const result = await loadProject(ROOT);
+    expect(result).not.toBeNull();
+    expect(result!.project.id).toBeTruthy();
   });
 });
