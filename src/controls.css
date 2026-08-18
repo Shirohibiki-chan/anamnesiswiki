@@ -163,17 +163,64 @@
   font-size: var(--fs-md);
 }
 
+/* Deep fill, lit from the top, white text. Both halves of the old rule were
+   rejected by the user (2026-08-18): it laid `--gradient-accent` over
+   `--color-accent-light` and set the text to `--color-bg`, which is a
+   blue-black sitting on bright teal.
+
+   **The text colour was never really a choice**, and that is the thing to
+   understand before changing any of this. White on `--color-accent-light`
+   measures about 1.5:1, so a fill that bright *has* to take dark text. Wanting
+   white text therefore means wanting a deep fill, and once the fill is deep
+   the brightness has to go somewhere else — which is what the highlight and
+   the pane of light above are for. That is also what gloss physically is: a
+   dark object with a light on it, not a light object.
+
+   **Four stops, and the middle two are not decoration.** The label sits across
+   roughly the middle 40% of the button's height, so only that band has to be
+   legible; the top edge is free to be bright. A first attempt held the *whole*
+   fill dark enough for white text — it passed the contrast check and looked
+   like a flat rectangle, because there was nowhere left for the gradient to
+   travel. The 30% and 70% stops are the band behind the letters and are what
+   keeps this at 4.9:1 or better on every bundled theme (worst case Grove;
+   Nightfall is 7.7:1).
+
+   Built from `--color-accent-dark` rather than named colours, so it follows
+   every theme. `--gradient-accent` still overrides the fill for a theme that
+   sets one, but the pane of light is layered *above* it on purpose: a theme
+   supplying its own colours should still get the gloss rather than losing it.
+   The six bundled themes no longer set that token — they used to carry the
+   two-stop 100deg gradient this replaces. */
 .ui-btn-primary {
-  background: var(--gradient-accent, none), var(--color-accent-light);
-  border-color: var(--color-accent-light);
-  color: var(--color-bg);
-  font-weight: 500;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04) 52%, rgba(255, 255, 255, 0)),
+    var(--gradient-accent, none),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-accent-dark) 72%, var(--color-accent-light)) 0%,
+      color-mix(in oklab, var(--color-accent-dark) 72%, #000) 30%,
+      color-mix(in oklab, var(--color-accent-dark) 44%, #000) 70%,
+      color-mix(in oklab, var(--color-accent-dark) 30%, #000) 100%
+    );
+  border-color: color-mix(in oklab, var(--color-accent-light) 50%, transparent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* The wash rather than a fill, because the background here is a gradient slot
-   and a `background` on hover would drop it. */
+/* Still the wash rather than a fill — a `background` on hover would drop the
+   gradient. What is new is that the wash has to be declared *with* the two
+   shadows rather than instead of them: box-shadow is one property, and the
+   old one-line hover would have thrown away the top highlight and the drop
+   shadow, flattening the button at the exact moment it should look pressable.
+   The highlight is listed first so it paints over the wash. */
 .ui-btn-primary:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 999px var(--color-hover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 999px var(--color-hover),
+    0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .ui-btn-secondary {

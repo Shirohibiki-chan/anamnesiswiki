@@ -140,6 +140,15 @@
      "accent" sounds like the bold teal and is in fact the 15% tint. */
   --color-accent: var(--color-accent-faint);
 
+  /* What goes ON the accent when the accent is the fill. One rule uses it —
+     the primary button — and it is white rather than `--color-bg` because
+     that is what the button being deep rather than bright buys you. The old
+     way round was near-black on bright teal, which is the only thing that
+     works on a fill that light: white on `--color-accent-light` measures
+     about 1.5:1. Not offered by the theme editor's pickers yet; a theme can
+     still set it by hand. */
+  --color-on-accent: #ffffff;
+
   /* Hover — the one state in the app that had no token of its own.
      ------------------------------------------------------------------
      Every hover in the app used to borrow a surface colour: tree rows and the
@@ -640,8 +649,6 @@
   --font-display: "Domine", serif;
   --font-ui: "Lexend", sans-serif;
   --font-prose: "Quicksand", sans-serif;
-
-  --gradient-accent: linear-gradient(100deg, #0d9488, #5eead4);
 }
 
 /* Warm charcoal and lamplight — the brown end of dark, where Anamnesis Dark is
@@ -679,8 +686,6 @@
   --color-callout-secret: #d3b2f5;
   --color-callout-secret-bg: rgba(168, 132, 240, 0.13);
   --color-callout-secret-text: #efe3fd;
-
-  --gradient-accent: linear-gradient(100deg, #b9651f, #f0a868);
 }
 
 /* Forest floor: green dark enough to still read as neutral at a glance, with
@@ -718,8 +723,6 @@
   --color-callout-secret: #c9b3f7;
   --color-callout-secret-bg: rgba(167, 139, 250, 0.12);
   --color-callout-secret-text: #ece4fe;
-
-  --gradient-accent: linear-gradient(100deg, #a8801f, #e3c26d);
 }
 
 /* Plum and orchid — the one that's obviously *coloured* rather than a tinted
@@ -756,8 +759,6 @@
   --color-callout-secret: #a5b4fc;
   --color-callout-secret-bg: rgba(129, 140, 248, 0.13);
   --color-callout-secret-text: #e0e7ff;
-
-  --gradient-accent: linear-gradient(100deg, #a021b0, #e9a8f0);
 }
 
 /* Deep water. The first built-in that didn't come out of the sandbox — it was
@@ -824,8 +825,6 @@
   --color-callout-secret: #b09cfc;
   --color-callout-secret-bg: rgba(127, 96, 249, 0.14);
   --color-callout-secret-text: #e7e0ff;
-
-  --gradient-accent: linear-gradient(100deg, #7f60f9, #6ddcff);
 }
 
 /* The one theme that isn't a taste call — some people can't read light text on

@@ -284,30 +284,15 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 ## Queued Adjustments
 
-- **The primary button style needs redoing — the gradient and the text colour
-  both.** Flagged by her 2026-08-18 with a screenshot of "New project" on the
-  start screen; she set it aside rather than asking for it there and then, so
-  this is a marker and not a brief. What it actually is: `.ui-btn-primary` in
-  `controls.css`, laying `--gradient-accent` over `--color-accent-light` with
-  `--color-bg` as the text — near-black on teal. **It is not a start-screen
-  problem.** That rule is every primary button in the app, and both halves she
-  named come from theme tokens, so a change here lands on every theme at once
-  and on every dialog's confirm button. Ask what she wants it to look like
-  before touching it; a taste question with a screenshot attached is not a
-  licence to guess.
-
-  **The brief, once she saw the mockups** (2026-08-18, after a first round that
-  offered mostly gradient-free options and was rejected as a set):
-  - **Keep the gradient.** Removing it was never the ask. It needs to look
-    better — her word was *glossier*.
-  - **Stay in the deep half of the accent.** Teal is right; travelling up to
-    `--color-accent-light` is the part that looks bad. So the gradient lives
-    around `--color-accent-dark`, not between the two ends.
-  - **White text**, not `--color-bg`.
-
-  Still queued: a second round of glossy candidates is with her. **Whatever
-  wins has to be built from accent tokens**, or it ships teal on all seven
-  themes.
+- **The delete button no longer matches the button beside it.** The primary
+  button became a deep fill lit from the top with white text (2026-08-18);
+  `.ui-btn-danger` is still a flat red with `--color-bg` text, which is the
+  shape the primary one just stopped being. They sit next to each other in
+  every confirm dialog. **Not changed on the spot on purpose** — the brief was
+  about the main button, and giving the destructive one the same gloss is a
+  question about how loud a delete button should be, which is hers. Two ways
+  it could go: the same treatment mixed from `--color-destructive`, or leave
+  danger deliberately flat so it reads as a different kind of thing.
 
 - **The colour dot on every tree row is in the wrong place, and the folder
   colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
