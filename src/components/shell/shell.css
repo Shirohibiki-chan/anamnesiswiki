@@ -427,6 +427,53 @@
   white-space: nowrap;
 }
 
+/* Picking between several projects found inside one chosen folder. Borrows the
+   recent list's row shape on purpose: it's the same gesture — a short list of
+   projects, click one to open it — and inventing a second look for it would
+   make two things that behave identically read as two different things. */
+.project-picker-choices {
+  width: 100%;
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.project-picker-choices h2 {
+  margin: 0;
+}
+
+.project-picker-choices ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.project-picker-choices button:not(.ui-link) {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  padding: var(--space-lg) var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.project-picker-choices button:not(.ui-link):hover {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-hover);
+}
+
 /* All three actions are `.ui-btn .ui-btn-lg .ui-btn-secondary` now. They're
    still identical to each other, which is the remaining half of this screen's
    problem — for someone opening the app for the first time only one of the
