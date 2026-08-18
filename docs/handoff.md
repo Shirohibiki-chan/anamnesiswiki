@@ -1547,31 +1547,41 @@ is below.
 
 ## Layout
 
-- **A wrapping row of chips is the wrong shape in the 180px sidebar.** A chip
-  flows: the design pays off when several sit on a line together. Nothing does
-  here — a folder’s name plus its count is wider than half the column, so every
-  chip claimed a row and the Assets tab’s folder strip became a stack of
-  stretched pills, reported 2026-08-18. Replaced with a grid of squat tiles,
-  name over count (`.asset-folders-grid`).
-  **`repeat(auto-fill, minmax(4.5rem, 1fr))` rather
-  than a fixed column count**, because the same component draws inside the
-  picker dialog, which is several hundred pixels wide; a fixed two would look
-  broken there and a container query would need the component to know which of
-  the two places it was in. Two things a column of tiles needs that a row of
-  chips doesn't: `align-self: stretch` on the label — text in a column is only
-  as wide as it wants to be, and text that is never narrower than itself never
-  ellipsises — and a `max-height` on the grid in the sidebar, since folders
-  reachable by scrolling beat pictures pushed off the bottom of the panel.
+- **The Assets tab's folders went chips → tiles → dropdown in one day, and the
+  lesson underneath is about the column, not the shapes.** A chip flows: the
+  design pays off when several share a line, and nothing does at 180px, because
+  a folder's name plus its count is wider than half of it. So the chips each
+  claimed a row and the strip read as a stack of stretched pills. Tiles two to a
+  row fixed the look and kept the real problem, which measurement found and
+  guessing wouldn't have: at fifty folders the block is 26 rows and 1101px,
+  shown 216px at a time. **Anything that grows with the number of folders is
+  wrong in a panel whose job is showing pictures.** The dropdown floats over
+  them instead, so the panel's cost is one line whatever the count.
 
-- **The Assets tab's folder strip folds shut, and two things hold it open that
-  aren't the toggle.** A rename in progress is one: the name box *is* one of the
-  tiles, so `renamingId !== null` forces the grid open — **derived, not an
-  effect that calls `setOpen`.** An effect would leave the strip open after the
-  rename finished, with the chevron pointing the wrong way, and React's
-  `set-state-in-effect` rule rejects it anyway. The other is a picture dragged
-  over the shut line, which opens the tiles so there's something to drop on;
-  without it, folding the strip would quietly remove the only way to file a
-  picture. Anything else that hides these tiles has to answer both cases.
+- **Three things about the dropdown that look optional and aren't.**
+  - **`max-height` lives in CSS, not in a measured style.** `TreePopover`
+    measures the rendered box to decide whether to open downward or flip up; a
+    menu that caps its own height after being positioned gets positioned
+    against the wrong height. Verified flipping upward from a trigger at
+    y=617 in a 720px window.
+  - **A picture dragged over the closed line opens the menu**, and its rows take
+    drops. Without both, collapsing the folders quietly removes the only way to
+    file a picture — the failure isn't visible, which is what makes it worth
+    writing down.
+  - **Renaming replaces the line rather than opening the menu.** The name box
+    used to be one of the tiles, which meant a shut strip hid what you were
+    typing into; the line already names the folder Rename was pressed for. The
+    earlier fix — forcing the grid open from `renamingId` — is gone, and don't
+    reintroduce it as an effect that calls `setOpen`: React's
+    `set-state-in-effect` rule rejects it, and it leaves the chevron
+    disagreeing with the screen.
+
+- **The tile grid still exists, for the picker dialog only**
+  (`.asset-folders-grid`, `repeat(auto-fill, minmax(4.5rem, 1fr))`). Two rules
+  it needs that a row of chips didn't: `align-self: stretch` on the label, since
+  text in a column is only as wide as it wants to be and text never narrower
+  than itself never ellipsises; and `auto-fill` rather than a fixed count, since
+  a dialog several hundred pixels wide and a sidebar are the same component.
 
 - **The side panels' widths are custom properties on `.app-layout`, and the
   resize handles are positioned against the grid rather than inside the

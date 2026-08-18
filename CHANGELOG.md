@@ -4,8 +4,8 @@
 
 ### Fixes
 
-- **The folders in the Assets tab fold away.** They sit on one line saying which folder you're in, and open when you click it — the panel is for looking at pictures, and a block of folders was holding the top of it whether you were using them or not. Picking a folder closes it again. Dragging a picture onto the closed line opens it so you can drop the picture in a folder.
-- **Folders in the Assets tab are tiles now, two to a row.** They were rounded pills meant to sit side by side, and none of them ever did — a folder's name plus its count is wider than half the sidebar, so each one took a row to itself and four folders filled the panel. The tiles put the count under the name, line up in a grid, and widen to three or more when you drag the sidebar out or open the picture picker. Long names cut off with a "…" and show in full when you hover.
+- **The folders in the Assets tab are a dropdown now.** One line saying which folder you're in, and the list opens over the pictures when you click it. It scrolls itself and doesn't push anything down, so fifty folders works as well as four — where the old block of folders would have been 26 rows deep and shown a fifth of itself at a time. Picking a folder closes it. Dragging a picture onto the line opens it so you can drop the picture into a folder, and renaming a folder turns that line into the name box.
+- **Folders in the picture picker are tiles, several to a row.** They were rounded pills meant to sit side by side, and none of them ever did — a folder's name plus its count is wider than half the sidebar, so each one took a row to itself and four folders filled the panel. The tiles put the count under the name and line up in a grid. Long names cut off with a "…" and show in full when you hover.
 
 ## 2026-08-14
 

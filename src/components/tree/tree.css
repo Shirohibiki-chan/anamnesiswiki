@@ -1124,22 +1124,84 @@ button.tree-path-crumb:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Only the tiles are spaced off the line above them. Shut, the strip is that
-   line alone and shouldn't be carrying a gap under nothing. */
-.asset-folders-toggle + .asset-folders-grid {
-  margin-top: var(--space-xs);
+/* The dropdown itself. `.tree-popover` supplies the surface, the elevation and
+   the position; this is only the list inside it.
+
+   min-width beats the 180px sidebar on purpose — TreePopover clamps a popover
+   that would hang off the left edge back against the panel, so a menu wider
+   than its trigger is free, and a folder name gets a whole row to itself
+   instead of a third of one.
+
+   max-height is what makes fifty folders survivable: the menu scrolls itself
+   rather than growing past the window. TreePopover measures the rendered box
+   to decide whether to open downward or flip up, so the cap has to be in CSS
+   where that measurement can see it — a menu that sizes itself after being
+   positioned gets positioned wrong. */
+.asset-folders-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 12rem;
+  max-height: min(24rem, 60vh);
+  overflow-y: auto;
 }
 
-/* Two per row in the sidebar at its narrowest, three as it's dragged out, more
-   again in the picker dialog — `auto-fill` rather than a fixed count, so one
-   rule serves both places and the folders track the picture grid below without
-   having to know which one they're in.
+.asset-folders-menu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  text-align: left;
+  cursor: pointer;
+}
 
-   4.5rem is the narrowest a name-and-count tile stays readable at, and it's
-   what puts exactly two across a 180px column. Chips that wrapped were here
-   before, which sounded right and wasn't: a name plus a count is wider than
-   half the column, so every one took a row to itself and four folders filled
-   the panel. */
+.asset-folders-menu-row:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.asset-folders-menu-row-active {
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+/* While a picture is held over it, matching what a tile does in the picker. */
+.asset-folders-menu-row-over {
+  border-color: var(--color-accent-light);
+  background: var(--color-accent-hover);
+}
+
+/* A folder name gets the room; the count keeps its own column at the end so
+   the numbers line up down the menu. */
+.asset-folders-menu-row-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-folders-menu-row-count {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* The picker dialog's folder tiles — the sidebar uses the dropdown above
+   instead. `auto-fill` rather than a fixed column count, so the tiles fill
+   whatever width the dialog has.
+
+   4.5rem is the narrowest a name-and-count tile stays readable at, which is
+   also what put exactly two across the 180px sidebar when this shape lived
+   there too. Chips that wrapped were here before that, which sounded right and
+   wasn't: a name plus a count is wider than half a sidebar, so every one took a
+   row to itself and four folders filled the panel. */
 
 .asset-folders-grid {
   display: grid;
@@ -1147,13 +1209,6 @@ button.tree-path-crumb:hover {
   gap: var(--space-xs);
 }
 
-/* A ceiling, and only past about a dozen folders does it become a scroller.
-   Folders reachable by scrolling beat pictures pushed off the bottom of the
-   panel entirely. The toolbar and the count above it stay put either way. */
-.tree-assets .asset-folders-grid {
-  max-height: 30vh;
-  overflow-y: auto;
-}
 
 /* Squat: the name on one line with its count under it. Left-aligned rather
    than centred, so the names in a row all start at the same place and can be

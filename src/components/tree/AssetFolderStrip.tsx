@@ -20,19 +20,25 @@
 // Deliberately no folder icon. At roughly 72px a glyph costs about a third of
 // the name, and the name is the part being read.
 //
-// **In the sidebar it folds down to one line, and starts folded.** Even as
-// tiles the folders were taking the top of a panel whose whole job is showing
-// pictures — reported 2026-08-18, the day the tiles landed. Shut, it says which
-// folder you're in, which is the one thing worth a permanent line; open, every
-// folder is there. Choosing one shuts it again, so the ordinary errand costs
-// two clicks and no lasting space.
+// **In the sidebar it's a dropdown, not a block.** One line saying which folder
+// you're in, and the folders themselves in a menu over the pictures. Her call,
+// 2026-08-18. It started as a block that expanded in place, which was fine at
+// four folders and measurably useless at fifty: 26 rows of tiles, 1101px of
+// them, shown 216px at a time. A menu floats instead of pushing, scrolls
+// itself, and gives a folder's whole name a row rather than a third of one.
 //
-// The picker dialog doesn't get the toggle. It's several hundred pixels wide,
-// the folders fit on one row there, and it's a dialog you're looking at rather
-// than a panel you're working beside.
+// **Fifty folders is the size to build for, not four** — she asked what happens
+// at fifty before anything had been built for it, which is the reason the menu
+// exists.
+//
+// The picker dialog keeps the tile grid. It's several hundred pixels wide, the
+// folders sit in a row or two there, and it's a dialog you're looking at rather
+// than a panel you're working beside — so nothing is being pushed out of the
+// way and there's nothing for a menu to save.
 import { ChevronDown, ChevronRight, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
+import { TreePopover } from "./TreePopover";
 import type { AssetFolders, FolderFilter } from "../../services/asset-folders";
 
 type Counts = { all: number; unsorted: number; byFolder: Record<string, number> };
@@ -55,10 +61,10 @@ export type AssetFolderStripProps = {
   /** Dropping a picture on a tile files it there. Omitted in the picker. */
   onDropAsset?: (fileName: string, folderId: string | null) => void;
   /**
-   * Folds down to one line saying where you are. The sidebar's, not the
-   * picker's — see the note at the top of the file.
+   * One line saying where you are, with the folders in a dropdown. The
+   * sidebar's shape, not the picker's — see the note at the top of the file.
    */
-  collapsible?: boolean;
+  asMenu?: boolean;
   /** The folder just made, which opens straight into its own name box. */
   renamingId: string | null;
   onRenamingDone: () => void;
@@ -77,27 +83,22 @@ export function AssetFolderStrip({
   onStartRename,
   onDelete,
   onDropAsset,
-  collapsible = false,
+  asMenu = false,
   renamingId,
   onRenamingDone,
 }: AssetFolderStripProps) {
   const selected = filter.kind === "folder" ? folders.folders.find((f) => f.id === filter.id) : undefined;
-  const [open, setOpen] = useState(false);
-  // A folder just made opens straight into its name box, and that box is one of
-  // the tiles — so a rename in progress holds the strip open whatever the
-  // toggle says, or the box she's typing into is somewhere she can't see.
-  // Derived rather than an effect that opens it: an effect would leave the
-  // strip open afterwards, and `open` is then out of step with the chevron.
-  const showGrid = !collapsible || open || renamingId !== null;
+  // The trigger's rect, which is also whether the menu is open — TreePopover
+  // positions itself from a rect rather than from an element, so there is
+  // nothing to keep in a second piece of state.
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
 
   const pick = (next: FolderFilter): void => {
     onFilter(next);
-    // Choosing is the end of the errand, so the strip gets out of the way
-    // again. Only where there's a toggle at all — the picker never folds.
-    if (collapsible) setOpen(false);
+    setAnchor(null);
   };
 
-  // What the shut line says. `selected` is undefined for a folder id that no
+  // What the one line says. `selected` is undefined for a folder id that no
   // longer exists, which is a filter left pointing at a deleted folder — the
   // grid shows everything in that case, so the line has to say so too.
   const here =
@@ -107,31 +108,84 @@ export function AssetFolderStrip({
         ? { label: selected.name, count: counts.byFolder[selected.id] ?? 0 }
         : { label: "All pictures", count: counts.all };
 
+  // Renaming replaces the line rather than opening the menu to reach a box
+  // inside it. The line already names the folder Rename was pressed for, so
+  // editing it in place is the shorter route and the honest one — and a name
+  // box inside a menu that closes on click is a box you can lose by aiming
+  // badly. The picker has no line, so its renames still happen in the grid.
+  if (asMenu && renamingId !== null) {
+    return (
+      <div className="asset-folders">
+        <NameBox
+          initial={folders.folders.find((f) => f.id === renamingId)?.name ?? ""}
+          onCommit={(name) => {
+            onRename(renamingId, name);
+            onRenamingDone();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="asset-folders">
-      {collapsible && (
+      {asMenu && (
         <button
           type="button"
           className="asset-folders-toggle"
-          aria-expanded={open}
-          title={open ? "Hide the folders" : "Show the folders"}
-          onClick={() => setOpen((was) => !was)}
-          // A picture dragged onto a shut strip opens it, rather than meeting
-          // one line that can't file it. The drop still happens on a tile;
-          // this only gets the tiles on screen to be dropped on.
+          aria-haspopup="menu"
+          aria-expanded={anchor !== null}
+          title="Choose a folder"
+          onClick={(event) => setAnchor(anchor ? null : event.currentTarget.getBoundingClientRect())}
+          // A picture dragged onto the line opens the menu under it, rather
+          // than meeting one row that can't file it. The drop still happens on
+          // a folder; this only gets the folders on screen to be dropped on.
           onDragOver={(event) => {
             if (!onDropAsset || !Array.from(event.dataTransfer.types).includes(ASSET_DRAG_TYPE)) return;
             event.preventDefault();
-            setOpen(true);
+            if (!anchor) setAnchor(event.currentTarget.getBoundingClientRect());
           }}
         >
-          {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          {anchor ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           <span className="asset-folders-toggle-label">{here.label}</span>
           <span className="asset-folders-toggle-count">{here.count}</span>
         </button>
       )}
 
-      {showGrid && (
+      {asMenu && anchor && (
+        <TreePopover anchorRect={anchor} onClose={() => setAnchor(null)} className="asset-folders-menu-popover">
+          <div className="asset-folders-menu" role="menu">
+            <MenuRow
+              label="All pictures"
+              count={counts.all}
+              active={filter.kind === "all"}
+              onClick={() => pick({ kind: "all" })}
+              onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
+            />
+            {counts.unsorted > 0 && counts.unsorted < counts.all && (
+              <MenuRow
+                label="Unsorted"
+                count={counts.unsorted}
+                active={filter.kind === "unsorted"}
+                onClick={() => pick({ kind: "unsorted" })}
+                onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
+              />
+            )}
+            {folders.folders.map((folder) => (
+              <MenuRow
+                key={folder.id}
+                label={folder.name}
+                count={counts.byFolder[folder.id] ?? 0}
+                active={sameFilter(filter, { kind: "folder", id: folder.id })}
+                onClick={() => pick({ kind: "folder", id: folder.id })}
+                onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, folder.id))}
+              />
+            ))}
+          </div>
+        </TreePopover>
+      )}
+
+      {!asMenu && (
         <div className="asset-folders-grid">
           <Tile
             label="All pictures"
@@ -276,6 +330,61 @@ function Tile({
     >
       <span className="asset-folder-tile-label">{label}</span>
       <span className="asset-folder-tile-count">{count}</span>
+    </button>
+  );
+}
+
+/**
+ * One folder in the dropdown. A row rather than a tile, because a row is what
+ * a menu is made of and because a whole folder name fits across one — which
+ * was the other thing wrong with tiles at fifty folders, not just the height.
+ *
+ * It takes a drop, same as a tile does. A menu whose rows refused pictures
+ * would be a menu you have to close before you can file anything.
+ */
+function MenuRow({
+  label,
+  count,
+  active,
+  onClick,
+  onDropAsset,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+  onDropAsset?: (fileName: string) => void;
+}) {
+  const [over, setOver] = useState(false);
+  const carries = (event: React.DragEvent): boolean =>
+    Array.from(event.dataTransfer.types).includes(ASSET_DRAG_TYPE);
+
+  return (
+    <button
+      type="button"
+      role="menuitemradio"
+      aria-checked={active}
+      className={`asset-folders-menu-row${active ? " asset-folders-menu-row-active" : ""}${over ? " asset-folders-menu-row-over" : ""}`}
+      onClick={onClick}
+      onDragOver={(event) => {
+        if (!onDropAsset || !carries(event)) return;
+        // The browser refuses the drop outright without this — `dragover`
+        // calling preventDefault is what makes an element a target at all.
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(event) => {
+        setOver(false);
+        if (!onDropAsset || !carries(event)) return;
+        event.preventDefault();
+        const fileName = event.dataTransfer.getData(ASSET_DRAG_TYPE);
+        if (fileName) onDropAsset(fileName);
+      }}
+    >
+      <span className="asset-folders-menu-row-label">{label}</span>
+      <span className="asset-folders-menu-row-count">{count}</span>
     </button>
   );
 }

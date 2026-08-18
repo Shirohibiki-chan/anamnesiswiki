@@ -200,7 +200,7 @@ export function AssetsPanel() {
           onStartRename={setRenamingId}
           onDelete={handleDeleteFolder}
           onDropAsset={setAssetFolder}
-          collapsible
+          asMenu
           renamingId={renamingId}
           onRenamingDone={() => setRenamingId(null)}
         />
