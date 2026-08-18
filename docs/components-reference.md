@@ -20,8 +20,12 @@
 |---|---|
 | The three-column app frame (left tree / center page / right properties), including panel show/hide state and responsive collapsing on narrow windows | `src/components/shell/AppLayout.tsx` |
 | Top bar spanning the center panel — breadcrumb trail on the left, right-panel toggle on the right, tiny fade-in "Saved" indicator after autosave commits | `src/components/shell/TopBar.tsx` |
-| First-launch project picker — grid of recent projects + "Open folder" and "New project" buttons; opens a native folder picker via Tauri dialog | `src/components/shell/ProjectPicker.tsx` |
-| Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `ProjectPicker` if none exists | `src/components/shell/StartupRouter.tsx` |
+| The start screen — brand, the one centred "New project" button, the filter box, and the rail. Rendered before any project is open | `src/components/start/StartScreen.tsx` |
+| Every project as covers or rows, a page at a time or in one scroll, with the view toggle and the page controls | `src/components/start/ProjectGrid.tsx`, `src/components/start/ProjectTile.tsx` |
+| The start screen's right-hand rail — recently opened, the ways to start something, the cog | `src/components/start/StartRail.tsx` |
+| What the start screen can do that can fail: open a listed project, open a folder she picked (including looking one level in), create a new one | `src/hooks/use-start-actions.ts` |
+| Pages that fit the window, for any long grid. Reads the pages-or-scroll preference | `src/hooks/use-paged-list.ts`, `src/services/pagination.ts` |
+| Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `StartScreen` if none exists | `src/components/shell/StartupRouter.tsx` |
 | The settings dialog — the frame, the vertical rail of sections, the search box, and the ranked result list. The rail's contents come from `SETTINGS_TABS` in `src/constants/settings.ts`; adding a section is an entry there **and** one in this file's `PANELS` map, which a test checks are in step. | `src/components/shell/SettingsModal.tsx` |
 | Settings search — the index of every setting, built from the same registries the panels render from. A result scrolls to and flashes the row tagged `data-setting="<entry id>"`. | `src/services/settings-search.ts`, `src/constants/settings.ts` |
 | Settings → Theme — the theme list with live swatch dots, the New theme / import / folder buttons, and "Put everything back to default" | `src/components/shell/ThemeSettings.tsx` |

@@ -608,10 +608,13 @@ projects behind a "4 more…" link and a page does not. Everything is still
 reachable either way; the question is only whether the grid ends at a page
 boundary or keeps going.
 
-The switch belongs in appearance settings, beside muted covers and for the same
-reason — how much scrolling a person wants is taste, and the answer to a taste
-question is a setting rather than a compromise everyone lives with. Default to
-pages, since that is what she wants and she is the user.
+**It shipped in Settings → Lists rather than in appearance** (2026-08-18). The
+reasoning for having a switch at all is the muted-covers reasoning — taste gets
+a setting, not a compromise everybody lives with — but this one is about how a
+list behaves rather than how it looks, and it governs the picture picker as
+well as this screen (her call: it is the grid she is in far more often). A
+behaviour setting filed under appearance is a setting nobody finds twice.
+Default is pages.
 
 **The pinned row keeps its own pagination regardless.** That one is not a
 preference: a scrolling row cannot land on a page boundary, so its last page
@@ -710,7 +713,18 @@ it surfaces what changed in the release, which currently ships inside the app
 but has to be gone looking for.
 
 The mock lives at `docs/mockups/start-screen.html` for reference while this is
-built.
+built. Read its labels as saying "project" — it was drawn before the naming
+pass and still says "world" on the buttons.
+
+**Built so far (2026-08-18):** the two-column shell, brand and version, the one
+centred New project button, the filter box, the all-projects cover grid with
+generated covers and the grid/list toggle, the pages/scroll switch, and the
+rail carrying Recently Opened, Start Something and the cog.
+
+**Still to build:** the pinned row and its manage window; covers you set
+yourself, and the muted-covers switch; the sort control beside the view toggle;
+release notes in the rail; the page you were last on; groups and archive; the
+duplicate-world action.
 
 ### Second instance
 

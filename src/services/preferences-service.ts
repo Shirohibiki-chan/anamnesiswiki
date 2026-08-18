@@ -22,12 +22,43 @@
 export const TREE_DOUBLE_CLICK_ACTIONS = ["expand", "rename"] as const;
 export type TreeDoubleClickAction = (typeof TREE_DOUBLE_CLICK_ACTIONS)[number];
 
+/**
+ * Whether a long grid of things is broken into pages, or is one endless scroll.
+ *
+ * Pages are the default and her preference (2026-08-18), and the switch exists
+ * because the other one is a real way to work rather than a mistake: scrolling
+ * wins when you are skimming for something you would know on sight and could
+ * not have named.
+ *
+ * App-level and not per-grid on purpose. It reads as one habit rather than
+ * several — the projects on the start screen and the pictures in the asset
+ * picker are the same question asked twice — and a switch that had to be found
+ * and set separately in each place would mostly be found in neither.
+ */
+export const LIST_PAGING_MODES = ["pages", "scroll"] as const;
+export type ListPagingMode = (typeof LIST_PAGING_MODES)[number];
+
+/**
+ * Covers or rows, on the start screen.
+ *
+ * Not in the settings dialog: the control is a pair of icons on the screen
+ * it changes, which is where you are when you want it. It lives here anyway
+ * because it has to survive closing the app — the same reasoning as the panel
+ * widths, and the same disappointment if it didn't.
+ */
+export const PROJECT_VIEWS = ["grid", "list"] as const;
+export type ProjectView = (typeof PROJECT_VIEWS)[number];
+
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
+  listPaging: ListPagingMode;
+  projectView: ProjectView;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
+  listPaging: "pages",
+  projectView: "grid",
 };
 
 /**
@@ -44,9 +75,17 @@ export function parsePreferences(raw: unknown): Preferences {
   if (typeof raw !== "object" || raw === null) return DEFAULT_PREFERENCES;
   const source = raw as Record<string, unknown>;
   const treeDoubleClick = source.treeDoubleClick;
+  const listPaging = source.listPaging;
+  const projectView = source.projectView;
   return {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
       : DEFAULT_PREFERENCES.treeDoubleClick,
+    listPaging: LIST_PAGING_MODES.includes(listPaging as ListPagingMode)
+      ? (listPaging as ListPagingMode)
+      : DEFAULT_PREFERENCES.listPaging,
+    projectView: PROJECT_VIEWS.includes(projectView as ProjectView)
+      ? (projectView as ProjectView)
+      : DEFAULT_PREFERENCES.projectView,
   };
 }

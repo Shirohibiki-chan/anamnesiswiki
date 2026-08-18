@@ -195,3 +195,29 @@ export function buildWorldList(input: {
     (a, b) => b.activeAt - a.activeAt || a.name.localeCompare(b.name) || a.path.localeCompare(b.path),
   );
 }
+
+/**
+ * The filter box on the start screen, as a rule rather than an `includes` in a
+ * component.
+ *
+ * **Name first, then the path.** Typing is nearly always aimed at a name, but
+ * two projects can share one and the folder is then the only thing that tells
+ * them apart — so a query that matches nothing by name still gets a chance
+ * against where the project lives.
+ *
+ * **Every word has to land, in any order.** "val 3" finds `Valeraverse3`, and
+ * so does "3 val". Matching the query as one string would fail both, which is
+ * how a filter box teaches someone to stop using it.
+ *
+ * An empty or blank query is not a filter, and returns the list it was given.
+ */
+export function filterWorlds(worlds: readonly ListedWorld[], query: string): ListedWorld[] {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [...worlds];
+
+  return worlds.filter((world) => {
+    const name = world.name.toLowerCase();
+    const path = world.path.toLowerCase();
+    return words.every((word) => name.includes(word) || path.includes(word));
+  });
+}

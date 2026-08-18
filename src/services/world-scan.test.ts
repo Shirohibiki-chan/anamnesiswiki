@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildWorldList,
   decideAmongNestedWorlds,
+  filterWorlds,
   isInsideProjectsFolder,
   isReservedWorldName,
   WORLD_SCAN_DEPTH,
+  type ListedWorld,
   type WorldFile,
 } from "./world-scan";
 
@@ -199,5 +201,58 @@ describe("buildWorldList", () => {
     // It used to stop at eight, which is the bug this replaces.
     const onDisk = Array.from({ length: 20 }, (_, i) => file(`${DIR}/World${i}`));
     expect(buildWorldList({ onDisk, remembered: [], projectsDir: DIR })).toHaveLength(20);
+  });
+});
+
+describe("filterWorlds", () => {
+  const DIR = "/Documents/Anamnesis";
+  const listed = (path: string, name: string): ListedWorld => ({
+    path,
+    id: null,
+    name,
+    lastOpenedAt: null,
+    modifiedAt: null,
+    activeAt: 0,
+    isOutsideProjectsFolder: false,
+  });
+
+  const worlds = [
+    listed(`${DIR}/Valeraverse`, "Valeraverse"),
+    listed(`${DIR}/Valeraverse3`, "Valeraverse3"),
+    listed(`${DIR}/Drafts/girl`, "this is the story of a girl"),
+    listed("D:/Backups/Ashfall", "Ashfall"),
+  ];
+
+  it("returns everything for an empty or blank query", () => {
+    expect(filterWorlds(worlds, "")).toHaveLength(4);
+    expect(filterWorlds(worlds, "   ")).toHaveLength(4);
+  });
+
+  it("ignores case, since nobody types capitals into a filter box", () => {
+    expect(filterWorlds(worlds, "ASHFALL").map((w) => w.name)).toEqual(["Ashfall"]);
+  });
+
+  it("matches on any word, in any order", () => {
+    // "val 3" and "3 val" are the same intent typed two ways.
+    expect(filterWorlds(worlds, "val 3").map((w) => w.name)).toEqual(["Valeraverse3"]);
+    expect(filterWorlds(worlds, "3 val").map((w) => w.name)).toEqual(["Valeraverse3"]);
+  });
+
+  it("matches the middle of a name, not only the start", () => {
+    expect(filterWorlds(worlds, "story").map((w) => w.name)).toEqual(["this is the story of a girl"]);
+  });
+
+  it("falls back to the folder, for the projects that share a name", () => {
+    expect(filterWorlds(worlds, "backups").map((w) => w.name)).toEqual(["Ashfall"]);
+  });
+
+  it("returns nothing rather than everything when nothing matches", () => {
+    expect(filterWorlds(worlds, "zzz")).toEqual([]);
+  });
+
+  it("does not mutate the list it was handed", () => {
+    const before = [...worlds];
+    filterWorlds(worlds, "val");
+    expect(worlds).toEqual(before);
   });
 });

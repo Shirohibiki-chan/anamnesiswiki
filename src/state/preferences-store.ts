@@ -6,7 +6,9 @@ import * as appSettings from "../services/app-settings-service";
 import {
   DEFAULT_PREFERENCES,
   parsePreferences,
+  type ListPagingMode,
   type Preferences,
+  type ProjectView,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -15,6 +17,8 @@ export type PreferencesStoreState = {
   /** Called once at startup. See StartupRouter. */
   loadPreferences: () => Promise<void>;
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
+  setListPaging: (mode: ListPagingMode) => void;
+  setProjectView: (view: ProjectView) => void;
 };
 
 export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
@@ -43,6 +47,14 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setTreeDoubleClick(action) {
       apply({ ...get().preferences, treeDoubleClick: action });
+    },
+
+    setListPaging(mode) {
+      apply({ ...get().preferences, listPaging: mode });
+    },
+
+    setProjectView(view) {
+      apply({ ...get().preferences, projectView: view });
     },
   };
 });
