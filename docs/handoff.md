@@ -458,6 +458,17 @@ is below.
 - **`window.confirm()` silently no-ops in Tauri's webview** — it doesn't block, so
   Delete once deleted with no prompt at all. Use `confirmDestructive()`.
 
+- **A `<button>` with no class is invisible, not merely plain.** The reset
+  strips fill, border, padding and the pointer cursor, so an unclassed button
+  renders as a line of text the same colour as the prose around it. The import
+  dialog's only control shipped that way from Phase 8 and was reported
+  2026-08-18 as the file picker failing to open — because missing a 21px
+  invisible target is indistinguishable from a broken button. **Every
+  `<button>` needs `ui-btn` (or a component class that fills the same role).**
+  Worth knowing how this was found, because reading the JSX would never show
+  it: `tauri:inspect` plus `getComputedStyle` over every button on screen,
+  flagging any with no fill, no border, no padding and no pointer cursor.
+
 - **A native picker that fails must reach the screen, and every call site had
   the same hole.** Reported 2026-08-18: choosing a file to import often opened
   no picker at all. The shape was identical in six places — `await pickX()`
