@@ -234,15 +234,48 @@
   background: var(--color-accent-hover);
 }
 
+/* The same button as primary, in red. Her call (2026-08-18): the two sit
+   beside each other in every confirm dialog, and leaving danger flat while
+   primary became a lit fill made the delete button look like the unfinished
+   one rather than like a different kind of thing.
+
+   **Built with `oklch(from …)` rather than `color-mix` toward black, which is
+   where this differs from primary and why.** Primary has two accent tokens to
+   work between; danger has exactly one, and its lightness is nowhere near the
+   same across themes — `--color-destructive` is #f87171 on the dark themes and
+   #dc2626 on Daylight. Mixing both by the same percentage would have given
+   Daylight a near-black button. Pinning the lightness instead and keeping the
+   theme's own chroma and hue lands the two within a tenth of each other:
+   6.0:1 and 6.1:1 behind the label, 9.2:1 and 8.2:1 below it. The app already
+   uses this syntax for `--color-hover-pole` in index.css.
+
+   The 0.62 stop is the top edge, which the label does not sit on and which is
+   therefore allowed to be a proper red rather than a safe one. */
 .ui-btn-danger {
-  background: var(--color-destructive);
-  border-color: var(--color-destructive);
-  color: var(--color-bg);
-  font-weight: 500;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04) 52%, rgba(255, 255, 255, 0)),
+    linear-gradient(
+      180deg,
+      oklch(from var(--color-destructive) 0.62 c h) 0%,
+      oklch(from var(--color-destructive) 0.52 c h) 30%,
+      oklch(from var(--color-destructive) 0.42 c h) 70%,
+      oklch(from var(--color-destructive) 0.36 c h) 100%
+    );
+  border-color: color-mix(in oklab, var(--color-destructive) 55%, transparent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+/* Same shape as primary's, and for the same reason: the wash has to be
+   declared with the two shadows or it throws them away. */
 .ui-btn-danger:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 999px var(--color-hover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 999px var(--color-hover),
+    0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* --- Icon buttons ---

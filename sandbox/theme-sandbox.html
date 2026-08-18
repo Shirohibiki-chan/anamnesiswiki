@@ -360,7 +360,18 @@ details.grad[data-on="1"] { border-color: #3d5c58; }
   color: var(--color-on-accent, #fff); font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 3px rgba(0,0,0,.5);
 }
-#preview .ui-btn.danger { color: var(--color-danger, #f87171); }
+#preview .ui-btn.danger {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,.04) 52%, rgba(255,255,255,0)),
+    linear-gradient(180deg,
+      oklch(from var(--color-destructive, #f87171) 0.62 c h) 0%,
+      oklch(from var(--color-destructive, #f87171) 0.52 c h) 30%,
+      oklch(from var(--color-destructive, #f87171) 0.42 c h) 70%,
+      oklch(from var(--color-destructive, #f87171) 0.36 c h) 100%);
+  border-color: color-mix(in oklab, var(--color-destructive, #f87171) 55%, transparent);
+  color: var(--color-on-accent, #fff); font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 3px rgba(0,0,0,.5);
+}
 #preview .path { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-secondary); }
 
 #preview .modal-demo {

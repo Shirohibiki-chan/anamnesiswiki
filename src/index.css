@@ -140,13 +140,16 @@
      "accent" sounds like the bold teal and is in fact the 15% tint. */
   --color-accent: var(--color-accent-faint);
 
-  /* What goes ON the accent when the accent is the fill. One rule uses it —
-     the primary button — and it is white rather than `--color-bg` because
+  /* What goes ON a filled button. Two rules use it, primary and danger, and
+     it is white rather than `--color-bg` because
      that is what the button being deep rather than bright buys you. The old
      way round was near-black on bright teal, which is the only thing that
      works on a fill that light: white on `--color-accent-light` measures
-     about 1.5:1. Not offered by the theme editor's pickers yet; a theme can
-     still set it by hand. */
+     about 1.5:1. Named for the accent because that is where it started, and
+     kept as one token rather than two — a second `--color-on-destructive`
+     would be a token whose only possible sensible value is the same white.
+     Not offered by the theme editor's pickers yet; a theme can still set it
+     by hand. */
   --color-on-accent: #ffffff;
 
   /* Hover — the one state in the app that had no token of its own.
@@ -825,6 +828,20 @@
   --color-callout-secret: #b09cfc;
   --color-callout-secret-bg: rgba(127, 96, 249, 0.14);
   --color-callout-secret-text: #e7e0ff;
+
+  /* The only theme that still fills its own primary button. Her call
+     (2026-08-18): the other four bundled gradients were just their own accent
+     said twice, and dropping them changed nothing you could see — this one was
+     violet-to-cyan, which is nothing like the deep blue the rest of Abyssal is
+     built from, and she wants it kept.
+
+     **Deepened rather than copied back.** The original stops were #7f60f9 and
+     #6ddcff, and the button's label is white now: white on that cyan measures
+     1.6:1, which is not a button, it's a rumour. Both stops keep their hue and
+     chroma and drop in lightness until the whole travel clears 4.5:1 — 5.3:1
+     at the violet end, 5.0:1 at the cyan. The gloss layers over the top of
+     this, so it still reads as the same button as everywhere else. */
+  --gradient-accent: linear-gradient(100deg, #714ee6, #0078a1);
 }
 
 /* The one theme that isn't a taste call — some people can't read light text on
