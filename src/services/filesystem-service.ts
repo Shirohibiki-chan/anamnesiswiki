@@ -32,6 +32,7 @@ import {
   TEMPLATES_FILE,
 } from "../constants/paths";
 import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
+import { decideAmongNestedWorlds, isReservedWorldName, WORLD_SCAN_DEPTH, type OpenFolderOutcome } from "./world-scan";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -364,6 +365,26 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     project = JSON.parse(await readTextFile(projectPath)) as Project;
   } catch {
     return null;
+  }
+
+  // Every world saved before ids existed arrives here without one. Mint it and
+  // write it straight back, so the id a pin or a group is keyed on is the same
+  // id next time — a value invented fresh on each load would be no identity at
+  // all. Writing only when it's missing keeps this a one-time event per world
+  // rather than a write on every open.
+  //
+  // A failed write is not fatal: the world still opens, carrying the id it was
+  // just given for this session. A read-only folder — a world on a memory
+  // stick, or one inside a zip she opened in place — must not be unopenable
+  // because of bookkeeping. It simply gets a new id next time, which costs
+  // exactly the pins on a world she can't write to anyway.
+  if (!project.id) {
+    project = { ...project, id: crypto.randomUUID() };
+    try {
+      await saveProject(rootPath, project);
+    } catch {
+      // Keep going with the in-memory id.
+    }
   }
 
   const ctx: WalkContext = {
@@ -712,6 +733,85 @@ async function walkEntries(
   );
 
   return perEntry.flat();
+}
+
+/**
+ * Whether a directory holds a world — the same `project.json` check
+ * `loadProject` makes, on purpose. Anything a listing offers has to be
+ * something the loader will accept, and two different definitions of "is a
+ * world" is how a picker grows entries that fail to open.
+ */
+export async function isWorldDir(path: string): Promise<boolean> {
+  return exists(joinPath(path, PROJECT_FILE));
+}
+
+/**
+ * Every world under `root`, to `WORLD_SCAN_DEPTH`. Paths only.
+ *
+ * Reading each world's `project.json` for its name and id is a separate step by
+ * design: this is one `readDir` per directory and fails on none of them, so an
+ * unreadable subfolder — a shortcut to a drive that isn't plugged in, say —
+ * costs that subfolder rather than the whole listing.
+ *
+ * **Never descends into a world.** A world's folder is full of directories,
+ * none of them worlds, and one of them could hold a `project.json` of its own
+ * if a world is ever imported inside another. Stopping at the boundary is what
+ * makes this a list of worlds rather than a list of folders underneath one.
+ */
+export async function scanForWorlds(root: string): Promise<string[]> {
+  const found: string[] = [];
+
+  async function visit(dir: string, depth: number): Promise<void> {
+    let entries: DirEntry[];
+    try {
+      entries = await readDir(dir);
+    } catch {
+      return;
+    }
+
+    const directories = entries.filter((e) => e.isDirectory && !(depth === 1 && isReservedWorldName(e.name)));
+    await Promise.all(
+      directories.map(async (entry) => {
+        const path = joinPath(dir, entry.name);
+        if (await isWorldDir(path)) {
+          found.push(path);
+          return;
+        }
+        if (depth < WORLD_SCAN_DEPTH) await visit(path, depth + 1);
+      }),
+    );
+  }
+
+  await visit(root, 1);
+  // Directories are read in parallel, so completion order is down to timing.
+  // Sorting keeps two scans of an unchanged folder in the same order.
+  found.sort();
+  return found;
+}
+
+/**
+ * "Open folder", made forgiving. See `decideAmongNestedWorlds` for why.
+ */
+export async function resolveChosenFolder(path: string): Promise<OpenFolderOutcome> {
+  if (await isWorldDir(path)) return { kind: "world", path };
+
+  let entries: DirEntry[];
+  try {
+    entries = await readDir(path);
+  } catch {
+    return { kind: "none" };
+  }
+
+  const inside: string[] = [];
+  await Promise.all(
+    entries
+      .filter((e) => e.isDirectory)
+      .map(async (entry) => {
+        const child = joinPath(path, entry.name);
+        if (await isWorldDir(child)) inside.push(child);
+      }),
+  );
+  return decideAmongNestedWorlds(inside);
 }
 
 export async function saveProject(rootPath: string, project: Project): Promise<void> {

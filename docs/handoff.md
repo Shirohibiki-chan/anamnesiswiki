@@ -57,6 +57,28 @@ is below.
 
 ## Storage
 
+- **A world's identity is `project.json`'s `id`, never its folder path.** Paths
+  change — a rename, a move to another drive, the Phase 27 folder
+  reorganisation — and everything keying on one breaks quietly when they do.
+  The recent list is the standing example: it stores paths, so a renamed world
+  reappears as a second entry and the old one dangles. Pins, groups and archive
+  state all key on the id instead.
+
+  It lives in the project file rather than app settings **on purpose**, so it
+  travels with a world that's handed to someone else. Optional in the type but
+  present in practice: `loadProject` mints one and writes it back for any world
+  saved before ids existed, so the field is missing on disk exactly once per
+  world and every caller downstream of a load can count on it.
+
+  A failed backfill write is swallowed — a world on read-only media still
+  opens, carrying a session-only id.
+
+- **A copy gets a fresh id, and records its parent in `forkedFromId`.** Never
+  derive one id from another: the collision suffixes in `filesystem-service.ts`
+  are recomputed on every resolve, which is fine for a filename and fatal for
+  an identity, because a renumber breaks every reference. Lineage is its own
+  field so identity can stay meaningless.
+
 - **A directory's ownership must never come from its current name.** Folders and
   nestable pages carry a `_folder.json` / `_page.json` marker; that marker is what
   identifies the owner. Matching by filename instead — which is how Phase 1 did

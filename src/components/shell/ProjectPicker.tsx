@@ -5,34 +5,74 @@ import { useState } from "react";
 import { useProject } from "../../hooks/use-project";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useOpenFolder } from "../../hooks/use-open-folder";
 import { ImportModal } from "../import/ImportModal";
 import { SettingsButton } from "./SettingsButton";
 import "./shell.css";
+
+/**
+ * The folder's own name, for listing worlds found inside a chosen folder.
+ *
+ * The folder name rather than the world's real name from `project.json`:
+ * reading every candidate's project file to label three buttons is three more
+ * disk round trips at the one moment she's waiting on a click, and a world's
+ * folder is nearly always named after it. The full path is on the row and in
+ * the tooltip either way.
+ */
+function folderNameOf(path: string): string {
+  const segments = path.split(/[\\/]/).filter(Boolean);
+  return segments[segments.length - 1] ?? path;
+}
 
 export function ProjectPicker() {
   const { loadProject, createProjectAt } = useProject();
   const { recentProjects, recordProjectOpened, forgetProject, prepareProjectsDir, describeProjectLocation } =
     useAppSettings();
   const { pickFolder } = useDialogs();
+  const resolveChosenFolder = useOpenFolder();
 
   const [isBusy, setIsBusy] = useState(false);
   const [isCreatingOpen, setIsCreatingOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Set when the chosen folder holds several worlds and there's no honest way
+  // to guess which one she meant. Rendered as a short list of buttons.
+  const [choices, setChoices] = useState<string[] | null>(null);
 
   async function handleOpenFolder() {
     const path = await pickFolder({ title: "Open an Anamnesis project" });
     if (!path) return;
 
     setIsBusy(true);
-    const result = await loadProject(path).finally(() => setIsBusy(false));
+    const outcome = await resolveChosenFolder(path).finally(() => setIsBusy(false));
 
-    if (!result) {
+    if (outcome.kind === "none") {
+      setChoices(null);
       setError("That folder doesn't have an Anamnesis project in it, or its files couldn't be read. Try a different folder, or create a new one instead.");
       return;
     }
+    if (outcome.kind === "choose") {
+      // Several worlds inside the folder she picked. Guessing here would open
+      // the wrong world silently, which is worse than one more click.
+      setError(null);
+      setChoices(outcome.paths);
+      return;
+    }
+    setChoices(null);
+    await openWorldAt(outcome.path);
+  }
+
+  async function openWorldAt(path: string) {
+    setIsBusy(true);
+    const result = await loadProject(path).finally(() => setIsBusy(false));
+
+    if (!result) {
+      setError("That project's files couldn't be read. Try a different folder, or create a new one instead.");
+      return;
+    }
     setError(null);
+    setChoices(null);
     await recordProjectOpened(path, result.name);
   }
 
@@ -152,6 +192,25 @@ export function ProjectPicker() {
           </form>
         )}
       </div>
+
+      {choices && (
+        <div className="project-picker-choices">
+          <h2 className="ui-eyebrow">That folder holds more than one project</h2>
+          <ul>
+            {choices.map((path) => (
+              <li key={path}>
+                <button type="button" onClick={() => void openWorldAt(path)} disabled={isBusy} title={path}>
+                  <span className="project-picker-recent-name">{folderNameOf(path)}</span>
+                  <span className="project-picker-recent-path">{describeProjectLocation(path)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="ui-link" onClick={() => setChoices(null)}>
+            Never mind
+          </button>
+        </div>
+      )}
 
       {error && <p className="project-picker-error">{error}</p>}
 
