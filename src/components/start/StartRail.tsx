@@ -1,6 +1,11 @@
 // The rail down the right of the start screen: the three projects she was in
-// most recently, the ways to start something that isn't opening one of those,
-// and the cog.
+// most recently, the two ways to get a project into the library that are not
+// the New project button, and the cog.
+//
+// The second heading was "Start Something", which named a mood rather than an
+// errand — neither thing under it starts anything from scratch. Both point the
+// app at a project that already exists, one as a folder and one as a file, and
+// both end with it in the list on the left. So: add.
 //
 // Recents live here rather than in the middle because they are a shortcut, not
 // the library — the grid beside this already holds every project including
@@ -49,7 +54,7 @@ export function StartRail({ recent, now, disabled, onOpen, onOpenFolder, onImpor
 
       <div>
         <p className="start-label start-rail-label">
-          <span className="start-title">Start Something</span>
+          <span className="start-title">Add a Project</span>
         </p>
         <button type="button" className="start-item" onClick={onOpenFolder} disabled={disabled}>
           <b>A folder on disk</b>

@@ -406,9 +406,16 @@
      unchanged — retuning those would resize the entire UI, which is a taste
      decision, not a consolidation. What collapsed is the tail: 10px folded up
      to 11, 15px down to 14, and the six competing heading sizes down to three
-     (modal title, page title, start-screen title). The gap between xl and 2xl
-     is real — nothing in the app sits between 18px and 28px, and a scale step
-     that nothing uses is just a step someone will misuse later.
+     (modal title, page title, start-screen title) — four now, since section
+     headings became their own step below.
+
+     The 20px step is the newest and was added on purpose rather than by
+     rounding something up: Phase 27's direction asks for section headings at
+     roughly that size, 16px was too close to body text to read as a heading,
+     and 18px already means "modal title". The 32px step went the other way
+     and is gone: the start screen's big <h1> went with Phase 27's rebuild, so
+     nothing used it, and a scale step nothing uses is just a step someone will
+     misuse later. Both halves of that are the same rule.
 
      Every step is multiplied by `--fs-scale`, which Settings → Fonts and text sets
      and nothing else touches. Text size had to scale *text*: the alternative
@@ -422,10 +429,10 @@
   --fs-xs: calc(0.75rem * var(--fs-scale)); /* 12px — dense UI, secondary labels */
   --fs-sm: calc(0.8125rem * var(--fs-scale)); /* 13px — the default UI size */
   --fs-md: calc(0.875rem * var(--fs-scale)); /* 14px — emphasis, inputs you type into */
-  --fs-lg: calc(1rem * var(--fs-scale)); /* 16px — section headings */
+  --fs-lg: calc(1rem * var(--fs-scale)); /* 16px — panel headings */
   --fs-xl: calc(1.125rem * var(--fs-scale)); /* 18px — modal titles */
-  --fs-2xl: calc(1.75rem * var(--fs-scale)); /* 28px — page and folder titles */
-  --fs-3xl: calc(2rem * var(--fs-scale)); /* 32px — start screen */
+  --fs-2xl: calc(1.25rem * var(--fs-scale)); /* 20px — section headings */
+  --fs-3xl: calc(1.75rem * var(--fs-scale)); /* 28px — page and folder titles */
 
   /* The writing on a page, and only that. A second multiplier because the two
      sizes are answering different questions: the app's labels want to be as
@@ -1026,13 +1033,13 @@ body,
 /* Headings inside a page, as the second of the two text gradients. Scoped to
    `.wiki-body` rather than to a BlockNote class on purpose: the editor owns
    its own DOM and its class names are its business, but the heading elements
-   it renders are plain h1/h2/h3 and always will be.
+   it renders are plain <h1>/h2/h3 and always will be.
 
    Applied while the editor is live, so it has to survive being typed into.
    Text-gradient headings do — unlike the page title, the caret sits inside a
    contenteditable that keeps its own colour, and clipping only affects how the
    already-laid-out glyphs are painted. See index.css §Gradients. */
-.wiki-body :is(h1, h2, h3) {
+.wiki-body :is(<h1>, h2, h3) {
   background-image: var(--gradient-heading, none);
   -webkit-background-clip: var(--gradient-heading-clip, border-box);
   background-clip: var(--gradient-heading-clip, border-box);

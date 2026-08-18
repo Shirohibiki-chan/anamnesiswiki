@@ -370,12 +370,17 @@ There is a second multiplier, `--fs-scale-content`, behind the **Writing** slide
 | `--fs-xs` | 0.75rem / 12px | Dense UI, secondary labels, hints |
 | `--fs-sm` | 0.8125rem / 13px | The default UI size |
 | `--fs-md` | 0.875rem / 14px | Emphasis, inputs you type into |
-| `--fs-lg` | 1rem / 16px | Section headings |
+| `--fs-lg` | 1rem / 16px | Panel headings (a Settings screen's own title) |
 | `--fs-xl` | 1.125rem / 18px | Modal titles (import, export, Settings) |
-| `--fs-2xl` | 1.75rem / 28px | Page and folder titles |
-| `--fs-3xl` | 2rem / 32px | Start screen |
+| `--fs-2xl` | 1.25rem / 20px | Section headings (All Projects, Add a Project) |
+| `--fs-3xl` | 1.75rem / 28px | Page and folder titles |
 
-Nothing sits between 18px and 28px; the gap is intentional, not an omission.
+The 20px step was added 2026-08-18 for Phase 27's section headings, which needed
+to be bigger than body text without borrowing the size that means "modal title".
+The 32px step it displaced is gone rather than renamed: the start screen's big
+`<h1>` went with Phase 27's rebuild and nothing used it afterwards. **A step
+nothing uses is a step someone will misuse**, which is the same rule in both
+directions — don't add one speculatively either.
 
 **Line height** — `--lh-normal` (1.5) is set on `body`, so most elements need no declaration at all. `--lh-tight` (1.25) is for headings at `--fs-xl` and above. Before this the app had six ad-hoc line-heights and everything else inherited the browser's ~1.2, which is why dense screens read as cramped.
 

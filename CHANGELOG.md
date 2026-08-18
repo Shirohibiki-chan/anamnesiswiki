@@ -15,11 +15,12 @@
 
 ### Adjustments
 
-- **The start screen's section headings are Title Case.** "Recently Opened", "Start Something", "All Projects" — they're headings, and they were shipped looking like sentences.
+- **The start screen's section headings are Title Case, and bigger.** "Recently Opened", "Add a Project", "All Projects" — they're headings, and they were shipped looking like sentences at the size of ordinary text. They're 20px now, which is a size the app didn't previously have: it went straight from 18 to 28, and 16 sat too close to the writing around it to read as a heading at all. Everything else on the screen is untouched, and the text-size slider in Settings still moves them along with the rest.
 - **The Import line in the rail says project, not world.** Everywhere else on that screen already did.
 
 ### Renames
 
+- **"Start Something" is "Add a Project".** It was a mood rather than an errand, and neither thing under it starts anything from scratch — both point the app at a project that already exists, one as a folder and one as a `.lk` file, and both end with it sitting in the list on the left.
 - **"Import from LegendKeeper" is just "Import".** It sits in the rail on the start screen and says what it takes — a `.lk` file — rather than naming somebody else's app. The dialog it opens is called "Import a project" for the same reason, and the note about pictures needing the internet no longer names the app they're coming from either. Export still says LegendKeeper, because that file is for that app.
 
 ### Fixes
