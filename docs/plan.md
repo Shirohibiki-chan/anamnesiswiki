@@ -274,11 +274,11 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 **Nested folders.** Ours are flat labels; LK's nest, with a breadcrumb (`Media / asdasdasda / hjhgkhkjh`). Her words for the flat version were that it feels cheap. `asset-folders.ts` stores a folder as an id and a name and a picture as a folder id, so nesting is a parent id on the folder plus a breadcrumb — the pictures themselves don't move, since a folder is a label and not a location.
 
-**A full-window library manager**, like LK's Project Settings → Assets: a filter box, a grid/list toggle, breadcrumbs, and folders as tiles in the same grid as the pictures. The 180px sidebar can't be this and shouldn't try. The picker dialog is the closest thing we already have and is where this probably grows from. **Fifty folders is the case it has to answer** — she raised that number 2026-08-18, and the sidebar dropdown is the stopgap, not the answer.
+**A full-window library manager**, like LK's Project Settings → Assets: a filter box, a grid/list toggle, breadcrumbs, and folders as tiles in the same grid as the pictures. The 180px sidebar can't be this and shouldn't try. The picker dialog is the closest thing we already have and is where this probably grows from. **Fifty folders is the case it has to answer** — she raised that number 2026-08-18, and the sidebar dropdown is the stopgap, not the answer. **Where it opens from is settled: a button in the Assets tab, not a Settings section** — her call 2026-08-18, on the grounds that burying it in settings was always the odd thing about LK’s version. **And it waits for nested folders** rather than being built flat and re-done: they share the breadcrumb, and she chose to hold it until then.
 
 **What we can't take from LK, and it's settled:** the export contains **no asset library at all**. Both of her accounts, checked field by field — no filenames, no folder names, no media section; a picture exists only as a bare CDN URL inside a page, with `attrs.id` empty. So imported pictures can never arrive named or filed, and the names she gives them here are hers alone. See `docs/lk-format.md`.
 
-**Folder shape in the sidebar** is settled and shipped 2026-08-18: a dropdown. One line naming the folder you’re in, the folders themselves in a menu over the pictures. It went chips → tiles → dropdown in a day; her call, and the right one, because it’s the only shape whose cost doesn’t grow with the number of folders. Measured at fifty: the block shape was 26 rows and 1101px, a fifth of it visible at a time. **A filter box inside the menu is the obvious next step and is not built** — fifty rows scroll fine but nobody wants to read them.
+**Folder shape in the sidebar** is settled and shipped 2026-08-18: a dropdown. One line naming the folder you’re in, the folders themselves in a menu over the pictures. It went chips → tiles → dropdown in a day; her call, and the right one, because it’s the only shape whose cost doesn’t grow with the number of folders. Measured at fifty: the block shape was 26 rows and 1101px, a fifth of it visible at a time. The menu grew its own filter box the same day (#183), which is what makes fifty rows usable rather than merely reachable.
 
 ---
 
@@ -639,7 +639,7 @@ grid (#177).
 **Also shipped 2026-08-18:** removing a picture from the library without
 touching a page (#179), the folder chips rebuilt as squat tiles (#180), those
 tiles folded down to one line (#181), and that line turned into a dropdown that
-holds fifty folders as easily as four (#182).
+holds fifty folders as easily as four (#182), with a filter box in it (#183).
 
 **Left in this phase:** reorder templates and start-a-new-page-from one.
 Remove-from-every-page was **dropped** 2026-08-14 — see the Assets tab section

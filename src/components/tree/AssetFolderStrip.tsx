@@ -37,9 +37,10 @@
 // way and there's nothing for a menu to save.
 import { ChevronDown, ChevronRight, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ASSET_FOLDER_FILTER_MIN } from "../../constants/limits";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
+import { ALL_PICTURES, UNSORTED_PICTURES, type AssetFolders, type FolderFilter } from "../../services/asset-folders";
 import { TreePopover } from "./TreePopover";
-import type { AssetFolders, FolderFilter } from "../../services/asset-folders";
 
 type Counts = { all: number; unsorted: number; byFolder: Record<string, number> };
 
@@ -154,34 +155,14 @@ export function AssetFolderStrip({
 
       {asMenu && anchor && (
         <TreePopover anchorRect={anchor} onClose={() => setAnchor(null)} className="asset-folders-menu-popover">
-          <div className="asset-folders-menu" role="menu">
-            <MenuRow
-              label="All pictures"
-              count={counts.all}
-              active={filter.kind === "all"}
-              onClick={() => pick({ kind: "all" })}
-              onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
-            />
-            {counts.unsorted > 0 && counts.unsorted < counts.all && (
-              <MenuRow
-                label="Unsorted"
-                count={counts.unsorted}
-                active={filter.kind === "unsorted"}
-                onClick={() => pick({ kind: "unsorted" })}
-                onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
-              />
-            )}
-            {folders.folders.map((folder) => (
-              <MenuRow
-                key={folder.id}
-                label={folder.name}
-                count={counts.byFolder[folder.id] ?? 0}
-                active={sameFilter(filter, { kind: "folder", id: folder.id })}
-                onClick={() => pick({ kind: "folder", id: folder.id })}
-                onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, folder.id))}
-              />
-            ))}
-          </div>
+          <FolderMenu
+            folders={folders}
+            counts={counts}
+            filter={filter}
+            onPick={pick}
+            onClose={() => setAnchor(null)}
+            onDropAsset={onDropAsset}
+          />
         </TreePopover>
       )}
 
@@ -331,6 +312,142 @@ function Tile({
       <span className="asset-folder-tile-label">{label}</span>
       <span className="asset-folder-tile-count">{count}</span>
     </button>
+  );
+}
+
+/**
+ * The dropdown's contents: a filter box once there are enough folders to hunt
+ * through, then the rows.
+ *
+ * Its own component so the typed text lives and dies with the menu. The
+ * popover unmounts on close, so the box is empty every time it opens — which
+ * is the behaviour you want and would otherwise need clearing by hand in two
+ * places.
+ *
+ * **The box only appears past `ASSET_FOLDER_FILTER_MIN`.** Above four folders
+ * a search field is a control asking to be used on a list you can already
+ * read; the threshold is where reading stops being the faster way.
+ */
+function FolderMenu({
+  folders,
+  counts,
+  filter,
+  onPick,
+  onClose,
+  onDropAsset,
+}: {
+  folders: AssetFolders;
+  counts: Counts;
+  filter: FolderFilter;
+  onPick: (filter: FolderFilter) => void;
+  onClose: () => void;
+  onDropAsset?: (fileName: string, folderId: string | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const box = useRef<HTMLInputElement>(null);
+  const wanted = query.trim().toLowerCase();
+
+  // **Not `autoFocus`, and not a plain effect either — this is a trap rather
+  // than a preference.** TreePopover renders itself under `visibility: hidden`
+  // to measure its own box before deciding whether to open downward or flip
+  // up, and a browser refuses focus to anything hidden that way. `autoFocus`
+  // fires into that gap; so does a plain effect, because React flushes pending
+  // passive effects when the positioning `setState` forces its synchronous
+  // re-render — still before the popover turns visible. Both were measured
+  // leaving the box quietly unfocused. A timeout lands after all of it.
+  //
+  // **A timeout and not `requestAnimationFrame`**, which reads like the
+  // tidier answer and is the one that can't be tested: rAF doesn't fire in a
+  // page the compositor isn't drawing, which is exactly the state a headless
+  // check runs in. A timer fires either way, so this is verifiable rather than
+  // merely plausible.
+  useEffect(() => {
+    const timer = setTimeout(() => box.current?.focus(), 0);
+    return () => clearTimeout(timer);
+  }, []);
+  const matches = (label: string): boolean => wanted === "" || label.toLowerCase().includes(wanted);
+
+  const showFilter = folders.folders.length >= ASSET_FOLDER_FILTER_MIN;
+  // "All pictures" and "Unsorted" are matched on their names like everything
+  // else rather than pinned above the filter. Typing "un" should find Unsorted
+  // — it's a place pictures are, and a row that survives every query is a row
+  // that looks like a bug once the others have gone.
+  const fixedRows: { key: string; label: string; count: number; active: boolean; target: FolderFilter }[] = [
+    { key: "all", label: "All pictures", count: counts.all, active: filter.kind === "all", target: ALL_PICTURES },
+  ];
+  // Only once filing something has actually made a difference. With nothing
+  // filed yet, Unsorted holds every picture there is, so the row is a second
+  // button for the one above it wearing a different name and the same number.
+  if (counts.unsorted > 0 && counts.unsorted < counts.all) {
+    fixedRows.push({
+      key: "unsorted",
+      label: "Unsorted",
+      count: counts.unsorted,
+      active: filter.kind === "unsorted",
+      target: UNSORTED_PICTURES,
+    });
+  }
+  const shownFixed = fixedRows.filter((row) => matches(row.label));
+  const shownFolders = folders.folders.filter((folder) => matches(folder.name));
+
+  // Enter takes the first row on the list, which after typing is the thing you
+  // were typing towards. Without it the box makes you type *and* aim.
+  const firstTarget: FolderFilter | null =
+    shownFixed.length > 0
+      ? shownFixed[0].target
+      : shownFolders.length > 0
+        ? { kind: "folder", id: shownFolders[0].id }
+        : null;
+
+  return (
+    <div className="asset-folders-menu" role="menu">
+      {showFilter && (
+        <input
+          ref={box}
+          className="asset-folders-menu-filter"
+          value={query}
+          placeholder="Find a folder"
+          aria-label="Find a folder"
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onClose();
+            }
+            if (event.key === "Enter" && firstTarget) {
+              event.preventDefault();
+              onPick(firstTarget);
+            }
+          }}
+        />
+      )}
+
+      {shownFixed.map((row) => (
+        <MenuRow
+          key={row.key}
+          label={row.label}
+          count={row.count}
+          active={row.active}
+          onClick={() => onPick(row.target)}
+          // Both fixed rows mean "not in a folder", so a picture dropped on
+          // either comes out of whichever folder it was in.
+          onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, null))}
+        />
+      ))}
+      {shownFolders.map((folder) => (
+        <MenuRow
+          key={folder.id}
+          label={folder.name}
+          count={counts.byFolder[folder.id] ?? 0}
+          active={sameFilter(filter, { kind: "folder", id: folder.id })}
+          onClick={() => onPick({ kind: "folder", id: folder.id })}
+          onDropAsset={onDropAsset && ((fileName) => onDropAsset(fileName, folder.id))}
+        />
+      ))}
+      {shownFixed.length === 0 && shownFolders.length === 0 && (
+        <p className="asset-folders-menu-empty">No folder by that name.</p>
+      )}
+    </div>
   );
 }
 

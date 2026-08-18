@@ -109,3 +109,9 @@ export const IMAGE_RESIZE_STEP = 1.1;
 // steer around: with no delay, a card fires on every link the pointer crosses
 // on its way somewhere else. Matches what Obsidian settled on.
 export const HOVER_PREVIEW_DELAY_MS = 350;
+
+// How many folders the picture library's dropdown needs before it grows a
+// filter box. Below this the list is quicker to read than to type at, and a
+// search field over four rows is a control asking to be used. Raised as a real
+// problem at fifty (2026-08-18); eight is where scanning starts to lose.
+export const ASSET_FOLDER_FILTER_MIN = 8;
