@@ -1634,6 +1634,25 @@ is below.
 
 ## Layout
 
+- **A bright fill and white text are mutually exclusive, and that one fact
+  decides what the primary button can look like.** White on
+  `--color-accent-light` measures about 1.5:1, so the old near-black label on
+  bright teal was not a taste decision — it was the only thing readable on a
+  fill that light. When she asked for white text (2026-08-18), the fill had to
+  come down with it, and the brightness had to move into a highlight instead.
+  **Don't "fix" the button by brightening the fill back up** without changing
+  the text colour in the same move; you get an unreadable label and the reason
+  will not be obvious from looking at the rule.
+
+  The second half is the part that took two attempts. **Only the band behind
+  the letters has to clear 4.5:1 — roughly the middle 40% of the button's
+  height — not the whole fill.** The first version held every pixel dark enough
+  for white text; it passed the contrast check and looked like a flat
+  rectangle, because holding the top edge down leaves the gradient nowhere to
+  travel. Hence four stops, with 30% and 70% being the legible band and 0% free
+  to be bright. Same reasoning applies to anything else that puts text on a
+  gradient.
+
 - **The Assets tab's folders went chips → tiles → dropdown in one day, and the
   lesson underneath is about the column, not the shapes.** A chip flows: the
   design pays off when several share a line, and nothing does at 180px, because

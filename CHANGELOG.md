@@ -15,6 +15,7 @@
 
 ### Adjustments
 
+- **The main button has been rebuilt.** The one bright button — New Project, and the confirm button in every dialog — used to be a light teal with a gradient running across it and near-black text on top. It's now a deep teal lit from the top edge, with **white** text and a soft shine down the face of it. The colour comes from whatever theme you're on, so it's teal on Anamnesis Dark and Midnight, amber on Ember, and so on. One knock-on: the five themes that shipped their own version of the old gradient no longer do, so Abyssal's button in particular changes more than the rest — its gradient was violet-to-cyan, which had drifted a long way from the rest of that theme.
 - **The start screen's section headings are Title Case, and bigger.** "Recently Opened", "Add a Project", "All Projects" — they're headings, and they were shipped looking like sentences at the size of ordinary text. They're 20px now, which is a size the app didn't previously have: it went straight from 18 to 28, and 16 sat too close to the writing around it to read as a heading at all. Everything else on the screen is untouched, and the text-size slider in Settings still moves them along with the rest.
 - **The Import line in the rail says project, not world.** Everywhere else on that screen already did.
 

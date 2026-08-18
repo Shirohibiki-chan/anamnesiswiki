@@ -83,7 +83,8 @@ the base tokens — the other six ship as `[data-theme]` blocks over the top (se
 | `--color-text-placeholder` | `#686871` | Placeholder text in inputs, disabled states. **Has a contrast floor — see below** |
 | `--color-accent` | `var(--color-accent-faint)` | **An alias, not a value of its own** (Phase 11.5 — it used to be a byte-identical copy). It exists because shadcn/ui's "accent" role has that name and Phase 5's menu kit expects it; the app's own code should say `--color-accent-faint`. Note the trap in the name: this is the 15% tint, *not* the bold hue. Use `--color-accent-light`/`--color-accent-dark` for focus rings, progress bars and primary buttons. |
 | `--color-accent-light` | `#5eead4` | Accent text on dark surfaces — active tab labels, selected tree row text, save indicator |
-| `--color-accent-dark` | `#0d9488` | Hover states that need to go darker than base accent |
+| `--color-accent-dark` | `#0d9488` | Hover states that need to go darker than base accent; every stop of the primary button's gradient is mixed from it |
+| `--color-on-accent` | `#ffffff` | Text sitting **on** the accent — only the primary button. Not offered by the theme editor's pickers; a theme can set it by hand |
 | `--color-accent-faint` | `rgba(20,184,166,0.15)` | Tinted backgrounds for selected tree rows, active tabs |
 | `--color-accent-faint-border` | `rgba(20,184,166,0.30)` | Border on accent-faint backgrounds |
 | `--color-callout-info` | `#60a5fa` | Info callout left border and label text |
@@ -321,6 +322,8 @@ Twelve optional tokens — `--gradient-` plus `bg`, `topbar`, `sidebar`, `page`,
 
 1. **They are never declared, only read.** Every use site says `var(--gradient-x, none)` and nothing gives them a default. A declared-but-empty custom property resolves to *nothing*, so `background: , var(--color-panel)` is a syntax error that drops the surface's colour entirely — "off" has to mean absent. Don't add `--gradient-bg: none` to `:root`.
 2. **They layer over a colour, not instead of one** — `background: var(--gradient-x, none), var(--color-y)`. A theme that sets only some of the twelve still has solid surfaces, and a gradient with transparency in it fades to the theme's own colour. `--gradient-callout` in particular sits over each callout's tint rather than replacing it; replacing it would flatten Info/Quote/Secret into one colour. `--gradient-page` is the exception with no colour under it, because the writing area has never had a background of its own and giving it one would hide `--gradient-bg`.
+**`--gradient-accent` is the one slot with a real default underneath it.** The primary button builds its own gradient from `--color-accent-dark` (see Controls above), so this token is an override rather than the only thing standing between that button and a flat colour. None of the six bundled themes set it any more — they used to carry a two-stop `100deg` version of the old button. The white pane of light is layered *above* the slot on purpose, so a theme supplying its own colours still gets the gloss instead of losing it. A theme that sets a pale gradient here will need to set `--color-on-accent` too.
+
 3. **The two text gradients need three properties each.** `--gradient-title` and `--gradient-heading` come with `-clip` and `-fill` companions, set together by `gradientVars()` in the sandbox and by any theme file. The image alone paints a coloured box; the clip alone makes the text invisible. The `-clip` fallback must be `border-box` and the `-fill` fallback `currentColor`, or every theme without a title gradient loses its title.
 
 ### Custom themes and snippets (Phase 12)
@@ -433,6 +436,10 @@ The values are provisional and Phase 12 re-tunes them per theme. **The roles and
 | `.ui-link` · `.ui-eyebrow` · `.ui-inline-remove` | — |
 
 At most one `.ui-btn-primary` per screen. Secondary hover always means the accent tint — that's the single hover language for anything that's a button. Menu rows, tree rows and the recent-projects tiles keep their own, correctly: they aren't buttons.
+
+**The primary button is a deep fill lit from the top, with white text** (`--color-on-accent`), rebuilt 2026-08-18. Before that it was `--gradient-accent` over `--color-accent-light` with `--color-bg` as the text, and both halves were rejected. The reasoning is worth keeping because it constrains anyone changing it: **white on `--color-accent-light` measures about 1.5:1**, so a bright fill can only take dark text. Wanting white text means wanting a deep fill, and the brightness then has to move into the highlight — which is what gloss is. The gradient has four stops, and the 30% and 70% ones are the band the label sits on; only that band has to clear 4.5:1, which is what leaves the top edge free to be bright enough to see. Hold the *whole* fill dark enough for white text and you get a rectangle with no gradient in it. Every stop is mixed from `--color-accent-dark`, so it follows the theme.
+
+`.ui-btn-danger` was not changed and is still a flat fill with `--color-bg` text. That's a known inconsistency, not a considered difference.
 
 Deliberately a stylesheet and not a component library. These are *looks*, not behaviour; a `<Button>` wrapper would add props to maintain and buy nothing the class doesn't.
 
