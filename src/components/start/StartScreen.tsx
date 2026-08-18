@@ -73,7 +73,7 @@ export function StartScreen() {
               onClick={() => setIsNaming(true)}
               disabled={actions.isBusy}
             >
-              New project
+              New Project
             </button>
           ) : (
             <form
