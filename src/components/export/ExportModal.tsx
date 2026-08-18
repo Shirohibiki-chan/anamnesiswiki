@@ -60,11 +60,19 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
 
   async function handleExport() {
     if (!plan) return;
-    const path = await pickLkSavePath(projectName ?? "Export");
+    setError(null);
+    // Same shape as the import modal: the save dialog is a native window
+    // whose failure would otherwise reject into a discarded promise.
+    let path: string | null;
+    try {
+      path = await pickLkSavePath(projectName ?? "Export");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open the save dialog.");
+      return;
+    }
     if (!path) return;
 
     setStatus("saving");
-    setError(null);
     try {
       // Built a second time when the pictures are coming along, because the
       // first pass is what discovered which ones were needed. Everything else

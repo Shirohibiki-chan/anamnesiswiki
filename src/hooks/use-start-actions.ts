@@ -71,7 +71,16 @@ export function useStartActions(): StartActions {
   );
 
   const pickFolderToOpen = useCallback(async () => {
-    const path = await pickFolder({ title: "Open an Anamnesis project" });
+    // The picker is inside the try for the same reason as the import modal's:
+    // this promise is discarded by the click handler, so a dialog that fails
+    // to open would otherwise leave the button looking dead.
+    let path: string | null;
+    try {
+      path = await pickFolder({ title: "Open an Anamnesis project" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open the folder picker.");
+      return;
+    }
     if (!path) return;
 
     setIsBusy(true);

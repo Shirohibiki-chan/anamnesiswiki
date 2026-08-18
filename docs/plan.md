@@ -795,6 +795,8 @@ Unglamorous and probably the highest-value work in this document. This app has a
 
 JSON and HTML are separate and lower priority. World Anvil is dropped (see Future Features).
 
+**One Import button, more entries behind it — not a button per format.** Settled 2026-08-18: the errand is "bring my world in", and which program it came out of is a detail of the file, not a decision she should have to make before the picker opens. `pickImportFile` in `dialog-service.ts` already has the shape — a filter list plus an All files fallback — so each new importer adds a filter entry and a branch on what the file turns out to be, the way theme import already works out `.css` from `.json` after the fact. The folder-drag entry point above is the exception and stays separate, because a folder isn't something a file picker returns.
+
 ---
 
 ## Phase 21 — Shell Rework

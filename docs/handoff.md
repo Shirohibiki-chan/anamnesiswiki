@@ -458,6 +458,25 @@ is below.
 - **`window.confirm()` silently no-ops in Tauri's webview** — it doesn't block, so
   Delete once deleted with no prompt at all. Use `confirmDestructive()`.
 
+- **A native picker that fails must reach the screen, and every call site had
+  the same hole.** Reported 2026-08-18: choosing a file to import often opened
+  no picker at all. The shape was identical in six places — `await pickX()`
+  outside the `try`, in an `async` handler whose promise the `onClick` throws
+  away — so anything the plugin threw became an unhandled rejection and the
+  button simply did nothing. **The picker call belongs inside the `try`**, and
+  the caller must render the reason. `dialog-service.ts` also serialises them
+  through `onePicker`: a second press while a dialog is up returns `null`
+  ("nothing chosen") rather than asking the OS for a second dialog, which is
+  its own way of ending with none.
+
+- **The OS file dialog is a window this app cannot see.** It has no DOM, no
+  screenshot, and on Windows it can open *behind* the app — indistinguishable
+  from a dead button unless something on screen says a picker is open. That's
+  what `ImportModal`'s `picking` status is for; it also blocks the backdrop so
+  the modal can't be closed out from under a dialog that's still waiting to
+  answer it. The same blindness is why `tauri:inspect` can't verify this one:
+  it reads the document, and the dialog isn't in it.
+
 - **`pnpm tauri:inspect` opens a port that reads the running window, and it must
   never reach a build she can install.** It's the answer to a long-standing
   problem — a browser has no disk so it stops at the project picker, and a
