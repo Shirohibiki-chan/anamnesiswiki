@@ -1086,35 +1086,55 @@ button.tree-path-crumb:hover {
   padding: 0 var(--space-md) var(--space-sm);
 }
 
-/* Wrapping, not scrolling. A horizontal scroller in a 180px column hides
-   folders behind a gesture, and the whole point of the strip is that you can
-   see where a picture could go. */
-.asset-folders-chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+/* Two per row in the sidebar at its narrowest, three as it's dragged out, more
+   again in the picker dialog — `auto-fill` rather than a fixed count, so one
+   rule serves both places and the folders track the picture grid below without
+   having to know which one they're in.
+
+   4.5rem is the narrowest a name-and-count tile stays readable at, and it's
+   what puts exactly two across a 180px column. Chips that wrapped were here
+   before, which sounded right and wasn't: a name plus a count is wider than
+   half the column, so every one took a row to itself and four folders filled
+   the panel. */
+.asset-folders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
   gap: var(--space-xs);
 }
 
-.asset-folder-chip {
+/* A ceiling, and only past about a dozen folders does it become a scroller.
+   Folders reachable by scrolling beat pictures pushed off the bottom of the
+   panel entirely. The toolbar and the count above it stay put either way. */
+.tree-assets .asset-folders-grid {
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+/* Squat: the name on one line with its count under it. Left-aligned rather
+   than centred, so the names in a row all start at the same place and can be
+   read down the column. */
+.asset-folder-tile {
+  min-width: 0;
   display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  max-width: 100%;
-  padding: 2px var(--space-sm);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
   font-size: var(--fs-2xs);
+  text-align: left;
+  line-height: 1.25;
   cursor: pointer;
 }
 
-.asset-folder-chip:hover {
+.asset-folder-tile:hover {
   background: var(--color-hover);
 }
 
-.asset-folder-chip-active {
+.asset-folder-tile-active {
   border-color: var(--color-accent-faint-border);
   background: var(--color-accent-faint);
   color: var(--color-text-primary);
@@ -1122,46 +1142,56 @@ button.tree-path-crumb:hover {
 
 /* While a picture is held over it. A border colour rather than a size or a
    position, so nothing under the pointer moves while she's aiming at it —
-   a chip that grows on hover is a chip that runs away from the drop. */
-.asset-folder-chip-over {
+   a tile that grows on hover is a tile that runs away from the drop. */
+.asset-folder-tile-over {
   border-color: var(--color-accent-light);
   background: var(--color-accent-hover);
 }
 
-/* `min-width: 0` on the label is what lets the ellipsis happen at all — a
-   flex item's default `min-width: auto` refuses to shrink below its content,
-   so without it a long folder name pushes the count off the chip. */
-.asset-folder-chip-label {
+/* Two rules doing one job. `min-width: 0` is the usual one — a flex item's
+   default `min-width: auto` refuses to shrink below its content, so without it
+   a long folder name widens the whole grid column. `align-self: stretch` is
+   the one a column layout adds: left to itself the label is only as wide as
+   its text wants, and text that is never narrower than itself never
+   ellipsises. */
+.asset-folder-tile-label {
+  align-self: stretch;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.asset-folder-chip-count {
-  flex-shrink: 0;
+.asset-folder-tile-count {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
-/* The centring, scoped to the sidebar rather than put on the shared rules
-   above. The picker draws the same strip inside a wide dialog, where a row of
-   chips floating in the middle of several hundred pixels would read as
-   unfinished — this is a 180–420px column where everything is stacked anyway.
-   Her call, 2026-08-12: the tab's text should sit under the two toolbar
-   buttons rather than beside them. */
-.tree-assets .asset-folders-chips,
+/* The new-folder cell holds an icon rather than two lines of text, so it
+   centres its one child; the grid gives it the height of the tiles beside it
+   for free. */
+.asset-folders-new {
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+/* Her call, 2026-08-12: the tab's controls sit under the two toolbar buttons
+   rather than beside them. The tiles fill the column on their own now, so this
+   is all that's left to centre. */
 .tree-assets .asset-folders-actions {
   justify-content: center;
 }
 
-/* Sized like a chip so the strip doesn't jump when the box replaces one. */
+/* Shaped like a tile so the grid doesn't jump when the box replaces one. Its
+   width comes from the column it's sitting in rather than from a guess, which
+   is what the old fixed 7rem was. */
 .asset-folder-name {
   min-width: 0;
-  width: 7rem;
-  padding: 2px var(--space-sm);
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-accent-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background: var(--color-panel-alt);
   color: var(--color-text-primary);
   font-size: var(--fs-2xs);

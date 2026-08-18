@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-18
+
+### Fixes
+
+- **Folders in the Assets tab are tiles now, two to a row.** They were rounded pills meant to sit side by side, and none of them ever did — a folder's name plus its count is wider than half the sidebar, so each one took a row to itself and four folders filled the panel. The tiles put the count under the name, line up in a grid, and widen to three or more when you drag the sidebar out or open the picture picker. Long names cut off with a "…" and show in full when you hover.
+
 ## 2026-08-14
 
 ### Additions

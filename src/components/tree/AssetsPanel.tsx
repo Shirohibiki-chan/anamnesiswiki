@@ -150,9 +150,9 @@ export function AssetsPanel() {
         <ImagePlus size={14} />
         Add picture
       </button>
-      {/* Its own control up here rather than the last item in the row of folder
-          chips. Down there it sat immediately after a folder called "New
-          folder" — a chip and a button, same size, one of them named after
+      {/* Its own control up here rather than a cell at the end of the folder
+          grid. Down there it sat immediately after a folder called "New
+          folder" — a tile and a button, same size, one of them named after
           what the other one does. */}
       <button
         type="button"
@@ -187,7 +187,7 @@ export function AssetsPanel() {
           every tile states for itself — and in a 180px column it wrapped to two
           lines to do it. Both halves were readable somewhere better. */}
       {isLoading && <p className="tree-assets-note tree-assets-count">Reading your pictures…</p>}
-      {/* No folders means nothing to filter by, so the strip would be one chip
+      {/* No folders means nothing to filter by, so the grid would be one tile
           saying "All pictures" above every picture. The way to make the first
           one is in the toolbar, not in here. */}
       {folders.folders.length > 0 && (
