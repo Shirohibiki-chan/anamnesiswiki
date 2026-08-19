@@ -36,19 +36,23 @@ export function ProjectTile({ project, now, disabled, onOpen }: ProjectTileProps
       title={project.path}
     >
       <span className="project-tile-cover" style={{ backgroundImage: coverGradient(coverFor(project)) }} />
-      {project.isOutsideProjectsFolder && (
-        <span className="project-tile-flag" title="Not in your projects folder">
-          Elsewhere
-        </span>
-      )}
       <span className="project-tile-cap">
         <b>{project.name}</b>
-        {/* Two spans and not one string: the head is allowed to be clipped and
-            the tail is not, which is what keeps a narrow row saying which
-            folder this is rather than trailing off partway through the word
-            every project in that folder shares. */}
-        {where.tail && (
+        {/* The flag and the path are the same fact, so they share a line. It
+            used to sit in a corner of its own, which on a row meant holding a
+            column open on every project for a word almost none of them say.
+
+            Two spans for the path and not one string: the head is allowed to be
+            clipped and the tail is not, which is what keeps a narrow row saying
+            which folder this is rather than trailing off partway through the
+            word every project in that folder shares. */}
+        {(where.tail || project.isOutsideProjectsFolder) && (
           <span className="project-tile-where">
+            {project.isOutsideProjectsFolder && (
+              <i className="project-tile-flag" title="Not in your projects folder">
+                Elsewhere
+              </i>
+            )}
             <span>{where.head}</span>
             <b>{where.tail}</b>
           </span>

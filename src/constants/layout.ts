@@ -125,15 +125,20 @@ export const PINS_PER_PAGE = 4;
  * the answer rather than a cap on the width, since a capped list on a wide
  * monitor is the same empty screen with a tidier edge on it.
  *
- * 620 because a row carries four things now — the cover chip, the name, where
- * it lives on disk and when it was last touched — and below about this they
- * start taking the space from each other. It also keeps the list one column
- * wide at the size the app opens at, so nothing rearranges for the ordinary
- * window.
+ * 440 because the path sits *under* the name rather than beside it, so the top
+ * line of a row is only a name and a date and doesn't need much width to keep
+ * the two of them near each other. That is the whole reason the two-line row
+ * is worth the extra height: a wide single-line row puts the gap straight back.
  */
-export const PROJECT_ROW_MIN_WIDTH = 620;
+export const PROJECT_ROW_MIN_WIDTH = 440;
 
 export const PROJECT_TILE_MIN_WIDTH = 190;
-export const PROJECT_TILE_HEIGHT = 118;
-export const PROJECT_ROW_HEIGHT = 48;
+
+/**
+ * Both heights carry a line for the project's location, which is why they are
+ * not the rounder numbers they used to be: a cover was 118 and a row 48 when
+ * the caption was a name and a date.
+ */
+export const PROJECT_TILE_HEIGHT = 132;
+export const PROJECT_ROW_HEIGHT = 56;
 export const PROJECT_TILE_GAP = 10;

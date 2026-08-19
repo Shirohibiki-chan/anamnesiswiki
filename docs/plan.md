@@ -764,17 +764,29 @@ way instead of taking the sides off it on one window and the top off it on
 another. Two across is the floor. The dashed tile still takes one slot on
 whichever page it lands on.
 
-**The list view is four facts in aligned columns, not two pushed to opposite
-ends.** It shipped as one row across the full width with the name at one end and
-the date at the other, which is readable at about the window the app opens at
-and nothing else — full screen on a 2560 monitor put roughly 2000 pixels between
-the two. It now makes columns of rows once there is room (one to about 1900, two
-to about 2500, three beyond), and within a row the name, the location and the
-date sit in fixed tracks so they line up down the list. The date track is a
-fixed width rather than `auto` for exactly that reason: an `auto` column is as
-wide as its own row's text, so "just now" and "22 hours ago" would start the
-tracks beside them in a different place on every line. The Elsewhere flag gets a
-slot held open whether or not it is used, for the same reason.
+**A row is two lines, and that is what lets the list have columns.** It shipped
+as one row across the full width with the name at one end and the date at the
+other — readable at about the window the app opens at and nothing else, since
+full screen on a 2560 monitor put roughly 2000 pixels between the two. Putting
+the location *under* the name (her call, 2026-08-19) is what fixes it rather
+than decorating it: the top line is then only a name and a date, so a row can be
+narrow, so the list can lay out two, three or four columns of rows instead of
+stretching one. A wide single-line row would put the gap straight back however
+the middle were filled.
+
+**The date is a fixed track, not `auto`.** An `auto` column is as wide as its
+own row's text, so "just now" and "22 hours ago" hand their rows different
+column widths and the name beside them starts in a different place on every line
+— measured at 355, 361 and 370 for three rows in one column before it was
+fixed.
+
+**The Elsewhere flag rides on the location line rather than in a corner.** It
+briefly had a column held open for it whether or not it was used — the same
+alignment argument as the date — and that column was what kept the date from
+reaching the right-hand edge, which is what she saw. Putting it at the front of
+the path is the version with no reserved width, and it is also where it belongs:
+the flag and the path are the same fact about the same project, and on a cover
+it no longer sits over the artwork.
 
 **A project's location is split rather than ellipsised.** The last folder is
 kept whole and the middle of the path gives way, because an ellipsis eats the

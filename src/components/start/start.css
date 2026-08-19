@@ -282,7 +282,7 @@
    Change both together or the last row goes missing. */
 .start-tiles {
   display: grid;
-  grid-auto-rows: 118px;
+  grid-auto-rows: 132px;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 10px;
   align-content: start;
@@ -293,8 +293,8 @@
    readable — it just puts more nothing in the middle of it. `PROJECT_ROW_MIN_WIDTH`
    is the same number `usePagedList` counts with; change both together. */
 .start-area[data-view="list"] .start-tiles {
-  grid-auto-rows: 48px;
-  grid-template-columns: repeat(auto-fill, minmax(620px, 1fr));
+  grid-auto-rows: 56px;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
 }
 
 .start-empty {
@@ -347,14 +347,17 @@
   inset: 0;
 }
 
+/* Sits at the front of the location line, in both views. It used to have a
+   corner of the tile to itself, which on a row meant a column held open across
+   every project for a word almost none of them say — and that column was what
+   kept the date from reaching the right-hand edge. `flex: none` because it is
+   the half of this line that must not be clipped, along with the last folder. */
 .project-tile-flag {
-  position: absolute;
-  z-index: 1;
-  top: var(--space-2xs);
-  right: var(--space-xs);
+  flex: none;
+  margin-right: var(--space-xs);
   font-size: var(--fs-2xs);
+  font-style: normal;
   color: var(--color-accent-light);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
 }
 
 .project-tile-cap {
@@ -390,15 +393,15 @@
 /* The row is the same tile with the picture shrunk to a chip beside the name.
    Thirty covers is a wall; thirty rows is a list.
 
-   Tracks, and the last one is held open whether or not there is a flag to put
-   in it. "Elsewhere" is on a handful of rows at most, and letting it take its
-   own width would set the rows that have it a different width of everything
-   else — so the two kinds of row would line up with their own kind and with
-   nothing else. A reserved slot costs a little width on every row and is the
-   only version where the columns are columns. */
+   Two tracks: the chip, and everything else. The Elsewhere flag used to have a
+   third held open for it whether or not it was used — it is on a handful of rows
+   at most, and letting it take its own width would have set flagged rows a
+   different width of everything else. It now rides on the location line
+   instead, which is the line it was always about, and the date gets the edge
+   back. */
 .start-area[data-view="list"] .project-tile {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 4.5rem;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-2xs) var(--space-sm);
@@ -418,27 +421,33 @@
   border-radius: var(--radius-sm);
 }
 
-.start-area[data-view="list"] .project-tile-flag {
-  position: static;
-  order: 2;
-  text-shadow: none;
-}
-
-/* Three tracks rather than three things pushed apart, and that is what makes a
-   list look like a list: the names line up, the paths line up, the dates line
-   up. Pinning the name to one end and the date to the other left the middle of
-   every row empty and the empty grew with the window — nothing was aligned with
-   anything, so there was no column for the eye to run down. Fractions and not
-   fixed widths so the tracks share out whatever the column turns out to be. */
+/* Two lines and two tracks: the name with its path beneath it, and the date in
+   a column of its own. Everything used to sit on one line pushed apart, which
+   left the middle of every row empty and growing with the window — nothing was
+   aligned with anything, so there was no column for the eye to run down. The
+   path under the name is what lets the row be narrow enough that the name and
+   the date stay near each other at any width. */
 .start-area[data-view="list"] .project-tile-cap {
   position: static;
   display: grid;
   flex: 1;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 7rem;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  grid-template-rows: auto auto;
   align-items: baseline;
-  gap: var(--space-md);
+  column-gap: var(--space-md);
+  row-gap: 1px;
   min-width: 0;
   padding: 0;
+}
+
+/* The date spans both lines and sits centred on the pair. `align-self` and not
+   the grid's `baseline`, which it would otherwise inherit: a baseline on an item
+   spanning two rows lands on the *first* of them, so the date sat level with the
+   name with a hole under it rather than beside the row it labels. */
+.start-area[data-view="list"] .project-tile-cap em {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
 }
 
 .start-area[data-view="list"] .project-tile-cap b {
@@ -447,34 +456,34 @@
 
 /* A fixed track and not `auto`. An `auto` column is as wide as its own row's
    text, so "just now" and "22 hours ago" give their rows different column
-   widths and the two tracks beside them start in a different place on every
-   line — which is the alignment this row was rebuilt to get. Right-aligned
-   inside it so the dates read down the edge. */
+   widths and the name beside them starts in a different place on every line —
+   which is the alignment this row was rebuilt to get. Right-aligned inside it
+   so the dates read down the edge. */
 .start-area[data-view="list"] .project-tile-cap em {
   color: var(--color-text-muted);
   text-align: right;
   white-space: nowrap;
 }
 
-/* Where it lives on disk — the row view's third fact, and the one that makes a
-   row worth its width. Not on a cover, which has no room for it and is already
-   showing the picture instead. */
+/* Where it lives on disk, under the name in both views. On a cover it is the
+   one line that says something the picture cannot. */
 .project-tile-where {
-  display: none;
-}
-
-.start-area[data-view="list"] .project-tile-where {
   display: flex;
   min-width: 0;
   align-items: baseline;
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
+  line-height: var(--lh-tight);
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.start-area[data-view="list"] .project-tile-where {
   color: var(--color-text-muted);
 }
 
 /* The half that gives way. `min-width: 0` because a flex item won't shrink
    below its text otherwise, and then the row overflows instead of clipping. */
-.start-area[data-view="list"] .project-tile-where span {
+.project-tile-where span {
   overflow: hidden;
   min-width: 0;
   text-overflow: ellipsis;
@@ -482,10 +491,16 @@
 }
 
 /* The half that doesn't. `flex: none` is the whole point: the last folder is
-   what tells two projects apart, and an ellipsis eats exactly that. */
-.start-area[data-view="list"] .project-tile-where b {
+   what tells two projects apart, and an ellipsis eats exactly that. On a 190
+   cover this is most of what survives, which is the intent — `C:Users\u2026Projects`
+   answers the question the line is there to answer. */
+.project-tile-where b {
   flex: none;
   font-weight: inherit;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.start-area[data-view="list"] .project-tile-where b {
   color: var(--color-text-secondary);
 }
 
