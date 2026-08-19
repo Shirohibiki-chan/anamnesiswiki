@@ -602,13 +602,25 @@
   gap: var(--space-lg);
 }
 
-/* Four to a page: three gaps shared out across the row. The card is a fraction
-   of whatever width it is given rather than a fixed size, which is why this row
-   has nothing to measure and its page size is a constant. */
+/* The gaps shared out across the row: one fewer gap than there are cards, and
+   what is left divided between them. `--pins-across` comes from the component,
+   which picks it from the row's measured width — the card is a share of the row
+   rather than a size of its own, so the count is what gets chosen and the width
+   is what falls out. The fallback keeps the rule honest on its own. */
 .start-pin,
 .start-addpin {
-  flex: 0 0 calc((100% - var(--space-lg) * 3) / 4);
-  height: 208px;
+  flex: 0 0 calc((100% - var(--space-lg) * (var(--pins-across, 4) - 1)) / var(--pins-across, 4));
+}
+
+/* A proportion rather than a height, and this is the part that matters for a
+   photograph. A fixed height against a width that moves means the card changes
+   shape with the window, and `cover` answers that by cropping whichever way it
+   has to — the sides off a wide picture on a narrow window, the top and bottom
+   off it on a wide one. Same picture, different halves of it missing depending
+   on how the window happens to be sized. Fixing the ratio means it is always
+   cropped the same way, and 245 by 208 is the card the row was drawn at. */
+.start-pin {
+  aspect-ratio: 245 / 208;
 }
 
 .start-pin {

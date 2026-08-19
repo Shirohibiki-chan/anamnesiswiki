@@ -108,3 +108,23 @@ export function pageContaining(itemIndex: number, perPage: number): number {
   if (perPage < 1 || !Number.isFinite(itemIndex)) return 0;
   return Math.max(0, Math.floor(itemIndex / perPage));
 }
+
+/**
+ * How many cards fit across a row that divides itself into equal fractions.
+ *
+ * The other grids here lay a fixed-size tile onto a row and ask how many land;
+ * this answers the opposite shape of question, for a row whose card is a
+ * *share* of the width. Left to itself such a row has no natural column count,
+ * so a fullscreen window stretches four cards into four letterboxed bands and
+ * the narrowest window squeezes them taller than they are wide. Neither is a
+ * size anybody chose.
+ *
+ * `target` is the width a card wants to be, not a width it will get: the count
+ * is chosen so the cards land at or a little above it, and the leftover is
+ * shared out rather than left at the end. `min` is a floor because two cards
+ * beside each other still read as a row and one does not.
+ */
+export function fitAcross(width: number, target: number, gap: number, min: number): number {
+  if (!Number.isFinite(width) || width <= 0 || target <= 0) return min;
+  return Math.max(min, Math.floor((width + gap) / (target + gap)));
+}

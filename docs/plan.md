@@ -751,10 +751,18 @@ path and the name: the id decides when both sides have one, the path answers
 when they do not, and the pin picks up the id the first time the project is
 opened. The same fallback `coverFor` already makes, for the same reason.
 
-**The row's page size is a constant where every other grid measures.** A pinned
-card is a fraction of the row — four across at any width — so the column count
-is the input to the width rather than the answer to it, and there is nothing to
-measure. The dashed tile takes one of the four on whichever page it lands on.
+**The row's column count is measured, and it took shipping the constant to see
+why.** A pinned card is a fraction of the row rather than a size of its own, so
+the column count is the input to the width rather than the answer to it — which
+read like there was nothing to measure, and four across was written down. Four
+is only right at about 1280: fullscreen on a 2560 monitor made 565-wide bands
+against a card drawn at 245, and the app's minimum window made 150-wide cards
+against a fixed 208 height, taller than they are wide. The count is now chosen
+to land the card near 245 and the row shares out the remainder, and the card
+carries a ratio rather than a height so `cover` always crops a picture the same
+way instead of taking the sides off it on one window and the top off it on
+another. Two across is the floor. The dashed tile still takes one slot on
+whichever page it lands on.
 
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had; covers

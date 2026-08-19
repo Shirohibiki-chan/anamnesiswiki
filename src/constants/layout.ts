@@ -84,16 +84,33 @@ export const PICTURE_GRID_GAP = 8;
 export const MAX_PAGE_DOTS = 8;
 
 /**
- * How many pinned projects sit on one page of the row at the top.
+ * The pinned row at the top of the start screen: how wide a card wants to be,
+ * the gap between two of them (`--space-lg`), and the fewest that fit across.
  *
- * A constant rather than a measurement, unlike every other grid on that screen.
- * A pinned card is a fraction of the row — four across at any width, so it
- * grows and shrinks with the window instead of wrapping — which leaves nothing
- * to measure: the number of columns is the input to the width rather than the
- * answer to it.
+ * A pinned card is a *share* of the row rather than a fixed size, so unlike
+ * every other grid here the column count is the input to the width rather than
+ * the answer to it — but it can't be a constant either. Four across is right at
+ * about 1280 and wrong at both ends: fullscreen on a 2560 monitor stretches
+ * four cards into 565-wide letterboxed bands, and the narrowest window the app
+ * allows squeezes them to 150 wide against a fixed height, taller than they are
+ * wide. Neither is a shape anybody chose. So the count is picked to land the
+ * cards near this width and the row shares out the remainder.
  *
- * Four is the count from the design, and the dashed "pin another" tile takes
- * one of the four on whichever page it lands on.
+ * 245 because that is what a card measures at four across on a 1280 window —
+ * the size the row was drawn at, now kept at every other window size instead of
+ * only that one. Two is the floor: two cards beside each other still read as a
+ * row, one doesn't.
+ *
+ * The gap is `--space-lg`, and `start.css` is the real one — change both.
+ */
+export const PIN_TARGET_WIDTH = 245;
+export const PIN_GAP = 12;
+export const PIN_MIN_ACROSS = 2;
+
+/**
+ * What the row pages by before it has been measured — the count that is right
+ * at the default window size, so the ordinary case doesn't reshape itself after
+ * the first frame.
  */
 export const PINS_PER_PAGE = 4;
 

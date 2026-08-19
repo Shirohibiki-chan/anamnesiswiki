@@ -5,20 +5,24 @@
 // fades out with it, and the only hard edge it has is a coloured rule under the
 // name. Everything else here sits in a box, and this deliberately doesn't.
 //
-// **Four to a page, and the page size is a constant rather than a measurement.**
-// Every other grid on this screen measures its window and fits what it can;
-// this one doesn't, because a card here is a fraction of the row rather than a
-// fixed width — four across at any width — so there is nothing to measure. The
-// pages are real pages either way: whole cards, a short last page rather than a
-// repeated one, and dots that mean what they say.
+// **How many fit is measured, but it is measured differently to everything else
+// here.** The other grids lay a fixed-size tile onto a row and ask how many
+// land. A pinned card has no size of its own — it is a share of the row — so
+// this asks the opposite question: how many shares get the card closest to the
+// width it wants. Four was a constant once and it was only ever right at one
+// window size; fullscreen stretched four cards into letterboxed bands, and the
+// narrowest window stood them on end. The pages are real pages either way:
+// whole cards, a short last page rather than a repeated one, and dots that mean
+// what they say.
 //
 // Its pagination is not the pages-or-scroll preference. That switch governs the
 // grid below; a scrolling row can't land on a page boundary, so it was never on
 // offer here.
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useState } from "react";
-import { PINS_PER_PAGE } from "../../constants/layout";
-import { clampPage, pageCount } from "../../services/pagination";
+import { useState, type CSSProperties } from "react";
+import { PINS_PER_PAGE, PIN_GAP, PIN_MIN_ACROSS, PIN_TARGET_WIDTH } from "../../constants/layout";
+import { useElementSize } from "../../hooks/use-element-size";
+import { clampPage, fitAcross, pageCount } from "../../services/pagination";
 import type { ListedWorld } from "../../services/world-scan";
 import { PinnedCard } from "./PinnedCard";
 
@@ -38,7 +42,15 @@ export function PinnedRow({ pinned, total, now, disabled, onOpen, onManage }: Pi
   // that holds it is one card shorter. Counting it here is what keeps that
   // true without every page having to know where it sits.
   const cards = pinned.length + 1;
-  const pages = pageCount(cards, PINS_PER_PAGE);
+  // Measured off the carousel rather than the row inside it: the row is the
+  // thing being sized, and the cards are laid out from this number, so reading
+  // the width back off them would be measuring this function's own output.
+  // Before the first measurement arrives, the count that is right at the
+  // default window size — anything else reshapes the row a frame after it
+  // appears, which is a flinch on the screen she opens the app to.
+  const [frame, size] = useElementSize<HTMLDivElement>();
+  const across = size.width > 0 ? fitAcross(size.width, PIN_TARGET_WIDTH, PIN_GAP, PIN_MIN_ACROSS) : PINS_PER_PAGE;
+  const pages = pageCount(cards, across);
   const [page, setPage] = useState(0);
 
   // Unpinning the last project on the last page leaves you on a page that no
@@ -46,13 +58,13 @@ export function PinnedRow({ pinned, total, now, disabled, onOpen, onManage }: Pi
   // stored clamped. Deriving it covers every route into that — the manage
   // window, a drive going away mid-session — without an effect racing the
   // render to correct state it can already see is wrong.
-  const at = clampPage(page, cards, PINS_PER_PAGE);
+  const at = clampPage(page, cards, across);
   // Sliced by hand rather than with `pageOf`, which clamps the page against
   // the items it was handed. This row has one card more than it has projects,
   // so its last page can be a page `pinned` does not have — four pinned
   // projects fill page one and leave the dashed tile alone on page two — and
   // `pageOf` would answer that by handing back page one all over again.
-  const visible = pinned.slice(at * PINS_PER_PAGE, (at + 1) * PINS_PER_PAGE);
+  const visible = pinned.slice(at * across, (at + 1) * across);
   const showAddHere = at === pages - 1;
 
   return (
@@ -69,7 +81,11 @@ export function PinnedRow({ pinned, total, now, disabled, onOpen, onManage }: Pi
         </span>
       </p>
 
-      <div className="start-carousel">
+      {/* The count goes to CSS as a number rather than each card getting a
+          width: the cards divide the row between them, and handing them a
+          computed width instead would round four fractions up and overflow the
+          row it was measured from. */}
+      <div className="start-carousel" ref={frame} style={{ "--pins-across": across } as CSSProperties}>
         {/* Hidden rather than disabled at the ends. A dimmed chevron sitting on
             a glow over the artwork is a smudge on the picture; there is nothing
             to grey out here the way there is under a grid. */}
