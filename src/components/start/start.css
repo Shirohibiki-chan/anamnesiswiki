@@ -2,22 +2,40 @@
    Every project the app can find, plus the ways to start one that isn't in the
    list. See components/start/StartScreen.tsx.
 
-   Two columns: the library, and a rail against the wall for the shortcuts. The
-   rail is a fixed width because its contents are — a project name and a
-   timestamp — and letting it stretch would only make the names longer without
-   making them more useful. */
+   Two columns: the library, and a rail against the wall for the shortcuts.
+   The rail was a fixed width, on the reasoning that its contents are — a
+   project name and a timestamp. That was right about the contents and wrong
+   about who decides: a long project name ellipsises at 232 whatever the
+   window, and how much of a wide monitor the pictures deserve against the text
+   is a reading preference. It drags, like the shell's two panels. */
 
 .start {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 232px;
+  /* The rail's width arrives as a custom property from StartScreen, the same
+     way the shell's two columns do. The fallback is the width it was fixed at
+     before it could be dragged, which is what renders for the frame before the
+     stored width comes back off disk. */
+  grid-template-columns: minmax(0, 1fr) var(--rail-w, 232px);
   /* `minmax(0, 1fr)` and not the automatic row a grid would give this. An
      auto row is sized by its content and grows straight past `height`, so
      the column below it never learns how tall it is allowed to be and the
      grid of covers runs off the bottom of the window instead of paging. */
   grid-template-rows: minmax(0, 1fr);
   height: 100vh;
+  /* The containing block for the rail's resize handle, which sits outside the
+     rail rather than inside it — a handle inside a scrolling panel scrolls
+     away from the edge it is supposed to be the edge of. Same reasoning as
+     `.app-layout`. */
+  position: relative;
   background: var(--color-bg);
   color: var(--color-text-primary);
+}
+
+/* The strip itself is styled in shell.css, which is always loaded — only where
+   it sits is this screen's business. `--rail-w` less 2px so the 5px grab area
+   straddles the 1px border it appears to be, as on the other two. */
+.resize-handle-rail {
+  right: calc(var(--rail-w, 232px) - 2px);
 }
 
 .start-main {

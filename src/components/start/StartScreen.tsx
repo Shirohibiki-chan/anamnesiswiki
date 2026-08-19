@@ -11,14 +11,21 @@
 // that can't be undone by clicking somewhere else, and it's centred and filled
 // while everything else is quiet. Opening a folder and importing are in the
 // rail: real, reachable, and not shouting.
+//
+// The rail drags on the shell's own handle rather than a second mechanism
+// written for this screen. It is the same gesture on the same kind of edge, and
+// the width is stored beside the shell's two — see `layout-service`.
 import { useState } from "react";
+import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
 import { useUpdates } from "../../hooks/use-updates";
 import { useStartActions } from "../../hooks/use-start-actions";
 import { useWorldLibrary } from "../../hooks/use-world-library";
 import { resolvePins, unpinned as unpinnedOf } from "../../services/pins";
 import { filterWorlds } from "../../services/world-scan";
+import { RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from "../../constants/layout";
 import { ImportModal } from "../import/ImportModal";
+import { ResizeHandle } from "../shell/ResizeHandle";
 import { ManagePinsDialog } from "./ManagePinsDialog";
 import { PinnedRow } from "./PinnedRow";
 import { ProjectGrid } from "./ProjectGrid";
@@ -46,6 +53,8 @@ export function StartScreen() {
   const { worlds, isScanning, scannedAt } = useWorldLibrary();
   const { currentVersion } = useUpdates();
   const actions = useStartActions();
+  const widths = usePanelWidths();
+  const { setRailWidth, resetRailWidth } = useRailWidthActions();
 
   const [query, setQuery] = useState("");
   const [isNaming, setIsNaming] = useState(false);
@@ -69,7 +78,7 @@ export function StartScreen() {
     .slice(0, RAIL_RECENT_COUNT);
 
   return (
-    <main className="start">
+    <main className="start" style={{ "--rail-w": `${widths.rail}px` } as React.CSSProperties}>
       <div className="start-main">
         <header className="start-head">
           <div className="start-brand">
@@ -180,6 +189,16 @@ export function StartScreen() {
 
         {actions.error && <p className="start-error">{actions.error}</p>}
       </div>
+
+      <ResizeHandle
+        edge="rail"
+        label="Rail width"
+        width={widths.rail}
+        min={RAIL_MIN_WIDTH}
+        max={RAIL_MAX_WIDTH}
+        onResize={setRailWidth}
+        onReset={resetRailWidth}
+      />
 
       <StartRail
         recent={recent}

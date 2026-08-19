@@ -3,12 +3,16 @@ import {
   PROPERTIES_DEFAULT_WIDTH,
   PROPERTIES_MAX_WIDTH,
   PROPERTIES_MIN_WIDTH,
+  RAIL_DEFAULT_WIDTH,
+  RAIL_MAX_WIDTH,
+  RAIL_MIN_WIDTH,
   TREE_DEFAULT_WIDTH,
   TREE_MAX_WIDTH,
   TREE_MIN_WIDTH,
 } from "../constants/layout";
 import {
   clampPropertiesWidth,
+  clampRailWidth,
   clampTreeWidth,
   clampWidth,
   DEFAULT_PANEL_WIDTHS,
@@ -39,24 +43,32 @@ describe("clampWidth", () => {
   });
 });
 
-describe("clampTreeWidth / clampPropertiesWidth", () => {
+describe("clampTreeWidth / clampPropertiesWidth / clampRailWidth", () => {
   it("applies each panel's own limits", () => {
     expect(clampTreeWidth(0)).toBe(TREE_MIN_WIDTH);
     expect(clampTreeWidth(9000)).toBe(TREE_MAX_WIDTH);
     expect(clampPropertiesWidth(0)).toBe(PROPERTIES_MIN_WIDTH);
     expect(clampPropertiesWidth(9000)).toBe(PROPERTIES_MAX_WIDTH);
+    expect(clampRailWidth(0)).toBe(RAIL_MIN_WIDTH);
+    expect(clampRailWidth(9000)).toBe(RAIL_MAX_WIDTH);
   });
 
-  // Nobody's window should change shape on upgrade.
-  it("leaves the pre-Phase-14 fixed widths untouched", () => {
+  // Nobody's window should change shape on upgrade — the shell's two from
+  // before Phase 14, and the rail from before it could be dragged at all.
+  it("leaves the previously fixed widths untouched", () => {
     expect(clampTreeWidth(TREE_DEFAULT_WIDTH)).toBe(TREE_DEFAULT_WIDTH);
     expect(clampPropertiesWidth(PROPERTIES_DEFAULT_WIDTH)).toBe(PROPERTIES_DEFAULT_WIDTH);
+    expect(clampRailWidth(RAIL_DEFAULT_WIDTH)).toBe(RAIL_DEFAULT_WIDTH);
   });
 });
 
 describe("parsePanelWidths", () => {
-  it("takes a well-formed pair", () => {
-    expect(parsePanelWidths({ tree: 300, properties: 400 })).toEqual({ tree: 300, properties: 400 });
+  it("takes a well-formed record", () => {
+    expect(parsePanelWidths({ tree: 300, properties: 400, rail: 280 })).toEqual({
+      tree: 300,
+      properties: 400,
+      rail: 280,
+    });
   });
 
   it("falls back for anything that isn't an object", () => {
@@ -65,17 +77,28 @@ describe("parsePanelWidths", () => {
     expect(parsePanelWidths("260px")).toEqual(DEFAULT_PANEL_WIDTHS);
   });
 
-  it("keeps the good half of a half-written file", () => {
-    expect(parsePanelWidths({ tree: 340 })).toEqual({ tree: 340, properties: PROPERTIES_DEFAULT_WIDTH });
+  it("keeps the good part of a half-written file", () => {
+    expect(parsePanelWidths({ tree: 340 })).toEqual({
+      tree: 340,
+      properties: PROPERTIES_DEFAULT_WIDTH,
+      rail: RAIL_DEFAULT_WIDTH,
+    });
     expect(parsePanelWidths({ properties: "wide" })).toEqual(DEFAULT_PANEL_WIDTHS);
+  });
+
+  // Every settings file written before the rail could be dragged is this case,
+  // so it is the upgrade path rather than a malformed-input test.
+  it("gives the rail its default when the file predates it", () => {
+    expect(parsePanelWidths({ tree: 300, properties: 400 }).rail).toBe(RAIL_DEFAULT_WIDTH);
   });
 
   // The limits are free to move between versions, so a width that was legal
   // when it was written may not be now.
   it("pulls a width written by an older version back inside today's limits", () => {
-    expect(parsePanelWidths({ tree: 40, properties: 4000 })).toEqual({
+    expect(parsePanelWidths({ tree: 40, properties: 4000, rail: 4000 })).toEqual({
       tree: TREE_MIN_WIDTH,
       properties: PROPERTIES_MAX_WIDTH,
+      rail: RAIL_MAX_WIDTH,
     });
   });
 });

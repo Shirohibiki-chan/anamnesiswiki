@@ -7,19 +7,30 @@ import {
   PROPERTIES_DEFAULT_WIDTH,
   PROPERTIES_MAX_WIDTH,
   PROPERTIES_MIN_WIDTH,
+  RAIL_DEFAULT_WIDTH,
+  RAIL_MAX_WIDTH,
+  RAIL_MIN_WIDTH,
   TREE_DEFAULT_WIDTH,
   TREE_MAX_WIDTH,
   TREE_MIN_WIDTH,
 } from "../constants/layout";
 
+/**
+ * All three draggable columns, in one record because they share one settings
+ * key and one debounced write. The first two are the shell's; `rail` is the
+ * start screen's, and the two screens never exist at once — which is why a
+ * single store is enough and why each screen resets only what it shows.
+ */
 export type PanelWidths = {
   tree: number;
   properties: number;
+  rail: number;
 };
 
 export const DEFAULT_PANEL_WIDTHS: PanelWidths = {
   tree: TREE_DEFAULT_WIDTH,
   properties: PROPERTIES_DEFAULT_WIDTH,
+  rail: RAIL_DEFAULT_WIDTH,
 };
 
 /**
@@ -44,6 +55,10 @@ export function clampPropertiesWidth(width: number): number {
   return clampWidth(width, PROPERTIES_MIN_WIDTH, PROPERTIES_MAX_WIDTH, PROPERTIES_DEFAULT_WIDTH);
 }
 
+export function clampRailWidth(width: number): number {
+  return clampWidth(width, RAIL_MIN_WIDTH, RAIL_MAX_WIDTH, RAIL_DEFAULT_WIDTH);
+}
+
 /**
  * Whatever came back out of app-settings.json, reduced to widths we'd accept
  * today — the same treatment `parseOverrides` gives stored shortcuts, and for
@@ -60,5 +75,6 @@ export function parsePanelWidths(raw: unknown): PanelWidths {
     tree: typeof source.tree === "number" ? clampTreeWidth(source.tree) : TREE_DEFAULT_WIDTH,
     properties:
       typeof source.properties === "number" ? clampPropertiesWidth(source.properties) : PROPERTIES_DEFAULT_WIDTH,
+    rail: typeof source.rail === "number" ? clampRailWidth(source.rail) : RAIL_DEFAULT_WIDTH,
   };
 }

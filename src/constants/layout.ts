@@ -142,3 +142,23 @@ export const PROJECT_TILE_MIN_WIDTH = 190;
 export const PROJECT_TILE_HEIGHT = 132;
 export const PROJECT_ROW_HEIGHT = 56;
 export const PROJECT_TILE_GAP = 10;
+
+/**
+ * How wide the start screen's rail can be dragged, and where it starts.
+ *
+ * The same mechanism as the two side panels above, for the same reason: the
+ * rail is a column of text beside a grid of pictures, and how much of the
+ * window each of those deserves is a reading preference rather than a fact —
+ * the same argument that made the tree draggable in Phase 14.
+ *
+ * 232 is the width it shipped at, so nobody's start screen changes shape on
+ * upgrade. The minimum is where a recent project's line stops working: the
+ * chip and its gap take 28px, and below about 200 a name in the display face
+ * ellipsises before it has said which project it is. The maximum is set by the
+ * column it takes from rather than by the rail itself — the app's minimum
+ * window is 900 wide, and 400 here still leaves the pinned row the two cards
+ * across that `PIN_MIN_ACROSS` calls the floor.
+ */
+export const RAIL_MIN_WIDTH = 200;
+export const RAIL_MAX_WIDTH = 400;
+export const RAIL_DEFAULT_WIDTH = 232;

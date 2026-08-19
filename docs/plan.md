@@ -788,6 +788,24 @@ the path is the version with no reserved width, and it is also where it belongs:
 the flag and the path are the same fact about the same project, and on a cover
 it no longer sits over the artwork.
 
+**The rail drags, on the shell's own handle rather than a second mechanism**
+(her call, 2026-08-19). It was written as a fixed 232 on the reasoning that its
+contents are fixed — a project name and a timestamp — which was right about the
+contents and wrong about who decides: a long name ellipsises at 232 whatever the
+monitor, and how much of a wide window the pictures deserve against the text is
+a reading preference like the panel widths, not a fact. `ResizeHandle` already
+does the whole gesture — pointer capture, arrow keys, double-click to reset —
+and it took a table of three edges rather than a hard-coded pair to take a
+third, so nothing was written twice.
+
+The width is stored beside the shell's two in `panelWidths`, and **the reset
+split in two doing it**: a double-click resets what the person can see, and the
+two screens never share a window, so one reset reaching across and undoing a
+width on the other screen was a bug waiting rather than a feature. 200 to 400,
+because the floor is where a recent project's line stops working and the ceiling
+is set by what it takes from — the app's minimum window is 900 wide, and 400
+still leaves the pinned row the two cards across that is its own floor.
+
 **A project's location is split rather than ellipsised.** The last folder is
 kept whole and the middle of the path gives way, because an ellipsis eats the
 end — and the end is the only part that tells two projects in different folders
@@ -795,9 +813,14 @@ apart. The separator sits on the front of the kept half so a clipped path still
 reads as a path.
 
 **Still to build:** the third entry under Add a Project — start from a
-template — which the direction above lists and the rail has never had; covers
-you set yourself, and the muted-covers switch; release notes in the rail; the
-page you were last on; groups and archive; the duplicate-project action.
+template — which the direction above lists and the rail has never had, and which
+needs its own design pass first: it turned into export and import a project
+template (her, 2026-08-19), so what a template file holds and what format it is
+are open questions rather than build work. Then: release notes in the rail,
+three by version with the newest marked, baked in from the changelog at build
+time; the projects folder at the foot of the rail with a button that opens it in
+File Explorer; covers you set yourself, and the muted-covers switch; the page you
+were last on; groups and archive; the duplicate-project action.
 
 ### Second instance
 
