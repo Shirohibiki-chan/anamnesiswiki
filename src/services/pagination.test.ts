@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clampPage, fitPerPage, pageContaining, pageCount, pageOf } from "./pagination";
+import {
+  fitAcross, clampPage, fitPerPage, pageContaining, pageCount, pageOf } from "./pagination";
 
 const ITEMS = ["a", "b", "c", "d", "e", "f", "g"];
 
@@ -143,5 +144,67 @@ describe("pageContaining", () => {
     expect(pageContaining(4, 0)).toBe(0);
     expect(pageContaining(-3, 6)).toBe(0);
     expect(pageContaining(Number.NaN, 6)).toBe(0);
+  });
+});
+
+describe("fitAcross", () => {
+  // The pinned row's numbers, so these read as window sizes rather than as
+  // arithmetic. A 1280 window leaves the row 1016 wide; fullscreen on a 2560
+  // monitor leaves it 2296; the narrowest window the app allows leaves it 636.
+  const TARGET = 245;
+  const GAP = 12;
+  const MIN = 2;
+  const across = (width: number) => fitAcross(width, TARGET, GAP, MIN);
+  const cardWidth = (width: number, n: number) => (width - (n - 1) * GAP) / n;
+
+  it("keeps four across at the window the row was drawn at", () => {
+    expect(across(1016)).toBe(4);
+    expect(cardWidth(1016, 4)).toBe(245);
+  });
+
+  it("adds columns instead of stretching the cards on a wide window", () => {
+    // The bug this exists for: four cards across a fullscreen 2560 monitor
+    // were 565 wide against a card drawn at 245, which is a letterboxed band
+    // rather than a cover.
+    expect(across(2296)).toBe(8);
+    expect(cardWidth(2296, 8)).toBeCloseTo(276.5, 1);
+  });
+
+  it("drops to two rather than standing the cards on end", () => {
+    // The other end of the same bug: at the app's minimum window four across
+    // made a 150-wide card against a 208-tall one, taller than it is wide.
+    expect(across(636)).toBe(2);
+    expect(cardWidth(636, 2)).toBe(312);
+  });
+
+  it("never lands a card narrower than it asked to be", () => {
+    for (let width = 400; width <= 4000; width += 7) {
+      const n = across(width);
+      if (n > MIN) expect(cardWidth(width, n)).toBeGreaterThanOrEqual(TARGET);
+    }
+  });
+
+  it("only ever grows the count as the window grows", () => {
+    let last = 0;
+    for (let width = 300; width <= 4000; width += 3) {
+      const n = across(width);
+      expect(n).toBeGreaterThanOrEqual(last);
+      last = n;
+    }
+  });
+
+  it("holds the floor when the row is too narrow for even two", () => {
+    expect(across(300)).toBe(MIN);
+    expect(across(1)).toBe(MIN);
+  });
+
+  it("answers the floor for a row that has not been measured", () => {
+    // A ResizeObserver reports nothing until the row has been laid out once,
+    // and the component has its own answer for that frame — this only has to
+    // avoid dividing by it.
+    expect(across(0)).toBe(MIN);
+    expect(across(-40)).toBe(MIN);
+    expect(across(Number.NaN)).toBe(MIN);
+    expect(fitAcross(1016, 0, GAP, MIN)).toBe(MIN);
   });
 });
