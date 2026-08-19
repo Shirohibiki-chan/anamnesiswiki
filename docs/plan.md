@@ -738,11 +738,28 @@ separate "recently opened" was considered and left out because the rail already
 carries that list, and an order that duplicates a list three feet away is a
 second answer to a question already answered.
 
+**The pinned row and its manage window landed 2026-08-19.** Pins are app
+settings rather than project files — which projects sit at the top of *this*
+screen is a fact about how she works here, not about the project, and one
+handed to someone else has no business arriving pre-pinned.
+
+**A pin is a record, not a bare id, and that is a deliberate softening of "pins
+key on the id".** Ids are minted when a project is *opened*, so a project the
+scan found and she has never opened has none — and those are exactly the
+projects the library was built to surface. A pin therefore stores the id, the
+path and the name: the id decides when both sides have one, the path answers
+when they do not, and the pin picks up the id the first time the project is
+opened. The same fallback `coverFor` already makes, for the same reason.
+
+**The row's page size is a constant where every other grid measures.** A pinned
+card is a fraction of the row — four across at any width — so the column count
+is the input to the width rather than the answer to it, and there is nothing to
+measure. The dashed tile takes one of the four on whichever page it lands on.
+
 **Still to build:** the third entry under Add a Project — start from a
-template — which the direction above lists and the rail has never had; the
-pinned row and its manage window; covers you set yourself, and the muted-covers
-switch; release notes in the rail; the page you were last on; groups and
-archive; the duplicate-project action.
+template — which the direction above lists and the rail has never had; covers
+you set yourself, and the muted-covers switch; release notes in the rail; the
+page you were last on; groups and archive; the duplicate-project action.
 
 ### Second instance
 

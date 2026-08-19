@@ -4,7 +4,12 @@
 
 ### Additions
 
+- **Keep the projects you actually use at the top.** There's a Pinned row across the top of the start screen now — tall covers, four to a page, with the picture fading up into the background instead of sitting in a box. Pinning and rearranging both happen in one window behind the Manage pins button: drag the rows into the order you want, and every project you haven't pinned sits underneath as covers, so putting one up there is one click. The row shows a dashed "Pin a project" tile even when nothing is pinned, so it doesn't hide until you already know about it. Nothing is capped — the row pages instead, and a page always holds whole covers rather than half of one.
 - **Put the projects in whatever order you want.** There's a pill above the grid, next to the covers-or-rows buttons, that opens a short menu: newest first, oldest first, name A–Z, or name Z–A. Newest first is still what you get and still means whichever happened last — you opening a project, or it changing — so nothing moves unless you ask it to. Oldest first is the one for finding what you haven't touched in months. The app remembers your choice, and picking a new order takes you back to the first page rather than leaving you halfway down a list that just rearranged itself.
+
+### Adjustments
+
+- **Two controls now show which one you picked.** The covers-or-rows toggle drew its icon in exactly the colour of its own highlight, so the side you were on was the side you couldn't see; the sort menu had the same problem on the order it was set to. Both are the bright teal now.
 
 ## 2026-08-18
 

@@ -3,6 +3,7 @@
 // in the app's own data dir, never inside a project folder.
 import { load, type Store } from "@tauri-apps/plugin-store";
 import { getDefaultProjectsDir } from "../constants/paths";
+import type { Pin } from "./pins";
 
 const SETTINGS_FILE = "app-settings.json";
 
@@ -57,6 +58,40 @@ export function describeProjectLocation(path: string): string {
   const tail = parent.slice(-2);
   const prefix = parent.length > tail.length ? `…${separator}` : "";
   return prefix + tail.join(separator);
+}
+
+/**
+ * The pinned projects, in the order they sit in on the start screen.
+ *
+ * App settings rather than the project file, unlike the id itself: which
+ * projects she keeps at the top of *this* screen is a fact about how she works
+ * here, not about the project. A pinned project handed to someone else, or
+ * opened on another machine, has no business arriving pre-pinned.
+ *
+ * Stored as one ordered array rather than a flag per project, because the
+ * order is the feature — see `pins.ts`.
+ */
+export async function getPinnedProjects(): Promise<Pin[]> {
+  const store = await getStore();
+  const stored = (await store.get<unknown>("pinnedProjects")) ?? [];
+  if (!Array.isArray(stored)) return [];
+  // Read defensively, the same way preferences are: this is an ordinary JSON
+  // file that outlives the version that wrote it, and one malformed entry must
+  // not cost her the rest of the row.
+  return stored.filter(
+    (entry): entry is Pin =>
+      typeof entry === "object" &&
+      entry !== null &&
+      typeof (entry as Pin).path === "string" &&
+      typeof (entry as Pin).name === "string" &&
+      (typeof (entry as Pin).id === "string" || (entry as Pin).id === null),
+  );
+}
+
+export async function setPinnedProjects(pins: readonly Pin[]): Promise<void> {
+  const store = await getStore();
+  await store.set("pinnedProjects", pins);
+  await store.save();
 }
 
 export async function getRecentProjects(): Promise<RecentProject[]> {

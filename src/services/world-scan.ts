@@ -124,6 +124,17 @@ function normalizePath(path: string): string {
   return path.replace(/[\\/]+/g, "/").replace(/\/+$/, "").toLowerCase();
 }
 
+/**
+ * Whether two paths name the same project folder, by the rule above.
+ *
+ * Exported because pins have to ask the same question and must get the same
+ * answer: a pin that thinks `C:\Users\...` and `C:\users\...` are two
+ * projects is a pin that silently stops matching the project it is on.
+ */
+export function isSameProjectPath(a: string, b: string): boolean {
+  return normalizePath(a) === normalizePath(b);
+}
+
 export function isInsideProjectsFolder(path: string, projectsDir: string): boolean {
   const dir = normalizePath(projectsDir);
   if (!dir) return false;
