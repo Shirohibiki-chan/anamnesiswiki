@@ -4,36 +4,18 @@
 
 ### Additions
 
-- **Keep the projects you actually use at the top.** There's a Pinned row across the top of the start screen now — tall covers, four to a page, with the picture fading up into the background instead of sitting in a box. Pinning and rearranging both happen in one window behind the Manage pins button: drag the rows into the order you want, and every project you haven't pinned sits underneath as covers, so putting one up there is one click. The row shows a dashed "Pin a project" tile even when nothing is pinned, so it doesn't hide until you already know about it. Nothing is capped — the row pages instead, and a page always holds whole covers rather than half of one.
+- **Keep the projects you actually use at the top.** There's a Pinned row across the top of the start screen now — tall covers with the picture fading up into the background instead of sitting in a box, as many across as the window has room for. Pinning and rearranging both happen in one window behind the Manage pins button: drag the rows into the order you want, and every project you haven't pinned sits underneath as covers, so putting one up there is one click. The row shows a dashed "Pin a project" tile even when nothing is pinned, so it doesn't hide until you already know about it. Nothing is capped — the row pages instead, and a page always holds whole covers rather than half of one.
 - **Put the projects in whatever order you want.** There's a pill above the grid, next to the covers-or-rows buttons, that opens a short menu: newest first, oldest first, name A–Z, or name Z–A. Newest first is still what you get and still means whichever happened last — you opening a project, or it changing — so nothing moves unless you ask it to. Oldest first is the one for finding what you haven't touched in months. The app remembers your choice, and picking a new order takes you back to the first page rather than leaving you halfway down a list that just rearranged itself.
-
-- **Every project shows where it lives on disk**, under its name, on covers and
-  in the list alike. Long paths lose their middle rather than their end, so the
-  folder the project actually sits in is always the part you can still read —
-  which is the part that tells two projects with the same name apart. Covers and
-  rows are both a little taller to carry it.
+- **Every project shows where it lives on disk.** Under its name, on covers and in the list alike. Long paths lose their middle rather than their end, so the folder the project actually sits in is always the part you can still read — which is the part that tells two projects with the same name apart. Covers and rows are both a little taller to carry it.
 
 ### Fixes
 
-- **One project no longer stretches across the whole screen in the list view.**
-  A row put the name at the far left and the date at the far right, so making
-  the window wider only put more nothing between them — about 2000 pixels of it
-  with the window full screen. A row is now two lines — the name with its
-  location under it, and the date beside them — which lets it be narrow enough
-  that the list makes a second, third or fourth column of rows as there's room
-  for them, instead of one row stretched across everything.
-- **The pinned covers no longer stretch out of shape on a wide window.** The row
-  was always four across, which is the right number at about the size the app
-  opens at and wrong everywhere else: fullscreen on a wide monitor pulled four
-  covers into long thin bands, and shrinking the window stood them on end and
-  started cutting the names off. It now fits as many as the width has room for —
-  eight across a fullscreen 2560 monitor, two on the narrowest window — and a
-  cover keeps the same shape at every size, so a picture you put on one is
-  always cropped the same way rather than losing its sides on one window and its
-  top and bottom on another.
+- **One project no longer stretches across the whole screen in the list view.** A row put the name at the far left and the date at the far right, so making the window wider only put more nothing between them — about 2000 pixels of it with the window full screen. A row is now two lines: the name with its location under it, and the date beside them, centred. That lets a row be narrow enough for the list to make a second, third or fourth column of them as there's room, instead of stretching one across everything.
+- **The pinned covers no longer stretch out of shape on a wide window.** The row was always four across, which is the right number at about the size the app opens at and wrong everywhere else: fullscreen on a wide monitor pulled four covers into long thin bands, and shrinking the window stood them on end and started cutting the names off. It now fits as many as the width has room for — eight across a fullscreen 2560 monitor, two on the narrowest window — and a cover keeps the same shape at every size, so a picture you put on one is always cropped the same way rather than losing its sides on one window and its top and bottom on another.
 
 ### Adjustments
 
+- **The Elsewhere marker moved onto the line with the project's location.** It used to sit in the corner of a cover, over the picture. It says the same thing the path under the name says, so it now sits at the front of that line in both views — which also gave the date on a row its right-hand edge back, since the marker had been holding a column open on every row whether or not it was used.
 - **Two controls now show which one you picked.** The covers-or-rows toggle drew its icon in exactly the colour of its own highlight, so the side you were on was the side you couldn't see; the sort menu had the same problem on the order it was set to. Both are the bright teal now.
 
 ## 2026-08-18
@@ -45,7 +27,6 @@
 - **Pages instead of endless scrolling, and it's a setting.** The project grid comes a page at a time by default, with arrows and dots underneath. A page is however much fits your window, so there are no half-empty rows and the next page is exactly one screenful away. If you'd rather have one long scroll, Settings → Lists switches it, and the switch covers every long list in the app rather than just this one.
 - **Every project you have shows up on the start screen, not just the last eight.** The screen used to list the eight you had opened most recently, so a ninth was only reachable through "Open folder" — and a project you had never opened on this computer never appeared at all. The app looks in your projects folder now, including one folder deeper, so a project tidied into a subfolder still turns up. Newest first, going by whichever happened last: you opening it, or it changing. Nothing is trimmed off the end — the list is as long as it needs to be and the screen scrolls. A project living somewhere else, like another drive, sits in the same list with a small "Elsewhere" marker on it.
 - **Opening a folder now looks inside it.** Unzipping a world usually gives you a folder with the real one nested inside — `Valeraverse` holding another `Valeraverse` — and picking the outer one used to tell you there was no project in it, which was true and no help at all. It opens the one inside now. If the folder holds several projects, it lists them and lets you pick, rather than guessing.
-
 - **Start a new page from a template without going through the new-page screen.** Every row in the Templates tab has a page-with-a-plus button on hover — the built-in kinds and your own alike. The page arrives at the top of your tree with the template already poured into it, opens with its name ready to type, and the sidebar goes back to the Project tab so you can see where it landed. One press of undo takes the whole thing back.
 - **Drag your own templates into the order you want them offered in.** A grip appears on the right of a template's row in the Templates tab when you hover it; drag it up or down and the new-page screen offers them in that order too, since both read the same list. Undoable. The built-in ones don't move — they're the app's own list and the same in every world.
 
@@ -77,7 +58,6 @@
 ### Additions
 
 - **Pictures you uploaded yourself can now go to LegendKeeper too.** The export dialog offers to carry them inside the file, and tells you how much bigger that makes it before you decide. Off by default, because a world full of photos turns a tiny file into a large one. Portraits, covers and pictures in the text all come along.
-
 - **A picture that came from LegendKeeper can now go back to LegendKeeper.** Exporting a page with a picture in its text used to leave the picture behind and just keep the caption. If that picture arrived in an import, the app remembers the address it came from and hands it back, so the page comes out whole. Same for a picture you added by pasting a web address.
 - Pictures you uploaded from your own computer still can't go into a `.lk` file — it stores addresses of pictures on LegendKeeper's servers, not the pictures themselves. The export summary still tells you when that happens.
 - **Only worlds imported from now on get this.** A world imported before today didn't record where its pictures came from, so it would need re-importing to gain it.
@@ -539,7 +519,6 @@
 ### Fixes
 
 - **Pages stopped saving long before they had to.** The app refused any page whose file path went over 200 characters, and told you to shorten the name or move it. That number came from an old Windows limit of 260, with 60 characters held back just in case — which was never the right check, and only ever meant refusing pages Windows would have written quite happily. Five folders deep with ordinary page names gets you to about 203.
-
 - **A folder that had gone wrong once stayed broken forever.** Once a page's file was missing, every rename and every move afterwards tried the same impossible thing and failed the same way — including after restarting the app, because the app works out where files live from your tree each time rather than remembering. The app now notices there's nothing there to move and just writes the page where it belongs. **Any folder currently stuck like this fixes itself the next time you rename or move something in it.**
   - A rename the system actually refuses — a file OneDrive has open, a full disk — still gets reported the way it always did. Only "there's nothing there" is treated as something to repair.
 
