@@ -8,7 +8,7 @@
 // wearing a real photograph later won't be wearing a black stripe with it.
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
-import type { ListedWorld } from "../../services/world-scan";
+import { locationOf, type ListedWorld } from "../../services/world-scan";
 
 type ProjectTileProps = {
   project: ListedWorld;
@@ -20,6 +20,10 @@ type ProjectTileProps = {
 
 export function ProjectTile({ project, now, disabled, onOpen }: ProjectTileProps) {
   const when = timeAgo(project.activeAt || null, now);
+  // Rendered in both views and hidden in one, rather than branched on: which
+  // view is drawn is a class on the grid, and a component that reads it would
+  // be the first thing here that has to know.
+  const where = locationOf(project.path);
 
   return (
     <button
@@ -39,6 +43,16 @@ export function ProjectTile({ project, now, disabled, onOpen }: ProjectTileProps
       )}
       <span className="project-tile-cap">
         <b>{project.name}</b>
+        {/* Two spans and not one string: the head is allowed to be clipped and
+            the tail is not, which is what keeps a narrow row saying which
+            folder this is rather than trailing off partway through the word
+            every project in that folder shares. */}
+        {where.tail && (
+          <span className="project-tile-where">
+            <span>{where.head}</span>
+            <b>{where.tail}</b>
+          </span>
+        )}
         {when && <em>{when}</em>}
       </span>
     </button>

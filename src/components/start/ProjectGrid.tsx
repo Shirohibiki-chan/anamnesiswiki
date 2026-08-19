@@ -8,6 +8,7 @@
 import { LayoutGrid, Rows3 } from "lucide-react";
 import {
   PROJECT_ROW_HEIGHT,
+  PROJECT_ROW_MIN_WIDTH,
   PROJECT_TILE_GAP,
   PROJECT_TILE_HEIGHT,
   PROJECT_TILE_MIN_WIDTH,
@@ -51,7 +52,7 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
   const tile =
     view === "grid"
       ? { minWidth: PROJECT_TILE_MIN_WIDTH, height: PROJECT_TILE_HEIGHT, gap: PROJECT_TILE_GAP }
-      : { minWidth: Number.MAX_SAFE_INTEGER, height: PROJECT_ROW_HEIGHT, gap: PROJECT_TILE_GAP };
+      : { minWidth: PROJECT_ROW_MIN_WIDTH, height: PROJECT_ROW_HEIGHT, gap: PROJECT_TILE_GAP };
 
   const { ref, visible, isPaged, page, pages, goTo } = usePagedList(ordered, tile);
 

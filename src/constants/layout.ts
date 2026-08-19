@@ -114,6 +114,25 @@ export const PIN_MIN_ACROSS = 2;
  */
 export const PINS_PER_PAGE = 4;
 
+/**
+ * How narrow a row in the list view is allowed to get before the list stops
+ * making another column of them.
+ *
+ * The list used to be one row across the whole window, which is only readable
+ * at about the width the app opens at: fullscreen on a 2560 monitor left 2060
+ * pixels of nothing between a project's name and the date beside it, because
+ * the two are pinned to opposite ends of whatever they are given. Columns are
+ * the answer rather than a cap on the width, since a capped list on a wide
+ * monitor is the same empty screen with a tidier edge on it.
+ *
+ * 620 because a row carries four things now — the cover chip, the name, where
+ * it lives on disk and when it was last touched — and below about this they
+ * start taking the space from each other. It also keeps the list one column
+ * wide at the size the app opens at, so nothing rearranges for the ordinary
+ * window.
+ */
+export const PROJECT_ROW_MIN_WIDTH = 620;
+
 export const PROJECT_TILE_MIN_WIDTH = 190;
 export const PROJECT_TILE_HEIGHT = 118;
 export const PROJECT_ROW_HEIGHT = 48;

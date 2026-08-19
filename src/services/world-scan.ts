@@ -135,6 +135,43 @@ export function isSameProjectPath(a: string, b: string): boolean {
   return normalizePath(a) === normalizePath(b);
 }
 
+/**
+ * Where a project sits on disk, split so a narrow row can drop the middle of it
+ * rather than the end.
+ *
+ * The folder *containing* the project, not the project's own folder — the row
+ * is already showing the project's name, and repeating it as the last word of
+ * its own path says nothing.
+ *
+ * Split into a `head` that may be clipped and a `tail` that must not be. A
+ * plain ellipsis eats the end of a string, which on a path is the only part
+ * that tells two projects apart: `C:\Users\shiro\Documents\Anam…` and
+ * `C:\Users\shiro\Documents\Anot…` read as the same place. Keeping the last
+ * folder whole and collapsing what leads up to it says the useful half.
+ *
+ * Separators are left as they were given. This runs on Windows and on macOS,
+ * the two disagree, and a path rewritten to look tidy is a path she can't
+ * match against what her file manager shows her.
+ */
+export type ProjectLocation = { head: string; tail: string };
+
+export function locationOf(path: string): ProjectLocation {
+  const trimmed = path.replace(/[\\/]+$/, "");
+  const cut = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"));
+  // No separator at all: a bare name, with nowhere above it to report.
+  if (cut < 0) return { head: "", tail: "" };
+  const parent = trimmed.slice(0, cut);
+  const split = Math.max(parent.lastIndexOf("/"), parent.lastIndexOf("\\"));
+  // The parent is the drive or the root itself — there is no middle to drop,
+  // so all of it is the part that must survive.
+  if (split < 0) return { head: "", tail: parent };
+  // The separator goes on the front of the tail, not the back of the head, so
+  // that clipping the head leaves the slash standing: `…Doc…\\Projects` still
+  // reads as a path with a piece missing, where `…Doc…Projects` reads as one
+  // folder with a strange name.
+  return { head: parent.slice(0, split), tail: parent.slice(split) };
+}
+
 export function isInsideProjectsFolder(path: string, projectsDir: string): boolean {
   const dir = normalizePath(projectsDir);
   if (!dir) return false;
