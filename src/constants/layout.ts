@@ -60,6 +60,29 @@ export const READING_COLUMN_WIDTH = 880;
  * `MIN_WIDTH` because the grid stretches its columns to fill the row — a tile
  * is never narrower than this, and usually a little wider.
  */
+/**
+ * The gap between two pictures in a grid of them, in pixels — `--space-md`,
+ * which is what both picture grids (the Assets tab and the picker) set their
+ * `gap` to.
+ *
+ * The page size needs it and CSS custom properties are not readable as numbers
+ * from TypeScript. Everything else about those tiles is measured off a real one
+ * at runtime rather than written down here — see `useMeasuredPagedList` for
+ * why a picture tile can't honestly be a constant.
+ */
+export const PICTURE_GRID_GAP = 8;
+
+/**
+ * How many pages can be shown as dots before the row becomes a counter.
+ *
+ * A dot is 26px of hit target, so eight of them is 208px — wider than the
+ * sidebar column the Assets tab lives in, and a row that wraps to two lines
+ * under a grid reads as part of the grid. Past this the nav says "4 / 30"
+ * instead, which is also the more useful sentence once there are thirty pages:
+ * nobody counts dots that far.
+ */
+export const MAX_PAGE_DOTS = 8;
+
 export const PROJECT_TILE_MIN_WIDTH = 190;
 export const PROJECT_TILE_HEIGHT = 118;
 export const PROJECT_ROW_HEIGHT = 48;

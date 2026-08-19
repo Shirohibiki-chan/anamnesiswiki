@@ -391,3 +391,84 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* --- Pages ---
+   Under any grid broken into pages. Written for the start screen and moved
+   here when the pictures got pages too; the markup that goes with it is
+   components/shell/PageNav.tsx, which explains why this one has a component
+   when the rest of this file deliberately does not.
+
+   The surface keeps its own spacing above the row, since how much room the nav
+   needs depends on what it sits under. */
+
+.ui-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+}
+
+.ui-page-arrow {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ui-page-arrow:hover:not(:disabled) {
+  color: var(--color-accent);
+}
+
+.ui-page-arrow:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.ui-page-dots {
+  display: flex;
+  gap: 2px;
+}
+
+/* Big enough to actually hit: the target is 26 by 20 and the mark inside it is
+   a 4px bar. A dot you have to aim at is a dot you stop using. */
+.ui-page-dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.ui-page-dot::before {
+  content: "";
+  width: 18px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.ui-page-dot:hover::before {
+  background: var(--color-text-muted);
+}
+
+.ui-page-dot[aria-current="true"]::before {
+  background: var(--color-accent);
+}
+
+/* The dots' replacement past MAX_PAGE_DOTS. Tabular figures so the row
+   doesn't shift by a pixel as the page number changes width. */
+.ui-page-count {
+  min-width: 4ch;
+  text-align: center;
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}

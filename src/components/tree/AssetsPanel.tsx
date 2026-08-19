@@ -32,7 +32,8 @@
 // the flag is down to what it always described: the tile says "not sure yet"
 // instead of "not used anywhere".
 import { FolderPlus, ImagePlus, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
+import { PICTURE_GRID_GAP } from "../../constants/layout";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import {
   ALL_PICTURES,
@@ -51,7 +52,9 @@ import {
 import { AssetFolderStrip } from "./AssetFolderStrip";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenSingleImage } from "../../hooks/use-lightbox";
+import { useMeasuredPagedList } from "../../hooks/use-paged-list";
 import { useNodeImage } from "../../hooks/use-node-image";
+import { PageNav } from "../shell/PageNav";
 
 export function AssetsPanel() {
   const { entries, isLoading, isUsageIncomplete, refresh } = useAssets();
@@ -66,6 +69,14 @@ export function AssetsPanel() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
 
   const { shown, counts } = useFilteredAssets(entries, folders, filter);
+  // Pages or one long scroll, whichever Settings → Lists says. The tile is
+  // measured rather than declared: this grid is two columns at the sidebar's
+  // narrowest and three past 300px, and a tile is as tall as it is wide plus
+  // however much room the caption's text size takes.
+  const { ref, tileRef, visible, isPaged, page, pages, goTo } = useMeasuredPagedList<AssetEntry, HTMLDivElement>(
+    shown,
+    PICTURE_GRID_GAP,
+  );
 
   function handleCreateFolder() {
     const id = createAssetFolder("New folder");
@@ -205,18 +216,25 @@ export function AssetsPanel() {
           onRenamingDone={() => setRenamingId(null)}
         />
       )}
-      {/* Only this part scrolls. The toolbar, the count and the folders stay
-          put — everything above used to scroll away with the grid, so the way
-          to add a picture or change folder disappeared the moment you went
-          looking through the pictures. */}
-      <div className="tree-assets-scroll">
-        {error && <p className="tree-assets-note tree-assets-error">{error}</p>}
-        {isUsageIncomplete && (
-          <p className="tree-assets-note tree-assets-warning">
-            One of your pages wouldn&rsquo;t open, so this can&rsquo;t say for certain what&rsquo;s using what. Deleting
-            is off until it can.
-          </p>
-        )}
+      {/* Both notes sit above the scrolling part rather than inside it, because
+          neither is something to scroll past: one says a page wouldn't open and
+          the other says why nothing was added. Inside, a page of pictures could
+          also push them out of sight. */}
+      {error && <p className="tree-assets-note tree-assets-error">{error}</p>}
+      {isUsageIncomplete && (
+        <p className="tree-assets-note tree-assets-warning">
+          One of your pages wouldn&rsquo;t open, so this can&rsquo;t say for certain what&rsquo;s using what. Deleting is
+          off until it can.
+        </p>
+      )}
+
+      {/* Only this part scrolls — and only when the reader asked for one long
+          scroll. Set to pages it clips instead, so a page is exactly what fits
+          and no scrollbar can contradict the arithmetic. The toolbar and the
+          folders stay put either way; everything above used to scroll away with
+          the grid, so the way to add a picture or change folder disappeared the
+          moment you went looking through the pictures. */}
+      <div className="tree-assets-scroll" data-paged={isPaged} ref={ref}>
         {!isLoading && shown.length === 0 && (
           <p className="tree-assets-note">
             {entries.length === 0
@@ -225,9 +243,12 @@ export function AssetsPanel() {
           </p>
         )}
         <ul className="tree-assets-grid">
-          {shown.map((entry) => (
+          {visible.map((entry, index) => (
             <AssetTile
               key={entry.fileName}
+              // The first tile is the one that gets measured, and every page
+              // has one — see useMeasuredPagedList.
+              tileRef={index === 0 ? tileRef : undefined}
               entry={entry}
               name={assetDisplayName(names, entry.fileName)}
               onRename={renameAsset}
@@ -237,6 +258,10 @@ export function AssetsPanel() {
           ))}
         </ul>
       </div>
+
+      {/* Dots would be 26px each in a column that can be 180px wide, so this
+          one counts instead. */}
+      {isPaged && <PageNav page={page} pages={pages} goTo={goTo} label="Pages of pictures" dots={false} />}
     </div>
   );
 }
@@ -259,11 +284,14 @@ export function AssetsPanel() {
 function AssetTile({
   entry,
   name,
+  tileRef,
   onRename,
   onRemove,
   usageIsCertain,
 }: {
   entry: AssetEntry;
+  /** Set on the first tile only, so the page size can be worked out from a real one. */
+  tileRef?: RefObject<HTMLLIElement | null>;
   /** "" for a picture that hasn't got one — never the UUID it's stored under. */
   name: string;
   onRename: (fileName: string, name: string) => void;
@@ -283,6 +311,7 @@ function AssetTile({
 
   return (
     <li
+      ref={tileRef}
       className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`}
       title={detail}
       // Dragging one onto a page puts it there — the deliberate gesture that

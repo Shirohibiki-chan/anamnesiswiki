@@ -1682,6 +1682,29 @@ is below.
   behaviour is verifiable rather than merely plausible. That distinction
   applies to anything else in this repo that wants to wait a beat.
 
+  **`ResizeObserver` is in the same family and it costs more**, measured
+  2026-08-18: its callbacks are delivered as part of the rendering steps, so in
+  that pane a plain observer on a laid-out element never fires once — not late,
+  never. Anything sized at runtime (the paged grids, the tree's own
+  measurement) therefore reads as permanently unmeasured there, which looks
+  exactly like a broken hook. **Check it in the real window via
+  `pnpm tauri:inspect` instead of debugging what the pane shows you.**
+
+- **A picture tile's size can't be written down as a constant, and that's why
+  `useMeasuredPagedList` exists.** The project grid declares its tile because it
+  has one: 190 by 118, in `constants/layout.ts`, in the same numbers the
+  stylesheet uses. Neither picture grid works that way — both are a counted
+  number of columns across whatever width they are given (two in the sidebar,
+  three past 300px, four in the picker), both make the thumbnail a square of
+  that column, and both sit under a caption that grows with the text-size
+  slider. A constant would be correct in one panel at one text size. **Don't
+  "simplify" the measuring hook into numbers**; the failure it prevents is a
+  page that overflows its area by one row, and the clip cuts that row in half.
+
+  It measures the *border* box, not the content box `useElementSize` reports.
+  Padding and border occupy the row like everything else, and under-measuring
+  is the direction that overflows.
+
 - **Three things about the dropdown that look optional and aren't.**
   - **`max-height` lives in CSS, not in a measured style.** `TreePopover`
     measures the rendered box to decide whether to open downward or flip up; a

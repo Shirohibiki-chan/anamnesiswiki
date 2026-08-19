@@ -611,10 +611,11 @@ boundary or keeps going.
 **It shipped in Settings → Lists rather than in appearance** (2026-08-18). The
 reasoning for having a switch at all is the muted-covers reasoning — taste gets
 a setting, not a compromise everybody lives with — but this one is about how a
-list behaves rather than how it looks, and it governs the picture picker as
-well as this screen (her call: it is the grid she is in far more often). A
+list behaves rather than how it looks, and it governs the pictures as well as
+this screen (her call: they are the grids she is in far more often). A
 behaviour setting filed under appearance is a setting nobody finds twice.
-Default is pages.
+Default is pages. Both picture grids — the sidebar's Assets tab and the
+picker — read it as of 2026-08-18.
 
 **The pinned row keeps its own pagination regardless.** That one is not a
 preference: a scrolling row cannot land on a page boundary, so its last page
