@@ -443,11 +443,14 @@
   padding: 0;
 }
 
-/* The date spans both lines and sits against the name rather than between the
-   two, so the eye reads across from the name it belongs to. */
+/* The date spans both lines and sits centred on the pair. `align-self` and not
+   the grid's `baseline`, which it would otherwise inherit: a baseline on an item
+   spanning two rows lands on the *first* of them, so the date sat level with the
+   name with a hole under it rather than beside the row it labels. */
 .start-area[data-view="list"] .project-tile-cap em {
   grid-row: 1 / span 2;
   grid-column: 2;
+  align-self: center;
 }
 
 .start-area[data-view="list"] .project-tile-cap b {
