@@ -1087,6 +1087,17 @@ button.tree-path-crumb:hover {
   padding-bottom: var(--space-md);
 }
 
+/* Set to pages it clips rather than scrolls, so a page is exactly what fits —
+   the same arrangement `.start-area` documents. A scrollbar appearing here
+   would take width off the row the page size was worked out from. */
+.tree-assets-scroll[data-paged="true"] {
+  overflow: hidden;
+}
+
+.tree-assets .ui-pages {
+  padding: var(--space-xs) var(--space-md) var(--space-sm);
+}
+
 /* Add picture / new folder. Real buttons, because `.ui-icon-btn` is
    transparent until hovered and the add button had gone unfindable — see the
    note in AssetsPanel.tsx. */

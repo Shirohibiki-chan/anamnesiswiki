@@ -1682,6 +1682,43 @@ is below.
   behaviour is verifiable rather than merely plausible. That distinction
   applies to anything else in this repo that wants to wait a beat.
 
+  **`ResizeObserver` is in the same family and it costs more**, measured
+  2026-08-18: its callbacks are delivered as part of the rendering steps, so in
+  that pane a plain observer on a laid-out element never fires once — not late,
+  never. Anything sized at runtime (the paged grids, the tree's own
+  measurement) therefore reads as permanently unmeasured there, which looks
+  exactly like a broken hook. **Check it in the real window via
+  `pnpm tauri:inspect` instead of debugging what the pane shows you.**
+
+- **A picture tile's size can't be written down as a constant, and that's why
+  `useMeasuredPagedList` exists.** The project grid declares its tile because it
+  has one: 190 by 118, in `constants/layout.ts`, in the same numbers the
+  stylesheet uses. Neither picture grid works that way — both are a counted
+  number of columns across whatever width they are given (two in the sidebar,
+  three past 300px, four in the picker), both make the thumbnail a square of
+  that column, and both sit under a caption that grows with the text-size
+  slider. A constant would be correct in one panel at one text size. **Don't
+  "simplify" the measuring hook into numbers**; the failure it prevents is a
+  page that overflows its area by one row, and the clip cuts that row in half.
+
+  It measures the *border* box, not the content box `useElementSize` reports.
+  Padding and border occupy the row like everything else, and under-measuring
+  is the direction that overflows. Unrounded, too, and `fitAlong` carries half
+  a pixel of slack to meet it: a grid of counted columns divides its row into
+  four fractional widths, so the fit lands exactly on four and any rounding at
+  all floors it to three. Measured 2026-08-19 — 53 pictures came out as
+  eighteen pages of three. **Don't remove the tolerance and don't widen it**;
+  half a pixel cannot promote a tile that misses by a whole one.
+
+- **A dialog cannot size itself to its content and hold a page of content
+  sized to fit it.** The picture picker did both for an afternoon: the page was
+  as many pictures as the body could hold, and the body was as tall as the
+  pictures made it. That settles at the smallest number either will accept —
+  measured at three pictures on a page, eighteen pages, in a window with room
+  for four times that. `.asset-picker` now has a definite height, and it has to
+  keep one. The same trap waits for any other dialog that grows with its
+  contents and then tries to paginate them.
+
 - **Three things about the dropdown that look optional and aren't.**
   - **`max-height` lives in CSS, not in a measured style.** `TreePopover`
     measures the rendered box to decide whether to open downward or flip up; a

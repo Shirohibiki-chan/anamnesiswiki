@@ -340,69 +340,12 @@
   white-space: nowrap;
 }
 
-/* --- Pages --- */
+/* --- Pages ---
+   The nav itself is `.ui-pages` in controls.css now that three grids use it.
+   All that is left here is how far it sits from the tiles. */
 
-.start-pages {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2xs);
+.start-all .ui-pages {
   padding-top: var(--space-sm);
-}
-
-.start-page-arrow {
-  display: grid;
-  place-items: center;
-  padding: 2px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.start-page-arrow:hover:not(:disabled) {
-  color: var(--color-accent);
-}
-
-.start-page-arrow:disabled {
-  cursor: default;
-  opacity: 0.35;
-}
-
-.start-dots {
-  display: flex;
-  gap: 2px;
-}
-
-/* Big enough to actually hit: the target is 26 by 20 and the mark inside it is
-   a 4px bar. A dot you have to aim at is a dot you stop using. */
-.start-dot {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  cursor: pointer;
-}
-
-.start-dot::before {
-  content: "";
-  width: 18px;
-  height: 4px;
-  border-radius: var(--radius-full);
-  background: var(--color-border-strong);
-}
-
-.start-dot:hover::before {
-  background: var(--color-text-muted);
-}
-
-.start-dot[aria-current="true"]::before {
-  background: var(--color-accent);
 }
 
 /* --- The rail --- */

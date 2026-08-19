@@ -24,7 +24,8 @@
 | Every project as covers or rows, a page at a time or in one scroll, with the view toggle and the page controls | `src/components/start/ProjectGrid.tsx`, `src/components/start/ProjectTile.tsx` |
 | The start screen's right-hand rail — recently opened, the ways to start something, the cog | `src/components/start/StartRail.tsx` |
 | What the start screen can do that can fail: open a listed project, open a folder she picked (including looking one level in), create a new one | `src/hooks/use-start-actions.ts` |
-| Pages that fit the window, for any long grid. Reads the pages-or-scroll preference | `src/hooks/use-paged-list.ts`, `src/services/pagination.ts` |
+| Pages that fit the window, for any long grid. Reads the pages-or-scroll preference. `useMeasuredPagedList` is the variant for a grid whose tile size only the CSS knows — the two picture grids | `src/hooks/use-paged-list.ts`, `src/services/pagination.ts` |
+| The arrows and dots (or the counter) under a paged grid, shared by all three | `src/components/shell/PageNav.tsx` |
 | Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `StartScreen` if none exists | `src/components/shell/StartupRouter.tsx` |
 | The settings dialog — the frame, the vertical rail of sections, the search box, and the ranked result list. The rail's contents come from `SETTINGS_TABS` in `src/constants/settings.ts`; adding a section is an entry there **and** one in this file's `PANELS` map, which a test checks are in step. | `src/components/shell/SettingsModal.tsx` |
 | Settings search — the index of every setting, built from the same registries the panels render from. A result scrolls to and flashes the row tagged `data-setting="<entry id>"`. | `src/services/settings-search.ts`, `src/constants/settings.ts` |

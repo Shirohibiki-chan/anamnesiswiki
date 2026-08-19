@@ -12,9 +12,10 @@
 // Uploading is a way of answering the same question rather than a separate
 // path: the new picture joins the library and is picked, so a caller gets a
 // filename back either way.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { ImagePlus, Search } from "lucide-react";
+import { PICTURE_GRID_GAP } from "../../constants/layout";
 import {
   ALL_PICTURES,
   describeSize,
@@ -28,7 +29,9 @@ import {
 } from "../../hooks/use-assets";
 import { AssetFolderStrip } from "../tree/AssetFolderStrip";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useMeasuredPagedList } from "../../hooks/use-paged-list";
 import { useNodeImage } from "../../hooks/use-node-image";
+import { PageNav } from "./PageNav";
 
 export function AssetPickerDialog() {
   const { pendingAssetPick, resolveAssetPick } = useDialogs();
@@ -80,6 +83,15 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
       return entry.uses.some((use) => use.nodeName.toLowerCase().includes(needle));
     });
   }, [inFolder, query]);
+
+  // Pages or one long scroll, the same preference the start screen reads. The
+  // dialog is one width, but a tile in it is still a square of whatever a
+  // quarter of that width comes to, under a caption sized by the reader's text
+  // scale — so it is measured rather than declared.
+  const { ref, tileRef, visible, isPaged, page, pages, goTo } = useMeasuredPagedList<AssetEntry, HTMLDivElement>(
+    shown,
+    PICTURE_GRID_GAP,
+  );
 
   async function handleUpload(file: File | undefined) {
     if (!file) return;
@@ -139,7 +151,7 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
           onRenamingDone={() => setRenamingId(null)}
         />
 
-        <div className="asset-picker-body">
+        <div className="asset-picker-body" data-paged={isPaged} ref={ref}>
           {isLoading ? (
             <p className="asset-picker-note">Reading your pictures&hellip;</p>
           ) : entries.length === 0 ? (
@@ -150,9 +162,12 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
             <p className="asset-picker-note">Nothing matches that.</p>
           ) : (
             <ul className="asset-picker-grid">
-              {shown.map((entry) => (
+              {visible.map((entry, index) => (
                 <PickerTile
                   key={entry.fileName}
+                  // The measured one. Every page has a first tile; see
+                  // useMeasuredPagedList.
+                  tileRef={index === 0 ? tileRef : undefined}
                   entry={entry}
                   isSelected={entry.fileName === selected}
                   onSelect={() => setSelected(entry.fileName)}
@@ -162,6 +177,8 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
             </ul>
           )}
         </div>
+
+        {isPaged && <PageNav page={page} pages={pages} goTo={goTo} label="Pages of pictures" />}
 
         {error && <p className="asset-picker-error">{error}</p>}
 
@@ -208,11 +225,14 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
  */
 function PickerTile({
   entry,
+  tileRef,
   isSelected,
   onSelect,
   onConfirm,
 }: {
   entry: AssetEntry;
+  /** Set on the first tile only, so the page size can be worked out from a real one. */
+  tileRef?: RefObject<HTMLLIElement | null>;
   isSelected: boolean;
   onSelect: () => void;
   onConfirm: () => void;
@@ -220,7 +240,7 @@ function PickerTile({
   const { url, status } = useNodeImage(entry.fileName);
 
   return (
-    <li>
+    <li ref={tileRef}>
       <button
         type="button"
         className={`asset-picker-tile${isSelected ? " asset-picker-tile-selected" : ""}`}

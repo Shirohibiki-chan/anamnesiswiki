@@ -5,7 +5,7 @@
 // what makes the page size the honest one. It clips rather than scrolls while
 // paged, so a page is exactly what fits and the arithmetic in `usePagedList`
 // can't be contradicted by a scrollbar appearing.
-import { ChevronLeft, ChevronRight, LayoutGrid, Rows3 } from "lucide-react";
+import { LayoutGrid, Rows3 } from "lucide-react";
 import {
   PROJECT_ROW_HEIGHT,
   PROJECT_TILE_GAP,
@@ -15,6 +15,7 @@ import {
 import { usePagedList } from "../../hooks/use-paged-list";
 import { useProjectView, usePreferenceActions } from "../../hooks/use-preferences";
 import type { ListedWorld } from "../../services/world-scan";
+import { PageNav } from "../shell/PageNav";
 import { ProjectTile } from "./ProjectTile";
 
 type ProjectGridProps = {
@@ -96,40 +97,7 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
         )}
       </div>
 
-      {isPaged && (
-        <nav className="start-pages" aria-label="Pages of projects">
-          <button
-            type="button"
-            className="start-page-arrow"
-            aria-label="Previous page"
-            disabled={page === 0}
-            onClick={() => goTo(page - 1)}
-          >
-            <ChevronLeft size={17} />
-          </button>
-          <span className="start-dots">
-            {Array.from({ length: pages }, (_, index) => (
-              <button
-                key={index}
-                type="button"
-                className="start-dot"
-                aria-label={`Page ${index + 1} of ${pages}`}
-                aria-current={index === page}
-                onClick={() => goTo(index)}
-              />
-            ))}
-          </span>
-          <button
-            type="button"
-            className="start-page-arrow"
-            aria-label="Next page"
-            disabled={page === pages - 1}
-            onClick={() => goTo(page + 1)}
-          >
-            <ChevronRight size={17} />
-          </button>
-        </nav>
-      )}
+      {isPaged && <PageNav page={page} pages={pages} goTo={goTo} label="Pages of projects" />}
     </section>
   );
 }
