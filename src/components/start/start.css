@@ -209,8 +209,11 @@
   color: var(--color-text);
 }
 
+/* The bold teal, not `--color-accent` — which is the 15% tint, as index.css
+   warns at the token itself. Drawn in that, the order you are actually on was
+   the one line of this menu you could not read. */
 .start-sort-option[aria-selected="true"] {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 /* Hidden rather than absent, so the four labels line up at one left edge and
@@ -252,9 +255,12 @@
   color: var(--color-text-secondary);
 }
 
+/* Same slip, and this one shipped: the icon was drawn in `--color-accent`,
+   which is `--color-accent-faint` under another name — the exact value of the
+   background right above it. An icon the colour of its own highlight. */
 .start-view[aria-pressed="true"] {
   background: var(--color-accent-faint);
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 /* The measured element. It clips rather than scrolls while paged, so a page is
@@ -576,4 +582,455 @@
   margin: 0;
   color: var(--color-destructive);
   font-size: var(--fs-sm);
+}
+
+/* --- The pinned row --- */
+
+/* The one uncontained thing on this screen. Everything else sits in a box; a
+   pinned cover bleeds off its own top with nothing holding it, and the only
+   hard edge it has is the coloured rule under the name. */
+.start-pinned {
+  flex: none;
+}
+
+.start-carousel {
+  position: relative;
+}
+
+.start-carousel-row {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+/* Four to a page: three gaps shared out across the row. The card is a fraction
+   of whatever width it is given rather than a fixed size, which is why this row
+   has nothing to measure and its page size is a constant. */
+.start-pin,
+.start-addpin {
+  flex: 0 0 calc((100% - var(--space-lg) * 3) / 4);
+  height: 208px;
+}
+
+.start-pin {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The artwork and its border are masked identically, which is the whole trick:
+   the border runs up the sides and fades out with the picture instead of
+   drawing a lid across the top of it. Many stops so the ramp is smooth, and
+   done by the top third — any further and it stops reading as a card. */
+.start-pin-art,
+.start-pin-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.05) 6%,
+    rgba(0, 0, 0, 0.16) 11%,
+    rgba(0, 0, 0, 0.33) 17%,
+    rgba(0, 0, 0, 0.55) 23%,
+    rgba(0, 0, 0, 0.76) 29%,
+    rgba(0, 0, 0, 0.92) 35%,
+    #000 42%
+  );
+}
+
+.start-pin-art {
+  background-size: cover;
+  background-position: center;
+  transition: filter 0.2s;
+}
+
+/* Light and low-opacity rather than flat grey: grey against a saturated cover
+   goes muddy. */
+.start-pin-edge {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.start-pin-scrim {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: linear-gradient(to top, rgba(8, 8, 12, 0.9) 0%, rgba(8, 8, 12, 0.4) 28%, rgba(8, 8, 12, 0) 52%);
+}
+
+/* The card's one hard edge, in its own colours. */
+.start-pin-rule {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.start-pin-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.start-pin-cap b {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.start-pin-cap em {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.start-pin-flag {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-sm);
+  right: var(--space-md);
+  font-size: var(--fs-2xs);
+  /* -light, not --color-accent: that one is the 15% tint, as index.css warns
+     at the token itself. The same slip is what made the import progress bar
+     invisible. */
+  color: var(--color-accent-light);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+.start-pin:hover .start-pin-art {
+  filter: brightness(1.14);
+}
+
+.start-pin:hover .start-pin-edge {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Permanent furniture, so the section is visible before anything is in it.
+   Shorter than a card and sitting on the same baseline, because it is an
+   invitation rather than a project and should not read as an empty one. */
+.start-addpin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  align-self: end;
+  height: 140px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.start-addpin:hover {
+  border-color: var(--color-accent-light);
+  color: var(--color-text-secondary);
+}
+
+/* A chevron on a soft radial fade, reaching in over the artwork rather than
+   taking width beside the row. Radial and not a rectangle of scrim: a
+   rectangle over a picture shows its own top and bottom edges, and you end up
+   looking at the box instead of the arrow. */
+.start-carousel-nav {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.start-carousel-nav::before {
+  content: "";
+  position: absolute;
+  inset: -8% -4%;
+  pointer-events: none;
+}
+
+.start-carousel-prev {
+  left: calc(var(--space-sm) * -1);
+}
+
+.start-carousel-next {
+  right: calc(var(--space-sm) * -1);
+}
+
+.start-carousel-prev::before {
+  background: radial-gradient(58% 46% at 6% 50%, rgba(8, 8, 12, 0.52), rgba(8, 8, 12, 0.28) 48%, rgba(8, 8, 12, 0) 78%);
+}
+
+.start-carousel-next::before {
+  background: radial-gradient(58% 46% at 94% 50%, rgba(8, 8, 12, 0.52), rgba(8, 8, 12, 0.28) 48%, rgba(8, 8, 12, 0) 78%);
+}
+
+.start-carousel-nav svg {
+  position: relative;
+  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.75));
+}
+
+.start-carousel-nav:hover {
+  color: var(--color-accent-light);
+}
+
+/* 26x20 of hit target for an 18x4 mark. A 5px speck is a control you aim at
+   twice. */
+.start-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: var(--space-sm);
+}
+
+.start-carousel-dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 20px;
+  border: 0;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.start-carousel-dot::before {
+  content: "";
+  width: 18px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  transition: background 0.15s;
+}
+
+.start-carousel-dot:hover::before {
+  background: var(--color-text-muted);
+}
+
+.start-carousel-dot[aria-current="true"]::before {
+  background: var(--color-accent-light);
+}
+
+/* --- The manage window --- */
+
+.manage-pins {
+  width: min(44rem, calc(100vw - var(--space-2xl) * 2));
+  /* Definite, not content-sized. A dialog that grows with its list is a dialog
+     that changes shape as she pins things, and the list below it scrolls. */
+  height: min(38rem, calc(100vh - var(--space-2xl) * 2));
+  display: flex;
+  flex-direction: column;
+}
+
+.manage-pins-head {
+  position: relative;
+  flex: none;
+  padding: var(--space-xl) var(--space-xl) var(--space-md);
+}
+
+.manage-pins-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+.manage-pins-head p {
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.manage-pins-close {
+  position: absolute;
+  top: var(--space-lg);
+  right: var(--space-lg);
+}
+
+.manage-pins-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-xl) var(--space-xl);
+}
+
+.manage-pins-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.manage-pins-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+}
+
+.manage-pins-row:hover {
+  border-color: var(--color-panel-edge);
+}
+
+.manage-pins-grip {
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  cursor: grab;
+  /* Without this a drag on a touch screen scrolls the list instead. */
+  touch-action: none;
+}
+
+.manage-pins-position {
+  width: 1.5ch;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.manage-pins-thumb {
+  flex: none;
+  width: 44px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background-size: cover;
+  background-position: center;
+}
+
+.manage-pins-name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.manage-pins-name b {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manage-pins-name em {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+.manage-pins-unpin {
+  margin-left: auto;
+}
+
+.manage-pins-subhead {
+  margin: var(--space-xl) 0 var(--space-sm);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.manage-pins-empty {
+  margin: 0;
+  padding: var(--space-lg) 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.manage-pins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.manage-pins-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 84px;
+  overflow: hidden;
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-md);
+  padding: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.manage-pins-cover-art {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.manage-pins-cover-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: var(--space-lg) var(--space-sm) var(--space-xs);
+  background: linear-gradient(to top, rgba(8, 8, 12, 0.88), rgba(8, 8, 12, 0));
+  color: #fff;
+  font-size: var(--fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The one affordance saying what a click does here, since a cover on its own
+   looks like something to open rather than something to pin. */
+.manage-pins-cover-pin {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: rgba(8, 8, 12, 0.55);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.manage-pins-cover:hover .manage-pins-cover-pin,
+.manage-pins-cover:focus-visible .manage-pins-cover-pin {
+  opacity: 1;
 }

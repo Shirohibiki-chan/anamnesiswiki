@@ -83,6 +83,20 @@ export const PICTURE_GRID_GAP = 8;
  */
 export const MAX_PAGE_DOTS = 8;
 
+/**
+ * How many pinned projects sit on one page of the row at the top.
+ *
+ * A constant rather than a measurement, unlike every other grid on that screen.
+ * A pinned card is a fraction of the row — four across at any width, so it
+ * grows and shrinks with the window instead of wrapping — which leaves nothing
+ * to measure: the number of columns is the input to the width rather than the
+ * answer to it.
+ *
+ * Four is the count from the design, and the dashed "pin another" tile takes
+ * one of the four on whichever page it lands on.
+ */
+export const PINS_PER_PAGE = 4;
+
 export const PROJECT_TILE_MIN_WIDTH = 190;
 export const PROJECT_TILE_HEIGHT = 118;
 export const PROJECT_ROW_HEIGHT = 48;

@@ -12,11 +12,15 @@
 // while everything else is quiet. Opening a folder and importing are in the
 // rail: real, reachable, and not shouting.
 import { useState } from "react";
+import { usePins } from "../../hooks/use-pins";
 import { useUpdates } from "../../hooks/use-updates";
 import { useStartActions } from "../../hooks/use-start-actions";
 import { useWorldLibrary } from "../../hooks/use-world-library";
+import { resolvePins, unpinned as unpinnedOf } from "../../services/pins";
 import { filterWorlds } from "../../services/world-scan";
 import { ImportModal } from "../import/ImportModal";
+import { ManagePinsDialog } from "./ManagePinsDialog";
+import { PinnedRow } from "./PinnedRow";
 import { ProjectGrid } from "./ProjectGrid";
 import { StartRail } from "./StartRail";
 import "./start.css";
@@ -47,6 +51,13 @@ export function StartScreen() {
   const [isNaming, setIsNaming] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isManagingPins, setIsManagingPins] = useState(false);
+
+  const { pins, isLoaded: pinsLoaded, pin, unpin, reorder } = usePins(worlds);
+  // Resolved against every project rather than against the filtered list: the
+  // filter box is for finding one project in the grid, and a pinned row that
+  // emptied itself as she typed would be answering a question she did not ask.
+  const pinned = resolvePins(pins, worlds);
 
   const shown = filterWorlds(worlds, query);
   // Only ones she has actually opened, newest first. A project found by the
@@ -122,6 +133,19 @@ export function StartScreen() {
           </div>
         </header>
 
+        {/* Held back until the settings file has been read, so the row does
+            not flash its empty state on every start. */}
+        {pinsLoaded && !isScanning && (
+          <PinnedRow
+            pinned={pinned}
+            total={worlds.length}
+            now={scannedAt}
+            disabled={actions.isBusy}
+            onOpen={(project) => void actions.openListed(project.path, project.name)}
+            onManage={() => setIsManagingPins(true)}
+          />
+        )}
+
         <ProjectGrid
           projects={shown}
           isScanning={isScanning}
@@ -167,6 +191,18 @@ export function StartScreen() {
       />
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
+
+      {isManagingPins && (
+        <ManagePinsDialog
+          pinned={pinned}
+          unpinned={unpinnedOf(pins, worlds)}
+          now={scannedAt}
+          onPin={pin}
+          onUnpin={unpin}
+          onReorder={reorder}
+          onClose={() => setIsManagingPins(false)}
+        />
+      )}
     </main>
   );
 }
