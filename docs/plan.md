@@ -778,8 +778,15 @@ the middle were filled.
 own row's text, so "just now" and "22 hours ago" hand their rows different
 column widths and the name beside them starts in a different place on every line
 — measured at 355, 361 and 370 for three rows in one column before it was
-fixed. The Elsewhere flag gets a slot held open whether or not it is used, for
-the same reason.
+fixed.
+
+**The Elsewhere flag rides on the location line rather than in a corner.** It
+briefly had a column held open for it whether or not it was used — the same
+alignment argument as the date — and that column was what kept the date from
+reaching the right-hand edge, which is what she saw. Putting it at the front of
+the path is the version with no reserved width, and it is also where it belongs:
+the flag and the path are the same fact about the same project, and on a cover
+it no longer sits over the artwork.
 
 **A project's location is split rather than ellipsised.** The last folder is
 kept whole and the middle of the path gives way, because an ellipsis eats the

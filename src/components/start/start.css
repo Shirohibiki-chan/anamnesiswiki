@@ -347,14 +347,17 @@
   inset: 0;
 }
 
+/* Sits at the front of the location line, in both views. It used to have a
+   corner of the tile to itself, which on a row meant a column held open across
+   every project for a word almost none of them say — and that column was what
+   kept the date from reaching the right-hand edge. `flex: none` because it is
+   the half of this line that must not be clipped, along with the last folder. */
 .project-tile-flag {
-  position: absolute;
-  z-index: 1;
-  top: var(--space-2xs);
-  right: var(--space-xs);
+  flex: none;
+  margin-right: var(--space-xs);
   font-size: var(--fs-2xs);
+  font-style: normal;
   color: var(--color-accent-light);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
 }
 
 .project-tile-cap {
@@ -390,15 +393,15 @@
 /* The row is the same tile with the picture shrunk to a chip beside the name.
    Thirty covers is a wall; thirty rows is a list.
 
-   Tracks, and the last one is held open whether or not there is a flag to put
-   in it. "Elsewhere" is on a handful of rows at most, and letting it take its
-   own width would set the rows that have it a different width of everything
-   else — so the two kinds of row would line up with their own kind and with
-   nothing else. A reserved slot costs a little width on every row and is the
-   only version where the columns are columns. */
+   Two tracks: the chip, and everything else. The Elsewhere flag used to have a
+   third held open for it whether or not it was used — it is on a handful of rows
+   at most, and letting it take its own width would have set flagged rows a
+   different width of everything else. It now rides on the location line
+   instead, which is the line it was always about, and the date gets the edge
+   back. */
 .start-area[data-view="list"] .project-tile {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 4.5rem;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-2xs) var(--space-sm);
@@ -416,12 +419,6 @@
   width: 44px;
   height: 30px;
   border-radius: var(--radius-sm);
-}
-
-.start-area[data-view="list"] .project-tile-flag {
-  position: static;
-  order: 2;
-  text-shadow: none;
 }
 
 /* Two lines and two tracks: the name with its path beneath it, and the date in
