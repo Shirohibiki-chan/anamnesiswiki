@@ -288,9 +288,13 @@
   align-content: start;
 }
 
+/* Columns of rows, not one row across the window. A row pins the name to one
+   end and the date to the other, so a wide window doesn't make the row more
+   readable — it just puts more nothing in the middle of it. `PROJECT_ROW_MIN_WIDTH`
+   is the same number `usePagedList` counts with; change both together. */
 .start-area[data-view="list"] .start-tiles {
   grid-auto-rows: 48px;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(620px, 1fr));
 }
 
 .start-empty {
@@ -384,9 +388,17 @@
 }
 
 /* The row is the same tile with the picture shrunk to a chip beside the name.
-   Thirty covers is a wall; thirty rows is a list. */
+   Thirty covers is a wall; thirty rows is a list.
+
+   Tracks, and the last one is held open whether or not there is a flag to put
+   in it. "Elsewhere" is on a handful of rows at most, and letting it take its
+   own width would set the rows that have it a different width of everything
+   else — so the two kinds of row would line up with their own kind and with
+   nothing else. A reserved slot costs a little width on every row and is the
+   only version where the columns are columns. */
 .start-area[data-view="list"] .project-tile {
-  display: flex;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 4.5rem;
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-2xs) var(--space-sm);
@@ -412,12 +424,19 @@
   text-shadow: none;
 }
 
+/* Three tracks rather than three things pushed apart, and that is what makes a
+   list look like a list: the names line up, the paths line up, the dates line
+   up. Pinning the name to one end and the date to the other left the middle of
+   every row empty and the empty grew with the window — nothing was aligned with
+   anything, so there was no column for the eye to run down. Fractions and not
+   fixed widths so the tracks share out whatever the column turns out to be. */
 .start-area[data-view="list"] .project-tile-cap {
   position: static;
+  display: grid;
   flex: 1;
-  flex-direction: row;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 7rem;
   align-items: baseline;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   min-width: 0;
   padding: 0;
 }
@@ -426,10 +445,48 @@
   color: var(--color-text-primary);
 }
 
+/* A fixed track and not `auto`. An `auto` column is as wide as its own row's
+   text, so "just now" and "22 hours ago" give their rows different column
+   widths and the two tracks beside them start in a different place on every
+   line — which is the alignment this row was rebuilt to get. Right-aligned
+   inside it so the dates read down the edge. */
 .start-area[data-view="list"] .project-tile-cap em {
-  margin-left: auto;
   color: var(--color-text-muted);
+  text-align: right;
   white-space: nowrap;
+}
+
+/* Where it lives on disk — the row view's third fact, and the one that makes a
+   row worth its width. Not on a cover, which has no room for it and is already
+   showing the picture instead. */
+.project-tile-where {
+  display: none;
+}
+
+.start-area[data-view="list"] .project-tile-where {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* The half that gives way. `min-width: 0` because a flex item won't shrink
+   below its text otherwise, and then the row overflows instead of clipping. */
+.start-area[data-view="list"] .project-tile-where span {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The half that doesn't. `flex: none` is the whole point: the last folder is
+   what tells two projects apart, and an ellipsis eats exactly that. */
+.start-area[data-view="list"] .project-tile-where b {
+  flex: none;
+  font-weight: inherit;
+  color: var(--color-text-secondary);
 }
 
 /* --- Pages ---

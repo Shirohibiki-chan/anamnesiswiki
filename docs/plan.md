@@ -764,6 +764,24 @@ way instead of taking the sides off it on one window and the top off it on
 another. Two across is the floor. The dashed tile still takes one slot on
 whichever page it lands on.
 
+**The list view is four facts in aligned columns, not two pushed to opposite
+ends.** It shipped as one row across the full width with the name at one end and
+the date at the other, which is readable at about the window the app opens at
+and nothing else — full screen on a 2560 monitor put roughly 2000 pixels between
+the two. It now makes columns of rows once there is room (one to about 1900, two
+to about 2500, three beyond), and within a row the name, the location and the
+date sit in fixed tracks so they line up down the list. The date track is a
+fixed width rather than `auto` for exactly that reason: an `auto` column is as
+wide as its own row's text, so "just now" and "22 hours ago" would start the
+tracks beside them in a different place on every line. The Elsewhere flag gets a
+slot held open whether or not it is used, for the same reason.
+
+**A project's location is split rather than ellipsised.** The last folder is
+kept whole and the middle of the path gives way, because an ellipsis eats the
+end — and the end is the only part that tells two projects in different folders
+apart. The separator sits on the front of the kept half so a clipped path still
+reads as a path.
+
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had; covers
 you set yourself, and the muted-covers switch; release notes in the rail; the

@@ -6,6 +6,7 @@ import {
   filterWorlds,
   isInsideProjectsFolder,
   isReservedWorldName,
+  locationOf,
   sortWorlds,
   WORLD_SCAN_DEPTH,
   type ListedWorld,
@@ -307,5 +308,58 @@ describe("sortWorlds", () => {
     const withUnknown = [world("Known", 900), world("Unknown", 0)];
     expect(sortWorlds(withUnknown, "active").map((w) => w.name)).toEqual(["Known", "Unknown"]);
     expect(sortWorlds(withUnknown, "oldest").map((w) => w.name)).toEqual(["Unknown", "Known"]);
+  });
+});
+
+describe("locationOf", () => {
+  it("reports the folder the project sits in, not the project's own folder", () => {
+    // The row is already showing the name; ending its path with it again
+    // would be the same word twice.
+    expect(locationOf("C:\\Users\\shiro\\Documents\\Anamnesis\\Valeraverse")).toEqual({
+      head: "C:\\Users\\shiro\\Documents",
+      tail: "\\Anamnesis",
+    });
+  });
+
+  it("keeps the last folder whole so a clipped path still says where it is", () => {
+    // Two projects side by side in different folders under one parent. Clip
+    // the end of either and they read as the same place.
+    const a = locationOf("D:\\Writing\\Archive 2024\\Valeraverse");
+    const b = locationOf("D:\\Writing\\Archive 2025\\Valeraverse");
+    expect(a.tail).toBe("\\Archive 2024");
+    expect(b.tail).toBe("\\Archive 2025");
+    expect(a.head).toBe(b.head);
+  });
+
+  it("leaves the separators as they were given", () => {
+    // She matches this against what her file manager shows her, and Windows
+    // and macOS disagree about which way the slash leans.
+    expect(locationOf("/Users/shiro/Documents/Anamnesis/Valeraverse")).toEqual({
+      head: "/Users/shiro/Documents",
+      tail: "/Anamnesis",
+    });
+  });
+
+  it("keeps all of a drive root, which has no middle to drop", () => {
+    expect(locationOf("D:\\Valeraverse")).toEqual({ head: "", tail: "D:" });
+    expect(locationOf("/Valeraverse")).toEqual({ head: "", tail: "" });
+  });
+
+  it("ignores a trailing separator rather than reading it as a folder", () => {
+    expect(locationOf("C:\\Users\\shiro\\Documents\\Anamnesis\\Valeraverse\\")).toEqual({
+      head: "C:\\Users\\shiro\\Documents",
+      tail: "\\Anamnesis",
+    });
+  });
+
+  it("answers nothing for a bare name rather than inventing a parent", () => {
+    expect(locationOf("Valeraverse")).toEqual({ head: "", tail: "" });
+    expect(locationOf("")).toEqual({ head: "", tail: "" });
+  });
+
+  it("puts the two halves back together as the path it was given", () => {
+    const path = "C:\\Users\\shiro\\Documents\\Anamnesis\\Valeraverse";
+    const { head, tail } = locationOf(path);
+    expect(path.startsWith(head + tail)).toBe(true);
   });
 });

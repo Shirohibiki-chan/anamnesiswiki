@@ -7,8 +7,21 @@
 - **Keep the projects you actually use at the top.** There's a Pinned row across the top of the start screen now — tall covers, four to a page, with the picture fading up into the background instead of sitting in a box. Pinning and rearranging both happen in one window behind the Manage pins button: drag the rows into the order you want, and every project you haven't pinned sits underneath as covers, so putting one up there is one click. The row shows a dashed "Pin a project" tile even when nothing is pinned, so it doesn't hide until you already know about it. Nothing is capped — the row pages instead, and a page always holds whole covers rather than half of one.
 - **Put the projects in whatever order you want.** There's a pill above the grid, next to the covers-or-rows buttons, that opens a short menu: newest first, oldest first, name A–Z, or name Z–A. Newest first is still what you get and still means whichever happened last — you opening a project, or it changing — so nothing moves unless you ask it to. Oldest first is the one for finding what you haven't touched in months. The app remembers your choice, and picking a new order takes you back to the first page rather than leaving you halfway down a list that just rearranged itself.
 
+- **The list view shows where each project lives on disk.** Between the name and
+  the date, in the same grey as the date. Long paths lose their middle rather
+  than their end, so the folder the project actually sits in is always the part
+  you can still read — which is the part that tells two projects with the same
+  name apart.
+
 ### Fixes
 
+- **One project no longer stretches across the whole screen in the list view.**
+  A row put the name at the far left and the date at the far right, so making
+  the window wider only put more nothing between them — about 2000 pixels of it
+  with the window full screen. The list now makes a second and third column of
+  rows as there's room for them, and a row lines its name, its location and its
+  date up with the rows above and below it instead of spreading them to the
+  edges.
 - **The pinned covers no longer stretch out of shape on a wide window.** The row
   was always four across, which is the right number at about the size the app
   opens at and wrong everywhere else: fullscreen on a wide monitor pulled four
