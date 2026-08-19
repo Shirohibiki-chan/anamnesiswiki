@@ -49,16 +49,47 @@ export type ListPagingMode = (typeof LIST_PAGING_MODES)[number];
 export const PROJECT_VIEWS = ["grid", "list"] as const;
 export type ProjectView = (typeof PROJECT_VIEWS)[number];
 
+/**
+ * What order the start screen lists projects in.
+ *
+ * Lives beside `projectView` for the same reason: its control is on the screen
+ * it changes rather than in settings, and it still has to survive closing the
+ * app. What each one actually compares is in `sortWorlds` — this is only the
+ * set of answers and what to call them.
+ *
+ * **`active` is the default and stays the default.** It is the one order that
+ * needs no upkeep to be right (her call, 2026-08-14): it runs on the last
+ * thing that happened to a project, whichever of opening it and changing it
+ * came later. The other three exist because a default, however good, is not an
+ * answer to "where is the one I have not touched since spring".
+ */
+export const PROJECT_SORTS = ["active", "oldest", "name", "name-desc"] as const;
+export type ProjectSort = (typeof PROJECT_SORTS)[number];
+
+/**
+ * The menu's wording. Not "Last active" and "Alphabetical": the pill shows
+ * whichever of these is on, so each one has to read as a statement about the
+ * list underneath it rather than as the name of a field.
+ */
+export const PROJECT_SORT_LABELS: Record<ProjectSort, string> = {
+  active: "Newest first",
+  oldest: "Oldest first",
+  name: "Name A–Z",
+  "name-desc": "Name Z–A",
+};
+
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
   listPaging: ListPagingMode;
   projectView: ProjectView;
+  projectSort: ProjectSort;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
   listPaging: "pages",
   projectView: "grid",
+  projectSort: "active",
 };
 
 /**
@@ -77,6 +108,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const treeDoubleClick = source.treeDoubleClick;
   const listPaging = source.listPaging;
   const projectView = source.projectView;
+  const projectSort = source.projectSort;
   return {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
@@ -87,5 +119,8 @@ export function parsePreferences(raw: unknown): Preferences {
     projectView: PROJECT_VIEWS.includes(projectView as ProjectView)
       ? (projectView as ProjectView)
       : DEFAULT_PREFERENCES.projectView,
+    projectSort: PROJECT_SORTS.includes(projectSort as ProjectSort)
+      ? (projectSort as ProjectSort)
+      : DEFAULT_PREFERENCES.projectSort,
   };
 }

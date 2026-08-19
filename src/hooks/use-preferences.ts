@@ -2,7 +2,7 @@
 // CLAUDE.md's layer order — components never import stores directly.
 import { useShallow } from "zustand/react/shallow";
 import { usePreferencesStore } from "../state/preferences-store";
-import type { ListPagingMode, ProjectView, TreeDoubleClickAction } from "../services/preferences-service";
+import type { ListPagingMode, ProjectSort, ProjectView, TreeDoubleClickAction } from "../services/preferences-service";
 
 /**
  * Selected down to the one field rather than the whole preferences object,
@@ -28,12 +28,18 @@ export function useProjectView(): ProjectView {
   return usePreferencesStore((state) => state.preferences.projectView);
 }
 
+/** What order that screen lists them in. Its control sits beside the view toggle. */
+export function useProjectSort(): ProjectSort {
+  return usePreferencesStore((state) => state.preferences.projectSort);
+}
+
 export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({
       setTreeDoubleClick: state.setTreeDoubleClick,
       setListPaging: state.setListPaging,
       setProjectView: state.setProjectView,
+      setProjectSort: state.setProjectSort,
     })),
   );
 }

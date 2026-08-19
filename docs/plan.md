@@ -729,11 +729,20 @@ rail carrying Recently Opened, Add a Project and the cog. Section headings are
 Title Case in the display face at 20px, which is a new step in the type scale
 rather than the nearest existing one — see `--fs-2xl` in `index.css`.
 
+**The sort control landed 2026-08-19**, as a pill beside the view toggle
+holding four orders: newest first, oldest first, and the name both ways. The
+mock draws one pill reading "Newest first" and does not say what is inside it;
+four is what the data can honestly support — `activeAt` and the name are the
+only two things every project has, and each reads in both directions. A
+separate "recently opened" was considered and left out because the rail already
+carries that list, and an order that duplicates a list three feet away is a
+second answer to a question already answered.
+
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had; the
 pinned row and its manage window; covers you set yourself, and the muted-covers
-switch; the sort control beside the view toggle; release notes in the rail; the
-page you were last on; groups and archive; the duplicate-project action.
+switch; release notes in the rail; the page you were last on; groups and
+archive; the duplicate-project action.
 
 ### Second instance
 

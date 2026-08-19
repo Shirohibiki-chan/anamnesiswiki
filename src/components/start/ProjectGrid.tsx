@@ -13,10 +13,11 @@ import {
   PROJECT_TILE_MIN_WIDTH,
 } from "../../constants/layout";
 import { usePagedList } from "../../hooks/use-paged-list";
-import { useProjectView, usePreferenceActions } from "../../hooks/use-preferences";
-import type { ListedWorld } from "../../services/world-scan";
+import { useProjectSort, useProjectView, usePreferenceActions } from "../../hooks/use-preferences";
+import { sortWorlds, type ListedWorld } from "../../services/world-scan";
 import { PageNav } from "../shell/PageNav";
 import { ProjectTile } from "./ProjectTile";
+import { SortPill } from "./SortPill";
 
 type ProjectGridProps = {
   projects: ListedWorld[];
@@ -32,7 +33,15 @@ type ProjectGridProps = {
 
 export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, onOpen }: ProjectGridProps) {
   const view = useProjectView();
-  const { setProjectView } = usePreferenceActions();
+  const sort = useProjectSort();
+  const { setProjectView, setProjectSort } = usePreferenceActions();
+
+  // Sorted here rather than where the list is built, because the order is a
+  // question about this screen and the answer lives in her preferences — the
+  // list itself is the same list however it is read. Filtering happens first,
+  // upstream, and the two commute: sorting a filtered list and filtering a
+  // sorted one give the same page.
+  const ordered = sortWorlds(projects, sort);
 
   // A row is shorter than a cover, so the same window holds more of them —
   // which is the reason the list view exists and the reason the page size has
@@ -44,7 +53,7 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
       ? { minWidth: PROJECT_TILE_MIN_WIDTH, height: PROJECT_TILE_HEIGHT, gap: PROJECT_TILE_GAP }
       : { minWidth: Number.MAX_SAFE_INTEGER, height: PROJECT_ROW_HEIGHT, gap: PROJECT_TILE_GAP };
 
-  const { ref, visible, isPaged, page, pages, goTo } = usePagedList(projects, tile);
+  const { ref, visible, isPaged, page, pages, goTo } = usePagedList(ordered, tile);
 
   return (
     <section className="start-all">
@@ -52,6 +61,17 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
         <span className="start-title">All Projects</span>
         {!isScanning && <span className="start-count">{projects.length}</span>}
         <span className="start-label-right">
+          <SortPill
+            value={sort}
+            onChange={(next) => {
+              setProjectSort(next);
+              // Back to the first page. The page count has not changed, so
+              // page three is still a valid page — of an entirely different
+              // set of projects. Re-sorting is asking to look again, and
+              // looking again starts at the start.
+              goTo(0);
+            }}
+          />
           <span className="start-views" role="group" aria-label="How to show projects">
             <button
               type="button"

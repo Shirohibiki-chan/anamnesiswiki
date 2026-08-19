@@ -4,6 +4,7 @@
 // Deliberately touches nothing: `filesystem-service.ts` is the only file that
 // goes to disk (CLAUDE.md §4). It does the walking and hands the results here.
 import { SNIPPETS_DIR, THEMES_DIR } from "../constants/paths";
+import type { ProjectSort } from "./preferences-service";
 
 /**
  * How far below the projects folder a world is still found.
@@ -152,6 +153,11 @@ export function isInsideProjectsFolder(path: string, projectsDir: string): boole
  * the default has to be right without being maintained. Name and then path
  * break ties, so two worlds touched in the same millisecond don't swap places
  * between two looks at the same screen.
+ *
+ * The order it comes out in is the default one; the start screen re-sorts it
+ * when she has asked for something else. Built in the default order rather
+ * than unordered so that every caller which never asks — the rail's recent
+ * list, the tests, anything added later — gets a sensible list for free.
  */
 export function buildWorldList(input: {
   onDisk: WorldFile[];
@@ -191,9 +197,40 @@ export function buildWorldList(input: {
     add({ path: world.path, id: null, name: world.name, modifiedAt: null });
   }
 
-  return [...byPath.values()].sort(
-    (a, b) => b.activeAt - a.activeAt || a.name.localeCompare(b.name) || a.path.localeCompare(b.path),
-  );
+  return sortWorlds([...byPath.values()], "active");
+}
+
+/**
+ * The list in the order she asked for.
+ *
+ * **Every order ends in the same two tie-breaks — name, then path.** That is
+ * what stops the list reshuffling between two looks at the same screen:
+ * `Array.prototype.sort` is stable, but the input is a `Map`'s values built
+ * from a directory read, so "stable" only promises to preserve an order that
+ * was never meaningful. Two projects touched in the same millisecond, or two
+ * sharing a name, have to be settled by something that does not change.
+ *
+ * **Missing timestamps sort as 0, which puts them last under `active` and
+ * first under `oldest`.** A project that has never been opened and whose
+ * `project.json` would not read has nothing to sort *on*; both ends of the
+ * list are honest places for it, and the alternative — holding it out of the
+ * order — is a project she cannot find by scrolling to either end.
+ */
+export function sortWorlds(worlds: readonly ListedWorld[], sort: ProjectSort): ListedWorld[] {
+  const byName = (a: ListedWorld, b: ListedWorld) =>
+    a.name.localeCompare(b.name) || a.path.localeCompare(b.path);
+
+  const compare: Record<ProjectSort, (a: ListedWorld, b: ListedWorld) => number> = {
+    active: (a, b) => b.activeAt - a.activeAt || byName(a, b),
+    oldest: (a, b) => a.activeAt - b.activeAt || byName(a, b),
+    name: byName,
+    // Reversed on the name only. The path stays ascending, because it is the
+    // tie-break rather than the thing being sorted — flipping it too would
+    // make two same-named projects swap places for no reason the screen shows.
+    "name-desc": (a, b) => b.name.localeCompare(a.name) || a.path.localeCompare(b.path),
+  };
+
+  return [...worlds].sort(compare[sort]);
 }
 
 /**

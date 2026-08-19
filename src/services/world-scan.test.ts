@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { PROJECT_SORTS } from "./preferences-service";
 import {
   buildWorldList,
   decideAmongNestedWorlds,
   filterWorlds,
   isInsideProjectsFolder,
   isReservedWorldName,
+  sortWorlds,
   WORLD_SCAN_DEPTH,
   type ListedWorld,
   type WorldFile,
@@ -254,5 +256,56 @@ describe("filterWorlds", () => {
     const before = [...worlds];
     filterWorlds(worlds, "val");
     expect(worlds).toEqual(before);
+  });
+});
+
+describe("sortWorlds", () => {
+  const world = (name: string, activeAt: number, path = `/D/${name}`): ListedWorld => ({
+    path,
+    id: null,
+    name,
+    lastOpenedAt: null,
+    modifiedAt: null,
+    activeAt,
+    isOutsideProjectsFolder: false,
+  });
+
+  const worlds = [world("Beta", 300), world("Alpha", 100), world("Gamma", 200)];
+
+  it("puts the most recently touched world first by default", () => {
+    expect(sortWorlds(worlds, "active").map((w) => w.name)).toEqual(["Beta", "Gamma", "Alpha"]);
+  });
+
+  it("reverses that for the one she has not touched in months", () => {
+    expect(sortWorlds(worlds, "oldest").map((w) => w.name)).toEqual(["Alpha", "Gamma", "Beta"]);
+  });
+
+  it("sorts by name in both directions", () => {
+    expect(sortWorlds(worlds, "name").map((w) => w.name)).toEqual(["Alpha", "Beta", "Gamma"]);
+    expect(sortWorlds(worlds, "name-desc").map((w) => w.name)).toEqual(["Gamma", "Beta", "Alpha"]);
+  });
+
+  it("settles a tie the same way every time, whichever order is on", () => {
+    // Two worlds touched in the same millisecond. Without the tie-break the
+    // order here is whatever the directory read happened to produce, which is
+    // a list that reshuffles between two looks at the same screen.
+    const tied = [world("Same", 5, "/D/second"), world("Same", 5, "/D/first")];
+    for (const sort of PROJECT_SORTS) {
+      expect(sortWorlds(tied, sort).map((w) => w.path)).toEqual(["/D/first", "/D/second"]);
+    }
+  });
+
+  it("leaves the list it was given alone", () => {
+    const before = [...worlds];
+    sortWorlds(worlds, "name");
+    expect(worlds).toEqual(before);
+  });
+
+  it("keeps a world with nothing to sort on in the list rather than dropping it", () => {
+    // Never opened, and its project.json would not read. It has no timestamp,
+    // so it lands at whichever end 0 belongs at — but it is still listed.
+    const withUnknown = [world("Known", 900), world("Unknown", 0)];
+    expect(sortWorlds(withUnknown, "active").map((w) => w.name)).toEqual(["Known", "Unknown"]);
+    expect(sortWorlds(withUnknown, "oldest").map((w) => w.name)).toEqual(["Unknown", "Known"]);
   });
 });
