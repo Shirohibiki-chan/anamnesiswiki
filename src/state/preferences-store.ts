@@ -8,6 +8,7 @@ import {
   parsePreferences,
   type ListPagingMode,
   type Preferences,
+  type ProjectSort,
   type ProjectView,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
@@ -19,6 +20,7 @@ export type PreferencesStoreState = {
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
   setListPaging: (mode: ListPagingMode) => void;
   setProjectView: (view: ProjectView) => void;
+  setProjectSort: (sort: ProjectSort) => void;
 };
 
 export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
@@ -55,6 +57,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setProjectView(view) {
       apply({ ...get().preferences, projectView: view });
+    },
+
+    setProjectSort(sort) {
+      apply({ ...get().preferences, projectSort: sort });
     },
   };
 });

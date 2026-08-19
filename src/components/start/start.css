@@ -138,6 +138,92 @@
   margin-left: auto;
 }
 
+/* The order, as a pill that says which one is on. It is wider than the view
+   toggle beside it and that is the right way round: the toggle is a picture of
+   its own answer, this one is a sentence, and the sentence is the part you
+   came to read. Anchored, so the menu can hang off it. */
+.start-sort {
+  position: relative;
+  display: flex;
+}
+
+.start-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  /* Matched to the view toggle beside it, which is 24px of button inside 2px
+     of padding and a border. Two controls in one row have to share an edge;
+     the toggle sets the height because its own is built up from its contents
+     and this one is free to be told. */
+  height: 30px;
+  padding: 0 var(--space-sm) 0 var(--space-md);
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.start-pill:hover,
+.start-pill[aria-expanded="true"] {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* Right-aligned, because the pill sits at the right-hand end of a heading row
+   and a menu hanging left from there is a menu hanging off the screen. */
+.start-sort-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-edge);
+  box-shadow: 0 8px 24px var(--color-shadow, rgba(0, 0, 0, 0.4));
+}
+
+.start-sort-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.start-sort-option:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.start-sort-option[aria-selected="true"] {
+  color: var(--color-accent);
+}
+
+/* Hidden rather than absent, so the four labels line up at one left edge and
+   the menu does not change width as the tick moves down it. */
+.start-sort-check {
+  flex: none;
+  visibility: hidden;
+}
+
+.start-sort-option[aria-selected="true"] .start-sort-check {
+  visibility: visible;
+}
+
 /* The two views, as one control. Deliberately not a labelled pair of buttons:
    it is a preference about density, checked at a glance and changed rarely. */
 .start-views {
