@@ -2137,11 +2137,27 @@ ol.release-notes-list {
   color: var(--color-text-placeholder);
 }
 
-/* The scrolling part, and the only one. `.ui-modal` sets a max-height and
-   deliberately no overflow — its comment says each dialog manages its own —
-   so the grid scrolls while the title, search and buttons stay put. `min-height`
-   keeps the modal from collapsing to nothing while the directory is being read,
-   which otherwise makes it jump to full size a moment after it opens. */
+/* A definite height, not one that follows the pictures.
+
+   It used to grow with them, between the `min-height` below and `.ui-modal`'s
+   max — which meant the dialog changed size on every keystroke in the search
+   box, and meant pages could not work here at all: a page sized to fit the
+   dialog, inside a dialog sized to fit the page, settles at the smallest
+   number either will accept. Measured 2026-08-19 before the fix: three
+   pictures on a page, eighteen pages, a modal 444px tall in a window with room
+   for far more.
+
+   `min()` rather than a flat number so a short window still gets a dialog that
+   fits inside it. */
+.asset-picker {
+  height: min(40rem, calc(100vh - var(--space-3xl) * 2));
+}
+
+/* The scrolling part, and the only one. `.ui-modal` deliberately sets no
+   overflow — its comment says each dialog manages its own — so the grid
+   scrolls while the title, search and buttons stay put. `min-height` is what
+   keeps a page from being measured against nothing while the directory is
+   still being read. */
 .asset-picker-body {
   flex: 1;
   min-height: 180px;

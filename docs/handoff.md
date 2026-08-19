@@ -1703,7 +1703,21 @@ is below.
 
   It measures the *border* box, not the content box `useElementSize` reports.
   Padding and border occupy the row like everything else, and under-measuring
-  is the direction that overflows.
+  is the direction that overflows. Unrounded, too, and `fitAlong` carries half
+  a pixel of slack to meet it: a grid of counted columns divides its row into
+  four fractional widths, so the fit lands exactly on four and any rounding at
+  all floors it to three. Measured 2026-08-19 — 53 pictures came out as
+  eighteen pages of three. **Don't remove the tolerance and don't widen it**;
+  half a pixel cannot promote a tile that misses by a whole one.
+
+- **A dialog cannot size itself to its content and hold a page of content
+  sized to fit it.** The picture picker did both for an afternoon: the page was
+  as many pictures as the body could hold, and the body was as tall as the
+  pictures made it. That settles at the smallest number either will accept —
+  measured at three pictures on a page, eighteen pages, in a window with room
+  for four times that. `.asset-picker` now has a definite height, and it has to
+  keep one. The same trap waits for any other dialog that grows with its
+  contents and then tries to paginate them.
 
 - **Three things about the dropdown that look optional and aren't.**
   - **`max-height` lives in CSS, not in a measured style.** `TreePopover`

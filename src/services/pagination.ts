@@ -69,6 +69,9 @@ export function fitPerPage(
   return across * down;
 }
 
+/** Half a pixel of slack, in pixels. See `fitAlong`. */
+const EXACTLY = 0.5;
+
 /**
  * Never zero. A window shorter than one row still has to show something, and a
  * page of one tile she has to scroll past is a better answer than a page of
@@ -78,7 +81,19 @@ function fitAlong(space: number, size: number, gap: number): number {
   if (!Number.isFinite(space) || !Number.isFinite(size) || size <= 0) return 1;
   // The gap sits *between* tiles, so n tiles carry n-1 gaps. Adding one gap to
   // both sides of the division is the whole correction.
-  return Math.max(1, Math.floor((space + gap) / (size + gap)));
+  //
+  // `EXACTLY` is what stops a grid of counted columns losing one. A picture
+  // grid is four columns of whatever a quarter of the row comes to, so the
+  // division lands *on* an integer by construction — and a tile measured a
+  // fraction over, or a division that comes back 3.9999999999, floors to three
+  // and drops a whole column. Measured happening: a 462px row of four 109.5px
+  // tiles paged as three.
+  //
+  // Half a pixel, in pixels rather than as a share of a tile, because the
+  // amount of slack that is safe is a property of the screen and not of how
+  // big the tiles happen to be. A tile a whole pixel short of fitting still
+  // does not fit.
+  return Math.max(1, Math.floor((space + gap + EXACTLY) / (size + gap)));
 }
 
 /**

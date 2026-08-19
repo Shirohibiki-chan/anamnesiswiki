@@ -97,7 +97,7 @@ export function useMeasuredPagedList<T, E extends HTMLElement = HTMLDivElement, 
 }
 
 /**
- * An element's border box, rounded up.
+ * An element's border box, to the fraction of a pixel.
  *
  * Not `useElementSize`, which reports the content box — right for the area a
  * grid gets to fill, wrong for a tile, whose padding and border take up room
@@ -120,8 +120,11 @@ function useBoxSize<T extends HTMLElement>(): [RefObject<T | null>, { width: num
     const observer = new ResizeObserver(() => {
       const box = el.getBoundingClientRect();
       setSize((current) => {
-        const width = Math.ceil(box.width);
-        const height = Math.ceil(box.height);
+        // Unrounded. A grid of counted columns divides its row into four
+        // fractional widths, and rounding one of those up is enough to make
+        // four of them look like more than a row holds — see `EXACTLY` in
+        // services/pagination.ts, which absorbs the other half of this.
+        const { width, height } = box;
         return current.width === width && current.height === height ? current : { width, height };
       });
     });

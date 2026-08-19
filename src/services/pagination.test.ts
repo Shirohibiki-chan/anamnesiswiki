@@ -88,6 +88,21 @@ describe("fitPerPage", () => {
     expect(fitPerPage({ width: 631, height: 260 }, TILE)).toBe(2);
   });
 
+  it("keeps every column of a grid that counts its own columns", () => {
+    // The picture grids divide the row into four, so the tile width is
+    // whatever a quarter of it comes to and the fit lands exactly on 4. This
+    // is the measured case: a 462px row, four 109.5px tiles, 8px gaps — which
+    // floored to three columns and paged 53 pictures as eighteen pages of
+    // three.
+    expect(fitPerPage({ width: 462, height: 376 }, { minWidth: 109.5, height: 143.19, gap: 8 })).toBe(8);
+  });
+
+  it("does not round a tile that genuinely does not fit into one that does", () => {
+    // The slack is half a pixel, so a tile a whole pixel short stays out.
+    expect(fitPerPage({ width: 631, height: 260 }, TILE)).toBe(2);
+    expect(fitPerPage({ width: 631.6, height: 260 }, TILE)).toBe(3);
+  });
+
   it("grows the page when the window grows, which is the point", () => {
     const small = fitPerPage({ width: 660, height: 560 }, TILE);
     const large = fitPerPage({ width: 1400, height: 900 }, TILE);
