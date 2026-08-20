@@ -85,12 +85,14 @@ export function ThemeSettings() {
     folderError,
     deleteError,
     importError,
+    mutedCovers,
     selectTheme,
     importTheme,
     scanFolders,
     resetAppearance,
     openThemesFolder,
     deleteTheme,
+    setMutedCovers,
   } = useTheme();
   const { confirmDestructive } = useDialogs();
 
@@ -177,6 +179,22 @@ export function ThemeSettings() {
         <BlockedNotice key={sheet.file} sheet={sheet} />
       ))}
 
+      {/* Raised as a joke and kept because it's correct: bright colour on the
+          start screen's covers is a taste question, and a taste question gets
+          a setting rather than a compromise everyone lives with. Lands here
+          rather than in Settings → Lists, which owns how those grids paginate
+          — this is how they look, not how they behave. */}
+      <div className="appearance-toggle" data-setting="muted-covers">
+        <label className="appearance-toggle-row">
+          <input type="checkbox" checked={mutedCovers} onChange={(event) => void setMutedCovers(event.target.checked)} />
+          <span className="appearance-toggle-label">Mute project covers</span>
+        </label>
+        <p className="appearance-note">
+          Desaturates every cover on the start screen — the generated colours and any picture you've set yourself. Off by default, and
+          on automatically if your system already asks for higher contrast.
+        </p>
+      </div>
+
       {/* The one control that reaches across all four Appearance panels, so it
           sits on the one you land on rather than at the bottom of whichever
           panel happened to be last. */}
@@ -184,7 +202,9 @@ export function ThemeSettings() {
         <button type="button" className="ui-link" onClick={() => void resetAppearance()}>
           Put everything back to default
         </button>
-        <span className="appearance-note">Theme, fonts, text size and snippets. Files you've made stay in their folders.</span>
+        <span className="appearance-note">
+          Theme, fonts, text size, snippets and muted covers. Files you've made stay in their folders.
+        </span>
       </p>
     </div>
   );

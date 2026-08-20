@@ -48,6 +48,7 @@ export function useTheme() {
   const themeFonts = useThemeStore((state) => state.themeFonts);
   const textScale = useThemeStore((state) => state.textScale);
   const contentScale = useThemeStore((state) => state.contentScale);
+  const mutedCovers = useThemeStore((state) => state.mutedCovers);
   const enabledSnippets = useThemeStore((state) => state.enabledSnippets);
   const customThemes = useThemeStore((state) => state.customThemes);
   const snippets = useThemeStore((state) => state.snippets);
@@ -65,6 +66,7 @@ export function useTheme() {
   const setFontsEveryTheme = useThemeStore((state) => state.setFontsEveryTheme);
   const setTextScale = useThemeStore((state) => state.setTextScale);
   const setContentScale = useThemeStore((state) => state.setContentScale);
+  const setMutedCovers = useThemeStore((state) => state.setMutedCovers);
   const toggleSnippet = useThemeStore((state) => state.toggleSnippet);
   const scanFolders = useThemeStore((state) => state.scanFolders);
   const resetAppearance = useThemeStore((state) => state.resetAppearance);
@@ -101,6 +103,7 @@ export function useTheme() {
     canEditThemeFonts: draft !== null,
     textScale,
     contentScale,
+    mutedCovers,
     enabledSnippets,
     customThemes,
     snippets,
@@ -156,6 +159,7 @@ export function useTheme() {
     setFontsEveryTheme,
     setTextScale,
     setContentScale,
+    setMutedCovers,
     toggleSnippet,
     scanFolders,
     resetAppearance,

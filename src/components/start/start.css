@@ -1185,3 +1185,22 @@
 .manage-pins-cover:focus-visible .manage-pins-cover-pin {
   opacity: 1;
 }
+
+/* --- Muted covers (Settings → Theme) ---
+
+   One rule for every place a project's cover renders — the grid, the pinned
+   row, the rail's Recently Opened chip, and both spots inside Manage pins —
+   rather than five. The generated gradients and a picture she's set herself
+   are treated the same: the setting is "how vibrant do covers look", not "how
+   vibrant are the ones the app invented".
+
+   grayscale() alone would flatten every cover to one lightness once desaturated,
+   which reads as one grey block repeated. A little saturate() keeps enough of
+   the original apart that two covers are still two colours, just quiet ones. */
+[data-muted-covers] .project-tile-cover,
+[data-muted-covers] .start-pin-art,
+[data-muted-covers] .start-chip,
+[data-muted-covers] .manage-pins-cover-art,
+[data-muted-covers] .manage-pins-thumb {
+  filter: grayscale(70%) saturate(60%);
+}

@@ -220,6 +220,17 @@ export type AppearanceSettings = {
   contentScale: number;
   /** Snippet filenames that are switched on. Absent means none are. */
   enabledSnippets: string[];
+  /**
+   * Desaturates every project cover on the start screen — the generated
+   * gradients and any picture she's set herself alike.
+   *
+   * Absent means "work it out the way a fresh install would": on for anyone
+   * whose OS asks for higher contrast, off otherwise. That's a real default
+   * to recompute, not a fixed `false` — see `defaultMutedCovers` in
+   * theme-store.ts, used both when this key has never been written and by
+   * "Put everything back to default".
+   */
+  mutedCovers: boolean;
 };
 
 export async function getAppearance(): Promise<Partial<AppearanceSettings>> {
