@@ -18,6 +18,7 @@
 
 ### Fixes
 
+- **Quotes on imported pages looked like nothing.** Every quote in a world brought over from LegendKeeper is a different kind of block from the Quote callout you get by typing `/quote`, and that kind had never been styled — so it arrived wearing the editor library's own default: thin grey bar, grey text, no fill, square corners, sitting right under a callout that has all four. They're drawn the same now, in the same colours from the same theme, so a quote looks like a quote wherever it came from.
 - **Opening a project never actually landed on the page you were last on**, even though the tree remembered it — it always opened to "Select a page to begin" instead. Fixed.
 
 ### Adjustments
