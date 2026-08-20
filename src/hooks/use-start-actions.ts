@@ -56,6 +56,12 @@ export type StartActions = {
    * is how she already works.
    */
   showProjectInFolder: (project: ListedWorld) => Promise<void>;
+  /**
+   * A whole project copied, beside the one it came from. `true` on success, so
+   * the caller knows to re-scan; a name that won't do resolves `false` with the
+   * reason on the error line.
+   */
+  duplicateProject: (project: ListedWorld, name: string) => Promise<boolean>;
 };
 
 export function useStartActions(): StartActions {
@@ -248,6 +254,43 @@ export function useStartActions(): StartActions {
     );
   }, []);
 
+  // Forking in the app rather than in File Explorer, which is how she does it
+  // today. The copy lands beside the original — where a copy made in a file
+  // manager would land, and so where she will look for it — and refuses a name
+  // that already exists there rather than quietly making `Valeraverse (2)`:
+  // a fork is named for what it is *for*, and a suffix chosen by the app is a
+  // name she then has to fix.
+  const duplicateProject = useCallback(async (project: ListedWorld, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError("Give the copy a name.");
+      return false;
+    }
+    const destPath = fsService.siblingProjectPath(project.path, trimmed);
+    if (!destPath) {
+      setError("Couldn't work out where that project lives.");
+      return false;
+    }
+    setIsBusy(true);
+    try {
+      if (await fsService.pathExists(destPath)) {
+        setError("A folder with that name already exists there.");
+        return false;
+      }
+      await fsService.duplicateProject(project.path, destPath, trimmed);
+      setError(null);
+      return true;
+    } catch {
+      // No cleanup of a half-written copy, deliberately: a folder with some of
+      // her project in it is worth more than a tidy failure, and it is hers to
+      // look at and delete. Saying where it is, is the part that matters.
+      setError(`Couldn't finish copying that project. Check ${destPath} — it may be half made.`);
+      return false;
+    } finally {
+      setIsBusy(false);
+    }
+  }, []);
+
   return {
     isBusy,
     error,
@@ -262,5 +305,6 @@ export function useStartActions(): StartActions {
     setProjectCover,
     removeProjectCover,
     showProjectInFolder,
+    duplicateProject,
   };
 }

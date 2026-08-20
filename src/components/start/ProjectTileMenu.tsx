@@ -17,7 +17,7 @@
 // which is the same problem the template picker hit near the bottom of a tall
 // tree.
 import { useRef, useState } from "react";
-import { Archive, ArchiveRestore, Check, FolderOpen, ImagePlus, MoreHorizontal, Plus, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Copy, FolderOpen, ImagePlus, MoreHorizontal, Plus, X } from "lucide-react";
 import type { ProjectGroup } from "../../services/project-groups";
 import type { ListedWorld } from "../../services/world-scan";
 import { TreePopover } from "../tree/TreePopover";
@@ -55,6 +55,7 @@ type ProjectTileMenuProps = {
    */
   fileManagerName: string;
   onShowInFolder: () => void;
+  onDuplicate: (name: string) => void;
 };
 
 export function ProjectTileMenu({
@@ -66,10 +67,14 @@ export function ProjectTileMenu({
   onRemoveCover,
   fileManagerName,
   onShowInFolder,
+  onDuplicate,
 }: ProjectTileMenuProps) {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-  const [isNamingGroup, setIsNamingGroup] = useState(false);
-  const [groupName, setGroupName] = useState("");
+  // Which of the two things in this menu is being named, or null. One piece of
+  // state rather than a boolean each, because only one text box can be open at
+  // a time and two flags could disagree about that.
+  const [naming, setNaming] = useState<"group" | "copy" | null>(null);
+  const [draft, setDraft] = useState("");
   const trigger = useRef<HTMLButtonElement>(null);
   // Whether the menu was open when this press started — see the button below.
   const wasOpenOnPress = useRef(false);
@@ -79,12 +84,22 @@ export function ProjectTileMenu({
 
   function close() {
     setAnchorRect(null);
-    setIsNamingGroup(false);
-    setGroupName("");
+    setNaming(null);
+    setDraft("");
   }
 
-  function addGroup() {
-    library.onCreateGroup(project, groupName);
+  function startNaming(what: "group" | "copy") {
+    setNaming(what);
+    // A copy is named after the thing it came from, so the box opens with that
+    // in it and selected — most forks are the same name with a version on the
+    // end, and retyping it is the part she would resent. A group is named
+    // after something that does not exist yet, so it opens empty.
+    setDraft(what === "copy" ? `${project.name} copy` : "");
+  }
+
+  function commitName() {
+    if (naming === "group") library.onCreateGroup(project, draft);
+    else if (naming === "copy") onDuplicate(draft);
     close();
   }
 
@@ -157,6 +172,21 @@ export function ProjectTileMenu({
               Show in {fileManagerName}
             </button>
 
+            {naming === "copy" ? (
+              <NameForm draft={draft} onDraft={setDraft} onCommit={commitName} onCancel={close} label="Name for the copy" />
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                className="project-tile-menu-item"
+                title="Copies the whole project into a folder beside this one. Nothing here changes."
+                onClick={() => startNaming("copy")}
+              >
+                <Copy size={13} />
+                Duplicate…
+              </button>
+            )}
+
             <p className="project-menu-label">Groups</p>
 
             {/* Every group, ticked or not, rather than only the ones it is in:
@@ -179,35 +209,14 @@ export function ProjectTileMenu({
               </button>
             ))}
 
-            {isNamingGroup ? (
-              <form
-                className="project-menu-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  addGroup();
-                }}
-              >
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(event) => setGroupName(event.target.value)}
-                  placeholder="Group name"
-                  aria-label="New group name"
-                  autoFocus
-                  onKeyDown={(event) => {
-                    if (event.key !== "Escape") return;
-                    event.stopPropagation();
-                    setIsNamingGroup(false);
-                    setGroupName("");
-                  }}
-                />
-              </form>
+            {naming === "group" ? (
+              <NameForm draft={draft} onDraft={setDraft} onCommit={commitName} onCancel={close} label="New group name" />
             ) : (
               <button
                 type="button"
                 role="menuitem"
                 className="project-tile-menu-item"
-                onClick={() => setIsNamingGroup(true)}
+                onClick={() => startNaming("group")}
               >
                 <Plus size={13} />
                 New group…
@@ -235,5 +244,52 @@ export function ProjectTileMenu({
         </TreePopover>
       )}
     </div>
+  );
+}
+
+/**
+ * The menu's text box, for the two things in it that need a name.
+ *
+ * One component because the two behave identically and only differ in what
+ * they are called: Enter commits, Escape puts the menu back as it was, and the
+ * text is selected on open so typing replaces it — which is what makes a
+ * prefilled copy name cost nothing when she wants a different one.
+ */
+function NameForm({
+  draft,
+  onDraft,
+  onCommit,
+  onCancel,
+  label,
+}: {
+  draft: string;
+  onDraft: (value: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+  label: string;
+}) {
+  return (
+    <form
+      className="project-menu-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onCommit();
+      }}
+    >
+      <input
+        type="text"
+        value={draft}
+        onChange={(event) => onDraft(event.target.value)}
+        aria-label={label}
+        placeholder={label}
+        autoFocus
+        onFocus={(event) => event.currentTarget.select()}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.stopPropagation();
+          onCancel();
+        }}
+      />
+    </form>
   );
 }

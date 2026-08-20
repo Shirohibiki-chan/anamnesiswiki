@@ -90,6 +90,17 @@ is below.
   gone; the list now only says when each world was last opened. Anything that
   re-introduces a cap here hides worlds again.
 
+- **A copy of a project gets a fresh id and records the original in
+  `forkedFromId` — never an id derived from the original's.** Anything derived
+  eventually gets recomputed, and a recomputed id breaks every reference to it;
+  the collision suffixes elsewhere in `filesystem-service.ts` are recomputed on
+  every resolve, which is exactly the failure to avoid here. Identity stays
+  meaningless and "this is a fork of that" stays real data in its own field.
+  `duplicateProject` mints the *source* an id first if it hasn't got one, which
+  is a write to a project she didn't ask to change — justified because it is the
+  same write opening it would make, and without it a fork of a never-opened
+  project records no parent.
+
 - **`project-refs.ts` is the only answer to "is this stored thing the same
   project as that listed one", and pins, groups and the archive all go through
   it.** The rule — the id decides when both sides have one, the path is the

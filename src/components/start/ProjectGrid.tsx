@@ -57,6 +57,7 @@ type ProjectGridProps = {
   /** The OS's own word for its file manager — see ProjectTileMenu. */
   fileManagerName: string;
   onShowInFolder: (project: ListedWorld) => void;
+  onDuplicate: (project: ListedWorld, name: string) => void;
 };
 
 export function ProjectGrid({
@@ -73,6 +74,7 @@ export function ProjectGrid({
   onRemoveCover,
   fileManagerName,
   onShowInFolder,
+  onDuplicate,
 }: ProjectGridProps) {
   const view = useProjectView();
   const sort = useProjectSort();
@@ -158,6 +160,7 @@ export function ProjectGrid({
                 onRemoveCover={() => onRemoveCover(project)}
                 fileManagerName={fileManagerName}
                 onShowInFolder={() => onShowInFolder(project)}
+                onDuplicate={(name) => onDuplicate(project, name)}
               />
             ))}
           </div>
