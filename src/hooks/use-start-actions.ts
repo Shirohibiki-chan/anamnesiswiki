@@ -8,7 +8,7 @@
 // screen rather than three.
 import { useCallback, useState } from "react";
 import { extensionForPath } from "../services/asset-urls";
-import { pickImageFile, showFolder } from "../services/dialog-service";
+import { pickImageFile, revealItem, showFolder } from "../services/dialog-service";
 import * as fsService from "../services/filesystem-service";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import type { ListedWorld } from "../services/world-scan";
@@ -48,6 +48,14 @@ export type StartActions = {
   setProjectCover: (project: ListedWorld) => Promise<boolean>;
   /** What the same hover button does once a cover is set, instead of picking a new one. */
   removeProjectCover: (project: ListedWorld) => Promise<boolean>;
+  /**
+   * The project's own folder, handed to the file manager with the folder
+   * *selected* rather than opened — the same thing the tree's own "Show in
+   * …" does for a page, and the right one here: copying a project to fork it
+   * is done from the folder sitting highlighted among its neighbours, which
+   * is how she already works.
+   */
+  showProjectInFolder: (project: ListedWorld) => Promise<void>;
 };
 
 export function useStartActions(): StartActions {
@@ -227,6 +235,19 @@ export function useStartActions(): StartActions {
     }
   }, []);
 
+  // No busy flag: nothing is read or written and there is nothing to wait on,
+  // so disabling the screen for it would only make the tiles flicker. The
+  // failure still has to land somewhere — an OS call that can be refused and
+  // isn't reported is a menu item that does nothing on the machine where it
+  // matters — so it goes to the same one error line as everything else here,
+  // naming the path so a refusal still tells her where to go by hand.
+  const showProjectInFolder = useCallback(async (project: ListedWorld) => {
+    await revealItem(project.path).then(
+      () => setError(null),
+      () => setError(`Couldn't open your file manager. That project is in: ${project.path}`),
+    );
+  }, []);
+
   return {
     isBusy,
     error,
@@ -240,5 +261,6 @@ export function useStartActions(): StartActions {
     openProjectsFolder,
     setProjectCover,
     removeProjectCover,
+    showProjectInFolder,
   };
 }

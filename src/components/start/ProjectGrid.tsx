@@ -54,6 +54,9 @@ type ProjectGridProps = {
   onOpen: (project: ListedWorld) => void;
   onSetCover: (project: ListedWorld) => void;
   onRemoveCover: (project: ListedWorld) => void;
+  /** The OS's own word for its file manager — see ProjectTileMenu. */
+  fileManagerName: string;
+  onShowInFolder: (project: ListedWorld) => void;
 };
 
 export function ProjectGrid({
@@ -68,6 +71,8 @@ export function ProjectGrid({
   onOpen,
   onSetCover,
   onRemoveCover,
+  fileManagerName,
+  onShowInFolder,
 }: ProjectGridProps) {
   const view = useProjectView();
   const sort = useProjectSort();
@@ -151,6 +156,8 @@ export function ProjectGrid({
                 onOpen={() => onOpen(project)}
                 onSetCover={() => onSetCover(project)}
                 onRemoveCover={() => onRemoveCover(project)}
+                fileManagerName={fileManagerName}
+                onShowInFolder={() => onShowInFolder(project)}
               />
             ))}
           </div>
