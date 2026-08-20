@@ -463,12 +463,43 @@
   background: var(--color-accent);
 }
 
-/* The dots' replacement past MAX_PAGE_DOTS. Tabular figures so the row
-   doesn't shift by a pixel as the page number changes width. */
-.ui-page-count {
-  min-width: 4ch;
+/* The dots' replacement past MAX_PAGE_DOTS: "4 / 30", where the 4 is typed
+   into. Tabular figures on both halves so the row doesn't shift by a pixel as
+   the page number changes width — which it does on every press of an arrow. */
+.ui-page-jump {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Sized in `ch` so it holds its digits rather than a guess at them, and no
+   wider: this row also has to fit the 180px sidebar, where it is competing
+   with four arrows. Deliberately drawn as a field — the point of it is that
+   she can see it is one without being told. */
+.ui-page-input {
+  width: 3.5ch;
+  padding: 1px 3px;
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-sm);
+  background: var(--color-input);
+  color: var(--color-text);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+.ui-page-input:hover {
+  border-color: var(--color-border);
+}
+
+.ui-page-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.ui-page-total {
   font-size: var(--fs-2xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
