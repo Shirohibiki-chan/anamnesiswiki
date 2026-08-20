@@ -61,6 +61,8 @@ export function ProjectTileMenu({
   const [isNamingGroup, setIsNamingGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
   const trigger = useRef<HTMLButtonElement>(null);
+  // Whether the menu was open when this press started — see the button below.
+  const wasOpenOnPress = useRef(false);
 
   const inGroups = library.groupIdsOf(project);
   const isArchived = library.isArchived(project);
@@ -87,13 +89,29 @@ export function ProjectTileMenu({
         aria-label="Project actions"
         title="Project actions"
         disabled={disabled}
-        // On pointer-down rather than click, so this stays a toggle. The
-        // popover closes itself on any pointer-down outside it, which includes
-        // this button — and by the time a *click* fired the state would
-        // already say "closed", so the second press would reopen what she was
-        // trying to shut. Both handlers run inside one event here, and the
-        // close wins.
-        onPointerDown={() => setAnchorRect(anchorRect ? null : (trigger.current?.getBoundingClientRect() ?? null))}
+        // **Opens on click, and remembers on pointer-down whether it was
+        // already open.** Both halves are load-bearing, and opening on
+        // pointer-down instead is a menu that never appears: `TreePopover`
+        // attaches its close-on-outside listener as React flushes the effects
+        // of that same discrete press, so the press is still on its way up to
+        // `document` when the listener starts caring about it, and the menu is
+        // torn down microseconds after it mounts. Synthetic events do not
+        // reproduce that — it took a real one to see it.
+        //
+        // Opening on click alone has the opposite fault: the press that closed
+        // the menu leaves the state saying "closed", so the click behind it
+        // would reopen what she was shutting. The ref answers that, because it
+        // is read before any of this happens. `anchorRect` is the keyboard
+        // path, where there is no press to remember.
+        onPointerDown={() => {
+          wasOpenOnPress.current = anchorRect !== null;
+        }}
+        onClick={() => {
+          const shouldClose = wasOpenOnPress.current || anchorRect !== null;
+          wasOpenOnPress.current = false;
+          if (shouldClose) close();
+          else setAnchorRect(trigger.current?.getBoundingClientRect() ?? null);
+        }}
       >
         <MoreHorizontal size={14} />
       </button>
