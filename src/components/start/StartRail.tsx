@@ -51,6 +51,7 @@ function RecentRow({
       />
       <span className="start-line-text">
         <b>{project.name}</b>
+        {project.selectedName && <span className="start-line-page">{project.selectedName}</span>}
         <em>{timeAgo(project.lastOpenedAt, now)}</em>
       </span>
     </button>

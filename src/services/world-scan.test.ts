@@ -112,6 +112,7 @@ describe("buildWorldList", () => {
     name: path.split("/").pop() ?? path,
     modifiedAt: 0,
     coverImage: null,
+    selectedName: null,
     ...extra,
   });
 
@@ -217,6 +218,7 @@ describe("filterWorlds", () => {
     lastOpenedAt: null,
     modifiedAt: null,
     coverImage: null,
+    selectedName: null,
     activeAt: 0,
     isOutsideProjectsFolder: false,
   });
@@ -270,6 +272,7 @@ describe("sortWorlds", () => {
     lastOpenedAt: null,
     modifiedAt: null,
     coverImage: null,
+    selectedName: null,
     activeAt,
     isOutsideProjectsFolder: false,
   });

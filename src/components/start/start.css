@@ -652,6 +652,17 @@
   color: var(--color-text-muted);
 }
 
+/* The page she was last on, under the world's own name — "reopening on your
+   last page" (Phase 27). Between `b` and `em` in both size and prominence:
+   it names a fact about the world, but not the one the row is primarily for. */
+.start-line-page {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Wraps a release's version so the New tag sits beside it rather than inside
    its ellipsis — see the comment at the call site in StartRail.tsx. */
 .start-release-line {
