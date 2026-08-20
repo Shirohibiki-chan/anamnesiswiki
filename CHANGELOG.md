@@ -6,10 +6,6 @@
 
 - **Opening a project never actually landed on the page you were last on**, even though the tree remembered it — it always opened to "Select a page to begin" instead. Fixed.
 
-### Adjustments
-
-- **The sidebar tree had less room than it needed.** Rows are a little taller now, with a bit more air around the edge of the panel too.
-
 ## 2026-08-19
 
 ### Additions

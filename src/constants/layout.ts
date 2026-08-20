@@ -10,14 +10,6 @@
 // still readable — don't lower this further without them.
 export const TREE_INDENT = 18;
 
-// react-arborist virtualizes the tree — react-window positions every row at
-// a multiple of this number, so it has to match `.tree-row`'s own CSS height
-// exactly (tree.css) or rows overlap or leave gaps. Raised from the library's
-// default of 24 (she felt the sidebar was too dense) to 28; the row's
-// horizontal padding is untouched, so `.tree-guide`'s indent-line math in
-// tree.css, which reads that padding directly, doesn't need to change too.
-export const TREE_ROW_HEIGHT = 28;
-
 /**
  * How wide the two side panels can be dragged, in pixels, and where they start.
  *
