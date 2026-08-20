@@ -11,6 +11,7 @@
 - **The rail now tells you what's new.** The three most recent versions, newest tagged **New**, at the bottom of the rail. Click one and it opens Settings straight to that version's patch notes rather than making you go find it.
 - **Your projects folder has a button now**, at the very foot of the rail, above the cog. Click it and it opens straight into your file manager — the same thing Settings → Projects already let you find, just one click away instead of a trip through there.
 - **Mute project covers**, in Settings → Theme. Desaturates every cover on the start screen — the colours the app makes up and any picture you set yourself alike. Off by default, and on automatically if your system already asks for higher contrast.
+- **Set your own cover for a project.** Hover a cover in the grid and a small button appears in the corner — pick a picture from anywhere on disk, and it takes over from the generated colour everywhere that project's cover shows: the grid, the pinned row, the rail's Recently Opened, and the Manage pins window. The same button removes it and hands the project back its colour. Grid view only — a list row's thumbnail is too small for a button of its own, and list is already the view for someone who never sets a cover at all.
 
 ### Fixes
 

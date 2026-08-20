@@ -850,7 +850,13 @@ export async function readWorldSummary(path: string): Promise<WorldFile | null> 
   }
 
   const name = typeof project.name === "string" && project.name.trim() ? project.name : fileNameFromPath(path);
-  return { path, id: typeof project.id === "string" ? project.id : null, name, modifiedAt };
+  return {
+    path,
+    id: typeof project.id === "string" ? project.id : null,
+    name,
+    modifiedAt,
+    coverImage: typeof project.coverImage === "string" ? project.coverImage : null,
+  };
 }
 
 /**
@@ -1438,6 +1444,27 @@ export async function readAssetImage(rootPath: string, fileName: string): Promis
 }
 
 /**
+ * Sets or clears `project.json`'s `coverImage`, for a world that is very
+ * possibly not the open one — the start screen sets a cover on whichever tile
+ * she's hovering, and `loadProject`/`saveProject`'s typed round trip exists
+ * for a project actually open in the store.
+ *
+ * Reads the file as a plain object and writes it back the same way, rather
+ * than through `JSON.parse(...) as Project` and `saveProject`: a field this
+ * build's `Project` type doesn't know about — a newer version's, or a
+ * hand-edit — would silently vanish on the cast's way back out. This changes
+ * exactly the one key and leaves everything else on the object untouched,
+ * whatever it turns out to hold.
+ */
+export async function setProjectCoverImage(rootPath: string, fileName: string | null): Promise<void> {
+  const projectPath = joinPath(rootPath, PROJECT_FILE);
+  const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;
+  if (fileName) raw.coverImage = fileName;
+  else delete raw.coverImage;
+  await writeTextFile(projectPath, JSON.stringify(raw, null, 2));
+}
+
+/**
  * Every file in `assets/`, with its size. Phase 17's Assets tab.
  *
  * A project with no `assets/` yet has no pictures, which is an empty list
@@ -1630,6 +1657,17 @@ export async function readCssDir(dir: string): Promise<CssFile[]> {
  */
 export async function readTextFileAt(path: string): Promise<string> {
   return readTextFile(path);
+}
+
+/**
+ * One binary file, from anywhere on disk — `readTextFileAt`'s sibling, for the
+ * project cover picker, which points a native file dialog at whatever image
+ * she keeps wherever she keeps it. Same reasoning: outside any folder the app
+ * owns, so it can't go through `readAssetImage`, which is scoped to a
+ * project's own `assets/`.
+ */
+export async function readFileBytesAt(path: string): Promise<Uint8Array> {
+  return readFile(path);
 }
 
 /** Ends a watch started by `watchCssDirs`. Safe to call more than once. */

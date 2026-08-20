@@ -17,6 +17,7 @@ const world = (name: string, extra: Partial<ListedWorld> = {}): ListedWorld => (
   name,
   lastOpenedAt: null,
   modifiedAt: null,
+  coverImage: null,
   activeAt: 0,
   isOutsideProjectsFolder: false,
   ...extra,

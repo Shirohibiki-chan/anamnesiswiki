@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pin, X } from "lucide-react";
 import { useEffect, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import type { ListedWorld } from "../../services/world-scan";
@@ -103,24 +104,7 @@ export function ManagePinsDialog({
           ) : (
             <ul className="manage-pins-grid">
               {unpinned.map((project) => (
-                <li key={project.path}>
-                  <button
-                    type="button"
-                    className="manage-pins-cover"
-                    title={project.path}
-                    aria-label={`Pin ${project.name}`}
-                    onClick={() => onPin(project)}
-                  >
-                    <span
-                      className="manage-pins-cover-art"
-                      style={{ backgroundImage: coverGradient(coverFor(project)) }}
-                    />
-                    <span className="manage-pins-cover-pin" aria-hidden>
-                      <Pin size={13} />
-                    </span>
-                    <span className="manage-pins-cover-name">{project.name}</span>
-                  </button>
-                </li>
+                <UnpinnedCover key={project.path} project={project} onPin={() => onPin(project)} />
               ))}
             </ul>
           )}
@@ -128,6 +112,29 @@ export function ManagePinsDialog({
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * One project in "Everything else", not yet pinned. Its own component, not
+ * inline JSX inside the `.map` that renders it, because `useProjectCoverUrl`
+ * is a hook and hooks can't run inside a loop.
+ */
+function UnpinnedCover({ project, onPin }: { project: ListedWorld; onPin: () => void }) {
+  const coverUrl = useProjectCoverUrl(project.path, project.coverImage);
+  return (
+    <li>
+      <button type="button" className="manage-pins-cover" title={project.path} aria-label={`Pin ${project.name}`} onClick={onPin}>
+        <span
+          className="manage-pins-cover-art"
+          style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : coverGradient(coverFor(project)) }}
+        />
+        <span className="manage-pins-cover-pin" aria-hidden>
+          <Pin size={13} />
+        </span>
+        <span className="manage-pins-cover-name">{project.name}</span>
+      </button>
+    </li>
   );
 }
 
@@ -157,6 +164,7 @@ function PinnedRowItem({
     transition,
     opacity: isDragging ? 0.5 : undefined,
   };
+  const coverUrl = useProjectCoverUrl(project.path, project.coverImage);
   const when = timeAgo(project.activeAt || null, now);
 
   return (
@@ -165,7 +173,10 @@ function PinnedRowItem({
         <GripVertical size={13} />
       </span>
       <span className="manage-pins-position">{position}</span>
-      <span className="manage-pins-thumb" style={{ backgroundImage: coverGradient(coverFor(project)) }} />
+      <span
+        className="manage-pins-thumb"
+        style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : coverGradient(coverFor(project)) }}
+      />
       <span className="manage-pins-name">
         <b>{project.name}</b>
         {when && <em>{when}</em>}

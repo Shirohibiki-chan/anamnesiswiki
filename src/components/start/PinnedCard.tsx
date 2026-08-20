@@ -9,6 +9,7 @@
 //   with it;
 // - a rule along the bottom in the project's own colours, which is the card's
 //   one hard edge and the only thing marking where it stops.
+import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import type { ListedWorld } from "../../services/world-scan";
@@ -22,11 +23,18 @@ type PinnedCardProps = {
 
 export function PinnedCard({ project, now, disabled, onOpen }: PinnedCardProps) {
   const cover = coverFor(project);
+  const coverUrl = useProjectCoverUrl(project.path, project.coverImage);
   const when = timeAgo(project.activeAt || null, now);
 
   return (
     <button type="button" className="start-pin" onClick={onOpen} disabled={disabled} title={project.path}>
-      <span className="start-pin-art" style={{ backgroundImage: coverGradient(cover) }} />
+      {/* The rule below always reads the generated palette, picture or not —
+          it's a quiet accent line, not a claim about a photo's own colours,
+          and extracting those is a different feature nobody's asked for. */}
+      <span
+        className="start-pin-art"
+        style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : coverGradient(cover) }}
+      />
       <span className="start-pin-edge" />
       <span className="start-pin-scrim" />
       {/* The two ends of the cover read left to right, so the rule is the same

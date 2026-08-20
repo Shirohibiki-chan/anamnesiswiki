@@ -53,7 +53,7 @@ function folderNameOf(path: string): string {
 }
 
 export function StartScreen() {
-  const { worlds, isScanning, scannedAt } = useWorldLibrary();
+  const { worlds, isScanning, scannedAt, refreshWorlds } = useWorldLibrary();
   const { currentVersion } = useUpdates();
   const { releases } = useReleaseHistory();
   const { projectsDir } = useAppSettings();
@@ -171,6 +171,16 @@ export function StartScreen() {
           now={scannedAt}
           disabled={actions.isBusy}
           onOpen={(project) => void actions.openListed(project.path, project.name)}
+          onSetCover={(project) =>
+            void actions.setProjectCover(project).then((changed) => {
+              if (changed) void refreshWorlds();
+            })
+          }
+          onRemoveCover={(project) =>
+            void actions.removeProjectCover(project).then((changed) => {
+              if (changed) void refreshWorlds();
+            })
+          }
         />
 
         {actions.choices && (

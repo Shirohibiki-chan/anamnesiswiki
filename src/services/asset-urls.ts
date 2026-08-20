@@ -43,6 +43,18 @@ export function extensionFor(file: File): string {
   return file.type.split("/")[1] ?? "png";
 }
 
+/**
+ * Same job, for a path rather than a `File` — the project cover picker reads
+ * a native dialog's chosen path, which carries a name but never a MIME type,
+ * so there's no fallback to reach for here. `pickImageFile`'s own filter
+ * already means this rarely runs on anything else, and "png" is a harmless
+ * guess on the rare file with none.
+ */
+export function extensionForPath(path: string): string {
+  const match = /\.([a-zA-Z0-9]+)$/.exec(path);
+  return match ? match[1].toLowerCase() : "png";
+}
+
 export function isAssetRef(url: string): boolean {
   return url.startsWith(ASSET_REF_PREFIX);
 }

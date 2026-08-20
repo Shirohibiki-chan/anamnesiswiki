@@ -1963,6 +1963,44 @@ is below.
   Those are incidental UI state; this is a deliberate act the user just
   performed.
 
+## Project covers
+
+- **A cover is set on a world that is almost certainly not open** — from the
+  start screen's grid, before anything has been loaded into `project-store.ts`.
+  `setProjectCoverImage` (`filesystem-service.ts`) reflects that: it reads
+  `project.json` as a plain object, sets or deletes exactly the `coverImage`
+  key, and writes it back untyped, rather than going through
+  `loadProject`/`saveProject`'s typed round trip. **Don't route this through
+  that round trip even for convenience** — a field this build's `Project` type
+  doesn't carry (a newer version's, a hand-edit) would silently vanish on the
+  cast back out, and that round trip also assumes the tree on disk is walkable
+  right now, which nothing here needs or wants to pay for.
+
+- **The cover's own object-URL cache (`project-cover-images.ts`) is
+  deliberately not `asset-urls.ts`'s.** That one is cleared by
+  `releaseAssetUrls()` on every project open/close — right for a page's own
+  pictures, which stop mattering the moment their project isn't the open one.
+  A cover thumbnail is shown *because* nothing is open, so reusing that cache
+  would re-read and re-blob every other project's cover the next time the
+  start screen renders. Don't merge these two caches; they have opposite
+  invalidation rules for the same reason they have separate purposes.
+
+- **`ProjectTile.tsx`'s outer element is a `<div>`, not the button it looks
+  like.** A cover-picking control and "open this project" are two real
+  actions, and a `<button>` cannot nest inside another `<button>`. The frame
+  holds two sibling buttons — `.project-tile-open` (everything `.project-tile`
+  itself used to be: border, background, focus, disabled) and a small corner
+  button for the cover. **Don't collapse this back into one button** to tidy
+  the markup; that's the change that would make setting a cover and opening a
+  project the same click again.
+
+- **One button, two meanings — set when there's no cover, remove when there
+  is — never a third "change" action**, the same shape `PageBanner` already
+  uses for a page's own banner. Swapping to a different picture means
+  removing first. `PageBanner`'s picker is the in-app picture library, which
+  is scoped to the *open* project's assets; nothing is open here, so this
+  reaches for the OS's own file dialog instead (`pickImageFile`).
+
 ## Product decisions
 
 - **Hidden means "not shown to other people", never "out of the way".** A hidden

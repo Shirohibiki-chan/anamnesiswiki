@@ -30,9 +30,11 @@ type ProjectGridProps = {
   now: number;
   disabled: boolean;
   onOpen: (project: ListedWorld) => void;
+  onSetCover: (project: ListedWorld) => void;
+  onRemoveCover: (project: ListedWorld) => void;
 };
 
-export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, onOpen }: ProjectGridProps) {
+export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, onOpen, onSetCover, onRemoveCover }: ProjectGridProps) {
   const view = useProjectView();
   const sort = useProjectSort();
   const { setProjectView, setProjectSort } = usePreferenceActions();
@@ -112,6 +114,8 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
                 now={now}
                 disabled={disabled}
                 onOpen={() => onOpen(project)}
+                onSetCover={() => onSetCover(project)}
+                onRemoveCover={() => onRemoveCover(project)}
               />
             ))}
           </div>

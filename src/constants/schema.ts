@@ -229,6 +229,16 @@ export type Project = {
   // put it. Deleting a pinned page unpins it (see project-store's deleteNodes)
   // so this never points at a node that's gone.
   pinnedIds?: string[];
+  // The picture the start screen's grid shows for this world, in `assets/` —
+  // Phase 27, "covers you set yourself". Absent means "no cover set", the same
+  // reading a world saved before this existed gets, and both draw the
+  // generated gradient (`project-covers.ts`) instead.
+  //
+  // Written from the start screen itself, on a world that may well not be
+  // open — see `setProjectCoverImage` in filesystem-service.ts, which patches
+  // just this key rather than going through the normal typed load/save round
+  // trip a project only gets by being opened.
+  coverImage?: string;
   expandedIds: string[];
   selectedId: string | null;
   createdAt: number;
