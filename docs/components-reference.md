@@ -92,4 +92,3 @@
 | Publish dialog (Phase 1.5) — checkbox tree of what to publish, "include hidden tabs?" toggle (default off), tag filter, output folder picker; on Publish, generates a static site to the chosen folder | `src/components/modals/PublishModal.tsx` |
 | Two-step confirm dialog used for destructive actions (delete node with children, reset project, replace-on-import) — requires the user to type the item name or click a second confirm button | `src/components/modals/ConfirmDialog.tsx` |
 | "About" / help dialog — shows app version, links to `docs/glossary.md` rendered in-app, credits, license | `src/components/modals/AboutModal.tsx` |
-| "What's new" modal — renders `CHANGELOG.md` via Vite raw import as a styled list of dated entries | `src/components/modals/ChangelogModal.tsx` |

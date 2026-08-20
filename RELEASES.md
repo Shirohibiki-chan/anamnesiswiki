@@ -5,9 +5,11 @@ using it. Each section here is the text that goes on that version's
 [releases page](https://github.com/Shirohibiki-chan/anamnesiswiki/releases), and
 it's what the update button shows you before you install.
 
-This is the short version on purpose. `CHANGELOG.md` is the full log — every
-fix, every adjustment, in the order it happened. If you want to know what
-changed, read this. If you want to know *everything* that changed, read that.
+This is the short version on purpose. `CHANGELOG.md` (and its archive,
+`docs/changelog-archive.md`, linked from the bottom of it) is the full log —
+every fix, every adjustment, in the order it happened. If you want to know
+what changed, read this. If you want to know *everything* that changed, read
+that.
 
 ---
 
