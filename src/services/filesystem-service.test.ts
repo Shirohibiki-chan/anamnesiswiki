@@ -36,6 +36,7 @@ import {
   sanitizeSegment,
   saveNode,
   setProjectCoverImage,
+  projectsSubdirOf,
   siblingProjectPath,
   watchCssDirs,
 } from "./filesystem-service";
@@ -602,6 +603,14 @@ describe("watchCssDirs", () => {
     (await watchCssDirs(["/p/themes"], () => {}))();
 
     expect(stop).toHaveBeenCalled();
+  });
+});
+
+describe("projectsSubdirOf", () => {
+  it("names the folder new projects go in, inside the one she chose", () => {
+    expect(projectsSubdirOf("C:/Users/shiro/Documents/Anamnesis")).toBe(
+      "C:/Users/shiro/Documents/Anamnesis/Projects",
+    );
   });
 });
 

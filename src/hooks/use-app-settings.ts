@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as appSettings from "../services/app-settings-service";
 import type { RecentProject } from "../services/app-settings-service";
-import { ensureDir } from "../services/filesystem-service";
+import { ensureDir, projectsSubdirOf } from "../services/filesystem-service";
 
 export function useAppSettings() {
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
@@ -39,6 +39,22 @@ export function useAppSettings() {
 
   const prepareProjectsDir = useCallback(async () => {
     const dir = await appSettings.getProjectsDir();
+    await ensureDir(dir);
+    return dir;
+  }, []);
+
+  /**
+   * Where a new project goes: `Projects/` inside the folder she chose, made if
+   * it isn't there.
+   *
+   * A separate call from the one above rather than a change to it, because the
+   * two answer different questions and both have callers. Settings asks where
+   * *everything* lives — that's the folder holding `themes/`, `snippets/` and
+   * this — while creating, importing and "open my projects folder" all mean
+   * the container.
+   */
+  const prepareNewProjectsDir = useCallback(async () => {
+    const dir = projectsSubdirOf(await appSettings.getProjectsDir());
     await ensureDir(dir);
     return dir;
   }, []);
@@ -86,6 +102,13 @@ export function useAppSettings() {
     // folder that doesn't exist, and a folder browser pointed at it would open
     // in Documents instead with the user expected to make it by hand.
     prepareProjectsDir,
+    prepareNewProjectsDir,
+    // The container, for the rail's line at the foot of the start screen: the
+    // button opens where her projects are, so it has to say that folder rather
+    // than the one above it. Derived rather than stored — it is `projectsDir`
+    // plus a fixed name, and a second piece of state would be a second answer
+    // to one question.
+    newProjectsDir: projectsDir ? projectsSubdirOf(projectsDir) : null,
     describeProjectLocation: appSettings.describeProjectLocation,
   };
 }

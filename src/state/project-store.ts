@@ -17,6 +17,7 @@ import {
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import { TEMPLATES_FILE } from "../constants/paths";
 import * as fsService from "../services/filesystem-service";
+import { isReservedWorldName } from "../services/world-scan";
 import { assetRef, releaseAssetUrls } from "../services/asset-urls";
 import { isAssetInUse } from "../services/asset-usage";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
@@ -923,6 +924,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const trimmed = name.trim();
       if (!trimmed) return { ok: false, error: "Give your project a name." };
 
+      // The app's own folder names, refused wherever the project is being
+      // made. A project called "Projects" sitting where the container does
+      // would be found by the scan and never walked into, so every project
+      // inside it would vanish from the list; "themes" and "snippets" are the
+      // same failure one folder up. One rule is easier to explain than a rule
+      // about where this particular project happens to be going.
+      if (isReservedWorldName(trimmed)) {
+        return { ok: false, error: "That name belongs to one of the app's own folders. Try another." };
+      }
+
       const folderName = fsService.sanitizeSegment(trimmed);
       const rootPath = await join(parentDir, folderName);
       if (await fsService.pathExists(rootPath)) {
@@ -951,6 +962,12 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const { nodes, rootOrder, pendingImages, homeNodeId } = plan;
       const trimmed = name.trim();
       if (!trimmed) return { ok: false, error: "Give your project a name." };
+
+      // Same refusal as createProjectAt above — an import is a project being
+      // made, and lands in the same folder.
+      if (isReservedWorldName(trimmed)) {
+        return { ok: false, error: "That name belongs to one of the app's own folders. Try another." };
+      }
 
       const folderName = fsService.sanitizeSegment(trimmed);
       const rootPath = await join(parentDir, folderName);

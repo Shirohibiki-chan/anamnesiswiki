@@ -167,6 +167,23 @@ export const TEMPLATES_FILE = ".templates.json";
 // Loose `.css` files rather than a registry, so making a theme is "save this
 // file here" and deleting one is "delete the file". Nothing has to stay in
 // step with anything.
+/**
+ * Where new projects are put, inside the folder she chose.
+ *
+ * `themes/` and `snippets/` sit beside the projects on purpose — a theme
+ * belongs to no single project — which left projects and app data
+ * indistinguishable by position, and nothing stopping a project called
+ * "themes" from quietly collecting stylesheets. A folder of their own settles
+ * it.
+ *
+ * **Nothing is moved** (her call, 2026-08-14). Projects open by absolute path,
+ * the scan already reaches two levels down, and both those things were true
+ * before this existed — so a project sitting at the old level is still found,
+ * still opens, and still keeps its place in the recent list. This says where
+ * the *next* one goes, not where the last one lives.
+ */
+export const PROJECTS_SUBDIR = "Projects";
+
 export const THEMES_DIR = "themes";
 export const SNIPPETS_DIR = "snippets";
 
