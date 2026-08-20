@@ -121,6 +121,11 @@ export function StartScreen() {
   const scoped = scopeProjects(worlds, library.scope, { groups: library.groups, archived: library.archived });
   const shown = filterWorlds(scoped, query);
   const activeGroup = library.groups.find((group) => group.id === library.scope);
+  // Every project by id, so a fork can be shown against the name of the one it
+  // came from. Built from the whole library rather than from what the grid is
+  // showing: a fork whose original sits in another group, or in the archive,
+  // was still copied from it.
+  const forkNames = new Map(worlds.filter((world) => world.id).map((world) => [world.id as string, world.name]));
   // Only ones she has actually opened, newest first. A project found by the
   // scan and never opened has no business in a list called "recently opened",
   // however recently its file changed.
@@ -255,6 +260,7 @@ export function StartScreen() {
           }
           fileManagerName={fileManagerName}
           onShowInFolder={(project) => void actions.showProjectInFolder(project)}
+          forkNames={forkNames}
           onDuplicate={(project, name) =>
             void actions.duplicateProject(project, name).then((made) => {
               if (made) void refreshWorlds();
