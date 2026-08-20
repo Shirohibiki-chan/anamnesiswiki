@@ -602,6 +602,32 @@
   color: var(--color-text-muted);
 }
 
+/* Wraps a release's version so the New tag sits beside it rather than inside
+   its ellipsis — see the comment at the call site in StartRail.tsx. */
+.start-release-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.start-release-line b {
+  min-width: 0;
+}
+
+.start-release-new {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-faint);
+  color: var(--color-accent-light);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 /* Colour bleeding off an accent bar rather than sitting in a box — these are
    the quiet half of the screen, and a border on four sides would give them the
    same weight as the covers. */

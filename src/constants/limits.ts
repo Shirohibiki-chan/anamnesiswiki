@@ -50,9 +50,11 @@ export const LONG_PATH_ADVICE_CHARS = 260;
 // where existing pages resolve to and leave their old files behind.
 export const MAX_SEGMENT_CHARS = 96;
 
-// How many versions Settings → Patch Notes offers. Three is enough to cover
-// "what changed recently" without the panel becoming an archive — the whole
-// history is on the releases page, one link away from every tab.
+// How many versions Settings → Patch Notes offers, and the start screen's New
+// Releases in the rail — one number, since both are the same list of recent
+// versions shown at two sizes. Three is enough to cover "what changed
+// recently" without either one becoming an archive — the whole history is on
+// the releases page, one link away from both.
 export const PATCH_NOTES_VERSION_COUNT = 3;
 
 // How many LK pictures an import downloads at once. Strictly one at a time

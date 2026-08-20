@@ -550,15 +550,40 @@ end — and the end is the only part that tells two projects in different folder
 apart. The separator sits on the front of the kept half so a clipped path still
 reads as a path.
 
+**New Releases landed in the rail, 2026-08-19 — reusing Settings → Patch
+Notes's own data rather than a second parser.** The item as written said "baked
+in from the changelog at build time", but that's what `RELEASES.md` already is:
+a hand-written, per-version, build-bundled file, parsed by
+`release-history.ts`'s `recentReleases`, which Patch Notes already calls
+through `useReleaseHistory`. `CHANGELOG.md` is dated, not versioned, and often
+holds several days of work still short of a tag — it's the wrong shape for
+"three entries by version" regardless of where the plan text pointed. Both
+surfaces now read `PATCH_NOTES_VERSION_COUNT` (3) off the same list, so raising
+the count moves both together instead of drifting apart.
+
+Clicking a row opens Settings straight to Patch Notes, on the version that was
+clicked — not just to the panel, to that tab within it (fixed the same day,
+after shipping "always the newest tab" first and hearing that clicking an
+older version still landed on the newest). `SettingsModal` took an `initialTab`
+prop, and `PatchNotes` its own `initialVersion` — special-cased at the one call
+site in `SettingsModal` that renders it, rather than widening `PANELS` to a
+props-carrying type for the nine panels that have no "initial" anything to
+take. Both default to the first tab / newest version, so the cog and the
+top-bar button are untouched. The rail's own `openReleaseVersion` state (a
+version or null, not a separate boolean plus a version — no way for the two to
+disagree about whether the panel is open) renders its own `SettingsModal`
+instance directly rather than routing through `SettingsButton`, which only ever
+opens to Theme. Two independent instances rather than one shared one — the same
+pattern the cog already uses in two other places.
+
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: release notes in the rail,
-three by version with the newest marked, baked in from the changelog at build
-time; the projects folder at the foot of the rail with a button that opens it in
-File Explorer; covers you set yourself, and the muted-covers switch; the page you
-were last on; groups and archive; the duplicate-project action.
+are open questions rather than build work. Then: the projects folder at the
+foot of the rail with a button that opens it in File Explorer; covers you set
+yourself, and the muted-covers switch; the page you were last on; groups and
+archive; the duplicate-project action.
 
 ### Second instance
 
