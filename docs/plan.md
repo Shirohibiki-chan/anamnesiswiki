@@ -661,12 +661,30 @@ both spots inside Manage pins — three of which had to grow their own small
 subcomponent first, because the hook can't run inside the `.map()` that used
 to render them inline.
 
+**The rail now names the page she was last on, landed 2026-08-19.** `selectedId`
+was already saved in `project.json` on every selection; naming *what it points
+at* from the start screen is the part that didn't exist. Resolving a name from
+an id needs the node it belongs to, and node files are found by walking the
+tree — the cost `readWorldSummary`'s own doc comment rules out for every world
+the folder scan touches. So the name is denormalised: `selectedName` sits next
+to `selectedId` in `project.json`, written by the same `applySelection` that
+already writes the id, from the node already in memory — no new read, on a
+world that's already open, at the moment its selection changes. Two more spots
+keep it from going stale mid-session: renaming the page she's currently on
+updates the copy in place, and deleting it clears the copy the same way
+`selectedId` itself already gets cleared. Read back through
+`readWorldSummary`/`WorldFile` alongside `coverImage`, the same shape that
+field already uses. Shows in the rail's Recently Opened row only — the grid and
+pinned row cover every world in the library, not a short recent list, and nightly
+`readWorldSummary` reasoning about that broader read doesn't change just
+because one more field got cheap to carry.
+
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: the page you were last on;
-groups and archive; the duplicate-project action.
+are open questions rather than build work. Then: groups and archive; the
+duplicate-project action.
 
 ### Second instance
 

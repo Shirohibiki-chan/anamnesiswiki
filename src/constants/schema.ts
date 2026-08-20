@@ -241,6 +241,15 @@ export type Project = {
   coverImage?: string;
   expandedIds: string[];
   selectedId: string | null;
+  // The name of the page `selectedId` pointed at, the moment it was set —
+  // kept alongside the id rather than derived from it so the start screen can
+  // say what page she was last on without opening the world to look it up.
+  // `readWorldSummary` reads two flat fields off `project.json`; resolving a
+  // name from an id needs the node it belongs to, and node files are found by
+  // walking the tree, not indexed by id. Stale the moment that page is
+  // renamed until she visits it again, which is the same trade `name` itself
+  // already makes for a world whose folder was renamed outside the app.
+  selectedName?: string | null;
   createdAt: number;
 };
 
