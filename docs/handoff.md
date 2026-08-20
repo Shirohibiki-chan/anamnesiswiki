@@ -798,11 +798,27 @@ is below.
   properties panel already reuses this component; reuse it rather than
   positioning a menu inside a tile.
 
-- **A popover trigger that toggles has to fire on `pointerdown`, not `click`.**
-  `TreePopover` closes itself on any pointer-down outside it, which includes its
-  own trigger, so by the time a click fired the state already says closed and
-  the press reopens what she was trying to shut. On pointer-down both run inside
-  one event and the close wins.
+- **A `TreePopover` trigger opens on `click` and must never open on
+  `pointerdown` — and it needs a ref to stay a toggle.** Opening on pointer-down
+  produces a menu that never appears: React flushes the effects of that discrete
+  press before the press has finished travelling up to `document`, so the
+  popover's close-on-outside listener is already live when its own opening event
+  reaches it, and the menu is torn down microseconds after it mounts. Opening on
+  click alone has the opposite fault — the press that closed the menu leaves the
+  state saying "closed", so the click behind it reopens what she was shutting.
+  What works is both: remember on pointer-down whether it was open, and let the
+  click read that ref. A trigger *inside* the boundary ref — the pattern
+  `useClickOutside` is normally used with — has neither problem, because the
+  containment check excludes it; this is specific to a portaled popover, whose
+  ref cannot contain the button that opens it.
+
+- **Synthetic events do not reproduce that bug, and a check that dispatches
+  `new PointerEvent(...)` will pass on broken code.** React treats a trusted
+  discrete input differently from a dispatched one, and the whole failure is in
+  that timing. Anything about opening, closing or focusing a popover has to be
+  driven with real input — `Input.dispatchMouseEvent` over the debug port — or
+  it has not been tested. Shipped once, on 2026-08-20, and she found it in a
+  minute.
 
 - **Components never import stores or services** (CLAUDE.md layer rule). Narrow
   hooks exist so a component subscribes only to what it shows — `useNode` over the
