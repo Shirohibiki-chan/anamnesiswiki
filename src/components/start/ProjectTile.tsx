@@ -30,9 +30,21 @@ type ProjectTileProps = {
   onOpen: () => void;
   onSetCover: () => void;
   onRemoveCover: () => void;
+  fileManagerName: string;
+  onShowInFolder: () => void;
 };
 
-export function ProjectTile({ project, library, now, disabled, onOpen, onSetCover, onRemoveCover }: ProjectTileProps) {
+export function ProjectTile({
+  project,
+  library,
+  now,
+  disabled,
+  onOpen,
+  onSetCover,
+  onRemoveCover,
+  fileManagerName,
+  onShowInFolder,
+}: ProjectTileProps) {
   const when = timeAgo(project.activeAt || null, now);
   // Rendered in both views and hidden in one, rather than branched on: which
   // view is drawn is a class on the grid, and a component that reads it would
@@ -97,6 +109,8 @@ export function ProjectTile({ project, library, now, disabled, onOpen, onSetCove
         coverUrl={coverUrl}
         onSetCover={onSetCover}
         onRemoveCover={onRemoveCover}
+        fileManagerName={fileManagerName}
+        onShowInFolder={onShowInFolder}
       />
     </div>
   );

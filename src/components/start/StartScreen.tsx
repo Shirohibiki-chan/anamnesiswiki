@@ -21,6 +21,7 @@ import { useDialogs } from "../../hooks/use-dialogs";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
 import { useProjectLibrary } from "../../hooks/use-project-library";
+import { useFileManagerName } from "../../hooks/use-reveal";
 import { useReleaseHistory } from "../../hooks/use-release-history";
 import { useUpdates } from "../../hooks/use-updates";
 import { useStartActions } from "../../hooks/use-start-actions";
@@ -89,6 +90,7 @@ export function StartScreen() {
   const { projectsDir } = useAppSettings();
   const actions = useStartActions();
   const { confirmDestructive } = useDialogs();
+  const fileManagerName = useFileManagerName();
   const widths = usePanelWidths();
   const { setRailWidth, resetRailWidth } = useRailWidthActions();
 
@@ -251,6 +253,8 @@ export function StartScreen() {
               if (changed) void refreshWorlds();
             })
           }
+          fileManagerName={fileManagerName}
+          onShowInFolder={(project) => void actions.showProjectInFolder(project)}
           onRemoveCover={(project) =>
             void actions.removeProjectCover(project).then((changed) => {
               if (changed) void refreshWorlds();

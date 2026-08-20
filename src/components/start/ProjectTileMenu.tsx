@@ -17,7 +17,7 @@
 // which is the same problem the template picker hit near the bottom of a tall
 // tree.
 import { useRef, useState } from "react";
-import { Archive, ArchiveRestore, Check, ImagePlus, MoreHorizontal, Plus, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, FolderOpen, ImagePlus, MoreHorizontal, Plus, X } from "lucide-react";
 import type { ProjectGroup } from "../../services/project-groups";
 import type { ListedWorld } from "../../services/world-scan";
 import { TreePopover } from "../tree/TreePopover";
@@ -47,6 +47,14 @@ type ProjectTileMenuProps = {
   coverUrl: string | null;
   onSetCover: () => void;
   onRemoveCover: () => void;
+  /**
+   * The OS's own word for its file manager. Releases build for three
+   * platforms and this is a label someone reads to find out what it does, so
+   * a hard-coded "File Explorer" is wrong on two of them — same reasoning, and
+   * the same source, as the tree row's menu.
+   */
+  fileManagerName: string;
+  onShowInFolder: () => void;
 };
 
 export function ProjectTileMenu({
@@ -56,6 +64,8 @@ export function ProjectTileMenu({
   coverUrl,
   onSetCover,
   onRemoveCover,
+  fileManagerName,
+  onShowInFolder,
 }: ProjectTileMenuProps) {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [isNamingGroup, setIsNamingGroup] = useState(false);
@@ -130,6 +140,21 @@ export function ProjectTileMenu({
             >
               {coverUrl ? <X size={13} /> : <ImagePlus size={13} />}
               {coverUrl ? "Remove cover" : "Set cover"}
+            </button>
+
+            {/* Above the groups, with the cover: both are things done to the
+                project itself, where everything below is filing. */}
+            <button
+              type="button"
+              role="menuitem"
+              className="project-tile-menu-item"
+              onClick={() => {
+                close();
+                onShowInFolder();
+              }}
+            >
+              <FolderOpen size={13} />
+              Show in {fileManagerName}
             </button>
 
             <p className="project-menu-label">Groups</p>
