@@ -324,6 +324,28 @@ export function applyContentScale(scale: number): void {
   document.documentElement.style.setProperty("--fs-scale-content", String(safe));
 }
 
+/**
+ * A boolean attribute rather than a custom property: nothing here is a value
+ * to interpolate, only a selector for start.css to key its cover filters off
+ * of — `[data-muted-covers] .project-tile-cover { … }` and its siblings.
+ */
+export function applyMutedCovers(muted: boolean): void {
+  document.documentElement.toggleAttribute("data-muted-covers", muted);
+}
+
+/**
+ * What a fresh install would compute, since "off" is not the honest default
+ * for everyone: the accessibility issue muted covers exists for is real for
+ * anyone whose OS already asks for higher contrast, and they shouldn't have
+ * to find a setting to get it. `matchMedia` is absent outside a browser
+ * context — `pnpm dev`'s SSR-less setup always has it, but this stays
+ * defensive the way the rest of this file is about anything that touches
+ * `window`.
+ */
+export function defaultMutedCovers(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-contrast: more)").matches === true;
+}
+
 /* --- Surviving the launch ------------------------------------------------- */
 
 /**

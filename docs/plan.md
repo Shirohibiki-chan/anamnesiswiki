@@ -436,6 +436,29 @@ desaturating every cover, off by default, and on automatically for anyone whose
 system asks for higher contrast. The accessibility issue is text legibility on
 covers, which the scrim under every name already handles — not saturation.
 
+**Shipped 2026-08-19, in Settings → Theme rather than Settings → Lists.** The
+distinction the pagination switch drew ("that one is about how a list behaves
+rather than how it looks") cuts the other way here — this is entirely about
+how covers look, so it sits with Theme/Colours/Fonts/Snippets, not with the
+Lists panel that governs pagination and view mode. One boolean, `mutedCovers`,
+alongside `theme-store.ts`'s other appearance state, and applied the same way
+`applyThemeId`/`applyTextScale` are: a plain setter in `theme-service.ts`
+(`applyMutedCovers`) that toggles `[data-muted-covers]` on the document, with
+one CSS rule in `start.css` reading it against every place a cover renders —
+the grid, the pinned row, the rail's Recently Opened chip, and both spots
+inside Manage pins. `grayscale()` alone flattened every cover to the same
+lightness; `grayscale(70%) saturate(60%)` keeps enough of the original apart
+that two covers still read as two colours, just quiet ones.
+
+**"On automatically for anyone whose system asks for higher contrast" is a
+real default to recompute, not a fixed `false`.** `defaultMutedCovers()`
+reads `prefers-contrast: more` and is called three places that all mean "the
+value nobody has chosen yet": the store's initial state (synchronously — no
+settings file has to be read to answer a media query, unlike every other
+appearance field), `loadAppearance` when nothing was saved, and "Put
+everything back to default", which now resets this alongside theme/fonts/
+size/snippets rather than leaving it out of its own reset.
+
 **Section headings are headings.** Badges were tried and are too small to do a
 heading's job. Title Case, the display face, ~20px; controls beside them
 (Manage pins, Newest first) are pills so they read as pressable.
@@ -598,8 +621,9 @@ path is the title.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: covers you set yourself, and
-the muted-covers switch; the page you were last on; groups and archive; the
+are open questions rather than build work. Then: covers you set yourself (the
+muted-covers switch above already shipped, ahead of it — it doesn't need one
+to exist first); the page you were last on; groups and archive; the
 duplicate-project action.
 
 ### Second instance

@@ -47,11 +47,13 @@ import {
   applyContentScale,
   applyCustomThemeCss,
   applyFonts,
+  applyMutedCovers,
   applySnippetCss,
   applyTextScale,
   applyThemeId,
   cacheAppearance,
   clearPreviewedTokens,
+  defaultMutedCovers,
   fontStackFor,
   labelForFile,
   previewToken,
@@ -127,6 +129,8 @@ export type ThemeStoreState = {
   textScale: number;
   contentScale: number;
   enabledSnippets: string[];
+  /** Start screen project covers, desaturated. See `defaultMutedCovers`. */
+  mutedCovers: boolean;
 
   customThemes: CustomStylesheet[];
   snippets: CustomStylesheet[];
@@ -187,6 +191,7 @@ export type ThemeStoreState = {
   setFontsEveryTheme: (on: boolean) => Promise<void>;
   setTextScale: (scale: number) => Promise<void>;
   setContentScale: (scale: number) => Promise<void>;
+  setMutedCovers: (muted: boolean) => Promise<void>;
   toggleSnippet: (file: string) => Promise<void>;
   resetAppearance: () => Promise<void>;
   openThemesFolder: () => Promise<void>;
@@ -427,6 +432,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
 
     applyTextScale(state.textScale);
     applyContentScale(state.contentScale);
+    applyMutedCovers(state.mutedCovers);
     // After the theme is on the document, not before — it reads the resolved
     // background back out, which is only right once the rules above have landed.
     const bootBg = applyBootBackground();
@@ -543,6 +549,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         textScale: state.textScale,
         contentScale: state.contentScale,
         enabledSnippets: state.enabledSnippets,
+        mutedCovers: state.mutedCovers,
       })
       .catch(() => {});
   }
@@ -556,6 +563,11 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     textScale: DEFAULT_TEXT_SCALE,
     contentScale: DEFAULT_CONTENT_SCALE,
     enabledSnippets: [],
+    // Computed rather than hardcoded false, unlike everything above it: this
+    // one's un-saved default is knowable synchronously (a media query, not a
+    // settings file), so there's no reason to show the wrong thing for the
+    // one frame before loadAppearance resolves.
+    mutedCovers: defaultMutedCovers(),
     customThemes: [],
     snippets: [],
     draft: null,
@@ -621,6 +633,12 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       const fontsEveryTheme =
         typeof saved.fontsEveryTheme === "boolean" ? saved.fontsEveryTheme : Object.keys(fonts).length > 0;
 
+      // Undefined covers both "never saved" and "settings unreadable, and the
+      // paint cache had nothing to say either" — `fromCache` above doesn't
+      // carry this field, since muted covers has no pre-paint flash to guard
+      // against the way theme colour does. Both cases get the real default.
+      const mutedCovers = typeof saved.mutedCovers === "boolean" ? saved.mutedCovers : defaultMutedCovers();
+
       set({
         themeId: typeof saved.themeId === "string" && saved.themeId ? saved.themeId : DEFAULT_THEME_ID,
         themeFile: typeof saved.themeFile === "string" ? saved.themeFile : null,
@@ -633,6 +651,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         // resizing their pages on upgrade for no reason they asked for.
         contentScale: typeof saved.contentScale === "number" ? saved.contentScale : textScale,
         enabledSnippets: Array.isArray(saved.enabledSnippets) ? saved.enabledSnippets.filter((f) => typeof f === "string") : [],
+        mutedCovers,
       });
 
       // Applied before the scan and again after it. The built-in half of the
@@ -784,6 +803,12 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       await persist();
     },
 
+    async setMutedCovers(muted) {
+      set({ mutedCovers: muted });
+      apply();
+      await persist();
+    },
+
     async toggleSnippet(file) {
       const enabled = get().enabledSnippets;
       set({ enabledSnippets: enabled.includes(file) ? enabled.filter((f) => f !== file) : [...enabled, file] });
@@ -800,6 +825,11 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         textScale: DEFAULT_TEXT_SCALE,
         contentScale: DEFAULT_CONTENT_SCALE,
         enabledSnippets: [],
+        // Recomputed, not hardcoded false — "default" for this one already
+        // means "whatever a fresh install would land on", so resetting to it
+        // has to ask the same question again rather than pick the answer that
+        // happens to be false.
+        mutedCovers: defaultMutedCovers(),
       });
       apply();
       await persist();

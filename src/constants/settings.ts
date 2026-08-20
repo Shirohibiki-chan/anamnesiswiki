@@ -133,6 +133,13 @@ export const DECLARED_SETTINGS: readonly {
     keywords: ["where", "location", "files", "open", "explorer", "folder"],
   },
   {
+    id: "muted-covers",
+    tabId: "theme",
+    label: "Mute project covers",
+    hint: "desaturate every cover on the start screen",
+    keywords: ["cover", "project", "start screen", "saturation", "vibrant", "colour", "color", "contrast", "gray", "grey"],
+  },
+  {
     id: "text-size-writing",
     tabId: "fonts",
     label: "Writing size",
