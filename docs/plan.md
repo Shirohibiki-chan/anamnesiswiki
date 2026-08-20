@@ -712,10 +712,16 @@ because one more field got cheap to carry.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: showing lineage — every piece
-of it is now recorded and nothing on screen says a word about it, so a fork
-looks exactly like any other project. Second instance and the folder layout,
-both below, are also still to build.
+are open questions rather than build work. Then: second instance and the folder
+layout, both below.
+
+**Lineage is shown as of 2026-08-20**, on the location line rather than a line
+of its own: it is a fact about this project as a folder, the same kind the
+Elsewhere flag already reports there, and its own line would cost every project
+on the screen height for something most of them have nothing to say about. The
+name gives way before the last folder of the path does — that folder is what
+tells two same-named projects apart, and two same-named projects is exactly
+what a fork produces.
 
 **The fork detector landed 2026-08-20, and one of its rules changed under
 measurement.** "Most-recently-modified keeps the id" is wrong: copying a folder

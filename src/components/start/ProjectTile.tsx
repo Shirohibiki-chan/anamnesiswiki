@@ -14,7 +14,7 @@
 // `.project-tile-open`, which carries every pixel `.project-tile` itself used
 // to (border, background, focus, disabled), beside the controls that are the
 // whole reason the frame exists.
-import { ImagePlus, X } from "lucide-react";
+import { GitFork, ImagePlus, X } from "lucide-react";
 import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
@@ -33,6 +33,13 @@ type ProjectTileProps = {
   fileManagerName: string;
   onShowInFolder: () => void;
   onDuplicate: (name: string) => void;
+  /**
+   * The name of the project this one was copied from, when that project is
+   * still in the library. Null covers both "not a copy" and "copied from
+   * something that isn't here any more" — resolved upstream, because the
+   * answer lives in the whole listing rather than in this project's own file.
+   */
+  forkedFrom: string | null;
 };
 
 export function ProjectTile({
@@ -46,6 +53,7 @@ export function ProjectTile({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  forkedFrom,
 }: ProjectTileProps) {
   const when = timeAgo(project.activeAt || null, now);
   // Rendered in both views and hidden in one, rather than branched on: which
@@ -71,11 +79,24 @@ export function ProjectTile({
               clipped and the tail is not, which is what keeps a narrow row saying
               which folder this is rather than trailing off partway through the
               word every project in that folder shares. */}
-          {(where.tail || project.isOutsideProjectsFolder) && (
+          {(where.tail || project.isOutsideProjectsFolder || forkedFrom) && (
             <span className="project-tile-where">
               {project.isOutsideProjectsFolder && (
                 <i className="project-tile-flag" title="Not in your projects folder">
                   Elsewhere
+                </i>
+              )}
+              {/* On the same line as the path, and for the same reason the
+                  Elsewhere flag is: both are facts about this project as a
+                  folder, and a line of its own would cost every project on the
+                  screen height for something most of them have nothing to say
+                  about. The name is allowed to clip — that it *is* a copy is
+                  the part that has to survive a narrow row, since the full
+                  sentence is in the tooltip. */}
+              {forkedFrom && (
+                <i className="project-tile-fork" title={`Copied from ${forkedFrom}`}>
+                  <GitFork size={11} />
+                  <span>{forkedFrom}</span>
                 </i>
               )}
               <span>{where.head}</span>

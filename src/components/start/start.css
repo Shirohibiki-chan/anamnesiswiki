@@ -664,6 +664,44 @@
   color: var(--color-accent-light);
 }
 
+/* "Copied from Valeraverse", on the line that already carries the facts about
+   this project as a folder. Unlike the Elsewhere flag beside it this one may
+   shrink: the icon says it is a copy and the icon is what has to survive a
+   narrow row, where the name it was copied from is the detail — and the whole
+   sentence is in the tooltip either way. Muted rather than accented, because
+   it is true of a project forever and a permanent highlight stops meaning
+   anything. */
+.project-tile-fork {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* Doesn't give way, up to a share of the line. Flexbox shares shrinkage out
+     in proportion to how big each part started, so a long path was taking the
+     name down to its first letter — and the middle of a path is the one thing
+     on this line built to be thrown away. The cap is what stops that becoming
+     the opposite problem on a 190px cover. */
+  flex: none;
+  max-width: 45%;
+  margin-right: var(--space-xs);
+  font-family: var(--font-sans);
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+.project-tile-fork svg {
+  flex: none;
+}
+
+/* Capped rather than shrinkable: past a dozen characters a project's name is
+   not what this line is for, and the tooltip has all of it. */
+.project-tile-fork span {
+  overflow: hidden;
+  max-width: 14ch;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .project-tile-cap {
   position: absolute;
   z-index: 1;

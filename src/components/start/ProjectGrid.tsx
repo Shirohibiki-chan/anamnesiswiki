@@ -58,6 +58,12 @@ type ProjectGridProps = {
   fileManagerName: string;
   onShowInFolder: (project: ListedWorld) => void;
   onDuplicate: (project: ListedWorld, name: string) => void;
+  /**
+   * What each project was copied from, by name. Built from the whole library
+   * rather than from what this grid is showing: a fork whose original is in
+   * another group, or folded into the archive, was still copied from it.
+   */
+  forkNames: Map<string, string>;
 };
 
 export function ProjectGrid({
@@ -75,6 +81,7 @@ export function ProjectGrid({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  forkNames,
 }: ProjectGridProps) {
   const view = useProjectView();
   const sort = useProjectSort();
@@ -161,6 +168,7 @@ export function ProjectGrid({
                 fileManagerName={fileManagerName}
                 onShowInFolder={() => onShowInFolder(project)}
                 onDuplicate={(name) => onDuplicate(project, name)}
+                forkedFrom={(project.forkedFromId && forkNames.get(project.forkedFromId)) || null}
               />
             ))}
           </div>
