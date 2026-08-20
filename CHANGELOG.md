@@ -2,6 +2,10 @@
 
 ## 2026-08-20
 
+### Additions
+
+- **List view can set a cover now too.** A small `⋯` beside each row opens a menu with Set cover / Remove cover, the same two actions the grid's hover button already carries — a row's own thumbnail is too small for a button of its own, so it's reached through the menu instead.
+
 ### Fixes
 
 - **Opening a project never actually landed on the page you were last on**, even though the tree remembered it — it always opened to "Select a page to begin" instead. Fixed.
