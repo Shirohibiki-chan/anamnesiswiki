@@ -14,7 +14,7 @@
 
 - **The start screen's rail had less room than it needed.** Recently Opened, Add a Project, and New Releases all sit a little less cramped now.
 - **The rail's sections now stand apart from each other.** Twice the gap between Recently Opened, Add a Project and New Releases, with a little more air under each heading, so the three read as separate errands rather than one long list with rules through it. A folder on disk and Import sit a touch further apart too.
-- **The pinned covers are taller.** They were cropping portraits around the chin; there is about 15% more card now, so a cover keeps more of its top and bottom instead of losing it to the crop.
+- **The pinned covers stopped cutting heads off.** They are taller than they were, and what is left of a portrait after the crop is now taken from above centre rather than the middle — so the part that survives is the part with the face in it, not the feet.
 
 ## 2026-08-19
 

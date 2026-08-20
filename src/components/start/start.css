@@ -898,9 +898,9 @@
    cropped the same way. The card was drawn at 245 by 208, which cropped a
    portrait at about the chin — the one part of a cover you least want taken
    off. Taller at the same width means less comes off the top and bottom, so
-   the extra 32px buys back a head. */
+   the extra height buys back a head. */
 .start-pin {
-  aspect-ratio: 245 / 240;
+  aspect-ratio: 245 / 256;
 }
 
 .start-pin {
@@ -934,9 +934,14 @@
   );
 }
 
+/* Framed above centre, which is the cheaper half of the fix: centring splits
+   what the crop takes between the top and the bottom of the picture, and a
+   portrait keeps nothing worth seeing at the bottom. Biasing the window
+   upwards spends the whole overflow on the end with the face on it, and costs
+   the page no height to do it. */
 .start-pin-art {
   background-size: cover;
-  background-position: center;
+  background-position: center 32%;
   transition: filter 0.2s;
 }
 
