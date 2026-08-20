@@ -6,6 +6,10 @@
 
 - **Opening a project never actually landed on the page you were last on**, even though the tree remembered it — it always opened to "Select a page to begin" instead. Fixed.
 
+### Adjustments
+
+- **The start screen's rail had less room than it needed.** Recently Opened, Add a Project, and New Releases all sit a little less cramped now.
+
 ## 2026-08-19
 
 ### Additions
