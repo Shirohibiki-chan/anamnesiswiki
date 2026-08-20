@@ -895,9 +895,12 @@
    has to — the sides off a wide picture on a narrow window, the top and bottom
    off it on a wide one. Same picture, different halves of it missing depending
    on how the window happens to be sized. Fixing the ratio means it is always
-   cropped the same way, and 245 by 208 is the card the row was drawn at. */
+   cropped the same way. The card was drawn at 245 by 208, which cropped a
+   portrait at about the chin — the one part of a cover you least want taken
+   off. Taller at the same width means less comes off the top and bottom, so
+   the extra 32px buys back a head. */
 .start-pin {
-  aspect-ratio: 245 / 208;
+  aspect-ratio: 245 / 240;
 }
 
 .start-pin {
