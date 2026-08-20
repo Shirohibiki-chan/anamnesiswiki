@@ -654,7 +654,10 @@
 .start-rail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  /* Double the between-groups gap: at 12px each heading sat as close to the
+     rows above it as to its own, so the sections read as one long list with
+     rules through it rather than as separate errands. */
+  gap: var(--space-2xl);
   min-height: 0;
   padding: var(--space-xl) var(--space-md) var(--space-md);
   border-left: 1px solid var(--color-panel-edge);
@@ -665,7 +668,7 @@
 /* The rail's headings are the section titles a size down, with a rule under
    them — without one they read as loose text rather than as headings. */
 .start-rail-label {
-  margin: 0 0 var(--space-xs);
+  margin: 0 0 var(--space-sm);
   padding-bottom: 2px;
   border-bottom: 1px solid var(--color-panel-edge);
 }
@@ -781,7 +784,7 @@
 }
 
 .start-item + .start-item {
-  margin-top: 2px;
+  margin-top: var(--space-sm);
 }
 
 .start-item:hover {
