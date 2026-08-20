@@ -608,7 +608,10 @@
   align-items: center;
   gap: var(--space-xs);
   width: 100%;
-  padding: var(--space-2xs);
+  /* `--space-2xs` (2px) is "hairline nudges, chip padding" territory per
+     index.css's own scale — too tight for a row this is the main hit target
+     of. She called the rail SUPER squished; this is most of why. */
+  padding: var(--space-xs);
   border: 0;
   border-radius: var(--radius-md);
   background: none;
@@ -697,7 +700,7 @@
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  padding: var(--space-2xs) var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
   border: 0;
   border-left: 2px solid var(--color-accent-dark);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
