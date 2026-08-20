@@ -5,6 +5,7 @@
 // what makes the page size the honest one. It clips rather than scrolls while
 // paged, so a page is exactly what fits and the arithmetic in `usePagedList`
 // can't be contradicted by a scrollbar appearing.
+import type { ReactNode } from "react";
 import { LayoutGrid, Rows3 } from "lucide-react";
 import {
   PROJECT_ROW_HEIGHT,
@@ -18,14 +19,35 @@ import { useProjectSort, useProjectView, usePreferenceActions } from "../../hook
 import { sortWorlds, type ListedWorld } from "../../services/world-scan";
 import { PageNav } from "../shell/PageNav";
 import { ProjectTile } from "./ProjectTile";
+import type { ProjectLibraryActions } from "./ProjectTileMenu";
 import { SortPill } from "./SortPill";
 
 type ProjectGridProps = {
   projects: ListedWorld[];
+  /**
+   * What this list of projects is — "All Projects", a group's name, or the
+   * archive. The heading names the chip that is on, because a grid showing
+   * eleven of forty projects under a heading that says "All Projects" reads as
+   * a bug rather than as a filter.
+   */
+  heading: string;
+  /**
+   * The chip row, passed in rather than built here. This component knows about
+   * the grid and its two controls; groups and the archive are the library's
+   * business, and threading five more props through to reach the same markup
+   * would make the grid the thing that has to understand them.
+   */
+  filters: ReactNode;
+  library: ProjectLibraryActions;
   /** True while the first scan is still running, so an empty list isn't reported as none. */
   isScanning: boolean;
-  /** Whether a filter is on, which changes what "nothing here" means. */
-  isFiltered: boolean;
+  /**
+   * What to say when there is nothing to draw. Decided upstream because
+   * "nothing here" has three meanings on this screen — no projects at all, no
+   * match for what she typed, or an empty group — and only the screen holding
+   * the filter box and the chip row knows which one is true.
+   */
+  emptyMessage: string;
   /** One timestamp for the whole grid — see useWorldLibrary's `scannedAt`. */
   now: number;
   disabled: boolean;
@@ -34,7 +56,19 @@ type ProjectGridProps = {
   onRemoveCover: (project: ListedWorld) => void;
 };
 
-export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, onOpen, onSetCover, onRemoveCover }: ProjectGridProps) {
+export function ProjectGrid({
+  projects,
+  heading,
+  filters,
+  library,
+  isScanning,
+  emptyMessage,
+  now,
+  disabled,
+  onOpen,
+  onSetCover,
+  onRemoveCover,
+}: ProjectGridProps) {
   const view = useProjectView();
   const sort = useProjectSort();
   const { setProjectView, setProjectSort } = usePreferenceActions();
@@ -61,7 +95,7 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
   return (
     <section className="start-all">
       <p className="start-label">
-        <span className="start-title">All Projects</span>
+        <span className="start-title">{heading}</span>
         {!isScanning && <span className="start-count">{projects.length}</span>}
         <span className="start-label-right">
           <SortPill
@@ -98,19 +132,20 @@ export function ProjectGrid({ projects, isScanning, isFiltered, now, disabled, o
         </span>
       </p>
 
+      {filters}
+
       <div className="start-area" data-view={view} data-paged={isPaged} ref={ref}>
         {isScanning ? (
           <p className="start-empty">Looking for your projects…</p>
         ) : projects.length === 0 ? (
-          <p className="start-empty">
-            {isFiltered ? "No project here matches that." : "No projects yet — make one, or open a folder you already have."}
-          </p>
+          <p className="start-empty">{emptyMessage}</p>
         ) : (
           <div className="start-tiles">
             {visible.map((project) => (
               <ProjectTile
                 key={project.path}
                 project={project}
+                library={library}
                 now={now}
                 disabled={disabled}
                 onOpen={() => onOpen(project)}

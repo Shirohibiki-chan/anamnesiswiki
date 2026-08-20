@@ -413,27 +413,31 @@
   display: none;
 }
 
-/* List view's own way to the same action, since the grid's corner button has
-   nowhere to sit on a 44px chip. Hidden by default and only switched on for
-   list, the mirror image of the rule above — see ProjectTile.tsx. */
+/* The `⋯` menu sits in both views now (see ProjectTileMenu.tsx), in a
+   different place in each: on a row it is the only control there and takes the
+   right-hand end, and on a cover it stands beside the cover button, which
+   keeps the corner it shipped in. */
 .project-tile-menu {
-  display: none;
-}
-
-.start-area[data-view="list"] .project-tile-menu {
-  display: block;
   position: absolute;
-  top: 50%;
-  right: var(--space-xs);
-  transform: translateY(-50%);
   z-index: 2;
 }
 
-/* Plain `.ui-icon-btn`, not the scrim treatment the grid button needs — a
-   list row's background is the flat panel colour, not arbitrary artwork, so
-   the ordinary hover fill reads fine against it. Hidden until hover or focus,
-   same reasoning as the grid button: a permanent icon on every row is
-   furniture for something touched rarely. */
+.start-area[data-view="grid"] .project-tile-menu {
+  top: var(--space-xs);
+  /* One `ui-icon-btn-lg` (1.75rem) plus a gap, so the two corner controls sit
+     side by side rather than one on top of the other. */
+  right: calc(var(--space-xs) + 1.75rem + var(--space-2xs));
+}
+
+.start-area[data-view="list"] .project-tile-menu {
+  top: 50%;
+  right: var(--space-xs);
+  transform: translateY(-50%);
+}
+
+/* Hidden until hover or focus, same reasoning as the cover button beside it:
+   a permanent icon on every one of forty tiles is furniture for a control
+   touched rarely. */
 .project-tile-menu-btn {
   opacity: 0;
   transition: opacity 120ms ease;
@@ -445,7 +449,27 @@
   opacity: 1;
 }
 
-.project-tile-menu-list {
+/* In grid view it sits over artwork, so it takes the cover button's scrim and
+   its size: the ordinary hover fill is invisible on some covers and illegible
+   on others, and two corner buttons a quarter-rem apart in size read as a
+   mistake rather than as a pair. On a row the background is the flat panel
+   colour and the plain button is right as it is. */
+.start-area[data-view="grid"] .project-tile-menu-btn {
+  --ui-icon-btn-size: 1.75rem;
+  background: var(--color-scrim-soft);
+  color: var(--color-on-scrim);
+}
+
+.start-area[data-view="grid"] .project-tile-menu-btn:hover:not(:disabled) {
+  background: var(--color-scrim-solid);
+  color: var(--color-on-scrim);
+}
+
+/* A menu hanging off a control on this screen. The tile's own is portaled
+   through TreePopover instead — `.start-area` clips while the grid is paged,
+   so a menu opened from the bottom row would be cut in half — which leaves
+   this for the chip row, which sits above that area and can position its own. */
+.start-menu {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
@@ -458,6 +482,19 @@
   border-radius: var(--radius-md);
   background: var(--color-panel-edge);
   box-shadow: 0 8px 24px var(--color-shadow, rgba(0, 0, 0, 0.4));
+}
+
+/* The portaled one. `.tree-popover` already paints the surface and the
+   elevation; this only tightens it to the size the start screen's other menus
+   are, since that file is drawn for a picker rather than a list of verbs. */
+.project-menu {
+  min-width: 11rem;
+  padding: var(--space-2xs);
+}
+
+.project-menu > [role="menu"] {
+  display: flex;
+  flex-direction: column;
 }
 
 .project-tile-menu-item {
@@ -478,6 +515,133 @@
 .project-tile-menu-item:hover {
   background: var(--color-hover);
   color: var(--color-text);
+}
+
+/* Groups, above the ones a project is filed under. A heading rather than a
+   dividing line: the items above and below it are actions and these are a
+   list of names, and a rule between them says they are separated without
+   saying what they are. */
+.project-menu-label {
+  margin: var(--space-2xs) 0 0;
+  padding: var(--space-2xs) var(--space-sm);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* The tick is always in the layout and only sometimes visible, so the group
+   names line up at one left edge and the menu doesn't change width as she
+   files things — the same trick the sort menu's check uses. */
+.project-menu-tick {
+  flex: none;
+  visibility: hidden;
+}
+
+.project-menu-check[aria-checked="true"] {
+  color: var(--color-accent-light);
+}
+
+.project-menu-check[aria-checked="true"] .project-menu-tick {
+  visibility: visible;
+}
+
+.project-menu-form {
+  padding: var(--space-2xs) var(--space-xs);
+}
+
+/* --- Groups and the archive --- */
+
+/* One wrapping row under the heading it filters. Nothing here scrolls
+   sideways and nothing folds behind a "more" link: the row is short by
+   construction, and a chip that has to be scrolled to is the eight-project cap
+   this screen exists to be rid of, in better clothes. */
+.start-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0 0 var(--space-sm);
+}
+
+.start-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  height: 26px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.start-scope:hover {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* `--color-accent-light`, not `--color-accent` — the third time that trap has
+   come up on this screen. The faint token is the same value as the fill right
+   behind it, so the chip that is on would be the one you cannot read. */
+.start-scope[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--color-accent-faint);
+  color: var(--color-accent-light);
+}
+
+.start-scope-count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+.start-scope[aria-pressed="true"] .start-scope-count {
+  color: inherit;
+  opacity: 0.75;
+}
+
+/* Anchors a group's own menu, and keeps the chip and its `⋯` reading as one
+   control rather than two things that happen to be adjacent. */
+.start-scope-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Left-aligned, unlike the sort menu: a chip sits at the left-hand end of a
+   row that grows rightwards, so a menu hanging left from it hangs off the
+   screen exactly when the first group is the one she opened. */
+.start-scope-menu {
+  right: auto;
+  left: 0;
+}
+
+/* Dashed, and quieter than the rest: it is the one chip that isn't a filter,
+   and the dashes are the same "this is where a thing goes" the pinned row's
+   empty tile uses. */
+.start-scope-add {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+.start-scope-form input,
+.project-menu-form input {
+  width: 9rem;
+  height: 26px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-input);
+  color: var(--color-text);
+  font-size: var(--fs-xs);
+}
+
+.project-menu-form input {
+  width: 100%;
+  border-radius: var(--radius-sm);
 }
 
 /* Sits at the front of the location line, in both views. It used to have a

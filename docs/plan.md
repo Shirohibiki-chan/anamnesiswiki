@@ -368,6 +368,35 @@ filters it plus a group field in the manage window. Ship the screen without
 groups if that's what gets it out sooner; don't design the grid in a way that
 can't grow a chip row.
 
+**Groups and the archive landed 2026-08-20, as one chip row and one menu.** The
+chip row is what was written above; the "group field in the manage window" is
+not, because there is no window to put it in — pinning has one and filing does
+not, and building a second window for the sake of a sentence would have made
+the cheap half of this expensive. Filing happens on the project instead, in the
+`⋯` menu that already existed on a row, which is now on covers too — the menu
+holds the things that belong to the project rather than to its picture, and
+that is exactly what groups and archiving are. Making a group is in the same
+menu, taking the project it was opened on as its first member: naming a group
+there means "file this one under that", and handing back an empty group for her
+to then fill would be two steps for one intention.
+
+**Archive and groups compose by the fold winning.** An archived project is out
+of All, out of the pinned row, and out of the groups it is still filed under —
+but nothing is unfiled, so bringing it back needs no repair, and its pin is
+still where she put it. The alternative, leaving archived projects visible
+inside their groups, makes "archived" mean nothing anywhere except one chip.
+
+**The chip row shows only what exists**: All, one chip per group, and Archived
+only while something is in it. A rank of empty categories explaining a feature
+she has not used is the same furniture the empty-state rules elsewhere on this
+screen refuse.
+
+**One identity rule under all three.** Pins answered "is this stored thing the
+same project as that listed one" first, and groups and the archive ask exactly
+the same question — so it moved into `project-refs.ts` and pins was rebuilt on
+it rather than copied. Three answers to one question is a project that silently
+loses its group after a rename.
+
 ### The screen itself
 
 `docs/ui-audit.md` Part 3 has carried "the start screen's unaligned box stack
@@ -683,8 +712,10 @@ because one more field got cheap to carry.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: groups and archive; the
-duplicate-project action.
+are open questions rather than build work. Then: the duplicate-project action,
+and the fork detector that goes with it — `forkedFromId` is in the project
+file's shape and nothing yet writes or reads it. Second instance and the
+folder layout, both below, are also still to build.
 
 ### Second instance
 
