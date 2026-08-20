@@ -413,6 +413,73 @@
   display: none;
 }
 
+/* List view's own way to the same action, since the grid's corner button has
+   nowhere to sit on a 44px chip. Hidden by default and only switched on for
+   list, the mirror image of the rule above — see ProjectTile.tsx. */
+.project-tile-menu {
+  display: none;
+}
+
+.start-area[data-view="list"] .project-tile-menu {
+  display: block;
+  position: absolute;
+  top: 50%;
+  right: var(--space-xs);
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+/* Plain `.ui-icon-btn`, not the scrim treatment the grid button needs — a
+   list row's background is the flat panel colour, not arbitrary artwork, so
+   the ordinary hover fill reads fine against it. Hidden until hover or focus,
+   same reasoning as the grid button: a permanent icon on every row is
+   furniture for something touched rarely. */
+.project-tile-menu-btn {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.project-tile:hover .project-tile-menu-btn,
+.project-tile:focus-within .project-tile-menu-btn,
+.project-tile-menu-btn[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.project-tile-menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 9rem;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-edge);
+  box-shadow: 0 8px 24px var(--color-shadow, rgba(0, 0, 0, 0.4));
+}
+
+.project-tile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.project-tile-menu-item:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
 /* Sits at the front of the location line, in both views. It used to have a
    corner of the tile to itself, which on a row meant a column held open across
    every project for a word almost none of them say — and that column was what
@@ -470,7 +537,11 @@
   grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-2xs) var(--space-sm);
+  /* Right side reserves room for `.project-tile-menu` (24px) plus a gap on
+     each side of it — a fixed gutter, not padding the button floats over,
+     because it sits right where the date column ends and floating would mean
+     covering the very text she's trying to read. */
+  padding: var(--space-2xs) 34px var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-md);
   background: var(--color-panel);
 }
