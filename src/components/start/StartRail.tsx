@@ -16,6 +16,8 @@
 // it** (her call): patch notes matter less than the ways into the app, so
 // this reuses the plain `start-line` row rather than the accent-bordered
 // `start-item` treatment, the same distinction Recently Opened already draws.
+import { FolderOpen } from "lucide-react";
+import { describeFolderLocation } from "../../services/app-settings-service";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import type { ShownRelease } from "../../hooks/use-release-history";
@@ -32,6 +34,9 @@ type StartRailProps = {
   onImport: () => void;
   /** Which version was clicked, so Settings can open on that one specifically. */
   onOpenReleases: (version: string) => void;
+  /** Null until read off disk at startup — see StartScreen. */
+  projectsDir: string | null;
+  onOpenProjectsFolder: () => void;
 };
 
 export function StartRail({
@@ -43,6 +48,8 @@ export function StartRail({
   onOpenFolder,
   onImport,
   onOpenReleases,
+  projectsDir,
+  onOpenProjectsFolder,
 }: StartRailProps) {
   return (
     <aside className="start-rail">
@@ -115,6 +122,20 @@ export function StartRail({
       )}
 
       <div className="start-rail-foot">
+        {projectsDir && (
+          <button
+            type="button"
+            className="start-line start-projects-folder"
+            onClick={onOpenProjectsFolder}
+            disabled={disabled}
+            title={projectsDir}
+          >
+            <FolderOpen size={14} className="start-projects-folder-icon" />
+            <span className="start-line-text">
+              <b>{describeFolderLocation(projectsDir)}</b>
+            </span>
+          </button>
+        )}
         <SettingsButton />
       </div>
     </aside>

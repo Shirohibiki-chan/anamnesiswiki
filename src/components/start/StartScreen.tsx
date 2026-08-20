@@ -16,6 +16,7 @@
 // written for this screen. It is the same gesture on the same kind of edge, and
 // the width is stored beside the shell's two — see `layout-service`.
 import { useState } from "react";
+import { useAppSettings } from "../../hooks/use-app-settings";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
 import { useReleaseHistory } from "../../hooks/use-release-history";
@@ -55,6 +56,7 @@ export function StartScreen() {
   const { worlds, isScanning, scannedAt } = useWorldLibrary();
   const { currentVersion } = useUpdates();
   const { releases } = useReleaseHistory();
+  const { projectsDir } = useAppSettings();
   const actions = useStartActions();
   const widths = usePanelWidths();
   const { setRailWidth, resetRailWidth } = useRailWidthActions();
@@ -216,6 +218,8 @@ export function StartScreen() {
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
         onOpenReleases={setOpenReleaseVersion}
+        projectsDir={projectsDir}
+        onOpenProjectsFolder={() => void actions.openProjectsFolder()}
       />
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}

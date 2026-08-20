@@ -54,9 +54,32 @@ export function describeProjectLocation(path: string): string {
   // Drop the project's own folder — its name is already the line above this.
   const parent = segments.slice(0, -1);
   if (parent.length === 0) return path;
+  return truncateTail(parent, separator);
+}
 
-  const tail = parent.slice(-2);
-  const prefix = parent.length > tail.length ? `…${separator}` : "";
+/**
+ * A folder's own path, shortened the same way as `describeProjectLocation`
+ * above — for the rail's Projects folder line, which names the folder
+ * directly rather than pairing it with a name already shown on the line
+ * above. The one difference from `describeProjectLocation` is exactly that:
+ * this keeps the folder's own last segment rather than dropping it, because
+ * there's nothing else on screen naming which folder this is.
+ */
+export function describeFolderLocation(path: string): string {
+  const separator = path.includes("\\") ? "\\" : "/";
+  const segments = path.split(/[\\/]/).filter(Boolean);
+  if (segments.length === 0) return path;
+  return truncateTail(segments, separator);
+}
+
+// Keeps the last two segments whole and ellipsis-prefixes whatever came
+// before them — the shared core of both functions above. Two, not one: one
+// segment loses exactly the disambiguating context `describeProjectLocation`
+// exists for, per its own test ("tells apart two projects that share a
+// name" needs both `Anamnesis` and `testval2`, not just the nearer of them).
+function truncateTail(segments: string[], separator: string): string {
+  const tail = segments.slice(-2);
+  const prefix = segments.length > tail.length ? `…${separator}` : "";
   return prefix + tail.join(separator);
 }
 

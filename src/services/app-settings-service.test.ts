@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeProjectLocation } from "./app-settings-service";
+import { describeFolderLocation, describeProjectLocation } from "./app-settings-service";
 
 describe("describeProjectLocation", () => {
   it("names the folder the project sits in, not the project itself", () => {
@@ -24,5 +24,23 @@ describe("describeProjectLocation", () => {
 
   it("falls back to the whole path when there is no parent to name", () => {
     expect(describeProjectLocation("Valeraverse")).toBe("Valeraverse");
+  });
+});
+
+describe("describeFolderLocation", () => {
+  it("keeps the folder's own last segment, unlike describeProjectLocation", () => {
+    expect(describeFolderLocation("C:\\Users\\shiro\\Documents\\Anamnesis")).toBe("…\\Documents\\Anamnesis");
+  });
+
+  it("drops the leading ellipsis when nothing was trimmed", () => {
+    expect(describeFolderLocation("D:\\Worlds")).toBe("D:\\Worlds");
+  });
+
+  it("keeps posix paths in posix separators", () => {
+    expect(describeFolderLocation("/home/shiro/Documents/Anamnesis")).toBe("…/Documents/Anamnesis");
+  });
+
+  it("falls back to the whole path for a single segment", () => {
+    expect(describeFolderLocation("Anamnesis")).toBe("Anamnesis");
   });
 });

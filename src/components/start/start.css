@@ -666,7 +666,30 @@
 }
 
 .start-rail-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
   margin-top: auto;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-panel-edge);
+}
+
+/* The projects folder is a `start-line` like every other rail row, plus an
+   icon in place of the cover chip the project rows use — there's no picture
+   to stand in for "your folder", so the icon carries the same job the chip
+   does: say what kind of row this is before the text does. */
+.start-projects-folder {
+  width: 100%;
+}
+
+.start-projects-folder-icon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.start-projects-folder:hover .start-projects-folder-icon {
+  color: var(--color-text-primary);
 }
 
 /* --- The two things that only appear when something went sideways --- */

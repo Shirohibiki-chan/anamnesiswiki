@@ -7,6 +7,7 @@
 // happening at a time, and an error from any of them belongs in one place on
 // screen rather than three.
 import { useCallback, useState } from "react";
+import { showFolder } from "../services/dialog-service";
 import { useAppSettings } from "./use-app-settings";
 import { useDialogs } from "./use-dialogs";
 import { useOpenFolder } from "./use-open-folder";
@@ -28,6 +29,11 @@ export type StartActions = {
   openFound: (path: string) => Promise<void>;
   pickFolderToOpen: () => Promise<void>;
   createProject: (name: string) => Promise<void>;
+  /** The rail's Projects folder line. Makes the folder first — same reason
+   *  `createProject` calls `prepareProjectsDir`, since a fresh install has a
+   *  default path nothing has created yet, and handing that to the file
+   *  manager opens a level up with nothing there to explain why. */
+  openProjectsFolder: () => Promise<void>;
 };
 
 export function useStartActions(): StartActions {
@@ -136,6 +142,26 @@ export function useStartActions(): StartActions {
     [createProjectAt, prepareProjectsDir, recordProjectOpened],
   );
 
+  const openProjectsFolder = useCallback(async () => {
+    setIsBusy(true);
+    try {
+      const dir = await prepareProjectsDir();
+      // Named the same way use-reveal.ts falls back for a file: the path
+      // itself, so a refusal still tells her where to go by hand rather than
+      // just saying no. One line, not two — `start-error` is a plain `<p>`
+      // with no `white-space: pre-line` to make a literal newline visible,
+      // unlike the dialog-store notice use-reveal reports through.
+      await showFolder(dir).then(
+        () => setError(null),
+        () => setError(`Couldn't open your file manager. Your projects are in: ${dir}`),
+      );
+    } catch {
+      setError("Couldn't find your projects folder.");
+    } finally {
+      setIsBusy(false);
+    }
+  }, [prepareProjectsDir]);
+
   return {
     isBusy,
     error,
@@ -146,5 +172,6 @@ export function useStartActions(): StartActions {
     openFound,
     pickFolderToOpen,
     createProject,
+    openProjectsFolder,
   };
 }
