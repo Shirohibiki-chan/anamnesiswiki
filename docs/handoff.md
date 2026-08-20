@@ -1029,6 +1029,18 @@ is below.
 
 ## Editor & templates
 
+- **There are two quote blocks, and both have to look like a quote.** Ours is
+  `calloutQuote`; BlockNote's own `quote` is a separate type the app holds for
+  real — LK import maps a plain ProseMirror blockquote to it on purpose (a
+  `panel type="note"` is what becomes our callout), so every quote in an
+  imported world is one of those, and BlockNote's slash menu offers it beside
+  ours. It went unstyled until 2026-08-20 and wore the library's default next
+  to our callouts. `page.css` now draws it from the same `--color-callout-quote-*`
+  tokens, including the `width: 100%` the callout needs for the same reason: the
+  row BlockNote puts a block in is a flexbox, and a bare `blockquote` in one
+  sizes to its own text. The two types stay distinct where it matters — on the
+  way back out to LK — which is a fact about the file, not about the page.
+
 - **The code block's grammars are a hand-written list, and the dropdown and the
   list must not drift apart.** `constants/code-languages.ts` names what the
   dropdown offers; `services/editor-blocks/code-block.ts` names the Shiki
