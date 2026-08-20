@@ -712,8 +712,7 @@ because one more field got cheap to carry.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: second instance and the folder
-layout, both below.
+are open questions rather than build work. Then the folder layout, below.
 
 **Lineage is shown as of 2026-08-20**, on the location line rather than a line
 of its own: it is a fact about this project as a folder, the same kind the
@@ -759,6 +758,22 @@ and the picker shows it as open rather than letting it be chosen. A marker file
 in the world's folder naming the holding process, treated as stale when that
 process is gone, so a crash doesn't lock her out of her own world. Check it on
 every open, not only at startup, or the picker is still a way in.
+
+**Landed 2026-08-20, with the marker naming a *session* rather than a process.**
+"Treated as stale when that process is gone" needs to ask the OS whether a pid
+is alive, which needs a Rust command — and CLAUDE.md says not to add one for a
+job the fs plugin can do. So the marker says it is alive instead of being asked:
+it carries the time it was last written, the holder rewrites it every 30
+seconds while the project is open, and anything that stops running stops
+rewriting. Past two minutes it belongs to nobody. The refresh interval is set
+against her projects living in OneDrive — one ~100 byte file, one project at a
+time — and the stale window against what a crash costs, which is a wait rather
+than a file to delete by hand.
+
+The marker is `.anamnesis-open.json` in the project root, skipped by the load
+walk beside `project.json` and the two node markers, and skipped again when a
+project is duplicated: a copy is not open, and carrying a live claim into it
+would make the app refuse to open the thing she just made.
 
 This is the cheap 80% of Phase 21's "open in new window" and does not replace
 it. Worlds genuinely side by side in one window — tabs across worlds, dragging

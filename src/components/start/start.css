@@ -664,6 +664,23 @@
   color: var(--color-accent-light);
 }
 
+/* "Open" — another copy of the app has this project. Accented rather than
+   muted, unlike the fork mark below: this one is true for the next few minutes
+   rather than forever, and it is the one that explains why clicking does
+   nothing. `flex: none` because a marker that clipped to an icon would be a
+   warning she has to hover to read. */
+.project-tile-open-elsewhere {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  margin-right: var(--space-xs);
+  font-family: var(--font-sans);
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  color: var(--color-accent-light);
+}
+
 /* "Copied from Valeraverse", on the line that already carries the facts about
    this project as a folder. Unlike the Elsewhere flag beside it this one may
    shrink: the icon says it is a copy and the icon is what has to survive a

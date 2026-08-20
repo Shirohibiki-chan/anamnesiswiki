@@ -64,6 +64,8 @@ type ProjectGridProps = {
    * another group, or folded into the archive, was still copied from it.
    */
   forkNames: Map<string, string>;
+  /** Paths another copy of the app has open — see `useWorldLibrary`. */
+  heldElsewhere: Set<string>;
 };
 
 export function ProjectGrid({
@@ -82,6 +84,7 @@ export function ProjectGrid({
   onShowInFolder,
   onDuplicate,
   forkNames,
+  heldElsewhere,
 }: ProjectGridProps) {
   const view = useProjectView();
   const sort = useProjectSort();
@@ -169,6 +172,7 @@ export function ProjectGrid({
                 onShowInFolder={() => onShowInFolder(project)}
                 onDuplicate={(name) => onDuplicate(project, name)}
                 forkedFrom={(project.forkedFromId && forkNames.get(project.forkedFromId)) || null}
+                isOpenElsewhere={heldElsewhere.has(project.path)}
               />
             ))}
           </div>

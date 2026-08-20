@@ -15,7 +15,9 @@ import type { ListedWorld } from "../services/world-scan";
 import { useAppSettings } from "./use-app-settings";
 import { useDialogs } from "./use-dialogs";
 import { useOpenFolder } from "./use-open-folder";
+import { findBlockingClaim } from "./use-project-claim";
 import { useProject } from "./use-project";
+import { describeClaimAge } from "../services/project-claim";
 
 export type StartActions = {
   isBusy: boolean;
@@ -74,8 +76,21 @@ export function useStartActions(): StartActions {
   const [error, setError] = useState<string | null>(null);
   const [choices, setChoices] = useState<string[] | null>(null);
 
+  // Checked on every open and not only at startup, or the picker is still a
+  // way onto files another copy of the app is writing to. Said with the age in
+  // it, because "a few seconds ago" means switch windows and "about two
+  // minutes ago" means the other copy is probably gone and the wait is nearly
+  // over — a refusal with no number in it is a wall.
+  const refuseIfHeldElsewhere = useCallback(async (path: string, name: string) => {
+    const claim = await findBlockingClaim(path);
+    if (!claim) return false;
+    setError(`"${name}" is open in another window — it was last active there ${describeClaimAge(claim, Date.now())}.`);
+    return true;
+  }, []);
+
   const openFound = useCallback(
     async (path: string) => {
+      if (await refuseIfHeldElsewhere(path, fsService.fileNameFromPath(path))) return;
       setIsBusy(true);
       const result = await loadProject(path).finally(() => setIsBusy(false));
       if (!result) {
@@ -86,11 +101,12 @@ export function useStartActions(): StartActions {
       setChoices(null);
       await recordProjectOpened(path, result.name);
     },
-    [loadProject, recordProjectOpened],
+    [loadProject, recordProjectOpened, refuseIfHeldElsewhere],
   );
 
   const openListed = useCallback(
     async (path: string, name: string) => {
+      if (await refuseIfHeldElsewhere(path, name)) return;
       setIsBusy(true);
       const result = await loadProject(path).finally(() => setIsBusy(false));
       if (!result) {
@@ -101,7 +117,7 @@ export function useStartActions(): StartActions {
       setError(null);
       await recordProjectOpened(path, result.name);
     },
-    [forgetProject, loadProject, recordProjectOpened],
+    [forgetProject, loadProject, recordProjectOpened, refuseIfHeldElsewhere],
   );
 
   const pickFolderToOpen = useCallback(async () => {

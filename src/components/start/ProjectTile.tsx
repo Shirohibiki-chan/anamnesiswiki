@@ -14,7 +14,7 @@
 // `.project-tile-open`, which carries every pixel `.project-tile` itself used
 // to (border, background, focus, disabled), beside the controls that are the
 // whole reason the frame exists.
-import { GitFork, ImagePlus, X } from "lucide-react";
+import { GitFork, ImagePlus, MonitorDot, X } from "lucide-react";
 import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
@@ -40,6 +40,8 @@ type ProjectTileProps = {
    * answer lives in the whole listing rather than in this project's own file.
    */
   forkedFrom: string | null;
+  /** True while another copy of the app has this project open. */
+  isOpenElsewhere: boolean;
 };
 
 export function ProjectTile({
@@ -54,6 +56,7 @@ export function ProjectTile({
   onShowInFolder,
   onDuplicate,
   forkedFrom,
+  isOpenElsewhere,
 }: ProjectTileProps) {
   const when = timeAgo(project.activeAt || null, now);
   // Rendered in both views and hidden in one, rather than branched on: which
@@ -79,8 +82,18 @@ export function ProjectTile({
               clipped and the tail is not, which is what keeps a narrow row saying
               which folder this is rather than trailing off partway through the
               word every project in that folder shares. */}
-          {(where.tail || project.isOutsideProjectsFolder || forkedFrom) && (
+          {(where.tail || project.isOutsideProjectsFolder || forkedFrom || isOpenElsewhere) && (
             <span className="project-tile-where">
+              {/* First on the line, and the only marker here that is about
+                  right now rather than about the project: clicking it is
+                  refused, and being told before the click is the difference
+                  between a marker and an error message. */}
+              {isOpenElsewhere && (
+                <i className="project-tile-open-elsewhere" title="Open in another window of Anamnesis">
+                  <MonitorDot size={11} />
+                  Open
+                </i>
+              )}
               {project.isOutsideProjectsFolder && (
                 <i className="project-tile-flag" title="Not in your projects folder">
                   Elsewhere
