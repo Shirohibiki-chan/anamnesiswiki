@@ -728,7 +728,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   const applySelection = (id: string | null, tabId: string | undefined, navHistory: NavHistory): void => {
     const { rootPath, project, nodes, focusedId, pendingRenameId } = get();
     if (!rootPath || !project) return;
-    const nextProject: Project = { ...project, selectedId: id };
+    const nextProject: Project = { ...project, selectedId: id, selectedName: id ? (nodes[id]?.name ?? null) : null };
     // Landing outside the focused branch drops the focus. The tree physically
     // can't show a page that isn't under the focused node, so the alternative
     // is the sidebar quietly not following you — which is how a search result
@@ -1657,7 +1657,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // orphaned a page mid-testing during Phase 5; see docs/handoff.md).
       await flushSave(id);
 
-      const { rootPath: rootPathAfter, nodes: nodesAfter } = get();
+      const { rootPath: rootPathAfter, nodes: nodesAfter, project } = get();
       const existingAfter = nodesAfter[id];
       if (!rootPathAfter || !existingAfter) return;
 
@@ -1667,6 +1667,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const nextNodes = { ...nodesAfter, [id]: updated };
       set({ nodes: nextNodes });
       track(() => fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id));
+
+      // selectedName is a copy of this same node's name, taken at selection
+      // time so the start screen can read it without a tree walk (see
+      // schema.ts). Renaming the page she's currently on would otherwise
+      // leave that copy wrong until her next navigation.
+      if (project && project.selectedId === id) {
+        const nextProject: Project = { ...project, selectedName: name };
+        set({ project: nextProject });
+        scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPathAfter, nextProject).then(markSaved));
+      }
 
       // A rename is its own inverse, so both halves are the ordinary action —
       // no new filesystem path is involved in undoing one.
@@ -1848,6 +1858,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         // there — a stale selectedId leaves the page view rendering nothing
         // with no way back to a real page.
         selectedId: project.selectedId && toRemove.has(project.selectedId) ? null : project.selectedId,
+        // Same call as selectedId immediately above — selectedName is a copy
+        // of the same node's name and goes stale for the same reason.
+        selectedName:
+          project.selectedId && toRemove.has(project.selectedId) ? null : project.selectedName,
       };
 
       // Same reasoning as the two fields above, one level further out: a

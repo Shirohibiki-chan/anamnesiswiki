@@ -200,6 +200,7 @@ describe("readWorldSummary", () => {
       name: "Valeraverse",
       modifiedAt: 1234,
       coverImage: null,
+      selectedName: null,
     });
   });
 
@@ -208,6 +209,13 @@ describe("readWorldSummary", () => {
     namedWorld(`${ROOT}/NoCover`, { name: "NoCover" });
     expect((await readWorldSummary(`${ROOT}/HasCover`))?.coverImage).toBe("abc123.png");
     expect((await readWorldSummary(`${ROOT}/NoCover`))?.coverImage).toBeNull();
+  });
+
+  it("reads the page she was last on, and reports none for a world that has never recorded one", async () => {
+    namedWorld(`${ROOT}/OnAPage`, { name: "OnAPage", selectedId: "n1", selectedName: "Her Sword" });
+    namedWorld(`${ROOT}/NoSelection`, { name: "NoSelection" });
+    expect((await readWorldSummary(`${ROOT}/OnAPage`))?.selectedName).toBe("Her Sword");
+    expect((await readWorldSummary(`${ROOT}/NoSelection`))?.selectedName).toBeNull();
   });
 
   it("reports no id for a world saved before ids existed, rather than minting one", async () => {

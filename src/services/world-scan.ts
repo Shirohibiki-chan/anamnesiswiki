@@ -83,6 +83,8 @@ export type WorldFile = {
   modifiedAt: number | null;
   /** The filename in this world's own `assets/`, or null if she hasn't set one. */
   coverImage: string | null;
+  /** The page she was last on inside this world, or null if none is recorded. */
+  selectedName: string | null;
 };
 
 /** A world the app has opened before, as app settings remember it. */
@@ -99,6 +101,7 @@ export type ListedWorld = {
   lastOpenedAt: number | null;
   modifiedAt: number | null;
   coverImage: string | null;
+  selectedName: string | null;
   /** What the default sort runs on — see `buildWorldList`. */
   activeAt: number;
   /**
@@ -245,7 +248,7 @@ export function buildWorldList(input: {
   // and out of the list. Clicking one that really has gone reports it and
   // forgets it, which is the path that already existed.
   for (const world of input.remembered) {
-    add({ path: world.path, id: null, name: world.name, modifiedAt: null, coverImage: null });
+    add({ path: world.path, id: null, name: world.name, modifiedAt: null, coverImage: null, selectedName: null });
   }
 
   return sortWorlds([...byPath.values()], "active");

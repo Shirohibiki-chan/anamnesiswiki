@@ -856,6 +856,7 @@ export async function readWorldSummary(path: string): Promise<WorldFile | null> 
     name,
     modifiedAt,
     coverImage: typeof project.coverImage === "string" ? project.coverImage : null,
+    selectedName: typeof project.selectedName === "string" ? project.selectedName : null,
   };
 }
 
