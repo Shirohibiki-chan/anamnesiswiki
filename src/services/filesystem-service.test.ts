@@ -36,6 +36,7 @@ import {
   sanitizeSegment,
   saveNode,
   setProjectCoverImage,
+  siblingProjectPath,
   watchCssDirs,
 } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
@@ -601,6 +602,34 @@ describe("watchCssDirs", () => {
     (await watchCssDirs(["/p/themes"], () => {}))();
 
     expect(stop).toHaveBeenCalled();
+  });
+});
+
+describe("siblingProjectPath", () => {
+  it("puts the copy beside the project it came from", () => {
+    expect(siblingProjectPath("C:/Users/shiro/Documents/Anamnesis/Valeraverse", "Valeraverse v6")).toBe(
+      "C:/Users/shiro/Documents/Anamnesis/Valeraverse v6",
+    );
+  });
+
+  it("reads a Windows path from a native picker, and keeps its own separator out of the parent", () => {
+    // The parent is handed straight back to the OS, so whatever separators it
+    // arrived with stay as they were — only the joined-on name is ours.
+    expect(siblingProjectPath(String.raw`D:\Worlds\Valeraverse`, "Copy")).toBe(String.raw`D:\Worlds` + "/Copy");
+  });
+
+  it("makes the name safe for a folder", () => {
+    expect(siblingProjectPath("/D/Worlds/Val", 'Val: "v2"')).toBe("/D/Worlds/Val_ _v2_");
+  });
+
+  it("ignores a trailing slash rather than treating it as a level", () => {
+    expect(siblingProjectPath("/D/Worlds/Val/", "Val 2")).toBe("/D/Worlds/Val 2");
+  });
+
+  it("has nowhere to put a copy of a bare name", () => {
+    // No parent means no sibling. The caller reports it rather than guessing
+    // at a folder to write into.
+    expect(siblingProjectPath("Valeraverse", "Copy")).toBe("");
   });
 });
 

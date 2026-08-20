@@ -2,6 +2,7 @@
 // architecture rules and docs/spec.md §Data model for the on-disk layout.
 import { sep } from "@tauri-apps/api/path";
 import {
+  copyFile,
   exists,
   mkdir,
   readDir,
@@ -126,6 +127,23 @@ export function sanitizeSegment(name: string): string {
 export function fileNameFromPath(path: string): string {
   const segments = path.split(/[\\/]/);
   return segments[segments.length - 1] ?? "";
+}
+
+/**
+ * The folder something sits in. Same string work, and here for the same reason
+ * as `fileNameFromPath` above — used to put a duplicated project beside the one
+ * it was copied from, which is where a copy made in a file manager would land
+ * and so where she will look for it.
+ *
+ * Whichever separator the path already used is kept: this is handed straight
+ * back to the OS, and a path rewritten to look tidy is one she can't match
+ * against what her file manager shows her. A path with no separator in it has
+ * no parent to name and returns empty.
+ */
+function parentDirOf(path: string): string {
+  const trimmed = path.replace(/[\\/]+$/, "");
+  const cut = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"));
+  return cut < 0 ? "" : trimmed.slice(0, cut);
 }
 
 export async function pathExists(path: string): Promise<boolean> {
@@ -1442,6 +1460,104 @@ export async function saveAssetImage(rootPath: string, fileName: string, data: U
 
 export async function readAssetImage(rootPath: string, fileName: string): Promise<Uint8Array> {
   return readFile(joinPath(rootPath, ASSETS_DIR, fileName));
+}
+
+/**
+ * Where a copy of this project would go: beside it, under a name made safe for
+ * a folder. Empty when the source path has no parent to sit in.
+ *
+ * Here rather than in the caller because path shape is this file's subject —
+ * the caller's business is whether something is there already and what to say
+ * if it is.
+ */
+export function siblingProjectPath(sourcePath: string, name: string): string {
+  const parent = parentDirOf(sourcePath);
+  return parent ? joinPath(parent, sanitizeSegment(name)) : "";
+}
+
+/**
+ * A copy of a whole project, as its own project rather than as a folder that
+ * looks like one.
+ *
+ * **The copy gets a fresh id and records where it came from.** Two projects
+ * wearing one id is what a folder copied in File Explorer looks like, and
+ * every reference written against that id then points at two places — so the
+ * copy is minted a new one, and the lineage her forking actually depends on
+ * ("this is a fork of that") goes in its own field where it can stay true.
+ * A suffix on the original's id was considered and rejected: the collision
+ * suffixes elsewhere in this file are recomputed on every resolve, which is
+ * harmless for a filename and fatal for an id.
+ *
+ * **The source is minted an id first if it hasn't got one**, because lineage
+ * has to point at something. That is a write to a project she didn't ask to
+ * change, and it is the same write `loadProject` would make the moment she
+ * opened it — the alternative is a fork that records no parent precisely for
+ * the projects she has never opened, which are the ones the library exists to
+ * surface.
+ *
+ * Both project files are edited untyped, for the reason `setProjectCoverImage`
+ * gives: a field this build doesn't know about survives the trip.
+ */
+export async function duplicateProject(
+  sourcePath: string,
+  destPath: string,
+  name: string,
+): Promise<void> {
+  const sourceId = await ensureProjectId(sourcePath);
+  await copyDirectory(sourcePath, destPath);
+
+  const projectPath = joinPath(destPath, PROJECT_FILE);
+  const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;
+  raw.id = crypto.randomUUID();
+  raw.forkedFromId = sourceId;
+  raw.name = name;
+  await writeTextFile(projectPath, JSON.stringify(raw, null, 2));
+}
+
+/** The project's `id`, minting and writing one back if the file hasn't got one yet. */
+async function ensureProjectId(rootPath: string): Promise<string> {
+  const projectPath = joinPath(rootPath, PROJECT_FILE);
+  const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;
+  if (typeof raw.id === "string" && raw.id.length > 0) return raw.id;
+  const id = crypto.randomUUID();
+  raw.id = id;
+  await writeTextFile(projectPath, JSON.stringify(raw, null, 2));
+  return id;
+}
+
+/**
+ * Every file under one directory, copied into another.
+ *
+ * File by file rather than one call, because the fs plugin has no recursive
+ * copy — and a walk here is the same shape the scan already uses, limited the
+ * same way. The limiter is taken for each individual copy and released before
+ * recursing, for the reason `createReadLimiter` documents: a parent holding a
+ * permit while it waits on its children deadlocks a tree deeper than the limit.
+ *
+ * Nothing is skipped. A project's `assets/` is most of its bytes and all of
+ * its pictures, and a fork missing them is a fork she has to repair by hand.
+ */
+async function copyDirectory(from: string, to: string): Promise<void> {
+  const limited = createReadLimiter(READ_CONCURRENCY);
+
+  async function walk(source: string, target: string): Promise<void> {
+    await mkdir(target, { recursive: true });
+    const entries = await limited(() => readDir(source));
+    const files = entries.filter((entry) => entry.isFile);
+    const directories = entries.filter((entry) => entry.isDirectory);
+
+    await Promise.all(
+      files.map((file) => limited(() => copyFile(joinPath(source, file.name), joinPath(target, file.name)))),
+    );
+    // Sequential, so a project with many nested folders can't fan out into
+    // hundreds of open directories at once; the files inside each are what
+    // the limiter parallelises.
+    for (const directory of directories) {
+      await walk(joinPath(source, directory.name), joinPath(target, directory.name));
+    }
+  }
+
+  await walk(from, to);
 }
 
 /**

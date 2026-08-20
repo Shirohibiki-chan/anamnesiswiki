@@ -712,10 +712,23 @@ because one more field got cheap to carry.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: the duplicate-project action,
-and the fork detector that goes with it — `forkedFromId` is in the project
-file's shape and nothing yet writes or reads it. Second instance and the
-folder layout, both below, are also still to build.
+are open questions rather than build work. Then: the fork *detector* — the
+duplicate action landed 2026-08-20 and writes `forkedFromId` on every copy it
+makes, but nothing yet reads that field, and nothing yet notices two projects
+wearing one id, which is what a copy made in File Explorer looks like. Second
+instance and the folder layout, both below, are also still to build.
+
+**Duplicating landed 2026-08-20, in the project's own `⋯` menu.** The copy goes
+beside the original, because that is where a copy made in a file manager would
+land and so where she will look for it. A name that is already taken is refused
+rather than suffixed: a fork is named for what it is *for* ("Val v6"), and a
+`(2)` chosen by the app is a name she then has to go and fix. The source is
+minted an id first if it hasn't got one — a write to a project she didn't ask
+to change, and the same write opening it would make, without which a fork of a
+never-opened project records no parent, and those are exactly the projects the
+library exists to surface. A copy that fails partway is left on disk and named
+in the error rather than cleaned up: a folder with some of her project in it is
+worth more than a tidy failure.
 
 ### Second instance
 

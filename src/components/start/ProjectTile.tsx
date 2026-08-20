@@ -32,6 +32,7 @@ type ProjectTileProps = {
   onRemoveCover: () => void;
   fileManagerName: string;
   onShowInFolder: () => void;
+  onDuplicate: (name: string) => void;
 };
 
 export function ProjectTile({
@@ -44,6 +45,7 @@ export function ProjectTile({
   onRemoveCover,
   fileManagerName,
   onShowInFolder,
+  onDuplicate,
 }: ProjectTileProps) {
   const when = timeAgo(project.activeAt || null, now);
   // Rendered in both views and hidden in one, rather than branched on: which
@@ -111,6 +113,7 @@ export function ProjectTile({
         onRemoveCover={onRemoveCover}
         fileManagerName={fileManagerName}
         onShowInFolder={onShowInFolder}
+        onDuplicate={onDuplicate}
       />
     </div>
   );

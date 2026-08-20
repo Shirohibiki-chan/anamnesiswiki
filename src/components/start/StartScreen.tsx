@@ -255,6 +255,11 @@ export function StartScreen() {
           }
           fileManagerName={fileManagerName}
           onShowInFolder={(project) => void actions.showProjectInFolder(project)}
+          onDuplicate={(project, name) =>
+            void actions.duplicateProject(project, name).then((made) => {
+              if (made) void refreshWorlds();
+            })
+          }
           onRemoveCover={(project) =>
             void actions.removeProjectCover(project).then((changed) => {
               if (changed) void refreshWorlds();
