@@ -654,7 +654,10 @@
 .start-rail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  /* Double the between-groups gap: at 12px each heading sat as close to the
+     rows above it as to its own, so the sections read as one long list with
+     rules through it rather than as separate errands. */
+  gap: var(--space-2xl);
   min-height: 0;
   padding: var(--space-xl) var(--space-md) var(--space-md);
   border-left: 1px solid var(--color-panel-edge);
@@ -665,7 +668,7 @@
 /* The rail's headings are the section titles a size down, with a rule under
    them — without one they read as loose text rather than as headings. */
 .start-rail-label {
-  margin: 0 0 var(--space-xs);
+  margin: 0 0 var(--space-sm);
   padding-bottom: 2px;
   border-bottom: 1px solid var(--color-panel-edge);
 }
@@ -781,7 +784,7 @@
 }
 
 .start-item + .start-item {
-  margin-top: 2px;
+  margin-top: var(--space-sm);
 }
 
 .start-item:hover {
@@ -892,9 +895,12 @@
    has to — the sides off a wide picture on a narrow window, the top and bottom
    off it on a wide one. Same picture, different halves of it missing depending
    on how the window happens to be sized. Fixing the ratio means it is always
-   cropped the same way, and 245 by 208 is the card the row was drawn at. */
+   cropped the same way. The card was drawn at 245 by 208, which cropped a
+   portrait at about the chin — the one part of a cover you least want taken
+   off. Taller at the same width means less comes off the top and bottom, so
+   the extra height buys back a head. */
 .start-pin {
-  aspect-ratio: 245 / 208;
+  aspect-ratio: 245 / 256;
 }
 
 .start-pin {
@@ -928,9 +934,14 @@
   );
 }
 
+/* Framed above centre, which is the cheaper half of the fix: centring splits
+   what the crop takes between the top and the bottom of the picture, and a
+   portrait keeps nothing worth seeing at the bottom. Biasing the window
+   upwards spends the whole overflow on the end with the face on it, and costs
+   the page no height to do it. */
 .start-pin-art {
   background-size: cover;
-  background-position: center;
+  background-position: center 32%;
   transition: filter 0.2s;
 }
 
