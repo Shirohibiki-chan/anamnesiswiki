@@ -4,6 +4,8 @@
 import { load, type Store } from "@tauri-apps/plugin-store";
 import { getDefaultProjectsDir } from "../constants/paths";
 import type { Pin } from "./pins";
+import { isProjectGroup, type ProjectGroup } from "./project-groups";
+import { isProjectRef, type ProjectRef } from "./project-refs";
 
 const SETTINGS_FILE = "app-settings.json";
 
@@ -101,19 +103,55 @@ export async function getPinnedProjects(): Promise<Pin[]> {
   // Read defensively, the same way preferences are: this is an ordinary JSON
   // file that outlives the version that wrote it, and one malformed entry must
   // not cost her the rest of the row.
-  return stored.filter(
-    (entry): entry is Pin =>
-      typeof entry === "object" &&
-      entry !== null &&
-      typeof (entry as Pin).path === "string" &&
-      typeof (entry as Pin).name === "string" &&
-      (typeof (entry as Pin).id === "string" || (entry as Pin).id === null),
-  );
+  return stored.filter(isProjectRef);
 }
 
 export async function setPinnedProjects(pins: readonly Pin[]): Promise<void> {
   const store = await getStore();
   await store.set("pinnedProjects", pins);
+  await store.save();
+}
+
+/**
+ * The groups on the start screen, each carrying what is filed under it.
+ *
+ * Here rather than in the project files for the reason pins are: a group is a
+ * fact about how she keeps her own library, not about any project in it, and
+ * one handed to someone else has no business arriving pre-filed. The
+ * membership rule itself is `project-groups.ts`'s.
+ */
+export async function getProjectGroups(): Promise<ProjectGroup[]> {
+  const store = await getStore();
+  const stored = (await store.get<unknown>("projectGroups")) ?? [];
+  if (!Array.isArray(stored)) return [];
+  return stored.filter(isProjectGroup);
+}
+
+export async function setProjectGroups(groups: readonly ProjectGroup[]): Promise<void> {
+  const store = await getStore();
+  await store.set("projectGroups", groups);
+  await store.save();
+}
+
+/**
+ * The projects folded away out of the library.
+ *
+ * A list of the archived ones rather than a flag on each project, because the
+ * whole point of the archive is that it touches nothing on disk: a project she
+ * has archived may sit on a drive that is not plugged in, and writing a flag
+ * into a project file to hide it from a screen would be the one way to make
+ * "archive" able to fail.
+ */
+export async function getArchivedProjects(): Promise<ProjectRef[]> {
+  const store = await getStore();
+  const stored = (await store.get<unknown>("archivedProjects")) ?? [];
+  if (!Array.isArray(stored)) return [];
+  return stored.filter(isProjectRef);
+}
+
+export async function setArchivedProjects(archived: readonly ProjectRef[]): Promise<void> {
+  const store = await getStore();
+  await store.set("archivedProjects", archived);
   await store.save();
 }
 
