@@ -64,7 +64,10 @@ export function StartScreen() {
   const [newProjectName, setNewProjectName] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isManagingPins, setIsManagingPins] = useState(false);
-  const [isReleasesOpen, setIsReleasesOpen] = useState(false);
+  // The version to open on, or null when the panel isn't open at all — one
+  // piece of state rather than a boolean plus a version, so there's no way
+  // for the two to say different things about whether it's open.
+  const [openReleaseVersion, setOpenReleaseVersion] = useState<string | null>(null);
 
   const { pins, isLoaded: pinsLoaded, pin, unpin, reorder } = usePins(worlds);
   // Resolved against every project rather than against the filtered list: the
@@ -212,7 +215,7 @@ export function StartScreen() {
         onOpen={(project) => void actions.openListed(project.path, project.name)}
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
-        onOpenReleases={() => setIsReleasesOpen(true)}
+        onOpenReleases={setOpenReleaseVersion}
       />
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
@@ -222,7 +225,13 @@ export function StartScreen() {
           Notes specifically, so this owns its own trigger and its own
           instance of the same dialog rather than teaching the cog a second
           opinion about where it opens. */}
-      {isReleasesOpen && <SettingsModal initialTab="patch-notes" onClose={() => setIsReleasesOpen(false)} />}
+      {openReleaseVersion !== null && (
+        <SettingsModal
+          initialTab="patch-notes"
+          initialVersion={openReleaseVersion}
+          onClose={() => setOpenReleaseVersion(null)}
+        />
+      )}
 
       {isManagingPins && (
         <ManagePinsDialog

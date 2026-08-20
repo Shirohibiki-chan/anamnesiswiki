@@ -30,7 +30,8 @@ type StartRailProps = {
   onOpen: (project: ListedWorld) => void;
   onOpenFolder: () => void;
   onImport: () => void;
-  onOpenReleases: () => void;
+  /** Which version was clicked, so Settings can open on that one specifically. */
+  onOpenReleases: (version: string) => void;
 };
 
 export function StartRail({
@@ -93,7 +94,7 @@ export function StartRail({
               key={release.version}
               type="button"
               className="start-line"
-              onClick={onOpenReleases}
+              onClick={() => onOpenReleases(release.version)}
               disabled={disabled}
             >
               <span className="start-line-text">

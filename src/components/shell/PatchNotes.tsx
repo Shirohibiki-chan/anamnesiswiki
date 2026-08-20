@@ -18,9 +18,24 @@ function tabIndexForKey(key: string, from: number, count: number): number | null
   return null;
 }
 
-export function PatchNotes() {
+type PatchNotesProps = {
+  /**
+   * Opens straight to this version's tab instead of the newest. The start
+   * screen's New Releases rows pass their own version so clicking 0.2.0 lands
+   * on 0.2.0, not on whichever happens to be first. Falls back to the newest
+   * when it doesn't match anything — a version pulled from the same build's
+   * own RELEASES.md always will, but nothing here assumes that's the only way
+   * in.
+   */
+  initialVersion?: string;
+};
+
+export function PatchNotes({ initialVersion }: PatchNotesProps = {}) {
   const { releases, openOnGitHub } = useReleaseHistory();
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const index = releases.findIndex((release) => release.version === initialVersion);
+    return index === -1 ? 0 : index;
+  });
 
   // Only reachable if a build shipped a RELEASES.md with no version headings
   // in it, which is a broken build rather than a state to design for — but a

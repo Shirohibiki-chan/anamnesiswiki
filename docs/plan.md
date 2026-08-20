@@ -561,15 +561,20 @@ holds several days of work still short of a tag — it's the wrong shape for
 surfaces now read `PATCH_NOTES_VERSION_COUNT` (3) off the same list, so raising
 the count moves both together instead of drifting apart.
 
-Clicking a row opens Settings straight to Patch Notes — not just to the
-section, to the same panel with all three version tabs already there, newest
-selected. `SettingsModal` took an `initialTab` prop for this (defaulting to the
-first tab, so the cog and the top-bar button are untouched); the rail's own
-`isReleasesOpen` state renders its own `SettingsModal` instance directly rather
-than routing through `SettingsButton`, which only ever opens to Theme. Two
-independent instances rather than one shared one — the same pattern the cog
-already uses in two other places, and simpler than plumbing a second opinion
-about which tab into a component built to always open on the first.
+Clicking a row opens Settings straight to Patch Notes, on the version that was
+clicked — not just to the panel, to that tab within it (fixed the same day,
+after shipping "always the newest tab" first and hearing that clicking an
+older version still landed on the newest). `SettingsModal` took an `initialTab`
+prop, and `PatchNotes` its own `initialVersion` — special-cased at the one call
+site in `SettingsModal` that renders it, rather than widening `PANELS` to a
+props-carrying type for the nine panels that have no "initial" anything to
+take. Both default to the first tab / newest version, so the cog and the
+top-bar button are untouched. The rail's own `openReleaseVersion` state (a
+version or null, not a separate boolean plus a version — no way for the two to
+disagree about whether the panel is open) renders its own `SettingsModal`
+instance directly rather than routing through `SettingsButton`, which only ever
+opens to Theme. Two independent instances rather than one shared one — the same
+pattern the cog already uses in two other places.
 
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had, and which
