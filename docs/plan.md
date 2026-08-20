@@ -576,14 +576,31 @@ instance directly rather than routing through `SettingsButton`, which only ever
 opens to Theme. Two independent instances rather than one shared one — the same
 pattern the cog already uses in two other places.
 
+**The projects-folder line landed in the rail's foot, 2026-08-19 — reusing the
+themes/snippets "open in file manager" pattern rather than inventing one.**
+`showFolder` (`dialog-service.ts`) already existed for exactly this — Settings
+→ Appearance points it at `themesDir`/`snippetsDir` and reports a refusal by
+naming the folder. `use-start-actions.ts`'s new `openProjectsFolder` follows
+the same shape: `prepareProjectsDir()` first (a fresh install's default folder
+is a path nothing has created yet, and handing that straight to the file
+manager opens a level up with nothing there to explain why — the same reason
+`createProject` calls it), then `showFolder`, with a failure landing in the
+screen's one shared error line rather than a new surface.
+
+The row shows the folder itself, not paired with a name the way a project's
+own location line is — `describeProjectLocation` drops the last segment
+because the line above it already names the project; here there's nothing
+above it, so `describeFolderLocation` (`app-settings-service.ts`, sharing the
+same "keep the last two segments, ellipsis the rest" core) keeps it. The full
+path is the title.
+
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: the projects folder at the
-foot of the rail with a button that opens it in File Explorer; covers you set
-yourself, and the muted-covers switch; the page you were last on; groups and
-archive; the duplicate-project action.
+are open questions rather than build work. Then: covers you set yourself, and
+the muted-covers switch; the page you were last on; groups and archive; the
+duplicate-project action.
 
 ### Second instance
 

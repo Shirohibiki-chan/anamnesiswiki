@@ -9,6 +9,7 @@
 - **Every project shows where it lives on disk.** Under its name, on covers and in the list alike. Long paths lose their middle rather than their end, so the folder the project actually sits in is always the part you can still read — which is the part that tells two projects with the same name apart. Covers and rows are both a little taller to carry it.
 - **The rail down the side of the start screen can be dragged.** Take hold of the line between it and the projects and pull: the covers get the room you don't give the rail, and the pinned row refits itself to whatever is left. It works the same way the sidebar inside a project does, down to double-clicking the line to put it back where it started, and the arrow keys if you'd rather not drag. Your width is remembered.
 - **The rail now tells you what's new.** The three most recent versions, newest tagged **New**, at the bottom of the rail. Click one and it opens Settings straight to that version's patch notes rather than making you go find it.
+- **Your projects folder has a button now**, at the very foot of the rail, above the cog. Click it and it opens straight into your file manager — the same thing Settings → Projects already let you find, just one click away instead of a trip through there.
 
 ### Fixes
 
