@@ -1,5 +1,6 @@
-// The draggable edge of a side panel. One component for both, because the only
-// thing that differs between them is which way the pointer's x maps to a width.
+// The draggable edge of a side panel. One component for all three, because the
+// only things that differ between them are which way the pointer's x maps to a
+// width and which grid it is measured against.
 //
 // It's a `separator` with a tabindex rather than a bare div: dragging is not
 // the only way anyone should be able to change a panel's width, and the arrow
@@ -10,9 +11,27 @@ import { useCallback, useRef, useState } from "react";
 
 const KEYBOARD_STEP = 16;
 
+/**
+ * The panels that have a draggable edge, and what that edge is measured
+ * against. `fromRight` is both the direction the pointer reads in and the
+ * direction the arrow keys widen in.
+ *
+ * The grid rather than the window in every case, so a handle stays right if a
+ * screen ever stops being flush to the window edges — the start screen's rail
+ * is measured against `.start` for exactly the same reason the shell's two are
+ * measured against `.app-layout`.
+ */
+const EDGES = {
+  tree: { container: ".app-layout", fromRight: false },
+  properties: { container: ".app-layout", fromRight: true },
+  rail: { container: ".start", fromRight: true },
+} as const;
+
+export type ResizeEdge = keyof typeof EDGES;
+
 type ResizeHandleProps = {
-  /** Which panel this is the inner edge of. Decides which way x reads. */
-  edge: "tree" | "properties";
+  /** Which panel this is the inner edge of. */
+  edge: ResizeEdge;
   label: string;
   width: number;
   min: number;
@@ -20,8 +39,11 @@ type ResizeHandleProps = {
   onResize: (width: number) => void;
   /** Double-click, and Home — puts the panel back to the width it shipped at. */
   onReset: () => void;
-  /** Lets the shell switch its column transition off for the duration. */
-  onDragChange: (isDragging: boolean) => void;
+  /**
+   * Lets the shell switch its column transition off for the duration.
+   * Optional: a screen whose columns don't transition has nothing to switch.
+   */
+  onDragChange?: (isDragging: boolean) => void;
 };
 
 export function ResizeHandle({ edge, label, width, min, max, onResize, onReset, onDragChange }: ResizeHandleProps) {
@@ -31,19 +53,19 @@ export function ResizeHandle({ edge, label, width, min, max, onResize, onReset, 
   const setDragging = useCallback(
     (dragging: boolean) => {
       setIsDragging(dragging);
-      onDragChange(dragging);
+      onDragChange?.(dragging);
     },
     [onDragChange],
   );
 
-  // Measured off the grid that owns the columns rather than off the window, so
-  // this stays right if the shell ever stops being flush to the window edges.
+  // Measured off the grid that owns the columns rather than off the window.
   const widthFromPointer = useCallback(
     (clientX: number): number | null => {
-      const container = handleRef.current?.closest(".app-layout");
-      if (!container) return null;
-      const rect = container.getBoundingClientRect();
-      return edge === "tree" ? clientX - rect.left : rect.right - clientX;
+      const { container, fromRight } = EDGES[edge];
+      const element = handleRef.current?.closest(container);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return fromRight ? rect.right - clientX : clientX - rect.left;
     },
     [edge],
   );
@@ -71,8 +93,8 @@ export function ResizeHandle({ edge, label, width, min, max, onResize, onReset, 
     setDragging(false);
   }
 
-  // Arrows move the *edge*, so Left always narrows the tree and widens the
-  // properties panel — the key matches the direction the line goes, not the
+  // Arrows move the *edge*, so Left always narrows the tree and widens the two
+  // right-hand panels — the key matches the direction the line goes, not the
   // direction the number does.
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     const towardsStart = event.key === "ArrowLeft";
@@ -85,7 +107,7 @@ export function ResizeHandle({ edge, label, width, min, max, onResize, onReset, 
       return;
     }
     event.preventDefault();
-    const outwards = edge === "tree" ? towardsEnd : towardsStart;
+    const outwards = EDGES[edge].fromRight ? towardsStart : towardsEnd;
     onResize(width + (outwards ? KEYBOARD_STEP : -KEYBOARD_STEP));
   }
 

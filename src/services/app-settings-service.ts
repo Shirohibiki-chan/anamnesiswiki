@@ -214,7 +214,8 @@ export async function setAppearance(appearance: AppearanceSettings): Promise<voi
 }
 
 /**
- * How wide the two side panels are. App-level rather than per-project for the
+ * How wide the draggable columns are — the shell's two side panels and the
+ * start screen's rail. App-level rather than per-project for the
  * same reason the appearance settings are: one screen, several worlds.
  *
  * Returned unvalidated, like the shortcut overrides above — deciding whether a
@@ -226,7 +227,7 @@ export async function getPanelWidths(): Promise<unknown> {
   return (await store.get("panelWidths")) ?? {};
 }
 
-export async function setPanelWidths(widths: { tree: number; properties: number }): Promise<void> {
+export async function setPanelWidths(widths: { tree: number; properties: number; rail: number }): Promise<void> {
   const store = await getStore();
   await store.set("panelWidths", widths);
   await store.save();

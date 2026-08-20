@@ -19,6 +19,16 @@ export function usePanelWidthActions() {
   );
 }
 
+/** The start screen's rail. Separate so the shell doesn't carry it around. */
+export function useRailWidthActions() {
+  return useLayoutStore(
+    useShallow((state) => ({
+      setRailWidth: state.setRailWidth,
+      resetRailWidth: state.resetRailWidth,
+    })),
+  );
+}
+
 /** Reads the saved widths at startup. See StartupRouter. */
 export function useLoadPanelWidths(): () => Promise<void> {
   return useLayoutStore((state) => state.loadPanelWidths);

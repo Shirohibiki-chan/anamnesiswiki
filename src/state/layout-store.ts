@@ -6,6 +6,7 @@ import { create } from "zustand";
 import * as appSettings from "../services/app-settings-service";
 import {
   clampPropertiesWidth,
+  clampRailWidth,
   clampTreeWidth,
   DEFAULT_PANEL_WIDTHS,
   parsePanelWidths,
@@ -29,7 +30,10 @@ export type LayoutStoreState = {
   loadPanelWidths: () => Promise<void>;
   setTreeWidth: (width: number) => void;
   setPropertiesWidth: (width: number) => void;
+  setRailWidth: (width: number) => void;
+  /** The shell's two, not all three — see the reset note below. */
   resetPanelWidths: () => void;
+  resetRailWidth: () => void;
 };
 
 export const useLayoutStore = create<LayoutStoreState>((set, get) => {
@@ -69,8 +73,24 @@ export const useLayoutStore = create<LayoutStoreState>((set, get) => {
       applyWidths({ ...get().widths, properties: clampPropertiesWidth(width) });
     },
 
+    setRailWidth(width) {
+      applyWidths({ ...get().widths, rail: clampRailWidth(width) });
+    },
+
+    // Two resets rather than one, because a reset is a double-click on a
+    // handle and it should put back what the person can see. The shell and the
+    // start screen never share a window, so a reset on either used to silently
+    // reach across and undo a width on the other.
     resetPanelWidths() {
-      applyWidths(DEFAULT_PANEL_WIDTHS);
+      applyWidths({
+        ...get().widths,
+        tree: DEFAULT_PANEL_WIDTHS.tree,
+        properties: DEFAULT_PANEL_WIDTHS.properties,
+      });
+    },
+
+    resetRailWidth() {
+      applyWidths({ ...get().widths, rail: DEFAULT_PANEL_WIDTHS.rail });
     },
   };
 });
