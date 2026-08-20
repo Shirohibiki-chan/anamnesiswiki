@@ -871,6 +871,7 @@ export async function readWorldSummary(path: string): Promise<WorldFile | null> 
   return {
     path,
     id: typeof project.id === "string" ? project.id : null,
+    forkedFromId: typeof project.forkedFromId === "string" ? project.forkedFromId : null,
     name,
     modifiedAt,
     coverImage: typeof project.coverImage === "string" ? project.coverImage : null,
@@ -1460,6 +1461,39 @@ export async function saveAssetImage(rootPath: string, fileName: string, data: U
 
 export async function readAssetImage(rootPath: string, fileName: string): Promise<Uint8Array> {
   return readFile(joinPath(rootPath, ASSETS_DIR, fileName));
+}
+
+/**
+ * Re-mints one of two projects wearing the same id, and records the other as
+ * the one it came from. Returns the new id, or null if the write wouldn't go
+ * through.
+ *
+ * **A duplicate id is not an error, it is evidence.** It is what a project
+ * copied in a file manager looks like — which is how she forks today — and the
+ * repair is to give one of them an identity of its own while writing down the
+ * relationship that was true all along. Which of the two keeps the id is
+ * `planForkResolutions`'s decision, not this function's.
+ *
+ * **A failed write is swallowed**, the same as the id backfill in
+ * `loadProject`: a project on a drive she can't write to still belongs in the
+ * list, and the pair is simply found again the next time the folder is
+ * scanned.
+ */
+export async function reidentifyForkedProject(rootPath: string, forkedFromId: string): Promise<string | null> {
+  const projectPath = joinPath(rootPath, PROJECT_FILE);
+  try {
+    const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;
+    const id = crypto.randomUUID();
+    raw.id = id;
+    // Overwritten rather than kept if it was already a fork of something else:
+    // a shared id says it was copied from *this* one, which is later and more
+    // specific than whatever it recorded before.
+    raw.forkedFromId = forkedFromId;
+    await writeTextFile(projectPath, JSON.stringify(raw, null, 2));
+    return id;
+  } catch {
+    return null;
+  }
 }
 
 /**

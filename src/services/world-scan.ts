@@ -81,6 +81,8 @@ export type WorldFile = {
   id: string | null;
   name: string;
   modifiedAt: number | null;
+  /** The project this one was copied from, by that project's id, or null. */
+  forkedFromId: string | null;
   /** The filename in this world's own `assets/`, or null if she hasn't set one. */
   coverImage: string | null;
   /** The page she was last on inside this world, or null if none is recorded. */
@@ -97,6 +99,7 @@ export type RememberedWorld = {
 export type ListedWorld = {
   path: string;
   id: string | null;
+  forkedFromId: string | null;
   name: string;
   lastOpenedAt: number | null;
   modifiedAt: number | null;
@@ -248,7 +251,15 @@ export function buildWorldList(input: {
   // and out of the list. Clicking one that really has gone reports it and
   // forgets it, which is the path that already existed.
   for (const world of input.remembered) {
-    add({ path: world.path, id: null, name: world.name, modifiedAt: null, coverImage: null, selectedName: null });
+    add({
+      path: world.path,
+      id: null,
+      forkedFromId: null,
+      name: world.name,
+      modifiedAt: null,
+      coverImage: null,
+      selectedName: null,
+    });
   }
 
   return sortWorlds([...byPath.values()], "active");
@@ -311,4 +322,71 @@ export function filterWorlds(worlds: readonly ListedWorld[], query: string): Lis
     const path = world.path.toLowerCase();
     return words.every((word) => name.includes(word) || path.includes(word));
   });
+}
+
+/**
+ * What a duplicate id means, and which of the two projects should keep it.
+ *
+ * **Two projects wearing one id is not an error, it is evidence one was copied
+ * from the other.** It is exactly what a folder duplicated in File Explorer
+ * looks like — which is how she forks today — and dropping one of them, or
+ * refusing to list them, would hide her own work over a bookkeeping field. So
+ * one keeps the id, the other is re-minted, and the relationship that was
+ * already true gets written down.
+ *
+ * **The one the app has opened keeps the id.** The plan said most-recently
+ * modified, and that turns out to be the wrong half of the evidence for two
+ * reasons. Copying a folder preserves the modified time on Windows, so the two
+ * are *identical* at the moment the fork is made — the exact moment this has
+ * to be right. And re-minting is not free: pins, groups and the archive key on
+ * the id, so re-minting the project the app has records for silently detaches
+ * all three, where the copy it has never opened has nothing to lose. Having
+ * been opened is the one signal that says which of the two the app already
+ * knows as itself.
+ *
+ * Modified time settles it when neither has been opened, and the path settles
+ * it after that. **The last tie-break is what makes this safe to run on every
+ * scan**: without a total order the same pair could resolve one way now and
+ * the other way next time, re-minting each other forever.
+ *
+ * Groups of three or more resolve the same way: one keeps it, and everything
+ * else in the group records that one as its parent, since they were all copied
+ * from it or from each other.
+ */
+export type ForkResolution = {
+  /** The project to re-mint. */
+  path: string;
+  /** The id of the one it keeps, which is also what it was copied from. */
+  forkedFromId: string;
+};
+
+export function planForkResolutions(worlds: readonly ListedWorld[]): ForkResolution[] {
+  const byId = new Map<string, ListedWorld[]>();
+  for (const world of worlds) {
+    if (!world.id) continue;
+    const group = byId.get(world.id);
+    if (group) group.push(world);
+    else byId.set(world.id, [world]);
+  }
+
+  const resolutions: ForkResolution[] = [];
+  for (const [id, group] of byId) {
+    if (group.length < 2) continue;
+    const [keeper, ...rest] = [...group].sort(byStrongestClaim);
+    for (const world of rest) {
+      // A project that already records the keeper as its parent still needs
+      // its own id — the lineage is right and the identity is still shared.
+      resolutions.push({ path: world.path, forkedFromId: keeper.id ?? id });
+    }
+  }
+  return resolutions;
+}
+
+/** Strongest claim to the shared id first. See `planForkResolutions`. */
+function byStrongestClaim(a: ListedWorld, b: ListedWorld): number {
+  return (
+    (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0) ||
+    (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0) ||
+    a.path.localeCompare(b.path)
+  );
 }

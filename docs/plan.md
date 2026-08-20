@@ -712,11 +712,22 @@ because one more field got cheap to carry.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: the fork *detector* — the
-duplicate action landed 2026-08-20 and writes `forkedFromId` on every copy it
-makes, but nothing yet reads that field, and nothing yet notices two projects
-wearing one id, which is what a copy made in File Explorer looks like. Second
-instance and the folder layout, both below, are also still to build.
+are open questions rather than build work. Then: showing lineage — every piece
+of it is now recorded and nothing on screen says a word about it, so a fork
+looks exactly like any other project. Second instance and the folder layout,
+both below, are also still to build.
+
+**The fork detector landed 2026-08-20, and one of its rules changed under
+measurement.** "Most-recently-modified keeps the id" is wrong: copying a folder
+in Windows Explorer preserves the modified time, so at the moment the fork is
+made — the moment this has to be right — the two are identical on it. The one
+the app has *opened* keeps the id instead. That signal survives a copy, and it
+also picks the safer loser: pins, groups and the archive key on the id, so
+re-minting the project the app has records for would silently detach all three,
+where a copy it has never opened has nothing to lose. Modified time and then
+the path settle it after that, and the path tie-break is load-bearing — without
+a total order the same pair could resolve one way on one scan and the other way
+on the next, re-minting each other forever.
 
 **Duplicating landed 2026-08-20, in the project's own `⋯` menu.** The copy goes
 beside the original, because that is where a copy made in a file manager would

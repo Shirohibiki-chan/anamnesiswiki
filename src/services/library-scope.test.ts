@@ -7,6 +7,7 @@ import type { ListedWorld } from "./world-scan";
 const world = (name: string, extra: Partial<ListedWorld> = {}): ListedWorld => ({
   path: `/D/${name}`,
   id: `id-${name}`,
+  forkedFromId: null,
   name,
   lastOpenedAt: null,
   modifiedAt: null,

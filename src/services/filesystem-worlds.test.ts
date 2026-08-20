@@ -197,11 +197,19 @@ describe("readWorldSummary", () => {
     expect(await readWorldSummary(`${ROOT}/Val`)).toEqual({
       path: `${ROOT}/Val`,
       id: "abc",
+      forkedFromId: null,
       name: "Valeraverse",
       modifiedAt: 1234,
       coverImage: null,
       selectedName: null,
     });
+  });
+
+  it("reads the project a fork was copied from, and reports none for one that isn't a copy", async () => {
+    namedWorld(`${ROOT}/Fork`, { name: "Fork", id: "def", forkedFromId: "abc" });
+    namedWorld(`${ROOT}/Original`, { name: "Original", id: "abc" });
+    expect((await readWorldSummary(`${ROOT}/Fork`))?.forkedFromId).toBe("abc");
+    expect((await readWorldSummary(`${ROOT}/Original`))?.forkedFromId).toBeNull();
   });
 
   it("reads a cover she's set, and reports none for a world that has none", async () => {

@@ -84,6 +84,28 @@ is below.
   those apart is the fork detector's job, which re-ids one rather than dropping
   it.
 
+  **The one exception, and it is narrow: the fork detector writes.** A scan
+  that finds two projects wearing one id re-mints the loser
+  (`use-world-library`'s `resolveForks`). That is not the rule above being
+  broken — the rule is about not touching *every* project to backfill an id,
+  and this touches nothing unless a duplicate is actually there. Anything else
+  that wants to write during a listing needs the same standard: evidence found,
+  not maintenance performed.
+
+- **Which of two projects sharing an id keeps it: the one the app has opened —
+  not the most recently modified.** The plan said modified, and measuring it
+  killed that: copying a folder in Windows Explorer preserves the modified
+  time, so the original and the copy are *identical* on it at the moment the
+  fork is made, which is the moment this has to be right. Having been opened is
+  the signal that survives the copy. It also picks the safer loser, because
+  re-minting is not free: pins, groups and the archive all key on the id, so
+  re-minting the project the app has records for silently detaches all three,
+  while the copy it has never opened has nothing to lose. Modified time and
+  then the path settle it after that, and **the path tie-break is what makes
+  this safe to run on every scan** — without a total order the same pair could
+  resolve one way now and the other way next time, re-minting each other
+  forever.
+
 - **The recent-projects list is a sort order, not a whitelist.** It was capped
   at eight and was the only way a world reached the start screen, which is how
   her ninth world became reachable only through the folder picker. The cap is
