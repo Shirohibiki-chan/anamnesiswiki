@@ -90,6 +90,26 @@ is below.
   gone; the list now only says when each world was last opened. Anything that
   re-introduces a cap here hides worlds again.
 
+- **`project-refs.ts` is the only answer to "is this stored thing the same
+  project as that listed one", and pins, groups and the archive all go through
+  it.** The rule — the id decides when both sides have one, the path is the
+  fallback for a project that has never been opened and so has no id anywhere —
+  was written for pins first and is now shared, because three copies of it is
+  three chances to answer differently and the failure mode is a project quietly
+  losing its group after a rename. `pins.ts` is a thin layer over it holding the
+  one thing that is only about pins, their order. Anything new that remembers a
+  project in app settings stores a `ProjectRef`, never a bare id and never a
+  bare path.
+
+- **An archived project is out of every scope but the archive's own — including
+  out of the groups it is still filed under — and `library-scope.ts` is where
+  that is decided.** Three places have to agree about it: the grid, the count
+  beside its heading, and the pinned row above it, which filters archived
+  projects out separately. Nothing is *unfiled* by archiving, so bringing a
+  project back needs no repair and its pin is still where she left it. Leaving
+  archived projects visible inside their groups makes "archived" mean nothing
+  anywhere but one chip.
+
 - **A page on the start screen is however much fits the window, and what is
   remembered is the item, not the page number.** Both halves are load-bearing.
   A fixed page size is either larger than the window, so the page itself
@@ -769,6 +789,20 @@ is below.
   from the trigger's rect pushed the last row of the template picker off-screen
   when opened from low in a tall tree — present but unreachable, and it read as
   "adding a Note does nothing."
+
+- **`TreePopover` is not tree-only, and the start screen's project menu needs
+  it for a second reason: `.start-area` is `overflow: hidden` while the grid is
+  paged.** That clipping is deliberate — a page has to be exactly what fits, so
+  a scrollbar there would contradict the arithmetic — which means any menu
+  opened from a tile in the bottom row is cut off unless it leaves the box. The
+  properties panel already reuses this component; reuse it rather than
+  positioning a menu inside a tile.
+
+- **A popover trigger that toggles has to fire on `pointerdown`, not `click`.**
+  `TreePopover` closes itself on any pointer-down outside it, which includes its
+  own trigger, so by the time a click fired the state already says closed and
+  the press reopens what she was trying to shut. On pointer-down both run inside
+  one event and the close wins.
 
 - **Components never import stores or services** (CLAUDE.md layer rule). Narrow
   hooks exist so a component subscribes only to what it shows — `useNode` over the
