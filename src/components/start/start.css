@@ -591,9 +591,16 @@
   color: var(--color-accent-light);
 }
 
+/* A count on a chip is two characters next to a word, so everything about it
+   has to say "this is not part of the name". It was 11px mono two pixels from
+   a 12px label, which read as a typo in the group's name rather than as how
+   many things are in it. The chip's own size and font, tabular so the digits
+   sit in a column, and enough space in front of it to be a separate thing. A
+   count of nothing isn't drawn at all — see ProjectFilters.tsx. */
 .start-scope-count {
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
+  margin-left: 4px;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
 

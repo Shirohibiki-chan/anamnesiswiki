@@ -179,7 +179,10 @@ function GroupChip({
     <div className="start-scope-wrap" ref={boundary}>
       <button type="button" className="start-scope" aria-pressed={isActive} onClick={onSelect}>
         {group.name}
-        <span className="start-scope-count">{group.members.length}</span>
+        {/* Nothing rather than a zero. Every other chip carries a number, so
+            an absent one reads as none — where a "0" beside a name she just
+            typed reads as something having gone wrong with it. */}
+        {group.members.length > 0 && <span className="start-scope-count">{group.members.length}</span>}
       </button>
 
       {isActive && (

@@ -15,6 +15,7 @@
 
 ### Adjustments
 
+- **The number on a group's chip reads as a number now.** It was a tiny monospaced digit pressed right up against the group's name, which looked more like a typo in the name than a count of what's in it. It's the same size as the name now, with real space in front of it — and a group with nothing in it doesn't show a zero at all.
 - **The start screen's rail had less room than it needed.** Recently Opened, Add a Project, and New Releases all sit a little less cramped now.
 - **The rail's sections now stand apart from each other.** Twice the gap between Recently Opened, Add a Project and New Releases, with a little more air under each heading, so the three read as separate errands rather than one long list with rules through it. A folder on disk and Import sit a touch further apart too.
 - **The pinned covers stopped cutting heads off.** They are taller than they were, and what is left of a portrait after the crop is now taken from above centre rather than the middle — so the part that survives is the part with the face in it, not the feet.
