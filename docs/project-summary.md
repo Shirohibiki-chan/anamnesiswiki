@@ -179,7 +179,7 @@ Cloud sync (Phase 2) is deferred indefinitely. The Phase 1 data model — file-p
 Reference docs in the repo:
 
 - `docs/spec.md` — the full build spec (source of truth for what "shipped" means)
-- `docs/plan.md` — phased build roadmap with Future Features and Queued Adjustments
+- `docs/plan.md` — phased build roadmap with Queued Adjustments; unscheduled ideas in `docs/ideas.md`
 - `docs/handoff.md` — current state of the project, running log of what's shipped
 - `docs/glossary.md` — domain terms (node, tab, template, cascade, etc.)
 - `docs/components-reference.md` — target component layout

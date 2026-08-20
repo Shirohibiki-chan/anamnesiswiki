@@ -1,0 +1,269 @@
+# Future Features
+
+Ideas parked for later. Nothing here is scheduled — see [plan.md](plan.md) for the active roadmap.
+
+---
+
+**Interactive atlas / maps**
+
+LK's atlas — nested image maps with clickable pins that link to wiki pages — is the single feature Anamnesis intentionally doesn't ship in Phase 1. It's the most complex piece of LK to build well and the piece the user has said they use less than the wiki. If demand shows up (either from the user or from anyone she shares the app with), revisit as its own multi-phase project. Leaflet with custom CRS is the likely implementation.
+
+---
+
+**Timeline visualization (calendar-based)**
+
+A view that lays out Event-template nodes on a chronological axis, with per-event pins that open the underlying page. **Superseded 2026-08-08, not cut.** The user's answer to "what happened when" is now **Phase 25 — Storylines**, which orders events by what leads to what instead of by date. That's a deliberate choice rather than a workaround: she doesn't think in calendar years, and a date field she can't fill is the thing that stops the writing.
+
+The original blocker still stands if a calendar view is ever wanted anyway: Events have no reliable date data. `when` is a free string like "Year 872, Third Age," which nothing can sort, and a real date schema — one that copes with invented calendars — is the design work, not the chart. Storylines are the cheaper answer precisely because they need no such schema. Revisit only if she starts asking for years.
+
+---
+
+**Canvas / board / whiteboard**
+
+Freeform spatial planning surface — LK ships one as "Board." Kept on the list at the user's request 2026-07-31. Nothing else in the plan depends on it, so it can wait indefinitely without blocking anything.
+
+**The "largest single build in this document" estimate is withdrawn 2026-08-10.** It assumed writing a drawing surface from scratch. **Excalidraw** is the answer instead: MIT-licensed, embeds as a React component, works entirely offline, and stores a scene as plain JSON — which is the same promise the rest of the app makes about her files. Obsidian's Excalidraw plugin is the same move. That turns this from the biggest build here into an integration, and the remaining work is where a board *lives* in the tree and how a board links to pages, not the canvas itself. Still unscheduled; it's now cheap enough to schedule whenever she wants it rather than something to be talked out of.
+
+**It is not a prerequisite for Phase 25 — Storylines**, and the two must not be collapsed into one job. They share pan, zoom and drag-a-thing-somewhere, which is the smaller part of either. A storyline's nodes are *pages* and its edges *mean* something ("this leads to that"), so it needs a graph that knows what it's holding; a board deliberately holds anything and knows nothing about it. Building storylines out of a drawing tool would give up the part that makes it useful.
+
+---
+
+**Icons you choose yourself**
+
+Asked for by the user 2026-08-18. Wanted, unscheduled. Today a page's icon is
+its template's — every Character gets the same glyph — and the only thing she
+can change per page is its colour.
+
+**LegendKeeper does this, and her existing world is already full of her
+answers.** Every resource in a `.lk` carries `iconGlyph`, `iconShape` and
+`iconColor`; checked against her real export 2026-08-18, the glyphs are Font
+Awesome class names (`fas fa-tree-palm`, `fas fa-map-marked-alt`, `fas fa-sun`,
+`fas fa-water`, `fas fa-flag`), with a few bare names (`calendar`, `shapes`).
+**Our importer reads none of them**, so a world she decorated page by page
+arrives wearing eight template glyphs. That makes this an import fix as much as
+a feature, and it's the argument for doing it before she re-imports Valeraverse
+again rather than after.
+
+**The awkward part is that we don't ship Font Awesome and shouldn't start.**
+The app draws with `lucide-react`, which is bundled, offline and already the
+source of `constants/icons.ts`. So an imported glyph needs a name-to-name map,
+and it will be partial — Lucide has no palm tree. **A page whose glyph doesn't
+map keeps its template icon**, which is exactly what it has today, so a missing
+entry costs nothing and the map can grow. Don't reach for a Font Awesome
+package to close the gap: it's a second icon set in the bundle for a handful of
+pages, and the Policy Boundary rules out fetching one.
+
+`iconShape` and `iconColor` are atlas-pin styling — a pin's outline and its
+fill on a map. There's no atlas here (see the top of this file), and the colour
+is already a per-node thing we have. Read the glyph; leave the other two.
+
+**What's undecided and needs her, not a guess:** whether an icon replaces the
+template's or sits beside it, whether folders get one too, and how it's picked
+(a searchable list of every Lucide icon is the obvious answer and also ~1500
+things in a popover). Related but separate: the colour control's placement,
+below in Queued Adjustments.
+
+---
+
+**Collapsible group headers in the sidebar (GitBook-style)**
+
+Raised by the user 2026-08-11, with a GitBook screenshot: small uppercase muted
+labels — GETTING STARTED, BASICS FOR EVERYONE, BASICS FOR CREATORS — with pages
+sitting under each one and no indentation, and the section collapsing as a unit.
+**Wanted, and the shape is settled** (the user, same day) — not yet scheduled.
+Her hierarchy, which is GitBook's: **universe → groups → folders and pages
+inside them.**
+
+**How GitBook actually does it**, checked against their docs 2026-08-11 rather
+than assumed:
+
+- A **group is top-level only.** A group cannot go inside a group. That single
+  constraint is what makes this affordable — it removes every hard case a
+  place-a-label-anywhere design would create.
+- **Pages nest freely inside a group**, with no hard limit. GitBook suggests
+  staying under about three levels; **that is their styling advice for published
+  documentation sites and does not carry over here.** The user's own worlds go
+  much deeper and always will — do not implement a depth cap, warn about depth,
+  or treat deep nesting as a mistake, and **don't reach for the old
+  260-character Windows path ceiling as a reason** — it was measured and
+  withdrawn (see `constants/limits.ts`), and repeating it is how a limit that
+  doesn't exist gets designed around anyway. Phase 22 *removes* two levels from
+  every AU path rather than adding any.
+- **A group is a label, not a page.** There is nothing to open, so it has no
+  content of its own.
+
+**A group is still a directory on disk, and that isn't a contradiction** — it's
+only where its pages live. *Folder* in Anamnesis currently fuses two things
+GitBook keeps apart: a container for other pages, and a clickable row with its
+own page, properties and colour. **A group is the first without the second**, so
+it's a flag on a node rather than a new storage shape, and renames, drag and
+drop and the ` (2)` collision suffixes all keep working untouched.
+
+What genuinely has to learn about it: selection and routing (it can't be
+opened), the properties panel (it has none), `[[wikilinks]]` and search (it
+isn't a page and must not be offered as a target), LK export (the format has no
+equivalent — its children export as top-level), and Phase 24's graphs.
+
+**Phase 22 — Universes comes first, and her own hierarchy is why:** universes
+sit *above* groups in it. Groups don't replace Canon and the AUs — those become
+universes; they leave the *tree* for the switcher, and the top level they vacate
+is where groups then go. Build groups before that and they're built on rows
+that are moving.
+
+**What's shared between universes is a universe, not a group** — already decided
+2026-08-08, see Phase 22. A Shared universe stays visible alongside whichever
+one is selected, which a group can't do: a group lives inside one universe, so
+shared lore held in a group would only be shared with itself. Groups apply
+*within* Shared exactly as they do anywhere else.
+
+**Groups are made by hand, and existing folders are never auto-converted** —
+the user, 2026-08-11. So a project has no groups at all until she makes one,
+which settles the other open question by implication: **a page may sit at the
+top level outside any group**, and that's the normal state, not a degraded one.
+
+---
+
+**World Anvil import**
+
+Investigated 2026-07-31 against a real export (`World-Orynthia_ Fragments of Fable-2026-07-31.zip`) and **dropped for now** by the user. Recording the findings so the next look doesn't start cold:
+
+- The export is a zip of one JSON file per entity, keyed by `entityClass` / `templateType` (`Person`, `Article`, `Category`, plus Timeline, Map, Manuscript, VariableCollection). Tree structure comes from categories, which nest via their own `parent`, plus `articleParent` for sub-articles. Template inference is easy — `person` → Character, and the rest line up similarly.
+- **Content is BBCode** — `[p]`, `[h3|uuid]`, `[hr]`, `[articletoc]`. This is the expensive part. It shares nothing with the LK importer, which speaks ProseMirror; it's a second parser from scratch.
+- **The export is not clean UTF-8.** Real observed damage in the sample: "they're" arrives as `they<?>re`. An importer that doesn't repair this mangles every apostrophe in the world.
+- Portraits and covers are URLs on WA's servers, not files in the zip — same fetch-on-import shape the LK importer already uses.
+- Manuscripts, maps, timelines and `{{user}}` variables have no home here and would need flagging as skipped in the preview.
+
+**Worth salvaging even though the importer is dropped:** WA's Person template carries ~120 typed fields (age, pronouns, eyes, hair, height, species, family, relations, motivation, vices, quirks…). That list was the source for Phase 13's default property suggestions, mined *selectively* — WA's own reputation for bloat is the cautionary tale, so `constants/property-suggestions.ts` carries about a dozen per template rather than everything imaginable. The same rule applies if the list is mined again for anything else.
+
+---
+
+**Browser version**
+
+The user raised this 2026-07-31 — not for herself, but so people who won't install an unknown `.exe` can still look at a world. **Phase 1.5 (Publish) already covers that need** and needs no re-architecture; check whether it's satisfied before considering anything further.
+
+A genuinely editable browser build is a different animal: `filesystem-service.ts` talking to the user's disk through Tauri *is* the storage layer, and a browser can't do that. It would mean either a real backend or a much more limited "your world lives in this browser" mode. Not a build flag. Deferred, and related to Phase 2 below.
+
+---
+
+**Cloud sync (Phase 2)**
+
+Supabase-backed sync for users who want multi-device access without shared-folder tools. Free tier is enough for two people; adds a real backend and auth. Deferred until the shared-folder approach (Dropbox / Syncthing) demonstrably stops meeting the user's needs. Do not scaffold in Phase 1.
+
+---
+
+**Import Word and Google Docs, formatting intact**
+
+Asked for by the user 2026-08-12. Wanted, unscheduled.
+
+**Google Docs is a file import, not an integration, and that isn't a compromise — it's the only version that can exist here.** Reaching Google's API means a third network call *and* an account to authenticate against, and both sit on the wrong side of the Policy Boundary; the account half is Phase 2 territory at best. She exports from Google Docs (File → Download → `.docx`, or `.odt`) and imports the file. That is the same importer, so there is one thing to build rather than two, and it works with no internet.
+
+**`.docx` is a zip of XML and is parseable offline.** `mammoth` (BSD-2) converts it to HTML through an explicit style-mapping table, which is the part that makes formatting survive rather than being guessed at. From HTML the path is HTML → BlockNote blocks — **work Phase 20 needs anyway** for its own HTML import, so build that converter once and let both use it. `.odt` is the same shape (zip + XML) and is the fallback if Google's `.docx` export turns out lossy.
+
+What comes across: headings, bold/italic/underline/strikethrough, nested lists, links, blockquotes, tables, horizontal rules. What has no home here and must be *reported* rather than silently dropped — the LK importer's lossy-list preview is the pattern: page layout and columns, fonts and text colour, comments, tracked changes, text boxes and drawing objects, footnotes (land as trailing text at best).
+
+**Pictures embedded in a `.docx` are inside the zip, and that is one of the very few later moments a picture's real name exists** — the archive stores original media filenames. They extract into `assets/` down the same path an upload takes, and the name goes into `.names.json` at that moment or is lost for good. See handoff §Editor & templates.
+
+**Keep the formatting is only half of it — keep the *characters* is the other half.** A lot of what these documents hold isn't prose, it's prompt text: `{{char}}`, `{{user}}`, square and angle brackets, and whatever syntax the target platform uses. Google Docs also curls quotes and dashes silently as you type, so a prompt can already be subtly wrong before it's exported. The importer must pass text through unchanged — **no smart-quote conversion, no whitespace collapsing, no escaping of braces, no tidying of any kind.** Anything that reads as a "clean up the text" helper is the bug.
+
+---
+
+**Import and paste fidelity — what actually goes wrong**
+
+Notes from botmakers and fic writers describing their current tool, 2026-08-12,
+gathered by the user in a chat she was in. Paraphrased; no handles recorded,
+because this is a public repo and they were talking to each other rather than
+to us. **The complaints were unprompted and specific, which is what makes them
+worth keeping** — this is the failure everyone downstream of a document
+importer actually hits, and it is not the one you'd design against from
+imagination.
+
+What they reported, in the order it hurt:
+
+- **Paragraph spacing is the first casualty and the most-reported one.** Blank
+  lines between paragraphs vanish and a carefully spaced document arrives as
+  one wall of text. Reported on three separate paths with the same symptom:
+  pasting *in*, pasting *out*, and importing a file.
+- **Formatting that was never in the source gets added.** Headings that don't
+  exist, bold that wasn't bold, doubled spaces. **This is worse than losing
+  formatting, and the plan should treat it as worse**: losing it is visible and
+  fixable in a minute, inventing it means editing a document you no longer
+  recognise, and one of them described re-doing every heading and section by
+  hand after each import.
+- **Pasting *out* matters as much as importing in.** Their text goes on to
+  lorebook builders and other people's editors, so a page that can't leave
+  cleanly is as broken as one that can't be filled. One of them named a
+  specific round trip — write here, paste into a lorebook tool, watch the line
+  breaks die.
+- **Hand-repairing the formatting inside the tool made it worse**, which is how
+  a formatting bug turns into an abandoned document.
+- **The cost isn't annoyance.** One of them said the fight with formatting is
+  part of why they stopped finishing their bots. That is the actual stake here:
+  not polish, but whether the work gets done at all.
+
+**Anti-goals, written down so nobody has to rediscover them:**
+
+1. **Never invent formatting.** No heading, bold run or emphasis that the source
+   didn't have. Where a mapping is ambiguous, emit a plain paragraph — being
+   boring is recoverable, being wrong is not.
+2. **An empty paragraph is content.** Preserve blank lines exactly; never
+   normalise runs of them.
+3. **Never touch the characters** — see the `{{char}}` note above.
+4. **Round trip is the test, not import.** The acceptance question is "paste it
+   out and is it the same", not "does it look right on screen".
+
+**Paste is a different code path from file import and has to be checked
+separately.** BlockNote does its own clipboard handling and nothing here has
+ever tested it — see Queued Adjustments.
+
+**Two things about the tools they're leaving, both worth not repeating:**
+
+- **An "export to AO3" button is a reason people pick a writing app.** One of
+  them said it outright — it's why they use that site. That upgrades the AO3
+  entry below from a nice-to-have to a draw.
+- **They left Google Docs because it has a length limit and their current tool
+  doesn't.** Whatever Anamnesis does, it must not introduce one. Nothing here
+  currently does; keep it that way.
+
+---
+
+**Export to AO3**
+
+Asked for by the user 2026-08-12. Wanted, unscheduled.
+
+Raised half as a joke and it shouldn't be taken as one: a competing tool's AO3 export is the stated reason one of the writers above uses that tool at all. See the fidelity entry.
+
+**There is nothing to post to.** AO3 has no public write API, and posting on her behalf would need her account plus a network call — both out. So this produces something she pastes into AO3's rich-text box, or a file she uploads. No host is ever contacted, which keeps it inside the Policy Boundary without an argument.
+
+**The work is the subset, not the export.** AO3 runs everything through a tag whitelist and strips class and style attributes outright, so this emits a narrow HTML dialect — `p`, `br`, `em`, `strong`, `b`, `i`, `u`, `s`, `a`, `blockquote`, `h1`–`h6`, `ul`/`ol`/`li`, `hr`, `table`, `center` — and anything with no equivalent has to **degrade visibly and be listed**, the way LK export already lists what it flattens. The custom Info/Quote/Secret callouts are the obvious case: they become blockquotes and lose their colour, and a Secret callout silently becoming an ordinary quote is a spoiler published by accident.
+
+**Pictures can't come with it, and that's the headline rather than a footnote.** AO3 hosts no images; an `<img>` there must point at a file on someone else's server. Her library is local files with no public URL, so every picture in an exported page is a broken link or an omission. Say which, up front, before the export runs.
+
+`[[wikilinks]]` and mentions have nothing to point at either — they should become plain text rather than links to nothing.
+
+**Open question worth settling before building: what's a work?** One page is the easy answer; a **Phase 25 storyline exported as chapters** maps onto AO3's own chapter model and is probably what she actually wants. That pairing decides the shape, so don't build the single-page version in a way that can't grow chapters.
+
+**Third of a kind.** `lk-export.ts`, Phase 1.5's static publish and this are all "walk BlockNote blocks, emit another format". By the third one the shared walker is worth extracting; it wasn't at the second.
+
+---
+
+**Code blocks — the half that's left**
+
+Asked for by the user 2026-08-12; **styling, syntax highlighting and the LK round trip shipped the same day** (see `docs/shipped.md`). What's still open is the part that has nothing to do with the block itself:
+
+**Discoverability is smaller than it looked, and the claim that `/code` was the only door was wrong.** Typing ` ``` ` and a space makes a code block — BlockNote ships that shortcut, it has always worked here, and it's the door she asked for by name when she requested the feature. She found it on her own the first day. So this isn't "nobody can reach it", it's the narrower question of whether someone who *doesn't* already know markdown would, and that's the same question every other block raises. Still worth solving as one piece across all of them rather than bolting a button onto this one; the formatting toolbar isn't the place, since it only appears over a selection and a code block is inserted at an empty line.
+
+That's the whole of what's left. The question this section used to carry — whether her existing world had code blocks the old importer had emptied — is answered and gone; see `docs/shipped.md`.
+
+---
+
+**The picture library — what LK has that we don't**
+
+Raised by the user 2026-08-13 after comparing directly against LK.
+
+**Nested folders.** Ours are flat labels; LK's nest, with a breadcrumb (`Media / asdasdasda / hjhgkhkjh`). Her words for the flat version were that it feels cheap. `asset-folders.ts` stores a folder as an id and a name and a picture as a folder id, so nesting is a parent id on the folder plus a breadcrumb — the pictures themselves don't move, since a folder is a label and not a location.
+
+**A full-window library manager**, like LK's Project Settings → Assets: a filter box, a grid/list toggle, breadcrumbs, and folders as tiles in the same grid as the pictures. The 180px sidebar can't be this and shouldn't try. The picker dialog is the closest thing we already have and is where this probably grows from. **Fifty folders is the case it has to answer** — she raised that number 2026-08-18, and the sidebar dropdown is the stopgap, not the answer. **Where it opens from is settled: a button in the Assets tab, not a Settings section** — her call 2026-08-18, on the grounds that burying it in settings was always the odd thing about LK’s version. **And it waits for nested folders** rather than being built flat and re-done: they share the breadcrumb, and she chose to hold it until then.
+
+**What we can't take from LK, and it's settled:** the export contains **no asset library at all**. Both of her accounts, checked field by field — no filenames, no folder names, no media section; a picture exists only as a bare CDN URL inside a page, with `attrs.id` empty. So imported pictures can never arrive named or filed, and the names she gives them here are hers alone. See `docs/lk-format.md`.
+
+**Folder shape in the sidebar** is settled and shipped 2026-08-18: a dropdown. One line naming the folder you’re in, the folders themselves in a menu over the pictures. It went chips → tiles → dropdown in a day; her call, and the right one, because it’s the only shape whose cost doesn’t grow with the number of folders. Measured at fifty: the block shape was 26 rows and 1101px, a fifth of it visible at a time. The menu grew its own filter box the same day (#183), which is what makes fifty rows usable rather than merely reachable.

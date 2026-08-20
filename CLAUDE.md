@@ -32,7 +32,7 @@ See `docs/plan.md`. Work phases in order, don't build ahead. `docs/spec.md` is t
 Updating these is part of completing a change, not a follow-up. Show them in the plan before executing.
 
 - **`CHANGELOG.md`** — required for all user-visible changes. New dated section at top (`## 2026-07-30`), with Additions / Fixes / Adjustments / Renames as needed. Plain-language and user-visible — not internal refactor notes. Never `[Unreleased]`.
-- **`docs/plan.md`** — forward-looking only: remaining phases, Queued Adjustments, Known Bugs, Future Features. When a phase completes, its detail moves to `docs/shipped.md` rather than staying here.
+- **`docs/plan.md`** — forward-looking only: remaining phases, Queued Adjustments, Known Bugs. Unscheduled ideas live in `docs/ideas.md`. When a phase completes, its detail moves to `docs/shipped.md` rather than staying here.
 - **`docs/handoff.md`** — durable reasoning only: constraints and decisions that
   still govern the code. **Test before adding: *would reading this stop someone
   about to change this code from making a mistake?*** If yes, here. If it's a
