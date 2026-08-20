@@ -161,6 +161,24 @@ export async function pickThemeFile(): Promise<string | null> {
 }
 
 /**
+ * A picture to use as a project's cover, from the start screen. Native rather
+ * than the in-app picture library `PageBanner` uses: that library is the
+ * *open* project's own `assets/`, and setting a cover on a tile in the grid
+ * happens with nothing open at all.
+ */
+export async function pickImageFile(): Promise<string | null> {
+  const result = await onePicker(() =>
+    open({
+      directory: false,
+      multiple: false,
+      title: "Choose a cover",
+      filters: [{ name: "Pictures", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp"] }],
+    }),
+  );
+  return typeof result === "string" ? result : null;
+}
+
+/**
  * The file to import a project from.
  *
  * **The second filter is not padding.** A single-extension filter hides every

@@ -617,14 +617,56 @@ above it, so `describeFolderLocation` (`app-settings-service.ts`, sharing the
 same "keep the last two segments, ellipsis the rest" core) keeps it. The full
 path is the title.
 
+**Covers you set yourself shipped 2026-08-19, as a hover button on the grid
+tile (her call, asked directly rather than guessed — a right-click menu and
+"only from inside the project" were the other two options on the table).**
+That's a real interaction decision `ProjectTile.tsx`'s markup didn't have room
+for: the whole tile was one `<button>`, and a button can't nest inside a
+button. It's now a `<div>` frame holding two sibling buttons —
+`.project-tile-open`, carrying every pixel `.project-tile` itself used to, and
+a small corner button for the cover — rather than the frame growing any
+visible chrome of its own. Grid view only: a list row's thumbnail is a 44px
+chip, too small for a hit target of its own, and list is already the
+established view for someone who never sets a cover in the first place (see
+"honest view" above).
+
+**One button, two meanings, mirroring `PageBanner`'s existing "add or remove,
+never a separate change" shape rather than inventing a third state.** No
+cover: the button opens a native file picker and sets one. Cover set: the
+same button removes it, back to the generated colour — picking a *different*
+picture means removing first. `PageBanner`'s own picker is the in-app
+picture library, which only exists for the open project's own assets; nothing
+here is open, so this reaches straight for the OS's own dialog instead
+(`pickImageFile`, `dialog-service.ts`).
+
+**The cover lives in the world's own `assets/`, addressed by `project.json`'s
+new optional `coverImage` field** — same folder page pictures already use,
+same UUID-filename convention `setNodeImage` mints for those. Setting one on
+a project that almost certainly isn't open can't go through
+`loadProject`/`saveProject`'s typed round trip, so `setProjectCoverImage`
+(`filesystem-service.ts`) reads `project.json` as a plain object, sets or
+deletes just that one key, and writes it back untyped — a field this build's
+`Project` type doesn't recognise survives untouched, where the typed round
+trip would have silently dropped it on the way back out.
+
+**Reading it back for display gets its own cache, `project-cover-images.ts`,
+deliberately not reusing `asset-urls.ts`'s.** That one is cleared by
+`releaseAssetUrls()` on every project open/close, which is right for a page's
+pictures and wrong here: a cover thumbnail is shown *because* nothing is
+open, and clearing it every time she opens any project would mean re-reading
+and re-blobbing every other project's cover the next time she's back at the
+start screen. `useProjectCoverUrl` wraps it for display; four call sites read
+from it — the grid, the pinned row, the rail's Recently Opened chip, and
+both spots inside Manage pins — three of which had to grow their own small
+subcomponent first, because the hook can't run inside the `.map()` that used
+to render them inline.
+
 **Still to build:** the third entry under Add a Project — start from a
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then: covers you set yourself (the
-muted-covers switch above already shipped, ahead of it — it doesn't need one
-to exist first); the page you were last on; groups and archive; the
-duplicate-project action.
+are open questions rather than build work. Then: the page you were last on;
+groups and archive; the duplicate-project action.
 
 ### Second instance
 

@@ -199,7 +199,15 @@ describe("readWorldSummary", () => {
       id: "abc",
       name: "Valeraverse",
       modifiedAt: 1234,
+      coverImage: null,
     });
+  });
+
+  it("reads a cover she's set, and reports none for a world that has none", async () => {
+    namedWorld(`${ROOT}/HasCover`, { name: "HasCover", coverImage: "abc123.png" });
+    namedWorld(`${ROOT}/NoCover`, { name: "NoCover" });
+    expect((await readWorldSummary(`${ROOT}/HasCover`))?.coverImage).toBe("abc123.png");
+    expect((await readWorldSummary(`${ROOT}/NoCover`))?.coverImage).toBeNull();
   });
 
   it("reports no id for a world saved before ids existed, rather than minting one", async () => {

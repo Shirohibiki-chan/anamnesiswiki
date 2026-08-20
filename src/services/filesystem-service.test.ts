@@ -31,9 +31,11 @@ import {
   moveNodes,
   PathTooLongError,
   planRelocations,
+  readFileBytesAt,
   resolveNodePath,
   sanitizeSegment,
   saveNode,
+  setProjectCoverImage,
   watchCssDirs,
 } from "./filesystem-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
@@ -940,5 +942,45 @@ describe("reserved root names", () => {
     const all = [first, second];
     expect(resolveNodePath(first, all).dirSegments).toEqual(["assets (2)"]);
     expect(resolveNodePath(second, all).dirSegments).toEqual(["assets (3)"]);
+  });
+});
+
+describe("setProjectCoverImage", () => {
+  beforeEach(() => {
+    fsMock.readTextFile.mockReset();
+    fsMock.writeTextFile.mockReset();
+    fsMock.writeTextFile.mockImplementation(async () => {});
+  });
+
+  it("sets the key without disturbing fields this version doesn't know about", async () => {
+    fsMock.readTextFile.mockResolvedValue(
+      JSON.stringify({ version: 1, name: "Val", rootOrder: [], someFutureField: "kept" }),
+    );
+    await setProjectCoverImage("/root", "abc.png");
+    const written = JSON.parse(fsMock.writeTextFile.mock.calls[0][1] as string) as Record<string, unknown>;
+    expect(written).toEqual({ version: 1, name: "Val", rootOrder: [], someFutureField: "kept", coverImage: "abc.png" });
+  });
+
+  it("replaces an existing cover rather than adding a second key", async () => {
+    fsMock.readTextFile.mockResolvedValue(JSON.stringify({ version: 1, name: "Val", rootOrder: [], coverImage: "old.png" }));
+    await setProjectCoverImage("/root", "new.png");
+    const written = JSON.parse(fsMock.writeTextFile.mock.calls[0][1] as string) as Record<string, unknown>;
+    expect(written.coverImage).toBe("new.png");
+  });
+
+  it("removes the key entirely on null, rather than writing coverImage: null", async () => {
+    fsMock.readTextFile.mockResolvedValue(JSON.stringify({ version: 1, name: "Val", rootOrder: [], coverImage: "old.png" }));
+    await setProjectCoverImage("/root", null);
+    const written = JSON.parse(fsMock.writeTextFile.mock.calls[0][1] as string) as Record<string, unknown>;
+    expect("coverImage" in written).toBe(false);
+  });
+});
+
+describe("readFileBytesAt", () => {
+  it("reads whatever path it's given, not scoped to a project's own assets/", async () => {
+    const bytes = new Uint8Array([1, 2, 3]);
+    fsMock.readFile.mockResolvedValueOnce(bytes);
+    expect(await readFileBytesAt("D:/Downloads/picture.png")).toBe(bytes);
+    expect(fsMock.readFile).toHaveBeenCalledWith("D:/Downloads/picture.png");
   });
 });

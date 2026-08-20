@@ -17,12 +17,45 @@
 // this reuses the plain `start-line` row rather than the accent-bordered
 // `start-item` treatment, the same distinction Recently Opened already draws.
 import { FolderOpen } from "lucide-react";
+import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { describeFolderLocation } from "../../services/app-settings-service";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import type { ShownRelease } from "../../hooks/use-release-history";
 import type { ListedWorld } from "../../services/world-scan";
 import { SettingsButton } from "../shell/SettingsButton";
+
+/**
+ * One row. Its own component rather than the inline JSX `.map` used to
+ * render, because `useProjectCoverUrl` is a hook — calling one from inside a
+ * `.map` callback breaks the rule that hooks run at a component's own top
+ * level, not inside a loop.
+ */
+function RecentRow({
+  project,
+  now,
+  disabled,
+  onOpen,
+}: {
+  project: ListedWorld;
+  now: number;
+  disabled: boolean;
+  onOpen: () => void;
+}) {
+  const coverUrl = useProjectCoverUrl(project.path, project.coverImage);
+  return (
+    <button type="button" className="start-line" onClick={onOpen} disabled={disabled} title={project.path}>
+      <span
+        className="start-chip"
+        style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : coverGradient(coverFor(project)) }}
+      />
+      <span className="start-line-text">
+        <b>{project.name}</b>
+        <em>{timeAgo(project.lastOpenedAt, now)}</em>
+      </span>
+    </button>
+  );
+}
 
 type StartRailProps = {
   recent: ListedWorld[];
@@ -59,20 +92,7 @@ export function StartRail({
             <span className="start-title">Recently Opened</span>
           </p>
           {recent.map((project) => (
-            <button
-              key={project.path}
-              type="button"
-              className="start-line"
-              onClick={() => onOpen(project)}
-              disabled={disabled}
-              title={project.path}
-            >
-              <span className="start-chip" style={{ backgroundImage: coverGradient(coverFor(project)) }} />
-              <span className="start-line-text">
-                <b>{project.name}</b>
-                <em>{timeAgo(project.lastOpenedAt, now)}</em>
-              </span>
-            </button>
+            <RecentRow key={project.path} project={project} now={now} disabled={disabled} onOpen={() => onOpen(project)} />
           ))}
         </div>
       )}

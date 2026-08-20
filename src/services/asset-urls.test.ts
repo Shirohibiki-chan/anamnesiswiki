@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { assetFileName, assetRef, extensionFor, isAssetRef, releaseAssetUrls, resolveAssetUrl } from "./asset-urls";
+import {
+  assetFileName,
+  assetRef,
+  extensionFor,
+  extensionForPath,
+  isAssetRef,
+  releaseAssetUrls,
+  resolveAssetUrl,
+} from "./asset-urls";
 
 const readAssetImage = vi.hoisted(() => vi.fn());
 vi.mock("./filesystem-service", () => ({ readAssetImage }));
@@ -47,6 +55,16 @@ describe("extensionFor", () => {
 
   it("falls back again when there's neither", () => {
     expect(extensionFor({ name: "clipboard", type: "" } as File)).toBe("png");
+  });
+});
+
+describe("extensionForPath", () => {
+  it("reads the extension off a path picked from a native dialog", () => {
+    expect(extensionForPath("C:\\Users\\shiro\\Pictures\\Valera.JPEG")).toBe("jpeg");
+  });
+
+  it("guesses png rather than throwing when there's none", () => {
+    expect(extensionForPath("C:\\Users\\shiro\\Pictures\\noext")).toBe("png");
   });
 });
 

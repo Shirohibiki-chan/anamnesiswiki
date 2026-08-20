@@ -326,9 +326,20 @@
 /* The cover carries its own label: no bar, the picture fades into the dark
    under the name, so a project wearing a real photograph later isn't wearing a
    black stripe with it. */
+/* The frame is invisible on purpose — everything anyone sees is painted by
+   `.project-tile-open` beneath it, or by the cover button that sits over it.
+   It exists at all only because a `<button>` can't nest inside another one:
+   opening the project and setting its cover are two real actions, so they're
+   two sibling buttons rather than one wrapping the tile. */
 .project-tile {
   position: relative;
+}
+
+.project-tile-open {
+  position: relative;
   display: block;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--color-panel-edge);
@@ -338,7 +349,7 @@
   cursor: pointer;
 }
 
-.project-tile::after {
+.project-tile-open::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -351,11 +362,11 @@
   );
 }
 
-.project-tile:hover {
+.project-tile-open:hover {
   border-color: var(--color-accent-faint-border);
 }
 
-.project-tile:disabled {
+.project-tile-open:disabled {
   cursor: default;
   opacity: 0.6;
 }
@@ -363,6 +374,43 @@
 .project-tile-cover {
   position: absolute;
   inset: 0;
+  /* Irrelevant to a gradient, load-bearing for a picture she's set herself —
+     one rule covers both rather than a second class that only fires for one
+     of the two things this element can be showing. */
+  background-size: cover;
+  background-position: center;
+}
+
+/* Same treatment as PageBanner's own remove button — a scrim behind it rather
+   than the ordinary hover fill, since an arbitrary picture underneath makes
+   that fill invisible on some covers and illegible on others. Hidden until
+   hover or focus, same reasoning as the resize handles: a permanent icon on
+   every one of forty tiles is furniture for a control touched rarely. */
+.project-tile-cover-btn {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  z-index: 2;
+  background: var(--color-scrim-soft);
+  color: var(--color-on-scrim);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.project-tile:hover .project-tile-cover-btn,
+.project-tile:focus-within .project-tile-cover-btn {
+  opacity: 1;
+}
+
+.project-tile-cover-btn:hover {
+  background: var(--color-scrim-solid);
+  color: var(--color-on-scrim);
+}
+
+/* Grid only — see ProjectTile.tsx. A list row's thumbnail is a 44px chip,
+   too small for a hit target of its own. */
+.start-area[data-view="list"] .project-tile-cover-btn {
+  display: none;
 }
 
 /* Sits at the front of the location line, in both views. It used to have a
@@ -417,7 +465,7 @@
    different width of everything else. It now rides on the location line
    instead, which is the line it was always about, and the date gets the edge
    back. */
-.start-area[data-view="list"] .project-tile {
+.start-area[data-view="list"] .project-tile-open {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
@@ -427,7 +475,7 @@
   background: var(--color-panel);
 }
 
-.start-area[data-view="list"] .project-tile::after {
+.start-area[data-view="list"] .project-tile-open::after {
   display: none;
 }
 
@@ -577,6 +625,8 @@
   width: 20px;
   height: 20px;
   border-radius: var(--radius-sm);
+  background-size: cover;
+  background-position: center;
 }
 
 .start-line-text {

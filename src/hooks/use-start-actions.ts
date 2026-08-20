@@ -7,7 +7,11 @@
 // happening at a time, and an error from any of them belongs in one place on
 // screen rather than three.
 import { useCallback, useState } from "react";
-import { showFolder } from "../services/dialog-service";
+import { extensionForPath } from "../services/asset-urls";
+import { pickImageFile, showFolder } from "../services/dialog-service";
+import * as fsService from "../services/filesystem-service";
+import { MAX_IMAGE_BYTES } from "../constants/limits";
+import type { ListedWorld } from "../services/world-scan";
 import { useAppSettings } from "./use-app-settings";
 import { useDialogs } from "./use-dialogs";
 import { useOpenFolder } from "./use-open-folder";
@@ -34,6 +38,16 @@ export type StartActions = {
    *  default path nothing has created yet, and handing that to the file
    *  manager opens a level up with nothing there to explain why. */
   openProjectsFolder: () => Promise<void>;
+  /**
+   * The hover button on a project tile. Native picker rather than the in-app
+   * library `PageBanner` uses — that library is the *open* project's own
+   * assets, and this runs with nothing open. `true` on success, so the
+   * caller knows to re-scan the list; cancelling the picker is not a failure
+   * and resolves `false` without touching `error`.
+   */
+  setProjectCover: (project: ListedWorld) => Promise<boolean>;
+  /** What the same hover button does once a cover is set, instead of picking a new one. */
+  removeProjectCover: (project: ListedWorld) => Promise<boolean>;
 };
 
 export function useStartActions(): StartActions {
@@ -162,6 +176,57 @@ export function useStartActions(): StartActions {
     }
   }, [prepareProjectsDir]);
 
+  const setProjectCover = useCallback(async (project: ListedWorld) => {
+    // Outside the busy/error machinery below: cancelling a native dialog is
+    // an ordinary outcome, not a failure with something to say about it, and
+    // it must not flip the screen busy while it's up — she's meant to be able
+    // to do anything else while the OS's own window is on screen.
+    let path: string | null;
+    try {
+      path = await pickImageFile();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open the picture picker.");
+      return false;
+    }
+    if (!path) return false;
+
+    setIsBusy(true);
+    try {
+      const bytes = await fsService.readFileBytesAt(path);
+      if (bytes.byteLength > MAX_IMAGE_BYTES) {
+        setError("That picture is too large (10MB max).");
+        return false;
+      }
+      // Fresh UUID, same convention setNodeImage uses in project-store.ts —
+      // it lands in *this* world's own assets/, which may not be the open
+      // project's, so it can't go through that store action.
+      const fileName = `${crypto.randomUUID()}.${extensionForPath(path)}`;
+      await fsService.saveAssetImage(project.path, fileName, bytes);
+      await fsService.setProjectCoverImage(project.path, fileName);
+      setError(null);
+      return true;
+    } catch {
+      setError(`Couldn't set a cover for "${project.name}".`);
+      return false;
+    } finally {
+      setIsBusy(false);
+    }
+  }, []);
+
+  const removeProjectCover = useCallback(async (project: ListedWorld) => {
+    setIsBusy(true);
+    try {
+      await fsService.setProjectCoverImage(project.path, null);
+      setError(null);
+      return true;
+    } catch {
+      setError(`Couldn't remove the cover from "${project.name}".`);
+      return false;
+    } finally {
+      setIsBusy(false);
+    }
+  }, []);
+
   return {
     isBusy,
     error,
@@ -173,5 +238,7 @@ export function useStartActions(): StartActions {
     pickFolderToOpen,
     createProject,
     openProjectsFolder,
+    setProjectCover,
+    removeProjectCover,
   };
 }
