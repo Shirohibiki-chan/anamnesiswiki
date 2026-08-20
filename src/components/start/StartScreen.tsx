@@ -18,6 +18,7 @@
 import { useState } from "react";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
+import { useReleaseHistory } from "../../hooks/use-release-history";
 import { useUpdates } from "../../hooks/use-updates";
 import { useStartActions } from "../../hooks/use-start-actions";
 import { useWorldLibrary } from "../../hooks/use-world-library";
@@ -26,6 +27,7 @@ import { filterWorlds } from "../../services/world-scan";
 import { RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from "../../constants/layout";
 import { ImportModal } from "../import/ImportModal";
 import { ResizeHandle } from "../shell/ResizeHandle";
+import { SettingsModal } from "../shell/SettingsModal";
 import { ManagePinsDialog } from "./ManagePinsDialog";
 import { PinnedRow } from "./PinnedRow";
 import { ProjectGrid } from "./ProjectGrid";
@@ -52,6 +54,7 @@ function folderNameOf(path: string): string {
 export function StartScreen() {
   const { worlds, isScanning, scannedAt } = useWorldLibrary();
   const { currentVersion } = useUpdates();
+  const { releases } = useReleaseHistory();
   const actions = useStartActions();
   const widths = usePanelWidths();
   const { setRailWidth, resetRailWidth } = useRailWidthActions();
@@ -61,6 +64,7 @@ export function StartScreen() {
   const [newProjectName, setNewProjectName] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isManagingPins, setIsManagingPins] = useState(false);
+  const [isReleasesOpen, setIsReleasesOpen] = useState(false);
 
   const { pins, isLoaded: pinsLoaded, pin, unpin, reorder } = usePins(worlds);
   // Resolved against every project rather than against the filtered list: the
@@ -202,14 +206,23 @@ export function StartScreen() {
 
       <StartRail
         recent={recent}
+        releases={releases}
         now={scannedAt}
         disabled={actions.isBusy}
         onOpen={(project) => void actions.openListed(project.path, project.name)}
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
+        onOpenReleases={() => setIsReleasesOpen(true)}
       />
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
+
+      {/* Not routed through SettingsButton in the rail's foot: that one
+          always opens to Theme, and a release row's job is to land on Patch
+          Notes specifically, so this owns its own trigger and its own
+          instance of the same dialog rather than teaching the cog a second
+          opinion about where it opens. */}
+      {isReleasesOpen && <SettingsModal initialTab="patch-notes" onClose={() => setIsReleasesOpen(false)} />}
 
       {isManagingPins && (
         <ManagePinsDialog

@@ -71,6 +71,14 @@ type TabId = string;
 
 type SettingsModalProps = {
   onClose: () => void;
+  /**
+   * Which section is open on first paint. Defaults to the first tab — every
+   * existing caller opens the cog and lands on Theme, same as always. The
+   * start screen's New Releases rows are the one caller that wants something
+   * else: clicking a release should land on Patch Notes, not send the user
+   * hunting for it after a detour through Theme.
+   */
+  initialTab?: TabId;
 };
 
 // Null for any key the rail doesn't own, so it falls through to whatever else
@@ -86,8 +94,13 @@ function tabIndexForKey(key: string, from: number): number | null {
   return null;
 }
 
-export function SettingsModal({ onClose }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<TabId>(SETTINGS_TABS[0].id);
+export function SettingsModal({ onClose, initialTab }: SettingsModalProps) {
+  // Trusts the caller's id without checking it against SETTINGS_TABS: both
+  // callers that pass one hand-write it against a literal tab id right beside
+  // the call, the same way `activeTab` itself is never validated against the
+  // list either — a typo here is a wrong screen at dev time, not a state a
+  // real build ships with a bad value in.
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? SETTINGS_TABS[0].id);
   const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState(0);
   // Which setting the last result click was aiming at, so the panel it lands
