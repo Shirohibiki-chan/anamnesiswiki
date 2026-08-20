@@ -9,7 +9,7 @@
 // would make it appear, empty, on every page already using that template.
 //
 // Mined selectively from World Anvil's Person template, which carries ~120
-// typed fields — see docs/plan.md Future Features → World Anvil import. The
+// typed fields — see docs/ideas.md → World Anvil import. The
 // selection is the point: WA's own reputation is for bloat, and a suggestion
 // list nobody reads to the bottom of is the same failure in miniature. A dozen
 // per template, chosen for what people actually fill in.
