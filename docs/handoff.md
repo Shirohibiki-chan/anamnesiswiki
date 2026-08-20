@@ -112,6 +112,15 @@ is below.
   gone; the list now only says when each world was last opened. Anything that
   re-introduces a cap here hides worlds again.
 
+- **`Projects/` is where new projects go, and `isAppOwnedDir` and
+  `isReservedWorldName` are deliberately two different questions.** The scan
+  skips `themes/` and `snippets/` at the top level; it must **not** skip
+  `Projects/`, or every project inside it disappears. The name is refused for a
+  *new* project instead, because a project called "Projects" sitting where the
+  container does is found by the scan and never walked into. Nothing was
+  migrated and nothing needs to be: the scan reaches two levels, so a project
+  at the old level is still found and still opens by its absolute path.
+
 - **A project says it is open by keeping `.anamnesis-open.json` fresh, and
   freshness is the whole mechanism.** The app cannot ask the OS whether the
   process that wrote a marker still exists without a Rust command, so the

@@ -712,7 +712,8 @@ because one more field got cheap to carry.
 template — which the direction above lists and the rail has never had, and which
 needs its own design pass first: it turned into export and import a project
 template (her, 2026-08-19), so what a template file holds and what format it is
-are open questions rather than build work. Then the folder layout, below.
+are open questions rather than build work — the last thing in this phase that
+is not a conversation.
 
 **Lineage is shown as of 2026-08-20**, on the location line rather than a line
 of its own: it is a fact about this project as a folder, the same kind the
@@ -795,6 +796,22 @@ path, so moving them by hand costs nothing but re-opening each once, and she
 has two real worlds and one other user. Once ids and the scan exist, a moved
 world is re-found rather than lost from the recent list. Reserve `themes` and
 `snippets` as world names regardless of layout.
+
+**Landed 2026-08-20, and it changes where the *next* world goes rather than
+where any world lives.** Creating and importing both write into `Projects/`;
+the scan already reached two levels, so a world at the old level is still
+found, still opens and still keeps its place in the recent list, with nothing
+to migrate. Two folders are now different questions with different callers:
+`prepareProjectsDir` is the one she picked, which holds `themes/`, `snippets/`
+and this, and is what Settings → Projects points at; `prepareNewProjectsDir` is
+the container, and is what creating, importing and the rail's folder button
+mean.
+
+**`Projects` is reserved as a world name but is *not* skipped by the scan** —
+skipping it would hide every world inside it, which is the failure this folder
+exists to prevent, inverted. The reservation is enforced where a world is made
+rather than only described: a world by that name where the container sits would
+be found by the scan and never walked into.
 
 ---
 

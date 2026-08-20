@@ -3,7 +3,7 @@
 //
 // Deliberately touches nothing: `filesystem-service.ts` is the only file that
 // goes to disk (CLAUDE.md §4). It does the walking and hands the results here.
-import { SNIPPETS_DIR, THEMES_DIR } from "../constants/paths";
+import { PROJECTS_SUBDIR, SNIPPETS_DIR, THEMES_DIR } from "../constants/paths";
 import type { ProjectSort } from "./preferences-service";
 
 /**
@@ -32,8 +32,29 @@ export const WORLD_SCAN_DEPTH = 2;
  */
 const RESERVED_DIRS = new Set<string>([THEMES_DIR, SNIPPETS_DIR]);
 
-export function isReservedWorldName(name: string): boolean {
+/**
+ * Skipped by the scan at the top level — app data, not a world.
+ *
+ * **`Projects/` is deliberately not here.** It is where worlds now live, so
+ * skipping it would hide every one of them; it is only reserved as a *name*,
+ * below.
+ */
+export function isAppOwnedDir(name: string): boolean {
   return RESERVED_DIRS.has(name.trim().toLowerCase());
+}
+
+/**
+ * Names a new world can't have, whatever folder it is being made in.
+ *
+ * The two app folders, plus `Projects` — a world by that name sitting where the
+ * container does would be found first and its contents never walked into, so
+ * every world inside it would vanish from the list. That is the same failure
+ * the two folders above are skipped to avoid, and one rule is easier to explain
+ * than a rule about where the world happens to be going.
+ */
+export function isReservedWorldName(name: string): boolean {
+  const cleaned = name.trim().toLowerCase();
+  return isAppOwnedDir(cleaned) || cleaned === PROJECTS_SUBDIR.toLowerCase();
 }
 
 /**

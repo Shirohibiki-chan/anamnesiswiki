@@ -61,7 +61,7 @@ function progressHeadline(
 export function ImportModal({ onClose }: { onClose: () => void }) {
   const { pickImportFile, pickFolder } = useDialogs();
   const { parseLkFile, importLkProject } = useLkImport();
-  const { recordProjectOpened, projectsDir, prepareProjectsDir } = useAppSettings();
+  const { recordProjectOpened, projectsDir, prepareNewProjectsDir } = useAppSettings();
   const { getLabel } = useTemplates();
 
   const [status, setStatus] = useState<Status>("idle");
@@ -111,7 +111,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
   async function handleChangeDestination() {
     try {
-      const startFrom = destinationOverride ?? (await prepareProjectsDir());
+      const startFrom = destinationOverride ?? (await prepareNewProjectsDir());
       const picked = await pickFolder({
         title: "Choose where to save this imported project",
         defaultPath: startFrom,
@@ -135,7 +135,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     // The destination comes from Settings, and "Change" below overrides it.
     // Makes the folder if it isn't there — otherwise a fresh install's very
     // first action can be an import into a Documents\Anamnesis nobody created.
-    const parentDir = destinationOverride ?? (await prepareProjectsDir());
+    const parentDir = destinationOverride ?? (await prepareNewProjectsDir());
 
     setStatus("importing");
     setProgress(null);

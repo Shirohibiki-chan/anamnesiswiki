@@ -87,7 +87,7 @@ export function StartScreen() {
   const { worlds, heldElsewhere, isScanning, scannedAt, refreshWorlds } = useWorldLibrary();
   const { currentVersion } = useUpdates();
   const { releases } = useReleaseHistory();
-  const { projectsDir } = useAppSettings();
+  const { newProjectsDir } = useAppSettings();
   const actions = useStartActions();
   const { confirmDestructive } = useDialogs();
   const fileManagerName = useFileManagerName();
@@ -319,7 +319,7 @@ export function StartScreen() {
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
         onOpenReleases={setOpenReleaseVersion}
-        projectsDir={projectsDir}
+        projectsDir={newProjectsDir}
         onOpenProjectsFolder={() => void actions.openProjectsFolder()}
       />
 

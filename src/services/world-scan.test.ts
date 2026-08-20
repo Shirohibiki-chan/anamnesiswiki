@@ -5,6 +5,7 @@ import {
   decideAmongNestedWorlds,
   filterWorlds,
   isInsideProjectsFolder,
+  isAppOwnedDir,
   isReservedWorldName,
   locationOf,
   planForkResolutions,
@@ -14,10 +15,30 @@ import {
   type WorldFile,
 } from "./world-scan";
 
+describe("isAppOwnedDir", () => {
+  it("skips the app's own folders", () => {
+    expect(isAppOwnedDir("themes")).toBe(true);
+    expect(isAppOwnedDir("snippets")).toBe(true);
+  });
+
+  it("does not skip the container worlds now live in", () => {
+    // Skipping `Projects/` would hide every world inside it — the exact
+    // failure the folder was made to prevent, inverted.
+    expect(isAppOwnedDir("Projects")).toBe(false);
+  });
+});
+
 describe("isReservedWorldName", () => {
   it("refuses the app's own folders", () => {
     expect(isReservedWorldName("themes")).toBe(true);
     expect(isReservedWorldName("snippets")).toBe(true);
+  });
+
+  it("refuses the container's own name", () => {
+    // A world called "Projects" where the container sits is found by the scan
+    // and never walked into, so every world inside it goes missing.
+    expect(isReservedWorldName("Projects")).toBe(true);
+    expect(isReservedWorldName("  projects  ")).toBe(true);
   });
 
   it("ignores case and surrounding space, since a folder name carries both", () => {

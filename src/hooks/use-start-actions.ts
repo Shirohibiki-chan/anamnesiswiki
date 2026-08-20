@@ -36,8 +36,8 @@ export type StartActions = {
   pickFolderToOpen: () => Promise<void>;
   createProject: (name: string) => Promise<void>;
   /** The rail's Projects folder line. Makes the folder first — same reason
-   *  `createProject` calls `prepareProjectsDir`, since a fresh install has a
-   *  default path nothing has created yet, and handing that to the file
+   *  `createProject` calls `prepareNewProjectsDir`, since a fresh install has
+   *  a default path nothing has created yet, and handing that to the file
    *  manager opens a level up with nothing there to explain why. */
   openProjectsFolder: () => Promise<void>;
   /**
@@ -68,7 +68,7 @@ export type StartActions = {
 
 export function useStartActions(): StartActions {
   const { loadProject, createProjectAt } = useProject();
-  const { recordProjectOpened, forgetProject, prepareProjectsDir } = useAppSettings();
+  const { recordProjectOpened, forgetProject, prepareNewProjectsDir } = useAppSettings();
   const { pickFolder } = useDialogs();
   const resolveChosenFolder = useOpenFolder();
 
@@ -165,7 +165,7 @@ export function useStartActions(): StartActions {
       setIsBusy(true);
       let result: Awaited<ReturnType<typeof createProjectAt>>;
       try {
-        const parentDir = await prepareProjectsDir();
+        const parentDir = await prepareNewProjectsDir();
         result = await createProjectAt(parentDir, trimmed);
       } catch {
         result = {
@@ -183,13 +183,13 @@ export function useStartActions(): StartActions {
       setError(null);
       await recordProjectOpened(result.rootPath, trimmed);
     },
-    [createProjectAt, prepareProjectsDir, recordProjectOpened],
+    [createProjectAt, prepareNewProjectsDir, recordProjectOpened],
   );
 
   const openProjectsFolder = useCallback(async () => {
     setIsBusy(true);
     try {
-      const dir = await prepareProjectsDir();
+      const dir = await prepareNewProjectsDir();
       // Named the same way use-reveal.ts falls back for a file: the path
       // itself, so a refusal still tells her where to go by hand rather than
       // just saying no. One line, not two — `start-error` is a plain `<p>`
@@ -204,7 +204,7 @@ export function useStartActions(): StartActions {
     } finally {
       setIsBusy(false);
     }
-  }, [prepareProjectsDir]);
+  }, [prepareNewProjectsDir]);
 
   const setProjectCover = useCallback(async (project: ListedWorld) => {
     // Outside the busy/error machinery below: cancelling a native dialog is

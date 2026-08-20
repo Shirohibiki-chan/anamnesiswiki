@@ -30,11 +30,12 @@ import {
   OPEN_MARKER_FILE,
   PAGE_META_FILE,
   PROBE_TEMP_PREFIX,
+  PROJECTS_SUBDIR,
   PROJECT_FILE,
   TEMPLATES_FILE,
 } from "../constants/paths";
 import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
-import { decideAmongNestedWorlds, isReservedWorldName, WORLD_SCAN_DEPTH, type OpenFolderOutcome, type WorldFile } from "./world-scan";
+import { decideAmongNestedWorlds, isAppOwnedDir, WORLD_SCAN_DEPTH, type OpenFolderOutcome, type WorldFile } from "./world-scan";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
@@ -790,7 +791,7 @@ export async function scanForWorlds(root: string): Promise<string[]> {
       return;
     }
 
-    const directories = entries.filter((e) => e.isDirectory && !(depth === 1 && isReservedWorldName(e.name)));
+    const directories = entries.filter((e) => e.isDirectory && !(depth === 1 && isAppOwnedDir(e.name)));
     await Promise.all(
       directories.map(async (entry) => {
         const path = joinPath(dir, entry.name);
@@ -1554,6 +1555,16 @@ export async function reidentifyForkedProject(rootPath: string, forkedFromId: st
   } catch {
     return null;
   }
+}
+
+/**
+ * Where new projects go, inside the folder she chose. See `PROJECTS_SUBDIR`.
+ *
+ * Path shape is this file's subject, so the join lives here rather than in the
+ * three call sites that need the answer.
+ */
+export function projectsSubdirOf(root: string): string {
+  return joinPath(root, PROJECTS_SUBDIR);
 }
 
 /**
