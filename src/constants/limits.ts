@@ -116,3 +116,10 @@ export const HOVER_PREVIEW_DELAY_MS = 350;
 // search field over four rows is a control asking to be used. Raised as a real
 // problem at fifty (2026-08-18); eight is where scanning starts to lose.
 export const ASSET_FOLDER_FILTER_MIN = 8;
+
+// How long a start-screen group's name may be. Groups are drawn as chips in a
+// single row above the project grid, so the cap is about that row rather than
+// about storage: past roughly this length one chip is the whole row and the
+// rest are off the end of it. Enforced when the name is stored, not while she
+// types, so a paste that runs long is trimmed rather than refused.
+export const MAX_GROUP_NAME_CHARS = 40;

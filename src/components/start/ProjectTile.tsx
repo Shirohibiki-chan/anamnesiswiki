@@ -8,22 +8,22 @@
 // name, so a project wearing a real photograph isn't wearing a black stripe
 // with it.
 //
-// **Two buttons, not one wrapping the tile.** A button can't nest inside a
-// button, and the hover control for setting or removing a cover is a real
-// action distinct from opening the project — so this is a `<div>` frame
-// holding two sibling buttons: `.project-tile-open`, which carries every
-// pixel `.project-tile` itself used to (border, background, focus, disabled),
-// and a small corner button that's the whole reason the frame exists.
-import { useRef, useState } from "react";
-import { ImagePlus, MoreHorizontal, X } from "lucide-react";
-import { useClickOutside } from "../../hooks/use-click-outside";
+// **Sibling buttons, not one wrapping the tile.** A button can't nest inside a
+// button, and setting a cover or filing the project into a group are real
+// actions distinct from opening it — so this is a `<div>` frame holding
+// `.project-tile-open`, which carries every pixel `.project-tile` itself used
+// to (border, background, focus, disabled), beside the controls that are the
+// whole reason the frame exists.
+import { ImagePlus, X } from "lucide-react";
 import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import { locationOf, type ListedWorld } from "../../services/world-scan";
+import { ProjectTileMenu, type ProjectLibraryActions } from "./ProjectTileMenu";
 
 type ProjectTileProps = {
   project: ListedWorld;
+  library: ProjectLibraryActions;
   /** One timestamp for the whole grid, so forty tiles can't disagree about what "now" is. */
   now: number;
   disabled: boolean;
@@ -32,22 +32,13 @@ type ProjectTileProps = {
   onRemoveCover: () => void;
 };
 
-export function ProjectTile({ project, now, disabled, onOpen, onSetCover, onRemoveCover }: ProjectTileProps) {
+export function ProjectTile({ project, library, now, disabled, onOpen, onSetCover, onRemoveCover }: ProjectTileProps) {
   const when = timeAgo(project.activeAt || null, now);
   // Rendered in both views and hidden in one, rather than branched on: which
   // view is drawn is a class on the grid, and a component that reads it would
   // be the first thing here that has to know.
   const where = locationOf(project.path);
   const coverUrl = useProjectCoverUrl(project.path, project.coverImage);
-
-  // List view's own way to set a cover — see `.project-tile-menu-btn` in
-  // start.css for why this exists apart from the grid's corner button rather
-  // than that button just becoming a menu everywhere: a list thumbnail is 44px,
-  // too small to grow a hover button of its own, so the trigger lives beside
-  // the row instead of on the picture.
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuBoundary = useRef<HTMLDivElement>(null);
-  useClickOutside(menuBoundary, () => setIsMenuOpen(false), isMenuOpen);
 
   return (
     <div className="project-tile" title={project.path}>
@@ -82,8 +73,8 @@ export function ProjectTile({ project, now, disabled, onOpen, onSetCover, onRemo
       </button>
 
       {/* Grid view only — see start.css. A list row's thumbnail is a 44px
-          chip, too small for a hit target of its own; list view gets the
-          same action through the `⋯` menu below instead. */}
+          chip, too small for a hit target of its own; in list view the same
+          action is reached through the `⋯` menu instead. */}
       <button
         type="button"
         className="ui-icon-btn ui-icon-btn-lg project-tile-cover-btn"
@@ -95,39 +86,18 @@ export function ProjectTile({ project, now, disabled, onOpen, onSetCover, onRemo
         {coverUrl ? <X size={13} /> : <ImagePlus size={13} />}
       </button>
 
-      {/* List view only — see start.css. Same two actions the grid's corner
-          button carries, reached through a menu instead of a hover button
-          because there's no picture here big enough to put one on. */}
-      <div className="project-tile-menu" ref={menuBoundary}>
-        <button
-          type="button"
-          className="ui-icon-btn project-tile-menu-btn"
-          aria-haspopup="menu"
-          aria-expanded={isMenuOpen}
-          aria-label="Project actions"
-          title="Project actions"
-          disabled={disabled}
-          onClick={() => setIsMenuOpen((open) => !open)}
-        >
-          <MoreHorizontal size={14} />
-        </button>
-        {isMenuOpen && (
-          <div className="project-tile-menu-list" role="menu">
-            <button
-              type="button"
-              role="menuitem"
-              className="project-tile-menu-item"
-              onClick={() => {
-                setIsMenuOpen(false);
-                (coverUrl ? onRemoveCover : onSetCover)();
-              }}
-            >
-              {coverUrl ? <X size={13} /> : <ImagePlus size={13} />}
-              {coverUrl ? "Remove cover" : "Set cover"}
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Both views — see ProjectTileMenu.tsx. In list it is the only control
+          on the row, since a 44px thumbnail has nowhere to put the button
+          above; in grid it sits beside that button and carries everything
+          that isn't the cover. */}
+      <ProjectTileMenu
+        project={project}
+        library={library}
+        disabled={disabled}
+        coverUrl={coverUrl}
+        onSetCover={onSetCover}
+        onRemoveCover={onRemoveCover}
+      />
     </div>
   );
 }

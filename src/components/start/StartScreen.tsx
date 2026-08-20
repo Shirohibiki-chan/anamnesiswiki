@@ -17,12 +17,15 @@
 // the width is stored beside the shell's two — see `layout-service`.
 import { useState } from "react";
 import { useAppSettings } from "../../hooks/use-app-settings";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
+import { useProjectLibrary } from "../../hooks/use-project-library";
 import { useReleaseHistory } from "../../hooks/use-release-history";
 import { useUpdates } from "../../hooks/use-updates";
 import { useStartActions } from "../../hooks/use-start-actions";
 import { useWorldLibrary } from "../../hooks/use-world-library";
+import { scopeProjects, SCOPE_ALL, SCOPE_ARCHIVED, type LibraryScope } from "../../services/library-scope";
 import { resolvePins, unpinned as unpinnedOf } from "../../services/pins";
 import { filterWorlds } from "../../services/world-scan";
 import { RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from "../../constants/layout";
@@ -31,6 +34,7 @@ import { ResizeHandle } from "../shell/ResizeHandle";
 import { SettingsModal } from "../shell/SettingsModal";
 import { ManagePinsDialog } from "./ManagePinsDialog";
 import { PinnedRow } from "./PinnedRow";
+import { ProjectFilters } from "./ProjectFilters";
 import { ProjectGrid } from "./ProjectGrid";
 import { StartRail } from "./StartRail";
 import "./start.css";
@@ -52,12 +56,39 @@ function folderNameOf(path: string): string {
   return segments[segments.length - 1] ?? path;
 }
 
+/**
+ * The library's heading, which names the chip that is on.
+ *
+ * A grid showing eleven of forty projects under a heading that says "All
+ * Projects" reads as projects having gone missing. The heading is the one
+ * place the screen can say "this is a shelf, not everything".
+ */
+function headingFor(scope: LibraryScope, groupName: string | undefined): string {
+  if (scope === SCOPE_ARCHIVED) return "Archived";
+  return groupName ?? "All Projects";
+}
+
+/**
+ * What an empty grid says, which is three different things on this screen.
+ *
+ * The filter box answers first, because it is the one she is holding: a group
+ * that looks empty while a query is on is not empty, and saying so would send
+ * her to fix the wrong thing.
+ */
+function emptyMessageFor(scope: LibraryScope, query: string): string {
+  if (query.trim().length > 0) return "No project here matches that.";
+  if (scope === SCOPE_ARCHIVED) return "Nothing archived turned up — a project on a drive that isn't plugged in won't show here.";
+  if (scope !== SCOPE_ALL) return "Nothing is in this group yet. Add a project to it from the ⋯ button on the project.";
+  return "No projects yet — make one, or open a folder you already have.";
+}
+
 export function StartScreen() {
   const { worlds, isScanning, scannedAt, refreshWorlds } = useWorldLibrary();
   const { currentVersion } = useUpdates();
   const { releases } = useReleaseHistory();
   const { projectsDir } = useAppSettings();
   const actions = useStartActions();
+  const { confirmDestructive } = useDialogs();
   const widths = usePanelWidths();
   const { setRailWidth, resetRailWidth } = useRailWidthActions();
 
@@ -71,13 +102,23 @@ export function StartScreen() {
   // for the two to say different things about whether it's open.
   const [openReleaseVersion, setOpenReleaseVersion] = useState<string | null>(null);
 
+  const library = useProjectLibrary(worlds);
+
   const { pins, isLoaded: pinsLoaded, pin, unpin, reorder } = usePins(worlds);
   // Resolved against every project rather than against the filtered list: the
   // filter box is for finding one project in the grid, and a pinned row that
   // emptied itself as she typed would be answering a question she did not ask.
-  const pinned = resolvePins(pins, worlds);
+  // Minus anything archived: a project folded away has no business sitting in
+  // the loudest row on the screen, and the pin itself is kept rather than
+  // dropped, so bringing it back brings its place back with it.
+  const pinned = resolvePins(pins, worlds).filter((project) => !library.isArchived(project));
 
-  const shown = filterWorlds(worlds, query);
+  // Scope first, then the filter box. They commute, and this order is the one
+  // that matches the sentence the screen makes: the chips say which shelf, the
+  // box searches the shelf you are looking at.
+  const scoped = scopeProjects(worlds, library.scope, { groups: library.groups, archived: library.archived });
+  const shown = filterWorlds(scoped, query);
+  const activeGroup = library.groups.find((group) => group.id === library.scope);
   // Only ones she has actually opened, newest first. A project found by the
   // scan and never opened has no business in a list called "recently opened",
   // however recently its file changed.
@@ -85,6 +126,19 @@ export function StartScreen() {
     .filter((world) => world.lastOpenedAt !== null)
     .sort((a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0))
     .slice(0, RAIL_RECENT_COUNT);
+
+  // Asked before the group goes, because a group is filing rather than
+  // storage and the difference is worth saying out loud once: nothing in it is
+  // deleted, and there is no undo on this screen to lean on if she reads it
+  // the other way.
+  async function confirmGroupDelete(id: string) {
+    const group = library.groups.find((candidate) => candidate.id === id);
+    if (!group) return;
+    const ok = await confirmDestructive(
+      `Delete the group "${group.name}"? The projects in it stay exactly where they are.`,
+    );
+    if (ok) library.deleteGroup(id);
+  }
 
   return (
     <main className="start" style={{ "--rail-w": `${widths.rail}px` } as React.CSSProperties}>
@@ -153,7 +207,7 @@ export function StartScreen() {
 
         {/* Held back until the settings file has been read, so the row does
             not flash its empty state on every start. */}
-        {pinsLoaded && !isScanning && (
+        {pinsLoaded && library.isLoaded && !isScanning && (
           <PinnedRow
             pinned={pinned}
             total={worlds.length}
@@ -166,8 +220,29 @@ export function StartScreen() {
 
         <ProjectGrid
           projects={shown}
+          heading={headingFor(library.scope, activeGroup?.name)}
+          emptyMessage={emptyMessageFor(library.scope, query)}
+          filters={
+            <ProjectFilters
+              groups={library.groups}
+              archivedCount={library.archived.length}
+              scope={library.scope}
+              onScope={library.setScope}
+              onCreateGroup={library.createGroup}
+              onRenameGroup={library.renameGroup}
+              onDeleteGroup={(id) => void confirmGroupDelete(id)}
+            />
+          }
+          library={{
+            groups: library.groups,
+            groupIdsOf: (project) => library.groupsOf(project).map((group) => group.id),
+            isArchived: library.isArchived,
+            onToggleGroup: (project, groupId) => library.toggleGroupMember(groupId, project),
+            onCreateGroup: (project, name) => library.createGroup(name, project),
+            onArchive: library.archive,
+            onUnarchive: library.unarchive,
+          }}
           isScanning={isScanning}
-          isFiltered={query.trim().length > 0}
           now={scannedAt}
           disabled={actions.isBusy}
           onOpen={(project) => void actions.openListed(project.path, project.name)}
