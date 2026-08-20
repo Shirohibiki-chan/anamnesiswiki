@@ -1,7 +1,7 @@
 // Wraps react-arborist's Tree: converts the node graph to its nested data
 // shape, wires rename/move/toggle back to the project store, and handles
 // its own pixel sizing (react-arborist doesn't auto-size itself).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
 import { TREE_INDENT } from "../../constants/layout";
 import { useProject } from "../../hooks/use-project";
@@ -21,6 +21,18 @@ export function TreePanel() {
   const [searchMode, setSearchMode] = useState<TreeSearchMode>("all");
   const [containerRef, size] = useElementSize<HTMLDivElement>();
   const treeApiRef = useRef<TreeApi<TreeNodeData> | null>(null);
+  // Plain `useRef` doesn't tell React when `.current` changes, so an effect
+  // keyed on `project?.selectedId` alone can run once *before* `<Tree>` has
+  // mounted (its own row is gated on `size.height > 0`, a layout measurement
+  // that lands a render or two after this component's first paint) and never
+  // get a second chance — the id didn't change, so the effect has no reason
+  // to fire again once the ref is finally live. This callback ref makes
+  // "the tree just became available" a real, trackable state change.
+  const [isTreeReady, setIsTreeReady] = useState(false);
+  const setTreeApiRef = useCallback((api: TreeApi<TreeNodeData> | null | undefined) => {
+    treeApiRef.current = api ?? null;
+    setIsTreeReady(api != null);
+  }, []);
 
   const searchMatcher = useSearchMatcher(searchQuery, searchMode);
 
@@ -36,6 +48,10 @@ export function TreePanel() {
   // replaces the whole selection with one node, so running it for a node the
   // tree has *already* got selected would collapse a ctrl-click selection the
   // moment it was made.
+  //
+  // `isTreeReady` is in the dependency list for the reason above the ref
+  // declaration: a project that opens straight onto a nested page needs this
+  // to run again once the tree exists, not just when `selectedId` changes.
   useEffect(() => {
     const selectedId = project?.selectedId;
     if (!selectedId) return;
@@ -44,7 +60,7 @@ export function TreePanel() {
     }
     if (!treeApiRef.current?.isSelected(selectedId)) treeApiRef.current?.select(selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.selectedId]);
+  }, [project?.selectedId, isTreeReady]);
 
   // Seeds react-arborist's open/closed state once at mount from the
   // persisted project.expandedIds. TreePanel remounts fresh whenever a
@@ -117,13 +133,24 @@ export function TreePanel() {
 
         {size.height > 0 && (
           <Tree<TreeNodeData>
-            ref={treeApiRef}
+            ref={setTreeApiRef}
             data={treeData}
             width={size.width}
             height={size.height}
             indent={TREE_INDENT}
             openByDefault={false}
             initialOpenState={initialOpenState}
+            // react-arborist's own mount effect deselects everything whenever
+            // this is left unset — with nothing to tell it otherwise, it reads
+            // "no selection" rather than "hasn't been told yet", and fires
+            // `onSelect([])` to say so. That call reaches `selectNode` exactly
+            // like a real deselect would, and up to now it always won: this is
+            // why opening a project never actually landed on the page
+            // `project.selectedId` already named — the page you were last on
+            // was overwritten by this before the effect below ever got to
+            // restore it, every single time. Handing it the real id up front
+            // means the library asks for that node instead of clearing one.
+            selection={project?.selectedId ?? undefined}
             searchTerm={searchQuery}
             searchMatch={(node) => (searchMatcher ? searchMatcher(node.data.id) : true)}
             // No `disableDrop`: every page can hold pages as of 2026-08-10.

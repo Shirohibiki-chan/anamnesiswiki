@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-20
+
+### Fixes
+
+- **Opening a project never actually landed on the page you were last on**, even though the tree remembered it — it always opened to "Select a page to begin" instead. Fixed.
+
 ## 2026-08-19
 
 ### Additions
