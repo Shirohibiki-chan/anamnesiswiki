@@ -11,6 +11,7 @@
 
 ### Fixes
 
+- **Closing the window sometimes did nothing.** Once anything needed saving on the way out, a rare failure in that path could leave the window unable to close for the rest of the session — no error, no explanation, the X just stopped working. It always finishes the close now, however the save on the way out goes.
 - **One project no longer stretches across the whole screen in the list view.** A row put the name at the far left and the date at the far right, so making the window wider only put more nothing between them — about 2000 pixels of it with the window full screen. A row is now two lines: the name with its location under it, and the date beside them, centred. That lets a row be narrow enough for the list to make a second, third or fourth column of them as there's room, instead of stretching one across everything.
 - **The pinned covers no longer stretch out of shape on a wide window.** The row was always four across, which is the right number at about the size the app opens at and wrong everywhere else: fullscreen on a wide monitor pulled four covers into long thin bands, and shrinking the window stood them on end and started cutting the names off. It now fits as many as the width has room for — eight across a fullscreen 2560 monitor, two on the narrowest window — and a cover keeps the same shape at every size, so a picture you put on one is always cropped the same way rather than losing its sides on one window and its top and bottom on another.
 
@@ -271,20 +272,6 @@
 - **A picture that *is* being used has no delete button yet.** That's on purpose: deleting one would leave the page pointing at a file that's gone and showing an empty box, with nothing to say why. **Remove from every page** — which clears it off everything at once and makes it deletable — is the next piece.
 - Pictures used only by a template count as in use. A template and the page it came from can genuinely share a picture, and deleting it would empty the template.
 - Pictures inside hidden tabs count too, and so do ones tucked inside a bullet list.
-
-## 2026-08-12 — the built-in templates are yours to change
-
-### Additions
-
-- **Click a built-in template — Character, Location, any of them — and you can edit it, the same as one of your own.** Rewrite the prompts, rename a tab, add one, take one out.
-- **What you're editing is this world's copy.** Your other worlds keep the original, and the original is always still there underneath.
-- **Put back to the original** undoes the whole thing, from the template itself or from the sidebar. It asks first, and it's undoable after that.
-- The sidebar marks a built-in template **Edited** once it actually differs from the original — opening one to have a look doesn't count.
-- Pages you've already made are never touched, by an edit or by putting it back. Same as with your own templates: making a page from a template gives the page its own copy.
-
-### Worth knowing
-
-- This changes a template's tabs and its name — the headings and prompts a new page starts with. The properties in the right-hand panel aren't part of it yet; that's a separate thing, because changing those would also change what pages you've already written show.
 
 ---
 

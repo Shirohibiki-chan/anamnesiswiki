@@ -379,6 +379,32 @@ is below.
 - **A rename must re-save the node's contents, not just move the file.** `rename`
   only relocates; the file's own `name` field would still say the old name.
 
+- **`useSaveOnExit`'s `onCloseRequested` handler must always reach `destroy()`,
+  in a `finally`, no matter what.** The moment this hook registers that
+  listener, Tauri cancels the *native* close for every close attempt for the
+  rest of the session and never puts it back — read straight out of Tauri
+  2.11.5's `on_window_event`: `if window.has_js_listener(...) { api.prevent_close(); }`
+  runs unconditionally, before it even knows what the JS handler will do. From
+  then on the only thing that can still close the window is this handler
+  calling `destroy()` itself; the JS wrapper's own fallback destroy only fires
+  when the handler resolves *without* calling `preventDefault()` at all. Any
+  code path here that prevents the default and then fails to reach `destroy()`
+  — a thrown error, an early return after `preventDefault()`, anything —
+  leaves the window permanently uncloseable, silently, with nothing on screen
+  to explain why. That was "clicking the X does nothing" (raised 2026-08-19,
+  root-caused the same day by reading Tauri's source rather than guessed at).
+  Don't restructure this into an `if`/`else` that puts `destroy()` on only one
+  branch.
+
+- **The blur/visibilitychange flush and the close-requested flush share one
+  in-flight promise, not just `hasPendingSaves()`.** `flushSave` deletes an
+  entry from autosave's pending map *before* the write it describes reaches
+  disk, so there's a real gap where `hasPendingSaves()` reads false while a
+  blur-triggered write is still on the way to disk. A close-requested check
+  that only asked "is anything queued" would sail through that gap and close
+  the window mid-write. `useSaveOnExit` tracks the flush itself so close can
+  wait on it directly.
+
 ## Loading
 
 - **One damaged file must never cost the user the rest of the project.**
