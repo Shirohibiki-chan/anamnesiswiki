@@ -3,8 +3,41 @@
 // the world scan — see CLAUDE.md's layer order.
 import { useCallback, useEffect, useState } from "react";
 import * as appSettings from "../services/app-settings-service";
-import { collectWorldFiles } from "../services/filesystem-service";
-import { buildWorldList, type ListedWorld } from "../services/world-scan";
+import { collectWorldFiles, reidentifyForkedProject } from "../services/filesystem-service";
+import { buildWorldList, planForkResolutions, type ListedWorld } from "../services/world-scan";
+
+/**
+ * The one thing a listing writes, and only when it finds evidence of a fork.
+ *
+ * Two projects wearing one id is what a folder copied in File Explorer looks
+ * like — which is how she forks — so the scan is the only place that can ever
+ * notice. `planForkResolutions` decides which one keeps the id; this hands the
+ * others their own, and records what they were copied from.
+ *
+ * **This does not contradict "listing never writes".** That rule is about not
+ * touching every project on the disk to backfill an id — the cost that made
+ * `readWorldSummary` deliberately refuse to mint one. Here nothing is written
+ * unless a duplicate is actually found, which is rare and is a repair.
+ *
+ * The result is patched in memory rather than re-scanning: exactly what
+ * changed is already known, a second full scan would double the work of every
+ * start, and a re-scan that kept finding an unwritable duplicate would loop.
+ * A write that fails leaves the pair as they were, to be found again next
+ * time.
+ */
+async function resolveForks(worlds: ListedWorld[]): Promise<ListedWorld[]> {
+  const plan = planForkResolutions(worlds);
+  if (plan.length === 0) return worlds;
+
+  const minted = await Promise.all(
+    plan.map(async (fork) => ({ fork, id: await reidentifyForkedProject(fork.path, fork.forkedFromId) })),
+  );
+
+  return worlds.map((world) => {
+    const done = minted.find((entry) => entry.fork.path === world.path && entry.id !== null);
+    return done ? { ...world, id: done.id, forkedFromId: done.fork.forkedFromId } : world;
+  });
+}
 
 export function useWorldLibrary() {
   const [worlds, setWorlds] = useState<ListedWorld[]>([]);
@@ -28,7 +61,7 @@ export function useWorldLibrary() {
       projectsDir,
       remembered.map((world) => world.path),
     );
-    return buildWorldList({ onDisk, remembered, projectsDir });
+    return resolveForks(buildWorldList({ onDisk, remembered, projectsDir }));
   }, []);
 
   const refreshWorlds = useCallback(async () => {

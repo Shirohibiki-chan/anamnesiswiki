@@ -7,6 +7,7 @@ import {
   isInsideProjectsFolder,
   isReservedWorldName,
   locationOf,
+  planForkResolutions,
   sortWorlds,
   WORLD_SCAN_DEPTH,
   type ListedWorld,
@@ -109,6 +110,7 @@ describe("buildWorldList", () => {
   const file = (path: string, extra: Partial<WorldFile> = {}): WorldFile => ({
     path,
     id: "id-" + path,
+    forkedFromId: null,
     name: path.split("/").pop() ?? path,
     modifiedAt: 0,
     coverImage: null,
@@ -214,6 +216,7 @@ describe("filterWorlds", () => {
   const listed = (path: string, name: string): ListedWorld => ({
     path,
     id: null,
+    forkedFromId: null,
     name,
     lastOpenedAt: null,
     modifiedAt: null,
@@ -264,10 +267,83 @@ describe("filterWorlds", () => {
   });
 });
 
+describe("planForkResolutions", () => {
+  const listed = (path: string, extra: Partial<ListedWorld> = {}): ListedWorld => ({
+    path,
+    id: "shared",
+    forkedFromId: null,
+    name: path.split("/").pop() ?? path,
+    lastOpenedAt: null,
+    modifiedAt: 0,
+    coverImage: null,
+    selectedName: null,
+    activeAt: 0,
+    isOutsideProjectsFolder: false,
+    ...extra,
+  });
+
+  it("leaves a library with no duplicate ids alone", () => {
+    const worlds = [listed("/D/Val", { id: "a" }), listed("/D/Val3", { id: "b" })];
+    expect(planForkResolutions(worlds)).toEqual([]);
+  });
+
+  it("does not treat two projects without ids as a pair", () => {
+    // A project that has never been opened has no id at all. Two of those are
+    // two strangers, not a fork — and re-minting one would be a write to a
+    // project the listing was never allowed to touch.
+    const worlds = [listed("/D/One", { id: null }), listed("/D/Two", { id: null })];
+    expect(planForkResolutions(worlds)).toEqual([]);
+  });
+
+  it("re-mints the copy and records the original, when only one has been opened", () => {
+    // The Explorer fork: copying preserves the modified time, so the two are
+    // identical on that — and the one the app has opened is the one whose pins
+    // and groups would break if it were re-minted.
+    const original = listed("/D/Val", { lastOpenedAt: 5_000 });
+    const copy = listed("/D/Val - Copy");
+    expect(planForkResolutions([copy, original])).toEqual([
+      { path: "/D/Val - Copy", forkedFromId: "shared" },
+    ]);
+  });
+
+  it("falls back to the most recently modified when neither has been opened", () => {
+    const older = listed("/D/Old", { modifiedAt: 1_000 });
+    const newer = listed("/D/New", { modifiedAt: 9_000 });
+    expect(planForkResolutions([newer, older])).toEqual([{ path: "/D/Old", forkedFromId: "shared" }]);
+  });
+
+  it("settles a dead heat by path, and gives the same answer every time", () => {
+    // Without a total order the pair could resolve one way now and the other
+    // way on the next scan, re-minting each other forever.
+    const a = listed("/D/A");
+    const b = listed("/D/B");
+    expect(planForkResolutions([a, b])).toEqual([{ path: "/D/B", forkedFromId: "shared" }]);
+    expect(planForkResolutions([b, a])).toEqual([{ path: "/D/B", forkedFromId: "shared" }]);
+  });
+
+  it("points every copy in a group of three at the one that keeps the id", () => {
+    const keeper = listed("/D/Val", { lastOpenedAt: 5_000 });
+    const worlds = [listed("/D/Val - Copy"), keeper, listed("/D/Val - Copy (2)")];
+    expect(planForkResolutions(worlds)).toEqual([
+      { path: "/D/Val - Copy", forkedFromId: "shared" },
+      { path: "/D/Val - Copy (2)", forkedFromId: "shared" },
+    ]);
+  });
+
+  it("still re-mints a copy that already knows what it was forked from", () => {
+    // The lineage is right and the identity is still shared, which is the half
+    // that breaks every reference written against it.
+    const keeper = listed("/D/Val", { lastOpenedAt: 5_000 });
+    const copy = listed("/D/Val - Copy", { forkedFromId: "shared" });
+    expect(planForkResolutions([copy, keeper])).toHaveLength(1);
+  });
+});
+
 describe("sortWorlds", () => {
   const world = (name: string, activeAt: number, path = `/D/${name}`): ListedWorld => ({
     path,
     id: null,
+    forkedFromId: null,
     name,
     lastOpenedAt: null,
     modifiedAt: null,
