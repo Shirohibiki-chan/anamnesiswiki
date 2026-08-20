@@ -167,7 +167,16 @@ export function ProjectGrid({
         )}
       </div>
 
-      {isPaged && <PageNav page={page} pages={pages} goTo={goTo} label="Pages of projects" />}
+      {/* `dots={false}` so this list always gets the counter and the jump
+          controls with it, rather than only once it runs past MAX_PAGE_DOTS.
+          Her call, 2026-08-20, after looking for them here and finding two
+          dots: a row of dots is the right control for the pinned row above,
+          which is a handful of covers she flicks through, and the wrong one
+          for the list of every project she owns — that one she arrives at
+          knowing where she is going, and "back to the front" is worth a button
+          even when the front is two pages away. The pinned row keeps its own
+          dots and is untouched; it never used this component. */}
+      {isPaged && <PageNav page={page} pages={pages} goTo={goTo} label="Pages of projects" dots={false} />}
     </section>
   );
 }
