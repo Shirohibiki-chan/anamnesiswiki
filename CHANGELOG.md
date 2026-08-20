@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-20
+
+### Adjustments
+
+- **The sidebar tree had less room than it needed.** Rows are a little taller now, with a bit more air around the edge of the panel too.
+
 ## 2026-08-19
 
 ### Additions
