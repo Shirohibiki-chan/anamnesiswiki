@@ -84,7 +84,7 @@ function emptyMessageFor(scope: LibraryScope, query: string): string {
 }
 
 export function StartScreen() {
-  const { worlds, isScanning, scannedAt, refreshWorlds } = useWorldLibrary();
+  const { worlds, heldElsewhere, isScanning, scannedAt, refreshWorlds } = useWorldLibrary();
   const { currentVersion } = useUpdates();
   const { releases } = useReleaseHistory();
   const { projectsDir } = useAppSettings();
@@ -261,6 +261,7 @@ export function StartScreen() {
           fileManagerName={fileManagerName}
           onShowInFolder={(project) => void actions.showProjectInFolder(project)}
           forkNames={forkNames}
+          heldElsewhere={heldElsewhere}
           onDuplicate={(project, name) =>
             void actions.duplicateProject(project, name).then((made) => {
               if (made) void refreshWorlds();

@@ -6,6 +6,7 @@ import { useAppSettings } from "../../hooks/use-app-settings";
 import { useLoadShortcuts } from "../../hooks/use-shortcuts";
 import { useLoadPanelWidths } from "../../hooks/use-panel-widths";
 import { useLoadPreferences } from "../../hooks/use-preferences";
+import { findBlockingClaim } from "../../hooks/use-project-claim";
 import { AppLayout } from "./AppLayout";
 import { StartScreen } from "../start/StartScreen";
 import "./shell.css";
@@ -36,7 +37,12 @@ export function StartupRouter() {
       // sat on "Loading..." with no error and no way forward.
       try {
         const lastPath = await getLastOpenedProject();
-        if (lastPath) {
+        // The whole reason the marker exists. Launching the app twice would
+        // otherwise put two autosaving copies on the same files by the most
+        // ordinary path there is — neither of them asked for, neither of them
+        // told. A project another copy has open falls through to the picker,
+        // which is what this router already does for one that has moved.
+        if (lastPath && !(await findBlockingClaim(lastPath))) {
           await loadProject(lastPath);
           // If the project is gone (moved/deleted) or can't be read,
           // loadProject resolves null and isLoaded stays false — the render

@@ -1,6 +1,7 @@
 // Three-column app frame — left tree / center page / right properties.
 import { useCallback, useState } from "react";
-import { useProject, useSaveNow } from "../../hooks/use-project";
+import { useProject, useProjectRootPath, useSaveNow } from "../../hooks/use-project";
+import { useHoldProjectClaim } from "../../hooks/use-project-claim";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useHistoryActions } from "../../hooks/use-history";
@@ -32,6 +33,10 @@ import "./shell.css";
 
 export function AppLayout() {
   const { project, closeProject } = useProject();
+  // This component exists exactly while a project is open, which makes it the
+  // honest place to hold the marker that says so — no separate bookkeeping to
+  // keep in step, and no path that closes a project without releasing it.
+  useHoldProjectClaim(useProjectRootPath());
   const openTemplate = useOpenTemplate();
   const { clearLastOpenedProject } = useAppSettings();
   // Raised from a tree row's right-click menu, rendered here — react-arborist

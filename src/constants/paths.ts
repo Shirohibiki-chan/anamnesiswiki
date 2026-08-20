@@ -184,6 +184,18 @@ export const BACKUPS_DIR = "backups";
 // page, and the loader has to recognise it as one rather than treat it as
 // junk. Changing this string without changing both sides makes any
 // interrupted move look like data loss.
+/**
+ * The file that says a project is open in a running copy of the app, written
+ * into the project's own folder.
+ *
+ * In the project rather than in app settings, which is the opposite of where
+ * pins and groups live and for the opposite reason: this is a fact about the
+ * folder, and the whole point is that a *second* copy of the app — with its own
+ * settings store in memory — can see it. A dot name so it sorts out of the way
+ * in her file manager, and skipped by the load walk like the app's other files.
+ */
+export const OPEN_MARKER_FILE = ".anamnesis-open.json";
+
 export const MOVE_TEMP_PREFIX = ".anamnesis-move-";
 
 // Directory used to find out whether this machine will accept a path past the

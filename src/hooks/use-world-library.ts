@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import * as appSettings from "../services/app-settings-service";
 import { collectWorldFiles, reidentifyForkedProject } from "../services/filesystem-service";
 import { buildWorldList, planForkResolutions, type ListedWorld } from "../services/world-scan";
+import { findProjectsHeldElsewhere } from "./use-project-claim";
 
 /**
  * The one thing a listing writes, and only when it finds evidence of a fork.
@@ -51,6 +52,11 @@ export function useWorldLibrary() {
   // the scan is disk work, and an empty list shown for a frame reads as an
   // empty projects folder.
   const [isScanning, setIsScanning] = useState(true);
+  // Which projects another copy of the app has open. Read alongside the scan
+  // rather than folded into `ListedWorld`: it is a fact about right now rather
+  // than about the project, it goes out of date on its own, and everything
+  // that sorts, filters or files a project has no business seeing it.
+  const [heldElsewhere, setHeldElsewhere] = useState<Set<string>>(() => new Set());
 
   const readWorlds = useCallback(async () => {
     const [projectsDir, remembered] = await Promise.all([
@@ -61,13 +67,17 @@ export function useWorldLibrary() {
       projectsDir,
       remembered.map((world) => world.path),
     );
-    return resolveForks(buildWorldList({ onDisk, remembered, projectsDir }));
+    const worlds = await resolveForks(buildWorldList({ onDisk, remembered, projectsDir }));
+    const held = await findProjectsHeldElsewhere(worlds.map((world) => world.path)).catch(() => new Set<string>());
+    return { worlds, held };
   }, []);
 
   const refreshWorlds = useCallback(async () => {
     setIsScanning(true);
     try {
-      setWorlds(await readWorlds());
+      const { worlds, held } = await readWorlds();
+      setWorlds(worlds);
+      setHeldElsewhere(held);
       setScannedAt(Date.now());
     } finally {
       setIsScanning(false);
@@ -80,10 +90,11 @@ export function useWorldLibrary() {
     // per folder — but the start screen must never be left on "looking for
     // your worlds" by a surprise, since it's the only way into the app.
     readWorlds()
-      .catch(() => [])
-      .then((found) => {
+      .catch(() => ({ worlds: [] as ListedWorld[], held: new Set<string>() }))
+      .then(({ worlds, held }) => {
         if (cancelled) return;
-        setWorlds(found);
+        setWorlds(worlds);
+        setHeldElsewhere(held);
         setScannedAt(Date.now());
         setIsScanning(false);
       });
@@ -92,5 +103,5 @@ export function useWorldLibrary() {
     };
   }, [readWorlds]);
 
-  return { worlds, isScanning, scannedAt, refreshWorlds };
+  return { worlds, heldElsewhere, isScanning, scannedAt, refreshWorlds };
 }

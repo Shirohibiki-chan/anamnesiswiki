@@ -123,3 +123,20 @@ export const ASSET_FOLDER_FILTER_MIN = 8;
 // rest are off the end of it. Enforced when the name is stored, not while she
 // types, so a paste that runs long is trimmed rather than refused.
 export const MAX_GROUP_NAME_CHARS = 40;
+
+// How often the app rewrites the marker saying it has a project open, and how
+// long that marker is believed after the last rewrite.
+//
+// Two numbers rather than one because the second is what a *crash* costs. The
+// app can't ask the OS whether the process that wrote a marker is still alive
+// without a Rust command, so the marker has to say so itself by being kept
+// fresh — and anything that stops running stops refreshing. A marker older
+// than the stale window is treated as nobody's, which is what stops a crash
+// locking her out of her own project.
+//
+// 30 seconds is chosen against her projects living in OneDrive: it is a ~100
+// byte file and one project at a time, which is nothing next to what the
+// editor itself writes, while a two-minute wait after a crash is short enough
+// to sit through and long enough to survive a machine that froze for a moment.
+export const PROJECT_CLAIM_REFRESH_MS = 30_000;
+export const PROJECT_CLAIM_STALE_MS = 120_000;

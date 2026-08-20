@@ -27,6 +27,7 @@ import {
   BACKUPS_DIR,
   FOLDER_META_FILE as FOLDER_FILE,
   MOVE_TEMP_PREFIX,
+  OPEN_MARKER_FILE,
   PAGE_META_FILE,
   PROBE_TEMP_PREFIX,
   PROJECT_FILE,
@@ -247,6 +248,7 @@ const RESERVED_ROOT_KEYS = new Set(
     { name: ASSETS_DIR, isDirectory: true },
     { name: PROJECT_FILE, isDirectory: false },
     { name: TEMPLATES_FILE, isDirectory: false },
+    { name: OPEN_MARKER_FILE, isDirectory: false },
   ].map(({ name, isDirectory }) =>
     JSON.stringify([null, isDirectory, name.replace(/\.json$/i, "").toLowerCase()]),
   ),
@@ -726,7 +728,8 @@ async function walkEntries(
         entry.name === FOLDER_FILE ||
         entry.name === PAGE_META_FILE ||
         entry.name === PROJECT_FILE ||
-        entry.name === TEMPLATES_FILE
+        entry.name === TEMPLATES_FILE ||
+        entry.name === OPEN_MARKER_FILE
       ) {
         return [];
       }
@@ -1464,6 +1467,63 @@ export async function readAssetImage(rootPath: string, fileName: string): Promis
 }
 
 /**
+ * The marker saying a project is open, if there is one and it reads.
+ *
+ * Unreadable and absent are both `null`. A marker whose contents don't parse
+ * is a marker nobody can act on, and refusing to open a project on the
+ * strength of a file we can't understand would be the app locking her out over
+ * its own bookkeeping.
+ */
+export async function readProjectClaim(rootPath: string): Promise<unknown> {
+  try {
+    return JSON.parse(await readTextFile(joinPath(rootPath, OPEN_MARKER_FILE)));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every marker among these projects, keyed by the path asked about.
+ *
+ * One extra read attempt per project on top of the listing's own, capped the
+ * same way. Nearly all of them miss — a marker exists only while a project is
+ * open — and a miss is an ENOENT the fs plugin answers without touching much.
+ */
+export async function readProjectClaims(paths: readonly string[]): Promise<Map<string, unknown>> {
+  const limited = createReadLimiter(READ_CONCURRENCY);
+  const found = new Map<string, unknown>();
+  await Promise.all(
+    paths.map(async (path) => {
+      const claim = await limited(() => readProjectClaim(path));
+      if (claim !== null) found.set(path, claim);
+    }),
+  );
+  return found;
+}
+
+/**
+ * Writes the marker. Failure is the caller's to swallow: a project on
+ * read-only media still opens, it simply can't say that it is open.
+ */
+export async function writeProjectClaim(rootPath: string, claim: unknown): Promise<void> {
+  await writeTextFile(joinPath(rootPath, OPEN_MARKER_FILE), JSON.stringify(claim));
+}
+
+/**
+ * Removes the marker on the way out. Missing is success — the point is that
+ * it's gone, and the staleness window is what covers every way this doesn't
+ * get to run.
+ */
+export async function clearProjectClaim(rootPath: string): Promise<void> {
+  try {
+    await remove(joinPath(rootPath, OPEN_MARKER_FILE));
+  } catch {
+    // Already gone, or a folder that won't take a delete. Either way it goes
+    // stale on its own.
+  }
+}
+
+/**
  * Re-mints one of two projects wearing the same id, and records the other as
  * the one it came from. Returns the new id, or null if the write wouldn't go
  * through.
@@ -1577,7 +1637,10 @@ async function copyDirectory(from: string, to: string): Promise<void> {
   async function walk(source: string, target: string): Promise<void> {
     await mkdir(target, { recursive: true });
     const entries = await limited(() => readDir(source));
-    const files = entries.filter((entry) => entry.isFile);
+    // Everything except the marker saying the original is open right now: a
+    // copy is not open, and carrying a live-looking claim into it would make
+    // the app refuse to open the thing she just made.
+    const files = entries.filter((entry) => entry.isFile && entry.name !== OPEN_MARKER_FILE);
     const directories = entries.filter((entry) => entry.isDirectory);
 
     await Promise.all(

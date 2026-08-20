@@ -112,6 +112,24 @@ is below.
   gone; the list now only says when each world was last opened. Anything that
   re-introduces a cap here hides worlds again.
 
+- **A project says it is open by keeping `.anamnesis-open.json` fresh, and
+  freshness is the whole mechanism.** The app cannot ask the OS whether the
+  process that wrote a marker still exists without a Rust command, so the
+  marker proves it by being rewritten every `PROJECT_CLAIM_REFRESH_MS` while
+  the project is open; past `PROJECT_CLAIM_STALE_MS` it belongs to nobody. Two
+  consequences bind: **the heartbeat is not optional** — stop refreshing while
+  a project stays open and the app locks itself out two minutes later — and
+  **every write here is best-effort**, because a project on read-only media has
+  to open anyway, unable to say that it is open. `AppLayout` holds the claim
+  because that component exists exactly while a project is open, which is the
+  one place the lifetime can't drift out of step.
+
+- **The marker file is excluded in two places, and both matter.** The load walk
+  skips it by name beside `project.json` (or it is read as a page), and
+  `copyDirectory` skips it when a project is duplicated (or the copy arrives
+  wearing a live claim and the app refuses to open the thing she just made).
+  Anything new that walks or copies a project folder has to do the same.
+
 - **A copy of a project gets a fresh id and records the original in
   `forkedFromId` — never an id derived from the original's.** Anything derived
   eventually gets recomputed, and a recomputed id breaks every reference to it;
