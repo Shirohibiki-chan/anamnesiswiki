@@ -253,7 +253,7 @@ button.tree-path-crumb:hover {
 .tree-panel-body {
   flex: 1;
   min-height: 0;
-  padding: 0 var(--space-xs);
+  padding: 0 var(--space-sm);
 }
 
 /* The sidebar never scrolls sideways, however deep the nesting goes.
@@ -319,7 +319,9 @@ button.tree-path-crumb:hover {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  height: 24px;
+  /* Matches TREE_ROW_HEIGHT in constants/layout.ts, which react-arborist's
+     virtualized positioning reads — the two have to move together. */
+  height: 28px;
   padding: 0 var(--space-sm);
   border-radius: var(--radius-md);
   font-size: var(--fs-sm);
