@@ -309,7 +309,23 @@ export function StartScreen() {
           </div>
         )}
 
-        {actions.error && <p className="start-error">{actions.error}</p>}
+        {actions.error && (
+          <p className="start-error">
+            {actions.error}
+            {/* Only offered when the refusal was a claim, which is the one the
+                app routinely gets wrong — a crash, a power cut or a sync client
+                looks exactly like a second window from here. Every other
+                failure has nothing useful behind a second try. */}
+            {actions.openAnyway && (
+              <>
+                {" "}
+                <button type="button" className="ui-link" onClick={() => void actions.openAnyway?.()}>
+                  Open it anyway
+                </button>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       <ResizeHandle

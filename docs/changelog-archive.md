@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-12 — more room to drop a picture on a page
+
+### Fixes
+
+- **The bottom of a page refused pictures.** Dragging one down towards the end of your writing turned the cursor into the no-entry symbol before you got near the bottom of the window — the last 32 pixels are the page's margin, and only the writing itself was accepting drops. That band is the natural place to aim when you mean "put it after everything", so it was the worst possible strip to have switched off.
+- **The whole page column takes a drop now**, top to bottom: the margin under your writing, the empty space beside it, the title, and the tab strip.
+- **A drop that doesn't land on a line goes next to the nearest line above it**, instead of always going to the very end. Dropping beside the third paragraph of a long page used to send the picture to the bottom, out of sight the moment it arrived.
+- **Dropping above your writing** — on the title or the tabs — puts the picture at the top of the page rather than at the end.
+
+### Worth knowing
+
+- The banner still doesn't take a drop. Dropping a picture on a banner looks like it should *become* the banner, and quietly sliding it into your writing instead would be worse than not accepting it.
+
 ## 2026-08-12 — clicking a page opens that page again
 
 ### Fixes
@@ -387,6 +400,7 @@ Older entries: [docs/changelog-archive.md](docs/changelog-archive.md).
 - **Mentions and `[[wikilinks]]` show a preview card when you rest the pointer on them.** The page's name, what kind of page it is, its tags, and the first few lines of writing on it — enough to tell which Valera a link means without leaving the page you're on. Focusing a link with the keyboard shows it too.
   - It waits a moment before appearing, so links you're only passing over on the way somewhere else stay quiet.
   - The excerpt comes from the first tab that actually has writing in it, not the first tab — templates start with several and only some get filled in. **Tabs you've hidden are never used**, so nothing held back shows up in a preview.
+
 ## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
 
 ### Additions

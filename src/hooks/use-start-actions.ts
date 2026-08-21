@@ -26,6 +26,19 @@ export type StartActions = {
   error: string | null;
   dismissError: () => void;
   /**
+   * Set instead of a bare error when the only thing standing in the way is
+   * another window's claim — which is the one refusal that is routinely
+   * wrong. Calling it opens the project regardless.
+   *
+   * The claim is a *guess* built on a file being fresh, and it guesses wrong
+   * in the ordinary cases: the app crashed and came straight back, the machine
+   * lost power, a sync client is holding the folder. There is no way for the
+   * app to tell those from a real second window, so the honest thing is to say
+   * what it thinks and let her overrule it. Absent for every other failure,
+   * where "try again anyway" would just fail again.
+   */
+  openAnyway: (() => Promise<void>) | null;
+  /**
    * Set when the folder she picked holds several projects and there is no
    * honest way to guess which one she meant. Rendered as a short list.
    */
@@ -103,6 +116,7 @@ export function useStartActions(): StartActions {
 
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openAnyway, setOpenAnyway] = useState<(() => Promise<void>) | null>(null);
   const [choices, setChoices] = useState<string[] | null>(null);
 
   // Checked on every open and not only at startup, or the picker is still a
@@ -110,43 +124,64 @@ export function useStartActions(): StartActions {
   // it, because "a few seconds ago" means switch windows and "about two
   // minutes ago" means the other copy is probably gone and the wait is nearly
   // over — a refusal with no number in it is a wall.
-  const refuseIfHeldElsewhere = useCallback(async (path: string, name: string) => {
+  // `force` is optional, and its absence is meaningful: renaming a project
+  // another window holds is refused with no way past it, because renaming a
+  // folder a live process has open is a different and worse problem than
+  // reading one. Only opening offers the override.
+  const refuseIfHeldElsewhere = useCallback(async (path: string, name: string, force?: () => Promise<void>) => {
     const claim = await findBlockingClaim(path);
     if (!claim) return false;
     setError(`"${name}" is open in another window — it was last active there ${describeClaimAge(claim, Date.now())}.`);
+    // Stored as a thunk, not called: `useState` runs a function it is handed,
+    // so a setter given a callback would invoke it and open the project
+    // immediately, which is the opposite of asking.
+    setOpenAnyway(force ? () => force : null);
     return true;
   }, []);
 
-  const openFound = useCallback(
-    async (path: string) => {
-      if (await refuseIfHeldElsewhere(path, fsService.fileNameFromPath(path))) return;
+  // Split from the check so "open it anyway" has something to call that skips
+  // it — one path that actually opens, reachable with or without the guard.
+  const load = useCallback(
+    async (path: string, onFailure: (name: string) => Promise<void> | void) => {
       setIsBusy(true);
       const result = await loadProject(path).finally(() => setIsBusy(false));
       if (!result) {
-        setError("That project's files couldn't be read. Try a different folder, or create a new one instead.");
+        await onFailure(fsService.fileNameFromPath(path));
         return;
       }
       setError(null);
+      setOpenAnyway(null);
       setChoices(null);
       await recordProjectOpened(path, result.name);
     },
-    [loadProject, recordProjectOpened, refuseIfHeldElsewhere],
+    [loadProject, recordProjectOpened],
+  );
+
+  const openFound = useCallback(
+    async (path: string) => {
+      const force = () =>
+        load(path, () => {
+          setError("That project's files couldn't be read. Try a different folder, or create a new one instead.");
+          setOpenAnyway(null);
+        });
+      if (await refuseIfHeldElsewhere(path, fsService.fileNameFromPath(path), force)) return;
+      await force();
+    },
+    [load, refuseIfHeldElsewhere],
   );
 
   const openListed = useCallback(
     async (path: string, name: string) => {
-      if (await refuseIfHeldElsewhere(path, name)) return;
-      setIsBusy(true);
-      const result = await loadProject(path).finally(() => setIsBusy(false));
-      if (!result) {
-        setError(`Couldn't open "${name}" — it may have moved, been deleted, or its files may be damaged.`);
-        await forgetProject(path);
-        return;
-      }
-      setError(null);
-      await recordProjectOpened(path, result.name);
+      const force = () =>
+        load(path, async () => {
+          setError(`Couldn't open "${name}" — it may have moved, been deleted, or its files may be damaged.`);
+          setOpenAnyway(null);
+          await forgetProject(path);
+        });
+      if (await refuseIfHeldElsewhere(path, name, force)) return;
+      await force();
     },
-    [forgetProject, loadProject, recordProjectOpened, refuseIfHeldElsewhere],
+    [forgetProject, load, refuseIfHeldElsewhere],
   );
 
   const pickFolderToOpen = useCallback(async () => {
@@ -439,7 +474,11 @@ export function useStartActions(): StartActions {
   return {
     isBusy,
     error,
-    dismissError: useCallback(() => setError(null), []),
+    dismissError: useCallback(() => {
+      setError(null);
+      setOpenAnyway(null);
+    }, []),
+    openAnyway,
     choices,
     dismissChoices: useCallback(() => setChoices(null), []),
     openListed,
