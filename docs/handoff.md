@@ -2131,6 +2131,21 @@ is below.
   scroll box inside `.start-main`**; two nested scrollers is how a wheel starts
   moving the wrong one.
 
+- **The top bar and the page arrows are sticky, and both fight the same
+  quirk.** A sticky offset is measured against the scrollport's *padding* box,
+  not its border box — so `top: 0` inside a padded scroll container parks the
+  bar a padding's height down, leaving a strip of covers sliding past above it.
+  The header answers it by owning that padding itself (`.start-main` has no
+  top padding); the arrows can't, since they aren't the column's last child, so
+  they take a negative `bottom` of exactly the column's bottom padding and
+  re-open the gap as their own padding, where the background covers it.
+
+- **Cancelling the column's padding with a negative *top* margin is the
+  obvious fix and it is wrong.** The margin pulls the whole flow up while
+  sticky holds the bar still, so everything below rises by that much and the
+  pinned row slides under the header — measured as a 10px overlap at rest.
+  Horizontal negative margins are fine, because nothing sticks on that axis.
+
 - **Which is why the page-turn reset walks up to find its scroller**
   (`scrollingBoxOf` in `use-paged-list.ts`) rather than scrolling the element
   the ref is on. The two picture grids scroll themselves; the projects grid is

@@ -50,19 +50,52 @@
   gap: var(--space-lg);
   min-width: 0;
   min-height: 0;
-  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  /* No top padding — `.start-head` carries it, because it is sticky and the
+     space above it has to be part of *it* rather than part of the box it
+     scrolls inside. See the note on that rule. */
+  padding: 0 var(--space-xl) var(--space-lg);
   overflow-y: auto;
 }
 
 /* Brand left, the one bright button dead centre, the filter right. Three
    columns rather than space-between so the button is centred on the screen
    rather than on whatever is left over after the brand — the two sides are
-   different widths and always will be. */
+   different widths and always will be.
+
+   **Pinned to the top of the column** (her call, 2026-08-21). Making the whole
+   column scroll is what took New Project and the filter box off the screen the
+   moment she scrolled; both are controls she reaches for *while* looking at the
+   list, so they stay.
+
+   **The space above it is this element's padding, not the column's.** A
+   negative top margin to cancel the column's padding is the obvious version and
+   it is wrong: the margin pulls the whole flow up by that much while sticky
+   holds the bar where it is, so everything below ends up 16px higher and the
+   pinned row slides under the header. Measured doing exactly that — a 10px
+   overlap at rest. Owning the padding means there is nothing to cancel, and it
+   also means the bar's background covers the gap above it once it sticks.
+
+   The side margins do still cancel the column's, and those are fine: they are
+   the axis nothing sticks on. Without them the background is only as wide as
+   the content and the covers show sliding past on either side of it. The
+   negative bottom margin offsets the small padding added for the same reason,
+   so the gap to the pinned row is unchanged at rest — safe here in a way it
+   would not be lower down, since this is the column's first child and can only
+   pull on its own sibling gap. */
 .start-head {
+  position: sticky;
+  top: 0;
+  /* Above the covers it sits over. The `⋯` menu is portaled to `body` and so
+     is above both regardless — see ProjectTileMenu. */
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-md);
+  margin-inline: calc(var(--space-xl) * -1);
+  margin-bottom: calc(var(--space-sm) * -1);
+  padding: var(--space-xl) var(--space-xl) var(--space-sm);
+  background: var(--color-bg);
 }
 
 .start-brand {
@@ -871,10 +904,34 @@
 
 /* --- Pages ---
    The nav itself is `.ui-pages` in controls.css now that three grids use it.
-   All that is left here is how far it sits from the tiles. */
+   All that is left here is where it sits and how far from the tiles.
+
+   **Pinned to the bottom of the column** (her call, 2026-08-21), for the other
+   half of the reason the header is pinned to the top: once the column scrolls,
+   the arrows sit at the end of a list that can be a screen and a half long, and
+   turning a page means scrolling to the bottom to find them — then doing it
+   again, because turning a page goes back to the top.
+
+   Only the sides are pulled out, not the bottom. `.start-all` is followed by
+   two conditional siblings (the several-projects list and the error line), and
+   a negative bottom margin here would have the bar sitting on top of whichever
+   of them appeared. It settles into place naturally at the end of the list,
+   because `.start-all` ends where it does. */
 
 .start-all .ui-pages {
-  padding-top: var(--space-sm);
+  position: sticky;
+  /* Negative, and it is the mirror of the header's problem rather than a
+     nudge: a sticky offset is measured against the scrollport's *padding* box,
+     so `bottom: 0` parks the bar a column-padding's height above the real
+     bottom edge and leaves a 12px strip of covers sliding along underneath it.
+     Pulling the bar down by exactly that much puts its edge on the window's,
+     and the padding below re-opens the same gap *inside* the bar, where the
+     background covers it. */
+  bottom: calc(var(--space-lg) * -1);
+  z-index: 2;
+  margin-inline: calc(var(--space-xl) * -1);
+  padding: var(--space-sm) var(--space-xl) var(--space-lg);
+  background: var(--color-bg);
 }
 
 /* --- The rail --- */
