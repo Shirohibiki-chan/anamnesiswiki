@@ -1,19 +1,13 @@
 // Every project the app can find, as covers or as rows, a page at a time or in
 // one scroll.
 //
-// The measured element is the area the tiles sit in, not the page — that is
-// what makes the page size the honest one. It clips rather than scrolls while
-// paged, so a page is exactly what fits and the arithmetic in `usePagedList`
-// can't be contradicted by a scrollbar appearing.
+// **The page holds a count and scrolls if it has to.** It used to hold exactly
+// what fit the area, measured — which meant a page of eight on her window, and
+// a whole apparatus here declaring the tile's size in TypeScript so the
+// arithmetic and the stylesheet could agree about pixels. None of that is
+// needed to put twenty projects on a page; see `use-paged-list.ts`.
 import type { ReactNode } from "react";
 import { LayoutGrid, Rows3 } from "lucide-react";
-import {
-  PROJECT_ROW_HEIGHT,
-  PROJECT_ROW_MIN_WIDTH,
-  PROJECT_TILE_GAP,
-  PROJECT_TILE_HEIGHT,
-  PROJECT_TILE_MIN_WIDTH,
-} from "../../constants/layout";
 import { usePagedList } from "../../hooks/use-paged-list";
 import { useProjectSort, useProjectView, usePreferenceActions } from "../../hooks/use-preferences";
 import { sortWorlds, type ListedWorld } from "../../services/world-scan";
@@ -99,17 +93,12 @@ export function ProjectGrid({
   // sorted one give the same page.
   const ordered = sortWorlds(projects, sort);
 
-  // A row is shorter than a cover, so the same window holds more of them —
-  // which is the reason the list view exists and the reason the page size has
-  // to be told which one is on screen. A row's width is the whole area, and a
-  // minimum wider than any window is how you say that in the same arithmetic:
-  // one column, however wide the window gets, no special case in the service.
-  const tile =
-    view === "grid"
-      ? { minWidth: PROJECT_TILE_MIN_WIDTH, height: PROJECT_TILE_HEIGHT, gap: PROJECT_TILE_GAP }
-      : { minWidth: PROJECT_ROW_MIN_WIDTH, height: PROJECT_ROW_HEIGHT, gap: PROJECT_TILE_GAP };
-
-  const { ref, visible, isPaged, page, pages, goTo } = usePagedList(ordered, tile);
+  // The same count in both views. Covers and rows used to page differently
+  // because a row is shorter, so more of them fit — with a count there is
+  // nothing to fit, and twenty projects is twenty projects however they are
+  // drawn. Switching views now keeps you on the same twenty rather than
+  // reshuffling which page anything is on.
+  const { ref, visible, isPaged, page, pages, goTo } = usePagedList(ordered);
 
   return (
     <section className="start-all">
@@ -153,7 +142,7 @@ export function ProjectGrid({
 
       {filters}
 
-      <div className="start-area" data-view={view} data-paged={isPaged} ref={ref}>
+      <div className="start-area" data-view={view} ref={ref}>
         {isScanning ? (
           <p className="start-empty">Looking for your projects…</p>
         ) : projects.length === 0 ? (

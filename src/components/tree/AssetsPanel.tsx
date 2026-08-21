@@ -32,8 +32,7 @@
 // the flag is down to what it always described: the tile says "not sure yet"
 // instead of "not used anywhere".
 import { FolderPlus, ImagePlus, Trash2 } from "lucide-react";
-import { useRef, useState, type RefObject } from "react";
-import { PICTURE_GRID_GAP } from "../../constants/layout";
+import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import {
   ALL_PICTURES,
@@ -52,7 +51,7 @@ import {
 import { AssetFolderStrip } from "./AssetFolderStrip";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenSingleImage } from "../../hooks/use-lightbox";
-import { useMeasuredPagedList } from "../../hooks/use-paged-list";
+import { usePagedList } from "../../hooks/use-paged-list";
 import { useNodeImage } from "../../hooks/use-node-image";
 import { PageNav } from "../shell/PageNav";
 
@@ -69,14 +68,11 @@ export function AssetsPanel() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
 
   const { shown, counts } = useFilteredAssets(entries, folders, filter);
-  // Pages or one long scroll, whichever Settings → Lists says. The tile is
-  // measured rather than declared: this grid is two columns at the sidebar's
-  // narrowest and three past 300px, and a tile is as tall as it is wide plus
-  // however much room the caption's text size takes.
-  const { ref, tileRef, visible, isPaged, page, pages, goTo } = useMeasuredPagedList<AssetEntry, HTMLDivElement>(
-    shown,
-    PICTURE_GRID_GAP,
-  );
+  // Pages or one long scroll, whichever Settings → Lists says, at whatever
+  // size it says a page is. Nothing about this grid is measured any more: a
+  // page holds a count, and the count doesn't care that a tile here is two
+  // columns wide at the sidebar's narrowest and three past 300px.
+  const { ref, visible, isPaged, page, pages, goTo } = usePagedList(shown);
 
   function handleCreateFolder() {
     const id = createAssetFolder("New folder");
@@ -234,7 +230,7 @@ export function AssetsPanel() {
           folders stay put either way; everything above used to scroll away with
           the grid, so the way to add a picture or change folder disappeared the
           moment you went looking through the pictures. */}
-      <div className="tree-assets-scroll" data-paged={isPaged} ref={ref}>
+      <div className="tree-assets-scroll" ref={ref}>
         {!isLoading && shown.length === 0 && (
           <p className="tree-assets-note">
             {entries.length === 0
@@ -243,12 +239,9 @@ export function AssetsPanel() {
           </p>
         )}
         <ul className="tree-assets-grid">
-          {visible.map((entry, index) => (
+          {visible.map((entry) => (
             <AssetTile
               key={entry.fileName}
-              // The first tile is the one that gets measured, and every page
-              // has one — see useMeasuredPagedList.
-              tileRef={index === 0 ? tileRef : undefined}
               entry={entry}
               name={assetDisplayName(names, entry.fileName)}
               onRename={renameAsset}
@@ -284,14 +277,12 @@ export function AssetsPanel() {
 function AssetTile({
   entry,
   name,
-  tileRef,
   onRename,
   onRemove,
   usageIsCertain,
 }: {
   entry: AssetEntry;
   /** Set on the first tile only, so the page size can be worked out from a real one. */
-  tileRef?: RefObject<HTMLLIElement | null>;
   /** "" for a picture that hasn't got one — never the UUID it's stored under. */
   name: string;
   onRename: (fileName: string, name: string) => void;
@@ -311,7 +302,6 @@ function AssetTile({
 
   return (
     <li
-      ref={tileRef}
       className={`tree-assets-tile${entry.isUnused ? " tree-assets-tile-unused" : ""}`}
       title={detail}
       // Dragging one onto a page puts it there — the deliberate gesture that

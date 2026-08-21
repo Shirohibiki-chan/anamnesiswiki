@@ -2622,6 +2622,33 @@ behaviour setting filed under appearance is a setting nobody finds twice.
 Default is pages. Both picture grids — the sidebar's Assets tab and the
 picker — read it as of 2026-08-18.
 
+**How big a page is became a second setting on 2026-08-20, and the first
+answer was wrong.** A page shipped as "however many fit the window", measured,
+on the reasoning that a page which scrolls is back to the thing pages exist to
+avoid. Her window fitted eight projects, and she named the mistake exactly:
+*no infinite scroll* and *no scrolling at all* are two extremely different
+things, and only the first was ever the ask. A page is now a count — 20 by
+default, with 40, 60 and 100 offered, in Settings → Lists beside the switch —
+and a page taller than the window scrolls, which is fine.
+
+The options only go up from 20 on purpose: the failure being fixed is a page
+that was too small, and offering to make it smaller again would be shipping the
+bug back as a choice. One number for all three grids, the same argument the
+switch above it already won.
+
+Two things fell out of it. The three scroll containers each had a rule clipping
+them while paged, which had to go — a page has to be allowed to be taller than
+its box. And turning the page had to start resetting the scroll to the top,
+which was never possible to get wrong before: at the bottom of page one, "next
+page" left the scroll where it was and opened page two halfway down. Measured
+doing exactly that before it was fixed.
+
+It also deleted more than it added. `fitPerPage`, `useMeasuredPagedList` and
+its tile-measuring `ResizeObserver`, and the five `PROJECT_TILE_*` /
+`PICTURE_GRID_GAP` constants all existed so the page arithmetic and the
+stylesheet could agree about pixels. A count needs none of it, and the grids'
+own numbers went back to being the stylesheet's alone.
+
 **The pinned row keeps its own pagination regardless.** That one is not a
 preference: a scrolling row cannot land on a page boundary, so its last page
 repeats cards and its dots lie about where you are. The switch governs the

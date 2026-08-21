@@ -2164,12 +2164,6 @@ ol.release-notes-list {
   overflow-y: auto;
 }
 
-/* Pages clip instead of scrolling, so a page is exactly what fits — and a
-   scrollbar can't take width off the row the page size was measured from. */
-.asset-picker-body[data-paged="true"] {
-  overflow: hidden;
-}
-
 .asset-picker-note {
   margin: 0;
   padding: var(--space-xl) 0;

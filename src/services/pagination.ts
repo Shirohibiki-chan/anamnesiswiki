@@ -47,56 +47,6 @@ export function pageOf<T>(items: readonly T[], perPage: number, index: number): 
 }
 
 /**
- * How many tiles fit in the space there is.
- *
- * A page size that adapts is the one that keeps a page a *page*: a fixed
- * number is either more than fits, so the page itself scrolls and we're back
- * to the thing pages exist to avoid, or fewer, so a wide window pads the grid
- * with empty rows. Filling the area means the last row is always a full row
- * and the next page is always exactly one screen away.
- *
- * Geometry only, in pixels the caller measured. Nothing here reads the DOM,
- * which is what makes the awkward cases — a window too short for one row, a
- * grid measured before it has been laid out — testable rather than something
- * you find by resizing the app.
- */
-export function fitPerPage(
-  area: { width: number; height: number },
-  tile: { minWidth: number; height: number; gap: number },
-): number {
-  const across = fitAlong(area.width, tile.minWidth, tile.gap);
-  const down = fitAlong(area.height, tile.height, tile.gap);
-  return across * down;
-}
-
-/** Half a pixel of slack, in pixels. See `fitAlong`. */
-const EXACTLY = 0.5;
-
-/**
- * Never zero. A window shorter than one row still has to show something, and a
- * page of one tile she has to scroll past is a better answer than a page of
- * none, which would render an empty grid over a list that isn't empty.
- */
-function fitAlong(space: number, size: number, gap: number): number {
-  if (!Number.isFinite(space) || !Number.isFinite(size) || size <= 0) return 1;
-  // The gap sits *between* tiles, so n tiles carry n-1 gaps. Adding one gap to
-  // both sides of the division is the whole correction.
-  //
-  // `EXACTLY` is what stops a grid of counted columns losing one. A picture
-  // grid is four columns of whatever a quarter of the row comes to, so the
-  // division lands *on* an integer by construction — and a tile measured a
-  // fraction over, or a division that comes back 3.9999999999, floors to three
-  // and drops a whole column. Measured happening: a 462px row of four 109.5px
-  // tiles paged as three.
-  //
-  // Half a pixel, in pixels rather than as a share of a tile, because the
-  // amount of slack that is safe is a property of the screen and not of how
-  // big the tiles happen to be. A tile a whole pixel short of fitting still
-  // does not fit.
-  return Math.max(1, Math.floor((space + gap + EXACTLY) / (size + gap)));
-}
-
-/**
  * The page an item is on — which is how a resize stays where she was.
  *
  * The page size changes when the window does, so a stored *page number* means

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PREFERENCES, parsePreferences } from "./preferences-service";
+import { DEFAULT_PREFERENCES, LIST_PAGE_SIZES, parsePreferences } from "./preferences-service";
 
 describe("parsePreferences", () => {
   it("defaults an empty or absent settings file", () => {
@@ -14,6 +14,7 @@ describe("parsePreferences", () => {
     expect(parsePreferences({ listPaging: "scroll" }).listPaging).toBe("scroll");
     expect(parsePreferences({ listPaging: "pages" }).listPaging).toBe("pages");
     expect(parsePreferences({ projectSort: "name-desc" }).projectSort).toBe("name-desc");
+    expect(parsePreferences({ listPageSize: 100 }).listPageSize).toBe(100);
   });
 
   it("reads each preference on its own, so one bad value doesn't cost the others", () => {
@@ -43,5 +44,24 @@ describe("parsePreferences", () => {
     // way to work, not because it is the safe default.
     expect(DEFAULT_PREFERENCES.listPaging).toBe("pages");
     expect(DEFAULT_PREFERENCES.projectSort).toBe("active");
+  });
+
+  // A page used to be however much fit the window, which came to eight on her
+  // machine. 20 is the floor the offered sizes start at, so a settings file
+  // written before this existed lands on 20 rather than on the old behaviour —
+  // there is no longer any value that means "however many fit".
+  it("defaults to twenty to a page", () => {
+    expect(DEFAULT_PREFERENCES.listPageSize).toBe(20);
+    expect(parsePreferences({}).listPageSize).toBe(20);
+    expect(Math.min(...LIST_PAGE_SIZES)).toBe(20);
+  });
+
+  // Membership, not a range: a size with no button to show it would be obeyed
+  // by a grid while the settings panel showed something else selected.
+  it("refuses a page size that isn't one of the offered ones", () => {
+    expect(parsePreferences({ listPageSize: 37 }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
+    expect(parsePreferences({ listPageSize: 0 }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
+    expect(parsePreferences({ listPageSize: "40" }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
+    expect(parsePreferences({ listPageSize: 1e9 }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
   });
 });

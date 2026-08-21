@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  fitAcross, clampPage, fitPerPage, pageContaining, pageCount, pageOf } from "./pagination";
+import { clampPage, fitAcross, pageContaining, pageCount, pageOf } from "./pagination";
 
 const ITEMS = ["a", "b", "c", "d", "e", "f", "g"];
 
@@ -70,56 +69,6 @@ describe("clampPage", () => {
     expect(clampPage(-2, 7, 4)).toBe(0);
     expect(clampPage(Number.NaN, 7, 4)).toBe(0);
     expect(clampPage(1.7, 7, 4)).toBe(1);
-  });
-});
-
-describe("fitPerPage", () => {
-  // A tile 200 wide and 260 tall with 16 between them.
-  const TILE = { minWidth: 200, height: 260, gap: 16 };
-
-  it("fills the space it is given", () => {
-    // 3 across: 200 + 16 + 200 + 16 + 200 = 632. 2 down: 260 + 16 + 260 = 536.
-    expect(fitPerPage({ width: 660, height: 560 }, TILE)).toBe(6);
-  });
-
-  it("counts the gaps between tiles, not after the last one", () => {
-    // Exactly three tiles and the two gaps between them, to the pixel — the
-    // off-by-one that shows up as a permanently missing column.
-    expect(fitPerPage({ width: 632, height: 260 }, TILE)).toBe(3);
-    expect(fitPerPage({ width: 631, height: 260 }, TILE)).toBe(2);
-  });
-
-  it("keeps every column of a grid that counts its own columns", () => {
-    // The picture grids divide the row into four, so the tile width is
-    // whatever a quarter of it comes to and the fit lands exactly on 4. This
-    // is the measured case: a 462px row, four 109.5px tiles, 8px gaps — which
-    // floored to three columns and paged 53 pictures as eighteen pages of
-    // three.
-    expect(fitPerPage({ width: 462, height: 376 }, { minWidth: 109.5, height: 143.19, gap: 8 })).toBe(8);
-  });
-
-  it("does not round a tile that genuinely does not fit into one that does", () => {
-    // The slack is half a pixel, so a tile a whole pixel short stays out.
-    expect(fitPerPage({ width: 631, height: 260 }, TILE)).toBe(2);
-    expect(fitPerPage({ width: 631.6, height: 260 }, TILE)).toBe(3);
-  });
-
-  it("grows the page when the window grows, which is the point", () => {
-    const small = fitPerPage({ width: 660, height: 560 }, TILE);
-    const large = fitPerPage({ width: 1400, height: 900 }, TILE);
-    expect(large).toBeGreaterThan(small);
-  });
-
-  it("still shows a tile in a window too small for one", () => {
-    // A page of nothing would render an empty grid over a list that isn't
-    // empty. One tile she has to scroll past is the better failure.
-    expect(fitPerPage({ width: 40, height: 40 }, TILE)).toBe(1);
-  });
-
-  it("survives being asked before the grid has been laid out", () => {
-    // ResizeObserver reports 0 x 0 on the first frame.
-    expect(fitPerPage({ width: 0, height: 0 }, TILE)).toBe(1);
-    expect(fitPerPage({ width: Number.NaN, height: 560 }, TILE)).toBeGreaterThanOrEqual(1);
   });
 });
 

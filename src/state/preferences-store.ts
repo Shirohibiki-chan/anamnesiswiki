@@ -6,6 +6,7 @@ import * as appSettings from "../services/app-settings-service";
 import {
   DEFAULT_PREFERENCES,
   parsePreferences,
+  type ListPageSize,
   type ListPagingMode,
   type Preferences,
   type ProjectSort,
@@ -19,6 +20,7 @@ export type PreferencesStoreState = {
   loadPreferences: () => Promise<void>;
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
   setListPaging: (mode: ListPagingMode) => void;
+  setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
   setProjectSort: (sort: ProjectSort) => void;
 };
@@ -53,6 +55,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setListPaging(mode) {
       apply({ ...get().preferences, listPaging: mode });
+    },
+
+    setListPageSize(size) {
+      apply({ ...get().preferences, listPageSize: size });
     },
 
     setProjectView(view) {

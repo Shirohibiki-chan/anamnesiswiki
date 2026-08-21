@@ -49,30 +49,6 @@ export const PROPERTIES_DEFAULT_WIDTH = 300;
 export const READING_COLUMN_WIDTH = 880;
 
 /**
- * A project cover on the start screen, in pixels, and the gap between two of
- * them — the same numbers `start.css` lays the grid out with.
- *
- * TypeScript has to know them because the page size adapts to the window: how
- * many covers fit is arithmetic on these, and the alternative is measuring a
- * tile that only exists once the page it belongs to has been decided. The CSS
- * is the real one; change both together.
- *
- * `MIN_WIDTH` because the grid stretches its columns to fill the row — a tile
- * is never narrower than this, and usually a little wider.
- */
-/**
- * The gap between two pictures in a grid of them, in pixels — `--space-md`,
- * which is what both picture grids (the Assets tab and the picker) set their
- * `gap` to.
- *
- * The page size needs it and CSS custom properties are not readable as numbers
- * from TypeScript. Everything else about those tiles is measured off a real one
- * at runtime rather than written down here — see `useMeasuredPagedList` for
- * why a picture tile can't honestly be a constant.
- */
-export const PICTURE_GRID_GAP = 8;
-
-/**
  * How many pages can be shown as dots before the row becomes a counter.
  *
  * A dot is 26px of hit target, so eight of them is 208px — wider than the
@@ -113,35 +89,6 @@ export const PIN_MIN_ACROSS = 2;
  * the first frame.
  */
 export const PINS_PER_PAGE = 4;
-
-/**
- * How narrow a row in the list view is allowed to get before the list stops
- * making another column of them.
- *
- * The list used to be one row across the whole window, which is only readable
- * at about the width the app opens at: fullscreen on a 2560 monitor left 2060
- * pixels of nothing between a project's name and the date beside it, because
- * the two are pinned to opposite ends of whatever they are given. Columns are
- * the answer rather than a cap on the width, since a capped list on a wide
- * monitor is the same empty screen with a tidier edge on it.
- *
- * 440 because the path sits *under* the name rather than beside it, so the top
- * line of a row is only a name and a date and doesn't need much width to keep
- * the two of them near each other. That is the whole reason the two-line row
- * is worth the extra height: a wide single-line row puts the gap straight back.
- */
-export const PROJECT_ROW_MIN_WIDTH = 440;
-
-export const PROJECT_TILE_MIN_WIDTH = 190;
-
-/**
- * Both heights carry a line for the project's location, which is why they are
- * not the rounder numbers they used to be: a cover was 118 and a row 48 when
- * the caption was a name and a date.
- */
-export const PROJECT_TILE_HEIGHT = 132;
-export const PROJECT_ROW_HEIGHT = 56;
-export const PROJECT_TILE_GAP = 10;
 
 /**
  * How wide the start screen's rail can be dragged, and where it starts.

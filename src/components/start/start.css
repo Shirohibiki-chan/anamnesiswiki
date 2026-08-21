@@ -281,23 +281,19 @@
   color: var(--color-accent-light);
 }
 
-/* The measured element. It clips rather than scrolls while paged, so a page is
-   exactly what fits — a scrollbar appearing here would contradict the count
-   the page size was worked out from. In one-long-scroll mode it scrolls, which
-   is the whole of the difference between the two. */
+/* Scrolls in both modes, and the difference between them is where it stops.
+   This used to clip while paged, so a page could only ever be what fit the
+   window — which is what made a page eight projects. A page holding twenty has
+   to be allowed to be taller than the area it is drawn in. */
 .start-area {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-}
-
-.start-area[data-paged="false"] {
   overflow-y: auto;
 }
 
-/* The 190px and the 10px gap are PROJECT_TILE_MIN_WIDTH and PROJECT_TILE_GAP
-   in constants/layout.ts, which is where the page size is worked out from.
-   Change both together or the last row goes missing. */
+/* These numbers are the stylesheet's own now. They used to be duplicated in
+   constants/layout.ts because the page size was arithmetic on them; a page is
+   a count, so nothing in TypeScript needs to know how wide a cover is. */
 .start-tiles {
   display: grid;
   grid-auto-rows: 132px;
@@ -308,8 +304,7 @@
 
 /* Columns of rows, not one row across the window. A row pins the name to one
    end and the date to the other, so a wide window doesn't make the row more
-   readable — it just puts more nothing in the middle of it. `PROJECT_ROW_MIN_WIDTH`
-   is the same number `usePagedList` counts with; change both together. */
+   readable — it just puts more nothing in the middle of it. */
 .start-area[data-view="list"] .start-tiles {
   grid-auto-rows: 56px;
   grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
