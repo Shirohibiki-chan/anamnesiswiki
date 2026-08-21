@@ -33,7 +33,7 @@ jobs:
     outputs:
       notes: ${{ steps.notes.outputs.body }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Version files must match the tag
         run: node scripts/check-version.mjs "${GITHUB_REF_NAME#v}"
       # Fails here, in seconds, if this version has no section written for it.
@@ -73,7 +73,7 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Tauri v2 on Linux needs webkit2gtk 4.1 specifically — 4.0 is what
       # Tauri v1 used and it will not build against it.
@@ -83,11 +83,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
