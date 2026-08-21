@@ -12,6 +12,33 @@ import { getMentionMenuItems } from "./mention-menu-items";
 
 export const WIKILINK_TRIGGER = "[[";
 
+/**
+ * Which suggestion typing `]]` should confirm, if any.
+ *
+ * **Never confirms a name that belongs to more than one page.** Taking the top
+ * item is right when the typed name picks something out; when two pages are
+ * both called ragatha it is a coin flip made silently, and the link lands on
+ * whichever happened to sort first with nothing on screen saying a choice was
+ * made. Her call, 2026-08-21: show both and let her pick.
+ *
+ * Only *exact* name ties are ambiguous. Several fuzzy matches are the ordinary
+ * case — "val" matching Valera and Valeraverse — and guessing the top one is
+ * exactly what typing the closing brackets is asking for. An exact match also
+ * beats a fuzzy one that sorted above it, so a page literally called "Val"
+ * wins over Valera.
+ */
+export function chooseWikilinkTarget<T extends { title: string; onItemClick: () => void }>(
+  items: T[],
+  typed: string,
+): T | "none" | "ambiguous" {
+  if (items.length === 0) return "none";
+  const wanted = typed.trim().toLowerCase();
+  const exact = items.filter((item) => item.title.toLowerCase() === wanted);
+  if (exact.length > 1) return "ambiguous";
+  return exact[0] ?? items[0];
+}
+
+
 export function useWikilinkBracketConfirm(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
   editor: BlockNoteEditor<any, any, any>,
@@ -31,11 +58,17 @@ export function useWikilinkBracketConfirm(
   return function onKeyDownCapture(event: { key: string; preventDefault: () => void }) {
     if (event.key !== "]" || query === undefined || !query.endsWith("]")) return;
 
-    const items = filterSuggestionItems(getMentionMenuItems(editor, nodes, currentNodeId), query.slice(0, -1));
-    if (items.length === 0) return;
+    const typed = query.slice(0, -1);
+    const items = filterSuggestionItems(getMentionMenuItems(editor, nodes, currentNodeId), typed);
+    const choice = chooseWikilinkTarget(items, typed);
 
+    if (choice === "none") return;
+    // Ambiguous: swallow the bracket and leave the menu open on the list, so
+    // the next Enter or click is a real answer rather than a coin flip.
     event.preventDefault();
+    if (choice === "ambiguous") return;
+
     suggestionMenu.clearQuery();
-    items[0].onItemClick();
+    choice.onItemClick();
   };
 }
