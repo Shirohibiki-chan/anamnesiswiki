@@ -341,6 +341,126 @@
   gap: var(--space-sm);
 }
 
+/* ---- Meters (Phase 18c) ---- */
+
+.block-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* The fill takes the block's own colour when it has one, which is what makes a
+   purple bar purple — the accent is set by BlockShell and inherited here.
+   Falls back to the bold teal, never to --color-accent, which is the 15% tint
+   and would draw a meter you can't see. */
+.block-meter-fill,
+.block-meter-pip-filled {
+  color: var(--block-accent, var(--color-accent-light));
+}
+
+.block-meter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.block-meter-track {
+  flex: 1;
+  min-width: 0;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  overflow: hidden;
+}
+
+.block-meter-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: currentcolor;
+  transition: width 140ms ease;
+}
+
+.block-meter-readout {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Capped rather than full-width: a ring stretched to the width of the panel is
+   a hole in the sidebar, and she can make the panel wide. */
+.block-meter-arc {
+  align-self: center;
+  width: 100%;
+  max-width: 132px;
+  overflow: visible;
+}
+
+.block-meter-arc-track,
+.block-meter-arc-fill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.block-meter-arc-track {
+  stroke: var(--color-panel-alt);
+}
+
+.block-meter-arc-fill {
+  stroke: var(--block-accent, var(--color-accent-light));
+  transition: d 140ms ease;
+}
+
+.block-meter-arc-readout {
+  fill: var(--color-text-primary);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.block-meter-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.block-meter-pip {
+  display: inline-flex;
+  padding: 1px;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-meter-pip:hover {
+  color: var(--color-text-primary);
+}
+
+.block-meter-pip-filled:hover {
+  color: var(--block-accent, var(--color-accent-light));
+}
+
+/* The two numbers under every shape. They sit on one line rather than as two
+   labelled fields, because "3 of 5" is how the pair is read aloud. */
+.block-meter-numbers {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.block-meter-numbers .property-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.block-meter-of {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+}
+
 /* The source menu carries a second line per item, which the tree's own menu
    rule doesn't expect — it lays items out as a single centred row. */
 .block-source-menu button {

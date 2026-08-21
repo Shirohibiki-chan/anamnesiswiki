@@ -287,52 +287,15 @@ pass, the design system beneath it, themes, property types, everyday
 navigation, the right-click menu's full pass, pictures and tags, the Templates
 and Assets tabs, and the project library the start screen became. Their detail
 is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phases 18a and 18b shipped 2026-08-21** — the panel is a block canvas,
+**Phase 18 shipped whole on 2026-08-21** — the panel is a block canvas,
 everything in it is a block, pages written before it derive their layout on
-read, and one collection block answers what-points-at-what four ways. Detail is
-in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phase 18c is next**, and it is the next one in this file.
+read, one collection block answers what-points-at-what four ways, and a meter
+block draws one number six ways. Detail is in `docs/shipped.md`; what still
+binds the code is in `docs/handoff.md`.
+**Phase 19 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 18 — Sidebar Blocks
-
-The big one, and a genuinely new concept: the right panel becomes a second
-block canvas rather than a fixed list of fields. **Scoped 2026-08-21 and split
-into three phases** — 18a builds the canvas, 18b builds the index the three
-index blocks share, 18c builds the meters. The split is not cosmetic: 18a
-changes how every page's sidebar is stored, and shipping that alone means the
-data model is proven by use before eleven more block types are built on it.
-
-Keep the distinction sharp in the *user's* language — **properties** are
-labelled facts (`Age: 26`), **meters** are arranged widgets (a 75% purple bar
-called "Hollow Emperor's Influence"). Underneath, after 18a, they are the same
-thing: a block in an ordered list.
-
-**No YouTube, Spotify or map embeds** — LK's media group minus everything that
-fetches. Her reason, 2026-07-31, was aesthetic, not the offline policy, which
-she has never personally agreed with. If embeds come back that's a policy
-conversation to have with her and she'll likely wave it through; ask anyway,
-because the boundary is written strict in `CLAUDE.md` at her request.
-
----
-
-## Phase 18c — Meters
-
-Six blocks, two value models, six renderings — build the models first and the
-six are presentation.
-
-- **A 0–100 value:** Progress Bar · Circle · Semi-circle · Gauge.
-- **N of M discrete pips:** Rating · Token Pool, differing only in whether a
-  click sets the level or spends one.
-
-**Token Pool stays in**, questioned 2026-08-21 as a D&D artefact. It isn't one
-once Rating exists — the two are the same widget — and counted-in-whole-units
-is ordinary worldbuilding: spell charges, rations, favours owed, remaining
-heirs, ammunition.
 
 ---
 

@@ -3341,3 +3341,74 @@ another, a child page, a shared tag, and an 18a link block:
   heading followed.
 - The 18a link block arrived as a Manual links collection.
 - Adding an alias worked, and the existing one rendered.
+
+---
+
+## Phase 18c — Meters ✅ Shipped 2026-08-21
+
+Six meters — Progress bar, Circle, Semi-circle, Gauge, Rating, Token pool — as
+**one `meter` block with a switchable shape**, closing Phase 18. The plan's own
+framing turned out to be the design: two value models, and the six shapes are
+presentation over them.
+
+### What shipped
+
+- **`meter-service.ts`** — the defaulting, the clamping, the pip-click rules
+  and the SVG arc geometry, pure and unit-tested. 27 tests.
+- **`meter` block kind** with `meter` / `value` / `max` on `Block`, and three
+  store actions (`setBlockMeter`, `setBlockValue`, `setBlockMax`).
+- **`MeterBlock.tsx`** — the six renderings, the shape picker, the clickable
+  pips, and the two numbers under every shape.
+- **Six entries in Add Block** under a Meters heading, all creating the same
+  block with a different shape.
+
+### Decisions worth the record
+
+- **Six menu entries, one block kind.** The same shape the collection block
+  settled on in 18b: nobody adding a rating wants to add a progress bar and
+  then hunt for the setting, but a bar that should have been a gauge should
+  not have to be deleted and rebuilt either.
+- **The number survives every shape change; the maximum does not survive a
+  change of *model*.** Redrawing a bar as a gauge is the same fact drawn
+  differently, so everything stays. Turning a bar that reads against 200 into
+  a rating would otherwise hand her twenty stars to click, so the maximum is
+  dropped and the value kept.
+- **Clamping happens on read, never on write.** A rating dropped from ten pips
+  to three still stores the 8 it had, and shows 3; putting the ten back brings
+  the 8 back. Storing the clamped number instead would destroy it silently.
+- **Nothing default is written.** A meter with a value and no maximum is three
+  keys of JSON — `withField` drops anything undefined, the way 18a set up.
+- **Meters take the block colour rather than owning one.** The `⋯` menu's
+  palette was already there from 18a, so a purple influence bar needed no new
+  UI at all. The one trap was which token to fall back to: `--color-accent` is
+  a 15% tint, and a meter drawn in it is invisible — see `--color-accent-light`
+  in the CSS.
+- **Token Pool stayed in**, questioned the same day as a D&D artefact. Once
+  Rating exists the two are one widget differing by a single click rule, and
+  counting whole units is ordinary worldbuilding: spell charges, rations,
+  favours owed, ammunition.
+- **No YouTube, Spotify or map embeds**, carried from the Phase 18 scope and
+  still standing. Her reason on 2026-07-31 was aesthetic rather than the
+  offline policy, which she has never personally agreed with — so if embeds
+  come back it is a conversation to have with her, not a line to quietly cross.
+
+### Verification
+
+`pnpm lint`, `pnpm test` (1286, 27 new) and `tsc --noEmit` all clean.
+
+Then driven in a throwaway probe mounting the real `BlockPanel`, because a unit
+suite cannot see a sidebar:
+
+- All six added from the menu and rendered — bar, three arcs with their own
+  viewBoxes, and two rows of five pips.
+- Typing 75 into a bar filled it to 75% and read "75%"; a circle at 40 drew a
+  single arc and a full ring drew as two.
+- Rating: clicking the third star set 3, clicking it again cleared to 0,
+  clicking the fourth set 4. Token pool: filling to 5 then clicking the third
+  token spent down to 2.
+- Raising a rating to 10 drew ten pips; switching that block to a bar kept the
+  value, dropped the maximum back to 100, and redrew as 4%.
+- Colouring the block purple turned the fill `#c4b5fd`; an uncoloured arc drew
+  in the bold teal, not the invisible tint.
+- The stored blocks came out as `{ kind, meter, value }` with no defaults, and
+  the console stayed clean throughout.

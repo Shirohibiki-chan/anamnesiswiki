@@ -16,11 +16,11 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–17 and 27 are done. The app is shippable**, and **Phase 18
-(Sidebar Blocks) is next**. `docs/plan.md` has the remaining phases plus the
-unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase
-delivered. Phase 27 closed 2026-08-20 with project templates — what still binds
-the code from it is §Project templates below.
+**Phases 0–18 and 27 are done. The app is shippable**, and **Phase 19 (Safety
+Net) is next**. `docs/plan.md` has the remaining phases plus the unscheduled
+Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
+Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
+§Sidebar blocks below.
 
 The most recent ones are the ones a new session is most likely to touch.
 **Phase 14 — Everyday Navigation — closed 2026-08-11**: eleven small things
@@ -2726,8 +2726,8 @@ is below.
   assets tab, the lightbox, the crop and export's `imageSource`;
   `node.properties` feeds the property index and the templates. A block that
   kept its own copy of any of those would fork them silently and the fork would
-  only show up somewhere else in the app. Only `text` — and Phase 18c's meters
-  — hold their own value. Anything new that looks like it wants a copy of an
+  only show up somewhere else in the app. Only `text` and `meter` hold their
+  own value. Anything new that looks like it wants a copy of an
   existing field wants a pointer instead.
 
 - **A derived block's id must be deterministic, and `derivedId` is why.** A
@@ -2767,6 +2767,32 @@ is below.
   `unshownPropertyKeys`. `removeCustomProperty` is the destructive one, and it
   drops *every* block pointing at that key, because a property can be shown
   twice.
+
+- **A meter clamps on read and never on write, and `meter-service` is where
+  that lives.** The maximum moves underneath a stored value all the time — a
+  rating dropped from ten pips to three leaves an 8 behind — and writing the
+  clamped number instead would destroy what she typed the moment she nudged a
+  setting. Drawing eight of three is the other wrong answer, which is why the
+  clamp exists at all. Anything new that reads a meter reads it through
+  `meterValue`, not out of the block.
+
+- **Changing a meter's shape keeps the value and drops the maximum only when
+  the value *model* changes.** Bar to gauge is the same fact drawn differently
+  and keeps everything; bar to rating is not, and a bar reading against 200
+  carried across would draw twenty stars to click. `setBlockMeter` is the one
+  place that decides this — see `isPipMeter`.
+
+- **A meter's fill falls back to `--color-accent-light`, never
+  `--color-accent`.** The latter is a 15% tint despite the name — the same trap
+  that made the import progress bar invisible, documented at the token itself.
+  A meter drawn in it looks like an empty meter, which is a bug that reads as a
+  data problem.
+
+- **No YouTube, Spotify or map embeds in the sidebar.** Phase 18's scope, hers,
+  and aesthetic rather than a consequence of the offline policy she has never
+  personally agreed with. If an embed block is ever wanted it is a conversation
+  to have with her first, because `CLAUDE.md` draws that boundary strict at her
+  request — not a judgement call to make while building something else.
 
 ## The link index
 

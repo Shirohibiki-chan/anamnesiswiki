@@ -11,6 +11,7 @@ import {
   type BlockKind,
   type CollectionSource,
   type CustomPropertySpec,
+  type MeterStyle,
   createTemplateLibrary,
   type Node,
   type Project,
@@ -68,6 +69,7 @@ import {
   seedBlocks,
   withField,
 } from "../services/block-service";
+import { isPipMeter, meterStyleOf } from "../services/meter-service";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   addOverride,
@@ -310,6 +312,10 @@ export type ProjectStoreState = {
   setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
   setBlockText: (nodeId: string, blockId: string, text: string) => void;
   setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
+  // Phase 18c's meters.
+  setBlockMeter: (nodeId: string, blockId: string, style: MeterStyle) => void;
+  setBlockValue: (nodeId: string, blockId: string, value: number | undefined) => void;
+  setBlockMax: (nodeId: string, blockId: string, max: number | undefined) => void;
   // Phase 18b's collection settings.
   setBlockSource: (nodeId: string, blockId: string, source: CollectionSource) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
@@ -1532,6 +1538,39 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     setBlockLink(nodeId, blockId, targetId) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "targetId", targetId) : block)),
+      );
+    },
+
+    // ---- Phase 18c: meters ----
+    //
+    // Changing the shape keeps the number, because a bar redrawn as a gauge is
+    // the same fact drawn differently. It drops the *maximum* when the value
+    // model changes, though: 0-100 and a count of pips are different
+    // questions, and a bar reading against 200 carried into a rating would
+    // hand her twenty stars to click.
+    setBlockMeter(nodeId, blockId, style) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => {
+          if (block.id !== blockId) return block;
+          const next = withField(block, "meter", style);
+          return isPipMeter(style) === isPipMeter(meterStyleOf(block)) ? next : withField(next, "max", undefined);
+        }),
+      );
+    },
+
+    // Both of these store the raw number and let meter-service clamp on read.
+    // Writing the clamped value instead would quietly destroy what she typed:
+    // a rating dropped to three pips and raised back to ten would come back
+    // as three, not as the eight it was.
+    setBlockValue(nodeId, blockId, value) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "value", value) : block)),
+      );
+    },
+
+    setBlockMax(nodeId, blockId, max) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "max", max) : block)),
       );
     },
 

@@ -114,9 +114,23 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
 // property index and the templates — a block that kept its own copy of any of
 // those would fork them silently. So a block record holds presentation plus a
 // pointer, and the value stays in the field it has always lived in. Only the
-// kinds with genuinely new data (`text`, and Phase 18c's meters) store a value
-// inside the block itself.
-export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias";
+// kinds with genuinely new data (`text` and `meter`) store a value inside the
+// block itself.
+export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter";
+
+/**
+ * How a `meter` block draws itself. Phase 18c.
+ *
+ * Six shapes, two value models. The first four read one number against a
+ * maximum and differ only in how they draw it; the last two count whole units
+ * and differ only in what a click means. One block with a switchable shape
+ * rather than six kinds, the same way `collection` carries a source — a bar
+ * that should have been a gauge is a setting, not a delete and a rebuild.
+ */
+export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "rating" | "pool";
+
+/** The shapes that count whole units rather than measuring a proportion. */
+export const PIP_METER_STYLES: MeterStyle[] = ["rating", "pool"];
 
 /**
  * Where a `collection` block gets its list of pages. Phase 18b.
@@ -159,6 +173,13 @@ export type Block = {
   source?: CollectionSource;
   targetIds?: string[];
   tags?: string[];
+  // `meter` only. `value` is what it reads, `max` what it reads against — 100
+  // for the proportional shapes, a pip count for the discrete ones. Both
+  // absent on a block that has never been touched, which reads as the
+  // defaults in meter-service rather than as zero of zero.
+  meter?: MeterStyle;
+  value?: number;
+  max?: number;
 };
 
 export type Node = {

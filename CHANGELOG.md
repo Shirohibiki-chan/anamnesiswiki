@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-21 — meters
+
+### Additions
+
+- **Meters — a number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with six of them, and they sit in the sidebar alongside your properties.
+- **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so typing 75 gives you 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
+- **Two of them count whole things:** a **Rating** you click to set a level, and a **Token pool** you click to spend one at a time. Spell charges, favours owed, ammunition, stars out of five. Five to start with, up to twenty if you want them.
+- **Clicking a rating's current level clears it**, so a star you didn't mean to click isn't permanent.
+- **A meter wears the block's colour.** The swatches in its `⋯` menu are the ones every other block uses, so an influence meter can be purple and a wounded one red.
+- **The shape is a setting, not a decision you're stuck with.** Click the shape's name above the meter and pick another one — the number you typed comes with it, and nothing has to be deleted and rebuilt.
+- **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.
+- **Rename a meter to whatever it measures** the same way you rename any block's heading — double-click it. A meter called Meter is just the name it arrives with.
+
 ## 2026-08-21 — the X really does close the app now
 
 ### Fixes
@@ -268,21 +281,3 @@
 - **Plain text is the default on purpose, and it's never coloured.** Bot prompts have no syntax, and the point of putting one in here is that `{{char}}`, `**asterisks**` and braces stay exactly the characters you typed. Nothing touches them.
 - **Code blocks stay dark even if the rest of the app is light.** The colours the code is painted in aren't ours to choose, and they're built for a dark background.
 - **If any page in your world came in from LegendKeeper with a code block on it, that page is still missing its code.** Re-importing just those pages would bring it back now.
-
-## 2026-08-12 — pictures have names
-
-### Additions
-
-- **Pictures can be named, and the name sits on the picture** — across the bottom of the thumbnail, the way a file manager writes a filename under a thumbnail. Click it to change it. Enter or clicking away saves; Escape puts back what was there. Undo covers it.
-- **A picture you add from your computer keeps the name of the file you picked.** "Valera sword.png" arrives called "Valera sword".
-- A picture with no name shows a faint **Name this** while you're pointing at its tile, and nothing when you aren't.
-
-### Adjustments
-
-- **The file size under each picture is gone.**
-- What's using a picture stays where it was, under the square.
-
-### Worth knowing
-
-- **Pictures you added before today have no name**, and there's no way to work one out — the app has only ever stored them under a generated id, and the name of the file you originally picked was never written down anywhere. You can name them yourself, and once named it sticks.
-- **Naming a picture doesn't rename the file on disk.** It can't: every page showing that picture points at it by its filename, so renaming the file would mean rewriting every one of those pages, and a rewrite that stops halfway is a broken picture on a page you weren't looking at. The names live in their own small file next to the pictures. Losing it loses the names and nothing else.

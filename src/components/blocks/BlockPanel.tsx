@@ -43,6 +43,7 @@ import { AddBlockMenu } from "./AddBlockMenu";
 import { AliasBlock } from "./AliasBlock";
 import { BlockShell } from "./BlockShell";
 import { CollectionBlock } from "./CollectionBlock";
+import { MeterBlock } from "./MeterBlock";
 import { TextBlock } from "./TextBlock";
 import "../properties/properties.css";
 import "./blocks.css";
@@ -70,6 +71,9 @@ export function BlockPanel() {
     setBlockSource,
     setBlockTargets,
     setBlockTags,
+    setBlockMeter,
+    setBlockValue,
+    setBlockMax,
     setNodeAliases,
   } = useProject();
   const { confirmDestructive } = useDialogs();
@@ -238,6 +242,25 @@ export function BlockPanel() {
             onSetTargets={(ids) => setBlockTargets(node!.id, block.id, ids)}
             onSetTags={(tags) => setBlockTags(node!.id, block.id, tags)}
             onOpen={(id) => selectNode(id)}
+          />
+        ),
+      };
+    }
+
+    if (block.kind === "meter") {
+      // One natural title for all six shapes, unlike a collection's, because
+      // the shape already names itself on the pill right underneath — and
+      // because this is the block kind most likely to be renamed anyway: a
+      // meter called "Rating" is a widget, and one called "Hollow Emperor's
+      // Influence" is worldbuilding.
+      return {
+        natural: "Meter",
+        body: (
+          <MeterBlock
+            block={block}
+            onSetStyle={(style) => setBlockMeter(node!.id, block.id, style)}
+            onSetValue={(value) => setBlockValue(node!.id, block.id, value)}
+            onSetMax={(max) => setBlockMax(node!.id, block.id, max)}
           />
         ),
       };
@@ -451,6 +474,10 @@ export function BlockPanel() {
             }}
             onAddCollection={(source) => {
               addBlock(node.id, "collection", { source });
+              setAddRect(null);
+            }}
+            onAddMeter={(style) => {
+              addBlock(node.id, "meter", { meter: style });
               setAddRect(null);
             }}
             onAddProperty={(key) => {

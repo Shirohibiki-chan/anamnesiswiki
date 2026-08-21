@@ -9,8 +9,23 @@
 // The properties section is the way back to a field whose block was removed.
 // Removing a property block keeps the value on purpose, so without this the
 // data would be stranded where only the file on disk shows it.
-import { AtSign, FileText, Image as ImageIcon, Link2, ListTree, Sparkles, Tags, Tags as TagsIcon } from "lucide-react";
-import type { BlockKind, CollectionSource } from "../../constants/schema";
+import {
+  AtSign,
+  Circle,
+  Coins,
+  Donut,
+  FileText,
+  Gauge,
+  Image as ImageIcon,
+  Link2,
+  ListTree,
+  RectangleHorizontal,
+  Sparkles,
+  Star,
+  Tags,
+  Tags as TagsIcon,
+} from "lucide-react";
+import type { BlockKind, CollectionSource, MeterStyle } from "../../constants/schema";
 import type { RenderableProperty } from "../../services/property-service";
 
 type AddBlockMenuProps = {
@@ -18,11 +33,32 @@ type AddBlockMenuProps = {
   unshown: RenderableProperty[];
   onAdd: (kind: BlockKind) => void;
   onAddCollection: (source: CollectionSource) => void;
+  onAddMeter: (style: MeterStyle) => void;
   onAddProperty: (key: string) => void;
   onNewProperty: () => void;
 };
 
-export function AddBlockMenu({ unshown, onAdd, onAddCollection, onAddProperty, onNewProperty }: AddBlockMenuProps) {
+// The six meters are one block kind with a shape setting, but they are offered
+// as six entries: nobody adding a rating wants to add a progress bar and then
+// go looking for where to change it. The shape stays switchable afterwards —
+// see MeterBlock.
+const METERS: { style: MeterStyle; label: string; icon: typeof Circle }[] = [
+  { style: "bar", label: "Progress bar", icon: RectangleHorizontal },
+  { style: "circle", label: "Circle", icon: Circle },
+  { style: "semicircle", label: "Semi-circle", icon: Donut },
+  { style: "gauge", label: "Gauge", icon: Gauge },
+  { style: "rating", label: "Rating", icon: Star },
+  { style: "pool", label: "Token pool", icon: Coins },
+];
+
+export function AddBlockMenu({
+  unshown,
+  onAdd,
+  onAddCollection,
+  onAddMeter,
+  onAddProperty,
+  onNewProperty,
+}: AddBlockMenuProps) {
   return (
     <div className="tree-context-menu block-add-menu">
       <div className="tree-context-menu-heading">Media</div>
@@ -54,6 +90,13 @@ export function AddBlockMenu({ unshown, onAdd, onAddCollection, onAddProperty, o
       <button type="button" onClick={() => onAdd("alias")}>
         <AtSign size={13} /> Alias
       </button>
+
+      <div className="tree-context-menu-heading">Meters</div>
+      {METERS.map((meter) => (
+        <button key={meter.style} type="button" onClick={() => onAddMeter(meter.style)}>
+          <meter.icon size={13} /> {meter.label}
+        </button>
+      ))}
 
       <div className="tree-context-menu-heading">Properties</div>
       <button type="button" onClick={onNewProperty}>
