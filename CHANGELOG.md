@@ -1,11 +1,19 @@
 # Changelog
 
+## 2026-08-21 — menus answer the keyboard
+
+### Fixes
+
+- **Menus can be used from the keyboard now.** Opening one — a right-click menu, a block's `⋯`, Add Block, the colour swatches, a template or page picker — puts the cursor on its first item instead of leaving it behind on the page. **Up and Down** walk the list and wrap around at either end, **Tab** stays inside the menu rather than escaping into whatever is behind it, **Enter** picks, and **Escape** closes. Menus are drawn outside the page they belong to, which is why Tab used to sail straight past them into the rest of the window.
+- **Closing a menu puts you back where you were.** Escape, or choosing something, returns the cursor to the button that opened it — so you can add three blocks in a row without reaching for the mouse between them. Clicking somewhere else instead leaves the cursor where you clicked, rather than snatching it back.
+
 ## 2026-08-21 — two pages with one name
 
 ### Fixes
 
 - **Typing `[[name]]` no longer picks silently between two pages called the same thing.** Finishing a wikilink with `]]` confirms the top suggestion, which is the point of it — but when two pages share the exact name you typed, that was a coin flip, and the link landed on whichever one happened to sort first with nothing on screen saying a choice had been made. Now it holds the menu open with both of them on it and waits for you to pick. Everything else is unchanged: partial names, half-remembered spellings and one clear match all still confirm the moment you type the brackets.
 - **A page whose name you typed exactly now wins over a longer one listed above it.** Typing `[[Val]]` reaches a page called Val, not Valera, even when Valera sorted first.
+
 
 ## 2026-08-21 — backlinks, and lists of pages
 
@@ -304,14 +312,3 @@
 
 - Clicking a picture still opens it full size rather than dropping it into your page. Dragging is the version of that gesture you can't do by accident, which is why it's the one that edits your writing.
 - A picture that won't load can't be dragged — the page would just get an empty box, and you'd have to come back here to work out why.
-
-## 2026-08-12 — the Assets tab stops calling pictures unused when they aren't
-
-### Fixes
-
-- **Portraits and covers that are plainly in use were being listed as "used by nothing".** The pictures were never the problem. A page can end up with two files on disk claiming to be the same page — it happens when a page changes shape in your folder, usually because it gained something inside it or you gave it a different template, and the file didn't get carried across. The app can only keep one of the two, and the one it dropped took its portrait and cover out of the count with it. Which mattered more than the wrong number, because those pictures were then sitting under a delete button.
-- **Opening a project now spots that and repairs it.** The version with your most recent work is the one kept. The older file is renamed with `.old-copy` on the end and left next to it in your project folder, so nothing is thrown away, and you get told which page it was.
-- **And saving no longer leaves one behind in the first place** — a page written into its own folder now clears out its own leftover copy beside it.
-- **The delete buttons in the Assets tab switch off when a page won't open.** "Nothing is using this" is a claim about every page you have, so one page the app can't read makes it a guess — and that's not something to hang a delete on. The tab says so instead of quietly guessing.
-- **The trashcan no longer vanishes when you delete a picture.** It used to only appear while your mouse was over a tile, and deleting one shuffles the rest, so the button would disappear from tiles the pointer was still sitting on. It's just always there now, on the pictures nothing is using.
-- **A deleted picture actually leaves the tab.** The list was being re-read a moment before the delete finished, so the picture you'd just removed drew itself straight back in and stayed until you left the tab.
