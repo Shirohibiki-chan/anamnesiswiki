@@ -13,7 +13,7 @@ import * as fsService from "../services/filesystem-service";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { PROJECT_TEMPLATE_EXTENSION } from "../constants/project-template";
 import { buildProjectTemplate, serializeProjectTemplate } from "../services/project-template";
-import type { ListedWorld } from "../services/world-scan";
+import { isReservedWorldName, type ListedWorld } from "../services/world-scan";
 import { useAppSettings } from "./use-app-settings";
 import { useDialogs } from "./use-dialogs";
 import { useOpenFolder } from "./use-open-folder";
@@ -67,6 +67,12 @@ export type StartActions = {
    */
   duplicateProject: (project: ListedWorld, name: string) => Promise<boolean>;
   /**
+   * A project renamed — its name and, where it can, its folder. `true` once
+   * something changed, so the caller knows to re-scan; a name that won't do
+   * resolves `false` with the reason on the error line.
+   */
+  renameProject: (project: ListedWorld, name: string) => Promise<boolean>;
+  /**
    * A project's shape written out as a `.antpl` she can send to someone
    * (Phase 27). Nothing on disk changes here and nothing is re-scanned, so
    * this resolves nothing — success is the file existing where she put it, and
@@ -91,7 +97,7 @@ function templateNameFromPath(path: string): string {
 
 export function useStartActions(): StartActions {
   const { loadProject, createProjectAt } = useProject();
-  const { recordProjectOpened, forgetProject, prepareNewProjectsDir } = useAppSettings();
+  const { recordProjectOpened, forgetProject, renameRememberedProject, prepareNewProjectsDir } = useAppSettings();
   const { pickFolder } = useDialogs();
   const resolveChosenFolder = useOpenFolder();
 
@@ -330,6 +336,57 @@ export function useStartActions(): StartActions {
     }
   }, []);
 
+  // Renaming, which until now could only be done by editing `project.json` by
+  // hand — which is why her Explorer copy still calls itself "test" and reads
+  // as "test, copied from test".
+  //
+  // **Refused while another window holds it**, the same check opening makes:
+  // the folder moves out from under whatever is writing to it otherwise, and
+  // every save that copy makes afterwards lands somewhere that is no longer
+  // the project.
+  //
+  // The folder failing to move is reported *without* failing the rename,
+  // because by then the name has already changed and saying otherwise would be
+  // untrue. Naming the folder is the useful half of that message — she can
+  // finish the job in her file manager, and "Show in ..." is right there.
+  const renameProject = useCallback(
+    async (project: ListedWorld, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        setError("Give the project a name.");
+        return false;
+      }
+      if (trimmed === project.name) return false;
+      if (isReservedWorldName(trimmed)) {
+        setError("That name belongs to one of the app's own folders. Try another.");
+        return false;
+      }
+      if (await refuseIfHeldElsewhere(project.path, project.name)) return false;
+
+      setIsBusy(true);
+      try {
+        const result = await fsService.renameProject(project.path, trimmed);
+        await renameRememberedProject(project.path, result.path, trimmed);
+        setError(null);
+        return true;
+      } catch (e) {
+        // The name is written before the folder moves, so anything thrown here
+        // left the name changed — hence `true`, and hence a message about the
+        // folder rather than about the rename.
+        setError(
+          e instanceof Error && e.message
+            ? `Renamed, but the folder stayed put: ${e.message}`
+            : `Renamed, but the folder couldn't be renamed. It is still at ${project.path}.`,
+        );
+        await renameRememberedProject(project.path, project.path, trimmed);
+        return true;
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [refuseIfHeldElsewhere, renameRememberedProject],
+  );
+
   // The other half of "start from a template": making one out of a project she
   // already has. Nothing about *her* project changes — this only reads it.
   //
@@ -394,6 +451,7 @@ export function useStartActions(): StartActions {
     removeProjectCover,
     showProjectInFolder,
     duplicateProject,
+    renameProject,
     exportProjectTemplate,
   };
 }

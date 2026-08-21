@@ -33,6 +33,7 @@ type ProjectTileProps = {
   fileManagerName: string;
   onShowInFolder: () => void;
   onDuplicate: (name: string) => void;
+  onRename: (name: string) => void;
   onExportTemplate: () => void;
   /**
    * The name of the project this one was copied from, when that project is
@@ -56,6 +57,7 @@ export function ProjectTile({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  onRename,
   onExportTemplate,
   forkedFrom,
   isOpenElsewhere,
@@ -150,6 +152,7 @@ export function ProjectTile({
         fileManagerName={fileManagerName}
         onShowInFolder={onShowInFolder}
         onDuplicate={onDuplicate}
+        onRename={onRename}
         onExportTemplate={onExportTemplate}
       />
     </div>

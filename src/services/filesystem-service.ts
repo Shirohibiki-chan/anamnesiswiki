@@ -1681,6 +1681,56 @@ async function copyDirectory(from: string, to: string): Promise<void> {
  * exactly the one key and leaves everything else on the object untouched,
  * whatever it turns out to hold.
  */
+/**
+ * A project's name, and the folder it lives in, changed together.
+ *
+ * **Both, not just the name.** They are set together when a project is made
+ * (`createProjectAt` sanitizes the name into the folder name) and when one is
+ * copied, so a rename that moved only one of them would manufacture exactly
+ * the drift this feature exists to fix — she has a project whose folder says
+ * one thing and whose `project.json` says "test", and it reads as "test,
+ * copied from test".
+ *
+ * **The name is written before the folder moves, and that order is the whole
+ * error handling.** Writing the name is a one-field edit to a file that is
+ * already there; moving the folder is the part that a sync client or an open
+ * handle can refuse. If the move fails, the name is already right — which is
+ * what she can see — and the caller has a path that still works to say so
+ * with. The other order fails the other way: a folder wearing the new name
+ * with the old name inside it, which looks like the rename did nothing.
+ *
+ * **An id is minted first if there isn't one.** Pins, groups and the archive
+ * key on the id and fall back to the path only when there is no id to use, so
+ * renaming the folder of a project that has never been opened would silently
+ * detach all three. This is the same unasked-for write `duplicateProject`
+ * makes, for the same reason, and the same one opening the project would make
+ * anyway.
+ *
+ * Returns where the project ended up: the new path when the folder moved, the
+ * old one when only the name did.
+ */
+export async function renameProject(
+  rootPath: string,
+  name: string,
+): Promise<{ path: string; folderMoved: boolean }> {
+  const projectPath = joinPath(rootPath, PROJECT_FILE);
+  const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;
+  raw.name = name;
+  if (typeof raw.id !== "string" || !raw.id) raw.id = crypto.randomUUID();
+  await writeTextFile(projectPath, JSON.stringify(raw, null, 2));
+
+  const destPath = siblingProjectPath(rootPath, name);
+  // Nothing to move when the folder is already called this, or when the path
+  // has no parent to move within. Not a failure — the name is what she asked
+  // to change and it has changed.
+  if (!destPath || destPath === rootPath) return { path: rootPath, folderMoved: false };
+  if (await exists(destPath)) {
+    throw new Error(`A folder called "${fileNameFromPath(destPath)}" is already there.`);
+  }
+  await rename(rootPath, destPath);
+  return { path: destPath, folderMoved: true };
+}
+
 export async function setProjectCoverImage(rootPath: string, fileName: string | null): Promise<void> {
   const projectPath = joinPath(rootPath, PROJECT_FILE);
   const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;

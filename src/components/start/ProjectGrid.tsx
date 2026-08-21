@@ -52,6 +52,7 @@ type ProjectGridProps = {
   fileManagerName: string;
   onShowInFolder: (project: ListedWorld) => void;
   onDuplicate: (project: ListedWorld, name: string) => void;
+  onRename: (project: ListedWorld, name: string) => void;
   onExportTemplate: (project: ListedWorld) => void;
   /**
    * What each project was copied from, by name. Built from the whole library
@@ -78,6 +79,7 @@ export function ProjectGrid({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  onRename,
   onExportTemplate,
   forkNames,
   heldElsewhere,
@@ -162,6 +164,7 @@ export function ProjectGrid({
                 fileManagerName={fileManagerName}
                 onShowInFolder={() => onShowInFolder(project)}
                 onDuplicate={(name) => onDuplicate(project, name)}
+                onRename={(name) => onRename(project, name)}
                 onExportTemplate={() => onExportTemplate(project)}
                 forkedFrom={(project.forkedFromId && forkNames.get(project.forkedFromId)) || null}
                 isOpenElsewhere={heldElsewhere.has(project.path)}
