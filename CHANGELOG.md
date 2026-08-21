@@ -1,10 +1,18 @@
 # Changelog
 
+## 2026-08-21 — Tab picks what the [[ menu is showing
+
+### Fixes
+
+- **Tab in the `[[` menu takes the highlighted page**, the way finishing with `]]` already does and the way Tab works in any autocomplete. Before, nothing in the app claimed the key while that menu was open, so it fell through into the editor and rearranged the block you were writing in instead — which is the "it turns into a quote" you kept hitting. The same goes for the `/` menu and `@` mentions, which are the same menu underneath.
+- **Tab can no longer reach the editor at all while one of those menus is open.** If the list has nothing in it, Tab now does nothing rather than doing something to your writing.
+
 ## 2026-08-21 — Tab stays inside dialogs too
 
 ### Fixes
 
 - **Tab no longer walks out of a dialog into the page behind it.** Settings, Import, Export, All properties & tags, the picture picker, Save as template, Manage pins, the template picker and both confirm boxes all keep the cursor inside now, wrapping around at either end — and Tab from outside one steps into it rather than past it. The menus were fixed earlier the same day; dialogs are built separately and were missed, which is why it looked half-fixed.
+
 
 ## 2026-08-21 — menus answer the keyboard
 
@@ -292,17 +300,3 @@
 
 - Switching to the **Assets** tab deliberately leaves a template open. That tab is somewhere you go to fetch a picture for whatever you're working on, and a template can hold pictures like any other page.
 - Nothing you'd written into the template is affected — templates save as you type. Reopening one is a click in the Templates tab.
-
-## 2026-08-12 — folders in the picture library
-
-### Additions
-
-- **Folders, in the Assets tab and in the picker.** Make one with the folder button, name it, and drag pictures onto its name to file them. Clicking a folder shows just what's in it; **All pictures** and **Unsorted** are always there beside your own. Adding a picture while a folder is open puts it straight in that folder.
-- **The picker has the same folders**, so choosing a portrait can start from "the map ones" rather than from everything you've ever uploaded.
-- **Rename and delete a folder** with the two buttons that appear under the row when you've opened one.
-
-### Worth knowing
-
-- **A folder is a label, not a place.** Your pictures all stay in one `assets/` folder on disk and nothing moves when you file one — which is what makes moving a picture between folders safe. If it worked the other way, every page showing that picture would have to be rewritten to point at its new home, and a rewrite that stops halfway is a broken picture.
-- **Deleting a folder never deletes a picture.** Everything in it goes back to Unsorted, and the delete is undoable anyway.
-- Pictures can only be dragged into folders from the Assets tab. The picker is open because something's waiting on an answer, so it lets you make and rename folders but not reorganise the library.
