@@ -242,10 +242,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          pnpm tauri signer sign \
-            --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
-            --password "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
-            "$APPIMAGE"
+          # Key and password come from the environment, which the CLI reads
+          # itself — passing them as arguments would put the private key in
+          # the runner's process list.
+          pnpm tauri signer sign "$APPIMAGE"
           test -f "$APPIMAGE.sig" || { echo "no signature was written"; exit 1; }
 
       - name: Put both back on the release, and correct latest.json
