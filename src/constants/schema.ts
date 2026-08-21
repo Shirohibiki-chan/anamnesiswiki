@@ -103,6 +103,45 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
   { id: "done", label: "Done", color: "sage" },
 ];
 
+// A single widget in a page's right-hand panel. Phase 18a turned that panel
+// from a fixed list of fields into an ordered list of these, so the picture,
+// the tags and every property are all blocks and nothing sits outside the
+// list. See docs/plan.md Phase 18a.
+//
+// **A block is a view, not storage, for anything that already exists
+// elsewhere.** `node.tags` feeds search and the tag index, `node.image` feeds
+// the assets tab, the lightbox and export, and `node.properties` feeds the
+// property index and the templates — a block that kept its own copy of any of
+// those would fork them silently. So a block record holds presentation plus a
+// pointer, and the value stays in the field it has always lived in. Only the
+// kinds with genuinely new data (`text`, and Phase 18c's meters) store a value
+// inside the block itself.
+export type BlockKind = "property" | "image" | "tags" | "text" | "link";
+
+export type Block = {
+  id: string;
+  kind: BlockKind;
+  // Presentation, meaningful for every kind. `title` absent means the block
+  // shows its own natural label — a property's name, or "Tags". `showTitle`
+  // absent means true; false is LK's "No Title", which is how a text block
+  // becomes a bare paragraph in the sidebar.
+  title?: string;
+  showTitle?: boolean;
+  // A key from constants/palette.ts's COLOR_PALETTE, never a hex — same rule
+  // as node colours and property options, so a block recolours with the theme.
+  color?: string;
+  // `property` only: which property this block shows, matching a key in
+  // `properties` / `customProperties`. Removing the block leaves both alone —
+  // hiding a field is not deleting its value, and the block can be added back.
+  propertyKey?: string;
+  // `text` only: the block's own writing. The one kind in 18a whose data
+  // exists nowhere else.
+  text?: string;
+  // `link` only: the id of the node this points at. Absent while the block is
+  // still asking which page, which is what an empty link block looks like.
+  targetId?: string;
+};
+
 export type Node = {
   id: string;
   parentId: string | null;
@@ -124,6 +163,20 @@ export type Node = {
   // templates aren't user-editable until Phase 17, and making one page's
   // order bind every page of that template quietly makes them so.
   propertyOrder?: string[];
+  // The sidebar, as an ordered list of blocks (Phase 18a). This replaces
+  // `propertyOrder` rather than sitting beside it: once every property is a
+  // block, this list *is* the order, and two answers to one question is how
+  // they drift apart. `propertyOrder` is still read, but only by
+  // block-service's derivation for a page written before blocks existed —
+  // nothing writes it any more.
+  //
+  // **Absent and empty mean different things, and the distinction is what
+  // makes the migration work.** Absent means the page predates blocks, and
+  // block-service derives a list that reproduces the old fixed panel exactly.
+  // Empty means somebody has an empty sidebar on purpose, which is what a
+  // blank new page now starts with. So `createNode` always writes one, and
+  // nothing else may default this to `[]` on read.
+  blocks?: Block[];
   tags: string[];
   color?: string;
   // Held back from anyone the world is shown to, while staying completely
@@ -319,6 +372,7 @@ export function createNode(input: {
   tabs?: Tab[];
   properties?: Record<string, unknown>;
   customProperties?: CustomPropertySpec[];
+  blocks?: Block[];
   tags?: string[];
   color?: string;
 }): Node {
@@ -331,6 +385,10 @@ export function createNode(input: {
     tabs: input.tabs ?? [],
     properties: input.properties ?? {},
     customProperties: input.customProperties ?? [],
+    // Always written, never left absent — see the field's comment on Node. A
+    // page created from here has authored its sidebar even when the answer is
+    // "nothing in it", and only a page from before Phase 18a gets derived.
+    blocks: input.blocks ?? [],
     tags: input.tags ?? [],
     color: input.color,
     createdAt: now,

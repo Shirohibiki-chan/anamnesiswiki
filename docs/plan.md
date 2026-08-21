@@ -218,9 +218,10 @@ pass, the design system beneath it, themes, property types, everyday
 navigation, the right-click menu's full pass, pictures and tags, the Templates
 and Assets tabs, and the project library the start screen became. Their detail
 is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phase 18 is next**, and it is the next one in this file. It was scoped on
-2026-08-21 and split into 18a, 18b and 18c; they run in that order and 18a
-is the one to start.
+**Phase 18a shipped 2026-08-21** — the panel is a block canvas, everything in
+it is a block, and pages written before it derive their layout on read. Detail
+is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
+**Phase 18b is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
@@ -246,78 +247,6 @@ fetches. Her reason, 2026-07-31, was aesthetic, not the offline policy, which
 she has never personally agreed with. If embeds come back that's a policy
 conversation to have with her and she'll likely wave it through; ask anyway,
 because the boundary is written strict in `CLAUDE.md` at her request.
-
----
-
-## Phase 18a — The Block Canvas
-
-**Everything in the sidebar is a block, including the properties and the
-picture.** Her call, 2026-08-21. There is no fixed region above the blocks and
-no special case below them — a brand new page's sidebar is empty except for an
-**Add block** button, and every field it ever shows got there because something
-added a block. This is the version of the panel with the fewest rules in it,
-which is why it's worth the migration below.
-
-**Blocks are views, not storage, wherever the data already exists.** This is
-the load-bearing decision and getting it backwards rewrites 18b and 18c. A
-block record holds presentation — id, type, optional title, colour, and a
-pointer for the ones that point (a property block names its property key) —
-while the value stays in the field it lives in today. The reason is that
-`node.tags`, `node.image` and `node.properties` are not private to the sidebar:
-
-- `tags` feeds search, `useAllTags`, the tag index block 18b is about to build,
-  and LK export.
-- `image` feeds the assets tab, the lightbox, `imageFocusY`'s crop, and export,
-  which needs `imageSource` beside it.
-- `properties` feeds `use-property-index`, the templates in Phase 17, and the
-  All Properties modal.
-
-A Tags block that owned its own copy of the tags would silently fork all of
-that. Only blocks whose data is genuinely new — Text Box, and the six meters —
-store a value inside the block record itself.
-
-**The ordered block list replaces `propertyOrder`, and both must not survive.**
-`propertyOrder` is a *partial* list of keys with a default grouping behind it
-(see `PropertiesPanel`'s header comment — the grouping is the input to
-`orderProperties`, never enforced after). A block list is a total order of
-block ids. Once every property is a block the block list is the order, and
-keeping `propertyOrder` too means two answers to one question.
-
-**Existing pages derive their blocks on read, not by a migration pass over the
-disk.** This is `customProperties`' precedent in `schema.ts` — every read site
-falls back itself rather than trusting a load-time migration. A node with no
-`blocks` field synthesises one: an image block if it has an image, a property
-block per property in exactly the order `orderProperties` returns today, a tags
-block if it has tags. The panel then looks identical to how it looks now, the
-first edit writes the real list, and nothing rewrites a world she only opened.
-
-**A blank page is blank; a page made from a template starts with whatever
-blocks suit that template.** Confirmed 2026-08-21 — empty-by-default is about a
-page with no template behind it, not about the templates. Each template carries
-a starting block list, chosen for what that kind of page actually needs rather
-than applied uniformly: LK's own creature template is the reference she gave,
-and it is an image, a Habitat link block, Diet and Summary text blocks and
-tags, with Add block pinned under them.
-
-**This is less new than it sounds** — `template-registry.ts` already gives
-every template a `properties` array that seeds a new page's sidebar. That array
-becomes the ordered block seed, and the work is deciding what else belongs in
-each one now that a picture and a link are things a template can start with.
-The obvious first call: the templates about a *thing you can picture* —
-character, species, location, item — start with an image block, the way the
-creature template above does. `note` and `blank` start empty.
-
-Ships in 18a:
-
-- The canvas itself. **Add, remove and reorder are requirements from the
-  start** — build it as an ordered collection or this gets rewritten.
-- Per-block context menu: title / no title, colour, duplicate, move, remove.
-- **Image**, **Text Box**, **Tags**, **Link Block**, and property blocks for
-  the four value types Phase 13 built.
-- **Every block mutation is its own store action**, the way `setNodeColor` is.
-  Phase 19's panel undo is carried over from Phase 10 and is the one place a
-  mistake still can't be taken back; it hooks these actions, and a generic
-  "write the blocks array" makes it impossible to describe what was undone.
 
 ---
 

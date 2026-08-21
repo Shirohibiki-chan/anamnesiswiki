@@ -15,14 +15,19 @@ type TextPropertyProps = {
 export function TextProperty({ label, value, placeholder, multiline, onChange, onRemove }: TextPropertyProps) {
   return (
     <div className="property-field">
-      <div className="property-field-label-row">
-        <div className="ui-eyebrow property-field-label">{label}</div>
-        {onRemove && (
-          <button type="button" className="ui-inline-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
-            <X size={11} />
-          </button>
-        )}
-      </div>
+      {/* Phase 18a: the block's own title strip replaces this when the
+          field is rendered as a block, so an empty label means the shell
+          already drew one — or the user chose No title. */}
+      {label && (
+        <div className="property-field-label-row">
+          <div className="ui-eyebrow property-field-label">{label}</div>
+          {onRemove && (
+            <button type="button" className="ui-inline-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
+              <X size={11} />
+            </button>
+          )}
+        </div>
+      )}
       {multiline ? (
         <textarea
           className="property-value-textarea"

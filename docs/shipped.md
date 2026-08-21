@@ -3200,3 +3200,83 @@ skipping it would hide every world inside it, which is the failure this folder
 exists to prevent, inverted. The reservation is enforced where a world is made
 rather than only described: a world by that name where the container sits would
 be found by the scan and never walked into.
+
+---
+
+## Phase 18a — The Block Canvas ✅ Shipped 2026-08-21
+
+The right-hand panel stopped being a fixed picture slot, then properties, then
+tags, and became an ordered list of blocks with nothing outside it. Scoped in
+PRs #237 and #238 the same day; her calls throughout, taken from the reference
+screenshot of a creature template she supplied.
+
+### What shipped
+
+- **`Block` on `Node`**, an ordered list. Five kinds in 18a: `image`, `tags`,
+  `property`, `text`, `link`. Each record holds presentation — `title`,
+  `showTitle`, `color` — plus a pointer where it points.
+- **`block-service.ts`**, the pure half: derivation for pages that predate the
+  field, template seeds, move, duplicate, the unshown-property list, and
+  `withField`. 24 tests.
+- **Nine store actions**, one per operation rather than a single "write the
+  array" setter, so Phase 19's panel undo has something to name.
+- **`src/components/blocks/`** — `BlockPanel` replacing `PropertiesPanel`, plus
+  `BlockShell`, `BlockMenu`, `AddBlockMenu`, `TextBlock`, `LinkBlock`.
+- **Every property field's label row became conditional**, because the shell
+  draws the heading now and two of them is one too many.
+
+### Decisions worth the record
+
+- **Everything is a block, including the picture and the properties**, and a
+  page with no template starts with an empty panel. Hers, 2026-08-21. The
+  version with the fewest rules in it.
+- **Templates seed their own blocks** rather than everything starting empty —
+  also hers, from the reference screenshot, where a creature template arrives
+  carrying an image, a link, two text fields and tags. `template-registry`'s
+  existing `properties` array became that seed rather than a second list to
+  keep in step with it.
+- **Token Pool survived being questioned as a D&D artefact** and is scheduled
+  for 18c, because Rating is the same widget underneath and counted-in-units is
+  ordinary worldbuilding.
+
+### How the migration was made safe
+
+Derivation on read, not a pass over the disk — `customProperties`' precedent.
+A node with no `blocks` field renders a list rebuilt from what it already had,
+in the order `orderProperties` already resolved to, so an existing world looks
+untouched and stays untouched on disk until something is actually edited. The
+first edit through any block action materialises the list and applies the
+change on top of it; that ordering lives in one place (`editBlocks`) precisely
+so no action can get it wrong.
+
+The distinction that makes it work is that **absent and empty mean different
+things** — absent is "never had blocks", empty is "deliberately nothing", which
+is what a blank new page now is. `createNode` therefore always writes the
+field.
+
+### Verification
+
+`pnpm lint` clean, `pnpm build` clean, `pnpm test` 1231 passing with 26 new
+ones covering derivation, the absent/empty distinction, the template seeds and
+every pure edit.
+
+**The unit suite was green and the feature was still broken twice.** Both were
+found by mounting the real panel in a throwaway probe (`probe.html` plus
+`src/probe.tsx`, deleted afterwards) with three seeded pages — one pre-18a page
+with no `blocks` field, one from a template, one blank.
+
+1. **Pages from `project-template.ts` arrived with empty sidebars.** It builds
+   nodes through `createNode`, which defaults `blocks` to `[]` — an authored
+   empty list, which is the *blank page* answer, not the template one. Every
+   page in a project started from a template would have had a blank panel. It
+   seeds properly now.
+2. **Every edit to a pre-18a page silently did nothing.** Derived blocks were
+   minted with `crypto.randomUUID()`, so the list the panel rendered and the
+   list `editBlocks` re-derived shared no ids at all. Derived ids are now named
+   after what they point at; see handoff's `derivedId` note, and the two
+   regression tests.
+
+Verified afterwards in the probe: the derived panel matches the old one field
+for field, a template page seeds, a blank page is empty, No title hides a
+heading without touching its field, Remove takes a property off the panel and
+Add Block offers it straight back, and Move up reorders a derived list.
