@@ -47,6 +47,43 @@ export type SuggestionKeyEvent = {
  * a trail of untitled pages behind.
  */
 export function handleSuggestionListKeys(event: SuggestionKeyEvent): boolean {
+  // Tab takes the highlighted item, the way it does in every autocomplete —
+  // and the way typing `]]` already finishes a wikilink here.
+  //
+  // Reported from use 2026-08-21: pressing Tab in the `[[` menu did not touch
+  // the menu at all. Nothing in this app claimed the key, so it fell through
+  // to BlockNote and rearranged the block she was writing in instead. Claiming
+  // it fixes both halves at once — the menu answers Tab, and Tab can no longer
+  // reach the editor while a menu is open.
+  //
+  // Enter is dispatched rather than the selection being applied here, for the
+  // same reason the Ctrl combos dispatch arrows below: BlockNote owns which
+  // item is highlighted, and reimplementing "take the current one" would be a
+  // second definition of it that could drift.
+  if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    const menu = document.querySelector(SUGGESTION_MENU_SELECTOR);
+    if (!menu) return false;
+
+    // Claimed either way, so Tab can never reach the editor while a menu is
+    // up. That half is the bug fix; the dispatch below is the feature.
+    event.preventDefault();
+    event.stopPropagation();
+
+    // **Only forward Enter to a menu that has something to take.** An Enter
+    // nothing consumes does not vanish — it reaches the editor and splits the
+    // block in two, which is a menu keystroke silently editing her writing.
+    // Measured 2026-08-21 against a menu with no items in it. An empty menu
+    // swallows the key instead and does nothing, which is the right answer for
+    // a list with nothing selectable in it.
+    if (menu.childElementCount === 0) return true;
+
+    const tabTarget = event.target;
+    if (tabTarget instanceof HTMLElement) {
+      tabTarget.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    }
+    return true;
+  }
+
   const step = listStepForKey(event);
   // Only the Ctrl form. The arrows already reach BlockNote on their own, and
   // intercepting them here would mean dispatching a copy of an event that was
