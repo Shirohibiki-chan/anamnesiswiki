@@ -3260,6 +3260,34 @@ four survived.
   countable; her reference draws seventy-six tokens in a wrapped grid and
   reads fine. The cap now exists only to stop a typed 5000.
 
+### And a third pass, from ten more screenshots
+
+- **Half the taps on a token pool did nothing** — the pips container holds
+  pointer capture so a drag can cross them, and capture retargets the click
+  that follows to the container, so a per-pip `onClick` only fired when press
+  and release agreed. Pips commit on `pointerdown` now, like every other shape.
+- **The preview was painted over the fill** when lowering, in the track's
+  colour, which left a ragged second edge on an arc. The fill stops at
+  whichever is lower and the difference is one pulsing band.
+- **A lone dial sat against the left edge**, because the arcs laid out in a
+  two-column grid. Flex-wrap with `justify-content: center` puts one in the
+  middle and keeps two side by side.
+- **The icon picker was a few hundred icons and the reference has thousands.**
+  `glyph-catalogue.ts` now takes all of Lucide — 1,864 after dropping the
+  `LucideX`/`XIcon` aliases — with the curated groups still first and the rest
+  revealed a screenful at a time. Costs ~550KB in the main chunk (1.89MB →
+  2.44MB, measured).
+- **A page's icon only reached its tree row.** `NodeIcon` resolves it for the
+  tree, the page title and a folder's empty state alike.
+- **Eleven pastels, no custom colour.** Twenty-four in three weights, plus an
+  `<input type="color">` styled as one more swatch, in a grid shared by the
+  block menu and the tree's picker — which had been two different controls
+  disagreeing about how many colours exist. `getPaletteHex` reads a raw hex.
+- **Three faces and segments**, both from her screenshots: a dial shows its
+  number, its icon or both, and can be drawn as segments rather than a sweep.
+- **A dial with its icon inside was repeating it beside the name**, and the
+  block menu was long enough to need scrolling. Both trimmed.
+
 ### And rebuilt again, from five more screenshots
 
 The same day, after the pass above. Her comparison was that ours was

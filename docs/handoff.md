@@ -2798,6 +2798,13 @@ is below.
   properties, `meter` for meters. A second menu hung off the block itself
   would be a second place to look for the same three things.
 
+- **`glyph-catalogue.ts` imports all of Lucide on purpose, and it costs about
+  550KB.** Measured 2026-08-21: the main chunk went from 1.89MB to 2.44MB when
+  the picker stopped being a curated few hundred. That was the trade for a
+  picker that can find things, made after her comparison against the reference.
+  If launch ever feels slow this is the first place to look — and the fix is
+  loading it when the picker opens, not trimming the list again.
+
 - **A coloured block's heading gets its colour inline from `BlockShell`, not
   from a stylesheet.** The heading is a `.ui-eyebrow` and a `.block-title` at
   once, set from two files, one of them inside a Tailwind `@layer` — and which
@@ -2817,6 +2824,24 @@ is below.
   and keeps everything; bar to rating is not, and a bar reading against 200
   carried across would draw twenty stars to click. `setBlockMeter` is the one
   place that decides this — see `isPipMeter`.
+
+- **A meter's pips commit on `pointerdown`, never on a click.** The pips
+  container takes pointer capture so a drag can cross them, and capture
+  retargets the following click to the *container* — so a per-pip `onClick`
+  fires only when the press and release happen to agree. That is why about half
+  the taps on a token pool did nothing. Keyboard activation is the one thing
+  still on the button, as its own `onKeyDown`.
+
+- **The hover preview is drawn beside the fill, never over it.** The fill stops
+  at whichever is lower — the value or the pointer's promise — and the
+  difference is one pulsing band. Painting the removal on top in the track's
+  colour is what it did first, and it left a hard inner edge on a bar and a
+  visibly ragged one on an arc.
+
+- **`getPaletteHex` accepts a raw hex as well as a palette key.** The pickers
+  let her mix a colour, and a mixed one has no name to look up. Prefer a key
+  wherever a name exists — those follow the theme, a stored hex cannot — but
+  anything reading a colour must cope with both.
 
 - **A meter is a slider, and whether a drag is running is a ref — never
   `hasPointerCapture`.** Reading the capture back is the tidier-looking version

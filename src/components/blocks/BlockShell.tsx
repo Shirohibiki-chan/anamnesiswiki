@@ -12,7 +12,7 @@ import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getPaletteHex } from "../../constants/palette";
-import type { MeterStyle } from "../../constants/schema";
+import type { MeterFace, MeterStyle } from "../../constants/schema";
 import { TreePopover } from "../tree/TreePopover";
 import { BlockMenu } from "./BlockMenu";
 
@@ -38,7 +38,11 @@ type BlockShellProps = {
     style: MeterStyle;
     textShown: boolean;
     maxShown: boolean;
+    face: MeterFace;
+    segmented: boolean;
     onSetStyle: (style: MeterStyle) => void;
+    onSetFace: (face: MeterFace) => void;
+    onToggleSegments: () => void;
     onAdd: () => void;
     onDuplicateMeter: (meterId: string) => void;
     onRemoveMeter: (meterId: string) => void;

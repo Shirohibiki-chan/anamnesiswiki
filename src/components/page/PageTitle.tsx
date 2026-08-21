@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronRight, EyeOff, Home } from "lucide-react";
 import type { Node } from "../../constants/schema";
-import { getTemplateIcon } from "../../constants/icons";
+import { NodeIcon } from "../blocks/IconPicker";
 import { getPaletteHex } from "../../constants/palette";
 import { useProjectActions, useProjectHomeId, useProjectName } from "../../hooks/use-project";
 import { useBreadcrumbTrail, useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
@@ -26,7 +26,6 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
 
   const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
-  const Icon = getTemplateIcon(node.templateKey);
   const trail = useBreadcrumbTrail(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const looksHidden = Boolean(node.hidden) || hiddenByAncestor;
@@ -105,8 +104,15 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
       </nav>
 
       <div className="page-title-row">
-        {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
-        <Icon size={24} className="page-title-icon" style={effectiveHex ? { color: effectiveHex } : undefined} />
+        {/* The page's own icon when it has one — picking an icon has to change
+            the page, not just its row in the tree. */}
+        <NodeIcon
+          icon={node.icon}
+          templateKey={node.templateKey}
+          size={24}
+          className="page-title-icon"
+          style={effectiveHex ? { color: effectiveHex } : undefined}
+        />
         {isEditing ? (
           <input
             className="page-title-input"

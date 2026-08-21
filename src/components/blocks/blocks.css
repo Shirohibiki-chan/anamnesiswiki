@@ -161,34 +161,6 @@
   color: var(--color-text-muted);
 }
 
-/* ---- The per-block menu ---- */
-
-.block-menu {
-  min-width: 210px;
-  padding: var(--space-sm) 0;
-}
-
-.block-menu-color-row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
-}
-
-.block-menu-color-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-md);
-  color: var(--color-text-muted);
-  font-size: var(--fs-sm);
-}
-
-.block-menu-color-swatches {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-}
-
 /* ---- Link block ---- */
 
 .block-link-row {
@@ -383,9 +355,22 @@
 .block-meter-circle .block-meter-list,
 .block-meter-semicircle .block-meter-list,
 .block-meter-gauge .block-meter-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
   gap: var(--space-lg) var(--space-md);
+}
+
+/* Two across when there is room, and centred when there isn't — a grid put a
+   lone dial in the first cell, hard against the left edge. */
+.block-meter-circle .block-meter-reading,
+.block-meter-semicircle .block-meter-reading,
+.block-meter-gauge .block-meter-reading {
+  flex: 0 1 calc(50% - var(--space-md));
+  align-items: center;
+  min-width: 96px;
+  max-width: 148px;
 }
 
 .block-meter-reading {
@@ -406,7 +391,7 @@
 
 .block-meter-track {
   position: relative;
-  height: 8px;
+  height: 11px;
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
   overflow: hidden;
@@ -444,28 +429,14 @@
   animation: block-meter-pulse 900ms ease-in-out infinite;
 }
 
+/* Sits at the end of the fill rather than under it, so nothing is painted
+   over anything — see the comment in MeterBlock. */
 .block-meter-pending {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: var(--radius-full);
-  background: currentcolor;
-}
-
-/* The part a click would remove: over the fill, and struck through the
-   background colour so it reads as being taken out rather than added. */
-.block-meter-losing {
   position: absolute;
   top: 0;
   bottom: 0;
   border-radius: var(--radius-full);
-  background: var(--color-panel-alt);
-  pointer-events: none;
-  animation: block-meter-pulse-out 900ms ease-in-out infinite;
-}
-
-.block-meter-arc-losing {
-  stroke: var(--color-panel-alt);
-  animation: block-meter-pulse-out 900ms ease-in-out infinite;
+  background: currentcolor;
 }
 
 .block-meter-pip-losing {
@@ -503,8 +474,6 @@
   .block-meter-pending,
   .block-meter-arc-pending,
   .block-meter-pip-pending,
-  .block-meter-losing,
-  .block-meter-arc-losing,
   .block-meter-pip-losing {
     animation: none;
     opacity: 0.45;
@@ -524,8 +493,7 @@
 
 .block-meter-arc-track,
 .block-meter-arc-fill,
-.block-meter-arc-pending,
-.block-meter-arc-losing {
+.block-meter-arc-pending {
   fill: none;
   stroke-width: 9;
   stroke-linecap: round;
@@ -541,6 +509,25 @@
 
 .block-meter-arc-pending {
   stroke: currentcolor;
+}
+
+/* Segments rather than one sweep. On an arc that is a dash pattern in user
+   units — the viewBox is always 100 wide, so one pattern suits every shape.
+   A butt cap, because a rounded one on a 7-unit dash draws lozenges. */
+.block-meter-segmented .block-meter-arc-track,
+.block-meter-segmented .block-meter-arc-fill,
+.block-meter-segmented .block-meter-arc-pending {
+  stroke-dasharray: 6 3.2;
+  stroke-linecap: butt;
+}
+
+/* On a bar, the same idea as a gradient over both the fill and the track, so
+   the segments stay in step as the fill moves across them. */
+.block-meter-track.block-meter-segmented,
+.block-meter-track.block-meter-segmented .block-meter-fill,
+.block-meter-track.block-meter-segmented .block-meter-pending {
+  border-radius: 2px;
+  mask-image: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 13px);
 }
 
 .block-meter-arc-readout {
@@ -867,7 +854,7 @@
 .block-menu-shapes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
+  gap: 1px;
   padding: 0 var(--space-sm);
 }
 
@@ -875,8 +862,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: var(--space-sm) 2px;
+  gap: 1px;
+  padding: 4px 2px;
   color: var(--color-text-secondary);
   background: none;
   border: none;
@@ -916,4 +903,113 @@
 .block-source-label small {
   color: var(--color-text-muted);
   font-size: var(--fs-2xs);
+}
+
+/* ---- The colour row, shared by a block's menu and the tree's picker ---- */
+
+.color-swatches {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  padding: var(--space-sm);
+}
+
+.color-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.color-swatch:hover {
+  border-color: var(--color-text-secondary);
+}
+
+/* A ring outside the swatch rather than a border inside it, so the colour it
+   is showing doesn't shrink when it becomes the chosen one. */
+.color-swatch-active {
+  box-shadow: 0 0 0 2px var(--color-panel), 0 0 0 3px var(--color-text-primary);
+}
+
+.color-swatch-none,
+.color-swatch-custom {
+  border-color: var(--color-border);
+}
+
+/* The OS colour dialog, opened by a swatch that looks like the others. The
+   input itself is invisible and fills its label so the whole tile is the
+   target. */
+.color-swatch-custom {
+  position: relative;
+  overflow: hidden;
+}
+
+.color-swatch-custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ---- What sits inside a dial ---- */
+
+.block-menu-faces {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 var(--space-sm);
+}
+
+.block-menu-face {
+  padding: 3px 2px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.block-menu-face:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.block-menu-face-active {
+  color: var(--color-text-primary);
+  background: var(--color-accent-faint);
+  box-shadow: inset 0 0 0 1px var(--color-accent-faint-border);
+}
+
+/* Reveals the rest of the icon catalogue a screenful at a time. */
+.icon-picker-more {
+  width: 100%;
+  padding: var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.icon-picker-more:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+/* The empty run under the last block. It has to have height for a right-click
+   to land on it, and it fills whatever is left of the panel. */
+.block-panel-space {
+  min-height: 96px;
 }

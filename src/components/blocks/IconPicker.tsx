@@ -11,7 +11,17 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { searchEmoji } from "../../constants/emoji";
-import { getGlyph, searchGlyphs } from "../../constants/glyphs";
+import { getGlyph, restOfCatalogue, searchCatalogue, searchGlyphs } from "../../constants/glyphs";
+import { getTemplateIcon } from "../../constants/icons";
+
+/**
+ * How much of the fifteen-hundred-icon catalogue is drawn at once.
+ *
+ * All of it is reachable — searching covers every name — but a grid holding
+ * every icon is several thousand SVGs in one popover, which is slow to open
+ * and slow to scroll. So the rest arrives a screenful at a time.
+ */
+const CATALOGUE_PAGE = 240;
 
 type IconPickerProps = {
   /** The icon currently chosen, so it can be shown as picked and cleared. */
@@ -22,10 +32,15 @@ type IconPickerProps = {
 export function IconPicker({ value, onPick }: IconPickerProps) {
   const [tab, setTab] = useState<"glyphs" | "emoji">("glyphs");
   const [query, setQuery] = useState("");
+  const [shown, setShown] = useState(CATALOGUE_PAGE);
 
   const glyphGroups = searchGlyphs(query);
   const emojiGroups = searchEmoji(query);
   const groups = tab === "glyphs" ? glyphGroups : emojiGroups;
+  // Searching looks through everything Lucide ships; browsing shows the
+  // curated groups first and then the rest of the catalogue underneath.
+  const rest = query.trim() ? searchCatalogue(query) : restOfCatalogue();
+  const restShown = rest.slice(0, shown);
 
   return (
     <div className="icon-picker">
@@ -51,7 +66,10 @@ export function IconPicker({ value, onPick }: IconPickerProps) {
         autoFocus
         placeholder="Search icons"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setShown(CATALOGUE_PAGE);
+        }}
       />
 
       {/* Clearing is here rather than in the menu that opened this, because
@@ -64,7 +82,9 @@ export function IconPicker({ value, onPick }: IconPickerProps) {
       )}
 
       <div className="icon-picker-scroll">
-        {groups.length === 0 && <p className="icon-picker-empty">Nothing matches.</p>}
+        {groups.length === 0 && (tab === "emoji" || rest.length === 0) && (
+          <p className="icon-picker-empty">Nothing matches.</p>
+        )}
 
         {tab === "glyphs"
           ? glyphGroups.map((group) => (
@@ -112,9 +132,82 @@ export function IconPicker({ value, onPick }: IconPickerProps) {
                 </div>
               </div>
             ))}
+
+        {/* Everything else Lucide ships. Held below the suggestions so the
+            useful ones are still the first thing in the box, and revealed a
+            screenful at a time so opening the picker stays instant. */}
+        {tab === "glyphs" && rest.length > 0 && (
+          <div>
+            <div className="ui-eyebrow icon-picker-heading">
+              {query.trim() ? "Everything else" : "All icons"}
+            </div>
+            <div className="icon-picker-grid">
+              {restShown.map((glyph) => {
+                const Glyph = glyph.icon;
+                return (
+                  <button
+                    key={glyph.name}
+                    type="button"
+                    className={`icon-picker-option${value === glyph.name ? " icon-picker-option-active" : ""}`}
+                    title={glyph.name}
+                    aria-label={glyph.name}
+                    aria-pressed={value === glyph.name}
+                    onClick={() => onPick(glyph.name)}
+                  >
+                    <Glyph size={16} />
+                  </button>
+                );
+              })}
+            </div>
+            {rest.length > restShown.length && (
+              <button
+                type="button"
+                className="icon-picker-more"
+                onClick={() => setShown((count) => count + CATALOGUE_PAGE)}
+              >
+                Show more — {restShown.length} of {rest.length}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+/**
+ * A page's icon: the one it was given, or its template's.
+ *
+ * Every place that draws a node — the tree, the page title, a folder's empty
+ * state, a reference chip — goes through here, so "this page has its own
+ * icon" is one rule rather than one per component.
+ */
+export function NodeIcon({
+  icon,
+  templateKey,
+  size = 14,
+  className,
+  style,
+}: {
+  icon: string | undefined;
+  templateKey: string;
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  if (icon) {
+    return (
+      <span
+        className={className}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, fontSize: size - 1, lineHeight: 1, ...style }}
+      >
+        <MeterIcon icon={icon} size={size} />
+      </span>
+    );
+  }
+  const Template = getTemplateIcon(templateKey);
+  // eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so a given templateKey returns the same stable component reference every render
+  return <Template size={size} className={className} style={style} />;
 }
 
 /**

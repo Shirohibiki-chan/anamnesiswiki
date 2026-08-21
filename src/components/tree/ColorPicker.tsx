@@ -1,33 +1,23 @@
-// Popover content shown when a tree row's color dot is clicked. 10 preset
-// swatches plus a clear/default X. See docs/glossary.md §Color Cascade.
-// Positioning/portaling is handled by the TreePopover wrapper around this.
-import { X } from "lucide-react";
-import { COLOR_PALETTE } from "../../constants/palette";
+// The tree's colour picker. Phase 3, rebuilt on the shared swatch grid in
+// Phase 18c so a page and a block are coloured from the same control — she
+// noticed the two disagreeing about how many colours exist.
+import { ColorSwatches } from "../blocks/ColorSwatches";
 
 type ColorPickerProps = {
+  /** The page's own colour, which may be a palette key or a hex. */
   ownColor: string | undefined;
+  /** Whether this page is only showing a colour it inherited from a parent. */
   showInheritedHint: boolean;
-  onSelect: (colorKey: string | undefined) => void;
+  onSelect: (color: string | undefined) => void;
 };
 
 export function ColorPicker({ ownColor, showInheritedHint, onSelect }: ColorPickerProps) {
   return (
     <div className="tree-color-picker">
-      {showInheritedHint && !ownColor && <div className="tree-color-picker-hint">Inheriting from parent</div>}
-      <div className="tree-color-picker-grid">
-        {COLOR_PALETTE.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            className={`tree-color-swatch${ownColor === c.key ? " tree-color-swatch-active" : ""}`}
-            style={c.hex ? { backgroundColor: c.hex } : undefined}
-            title={c.name}
-            onClick={() => onSelect(c.hex ? c.key : undefined)}
-          >
-            {!c.hex && <X size={12} />}
-          </button>
-        ))}
-      </div>
+      <ColorSwatches value={ownColor} onPick={onSelect} />
+      {showInheritedHint && !ownColor && (
+        <p className="tree-color-inherited">Currently taking its colour from a folder above it.</p>
+      )}
     </div>
   );
 }

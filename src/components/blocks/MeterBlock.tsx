@@ -26,7 +26,7 @@
 // position back into a value.
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Circle, Plus, Star, X } from "lucide-react";
-import type { Block, MeterEntry, MeterStyle } from "../../constants/schema";
+import type { Block, MeterEntry, MeterFace, MeterStyle } from "../../constants/schema";
 import {
   ARC_GEOMETRY,
   arcFractionAt,
@@ -34,6 +34,7 @@ import {
   arcSpan,
   barFractionAt,
   isArcMeter,
+  meterFace,
   meterFraction,
   meterMax,
   meterReadout,
@@ -82,6 +83,8 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
               key={entry.id}
               entry={entry}
               style={style}
+              face={meterFace(block, entry)}
+              segmented={block.segmented === true}
               withText={showsText(block)}
               withMax={showsMax(block)}
               removable={entries.length > 1}
@@ -98,6 +101,8 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
 type ReadingProps = {
   entry: MeterEntry;
   style: MeterStyle;
+  face: MeterFace;
+  segmented: boolean;
   withText: boolean;
   withMax: boolean;
   removable: boolean;
@@ -105,7 +110,17 @@ type ReadingProps = {
   onRemove: () => void;
 };
 
-function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRemove }: ReadingProps) {
+function MeterReading({
+  entry,
+  style,
+  face,
+  segmented,
+  withText,
+  withMax,
+  removable,
+  onEdit,
+  onRemove,
+}: ReadingProps) {
   const track = useRef<HTMLDivElement | null>(null);
   const arc = useRef<SVGSVGElement | null>(null);
   const dragging = useRef(false);
@@ -126,8 +141,11 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
   // lowering draws the part that would be taken away, over the fill — the
   // first cut only ever drew the former, so aiming below the value previewed
   // nothing at all and reducing a meter was a blind click.
-  const raising = previewFraction !== null && previewFraction > fraction;
-  const lowering = previewFraction !== null && previewFraction < fraction;
+  // What is certain, and what is only being offered. The solid part is
+  // whichever of the two is lower, so the pulsing band always sits at the end
+  // of the fill — added on top when aiming higher, taken off it when aiming
+  // lower — rather than being painted over what is already there.
+  const solidFraction = previewFraction === null ? fraction : Math.min(previewFraction, fraction);
 
   // Zero is the default and is stored as absent, the way every other block
   // field is. An emptied meter should read as one nobody has set, not as one
@@ -238,16 +256,24 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
   // The icon, the name and the number under every shape. `withText` hides the
   // name only — the number is what a meter *is*, and one with no number
   // showing is a decoration.
+  // **The caption doesn't repeat an icon the shape is already showing.** A
+  // dial drawing the icon in its middle and again beside its name is the same
+  // icon twice in one meter, which she flagged. The button stays when it is
+  // the only place the icon appears, and becomes the faint plus when there is
+  // no icon at all — otherwise the way to change one is the block's menu.
+  const iconInShape = isArcMeter(style) && !!entry.icon && face !== "value";
   const caption = (
     <div className="block-meter-caption">
-      <button
-        type="button"
-        className={`block-meter-icon${entry.icon ? "" : " block-meter-icon-empty"}`}
-        aria-label={entry.icon ? "Change icon" : "Add an icon"}
-        onClick={(e) => setIconRect(e.currentTarget.getBoundingClientRect())}
-      >
-        {entry.icon ? <MeterIcon icon={entry.icon} /> : <Plus size={12} />}
-      </button>
+      {!iconInShape && (
+        <button
+          type="button"
+          className={`block-meter-icon${entry.icon ? "" : " block-meter-icon-empty"}`}
+          aria-label={entry.icon ? "Change icon" : "Add an icon"}
+          onClick={(e) => setIconRect(e.currentTarget.getBoundingClientRect())}
+        >
+          {entry.icon ? <MeterIcon icon={entry.icon} /> : <Plus size={12} />}
+        </button>
+      )}
       {withText && (
         <input
           className="block-meter-name"
@@ -283,7 +309,7 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
         <div
           {...slider}
           ref={track}
-          className="block-meter-track"
+          className={`block-meter-track${segmented ? " block-meter-segmented" : ""}`}
           onPointerDown={(e) => {
             capture(e);
             const next = barValueAt(e);
@@ -298,12 +324,19 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
           {/* The preview sits under the fill, so raising a value shows the
               pending part beyond it, and lowering one shows the real fill
               still standing past where the pending edge cuts it. */}
-          {raising && <div className="block-meter-pending" style={{ width: `${previewFraction * 100}%` }} />}
-          <div className="block-meter-fill" style={{ width: `${fraction * 100}%` }} />
-          {lowering && (
+          {/* The fill stops at whichever is lower — the value or the promise —
+              and the difference is drawn once, as a pulsing band, in the same
+              colour. The first cut painted the *removal* over the top in the
+              track's colour, which left a hard second edge inside the bar and
+              a visibly ragged one on an arc. Nothing overlaps now. */}
+          <div className="block-meter-fill" style={{ width: `${solidFraction * 100}%` }} />
+          {previewFraction !== null && previewFraction !== fraction && (
             <div
-              className="block-meter-losing"
-              style={{ left: `${previewFraction * 100}%`, right: `${(1 - fraction) * 100}%` }}
+              className="block-meter-pending"
+              style={{
+                left: `${Math.min(previewFraction, fraction) * 100}%`,
+                width: `${Math.abs(previewFraction - fraction) * 100}%`,
+              }}
             />
           )}
         </div>
@@ -319,7 +352,7 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
         <svg
           {...slider}
           ref={arc}
-          className="block-meter-arc"
+          className={`block-meter-arc${segmented ? " block-meter-segmented" : ""}`}
           viewBox={`0 0 100 ${VIEW_HEIGHT[style]}`}
           aria-label={entry.label || "Meter"}
           onPointerDown={(e) => {
@@ -337,29 +370,33 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
               rather than as a separate outline, so the two always agree about
               where the ends are. */}
           <path className="block-meter-arc-track" d={arcPath(1, geometry.start, geometry.sweep)} />
-          {raising && (
-            <path className="block-meter-arc-pending" d={arcPath(previewFraction, geometry.start, geometry.sweep)} />
-          )}
-          <path className="block-meter-arc-fill" d={arcPath(fraction, geometry.start, geometry.sweep)} />
-          {lowering && (
+          <path className="block-meter-arc-fill" d={arcPath(solidFraction, geometry.start, geometry.sweep)} />
+          {previewFraction !== null && previewFraction !== fraction && (
             <path
-              className="block-meter-arc-losing"
+              className="block-meter-arc-pending"
               d={arcSpan(previewFraction, fraction, geometry.start, geometry.sweep)}
             />
           )}
-          {/* An icon in the middle when there is one, the number when there
-              isn't — an empty ring reads as a meter that failed to load. */}
-          {entry.icon ? (
-            <foreignObject x="30" y={READOUT_Y[style] - 12} width="40" height="24">
+          {/* Three faces, as the reference offers: the number, the icon, or
+              both stacked. Never neither — an empty ring reads as a meter that
+              failed to draw. */}
+          {entry.icon && face !== "value" && (
+            <foreignObject
+              x="30"
+              y={READOUT_Y[style] - (face === "both" ? 21 : 12)}
+              width="40"
+              height="24"
+            >
               <div className="block-meter-arc-icon">
-                <MeterIcon icon={entry.icon} size={18} />
+                <MeterIcon icon={entry.icon} size={face === "both" ? 15 : 19} />
               </div>
             </foreignObject>
-          ) : (
+          )}
+          {(face !== "icon" || !entry.icon) && (
             <text
               className="block-meter-arc-readout"
               x="50"
-              y={READOUT_Y[style]}
+              y={READOUT_Y[style] + (face === "both" && entry.icon ? 6 : 0)}
               textAnchor="middle"
               dominantBaseline="middle"
             >
@@ -379,9 +416,17 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
     <div className="block-meter-reading" data-meter-id={entry.id}>
       <div
         className="block-meter-pips"
+        // **Committed on pointerdown, not on a click.** Capturing the pointer
+        // on this container retargets the click that follows to the container
+        // itself, so a `onClick` on each pip fired only when the press and the
+        // release happened to agree — which is why half the taps on a token
+        // pool did nothing. Pressing is also what the bar and the dials do, so
+        // all six shapes now answer the same gesture at the same moment.
         onPointerDown={(e) => {
           draggedPips.current = false;
           capture(e);
+          const index = pipUnder(e);
+          if (index !== null) commit(pipClickValue(style, value, index));
         }}
         // Dragging across pips sets the level it passes over, for both pip
         // shapes: sweeping four stars means four either way. The gestures only
@@ -416,13 +461,11 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
               }${losing ? " block-meter-pip-losing" : ""}`}
               aria-label={`${index + 1} of ${max}`}
               aria-pressed={filled}
-              onClick={() => {
-                // Consumed rather than just read, so a click that isn't
-                // preceded by its own pointerdown — a keyboard press is one —
-                // can't inherit a stale flag and be swallowed.
-                const afterDrag = draggedPips.current;
-                draggedPips.current = false;
-                if (afterDrag) return;
+              // The pointer is handled by the row above; this is the keyboard's
+              // way in, which a button would otherwise get through onClick.
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
                 commit(pipClickValue(style, value, index));
               }}
             >

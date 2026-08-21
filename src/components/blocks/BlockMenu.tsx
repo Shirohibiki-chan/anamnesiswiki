@@ -3,10 +3,10 @@
 // job, the same as every other menu in the app — see tree/ContextMenu.tsx,
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
-import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Palette, PencilLine, Plus, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Grid2x2, PencilLine, Plus, Trash2, Type } from "lucide-react";
 import { METER_STYLES } from "../../constants/meter-styles";
-import { COLOR_PALETTE } from "../../constants/palette";
-import type { MeterStyle } from "../../constants/schema";
+import type { MeterFace, MeterStyle } from "../../constants/schema";
+import { ColorSwatches } from "./ColorSwatches";
 
 type BlockMenuProps = {
   /** Whether the block is currently showing a title strip. */
@@ -47,6 +47,10 @@ type BlockMenuProps = {
      */
     onDuplicateMeter?: () => void;
     onRemoveMeter?: () => void;
+    face: MeterFace;
+    segmented: boolean;
+    onSetFace: (face: MeterFace) => void;
+    onToggleSegments: () => void;
   };
 };
 
@@ -119,28 +123,29 @@ export function BlockMenu({
           <button type="button" onClick={meter.onToggleMax}>
             <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} /> Show max
           </button>
+          <button type="button" onClick={meter.onToggleSegments}>
+            <Grid2x2 size={13} className={meter.segmented ? "" : "block-menu-unchecked"} /> Segmented
+          </button>
+          {/* What sits inside a dial. Three tiles rather than three rows,
+              because they are three pictures of the same meter. */}
+          <div className="block-menu-faces">
+            {(["value", "icon", "both"] as MeterFace[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`block-menu-face${meter.face === option ? " block-menu-face-active" : ""}`}
+                onClick={() => meter.onSetFace(option)}
+              >
+                {option === "value" ? "6/10" : option === "icon" ? "Icon" : "Both"}
+              </button>
+            ))}
+          </div>
         </>
       )}
 
       <div className="block-menu-separator" />
 
-      <div className="block-menu-color-row">
-        <span className="block-menu-color-label">
-          <Palette size={13} /> Colour
-        </span>
-        <div className="block-menu-color-swatches">
-          {COLOR_PALETTE.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              className={`tree-color-swatch${(color ?? "default") === c.key ? " tree-color-swatch-active" : ""}`}
-              style={c.hex ? { backgroundColor: c.hex } : undefined}
-              title={c.name}
-              onClick={() => onColor(c.hex ? c.key : undefined)}
-            />
-          ))}
-        </div>
-      </div>
+      <ColorSwatches value={color} onPick={onColor} />
 
       <div className="block-menu-separator" />
 

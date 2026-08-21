@@ -542,20 +542,17 @@ button.tree-path-crumb:hover {
   gap: var(--space-xs);
 }
 
-.tree-color-swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-  cursor: pointer;
+/* The swatches themselves moved to the shared `.color-swatches` grid in
+   blocks.css — a page and a block are coloured from one control now. */
+.tree-color-picker {
+  width: 232px;
 }
 
-.tree-color-swatch-active {
-  border-color: var(--color-text-primary);
+.tree-color-inherited {
+  margin: 0;
+  padding: 0 var(--space-sm) var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
 }
 
 .tree-template-picker {

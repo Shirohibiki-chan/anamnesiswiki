@@ -1,12 +1,12 @@
 // The icons the picker offers, and how a stored icon name turns back into
 // something drawable. Phase 18c.
 //
-// **A curated list, not every Lucide icon.** Lucide ships ~1500 and importing
-// the lot to fill a search box puts the whole set in the bundle and in the
-// parse cost of every launch, for a control used a handful of times per page.
-// This is the set worth having for worldbuilding, grouped the way somebody
-// looking for one would look — and adding to it is one line, so a gap she hits
-// is a gap that closes.
+// **This is the curated front of the picker, not the whole of it.** These are
+// the icons worth suggesting for worldbuilding, grouped the way somebody
+// looking for one would look and carrying the words they would actually type.
+// Every other Lucide icon is reachable too — see `glyph-catalogue.ts`, which
+// holds all ~1500 — so this list decides what gets offered first, not what is
+// available.
 //
 // `docs/ideas.md` §Icons you choose yourself is the larger version of this: a
 // page's own icon, plus reading LegendKeeper's Font Awesome glyph names on
@@ -160,6 +160,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import { ALL_GLYPHS, ALL_GLYPHS_BY_NAME } from "./glyph-catalogue";
 
 export type GlyphGroup = { name: string; glyphs: { name: string; icon: LucideIcon; keywords?: string }[] };
 
@@ -353,7 +354,9 @@ export const GLYPH_GROUPS: GlyphGroup[] = [
   },
 ];
 
-const BY_NAME = new Map(GLYPH_GROUPS.flatMap((group) => group.glyphs).map((glyph) => [glyph.name, glyph.icon]));
+const CURATED_BY_NAME = new Map(
+  GLYPH_GROUPS.flatMap((group) => group.glyphs).map((glyph) => [glyph.name, glyph.icon]),
+);
 
 /**
  * The component for a stored icon name, or nothing.
@@ -364,12 +367,36 @@ const BY_NAME = new Map(GLYPH_GROUPS.flatMap((group) => group.glyphs).map((glyph
  * crash.
  */
 export function getGlyph(name: string | undefined): LucideIcon | undefined {
-  return name ? BY_NAME.get(name) : undefined;
+  if (!name) return undefined;
+  return CURATED_BY_NAME.get(name) ?? ALL_GLYPHS_BY_NAME.get(name);
 }
 
 /** Whether a stored icon is one of ours, as opposed to an emoji she typed. */
 export function isGlyph(name: string | undefined): boolean {
-  return !!name && BY_NAME.has(name);
+  return getGlyph(name) !== undefined;
+}
+
+/**
+ * Everything not already suggested above, for browsing past the curated set.
+ *
+ * The curated names are held back so the same picture isn't offered twice in
+ * one scroll — they are already at the top with better words attached.
+ */
+export function restOfCatalogue(): { name: string; icon: LucideIcon }[] {
+  return ALL_GLYPHS.filter((glyph) => !CURATED_BY_NAME.has(glyph.name));
+}
+
+/**
+ * Every icon whose name matches, curated or not.
+ *
+ * Searching the whole catalogue is what makes the picker feel as large as it
+ * is: the curated groups answer "show me something for health", and this
+ * answers "I know there is a lighthouse in here somewhere".
+ */
+export function searchCatalogue(query: string): { name: string; icon: LucideIcon }[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return [];
+  return ALL_GLYPHS.filter((glyph) => glyph.name.includes(trimmed) && !CURATED_BY_NAME.has(glyph.name));
 }
 
 /**

@@ -1,7 +1,7 @@
 // The numbers behind a meter block, and the geometry its arcs are drawn from.
 // Phase 18c. Pure, so the six shapes are presentation over two value models
 // rather than six implementations of "what fraction is this".
-import { PIP_METER_STYLES, type Block, type MeterEntry, type MeterStyle } from "../constants/schema";
+import { PIP_METER_STYLES, type Block, type MeterEntry, type MeterFace, type MeterStyle } from "../constants/schema";
 
 /**
  * A proportional meter reads against 100 unless told otherwise, so "75" means
@@ -48,6 +48,17 @@ export function showsText(block: Block): boolean {
 
 export function showsMax(block: Block): boolean {
   return block.showMax !== false;
+}
+
+/**
+ * What goes inside a round meter, resolved.
+ *
+ * Absent means "whatever there is": the icon when one has been picked, the
+ * number when one hasn't. A ring with nothing in the middle reads as a meter
+ * that failed to draw, so there is no fourth answer of "neither".
+ */
+export function meterFace(block: Block, entry: MeterEntry): MeterFace {
+  return block.face ?? (entry.icon ? "icon" : "value");
 }
 
 export function isPipMeter(style: MeterStyle): boolean {

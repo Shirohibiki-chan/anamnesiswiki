@@ -75,6 +75,8 @@ export function BlockPanel() {
     setBlockMeter,
     setBlockMeterText,
     setBlockMeterMax,
+    setBlockMeterFace,
+    setBlockMeterSegmented,
     addMeter,
     duplicateMeter,
     removeMeter,
@@ -361,7 +363,16 @@ export function BlockPanel() {
   }
 
   return (
-    <div className="properties-panel block-panel">
+    <div
+      className="properties-panel block-panel"
+      // Right-clicking the panel itself — the gaps between blocks, the header
+      // strip — offers Add Block. A block's own right-click stops the event
+      // before it gets here, so the two never both fire.
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setAddRect(new DOMRect(e.clientX, e.clientY, 0, 0));
+      }}
+    >
       {node.templateKey === BLANK_TEMPLATE_KEY && (
         <div className="properties-panel-apply-template">
           <p>This page doesn't have a template yet.</p>
@@ -408,7 +419,11 @@ export function BlockPanel() {
                         style: block.meter ?? "bar",
                         textShown: block.showText !== false,
                         maxShown: block.showMax !== false,
+                        face: block.face ?? "icon",
+                        segmented: block.segmented === true,
                         onSetStyle: (style) => setBlockMeter(node.id, block.id, style),
+                        onSetFace: (face) => setBlockMeterFace(node.id, block.id, face),
+                        onToggleSegments: () => setBlockMeterSegmented(node.id, block.id, block.segmented !== true),
                         onAdd: () => addMeter(node.id, block.id),
                         onDuplicateMeter: (meterId) => duplicateMeter(node.id, block.id, meterId),
                         onRemoveMeter: (meterId) => removeMeter(node.id, block.id, meterId),
@@ -484,6 +499,17 @@ export function BlockPanel() {
           <Plus size={12} /> Add Block
         </button>
       )}
+
+      {/* The empty space under the last block answers a right-click too, with
+          the same menu the button opens. Right-clicking where a block would go
+          is how you ask for one, and it was doing nothing. */}
+      <div
+        className="block-panel-space"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setAddRect(new DOMRect(e.clientX, e.clientY, 0, 0));
+        }}
+      />
 
       {addRect && (
         <TreePopover anchorRect={addRect} onClose={() => setAddRect(null)}>

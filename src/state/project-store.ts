@@ -13,6 +13,7 @@ import {
   type CustomPropertySpec,
   type MeterStyle,
   type MeterEntry,
+  type MeterFace,
   createTemplateLibrary,
   type Node,
   type Project,
@@ -325,6 +326,8 @@ export type ProjectStoreState = {
   setBlockMeter: (nodeId: string, blockId: string, style: MeterStyle) => void;
   setBlockMeterText: (nodeId: string, blockId: string, shown: boolean) => void;
   setBlockMeterMax: (nodeId: string, blockId: string, shown: boolean) => void;
+  setBlockMeterFace: (nodeId: string, blockId: string, face: MeterFace) => void;
+  setBlockMeterSegmented: (nodeId: string, blockId: string, segmented: boolean) => void;
   addMeter: (nodeId: string, blockId: string) => void;
   duplicateMeter: (nodeId: string, blockId: string, meterId: string) => void;
   removeMeter: (nodeId: string, blockId: string, meterId: string) => void;
@@ -1605,6 +1608,19 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     setBlockMeterMax(nodeId, blockId, shown) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "showMax", shown ? undefined : false) : block)),
+      );
+    },
+
+    setBlockMeterFace(nodeId, blockId, face) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "face", face) : block)),
+      );
+    },
+
+    // Off is the default and is stored as absent, like every other block flag.
+    setBlockMeterSegmented(nodeId, blockId, segmented) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "segmented", segmented || undefined) : block)),
       );
     },
 

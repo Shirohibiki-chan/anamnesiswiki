@@ -133,6 +133,17 @@ export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "rating" | 
 export const PIP_METER_STYLES: MeterStyle[] = ["rating", "pool"];
 
 /**
+ * What sits inside a round meter. Phase 18c.
+ *
+ * The reference offers the same dial three ways — the number, the icon, or
+ * both — and they read differently enough to be worth choosing between: a wall
+ * of dials showing icons is a dashboard, and the same wall showing numbers is
+ * a character sheet. Absent means "the icon if there is one, otherwise the
+ * number", which is what a meter did before this existed.
+ */
+export type MeterFace = "value" | "icon" | "both";
+
+/**
  * One reading inside a meter block. Phase 18c.
  *
  * **A meter block holds a list of these, not a single number.** The reference
@@ -201,6 +212,9 @@ export type Block = {
   meters?: MeterEntry[];
   showText?: boolean;
   showMax?: boolean;
+  face?: MeterFace;
+  /** Drawn as a run of segments rather than one solid sweep. */
+  segmented?: boolean;
   // The first cut of `meter` kept one reading directly on the block. No new
   // one is written — block-service lifts these into a single entry on read,
   // the way it does for `link`. Kept readable so a meter made before the list

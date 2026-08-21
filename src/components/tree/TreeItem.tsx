@@ -7,7 +7,6 @@ import type { NodeRendererProps } from "react-arborist";
 import { ChevronDown, ChevronRight, Home, MoreHorizontal, Plus } from "lucide-react";
 import { TREE_INDENT } from "../../constants/layout";
 import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
-import { getTemplateIcon } from "../../constants/icons";
 import { getPaletteHex } from "../../constants/palette";
 import { useIsPinned, useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
 import {
@@ -21,7 +20,7 @@ import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useTreeDoubleClick } from "../../hooks/use-preferences";
 import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
 import type { TreeNodeData } from "../../services/tree-service";
-import { IconPicker, MeterIcon } from "../blocks/IconPicker";
+import { IconPicker, NodeIcon } from "../blocks/IconPicker";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
 import { MoveMenu } from "./MoveMenu";
@@ -71,7 +70,6 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const { color: effectiveKey, isOwner } = effective;
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const ownHex = getPaletteHex(fullNode.color);
-  const Icon = getTemplateIcon(fullNode.templateKey);
   const showFolderTint = isFolder && !!effectiveHex;
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isProjectHome = homeNodeId === node.id;
@@ -293,16 +291,15 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         </button>
 
         {/* A page's own icon wins over its template's — that is what picking
-            one means. Absent is the normal state and keeps the template's,
-            which is what every page had before Phase 18c. */}
-        {fullNode.icon ? (
-          <span className="tree-row-icon tree-row-icon-own" style={effectiveHex ? { color: effectiveHex } : undefined}>
-            <MeterIcon icon={fullNode.icon} size={14} />
-          </span>
-        ) : (
-          /* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */
-          <Icon size={14} className="tree-row-icon" style={effectiveHex ? { color: effectiveHex } : undefined} />
-        )}
+            one means. Absent keeps the template's, which is what every page
+            had before Phase 18c. */}
+        <NodeIcon
+          icon={fullNode.icon}
+          templateKey={fullNode.templateKey}
+          size={14}
+          className="tree-row-icon"
+          style={effectiveHex ? { color: effectiveHex } : undefined}
+        />
 
         {node.isEditing ? (
           <input

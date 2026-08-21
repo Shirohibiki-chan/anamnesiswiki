@@ -6,7 +6,8 @@
 
 - **Meters — a number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with six of them, and they sit in the sidebar alongside your properties.
 - **One block holds several meters.** A block is a panel of stats, not a single reading: **Add meter** in the block's `⋯` menu puts another one in, and each carries its own icon, name and numbers. Circles, semi-circles and gauges lay out two across; bars and tokens run full width. Remove one with the × beside it.
-- **Every meter has an icon, and there's now an icon picker.** Click the icon slot next to a meter's name for a searchable set of glyphs — search "health", "gold", "magic" — plus a tab of emoji. Emoji are just characters, so anything your system can draw, you can use.
+- **Every meter has an icon, and there's now an icon picker.** Click the icon slot next to a meter's name for **every icon the app ships — about 1,900 of them** — searchable by name, plus a tab of emoji. The ones worth suggesting for a world are grouped at the top and findable by what you'd call them ("health" finds the heart), and the rest is underneath. Emoji are just characters, so anything your system can draw, you can use.
+- **A dial can show its number, its icon, or both**, and can be drawn in **segments** instead of one solid sweep. Both are in the block's menu.
 - **Name each meter whatever it measures.** Type straight into the name beside it.
 - **Show text** and **Show max** in the block's menu, so a row of dials can be just the dials, and "6/10" can be "6".
 - **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so a bar set to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
@@ -16,18 +17,24 @@
 - **Clicking a rating's current level clears it**, so a star you didn't mean to click isn't permanent.
 - **They work from the keyboard.** Tab to a meter, then arrow keys to nudge it, Page Up and Page Down for ten at a time, Home and End for empty and full.
 - **The shape is a setting, not a decision you're stuck with.** Pick another from the six in the block's menu — your numbers come with it, and the block's heading follows.
-- **Pages can have their own icon.** Right-click a page → **Set icon**, and it's the same picker the meters use, glyphs and emoji both. It replaces the icon its template gave it; clearing it puts that back. Works on a whole selection at once, like Set color.
+- **Pages can have their own icon.** Right-click a page → **Set icon**, and it's the same picker the meters use, glyphs and emoji both. It replaces the icon its template gave it and shows everywhere that page appears — the tree, its title, its breadcrumb. Clearing it puts the template's back. Works on a whole selection at once, like Set color.
+- **Far more colours, and any colour you like.** The palette went from eleven pastels to twenty-four in three weights, and there's a **+** on the end that opens your system's colour picker for anything else. Pages and blocks share one colour control now, so they can't disagree about what's on offer.
 - **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.
 
 ### Adjustments
 
 - **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block from edge to edge of the sidebar and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
-- **Right-clicking a block opens its menu**, which is what right-clicking anything should do. It was doing nothing before, so you got whatever menu happened to be underneath. Right-clicking a particular meter inside a block also offers to duplicate or delete that one.
+- **Right-clicking a block opens its menu**, which is what right-clicking anything should do. It was doing nothing before, so you got whatever menu happened to be underneath. Right-clicking a particular meter inside a block also offers to duplicate or delete that one, and right-clicking the empty space under the blocks offers Add Block.
+- **The block menu got shorter.** The colour row is a grid of swatches rather than a long strip, and the shape picker is six small tiles.
 - **A block has one name again.** It used to show its own heading and then repeat the shape underneath — a section called METER with PROGRESS BAR written under it. The heading is the shape's name now, in the top left, and renaming it still wins.
 - **Blocks line up with each other.** The drag handle moved out of the heading's way, so every heading starts at the same edge as the block under it.
 
 ### Fixes
 
+- **Tokens and stars respond to every click now.** About half of them did nothing: the pip you pressed and the pip that got told about it could disagree, so the tap was swallowed. Pressing sets the value the moment you press, the way the bars and dials already did.
+- **A lone dial is centred.** One circle in a block sat hard against the left edge, because the layout was built for two side by side.
+- **The progress bar isn't a hairline any more**, and lowering a dial no longer draws a ragged second outline over it — the preview sits at the end of the fill instead of being painted on top of it.
+- **A dial showing its icon doesn't repeat it beside the name.**
 - **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
 - **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.
 

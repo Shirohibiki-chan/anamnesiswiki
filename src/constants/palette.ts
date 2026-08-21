@@ -7,21 +7,61 @@ export type PaletteColor = {
   hex: string | null;
 };
 
+/**
+ * The named colours, in three rows of the same eight hues.
+ *
+ * **Eleven pastels was the whole palette until 2026-08-21**, and her
+ * comparison against the reference was that it offered more, offered bolder
+ * ones, and let her type a colour of her own. All three were fair. The rows go
+ * light / mid / deep so a hue can be found by column and a weight by row,
+ * rather than by hunting through one line of similar pastels.
+ */
 export const COLOR_PALETTE: PaletteColor[] = [
   { key: "default", name: "Default", hex: null },
+
   { key: "teal", name: "Teal", hex: "#5eead4" },
   { key: "sky", name: "Sky", hex: "#7dd3fc" },
+  { key: "indigo", name: "Indigo", hex: "#a5b4fc" },
   { key: "purple", name: "Purple", hex: "#c4b5fd" },
   { key: "rose", name: "Rose", hex: "#fda4af" },
-  { key: "amber", name: "Amber", hex: "#fcd34d" },
-  { key: "sage", name: "Sage", hex: "#86efac" },
-  { key: "orange", name: "Orange", hex: "#fdba74" },
-  { key: "indigo", name: "Indigo", hex: "#a5b4fc" },
   { key: "red", name: "Red", hex: "#fca5a5" },
+  { key: "orange", name: "Orange", hex: "#fdba74" },
+  { key: "amber", name: "Amber", hex: "#fcd34d" },
+
+  { key: "emerald", name: "Emerald", hex: "#34d399" },
+  { key: "cyan", name: "Cyan", hex: "#22d3ee" },
+  { key: "blue", name: "Blue", hex: "#60a5fa" },
+  { key: "violet", name: "Violet", hex: "#a78bfa" },
+  { key: "fuchsia", name: "Fuchsia", hex: "#e879f9" },
+  { key: "pink", name: "Pink", hex: "#f472b6" },
+  { key: "coral", name: "Coral", hex: "#fb7185" },
+  { key: "sage", name: "Sage", hex: "#86efac" },
+
+  { key: "pine", name: "Pine", hex: "#0f766e" },
+  { key: "ocean", name: "Ocean", hex: "#0369a1" },
+  { key: "navy", name: "Navy", hex: "#3730a3" },
+  { key: "plum", name: "Plum", hex: "#7e22ce" },
+  { key: "wine", name: "Wine", hex: "#9f1239" },
+  { key: "rust", name: "Rust", hex: "#c2410c" },
+  { key: "bronze", name: "Bronze", hex: "#a16207" },
   { key: "gray", name: "Gray", hex: "#a1a1aa" },
 ];
 
+/**
+ * The hex a stored colour resolves to.
+ *
+ * **A stored value may be a hex outright**, not just a palette key: the
+ * pickers let her choose any colour, and one she mixed herself has no name to
+ * be looked up by. Palette keys are still preferred wherever a name exists,
+ * because those follow the theme and a raw hex cannot.
+ */
 export function getPaletteHex(key: string | undefined): string | null {
   if (!key) return null;
+  if (key.startsWith("#")) return isHexColor(key) ? key : null;
   return COLOR_PALETTE.find((c) => c.key === key)?.hex ?? null;
+}
+
+/** Whether a string is a colour we would be willing to write to disk. */
+export function isHexColor(value: string): boolean {
+  return /^#[0-9a-f]{6}$/i.test(value.trim());
 }
