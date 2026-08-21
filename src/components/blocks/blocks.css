@@ -258,3 +258,102 @@
 .block-inline-link:hover {
   color: var(--color-text-primary);
 }
+
+/* ---- Collection block (Phase 18b) ---- */
+
+.block-collection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* The source is a quiet control, not a heading — the block's own title strip
+   already says what this is. It only needs to be findable once. */
+.block-collection-source {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.block-collection-source:hover {
+  color: var(--color-text-primary);
+}
+
+.block-collection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.block-collection-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* Why a row is in the list, for the sources where that isn't obvious. Sized
+   down rather than coloured, so it reads as an annotation on the page name and
+   not as part of it. */
+.block-collection-why {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+}
+
+.block-collection-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.block-collection-tags,
+.block-alias-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.block-collection-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px var(--space-sm);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+}
+
+.block-alias {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* The source menu carries a second line per item, which the tree's own menu
+   rule doesn't expect — it lays items out as a single centred row. */
+.block-source-menu button {
+  align-items: flex-start;
+}
+
+.block-source-label {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.block-source-label small {
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+}

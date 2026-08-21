@@ -6,7 +6,7 @@ import Fuse from "fuse.js";
 import { MAX_SEARCH_RESULTS, SEARCH_SNIPPET_CHARS } from "../constants/limits";
 import type { BlockNoteDocument, Node } from "../constants/schema";
 
-export type SearchMatchKind = "name" | "tag" | "content";
+export type SearchMatchKind = "name" | "alias" | "tag" | "content";
 
 export type SearchResult = {
   nodeId: string;
@@ -110,7 +110,9 @@ export type SearchScopeMode = (typeof SEARCH_SCOPES)[number];
 type NameIndexes = { all?: Fuse<Node>; name?: Fuse<Node>; tag?: Fuse<Node> };
 const nameIndexCache = new WeakMap<Record<string, Node>, NameIndexes>();
 
-const NAME_KEYS = { all: ["name", "tags"], name: ["name"], tag: ["tags"] } as const;
+// Aliases sit with names, not tags: `[[Val]]` reaching Valera Jiang and
+// searching "Val" finding her are the same idea (Phase 18b).
+const NAME_KEYS = { all: ["name", "aliases", "tags"], name: ["name", "aliases"], tag: ["tags"] } as const;
 
 function nameIndex(nodes: Record<string, Node>, mode: "all" | "name" | "tag"): Fuse<Node> {
   const cached = nameIndexCache.get(nodes) ?? {};
@@ -185,9 +187,24 @@ export function searchProject(nodes: Record<string, Node>, query: string, mode: 
       // In name scope the row says "name" even where a tag also matched:
       // showing the tag would be the row explaining itself with the one field
       // that was deliberately excluded.
-      const nameHit = scope === "name" || item.name.toLowerCase().includes(lowered);
+      const nameHit = item.name.toLowerCase().includes(lowered);
+      // Her call, 2026-08-21: an alias match names the alias rather than
+      // matching silently, so a page in the results never looks unexplained —
+      // the same complaint as a Backlinks block that cannot say why a row is
+      // in it. Only when the page's own name didn't match, or the row would
+      // explain a hit that needed no explaining.
+      const aliasHit = nameHit ? undefined : (item.aliases ?? []).find((alias) => alias.toLowerCase().includes(lowered));
       claimed.add(item.id);
-      if (tagHit && !nameHit) {
+      if (aliasHit) {
+        const at = aliasHit.toLowerCase().indexOf(lowered);
+        results.push({
+          nodeId: item.id,
+          kind: "alias",
+          snippet: aliasHit,
+          matchStart: at,
+          matchEnd: at + lowered.length,
+        });
+      } else if (tagHit && !(scope === "name" || nameHit)) {
         const at = tagHit.toLowerCase().indexOf(lowered);
         results.push({ nodeId: item.id, kind: "tag", snippet: tagHit, matchStart: at, matchEnd: at + lowered.length });
       } else {

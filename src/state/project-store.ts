@@ -9,6 +9,7 @@ import {
   FOLDER_TEMPLATE_KEY,
   type Block,
   type BlockKind,
+  type CollectionSource,
   type CustomPropertySpec,
   createTemplateLibrary,
   type Node,
@@ -299,6 +300,11 @@ export type ProjectStoreState = {
   setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
   setBlockText: (nodeId: string, blockId: string, text: string) => void;
   setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
+  // Phase 18b's collection settings.
+  setBlockSource: (nodeId: string, blockId: string, source: CollectionSource) => void;
+  setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
+  setBlockTags: (nodeId: string, blockId: string, tags: string[]) => void;
+  setNodeAliases: (nodeId: string, aliases: string[]) => void;
   // Project-wide, from the All properties & tags view. Each is one undo entry
   // however many pages it touched — see applyBulk.
   renamePropertyEverywhere: (label: string, newLabel: string) => void;
@@ -1515,6 +1521,39 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "targetId", targetId) : block)),
       );
+    },
+
+    // Changing the source clears the settings belonging to the old one. A
+    // collection switched from tags to subpages that quietly kept its tag list
+    // would surprise whoever switched it back, and a stale list is invisible
+    // while another source is showing.
+    setBlockSource(nodeId, blockId, source) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId
+            ? withField(withField(withField(block, "source", source), "tags", undefined), "targetIds", undefined)
+            : block,
+        ),
+      );
+    },
+
+    setBlockTargets(nodeId, blockId, targetIds) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "targetIds", targetIds) : block)),
+      );
+    },
+
+    setBlockTags(nodeId, blockId, tags) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "tags", tags) : block)),
+      );
+    },
+
+    // Blank entries are dropped rather than stored: an empty alias would match
+    // an empty search and pull every page into the results.
+    setNodeAliases(nodeId, aliases) {
+      const cleaned = aliases.map((alias) => alias.trim()).filter(Boolean);
+      get().updateNode(nodeId, { aliases: cleaned.length > 0 ? cleaned : undefined });
     },
 
 

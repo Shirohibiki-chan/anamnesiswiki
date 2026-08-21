@@ -20,6 +20,7 @@ import {
   FOLDER_TEMPLATE_KEY,
   PROPERTY_TYPE_LABELS,
   type Block,
+
   type CustomPropertySpec,
   type PropertyOption,
 } from "../../constants/schema";
@@ -38,8 +39,9 @@ import { TextProperty } from "../properties/TextProperty";
 import { TemplatePicker } from "../tree/TemplatePicker";
 import { TreePopover } from "../tree/TreePopover";
 import { AddBlockMenu } from "./AddBlockMenu";
+import { AliasBlock } from "./AliasBlock";
 import { BlockShell } from "./BlockShell";
-import { LinkBlock } from "./LinkBlock";
+import { CollectionBlock } from "./CollectionBlock";
 import { TextBlock } from "./TextBlock";
 import "../properties/properties.css";
 import "./blocks.css";
@@ -63,7 +65,10 @@ export function BlockPanel() {
     setBlockTitleShown,
     setBlockColor,
     setBlockText,
-    setBlockLink,
+    setBlockSource,
+    setBlockTargets,
+    setBlockTags,
+    setNodeAliases,
   } = useProject();
   const knownOptions = useKnownOptions();
   const allTags = useAllTags();
@@ -206,15 +211,43 @@ export function BlockPanel() {
       };
     }
 
-    if (block.kind === "link") {
+    if (block.kind === "collection") {
+      // The heading follows the source, so a block switched from Subpages to
+      // Backlinks stops claiming to be the other thing — unless she has given
+      // it a title of her own, which BlockShell honours over this.
+      const natural =
+        block.source === "mentions"
+          ? "Backlinks"
+          : block.source === "subpages"
+            ? "Subpages"
+            : block.source === "tags"
+              ? "Tagged"
+              : "Links";
       return {
-        natural: "Link",
+        natural,
         body: (
-          <LinkBlock
-            targetId={block.targetId}
+          <CollectionBlock
+            block={block}
+            node={node!}
             nodes={nodes}
-            onChange={(targetId) => setBlockLink(node!.id, block.id, targetId)}
+            allTags={allTags}
+            onSetSource={(source) => setBlockSource(node!.id, block.id, source)}
+            onSetTargets={(ids) => setBlockTargets(node!.id, block.id, ids)}
+            onSetTags={(tags) => setBlockTags(node!.id, block.id, tags)}
             onOpen={(id) => selectNode(id)}
+          />
+        ),
+      };
+    }
+
+    if (block.kind === "alias") {
+      return {
+        natural: "Alias",
+        body: (
+          <AliasBlock
+            aliases={node!.aliases ?? []}
+            pageName={node!.name}
+            onChange={(aliases) => setNodeAliases(node!.id, aliases)}
           />
         ),
       };
@@ -382,6 +415,10 @@ export function BlockPanel() {
             unshown={unshown}
             onAdd={(kind) => {
               addBlock(node.id, kind);
+              setAddRect(null);
+            }}
+            onAddCollection={(source) => {
+              addBlock(node.id, "collection", { source });
               setAddRect(null);
             }}
             onAddProperty={(key) => {

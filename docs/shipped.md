@@ -3280,3 +3280,64 @@ Verified afterwards in the probe: the derived panel matches the old one field
 for field, a template page seeds, a blank page is empty, No title hides a
 heading without touching its field, Remove takes a property off the panel and
 Add Block offers it straight back, and Move up reorders a derived list.
+
+---
+
+## Phase 18b — The Index ✅ Shipped 2026-08-21
+
+Backlinks, tag index, subpage index and manual links, as **one collection block
+with a switchable source** — plus aliases, which are an edge into the same
+index. Scoped in PR #246 the same day, from two screenshots she sent while
+trying to work out why the reference's Backlinks block was empty.
+
+### What shipped
+
+- **`link-index.ts`**, the whole of it: outgoing edges per page, the project
+  index (mentions, children, tags), and `pagesWithAnyTag`. 16 tests.
+- **`collection` block** with four sources, `alias` block, `Node.aliases`, four
+  store actions, `use-link-index`.
+- **The 18a `link` block migrated** to `collection` + `source: "manual"` on
+  read, so the one page in her world carrying one kept working.
+- **Aliases wired through** `wikilink.ts` and `search-service`, with the search
+  row naming the alias that matched.
+
+### Decisions worth the record
+
+- **One block, four sources, four menu names.** Her screenshots showed the
+  reference offers Backlinks / Tag Index / Subpages / Manual Links as separate
+  menu entries that all open the same *Collection source* picker. That is
+  strictly better than our planned three block types plus a link block, and it
+  is what the plan had already worked out underneath.
+- **A mention counts from prose, from a reference property, and from a manual
+  list** — mine, flagged as mine. A page listing this one under Friends is
+  pointing at it as hard as a sentence would. Each row says which kind it was,
+  because a list that cannot explain itself is the exact failure that started
+  the phase.
+- Her calls: direct children only, tags chosen on the block, search names the
+  matching alias.
+
+### The failure this phase came out of
+
+She typed `[[ragatha]]` on the *gangle* page in the reference. It created a
+**second page called ragatha as a child of gangle** and linked to that, leaving
+her existing ragatha untouched — so its Backlinks block was correct and
+useless. Ours cannot do that: `resolveWikilinks` never creates anything, and
+only resolves an unambiguous name. What it *did* do was fail silently on an
+ambiguous one, which is the same class of problem; that is written up in the
+plan as work this phase did not close.
+
+### Verification
+
+`pnpm lint`, `pnpm build` and `pnpm test` (1247, 16 new) all clean.
+
+Then driven in a throwaway probe reproducing her exact case — two `@ragatha`
+mentions on one page, a Friends property pointing at the same page from
+another, a child page, a shared tag, and an 18a link block:
+
+- Backlinks showed **gangle once**, not twice, and **jax labelled "Friends"**.
+- Subpages showed only the direct child; the tag collection showed the other
+  tagged page and excluded the page it was on.
+- Switching a collection from Subpages to Backlinks re-resolved it and its
+  heading followed.
+- The 18a link block arrived as a Manual links collection.
+- Adding an alias worked, and the existing one rendered.
