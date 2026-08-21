@@ -105,6 +105,40 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
+- **A project that refuses to open can say nothing at all.** Reported from use
+  2026-08-21: clicking Valeraverse on the start screen did nothing visible, and
+  the world stayed shut. The likely trigger was a stale open-claim — a
+  `pnpm tauri dev` build had been restarted under her while its marker was
+  still live, and the world opened normally once the marker aged past
+  `PROJECT_CLAIM_STALE_MS` — so the *refusal* was correct. **What is wrong is
+  that she saw no reason for it.** `openListed` and `openFound` both set an
+  error for every failure path, and `refuseIfHeldElsewhere` sets a specific one
+  naming the other window, so either that message is not rendering where she
+  was looking or the click never reached the handler. Find out which before
+  changing any of the copy.
+
+  **Two things make this worse than a missing message.** `loadProject` catches
+  everything and returns `null`, so a genuine exception and a missing folder
+  are indistinguishable by the time the UI sees them — there is nothing in the
+  app that can say *why*. And `openListed` calls `forgetProject` on failure, so
+  one silent failure also drops the world from the recent list, and every click
+  after that is against an entry that is already gone. Whatever the root cause
+  turns out to be, that pairing turns a transient refusal into something that
+  looks permanent.
+
+- **There is no error boundary anywhere in the app**, so anything that throws
+  while rendering unmounts the whole tree and the window goes blank with no
+  message. Confirmed by search 2026-08-21 — no `componentDidCatch`, no
+  `getDerivedStateFromError`, nothing. This has always been true and has become
+  more expensive since Phase 18a: a sidebar is now an arbitrary list of blocks,
+  so one bad block on one page can take the entire app down rather than
+  spoiling one field. **The fix is a boundary around the parts that can be
+  re-entered** — the block panel and the page view — rather than one at the
+  root, since a boundary at the root can only offer a reload, while one around
+  the panel can say which block failed and leave the rest of the app usable.
+  Phase 19 territory; it is the same argument as version history, which is that
+  this app's failures should be survivable rather than merely rare.
+
 - **The AppImage won't start on some older Linux systems.** Reported 2026-08-09
   from the first install by someone who isn't the user: it ran on his new
   laptop and failed on an older Fedora one. His diagnosis, verbatim — *"the GTK
