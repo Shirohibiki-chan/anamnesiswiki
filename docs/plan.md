@@ -218,7 +218,9 @@ pass, the design system beneath it, themes, property types, everyday
 navigation, the right-click menu's full pass, pictures and tags, the Templates
 and Assets tabs, and the project library the start screen became. Their detail
 is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phase 18 is next**, and it is the next one in this file.
+**Phase 18 is next**, and it is the next one in this file. It was scoped on
+2026-08-21 and split into 18a, 18b and 18c; they run in that order and 18a
+is the one to start.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
@@ -227,17 +229,121 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ## Phase 18 — Sidebar Blocks
 
-The big one, and a genuinely new concept: the right panel becomes a second block canvas rather than a fixed list of fields.
+The big one, and a genuinely new concept: the right panel becomes a second
+block canvas rather than a fixed list of fields. **Scoped 2026-08-21 and split
+into three phases** — 18a builds the canvas, 18b builds the index the three
+index blocks share, 18c builds the meters. The split is not cosmetic: 18a
+changes how every page's sidebar is stored, and shipping that alone means the
+data model is proven by use before eleven more block types are built on it.
 
-Keep the distinction sharp — **properties** are labelled facts (`Age: 26`); **blocks** are arranged widgets (a 75% purple bar called "Hollow Emperor's Influence"). They share a column and nothing else.
+Keep the distinction sharp in the *user's* language — **properties** are
+labelled facts (`Age: 26`), **meters** are arranged widgets (a 75% purple bar
+called "Hollow Emperor's Influence"). Underneath, after 18a, they are the same
+thing: a block in an ordered list.
 
-- Node gains an ordered block list. **Add, remove and reorder are requirements from the start**, not follow-ups — build the panel as an ordered collection or this gets rewritten.
-- Per-block context menu: title / no-title, colour, duplicate, move, remove.
-- **Blocks:** Text Box · Tags · Alias · Link Block · Tag Index · Subpage Index · Backlinks · Image.
-- **Meters:** Progress Bar · Circle · Semi-circle · Gauge · Token Pool · Rating.
-- **Backlinks, Tag Index and Subpage Index are one job underneath** — an index of what points at what. Build that service once; it serves all three blocks and is the same data Phase 24's graphs need.
-- **Alias** punches above its weight — alternate names that feed search and `[[wikilinks]]`, so "Val" finds Valera Jiang.
-- **No YouTube or Spotify embeds.** The user's reason, 2026-07-31, was aesthetic — LK's are ugly — not the offline policy, which she has never personally agreed with. If embeds come back, that's a policy conversation to have with her, and she'll likely wave it through; ask anyway, because the boundary is still written strict in `CLAUDE.md` at her request.
+**No YouTube, Spotify or map embeds** — LK's media group minus everything that
+fetches. Her reason, 2026-07-31, was aesthetic, not the offline policy, which
+she has never personally agreed with. If embeds come back that's a policy
+conversation to have with her and she'll likely wave it through; ask anyway,
+because the boundary is written strict in `CLAUDE.md` at her request.
+
+---
+
+## Phase 18a — The Block Canvas
+
+**Everything in the sidebar is a block, including the properties and the
+picture.** Her call, 2026-08-21. There is no fixed region above the blocks and
+no special case below them — a brand new page's sidebar is empty except for an
+**Add block** button, and every field it ever shows got there because something
+added a block. This is the version of the panel with the fewest rules in it,
+which is why it's worth the migration below.
+
+**Blocks are views, not storage, wherever the data already exists.** This is
+the load-bearing decision and getting it backwards rewrites 18b and 18c. A
+block record holds presentation — id, type, optional title, colour, and a
+pointer for the ones that point (a property block names its property key) —
+while the value stays in the field it lives in today. The reason is that
+`node.tags`, `node.image` and `node.properties` are not private to the sidebar:
+
+- `tags` feeds search, `useAllTags`, the tag index block 18b is about to build,
+  and LK export.
+- `image` feeds the assets tab, the lightbox, `imageFocusY`'s crop, and export,
+  which needs `imageSource` beside it.
+- `properties` feeds `use-property-index`, the templates in Phase 17, and the
+  All Properties modal.
+
+A Tags block that owned its own copy of the tags would silently fork all of
+that. Only blocks whose data is genuinely new — Text Box, and the six meters —
+store a value inside the block record itself.
+
+**The ordered block list replaces `propertyOrder`, and both must not survive.**
+`propertyOrder` is a *partial* list of keys with a default grouping behind it
+(see `PropertiesPanel`'s header comment — the grouping is the input to
+`orderProperties`, never enforced after). A block list is a total order of
+block ids. Once every property is a block the block list is the order, and
+keeping `propertyOrder` too means two answers to one question.
+
+**Existing pages derive their blocks on read, not by a migration pass over the
+disk.** This is `customProperties`' precedent in `schema.ts` — every read site
+falls back itself rather than trusting a load-time migration. A node with no
+`blocks` field synthesises one: an image block if it has an image, a property
+block per property in exactly the order `orderProperties` returns today, a tags
+block if it has tags. The panel then looks identical to how it looks now, the
+first edit writes the real list, and nothing rewrites a world she only opened.
+
+**A blank page is blank; a page made from a template gets the template's
+blocks.** Templates became user-editable in Phase 17, so a template gains a
+block list the same way it already carries a property schema. *Assumption, not
+her stated words* — she asked for a new sidebar to be empty, and in LK a
+templated page still arrives with its fields. Worth confirming before 18a is
+built, because if templates don't carry blocks then applying a template does
+nothing visible and the Templates tab loses most of its point.
+
+Ships in 18a:
+
+- The canvas itself. **Add, remove and reorder are requirements from the
+  start** — build it as an ordered collection or this gets rewritten.
+- Per-block context menu: title / no title, colour, duplicate, move, remove.
+- **Image**, **Text Box**, **Tags**, **Link Block**, and property blocks for
+  the four value types Phase 13 built.
+- **Every block mutation is its own store action**, the way `setNodeColor` is.
+  Phase 19's panel undo is carried over from Phase 10 and is the one place a
+  mistake still can't be taken back; it hooks these actions, and a generic
+  "write the blocks array" makes it impossible to describe what was undone.
+
+---
+
+## Phase 18b — The Index
+
+**Backlinks, Tag Index and Subpage Index are one job underneath** — an index of
+what points at what. Nothing in the codebase computes a backlink today, so this
+is built from nothing rather than extended. Build the service once; it serves
+all three blocks and is the same data Phase 24's graphs need.
+
+- **Backlinks** — every page whose text links here.
+- **Tag Index** — every page carrying a given tag.
+- **Subpage Index** — the children of this page, which the tree already knows
+  and the sidebar currently doesn't show.
+- **Alias** punches above its weight — alternate names that feed search and
+  `[[wikilinks]]`, so "Val" finds Valera Jiang. It belongs here rather than in
+  18a because an alias is an edge into the same index: a link to "Val" has to
+  resolve to Valera's page, and backlinks have to report it as one.
+
+---
+
+## Phase 18c — Meters
+
+Six blocks, two value models, six renderings — build the models first and the
+six are presentation.
+
+- **A 0–100 value:** Progress Bar · Circle · Semi-circle · Gauge.
+- **N of M discrete pips:** Rating · Token Pool, differing only in whether a
+  click sets the level or spends one.
+
+**Token Pool stays in**, questioned 2026-08-21 as a D&D artefact. It isn't one
+once Rating exists — the two are the same widget — and counted-in-whole-units
+is ordinary worldbuilding: spell charges, rations, favours owed, remaining
+heirs, ammunition.
 
 ---
 
