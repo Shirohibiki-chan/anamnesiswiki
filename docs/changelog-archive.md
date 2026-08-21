@@ -2,7 +2,6 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
-<<<<<<< HEAD
 ## 2026-08-12 — more room to drop a picture on a page
 
 ### Fixes
@@ -15,21 +14,6 @@ Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is 
 ### Worth knowing
 
 - The banner still doesn't take a drop. Dropping a picture on a banner looks like it should *become* the banner, and quietly sliding it into your writing instead would be worse than not accepting it.
-<<<<<<< HEAD
-=======
-
-## 2026-08-12 — clicking a page opens that page again
-
-### Fixes
-
-- **A template stayed on screen after you'd gone back to your project.** Open a template, switch back to the Project tab, click a page — and nothing happened. The sidebar highlighted the page you clicked and the properties panel on the right filled in with its details, but the middle of the window carried on showing the template, so the app looked like it was ignoring you.
-- **Going anywhere now closes an open template**: clicking a page in the tree, following a link inside your writing, a search result, a bookmark, and the back, forward and home buttons. Switching back to the Project tab closes it too, so the sidebar and the page you're reading never disagree about where you are.
-
-### Worth knowing
-
-- Switching to the **Assets** tab deliberately leaves a template open. That tab is somewhere you go to fetch a picture for whatever you're working on, and a template can hold pictures like any other page.
-- Nothing you'd written into the template is affected — templates save as you type. Reopening one is a click in the Templates tab.
->>>>>>> a5487c7 (Let her overrule the "open in another window" refusal)
 
 ## 2026-08-12 — clicking a page opens that page again
 
@@ -43,8 +27,6 @@ Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is 
 - Switching to the **Assets** tab deliberately leaves a template open. That tab is somewhere you go to fetch a picture for whatever you're working on, and a template can hold pictures like any other page.
 - Nothing you'd written into the template is affected — templates save as you type. Reopening one is a click in the Templates tab.
 
-=======
->>>>>>> a5487c7 (Let her overrule the "open in another window" refusal)
 ## 2026-08-12 — folders in the picture library
 
 ### Additions
@@ -418,6 +400,7 @@ Older entries: [docs/changelog-archive.md](docs/changelog-archive.md).
 - **Mentions and `[[wikilinks]]` show a preview card when you rest the pointer on them.** The page's name, what kind of page it is, its tags, and the first few lines of writing on it — enough to tell which Valera a link means without leaving the page you're on. Focusing a link with the keyboard shows it too.
   - It waits a moment before appearing, so links you're only passing over on the way somewhere else stay quiet.
   - The excerpt comes from the first tab that actually has writing in it, not the first tab — templates start with several and only some get filled in. **Tabs you've hidden are never used**, so nothing held back shows up in a preview.
+
 ## 2026-08-10 — small keyboard friction in the sidebar and the search boxes
 
 ### Additions
