@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-21 — Tab stays inside dialogs too
+
+### Fixes
+
+- **Tab no longer walks out of a dialog into the page behind it.** Settings, Import, Export, All properties & tags, the picture picker, Save as template, Manage pins, the template picker and both confirm boxes all keep the cursor inside now, wrapping around at either end — and Tab from outside one steps into it rather than past it. The menus were fixed earlier the same day; dialogs are built separately and were missed, which is why it looked half-fixed.
+
 ## 2026-08-21 — menus answer the keyboard
 
 ### Fixes
@@ -300,15 +306,3 @@
 - **A folder is a label, not a place.** Your pictures all stay in one `assets/` folder on disk and nothing moves when you file one — which is what makes moving a picture between folders safe. If it worked the other way, every page showing that picture would have to be rewritten to point at its new home, and a rewrite that stops halfway is a broken picture.
 - **Deleting a folder never deletes a picture.** Everything in it goes back to Unsorted, and the delete is undoable anyway.
 - Pictures can only be dragged into folders from the Assets tab. The picker is open because something's waiting on an answer, so it lets you make and rename folders but not reorganise the library.
-
-## 2026-08-12 — the Assets tab does things
-
-### Additions
-
-- **An add-a-picture button, right there in the tab.** Pictures used to only get into the project at the moment you wanted one somewhere — as a portrait, a cover, or in a page. Now you can put one in the library first and decide where it goes later. The button is in the tab's header and stays there when the tab is empty, which is when you most need it.
-- **Drag a picture from the tab onto a page.** It drops in after whatever you're pointing at, or at the end if you let go below your writing. It points at the file that's already there rather than making a second copy, so one map on six pages is still one file.
-
-### Worth knowing
-
-- Clicking a picture still opens it full size rather than dropping it into your page. Dragging is the version of that gesture you can't do by accident, which is why it's the one that edits your writing.
-- A picture that won't load can't be dragged — the page would just get an empty box, and you'd have to come back here to work out why.

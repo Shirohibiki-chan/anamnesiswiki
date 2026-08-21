@@ -4,12 +4,17 @@ import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
+import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
 import { useThemeBootstrap } from "./hooks/use-theme";
 
 function App() {
   // Above the router on purpose: the theme applies whether she lands on the
   // start screen, a project, or the recovery notice.
   useThemeBootstrap();
+  // Above the router for the same reason the dialogs below are: ConfirmDialog
+  // and NoticeDialog can be raised from the start screen as well as from a
+  // project, so the thing that keeps Tab inside them has to exist on both.
+  useDialogFocusTrap();
   return (
     <>
       <StartupRouter />
