@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-21 — the X closes the app again
+
+### Fixes
+
+- **Closing the window works again, and keeps working.** The app holds the window open for a moment while it finishes writing whatever you last typed, then closes it itself. If that last step ever failed, the app quietly decided a close was already underway and refused every attempt after it — so the X did nothing, for the rest of the session, with nothing on screen to say why. A close that doesn't succeed can now simply be tried again, and there's a second way out if the first is refused.
+
 ## 2026-08-21 — open it anyway
 
 ### Additions
@@ -278,13 +284,3 @@
 ### Adjustments
 
 - **"18 pictures · 1 used by nothing" is gone.** The total is already on the All pictures chip, and whether a picture is used is written under the picture — so it was a line repeating what's directly above and below it, and in a narrow sidebar it wrapped onto two lines to do it.
-
-## 2026-08-12 — the Assets tab keeps its buttons where you left them
-
-### Fixes
-
-- **The top of the tab no longer scrolls away.** Adding a picture, the count, and the folder row were inside the same scrolling box as the pictures, so going looking through them took every control off the top of the panel. Only the pictures scroll now.
-- **"Add picture" is a button that looks like a button.** It used to be a small icon at the end of the count line, and those icons are invisible until you hover them — which is fine for a control sitting next to the thing it acts on, and useless for the only way into a feature.
-- **Making a folder has its own button next to it**, instead of being the last item in the row of folders. It used to sit immediately after a folder called "New folder", so the button that makes folders and a folder named after what it does looked like the same thing.
-- **"Unsorted" only appears once you've filed something.** With nothing in folders yet it held every picture you have, so it was a second copy of "All pictures" wearing a different name and the same number.
-- **The folder row is hidden until you have a folder.** One chip saying "All pictures" above all your pictures wasn't telling you anything.
