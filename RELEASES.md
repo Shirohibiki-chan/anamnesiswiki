@@ -15,99 +15,63 @@ that.
 
 ## v0.4.0 — 2026-08-21
 
-The screen you land on is a library now — every project you have, with covers,
-pinned favourites, groups and an archive, instead of the last eight you opened.
-Alongside that: pictures anywhere in a page and a library to keep them in,
-templates you can actually edit, four new kinds of property, and a lot of small
-things that were in the way every day.
+The screen you land on is a library now — every project you have, with covers, pinned favourites, groups and an archive, instead of the last eight you opened. Alongside that: pictures anywhere in a page and a library to keep them in, templates you can actually edit, four new kinds of property, and a lot of small things that were in the way every day.
 
 ### Your projects have a home screen
 
-- **Every project you own is on it**, not just the last eight. Covers or a
-  list, whichever you prefer, and you can page through them.
-- **Pin the ones you're always in** to a row across the top, in whatever order
-  you like.
-- **Give a project a cover.** Any picture from the project, or one from your
-  computer.
-- **Sort projects into groups** — a row of chips under the heading, and a
-  project can be in as many as you like. Groups live in the app, so nothing on
-  your disk moves or gets renamed.
-- **Archive what you're done with.** It folds out of sight without touching a
-  single file, and comes back exactly where it was.
-- **Rename, duplicate, or show a project in File Explorer**, all from the `⋯`
-  menu on it. Renaming changes the name and the folder together so the two
-  can't drift apart.
-- **Start a project from a template**, and **send somebody your project's
-  shape** as a small file. It carries your folders and what nests in what —
-  none of your writing, no page names, no pictures.
-- **Two windows can't open the same project any more.** Launching Anamnesis
-  twice used to put both copies on the same files, each saving over the other.
+- **Every project you own is on it**, not just the last eight. Covers or a list, whichever you prefer, and you can page through them.
+- **Pin the ones you're always in** to a row across the top, in whatever order you like.
+- **Give a project a cover.** Any picture from the project, or one from your computer.
+- **Sort projects into groups** — a row of chips under the heading, and a project can be in as many as you like. Groups live in the app, so nothing on your disk moves or gets renamed.
+- **Archive what you're done with.** It folds out of sight without touching a single file, and comes back exactly where it was.
+- **Rename, duplicate, or show a project in File Explorer**, all from the `⋯` menu on it. Renaming changes the name and the folder together so the two can't drift apart.
+- **Start a project from a template**, and **send somebody your project's shape** as a small file. It carries your folders and what nests in what — none of your writing, no page names, no pictures.
+- **Two windows can't open the same project any more.** Launching Anamnesis twice used to put both copies on the same files, each saving over the other.
 
 ### Pictures
 
-- **Put a picture anywhere in a page**, not only in the sidebar. Drag it in,
-  paste it, or pick one you've already used.
-- **A picture library**, under Assets: every picture in the project as a grid,
-  sorted into folders you make, searchable by what it's used for, with the ones
-  nothing is using listed first so they're easy to clear out.
+- **Put a picture anywhere in a page**, not only in the sidebar. Drag it in, paste it, or pick one you've already used.
+- **A picture library**, under Assets: every picture in the project as a grid, sorted into folders you make, searchable by what it's used for, with the ones nothing is using listed first so they're easy to clear out.
 - **Click any picture to open it full size**, from a page or from the library.
-- **Name and caption your pictures.** The name sits on the picture in the
-  library; naming one doesn't rename the file on your disk.
+- **Name and caption your pictures.** The name sits on the picture in the library; naming one doesn't rename the file on your disk.
 - **Using the same picture twice stops making a second copy of it.**
 
 ### Templates you can change
 
-- **Edit any template, including the ones that came with the app** — Character,
-  Location, all of them. You're editing this world's copy, and there's a Put
-  back to the original if you change your mind.
+- **Edit any template, including the ones that came with the app** — Character, Location, all of them. You're editing this world's copy, and there's a Put back to the original if you change your mind.
 - **Turn a page you like into a template**, from its right-click menu.
-- **Drag your templates into the order you want them offered in**, and start a
-  new page from one directly.
+- **Drag your templates into the order you want them offered in**, and start a new page from one directly.
 - **Editing a template never touches pages you already made from it.**
 
 ### Getting around
 
 - **Back, forward and home**, at the top left, all rebindable.
-- **A `⋯` menu on every page in the sidebar**, holding the whole right-click
-  menu: move to, duplicate, sort sub-pages, expand or collapse a branch, show
-  in File Explorer.
-- **Any page can hold pages.** Notes, items and events too — nothing is
-  flat-only any more, and there's no depth limit; your computer decides.
+- **A `⋯` menu on every page in the sidebar**, holding the whole right-click menu: move to, duplicate, sort sub-pages, expand or collapse a branch, show in File Explorer.
+- **Any page can hold pages.** Notes, items and events too — nothing is flat-only any more, and there's no depth limit; your computer decides.
 - **Pin the pages you keep coming back to.**
 - **Hide a page from anyone you show your world to**, and everything under it.
-- **Rest the pointer on a link or a `[[mention]]`** and the page it points at
-  appears in a card without opening it.
+- **Rest the pointer on a link or a `[[mention]]`** and the page it points at appears in a card without opening it.
 - **Both side panels drag to whatever width you want.**
 
 ### Properties
 
 - **Four new kinds:** Number, Select, Multi-select and Status.
-- **Every property suggests values you've already used elsewhere**, so you stop
-  retyping yourself, and a new value shows up for the other pages once you
-  invent it.
+- **Every property suggests values you've already used elsewhere**, so you stop retyping yourself, and a new value shows up for the other pages once you invent it.
 - **Drag properties into the order you want**, per page.
-- **One place listing every property and every tag in the project**, including
-  what's inside your Select and Status fields.
+- **One place listing every property and every tag in the project**, including what's inside your Select and Status fields.
 
 ### Code blocks
 
-- **Syntax colouring**, a header bar with the language on it, and a copy
-  button. Three backticks and a space starts one.
-- **Plain text is the default and is never coloured**, so a block full of
-  braces and asterisks comes through exactly as you typed it.
+- **Syntax colouring**, a header bar with the language on it, and a copy button. Three backticks and a space starts one.
+- **Plain text is the default and is never coloured**, so a block full of braces and asterisks comes through exactly as you typed it.
 
 ### Fixes worth knowing about
 
-- **Pages stopped saving long before they had to.** A long page title now gets
-  a shorter filename instead of blocking the save.
-- **A folder that had gone wrong once stayed broken forever.** Opening a
-  project repairs what it finds and tells you what it repaired.
+- **Pages stopped saving long before they had to.** A long page title now gets a shorter filename instead of blocking the save.
+- **A folder that had gone wrong once stayed broken forever.** Opening a project repairs what it finds and tells you what it repaired.
 - **Pages that came loose from the page they were nested in get put back.**
-- **Opening a project lands on the page you were last on**, which it had always
-  remembered and never used.
-- **Pictures and code blocks inside a page now survive importing a `.lk`
-  file** — both used to arrive empty or missing. Pictures you added yourself
-  can go back out again too.
+- **Opening a project lands on the page you were last on**, which it had always remembered and never used.
+- **Pictures and code blocks inside a page now survive importing a `.lk` file** — both used to arrive empty or missing. Pictures you added yourself can go back out again too.
 
 ---
 
