@@ -47,8 +47,13 @@ jobs:
 
       # Tauri builds the AppDir and seals it. We want the AppDir, which it
       # leaves behind next to the .AppImage it made.
+      # `createUpdaterArtifacts` is on in tauri.conf.json, and Tauri refuses to
+      # finish without the signing key when it is. Turned off here rather than
+      # handing this workflow the key: nothing it builds is published, and a
+      # signature made *before* the strip below would describe a file that no
+      # longer exists by the end of the job.
       - name: Build the AppImage the normal way
-        run: pnpm tauri build --bundles appimage
+        run: pnpm tauri build --bundles appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
       # The AppImage project publishes the list of libraries that must come
       # from the host rather than the bundle — graphics, GL, driver shims —
@@ -65,8 +70,9 @@ jobs:
       - name: Strip host libraries out of the AppDir
         run: |
           set -euo pipefail
+          ls -la src-tauri/target/release/bundle/appimage/
           APPDIR="$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppDir' | head -1)"
-          test -n "$APPDIR" || { echo "no AppDir was produced"; exit 1; }
+          test -n "$APPDIR" || { echo "no AppDir left behind — see the listing above"; exit 1; }
           echo "AppDir: $APPDIR"
 
           # One name per line, blanks and #comments dropped.
