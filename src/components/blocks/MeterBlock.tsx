@@ -1,6 +1,13 @@
 // A meter block: several readings, one shape, set by pointing at them.
 // Phase 18c.
 //
+// **The block's heading is the shape's name, and there is only one of them.**
+// The first cut drew "METER" as the heading and then a second label under it
+// saying which shape — two names for one section, where the reference has one
+// in the top left. So the heading follows the shape (see BlockPanel), and the
+// shape is changed from the block's menu, which is where its other settings
+// already live.
+//
 // **A block holds a list of readings, not one number.** The reference puts
 // four dials under a single GAUGE heading, each with its own icon, name and
 // numbers, and that is what a character's stats actually are — a panel, not
@@ -17,13 +24,14 @@
 // The arithmetic and the arc geometry are in meter-service, which is where
 // they can be tested — including the inverse used here, turning a pointer
 // position back into a value.
-import { Fragment, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Circle, Coins, Donut, Gauge, Plus, RectangleHorizontal, Star, X } from "lucide-react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { Circle, Plus, Star, X } from "lucide-react";
 import type { Block, MeterEntry, MeterStyle } from "../../constants/schema";
 import {
   ARC_GEOMETRY,
   arcFractionAt,
   arcPath,
+  arcSpan,
   barFractionAt,
   isArcMeter,
   meterFraction,
@@ -42,19 +50,6 @@ import {
 import { TreePopover } from "../tree/TreePopover";
 import { IconPicker, MeterIcon } from "./IconPicker";
 
-// Grouped by what the number *means*, because that is the choice underneath
-// the six pictures: the first four measure a proportion and the last two count
-// whole things. Someone picking between a gauge and a token pool is picking
-// between those two ideas, not between two drawings.
-const STYLES: { key: MeterStyle; label: string; hint: string; icon: typeof Circle }[] = [
-  { key: "bar", label: "Progress bar", hint: "A filled track", icon: RectangleHorizontal },
-  { key: "circle", label: "Circle", hint: "A full ring", icon: Circle },
-  { key: "semicircle", label: "Semi-circle", hint: "An arc over the top", icon: Donut },
-  { key: "gauge", label: "Gauge", hint: "A dial with a gap at the bottom", icon: Gauge },
-  { key: "rating", label: "Rating", hint: "Stars you set a level with", icon: Star },
-  { key: "pool", label: "Token pool", hint: "Tokens you spend one at a time", icon: Coins },
-];
-
 /** Where the readout sits inside each round shape. */
 const READOUT_Y: Record<ArcStyle, number> = { circle: 50, semicircle: 44, gauge: 58 };
 
@@ -63,28 +58,17 @@ const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gau
 
 type MeterBlockProps = {
   block: Block;
-  onSetStyle: (style: MeterStyle) => void;
   onEdit: (meterId: string, patch: Partial<MeterEntry>) => void;
   onRemove: (meterId: string) => void;
   onAdd: () => void;
 };
 
-export function MeterBlock({ block, onSetStyle, onEdit, onRemove, onAdd }: MeterBlockProps) {
-  const [styleRect, setStyleRect] = useState<DOMRect | null>(null);
-
+export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) {
   const style = meterStyleOf(block);
   const entries = metersOf(block);
 
   return (
     <div className={`block-meter block-meter-${style}`}>
-      <button
-        type="button"
-        className="block-collection-source block-meter-style"
-        onClick={(e) => setStyleRect(e.currentTarget.getBoundingClientRect())}
-      >
-        {STYLES.find((option) => option.key === style)?.label ?? "Progress bar"}
-      </button>
-
       {entries.length === 0 ? (
         // The block's own menu has Add meter too, but an empty block needs the
         // way back to be visible rather than two clicks inside a menu.
@@ -106,32 +90,6 @@ export function MeterBlock({ block, onSetStyle, onEdit, onRemove, onAdd }: Meter
             />
           ))}
         </div>
-      )}
-
-      {styleRect && (
-        <TreePopover anchorRect={styleRect} onClose={() => setStyleRect(null)}>
-          <div className="tree-context-menu block-source-menu">
-            <div className="tree-context-menu-heading">Measures a proportion</div>
-            {STYLES.map((option) => (
-              <Fragment key={option.key}>
-                {option.key === "rating" && <div className="tree-context-menu-heading">Counts whole units</div>}
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSetStyle(option.key);
-                    setStyleRect(null);
-                  }}
-                >
-                  <option.icon size={13} />
-                  <span className="block-source-label">
-                    {option.label}
-                    <small>{option.hint}</small>
-                  </span>
-                </button>
-              </Fragment>
-            ))}
-          </div>
-        </TreePopover>
       )}
     </div>
   );
@@ -164,6 +122,12 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
   const value = meterValue(entry, style);
   const fraction = meterFraction(entry, style);
   const previewFraction = preview === null || max <= 0 ? null : Math.min(Math.max(preview, 0), max) / max;
+  // Which way the promise goes. Raising draws the part that would be added;
+  // lowering draws the part that would be taken away, over the fill — the
+  // first cut only ever drew the former, so aiming below the value previewed
+  // nothing at all and reducing a meter was a blind click.
+  const raising = previewFraction !== null && previewFraction > fraction;
+  const lowering = previewFraction !== null && previewFraction < fraction;
 
   // Zero is the default and is stored as absent, the way every other block
   // field is. An emptied meter should read as one nobody has set, not as one
@@ -315,7 +279,7 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
 
   if (style === "bar") {
     return (
-      <div className="block-meter-reading">
+      <div className="block-meter-reading" data-meter-id={entry.id}>
         <div
           {...slider}
           ref={track}
@@ -334,10 +298,14 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
           {/* The preview sits under the fill, so raising a value shows the
               pending part beyond it, and lowering one shows the real fill
               still standing past where the pending edge cuts it. */}
-          {previewFraction !== null && (
-            <div className="block-meter-pending" style={{ width: `${previewFraction * 100}%` }} />
-          )}
+          {raising && <div className="block-meter-pending" style={{ width: `${previewFraction * 100}%` }} />}
           <div className="block-meter-fill" style={{ width: `${fraction * 100}%` }} />
+          {lowering && (
+            <div
+              className="block-meter-losing"
+              style={{ left: `${previewFraction * 100}%`, right: `${(1 - fraction) * 100}%` }}
+            />
+          )}
         </div>
         {caption}
       </div>
@@ -347,7 +315,7 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
   if (isArcMeter(style)) {
     const geometry = ARC_GEOMETRY[style];
     return (
-      <div className="block-meter-reading">
+      <div className="block-meter-reading" data-meter-id={entry.id}>
         <svg
           {...slider}
           ref={arc}
@@ -369,10 +337,16 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
               rather than as a separate outline, so the two always agree about
               where the ends are. */}
           <path className="block-meter-arc-track" d={arcPath(1, geometry.start, geometry.sweep)} />
-          {previewFraction !== null && (
+          {raising && (
             <path className="block-meter-arc-pending" d={arcPath(previewFraction, geometry.start, geometry.sweep)} />
           )}
           <path className="block-meter-arc-fill" d={arcPath(fraction, geometry.start, geometry.sweep)} />
+          {lowering && (
+            <path
+              className="block-meter-arc-losing"
+              d={arcSpan(previewFraction, fraction, geometry.start, geometry.sweep)}
+            />
+          )}
           {/* An icon in the middle when there is one, the number when there
               isn't — an empty ring reads as a meter that failed to load. */}
           {entry.icon ? (
@@ -402,7 +376,7 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
   const promisedTo = preview === null ? value : Math.min(Math.max(preview, 0), max);
 
   return (
-    <div className="block-meter-reading">
+    <div className="block-meter-reading" data-meter-id={entry.id}>
       <div
         className="block-meter-pips"
         onPointerDown={(e) => {
@@ -426,10 +400,12 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
       >
         {Array.from({ length: max }, (_, index) => {
           const filled = index < value;
-          // A pip past the value but inside what the pointer is promising is
-          // the preview: filled, dimmed and pulsing, which is how a rating
-          // says "this is what you are about to pick".
+          // A pip past the value but inside what the pointer promises is about
+          // to be gained; one inside the value but past the promise is about
+          // to be lost. Both pulse, which is how a rating says "this is what
+          // you are about to pick" in either direction.
           const promised = !filled && index < promisedTo;
+          const losing = filled && index >= promisedTo;
           return (
             <button
               key={index}
@@ -437,7 +413,7 @@ function MeterReading({ entry, style, withText, withMax, removable, onEdit, onRe
               data-pip={index}
               className={`block-meter-pip${filled ? " block-meter-pip-filled" : ""}${
                 promised ? " block-meter-pip-pending" : ""
-              }`}
+              }${losing ? " block-meter-pip-losing" : ""}`}
               aria-label={`${index + 1} of ${max}`}
               aria-pressed={filled}
               onClick={() => {

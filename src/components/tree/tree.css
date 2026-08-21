@@ -476,6 +476,14 @@ button.tree-path-crumb:hover {
   display: flex;
 }
 
+/* Which row a menu belongs to. This used to be free — opening a menu selected
+   the row — but selecting a page opens it, so right-clicking one page while
+   reading another threw the reader onto it. The menu leaves the selection
+   alone now, and marks its row this way instead. */
+.tree-row-active:not(.tree-row-selected) {
+  background: var(--color-hover);
+}
+
 /* A page held back from anyone the world is shown to. Dimmed and italic, the
    same treatment hidden *tabs* already get in the tab strip, so the two read as
    one idea at two levels rather than two features. Deliberately still fully
@@ -1651,4 +1659,18 @@ button.tree-path-crumb:hover {
 .tree-assets-delete:hover {
   background: var(--color-hover-strong);
   color: var(--color-destructive);
+}
+
+/* A page wearing its own icon rather than its template's. The box is the size
+   a Lucide icon draws at, so a wide emoji doesn't shove the name sideways and
+   a row keeps the same rhythm whichever kind of icon it carries. */
+.tree-row-icon-own {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 13px;
+  line-height: 1;
 }

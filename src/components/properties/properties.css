@@ -5,6 +5,19 @@
   padding: var(--space-2xl);
 }
 
+/* Phase 18c: the block canvas puts that padding on its blocks instead, so a
+   coloured block reaches the sidebar's edges. See blocks.css. */
+.block-panel {
+  padding: 0;
+}
+
+.block-panel .properties-panel-apply-template,
+.block-panel .property-add-form,
+.block-panel .property-timestamps {
+  margin-left: var(--space-2xl);
+  margin-right: var(--space-2xl);
+}
+
 .properties-panel-empty {
   height: 100%;
   display: flex;

@@ -11,16 +11,25 @@
 - **Show text** and **Show max** in the block's menu, so a row of dials can be just the dials, and "6/10" can be "6".
 - **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so a bar set to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
 - **Two of them count whole things:** a **Rating** you set a level on, and a **Token pool** you spend one at a time. Spell charges, favours owed, ammunition. Five to start with, and as many as you actually want — seventy-six tokens wrap into a grid and stay countable.
-- **Point at a meter and it shows you what you'd get.** The value under your cursor previews as a dimmed, pulsing fill before you commit it, so a click is never a guess. Click to set it, or press and drag to sweep through values. Sweeping across stars or tokens works the same way.
+- **Point at a meter and it shows you what you'd get.** The value under your cursor previews as a dimmed, pulsing fill before you commit it, so a click is never a guess — **both ways**: aim above the value and it shows what would be added, aim below and it shows what would be taken away. Click to set it, or press and drag to sweep through values. Sweeping across stars or tokens works the same way.
 - **Click the numbers under a meter to type them exactly** — the value and the maximum both. Dragging moves in whole units; the boxes are for 62.5 and for "out of 76".
 - **Clicking a rating's current level clears it**, so a star you didn't mean to click isn't permanent.
 - **They work from the keyboard.** Tab to a meter, then arrow keys to nudge it, Page Up and Page Down for ten at a time, Home and End for empty and full.
-- **The shape is a setting, not a decision you're stuck with.** Click the shape's name above the meters and pick another one — your numbers come with it.
+- **The shape is a setting, not a decision you're stuck with.** Pick another from the six in the block's menu — your numbers come with it, and the block's heading follows.
+- **Pages can have their own icon.** Right-click a page → **Set icon**, and it's the same picker the meters use, glyphs and emoji both. It replaces the icon its template gave it; clearing it puts that back. Works on a whole selection at once, like Set color.
 - **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.
 
 ### Adjustments
 
-- **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
+- **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block from edge to edge of the sidebar and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
+- **Right-clicking a block opens its menu**, which is what right-clicking anything should do. It was doing nothing before, so you got whatever menu happened to be underneath. Right-clicking a particular meter inside a block also offers to duplicate or delete that one.
+- **A block has one name again.** It used to show its own heading and then repeat the shape underneath — a section called METER with PROGRESS BAR written under it. The heading is the shape's name now, in the top left, and renaming it still wins.
+- **Blocks line up with each other.** The drag handle moved out of the heading's way, so every heading starts at the same edge as the block under it.
+
+### Fixes
+
+- **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
+- **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.
 
 ## 2026-08-21 — the X really does close the app now
 

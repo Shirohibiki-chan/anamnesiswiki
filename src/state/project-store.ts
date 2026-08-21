@@ -326,6 +326,7 @@ export type ProjectStoreState = {
   setBlockMeterText: (nodeId: string, blockId: string, shown: boolean) => void;
   setBlockMeterMax: (nodeId: string, blockId: string, shown: boolean) => void;
   addMeter: (nodeId: string, blockId: string) => void;
+  duplicateMeter: (nodeId: string, blockId: string, meterId: string) => void;
   removeMeter: (nodeId: string, blockId: string, meterId: string) => void;
   editMeter: (nodeId: string, blockId: string, meterId: string, patch: Partial<MeterEntry>) => void;
   // Phase 18b's collection settings.
@@ -342,6 +343,14 @@ export type ProjectStoreState = {
   renameOptionEverywhere: (propertyLabel: string, optionLabel: string, newLabel: string) => void;
   recolourOptionEverywhere: (propertyLabel: string, optionLabel: string, color: string) => void;
   deleteOptionEverywhere: (propertyLabel: string, optionLabel: string) => void;
+  /**
+   * A page's own icon, or `undefined` to go back to its template's.
+   *
+   * Takes a list because the tree's menu acts on the selection, the way
+   * `setNodeColor` does — giving nine pages the same icon is one action and
+   * one undo, not nine.
+   */
+  setNodeIcon: (nodeIds: string[], icon: string | undefined) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   /**
    * Point the portrait at a picture the project already has, rather than
@@ -1607,6 +1616,22 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       );
     },
 
+    // A copy of one reading, directly under it, keeping its icon, name and
+    // numbers — four stats that differ by a word and a number are the normal
+    // case, and duplicating one that came back blank would save nothing.
+    duplicateMeter(nodeId, blockId, meterId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => {
+          if (block.id !== blockId) return block;
+          const entries = metersOf(block);
+          const index = entries.findIndex((entry) => entry.id === meterId);
+          if (index === -1) return block;
+          const copy = { ...entries[index], id: crypto.randomUUID() };
+          return withField(block, "meters", [...entries.slice(0, index + 1), copy, ...entries.slice(index + 1)]);
+        }),
+      );
+    },
+
     // Taking out the last reading leaves the block empty rather than refilling
     // it — an empty meter block is one she can see and delete, and one that
     // grows a new reading every time she clears it is one that won't go away.
@@ -2667,6 +2692,28 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         `recolouring ${countLabel(targets.length, "page")}`,
         () => apply((id) => previousColors.get(id)),
         () => apply(() => color),
+      );
+    },
+
+    // The same shape as setNodeColor above, and for the same reason: the tree's
+    // menu acts on the selection, so nine pages getting one icon is one action
+    // and one undo. Absent means "use the template's", which is what every
+    // page had before this existed.
+    setNodeIcon(nodeIds, icon) {
+      const { nodes } = get();
+      const targets = nodeIds.filter((id) => nodes[id]);
+      if (targets.length === 0) return;
+
+      const previous = new Map(targets.map((id) => [id, nodes[id].icon]));
+      const apply = (next: (id: string) => string | undefined) => {
+        for (const id of targets) get().updateNode(id, { icon: next(id) });
+      };
+
+      apply(() => icon);
+      record(
+        `changing the icon on ${countLabel(targets.length, "page")}`,
+        () => apply((id) => previous.get(id)),
+        () => apply(() => icon),
       );
     },
 

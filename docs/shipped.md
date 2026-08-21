@@ -3260,6 +3260,42 @@ four survived.
   countable; her reference draws seventy-six tokens in a wrapped grid and
   reads fine. The cap now exists only to stop a typed 5000.
 
+### And rebuilt again, from five more screenshots
+
+The same day, after the pass above. Her comparison was that ours was
+embarrassing next to the reference's, and the specifics were all fair.
+
+- **Two names for one section.** The block drew its own heading and then
+  repeated the shape underneath it. The heading is the shape now, in the top
+  left where the reference puts it, and the shape moved into the block's menu
+  as a grid of six pictures — which is how you pick between things that differ
+  by how they look.
+- **The colour stopped at an invisible edge.** `.properties-panel` had the
+  padding, so a coloured block was a box floating in a gutter. The padding
+  moved onto the blocks; the panel has none. The drag grip moved into that
+  gutter at the same time, since in the flow it pushed every heading ~18px
+  right of the content under it.
+- **The preview only worked upwards.** Aiming below a meter's value previewed
+  nothing, because the real fill covers the promise — so lowering was a blind
+  click. There is now a second preview drawn *over* the fill for the part that
+  would be removed, in all three shapes.
+- **Right-click did nothing on a block**, so the webview answered instead.
+  `BlockShell` opens the same menu at the pointer now, and reads
+  `data-meter-id` off the target so right-clicking one reading can offer to
+  duplicate or delete that one.
+- **The icon picker existed for meters and not for pages**, which was half of
+  what `docs/ideas.md` wanted it for. `Node.icon`, `setNodeIcon` (list-taking,
+  like `setNodeColor`) and Set icon in the tree's menu close that half. A
+  page's own icon replaces its template's; absent keeps the template's, which
+  is what every page had before.
+- **Right-clicking a page dragged you onto it** — `openMenu` called
+  `node.select()`, and selecting is navigating. Removed; nothing needed it.
+
+**Not built, and scoped instead:** blocks that can be dragged into the middle
+of the page and resized there, which is `docs/plan.md` Phase 28. It is a
+feature with a data-model decision in it rather than a fix, and folding it into
+this change would have made an already large one unreviewable.
+
 ### Dragging, added the same day
 
 The first cut set a meter by typing into a box, with the shapes display-only.

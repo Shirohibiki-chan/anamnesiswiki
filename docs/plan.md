@@ -308,6 +308,46 @@ Unglamorous and probably the highest-value work in this document. This app has a
 
 ---
 
+## Phase 28 — Blocks in the Page
+
+**Scoped 2026-08-21, from her screenshots of the reference, and not built with
+the rest of Phase 18.** It is a feature rather than a fix and it wants its own
+change; it is written down here rather than in Queued Adjustments because it
+is not an adjustment to anything.
+
+**A sidebar block can be dragged into the middle of the page**, where it keeps
+working and gets more room — her screenshots show a gauge block in the page
+body holding eleven dials in a wide grid, which the sidebar's two-across
+layout could never show. **It is resizable there**, by dragging either side.
+
+- **The block model already fits; the document model is the work.** A block is
+  a record in an ordered list (`Block` in `constants/schema.ts`) and the panel
+  is a renderer over it. Putting one in the page means BlockNote holding it,
+  which is a custom block — `src/services/editor-blocks/` already has three
+  (Info, Quote, Secret) and `CLAUDE.md` says to extend BlockNote through its
+  documented API and never fork it.
+- **Decide where such a block's data lives before writing any of it.** A block
+  in the page could keep its record in `node.blocks` and let the document hold
+  a pointer, or move into the document outright. The pointer version keeps one
+  answer to "what blocks does this page have" and makes dragging between the
+  two places a move rather than a conversion; the document version is simpler
+  to write and forks the model. **Prefer the pointer**, and be sure before
+  committing — this is the decision that is expensive to change later.
+- **Width is per-block and belongs on the block**, not on the page. It is the
+  one piece of presentation the sidebar has no use for, so it needs a sensible
+  reading when the same block is shown in a 340px panel: ignore it there.
+- **Not to be confused with Phase 21's splittable columns.** That rearranges
+  the app's panels; this puts one block inside the document. They meet only in
+  that both make the middle of the window less fixed than it is today.
+
+**Why it is worth doing:** the sidebar is a column, and a panel of stats is a
+grid. Everything Phase 18c built is squeezed by that column — four gauges go
+two-across and a fifth pushes the page's fields off the bottom. This is the
+part of the reference she compared ours to and found ours wanting, and it is
+the one part of that comparison the sidebar itself cannot answer.
+
+---
+
 ## Phase 20 — Markdown & Folder Import
 
 **Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.

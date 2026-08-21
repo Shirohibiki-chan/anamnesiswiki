@@ -14,6 +14,7 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
+import { getMeterStyleOption } from "../../constants/meter-styles";
 import { getPropertySuggestions } from "../../constants/property-suggestions";
 import {
   BLANK_TEMPLATE_KEY,
@@ -75,6 +76,7 @@ export function BlockPanel() {
     setBlockMeterText,
     setBlockMeterMax,
     addMeter,
+    duplicateMeter,
     removeMeter,
     editMeter,
     setNodeAliases,
@@ -251,17 +253,17 @@ export function BlockPanel() {
     }
 
     if (block.kind === "meter") {
-      // One natural title for all six shapes, unlike a collection's, because
-      // the shape already names itself on the pill right underneath — and
-      // because this is the block kind most likely to be renamed anyway: a
-      // meter called "Rating" is a widget, and one called "Hollow Emperor's
-      // Influence" is worldbuilding.
+      // The heading is the shape's name — one name per section, in the top
+      // left, the way the reference does it. The first cut drew "Meter" here
+      // and repeated the shape on a pill underneath, which is two names for
+      // one thing. Renaming still wins over this, and is the normal case: a
+      // block called "Circle" is a widget and one called after what it
+      // measures is worldbuilding.
       return {
-        natural: "Meter",
+        natural: getMeterStyleOption(block.meter).label,
         body: (
           <MeterBlock
             block={block}
-            onSetStyle={(style) => setBlockMeter(node!.id, block.id, style)}
             onEdit={(meterId, patch) => editMeter(node!.id, block.id, meterId, patch)}
             onRemove={(meterId) => removeMeter(node!.id, block.id, meterId)}
             onAdd={() => addMeter(node!.id, block.id)}
@@ -403,9 +405,13 @@ export function BlockPanel() {
                 meter={
                   block.kind === "meter"
                     ? {
+                        style: block.meter ?? "bar",
                         textShown: block.showText !== false,
                         maxShown: block.showMax !== false,
+                        onSetStyle: (style) => setBlockMeter(node.id, block.id, style),
                         onAdd: () => addMeter(node.id, block.id),
+                        onDuplicateMeter: (meterId) => duplicateMeter(node.id, block.id, meterId),
+                        onRemoveMeter: (meterId) => removeMeter(node.id, block.id, meterId),
                         onToggleText: () => setBlockMeterText(node.id, block.id, block.showText === false),
                         onToggleMax: () => setBlockMeterMax(node.id, block.id, block.showMax === false),
                       }

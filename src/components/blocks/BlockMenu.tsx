@@ -4,7 +4,9 @@
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
 import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Palette, PencilLine, Plus, Trash2, Type } from "lucide-react";
+import { METER_STYLES } from "../../constants/meter-styles";
 import { COLOR_PALETTE } from "../../constants/palette";
+import type { MeterStyle } from "../../constants/schema";
 
 type BlockMenuProps = {
   /** Whether the block is currently showing a title strip. */
@@ -31,11 +33,20 @@ type BlockMenuProps = {
    * second place to look for them.
    */
   meter?: {
+    style: MeterStyle;
     textShown: boolean;
     maxShown: boolean;
+    onSetStyle: (style: MeterStyle) => void;
     onAdd: () => void;
     onToggleText: () => void;
     onToggleMax: () => void;
+    /**
+     * The reading the menu was opened on, when it was opened by right-clicking
+     * one. Absent when the menu came from the `⋯` button, which belongs to the
+     * whole block and can't know which meter was meant.
+     */
+    onDuplicateMeter?: () => void;
+    onRemoveMeter?: () => void;
   };
 };
 
@@ -65,9 +76,40 @@ export function BlockMenu({
       {meter && (
         <>
           <div className="block-menu-separator" />
+          {/* The shape as a grid of six rather than a list, which is what the
+              reference shows and what a picture-picker wants to be: they
+              differ by how they look, so they are chosen by looking. */}
+          <div className="block-menu-shapes">
+            {METER_STYLES.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`block-menu-shape${meter.style === option.key ? " block-menu-shape-active" : ""}`}
+                title={`${option.label} — ${option.hint}`}
+                aria-label={option.label}
+                aria-pressed={meter.style === option.key}
+                onClick={() => meter.onSetStyle(option.key)}
+              >
+                <option.icon size={15} />
+                <small>{option.label}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="block-menu-separator" />
           <button type="button" onClick={meter.onAdd}>
             <Plus size={13} /> Add meter
           </button>
+          {meter.onDuplicateMeter && (
+            <button type="button" onClick={meter.onDuplicateMeter}>
+              <Copy size={13} /> Duplicate meter
+            </button>
+          )}
+          {meter.onRemoveMeter && (
+            <button type="button" className="tree-context-menu-danger" onClick={meter.onRemoveMeter}>
+              <Trash2 size={13} /> Delete meter
+            </button>
+          )}
           {/* Ticked rather than worded as the opposite action, because these
               are states rather than commands — "Hide text" beside a meter that
               is already hiding it reads as a question. */}

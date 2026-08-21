@@ -21,13 +21,14 @@ import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useTreeDoubleClick } from "../../hooks/use-preferences";
 import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
 import type { TreeNodeData } from "../../services/tree-service";
+import { IconPicker, MeterIcon } from "../blocks/IconPicker";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
 import { MoveMenu } from "./MoveMenu";
 import { SortMenu } from "./SortMenu";
 import { TreePopover } from "./TreePopover";
 
-type OpenPopover = "color" | "menu" | "sort" | "move" | null;
+type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
@@ -39,6 +40,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     deleteNodes,
     moveNodes,
     setNodeColor,
+    setNodeIcon,
     setNodeHidden,
     setProjectHome,
     setFocus,
@@ -177,14 +179,19 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   }
 
   // Shared by right-clicking the row and by the row's own "..." button, so the
-  // two can't drift apart — the menu acts on the selection, and a menu opened
-  // on a row that isn't in it would act on rows the user isn't pointing at.
+  // two can't drift apart.
   //
-  // Opening it *inside* a multi-selection keeps that selection: that's the
-  // whole point of having made one. Opening it anywhere else replaces it, the
-  // way every file manager behaves.
+  // **Opening a menu does not select the row, and must not.** It used to call
+  // `node.select()` first so the menu's target was visibly the selection — but
+  // selecting a page in this app *opens* it, so reaching another page's menu
+  // threw away the page you were reading and made you navigate back. Reported
+  // by the user 2026-08-21.
+  //
+  // Nothing was depending on that select: `targetIds()` already answers with
+  // this row whenever it isn't part of a multi-selection, so the menu acts on
+  // the row you pointed at either way. `tree-row-active` is what shows which
+  // row a menu belongs to while it's open.
   function openMenu(anchor: HTMLElement) {
-    if (!node.isSelected) node.select();
     openPopoverAt("menu", anchor);
   }
 
@@ -260,6 +267,15 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         // anchored to.
         className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}${openPopover ? " tree-row-active" : ""}`}
         style={rowStyle}
+        // **Right-clicking a row must not move you onto it.** The menu is about
+        // that row; going there is a different intent, and losing the page you
+        // were reading to reach another one's menu is a change you then have
+        // to undo by navigating back. react-arborist selects on mousedown, so
+        // the press is stopped before it gets there — the menu still acts on
+        // this row (see targetIds) whether or not it's the selected one.
+        onMouseDown={(e) => {
+          if (e.button === 2) e.stopPropagation();
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           openMenu(e.currentTarget);
@@ -276,8 +292,17 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           {showToggle && (node.isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />)}
         </button>
 
-        {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
-        <Icon size={14} className="tree-row-icon" style={effectiveHex ? { color: effectiveHex } : undefined} />
+        {/* A page's own icon wins over its template's — that is what picking
+            one means. Absent is the normal state and keeps the template's,
+            which is what every page had before Phase 18c. */}
+        {fullNode.icon ? (
+          <span className="tree-row-icon tree-row-icon-own" style={effectiveHex ? { color: effectiveHex } : undefined}>
+            <MeterIcon icon={fullNode.icon} size={14} />
+          </span>
+        ) : (
+          /* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */
+          <Icon size={14} className="tree-row-icon" style={effectiveHex ? { color: effectiveHex } : undefined} />
+        )}
 
         {node.isEditing ? (
           <input
@@ -357,6 +382,17 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "icon" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <IconPicker
+            value={fullNode.icon}
+            onPick={(icon) => {
+              setNodeIcon(targetIds(), icon);
+              closePopover();
+            }}
+          />
+        </TreePopover>
+      )}
       {openPopover === "sort" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <SortMenu
@@ -394,6 +430,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onDuplicate={() => void duplicateNodes(targetIds())}
             onMoveTo={openMoveMenu}
             onSetColor={() => setOpenPopover("color")}
+            onSetIcon={() => setOpenPopover("icon")}
             onSaveAsTemplate={() => void handleSaveAsTemplate()}
             onSortChildren={() => setOpenPopover("sort")}
             onExpandAll={() => setSubtreeOpen(true)}

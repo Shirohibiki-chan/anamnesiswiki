@@ -214,6 +214,15 @@ export type Node = {
   parentId: string | null;
   templateKey: string;
   name: string;
+  /**
+   * The page's own icon, replacing its template's. A glyph name from
+   * constants/glyphs.ts, or an emoji character outright — the same two kinds a
+   * meter's icon takes, read back through the same resolver.
+   *
+   * Absent is the normal state and means "whatever this template uses", which
+   * is what every page had before. Asked for 2026-08-18, built 2026-08-21.
+   */
+  icon?: string;
   tabs: Tab[];
   properties: Record<string, unknown>;
   // Optional (not defaulted to []) because pages saved before this field

@@ -151,6 +151,32 @@ export function arcPath(fraction: number, startAngle: number, sweep: number, rad
   return `M ${x0} ${y0} A ${radius} ${radius} 0 ${largeArc} 1 ${x1} ${y1}`;
 }
 
+/**
+ * The stretch of arc between two fractions.
+ *
+ * A preview that *lowers* a dial has to draw the part being taken away, which
+ * starts partway round rather than at the beginning — `arcPath` can only start
+ * at the sweep's origin. Hands back an empty path when the two ends meet, for
+ * the same reason `arcPath` does: a zero-length arc is a dot, not nothing.
+ */
+export function arcSpan(
+  from: number,
+  to: number,
+  startAngle: number,
+  sweep: number,
+  radius = 40,
+  centre = 50,
+): string {
+  const low = Math.min(Math.max(Math.min(from, to), 0), 1);
+  const high = Math.min(Math.max(Math.max(from, to), 0), 1);
+  const degrees = (high - low) * sweep;
+  if (degrees <= 0.001) return "";
+
+  const [x0, y0] = meterPoint(startAngle + low * sweep, radius, centre);
+  const [x1, y1] = meterPoint(startAngle + high * sweep, radius, centre);
+  return `M ${x0} ${y0} A ${radius} ${radius} 0 ${degrees > 180 ? 1 : 0} 1 ${x1} ${y1}`;
+}
+
 /** Where each round shape starts and how far it sweeps. */
 export const ARC_GEOMETRY: Record<"circle" | "semicircle" | "gauge", { start: number; sweep: number }> = {
   circle: { start: 0, sweep: 360 },

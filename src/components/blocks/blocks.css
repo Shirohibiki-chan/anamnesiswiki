@@ -1,9 +1,15 @@
 /* The sidebar's block canvas — Phase 18a. The fields inside a block still come
    from properties.css; this file is only the frame around them. */
 
+/* **The panel's padding lives on the blocks, not on the panel.** A coloured
+   block has to reach the edges of the sidebar — the reference fills the whole
+   section — and a block inside a padded column stops short of them, which
+   reads as a box floating in a gutter rather than as a coloured section. So
+   `.block-panel` has no padding of its own and every child carries the same
+   horizontal inset instead. */
 .block-shell {
   position: relative;
-  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  padding: var(--space-md) var(--space-2xl) var(--space-lg);
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
@@ -18,7 +24,7 @@
    too, but from BlockShell as an inline colour rather than from here — see the
    comment there for why that fight isn't worth having in a stylesheet. */
 .block-shell[style*="--block-accent"] {
-  background: color-mix(in srgb, var(--block-accent) 10%, transparent);
+  background: color-mix(in srgb, var(--block-accent) 12%, transparent);
 }
 
 .block-shell-dragging {
@@ -51,9 +57,15 @@
   transition: opacity 120ms ease;
 }
 
+/* Lifted out of the row and into the block's left padding, so the heading
+   starts at the same edge everything under it does. In the flow it pushed the
+   section name ~18px inwards, which is the gap that made the panel look like
+   it had lost its alignment — the reference keeps the grip in the gutter. */
 .block-grip {
+  position: absolute;
+  left: 5px;
+  top: var(--space-md);
   cursor: grab;
-  margin-left: -4px;
 }
 
 .block-shell:hover .block-grip,
@@ -124,7 +136,9 @@
   align-items: center;
   gap: var(--space-sm);
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
+  /* Matches the blocks' own inset now that the panel has none, so the row
+     lines up with the headings above it and its hover still spans the panel. */
+  padding: var(--space-md) var(--space-2xl);
   color: var(--color-text-muted);
   background: none;
   border: none;
@@ -415,9 +429,14 @@
   pointer-events: none;
 }
 
-/* What a click would do, drawn behind the real fill and pulsing so it reads as
-   a promise rather than as the value. This replaced a draggable dot: a handle
-   is furniture, and on a semicircle it slides off the end of the arc. */
+/* What a click would do, pulsing so it reads as a promise rather than as the
+   value. This replaced a draggable dot: a handle is furniture, and on a
+   semicircle it slides off the end of the arc.
+
+   **It works in both directions.** Aiming above the value shows what would be
+   added, drawn behind the fill; aiming below it shows what would be taken
+   away, drawn *over* the fill in the same pulse — otherwise reducing a meter
+   previews nothing at all, because the real fill covers the whole promise. */
 .block-meter-pending,
 .block-meter-arc-pending {
   color: var(--block-accent, var(--color-accent-light));
@@ -430,6 +449,37 @@
   inset: 0 auto 0 0;
   border-radius: var(--radius-full);
   background: currentcolor;
+}
+
+/* The part a click would remove: over the fill, and struck through the
+   background colour so it reads as being taken out rather than added. */
+.block-meter-losing {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  pointer-events: none;
+  animation: block-meter-pulse-out 900ms ease-in-out infinite;
+}
+
+.block-meter-arc-losing {
+  stroke: var(--color-panel-alt);
+  animation: block-meter-pulse-out 900ms ease-in-out infinite;
+}
+
+.block-meter-pip-losing {
+  animation: block-meter-pulse-out 900ms ease-in-out infinite;
+}
+
+@keyframes block-meter-pulse-out {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
 }
 
 .block-meter-pip-pending {
@@ -452,7 +502,10 @@
 @media (prefers-reduced-motion: reduce) {
   .block-meter-pending,
   .block-meter-arc-pending,
-  .block-meter-pip-pending {
+  .block-meter-pip-pending,
+  .block-meter-losing,
+  .block-meter-arc-losing,
+  .block-meter-pip-losing {
     animation: none;
     opacity: 0.45;
   }
@@ -471,7 +524,8 @@
 
 .block-meter-arc-track,
 .block-meter-arc-fill,
-.block-meter-arc-pending {
+.block-meter-arc-pending,
+.block-meter-arc-losing {
   fill: none;
   stroke-width: 9;
   stroke-linecap: round;
@@ -806,6 +860,45 @@
    sideways as they turn on and off. */
 .block-menu-unchecked {
   opacity: 0;
+}
+
+/* Six shapes as a grid inside the block's menu — they differ by how they look,
+   so they are picked by looking rather than read off a list of names. */
+.block-menu-shapes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  padding: 0 var(--space-sm);
+}
+
+.block-menu-shape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-sm) 2px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-menu-shape small {
+  font-size: var(--fs-2xs);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.block-menu-shape:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.block-menu-shape-active {
+  color: var(--color-text-primary);
+  background: var(--color-accent-faint);
+  box-shadow: inset 0 0 0 1px var(--color-accent-faint-border);
 }
 
 /* The source menu carries a second line per item, which the tree's own menu

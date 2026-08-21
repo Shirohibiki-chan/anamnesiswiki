@@ -120,6 +120,9 @@ export function IconPicker({ value, onPick }: IconPickerProps) {
 /**
  * Draws a stored icon, whatever kind it turned out to be.
  *
+ * Named for the meter it was written for and used well beyond one now — a
+ * page's icon resolves through here too.
+ *
  * The fallback is the point: an emoji isn't in the glyph registry and never
  * will be, so "not a glyph" means "draw it as text" rather than "draw
  * nothing". A glyph name that later leaves the catalogue lands here too, and

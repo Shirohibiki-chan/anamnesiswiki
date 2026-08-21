@@ -2768,6 +2768,25 @@ is below.
   drops *every* block pointing at that key, because a property can be shown
   twice.
 
+- **The block panel has no padding of its own; every block carries it.** A
+  coloured block has to reach the sidebar's edges — that is what "colour the
+  block" means, and a block inside a padded column stops short of them and
+  reads as a floating box. So `.block-panel` is padding-free and each child
+  insets itself by `--space-2xl`. Anything new dropped into that panel needs
+  the same inset or it will sit flush against the edge.
+
+- **A block's heading is its only name.** A meter block's heading *is* the
+  shape ("CIRCLE"), rather than a generic name with the shape repeated
+  underneath — that second label existed and was the thing that made the panel
+  look wrong. Don't add a label inside a block that restates what its heading
+  says.
+
+- **Opening a tree row's menu must not select the row.** Selecting a page opens
+  it, so a menu that selects first throws away whatever the user was reading to
+  reach another page's menu. `targetIds()` already answers with the clicked row
+  whenever it isn't inside a multi-selection, so nothing needs the select;
+  `tree-row-active` marks which row the menu belongs to.
+
 - **A meter block holds a *list* of readings, and `metersOf` is the only way
   to it.** `block.value` / `block.max` are the first cut's single reading and
   are never written again — `migrateBlocks` lifts one into `meters` on read,

@@ -7,11 +7,12 @@
 // title one behaviour across thirteen block kinds instead of thirteen
 // implementations of it, and it is why a text block can be a bare paragraph
 // with no heading at all.
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getPaletteHex } from "../../constants/palette";
+import type { MeterStyle } from "../../constants/schema";
 import { TreePopover } from "../tree/TreePopover";
 import { BlockMenu } from "./BlockMenu";
 
@@ -32,11 +33,15 @@ type BlockShellProps = {
   onRemove: () => void;
   /** Present only for a property block whose field the user added herself. */
   onDeleteProperty?: () => void;
-  /** Present only for a meter block — its own three menu entries. */
+  /** Present only for a meter block — its own section of the menu. */
   meter?: {
+    style: MeterStyle;
     textShown: boolean;
     maxShown: boolean;
+    onSetStyle: (style: MeterStyle) => void;
     onAdd: () => void;
+    onDuplicateMeter: (meterId: string) => void;
+    onRemoveMeter: (meterId: string) => void;
     onToggleText: () => void;
     onToggleMax: () => void;
   };
@@ -63,12 +68,31 @@ export function BlockShell({
 }: BlockShellProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
+  // Which reading a right-click landed on, so the menu can offer to duplicate
+  // or delete *that* one. Read off the DOM rather than reported up from every
+  // meter, because the menu lives here and the readings are the block's own
+  // business — see the data-meter-id in MeterBlock.
+  const [menuMeterId, setMenuMeterId] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const input = useRef<HTMLInputElement | null>(null);
 
   const shown = title ?? naturalTitle;
   const hex = getPaletteHex(color);
+
+  // Right-clicking a block opens the same menu the `⋯` button does, at the
+  // pointer. It is the gesture people try first and it was doing nothing here,
+  // which left the webview's own menu — or the tree's — answering for a block.
+  function openMenuAt(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement | null;
+    // Let a text box keep its own menu: cut/copy/paste is the right answer
+    // inside an input, and a block menu is not.
+    if (target?.closest("input, textarea, [contenteditable='true']")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setMenuMeterId(target?.closest("[data-meter-id]")?.getAttribute("data-meter-id") ?? null);
+    setMenuRect(new DOMRect(event.clientX, event.clientY, 0, 0));
+  }
 
   function startRename() {
     setDraft(shown);
@@ -96,6 +120,7 @@ export function BlockShell({
         ...(hex ? { ["--block-accent" as string]: hex } : {}),
       }}
       {...attributes}
+      onContextMenu={openMenuAt}
     >
       <div className="block-shell-bar">
         {/* The grip carries the drag listeners rather than the whole block, for
@@ -142,7 +167,10 @@ export function BlockShell({
           type="button"
           className="block-menu-trigger"
           aria-label={`${shown} block options`}
-          onClick={(e) => setMenuRect(e.currentTarget.getBoundingClientRect())}
+          onClick={(e) => {
+            setMenuMeterId(null);
+            setMenuRect(e.currentTarget.getBoundingClientRect());
+          }}
         >
           <MoreHorizontal size={13} />
         </button>
@@ -185,6 +213,18 @@ export function BlockShell({
                   meter.onAdd();
                   setMenuRect(null);
                 },
+                onDuplicateMeter: menuMeterId
+                  ? () => {
+                      meter.onDuplicateMeter(menuMeterId);
+                      setMenuRect(null);
+                    }
+                  : undefined,
+                onRemoveMeter: menuMeterId
+                  ? () => {
+                      meter.onRemoveMeter(menuMeterId);
+                      setMenuRect(null);
+                    }
+                  : undefined,
               }
             }
             onDeleteProperty={
