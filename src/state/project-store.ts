@@ -287,7 +287,17 @@ export type ProjectStoreState = {
   addCustomProperty: (nodeId: string, label: string, type: CustomPropertySpec["type"]) => void;
   updateCustomProperty: (nodeId: string, key: string, patch: Partial<Omit<CustomPropertySpec, "key">>) => void;
   removePropertyOption: (nodeId: string, key: string, optionId: string) => void;
-  removeCustomProperty: (nodeId: string, key: string) => void;
+  /**
+   * Takes a property off one page for good — the value, the block showing it,
+   * and the spec if the page owned one.
+   *
+   * Works on a template's fields as well as ones she added, which is her call
+   * 2026-08-21 and obviously right: a page made from a template is a *copy*,
+   * editing a template already doesn't touch pages made from it, so a field on
+   * her page is hers. A template field can be added back empty from Add Block
+   * afterwards; one she invented is gone, because nothing else defines it.
+   */
+  deletePageProperty: (nodeId: string, key: string) => void;
   // Phase 18a's sidebar. Each edit is its own action rather than one
   // "write the blocks array", because Phase 19's panel undo hooks these and a
   // generic setter leaves it unable to say what it is undoing.
@@ -1436,10 +1446,12 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       get().updateNode(nodeId, { customProperties, properties });
     },
 
-    removeCustomProperty(nodeId, key) {
+    deletePageProperty(nodeId, key) {
       const { nodes } = get();
       const existing = nodes[nodeId];
       if (!existing) return;
+      // A no-op for a template's field, which has no spec on the node — the
+      // value and the blocks below are the whole of it in that case.
       const customProperties = (existing.customProperties ?? []).filter((spec) => spec.key !== key);
       const properties = { ...existing.properties };
       delete properties[key];
@@ -1473,7 +1485,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // leaves its value in `properties` and its spec in `customProperties`, so
     // hiding a field is not deleting what was typed into it and the block can
     // be added back from the same list it was hidden from. Deleting the
-    // property itself is `removeCustomProperty`, which is a different action
+    // property itself is `deletePageProperty`, which is a different action
     // with a different name for a reason.
     removeBlock(nodeId, blockId) {
       editBlocks(nodeId, (blocks) => blocks.filter((block) => block.id !== blockId));

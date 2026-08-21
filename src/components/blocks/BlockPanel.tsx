@@ -25,6 +25,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useBlocks } from "../../hooks/use-blocks";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
 import type { RenderableProperty } from "../../services/property-service";
@@ -57,6 +58,7 @@ export function BlockPanel() {
     addCustomProperty,
     updateCustomProperty,
     removePropertyOption,
+    deletePageProperty,
     addBlock,
     removeBlock,
     reorderBlocks,
@@ -70,6 +72,7 @@ export function BlockPanel() {
     setBlockTags,
     setNodeAliases,
   } = useProject();
+  const { confirmDestructive } = useDialogs();
   const knownOptions = useKnownOptions();
   const allTags = useAllTags();
   const selectedId = project?.selectedId ?? null;
@@ -263,6 +266,33 @@ export function BlockPanel() {
     return { natural: prop.label, body: renderPropertyField(prop) };
   }
 
+  // Every property block can be deleted, a template's fields included. Her
+  // call, 2026-08-21: a page made from a template is a copy, and the app
+  // already promises that editing a template leaves existing pages alone — so
+  // a field sitting on her page is hers to throw away.
+  function propertyKeyOf(block: Block): string | undefined {
+    return block.kind === "property" ? block.propertyKey : undefined;
+  }
+
+  // Confirmed only when there is something to lose. Asking about an empty
+  // field she just added by mistake is a dialog for nothing; asking about one
+  // with an afternoon's writing in it is the whole point.
+  //
+  // The wording differs by what "gone" means. A field she invented is gone
+  // outright, because nothing else defines it. One from the template can be
+  // added back empty from Add Block, and saying so is the difference between
+  // a decision and a gamble.
+  async function deleteProperty(key: string, label: string) {
+    const value = node!.properties[key];
+    const hasValue = Array.isArray(value) ? value.length > 0 : value !== undefined && value !== "";
+    const isCustom = (node!.customProperties ?? []).some((spec) => spec.key === key);
+    if (hasValue) {
+      const fate = isCustom ? "This page only, and it can't be brought back." : "You can add it back empty afterwards.";
+      if (!(await confirmDestructive(`Delete "${label}" and what's in it? ${fate}`))) return;
+    }
+    deletePageProperty(node!.id, key);
+  }
+
   function handleApplyTemplate(templateKey: string) {
     void applyTemplate(node!.id, templateKey);
     setTemplateRect(null);
@@ -325,6 +355,7 @@ export function BlockPanel() {
         <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block, index) => {
             const { natural, body } = renderBlock(block);
+            const propertyKey = propertyKeyOf(block);
             return (
               <BlockShell
                 key={block.id}
@@ -341,6 +372,7 @@ export function BlockPanel() {
                 onDuplicate={() => duplicateBlock(node.id, block.id)}
                 onMove={(direction) => reorderBlocks(node.id, index, index + direction)}
                 onRemove={() => removeBlock(node.id, block.id)}
+                onDeleteProperty={propertyKey ? () => void deleteProperty(propertyKey, natural) : undefined}
               >
                 {body}
               </BlockShell>

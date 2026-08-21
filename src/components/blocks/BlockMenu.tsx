@@ -3,7 +3,7 @@
 // job, the same as every other menu in the app — see tree/ContextMenu.tsx,
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
-import { ArrowDown, ArrowUp, Copy, Palette, PencilLine, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, EyeOff, Palette, PencilLine, Trash2, Type } from "lucide-react";
 import { COLOR_PALETTE } from "../../constants/palette";
 
 type BlockMenuProps = {
@@ -18,6 +18,12 @@ type BlockMenuProps = {
   onDuplicate: () => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
+  /**
+   * Deleting the field itself. Present for any property block — a template's
+   * fields included, since the page is a copy — and absent for the other block
+   * kinds, which have nothing behind them to delete.
+   */
+  onDeleteProperty?: () => void;
 };
 
 export function BlockMenu({
@@ -31,6 +37,7 @@ export function BlockMenu({
   onDuplicate,
   onMove,
   onRemove,
+  onDeleteProperty,
 }: BlockMenuProps) {
   return (
     <div className="tree-context-menu block-menu">
@@ -75,12 +82,20 @@ export function BlockMenu({
 
       <div className="block-menu-separator" />
 
-      {/* Removing a block hides a field; it never deletes what was typed into
-          it. The wording says so, because "Delete" next to a property someone
-          spent an hour filling in reads as the other thing. */}
-      <button type="button" className="tree-context-menu-danger" onClick={onRemove}>
-        <Trash2 size={13} /> Remove block
+      {/* Two different things, deliberately worded apart. Removing a block
+          takes it off the panel and keeps whatever was typed into it, so it
+          can be added back from Add Block. Deleting the property throws the
+          value away. Offering only one of them was the bug: Phase 18a moved
+          removal into this menu and left nothing anywhere that could delete a
+          property she had added. */}
+      <button type="button" onClick={onRemove}>
+        <EyeOff size={13} /> Remove block
       </button>
+      {onDeleteProperty && (
+        <button type="button" className="tree-context-menu-danger" onClick={onDeleteProperty}>
+          <Trash2 size={13} /> Delete property
+        </button>
+      )}
     </div>
   );
 }
