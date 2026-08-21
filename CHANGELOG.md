@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-21 — open it anyway
+
+### Additions
+
+- **When Anamnesis says a project is open in another window, you can now overrule it.** An **Open it anyway** link sits next to the message. The check is a guess — a project says it's open by keeping a note fresh, so a crash, a power cut or a sync client holding the folder all look exactly like a second window from the outside, and the app has no way to tell them apart. It still says what it thinks, and now you get the last word. Renaming a project another window holds is still refused outright, because renaming a folder something else has open is a different kind of risk.
+
 ## 2026-08-21 — reloading no longer locks you out of your own project
 
 ### Fixes
@@ -282,16 +288,3 @@
 - **Making a folder has its own button next to it**, instead of being the last item in the row of folders. It used to sit immediately after a folder called "New folder", so the button that makes folders and a folder named after what it does looked like the same thing.
 - **"Unsorted" only appears once you've filed something.** With nothing in folders yet it held every picture you have, so it was a second copy of "All pictures" wearing a different name and the same number.
 - **The folder row is hidden until you have a folder.** One chip saying "All pictures" above all your pictures wasn't telling you anything.
-
-## 2026-08-12 — more room to drop a picture on a page
-
-### Fixes
-
-- **The bottom of a page refused pictures.** Dragging one down towards the end of your writing turned the cursor into the no-entry symbol before you got near the bottom of the window — the last 32 pixels are the page's margin, and only the writing itself was accepting drops. That band is the natural place to aim when you mean "put it after everything", so it was the worst possible strip to have switched off.
-- **The whole page column takes a drop now**, top to bottom: the margin under your writing, the empty space beside it, the title, and the tab strip.
-- **A drop that doesn't land on a line goes next to the nearest line above it**, instead of always going to the very end. Dropping beside the third paragraph of a long page used to send the picture to the bottom, out of sight the moment it arrived.
-- **Dropping above your writing** — on the title or the tabs — puts the picture at the top of the page rather than at the end.
-
-### Worth knowing
-
-- The banner still doesn't take a drop. Dropping a picture on a banner looks like it should *become* the banner, and quietly sliding it into your writing instead would be worse than not accepting it.
