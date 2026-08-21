@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-21 — two pages with one name
+
+### Fixes
+
+- **Typing `[[name]]` no longer picks silently between two pages called the same thing.** Finishing a wikilink with `]]` confirms the top suggestion, which is the point of it — but when two pages share the exact name you typed, that was a coin flip, and the link landed on whichever one happened to sort first with nothing on screen saying a choice had been made. Now it holds the menu open with both of them on it and waits for you to pick. Everything else is unchanged: partial names, half-remembered spellings and one clear match all still confirm the moment you type the brackets.
+- **A page whose name you typed exactly now wins over a longer one listed above it.** Typing `[[Val]]` reaches a page called Val, not Valera, even when Valera sorted first.
+
 ## 2026-08-21 — backlinks, and lists of pages
 
 ### Additions
@@ -13,6 +20,7 @@
 
 - **The link block became Manual links.** Any link block you already made turns into a Manual links list on its own, holding the page it pointed at. Nothing to redo — it just holds more than one page now.
 - **`[[Name]]` finds pages by alias too.** A page actually called that name still wins; aliases are only used when nothing carries the name itself.
+
 
 ## 2026-08-21 — the sidebar is blocks now
 
@@ -307,15 +315,3 @@
 - **The delete buttons in the Assets tab switch off when a page won't open.** "Nothing is using this" is a claim about every page you have, so one page the app can't read makes it a guess — and that's not something to hang a delete on. The tab says so instead of quietly guessing.
 - **The trashcan no longer vanishes when you delete a picture.** It used to only appear while your mouse was over a tile, and deleting one shuffles the rest, so the button would disappear from tiles the pointer was still sitting on. It's just always there now, on the pictures nothing is using.
 - **A deleted picture actually leaves the tab.** The list was being re-read a moment before the delete finished, so the picture you'd just removed drew itself straight back in and stayed until you left the tab.
-
-## 2026-08-12 — the library reaches pictures in a page, and the Assets tab does something
-
-### Additions
-
-- **Pictures inside a page can come from your library now.** Add a picture block and it opens on **Library** — everything the world already has — with Upload and the paste-a-web-address option still there beside it. Putting the same map on six pages is one file, the same as portraits and covers.
-- **Clicking a thumbnail in the Assets tab opens it full size**, in the same viewer you get double-clicking a picture in a page. Until now the tab was the one place you could see all your pictures and not actually look at any of them.
-
-### Worth knowing
-
-- Clicking a thumbnail deliberately doesn't drop it into whatever page you're on. They're small and there are a lot of them, and the gesture for "what is this one" shouldn't be the one that edits your writing. The picture block's Library tab is where you've already said where it goes.
-- Dragging a picture from the tab onto a page isn't in yet.
