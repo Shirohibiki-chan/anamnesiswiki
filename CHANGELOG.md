@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-08-21 — the sidebar is blocks now
+
+### Additions
+
+- **The right-hand panel is a canvas you arrange, not a fixed list of fields.** Everything in it is a block — the picture, your tags and every property alike — and you can add, remove, reorder and duplicate any of them. Drag a block by the grip that appears when you hover it, or use Move up / Move down in its `⋯` menu.
+- **Every block has its own menu.** Rename its heading, turn the heading off entirely, give it a colour, duplicate it, move it, or remove it. Double-clicking a heading renames it too, and clearing the box puts the original name back.
+- **A brand new page starts empty**, with nothing but an **Add Block** button — unless you made it from a template, in which case it starts with what that kind of page needs. Characters, species, locations and items begin with a picture; notes and blank pages begin with nothing.
+- **Two new kinds of block: Text block and Link block.** A text block is somewhere to write beside the page rather than in it. A link block points at another page, follows it if you rename that page, and says so plainly if you delete it.
+- **Removing a block never deletes what you typed.** Take a property's block off the panel and the value stays on the page — the field is just hidden. Add Block lists everything you've hidden, so you can put it back. Deleting a property for real is still its own thing.
+
+### Adjustments
+
+- **Your existing pages look exactly as they did.** Every page written before today works out its own layout the first time you open it — picture on top, your properties in the order you'd already dragged them into, tags at the bottom. Nothing is rewritten until you actually change something, so opening a world doesn't touch a single file.
+- **Dragging properties into order is now dragging blocks into order.** Same gesture, except it can move the picture and the tags too, which it never could before.
+
 ## 2026-08-21
 
 ### Fixes
@@ -308,11 +323,3 @@
 
 - Deleting a picture from one page won't remove the file while another page is still using it. That's the point of sharing, but it does mean the Assets tab is the place to go when you actually want a picture gone.
 - Unsplash and Pinterest, which LegendKeeper offers alongside your own files, aren't here and aren't planned. Both would mean the app talking to someone else's server.
-
-## 2026-08-12 — the Assets tab is a grid
-
-### Adjustments
-
-- **The Assets tab shows your pictures as a grid of thumbnails**, not a single column of little ones. Two across normally, three when you widen the sidebar, and the thumbnails grow as you widen it rather than staying small and multiplying.
-- **The pictures are big enough to recognise now** — from 44px to between 77px and 129px depending on how wide you've pulled the sidebar. What a picture is called is a UUID and no help to anyone, so being able to see it is the whole point.
-- What's using it still sits under each one, and the delete button moved onto the picture's corner.

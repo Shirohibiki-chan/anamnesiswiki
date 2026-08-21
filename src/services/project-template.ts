@@ -28,7 +28,8 @@ import {
   type ProjectTemplateFile,
   type ProjectTemplateNode,
 } from "../constants/project-template";
-import { getDefaultTabs, getTemplate } from "./template-registry";
+import { seedBlocks } from "./block-service";
+import { getDefaultTabs, getPropertySchema, getTemplate } from "./template-registry";
 import { orderSiblings } from "./tree-service";
 
 /**
@@ -272,6 +273,12 @@ export function materializeProjectTemplate(file: ProjectTemplateFile): { nodes: 
       // way to disk and not something to quietly shorten here.
       name: entry.name.trim() || UNTITLED_PAGE_NAME,
       tabs: getDefaultTabs(templateKey),
+      // The same sidebar a page of this kind made in the app would get. Left
+      // to `createNode`'s default it would be an authored *empty* list, and a
+      // project built from a template would arrive with every panel blank —
+      // which reads as the templates having lost their fields. See
+      // block-service's seedBlocks.
+      blocks: seedBlocks(templateKey, getPropertySchema(templateKey)),
       tags: entry.tags ?? [],
       ...(entry.color ? { color: entry.color } : {}),
     });

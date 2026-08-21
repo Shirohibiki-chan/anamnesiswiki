@@ -7,6 +7,8 @@ import {
   createProject,
   DEFAULT_STATUS_OPTIONS,
   FOLDER_TEMPLATE_KEY,
+  type Block,
+  type BlockKind,
   type CustomPropertySpec,
   createTemplateLibrary,
   type Node,
@@ -56,7 +58,15 @@ import {
   withTabRenamed,
   withTabsReordered,
 } from "../services/tab-service";
-import { getDefaultTabs, getTemplate } from "../services/template-registry";
+import { getDefaultTabs, getPropertySchema, getTemplate } from "../services/template-registry";
+import {
+  blocksFor,
+  duplicateBlock as duplicateBlockIn,
+  moveBlock,
+  newBlock,
+  seedBlocks,
+  withField,
+} from "../services/block-service";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   addOverride,
@@ -262,7 +272,7 @@ export type ProjectStoreState = {
     onProgress?: (progress: ImportProgress) => void,
   ) => Promise<CreateProjectResult>;
   closeProject: () => void;
-  addNode: (input: { parentId: string | null; templateKey: string; name: string }) => Node;
+  addNode: (input: { parentId: string | null; templateKey: string; name: string; blocks?: Block[] }) => Node;
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
   updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
   toggleTabHidden: (nodeId: string, tabId: string) => void;
@@ -277,7 +287,18 @@ export type ProjectStoreState = {
   updateCustomProperty: (nodeId: string, key: string, patch: Partial<Omit<CustomPropertySpec, "key">>) => void;
   removePropertyOption: (nodeId: string, key: string, optionId: string) => void;
   removeCustomProperty: (nodeId: string, key: string) => void;
-  reorderProperties: (nodeId: string, orderedKeys: string[]) => void;
+  // Phase 18a's sidebar. Each edit is its own action rather than one
+  // "write the blocks array", because Phase 19's panel undo hooks these and a
+  // generic setter leaves it unable to say what it is undoing.
+  addBlock: (nodeId: string, kind: BlockKind, extra?: Partial<Block>) => void;
+  removeBlock: (nodeId: string, blockId: string) => void;
+  reorderBlocks: (nodeId: string, fromIndex: number, toIndex: number) => void;
+  duplicateBlock: (nodeId: string, blockId: string) => void;
+  setBlockTitle: (nodeId: string, blockId: string, title: string | undefined) => void;
+  setBlockTitleShown: (nodeId: string, blockId: string, shown: boolean) => void;
+  setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
+  setBlockText: (nodeId: string, blockId: string, text: string) => void;
+  setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
   // Project-wide, from the All properties & tags view. Each is one undo entry
   // however many pages it touched — see applyBulk.
   renamePropertyEverywhere: (label: string, newLabel: string) => void;
@@ -640,6 +661,32 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // thing to reverse — history-store owns that guard.
   const record = (label: string, undo: () => Promise<void> | void, redo: () => Promise<void> | void): void => {
     useHistoryStore.getState().record({ label, undo, redo });
+  };
+
+  /**
+   * Applies one edit to a page's block list, materialising the list first if
+   * the page has never had one.
+   *
+   * That materialisation is Phase 18a's whole migration. A page written before
+   * blocks existed has no `blocks` field and renders from a list derived on
+   * read (see block-service), so the panel looks the way it always did without
+   * anything being written. The moment the user actually changes something,
+   * the derived list becomes real and the change lands on top of it — so a
+   * world she only opened is never rewritten, and one she edits is converted a
+   * page at a time by the act of editing it.
+   *
+   * Every block action goes through here rather than calling `updateNode`
+   * directly, because getting that order wrong — patching `blocks` on a node
+   * that has none — would write a one-block sidebar and drop every field the
+   * page was showing.
+   */
+  const editBlocks = (nodeId: string, edit: (blocks: Block[]) => Block[]): void => {
+    const node = get().nodes[nodeId];
+    if (!node) return;
+    const current = blocksFor(node, getPropertySchema(node.templateKey));
+    const next = edit(current);
+    if (next === current) return;
+    get().updateNode(nodeId, { blocks: next });
   };
 
   /**
@@ -1134,7 +1181,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (!rootPath || !project) throw new Error("addNode: no project loaded");
 
       const tabs = getDefaultTabs(input.templateKey);
-      const node = createNode({ ...input, tabs });
+      // A new page's sidebar is its template's — the picture, the fields that
+      // template asks for, and tags — while a blank page starts with nothing
+      // in it but Add block. Written at creation rather than derived on read,
+      // because an authored empty list is exactly how a blank page says its
+      // sidebar is meant to be empty. See block-service's seedBlocks.
+      const blocks = input.blocks ?? seedBlocks(input.templateKey, getPropertySchema(input.templateKey));
+      const node = createNode({ ...input, tabs, blocks });
       const nextNodes = { ...nodes, [node.id]: node };
       const nextProject: Project =
         input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
@@ -1267,10 +1320,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       const override = overrideFor(get().templates, templateKey);
       const seedTabs = override ? (structuredClone(override.tabs) as Tab[]) : getDefaultTabs(templateKey);
       const newTabs = seedTabs.filter((tab) => !existingTabIds.has(tab.id));
+      // Applying a template to a page that has never had one brings that
+      // template's sidebar with it — otherwise the blank page's empty panel
+      // stays empty and choosing a template appears to do nothing below the
+      // fold. A page that already has blocks keeps them: the user arranged
+      // that panel, and a template change is not permission to rearrange it.
+      const seededBlocks =
+        existing.blocks && existing.blocks.length > 0
+          ? existing.blocks
+          : seedBlocks(templateKey, getPropertySchema(templateKey));
       const updated: Node = {
         ...existing,
         templateKey,
         tabs: [...existing.tabs, ...newTabs],
+        blocks: seededBlocks,
         updatedAt: Date.now(),
       };
       const nextNodes = { ...nodesAfter, [nodeId]: updated };
@@ -1322,7 +1385,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         type,
         ...(isChipType(type) ? { options } : {}),
       };
-      get().updateNode(nodeId, { customProperties: [...(existing.customProperties ?? []), spec] });
+      // The property and the block that shows it are added together. Adding a
+      // field that then doesn't appear in the panel would read as the button
+      // being broken, and Phase 18a's panel renders nothing it has no block
+      // for. Materialised the same way every block edit is — see editBlocks.
+      const blocks = [
+        ...blocksFor(existing, getPropertySchema(existing.templateKey)),
+        newBlock("property", { propertyKey: spec.key }),
+      ];
+      get().updateNode(nodeId, { customProperties: [...(existing.customProperties ?? []), spec], blocks });
     },
 
     updateCustomProperty(nodeId, key, patch) {
@@ -1369,12 +1440,83 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // Drop it from the manual order too, so a key that no longer exists
       // can't sit in the list influencing where its neighbours land.
       const propertyOrder = existing.propertyOrder?.filter((orderedKey) => orderedKey !== key);
-      get().updateNode(nodeId, { customProperties, properties, propertyOrder });
+      // Deleting the property takes its blocks with it — every one of them,
+      // since a property can be shown twice. This is the opposite of
+      // `removeBlock`, which hides a field and keeps the value; here the value
+      // is going, so a block still pointing at it would render a field that no
+      // longer exists.
+      const blocks = blocksFor(existing, getPropertySchema(existing.templateKey)).filter(
+        (block) => !(block.kind === "property" && block.propertyKey === key),
+      );
+      get().updateNode(nodeId, { customProperties, properties, propertyOrder, blocks });
     },
 
-    reorderProperties(nodeId, orderedKeys) {
-      get().updateNode(nodeId, { propertyOrder: orderedKeys });
+
+    // ---- Phase 18a: the sidebar's blocks ----
+    //
+    // Every one of these goes through `editBlocks`, which is where the
+    // migration actually happens: a page written before Phase 18a has no
+    // block list, so the first edit to its panel materialises the derived one
+    // and then applies the change to it. Reading a page never writes, and a
+    // world she only opened is never rewritten.
+    addBlock(nodeId, kind, extra) {
+      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, extra)]);
     },
+
+    // Removing a block removes the block, and nothing else. A property block
+    // leaves its value in `properties` and its spec in `customProperties`, so
+    // hiding a field is not deleting what was typed into it and the block can
+    // be added back from the same list it was hidden from. Deleting the
+    // property itself is `removeCustomProperty`, which is a different action
+    // with a different name for a reason.
+    removeBlock(nodeId, blockId) {
+      editBlocks(nodeId, (blocks) => blocks.filter((block) => block.id !== blockId));
+    },
+
+    reorderBlocks(nodeId, fromIndex, toIndex) {
+      editBlocks(nodeId, (blocks) => moveBlock(blocks, fromIndex, toIndex));
+    },
+
+    duplicateBlock(nodeId, blockId) {
+      editBlocks(nodeId, (blocks) => duplicateBlockIn(blocks, blockId));
+    },
+
+    // An empty title is not a title: it is stored as absent so the block falls
+    // back to its natural label rather than rendering a blank strip where a
+    // heading should be.
+    setBlockTitle(nodeId, blockId, title) {
+      const trimmed = title?.trim();
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "title", trimmed || undefined) : block)),
+      );
+    },
+
+    // True is the default, so it is stored as absent — otherwise every block
+    // ever shown carries a field saying it looks normal.
+    setBlockTitleShown(nodeId, blockId, shown) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "showTitle", shown ? undefined : false) : block)),
+      );
+    },
+
+    setBlockColor(nodeId, blockId, color) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "color", color) : block)),
+      );
+    },
+
+    setBlockText(nodeId, blockId, text) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "text", text || undefined) : block)),
+      );
+    },
+
+    setBlockLink(nodeId, blockId, targetId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "targetId", targetId) : block)),
+      );
+    },
+
 
     // The four project-wide edits. All the thinking is in property-service's
     // plan* functions, which the view has already run to show what's about to

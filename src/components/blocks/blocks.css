@@ -1,0 +1,260 @@
+/* The sidebar's block canvas — Phase 18a. The fields inside a block still come
+   from properties.css; this file is only the frame around them. */
+
+.block-shell {
+  position: relative;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* The accent is set per block as an inline custom property by BlockShell, so a
+   block with no colour simply has no rule to apply and costs nothing. */
+.block-shell[style*="--block-accent"] {
+  border-left: 2px solid var(--block-accent);
+}
+
+.block-shell-dragging {
+  z-index: 2;
+}
+
+.block-shell-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 18px;
+}
+
+/* The grip and the menu button stay invisible until the pointer is over the
+   block. Hover states belong to the controls rather than the block for the
+   reason the code block's header learned the hard way — a control that appears
+   under the pointer everywhere reads as a smear moving across the panel. */
+.block-grip,
+.block-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.block-grip {
+  cursor: grab;
+  margin-left: -4px;
+}
+
+.block-shell:hover .block-grip,
+.block-shell:hover .block-menu-trigger,
+.block-grip:focus-visible,
+.block-menu-trigger:focus-visible {
+  opacity: 1;
+}
+
+.block-menu-trigger {
+  margin-left: auto;
+}
+
+.block-menu-trigger:hover,
+.block-grip:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.block-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-title-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-sm);
+}
+
+.block-shell-body {
+  margin-top: var(--space-sm);
+}
+
+/* A block with no title still needs its menu reachable, so the bar stays in
+   the flow rather than collapsing to nothing. */
+.block-shell-bar:empty {
+  min-height: 0;
+}
+
+.block-missing {
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  font-style: italic;
+}
+
+/* ---- Add Block ---- */
+
+.block-add-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.block-add-trigger:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.block-add-menu {
+  min-width: 200px;
+  padding: var(--space-sm) 0;
+}
+
+.block-add-heading {
+  padding: var(--space-sm) var(--space-lg);
+  color: var(--color-text-muted);
+}
+
+/* ---- The per-block menu ---- */
+
+.block-menu {
+  min-width: 210px;
+  padding: var(--space-sm) 0;
+}
+
+.block-menu-color-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+}
+
+.block-menu-color-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.block-menu-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+/* ---- Link block ---- */
+
+.block-link-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.block-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-link:hover {
+  text-decoration: underline;
+}
+
+.block-link-empty {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.block-link-empty:hover {
+  color: var(--color-text-primary);
+}
+
+.block-link-missing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.block-link-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 220px;
+  padding: var(--space-md);
+}
+
+.block-link-results {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.block-link-empty-hint {
+  padding: var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* Menu bits that the tree's context-menu styles don't already cover. The menus
+   themselves reuse `.tree-context-menu`, whose `button` rule styles every item
+   — so an item here carries no class of its own on purpose. */
+
+.block-menu-separator {
+  height: 1px;
+  margin: var(--space-2xs) 0;
+  background: var(--color-border-subtle);
+}
+
+.block-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.block-inline-link:hover {
+  color: var(--color-text-primary);
+}

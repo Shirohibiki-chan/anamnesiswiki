@@ -2710,6 +2710,64 @@ is below.
   and put on the document, which is what makes a sandbox export work unedited;
   don't switch to deriving the id from the filename.
 
+## Sidebar blocks
+
+- **`blocks` absent and `blocks: []` are different states and the migration
+  depends on it.** Absent means the page predates Phase 18a, and
+  `block-service`'s `deriveBlocks` rebuilds the old fixed panel for it on read.
+  Empty means somebody's sidebar is deliberately empty, which is what a blank
+  new page is. `createNode` therefore always writes the field, and **nothing
+  may default it to `[]` on read** — a single `?? []` at a read site turns
+  every pre-18a page's sidebar blank, on screen first and then on disk the
+  moment anything is edited.
+
+- **A block is a view, not storage, for anything that already exists.**
+  `node.tags` feeds search, the tag index and export; `node.image` feeds the
+  assets tab, the lightbox, the crop and export's `imageSource`;
+  `node.properties` feeds the property index and the templates. A block that
+  kept its own copy of any of those would fork them silently and the fork would
+  only show up somewhere else in the app. Only `text` — and Phase 18c's meters
+  — hold their own value. Anything new that looks like it wants a copy of an
+  existing field wants a pointer instead.
+
+- **A derived block's id must be deterministic, and `derivedId` is why.** A
+  page with no stored list is derived *twice* for every edit: once by the panel
+  that drew the block, once by `editBlocks` re-deriving to apply the change.
+  With `crypto.randomUUID()` those two lists share no ids, the clicked id
+  matches nothing, and the edit lands nowhere — the panel just refuses to
+  change, with no error anywhere. That shipped past a green unit suite and was
+  caught by driving the real panel in a probe. Anything that adds a derived
+  block kind names its id after what it points at; only blocks that get
+  *written* may mint a random one.
+
+- **Every block edit goes through `editBlocks`, and the order inside it is the
+  point.** It reads the current list *through* `blocksFor`, so a page with no
+  list gets the derived one materialised before the edit lands on it. Calling
+  `updateNode(id, { blocks })` directly from a new action would write whatever
+  that action built onto a node that had nothing — a one-block sidebar, and
+  every field the page was showing gone. There is no second correct place to
+  do this.
+
+- **`propertyOrder` is read and never written.** It is input to derivation for
+  pages that predate blocks, nothing more. `reorderProperties` was deleted
+  rather than kept in parallel: once every property is a block, the block list
+  *is* the order, and two answers to that question drift apart. Don't
+  reintroduce a writer for it.
+
+- **The block shell owns the title; the field inside it does not.** Every
+  property field takes `label` and now skips its label row when that label is
+  empty, and `BlockPanel` passes `""` to all of them. This is what makes Title
+  / No title one behaviour instead of one per field type, and it is why adding
+  a new field component means guarding its label row the same way — otherwise
+  a block renders its heading twice.
+
+- **Removing a block is not deleting a property.** `removeBlock` takes the
+  block out and leaves `properties` and `customProperties` alone, so a hidden
+  field keeps its value and Add Block offers it back through
+  `unshownPropertyKeys`. `removeCustomProperty` is the destructive one, and it
+  drops *every* block pointing at that key, because a property can be shown
+  twice.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:

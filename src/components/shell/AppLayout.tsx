@@ -24,7 +24,7 @@ import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
 import { TemplateView } from "../page/TemplateView";
 import { AllPropertiesModal } from "../properties/AllPropertiesModal";
-import { PropertiesPanel } from "../properties/PropertiesPanel";
+import { BlockPanel } from "../blocks/BlockPanel";
 import { LoadWarning } from "./LoadWarning";
 import { RecoveryNotice } from "./RecoveryNotice";
 import { SaveWarning } from "./SaveWarning";
@@ -140,7 +140,7 @@ export function AppLayout() {
 
       {isRightPanelOpen && (
         <aside className="app-layout-properties">
-          <PropertiesPanel key={project?.selectedId ?? "none"} />
+          <BlockPanel key={project?.selectedId ?? "none"} />
         </aside>
       )}
 
