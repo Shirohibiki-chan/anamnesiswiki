@@ -8,6 +8,7 @@ import {
   parseProjectClaim,
   SESSION_ID,
   type ProjectClaim,
+  resolveSessionId,
 } from "./project-claim";
 
 const NOW = 1_700_000_000_000;
@@ -74,5 +75,31 @@ describe("describeClaimAge", () => {
 
   it("never says a negative age for a marker written a moment ahead of us", () => {
     expect(describeClaimAge(theirs(NOW + 5_000), NOW)).toBe("a few seconds ago");
+  });
+});
+
+// A refresh used to mint a new id, find the marker the previous load wrote
+// seconds earlier, and refuse to open the project — the app locking itself
+// out of its own world. Reported from use 2026-08-21.
+describe("resolveSessionId", () => {
+  it("keeps the id this window already had, so a reload reclaims its own marker", () => {
+    expect(resolveSessionId("kept", () => "fresh")).toBe("kept");
+  });
+
+  it("mints one when there is nothing stored, which is a new window", () => {
+    expect(resolveSessionId(null, () => "fresh")).toBe("fresh");
+  });
+
+  it("mints one rather than trusting an empty string", () => {
+    expect(resolveSessionId("", () => "fresh")).toBe("fresh");
+  });
+
+  it("does not mint when it does not have to", () => {
+    let minted = 0;
+    resolveSessionId("kept", () => {
+      minted += 1;
+      return "fresh";
+    });
+    expect(minted).toBe(0);
   });
 });

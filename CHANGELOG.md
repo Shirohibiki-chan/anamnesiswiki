@@ -1,11 +1,18 @@
 # Changelog
 
+## 2026-08-21 — reloading no longer locks you out of your own project
+
+### Fixes
+
+- **Refreshing the app stopped shutting you out of the project you had open.** A project records that it's open so a second copy of Anamnesis can't save over the first — but the app worked out who it was fresh on every load, so after a refresh it found the note it had written seconds earlier, didn't recognise its own handwriting, and refused to let you back in until the note went stale a couple of minutes later. A window now remembers who it is across a refresh and takes its own project straight back. Two genuinely separate copies are still kept apart, exactly as before.
+
 ## 2026-08-21 — Tab picks what the [[ menu is showing
 
 ### Fixes
 
 - **Tab in the `[[` menu takes the highlighted page**, the way finishing with `]]` already does and the way Tab works in any autocomplete. Before, nothing in the app claimed the key while that menu was open, so it fell through into the editor and rearranged the block you were writing in instead — which is the "it turns into a quote" you kept hitting. The same goes for the `/` menu and `@` mentions, which are the same menu underneath.
 - **Tab can no longer reach the editor at all while one of those menus is open.** If the list has nothing in it, Tab now does nothing rather than doing something to your writing.
+
 
 ## 2026-08-21 — Tab stays inside dialogs too
 
@@ -288,15 +295,3 @@
 ### Worth knowing
 
 - The banner still doesn't take a drop. Dropping a picture on a banner looks like it should *become* the banner, and quietly sliding it into your writing instead would be worse than not accepting it.
-
-## 2026-08-12 — clicking a page opens that page again
-
-### Fixes
-
-- **A template stayed on screen after you'd gone back to your project.** Open a template, switch back to the Project tab, click a page — and nothing happened. The sidebar highlighted the page you clicked and the properties panel on the right filled in with its details, but the middle of the window carried on showing the template, so the app looked like it was ignoring you.
-- **Going anywhere now closes an open template**: clicking a page in the tree, following a link inside your writing, a search result, a bookmark, and the back, forward and home buttons. Switching back to the Project tab closes it too, so the sidebar and the page you're reading never disagree about where you are.
-
-### Worth knowing
-
-- Switching to the **Assets** tab deliberately leaves a template open. That tab is somewhere you go to fetch a picture for whatever you're working on, and a template can hold pictures like any other page.
-- Nothing you'd written into the template is affected — templates save as you type. Reopening one is a click in the Templates tab.
