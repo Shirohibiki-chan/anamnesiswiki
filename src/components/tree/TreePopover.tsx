@@ -13,7 +13,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 import { useClickOutside } from "../../hooks/use-click-outside";
@@ -64,41 +63,54 @@ export function TreePopover({ anchorRect, onClose, className, children }: TreePo
     };
   }, []);
 
-  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Escape") {
-      event.stopPropagation();
-      onClose();
-      return;
-    }
+  // **A native listener, not React's `onKeyDown`.** The popover is portaled to
+  // `document.body`, which is *outside* the React root container — and React
+  // delegates events at that root, so a real keystroke inside the popover
+  // bubbles body → html → document and never passes through React's listener.
+  // The handler simply never ran. It looked like it worked because the first
+  // check dispatched synthetic events straight at this element; a real Tab
+  // walked out of the menu the whole time. Measured 2026-08-21.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-    const items = itemsIn();
-    if (items.length === 0) return;
-    const at = items.indexOf(document.activeElement as HTMLElement);
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onClose();
+        return;
+      }
 
-    // Arrows walk the menu; Tab is left alone *inside* a popover holding a
-    // text box, where it is the ordinary way out of the field.
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const step = event.key === "ArrowDown" ? 1 : -1;
-      const next = at === -1 ? 0 : (at + step + items.length) % items.length;
-      items[next].focus({ preventScroll: true });
-      return;
-    }
+      const items = itemsIn();
+      if (items.length === 0) return;
+      const at = items.indexOf(document.activeElement as HTMLElement);
 
-    // Tab wraps rather than escaping into the page behind. Leaving a menu by
-    // tabbing past its last item drops focus somewhere invisible, since the
-    // popover is portaled away from whatever opened it.
-    if (event.key === "Tab") {
-      const last = items.length - 1;
-      if (!event.shiftKey && at === last) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
-        items[0].focus({ preventScroll: true });
-      } else if (event.shiftKey && at <= 0) {
-        event.preventDefault();
-        items[last].focus({ preventScroll: true });
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        const next = at === -1 ? 0 : (at + step + items.length) % items.length;
+        items[next].focus({ preventScroll: true });
+        return;
+      }
+
+      // Tab wraps rather than escaping into the page behind. Leaving a menu by
+      // tabbing past its last item drops focus somewhere invisible, since the
+      // popover is drawn away from whatever opened it.
+      if (event.key === "Tab") {
+        const last = items.length - 1;
+        if (!event.shiftKey && (at === last || at === -1)) {
+          event.preventDefault();
+          items[0].focus({ preventScroll: true });
+        } else if (event.shiftKey && at <= 0) {
+          event.preventDefault();
+          items[last].focus({ preventScroll: true });
+        }
       }
     }
-  }
+
+    el.addEventListener("keydown", onKeyDown);
+    return () => el.removeEventListener("keydown", onKeyDown);
+  }, [itemsIn, onClose]);
 
   // Popover content varies in size (color grid vs. template grid vs. context
   // menu), so its footprint isn't known until it's actually in the DOM.
@@ -159,7 +171,6 @@ export function TreePopover({ anchorRect, onClose, className, children }: TreePo
       className={`tree-popover${className ? ` ${className}` : ""}`}
       style={style}
       tabIndex={-1}
-      onKeyDown={onKeyDown}
       onClick={(e) => e.stopPropagation()}
     >
       {children}
