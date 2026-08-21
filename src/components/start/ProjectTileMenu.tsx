@@ -17,7 +17,7 @@
 // which is the same problem the template picker hit near the bottom of a tall
 // tree.
 import { useRef, useState } from "react";
-import { Archive, ArchiveRestore, Check, Copy, FolderOpen, ImagePlus, MoreHorizontal, Plus, Share2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Copy, FolderOpen, ImagePlus, MoreHorizontal, Pencil, Plus, Share2, X } from "lucide-react";
 import type { ProjectGroup } from "../../services/project-groups";
 import type { ListedWorld } from "../../services/world-scan";
 import { TreePopover } from "../tree/TreePopover";
@@ -57,6 +57,12 @@ type ProjectTileMenuProps = {
   onShowInFolder: () => void;
   onDuplicate: (name: string) => void;
   /**
+   * Renames the project *and* its folder. Named "Rename" rather than "Rename
+   * project" because everything in this menu is about the project — see the
+   * note on `onExportTemplate`.
+   */
+  onRename: (name: string) => void;
+  /**
    * This project's shape written out as a template file (Phase 27). Up here
    * with the cover, the file manager and Duplicate rather than down among the
    * groups: those four are things done *to* the project, and everything below
@@ -75,13 +81,14 @@ export function ProjectTileMenu({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  onRename,
   onExportTemplate,
 }: ProjectTileMenuProps) {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   // Which of the two things in this menu is being named, or null. One piece of
   // state rather than a boolean each, because only one text box can be open at
   // a time and two flags could disagree about that.
-  const [naming, setNaming] = useState<"group" | "copy" | null>(null);
+  const [naming, setNaming] = useState<"group" | "copy" | "rename" | null>(null);
   const [draft, setDraft] = useState("");
   const trigger = useRef<HTMLButtonElement>(null);
   // Whether the menu was open when this press started — see the button below.
@@ -96,18 +103,22 @@ export function ProjectTileMenu({
     setDraft("");
   }
 
-  function startNaming(what: "group" | "copy") {
+  function startNaming(what: "group" | "copy" | "rename") {
     setNaming(what);
     // A copy is named after the thing it came from, so the box opens with that
     // in it and selected — most forks are the same name with a version on the
-    // end, and retyping it is the part she would resent. A group is named
-    // after something that does not exist yet, so it opens empty.
-    setDraft(what === "copy" ? `${project.name} copy` : "");
+    // end, and retyping it is the part she would resent. A rename opens on the
+    // name it has now, for the same reason and more so: most renames are a fix
+    // to part of a name rather than a new one. A group is named after
+    // something that does not exist yet, so it opens empty.
+    if (what === "group") setDraft("");
+    else setDraft(what === "copy" ? `${project.name} copy` : project.name);
   }
 
   function commitName() {
     if (naming === "group") library.onCreateGroup(project, draft);
     else if (naming === "copy") onDuplicate(draft);
+    else if (naming === "rename") onRename(draft);
     close();
   }
 
@@ -179,6 +190,21 @@ export function ProjectTileMenu({
               <FolderOpen size={13} />
               Show in {fileManagerName}
             </button>
+
+            {naming === "rename" ? (
+              <NameForm draft={draft} onDraft={setDraft} onCommit={commitName} onCancel={close} label="New name" />
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                className="project-tile-menu-item"
+                title="Renames the project and its folder together. Nothing inside it changes."
+                onClick={() => startNaming("rename")}
+              >
+                <Pencil size={13} />
+                Rename…
+              </button>
+            )}
 
             {naming === "copy" ? (
               <NameForm draft={draft} onDraft={setDraft} onCommit={commitName} onCancel={close} label="Name for the copy" />

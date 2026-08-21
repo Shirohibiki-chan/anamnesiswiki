@@ -84,12 +84,21 @@ export function useAppSettings() {
     [refreshRecentProjects],
   );
 
+  const renameRememberedProject = useCallback(
+    async (oldPath: string, newPath: string, name: string) => {
+      await appSettings.renameRecentProject(oldPath, newPath, name);
+      await refreshRecentProjects();
+    },
+    [refreshRecentProjects],
+  );
+
   const clearLastOpenedProject = useCallback(() => appSettings.setLastOpenedProject(null), []);
 
   return {
     recentProjects,
     recordProjectOpened,
     forgetProject,
+    renameRememberedProject,
     getLastOpenedProject: appSettings.getLastOpenedProject,
     clearLastOpenedProject,
     projectsDir,

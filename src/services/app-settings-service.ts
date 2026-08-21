@@ -324,6 +324,38 @@ export async function setPreferences(preferences: Record<string, unknown>): Prom
   await store.save();
 }
 
+/**
+ * What the settings file has to be told when a project is renamed.
+ *
+ * **Not `addRecentProject` with the new path.** That stamps `lastOpenedAt`
+ * with now, which would send a project she has merely *renamed* to the top of
+ * a list ordered by when things were last opened, and mark a project she has
+ * not opened in months as the most recent one. The entry is rewritten in
+ * place instead, keeping the timestamp it had.
+ *
+ * **A project with no entry gets none made for it.** Never having been opened
+ * is a fact the rail's Recently Opened depends on, and renaming something is
+ * not opening it.
+ *
+ * The last-opened pointer moves too, or the next launch tries to auto-open a
+ * path that no longer exists. `StartupRouter` falls through to the picker when
+ * that happens, so this is the difference between landing where she left off
+ * and landing on the start screen.
+ */
+export async function renameRecentProject(oldPath: string, newPath: string, name: string): Promise<void> {
+  const store = await getStore();
+  const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];
+  const updated = existing.map((entry) => (entry.path === oldPath ? { ...entry, path: newPath, name } : entry));
+  if (updated.some((entry, index) => entry !== existing[index])) {
+    await store.set("recentProjects", updated);
+  }
+
+  if ((await store.get<string>("lastOpenedProject")) === oldPath) {
+    await store.set("lastOpenedProject", newPath);
+  }
+  await store.save();
+}
+
 export async function removeRecentProject(path: string): Promise<void> {
   const store = await getStore();
   const existing = (await store.get<RecentProject[]>("recentProjects")) ?? [];

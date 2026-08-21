@@ -25,7 +25,7 @@
 | The start screen's right-hand rail — recently opened, the ways to start something, the cog | `src/components/start/StartRail.tsx` |
 | Start from a template — the list of templates, the tree preview of the selected one, and the name box. Its own busy flag and error line, both inside the window | `src/components/start/TemplatePickerDialog.tsx`, `src/hooks/use-project-templates.ts` |
 | The `.antpl` format itself: building one from a project, parsing one she was sent, and turning one into nodes. The shipped default template is a constant | `src/services/project-template.ts`, `src/constants/project-template.ts`, `src/constants/default-project-template.ts` |
-| What the start screen can do that can fail: open a listed project, open a folder she picked (including looking one level in), create a new one, export one as a template | `src/hooks/use-start-actions.ts` |
+| What the start screen can do that can fail: open a listed project, open a folder she picked (including looking one level in), create a new one, rename or duplicate one, export one as a template | `src/hooks/use-start-actions.ts` |
 | Pages, for any long grid. Reads both list preferences — pages-or-scroll, and how many go on one — and puts her back at the top of the page when it turns | `src/hooks/use-paged-list.ts`, `src/services/pagination.ts` |
 | The arrows and dots (or the counter) under a paged grid, shared by all three | `src/components/shell/PageNav.tsx` |
 | Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `StartScreen` if none exists | `src/components/shell/StartupRouter.tsx` |

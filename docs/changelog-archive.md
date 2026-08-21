@@ -2,6 +2,25 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-12 — the Assets tab
+
+### Additions
+
+- **The Assets tab works.** Every picture in the project, with a thumbnail, how big it is, and what's actually using it — "3 pages · 1 template", or "Not used anywhere". Until now nothing in the app could even see that folder, so a portrait you replaced six times left five files you had no way of finding.
+- **Pictures nothing is using come first**, because those are the ones you can do something about.
+- **Delete a picture nothing is using**, with a check first and undo after — the file itself comes back, not just a reference to it.
+- Hovering a row tells you which pages by name.
+
+### Worth knowing
+
+- **A picture that *is* being used has no delete button yet.** That's on purpose: deleting one would leave the page pointing at a file that's gone and showing an empty box, with nothing to say why. **Remove from every page** — which clears it off everything at once and makes it deletable — is the next piece.
+- Pictures used only by a template count as in use. A template and the page it came from can genuinely share a picture, and deleting it would empty the template.
+- Pictures inside hidden tabs count too, and so do ones tucked inside a bullet list.
+
+---
+
+Older entries: [docs/changelog-archive.md](docs/changelog-archive.md).
+
 ## 2026-08-12 — the built-in templates are yours to change
 
 ### Additions

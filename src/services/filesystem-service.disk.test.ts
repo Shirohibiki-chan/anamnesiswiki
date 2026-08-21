@@ -73,7 +73,7 @@ const fsMock = vi.hoisted(() => {
 });
 vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 
-import { addNodes, moveNodes, renameNode, saveNode } from "./filesystem-service";
+import { addNodes, moveNodes, renameNode, renameProject, saveNode } from "./filesystem-service";
 import { enqueueWrite, whenWritesSettle } from "./write-queue";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
@@ -259,5 +259,91 @@ describe("a stale copy of a node left beside its own directory", () => {
 
     await expect(saveNode("/root", page, graph)).resolves.toBeUndefined();
     expect(layout()).toContain("F/New Note/_page.json");
+  });
+});
+
+describe("renaming a project", () => {
+  function project(folderName: string, contents: Record<string, unknown>) {
+    disk.dirs.add(`/root/${folderName}`);
+    disk.files.set(`/root/${folderName}/project.json`, JSON.stringify(contents));
+    return `/root/${folderName}`;
+  }
+  const projectFile = (path: string) => JSON.parse(disk.files.get(`${path}/project.json`)!);
+
+  it("changes the name and moves the folder to match", async () => {
+    const path = project("test", { version: 1, id: "abc", name: "test", rootOrder: [] });
+
+    const result = await renameProject(path, "Valeraverse");
+
+    expect(result).toEqual({ path: "/root/Valeraverse", folderMoved: true });
+    expect(disk.dirs.has("/root/test")).toBe(false);
+    expect(projectFile("/root/Valeraverse").name).toBe("Valeraverse");
+  });
+
+  it("takes everything in the project with it", async () => {
+    const path = project("test", { version: 1, id: "abc", name: "test", rootOrder: [] });
+    disk.dirs.add("/root/test/Canon");
+    disk.files.set("/root/test/Canon/_folder.json", "{}");
+    disk.files.set("/root/test/Canon/Main Story.json", "{}");
+
+    await renameProject(path, "Valeraverse");
+
+    expect(layout().filter((f) => f.startsWith("Valeraverse"))).toEqual([
+      "Valeraverse/Canon/Main Story.json",
+      "Valeraverse/Canon/_folder.json",
+      "Valeraverse/project.json",
+    ]);
+  });
+
+  // Pins, groups and the archive fall back to the path only when there is no
+  // id — so moving the folder of a project that has never been opened would
+  // quietly detach all three.
+  it("mints an id first when the project has never been opened", async () => {
+    const path = project("test", { version: 1, name: "test", rootOrder: [] });
+
+    const result = await renameProject(path, "Valeraverse");
+
+    expect(typeof projectFile(result.path).id).toBe("string");
+    expect(projectFile(result.path).id).toBeTruthy();
+  });
+
+  it("leaves an id it already had alone", async () => {
+    const path = project("test", { version: 1, id: "abc", name: "test", rootOrder: [] });
+    await renameProject(path, "Valeraverse");
+    expect(projectFile("/root/Valeraverse").id).toBe("abc");
+  });
+
+  it("keeps fields this build knows nothing about", async () => {
+    const path = project("test", { version: 1, id: "abc", name: "test", rootOrder: [], somethingNewer: 42 });
+    await renameProject(path, "Valeraverse");
+    expect(projectFile("/root/Valeraverse").somethingNewer).toBe(42);
+  });
+
+  it("renames in place when the folder is already called that", async () => {
+    const path = project("Valeraverse", { version: 1, id: "abc", name: "old", rootOrder: [] });
+
+    const result = await renameProject(path, "Valeraverse");
+
+    expect(result).toEqual({ path: "/root/Valeraverse", folderMoved: false });
+    expect(projectFile("/root/Valeraverse").name).toBe("Valeraverse");
+  });
+
+  it("refuses rather than merging into a folder that is already there", async () => {
+    const path = project("test", { version: 1, id: "abc", name: "test", rootOrder: [] });
+    project("Valeraverse", { version: 1, id: "other", name: "Valeraverse", rootOrder: [] });
+
+    await expect(renameProject(path, "Valeraverse")).rejects.toThrow(/already there/);
+    expect(projectFile("/root/Valeraverse").id).toBe("other");
+  });
+
+  // The name is written first on purpose: a folder the OS won't move leaves
+  // the name already correct, which is the half she can see.
+  it("keeps the new name when the folder cannot be moved", async () => {
+    const path = project("test", { version: 1, id: "abc", name: "test", rootOrder: [] });
+    locked.path = path;
+
+    await expect(renameProject(path, "Valeraverse")).rejects.toThrow(/access denied/);
+    expect(projectFile("/root/test").name).toBe("Valeraverse");
+    expect(disk.dirs.has("/root/test")).toBe(true);
   });
 });

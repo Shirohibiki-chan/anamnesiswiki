@@ -268,6 +268,11 @@ export function StartScreen() {
           onShowInFolder={(project) => void actions.showProjectInFolder(project)}
           forkNames={forkNames}
           heldElsewhere={heldElsewhere}
+          onRename={(project, name) =>
+            void actions.renameProject(project, name).then((renamed) => {
+              if (renamed) void refreshWorlds();
+            })
+          }
           onExportTemplate={(project) => void actions.exportProjectTemplate(project)}
           onDuplicate={(project, name) =>
             void actions.duplicateProject(project, name).then((made) => {

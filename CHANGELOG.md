@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-21
+
+### Additions
+
+- **Rename a project from inside the app.** It's on the `⋯` menu on any project, and it changes the name *and* the folder together, so the two can't drift apart. The box opens with the current name in it, selected, since most renames are a fix to part of a name rather than a whole new one. Nothing inside the project changes, and its pins, groups and archive state all follow it. If the folder can't be renamed — something else has it open, or your sync client is mid-copy — the name still changes and it tells you where the folder still is.
+
 ## 2026-08-20
 
 ### Additions
@@ -301,22 +307,3 @@
 - **The Assets tab shows your pictures as a grid of thumbnails**, not a single column of little ones. Two across normally, three when you widen the sidebar, and the thumbnails grow as you widen it rather than staying small and multiplying.
 - **The pictures are big enough to recognise now** — from 44px to between 77px and 129px depending on how wide you've pulled the sidebar. What a picture is called is a UUID and no help to anyone, so being able to see it is the whole point.
 - What's using it still sits under each one, and the delete button moved onto the picture's corner.
-
-## 2026-08-12 — the Assets tab
-
-### Additions
-
-- **The Assets tab works.** Every picture in the project, with a thumbnail, how big it is, and what's actually using it — "3 pages · 1 template", or "Not used anywhere". Until now nothing in the app could even see that folder, so a portrait you replaced six times left five files you had no way of finding.
-- **Pictures nothing is using come first**, because those are the ones you can do something about.
-- **Delete a picture nothing is using**, with a check first and undo after — the file itself comes back, not just a reference to it.
-- Hovering a row tells you which pages by name.
-
-### Worth knowing
-
-- **A picture that *is* being used has no delete button yet.** That's on purpose: deleting one would leave the page pointing at a file that's gone and showing an empty box, with nothing to say why. **Remove from every page** — which clears it off everything at once and makes it deletable — is the next piece.
-- Pictures used only by a template count as in use. A template and the page it came from can genuinely share a picture, and deleting it would empty the template.
-- Pictures inside hidden tabs count too, and so do ones tucked inside a bullet list.
-
----
-
-Older entries: [docs/changelog-archive.md](docs/changelog-archive.md).

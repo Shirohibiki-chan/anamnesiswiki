@@ -2157,6 +2157,40 @@ is below.
   `fitAcross` on its own, deliberately, and the per-page setting does not touch
   it — a scrolling row cannot land on a page boundary. See Phase 27's record.
 
+## Renaming a project
+
+- **A project's name and its folder change together, and that is the whole
+  point of the feature.** They are already set together when one is made and
+  when one is copied, so renaming only the label would manufacture exactly the
+  drift it exists to fix — she had a project whose folder said one thing and
+  whose `project.json` said "test", which the start screen rendered as "test,
+  copied from test".
+
+- **The name is written before the folder moves, and the order is the error
+  handling.** Writing the name is a one-field edit to a file already there;
+  moving the folder is what a sync client or an open handle can refuse. Failing
+  after the name is written leaves the visible half correct and a path that
+  still works to report with. The other order fails to a folder wearing the new
+  name with the old name inside it, which reads as the rename having done
+  nothing. `renameProject` therefore throws *after* a successful write, and the
+  caller treats that as a success with a message — don't "fix" it into a
+  rollback.
+
+- **An id is minted first when the project hasn't got one.** Pins, groups and
+  the archive fall back to matching on the path only when there is no id (see
+  `matchesRef`), so moving the folder of a never-opened project would silently
+  detach all three. Same unasked-for write `duplicateProject` already makes.
+  `healRefs` then updates the stored path and name on the next resolve, which
+  is why nothing else has to be rewritten.
+
+- **The remembered-recents entry is rewritten in place, never re-added.**
+  `addRecentProject` stamps `lastOpenedAt` with now, so renaming a project she
+  has not opened in months would send it to the top of a list ordered by when
+  things were last opened. `renameRecentProject` keeps the timestamp, makes no
+  entry for a project that has none — never having been opened is a fact the
+  rail depends on — and moves the last-opened pointer so the next launch does
+  not try to auto-open a path that has gone.
+
 ## Project templates
 
 - **A `.antpl` describes a shape; it is not a project copied.** Folders, and a
