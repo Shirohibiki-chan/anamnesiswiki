@@ -2782,6 +2782,21 @@ is below.
   carried across would draw twenty stars to click. `setBlockMeter` is the one
   place that decides this — see `isPipMeter`.
 
+- **A meter is a slider, and whether a drag is running is a ref — never
+  `hasPointerCapture`.** Reading the capture back is the tidier-looking version
+  and it is not reliable: capture can be refused or lost without the gesture
+  ending, and the failure mode is silent, a meter that takes the initial press
+  and then ignores every move. Measured in a probe, after the unit tests
+  passed. The ref is closed out by `event.buttons`, which cannot disagree with
+  whether a button is down.
+
+- **`arcFractionAt` is the inverse of `meterPoint` and they must stay that
+  way.** Dragging a dial is the drawing read backwards; a second copy of the
+  polar maths drifts and the handle stops sitting on the line it sets. A point
+  in a dial's *gap* snaps to the nearer end, which is not a nicety — reading an
+  overshoot past full as empty is a meter that empties itself at the moment you
+  fill it.
+
 - **A meter's fill falls back to `--color-accent-light`, never
   `--color-accent`.** The latter is a 15% tint despite the name — the same trap
   that made the import progress bar invisible, documented at the token itself.

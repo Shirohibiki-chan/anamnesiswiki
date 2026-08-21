@@ -5,9 +5,13 @@
 ### Additions
 
 - **Meters — a number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with six of them, and they sit in the sidebar alongside your properties.
-- **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so typing 75 gives you 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
-- **Two of them count whole things:** a **Rating** you click to set a level, and a **Token pool** you click to spend one at a time. Spell charges, favours owed, ammunition, stars out of five. Five to start with, up to twenty if you want them.
+- **You drag them.** Grab the handle on a bar and slide it, or take hold of a dial and swing it round — the number follows your finger and doesn't have to be typed. Dragging past either end stops there instead of wrapping, including past the gap at the bottom of a gauge, which fills it rather than emptying it.
+- **Stars and tokens drag too.** Sweep across them to set four at once instead of clicking four times. A single click still means what it did.
+- **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so a bar dragged to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
+- **Two of them count whole things:** a **Rating** you click or drag to set a level, and a **Token pool** you click to spend one at a time. Spell charges, favours owed, ammunition, stars out of five. Five to start with, up to twenty if you want them.
 - **Clicking a rating's current level clears it**, so a star you didn't mean to click isn't permanent.
+- **The two boxes under every meter are still there** for a number that has to be exact — dragging moves in whole units, and 62.5 is a thing you type.
+- **They work from the keyboard.** Tab to a meter, then arrow keys to nudge it, Page Up and Page Down for ten at a time, Home and End for empty and full.
 - **A meter wears the block's colour.** The swatches in its `⋯` menu are the ones every other block uses, so an influence meter can be purple and a wounded one red.
 - **The shape is a setting, not a decision you're stuck with.** Click the shape's name above the meter and pick another one — the number you typed comes with it, and nothing has to be deleted and rebuilt.
 - **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.

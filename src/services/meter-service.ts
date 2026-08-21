@@ -76,6 +76,18 @@ export function pipClickValue(style: MeterStyle, current: number, index: number)
 }
 
 /**
+ * A point on the circle, by angle in degrees with zero at twelve o'clock.
+ *
+ * Exported because the arc and the handle that drags it have to agree about
+ * where the end of the arc is — two copies of this drift by a pixel and the
+ * handle sits off the line.
+ */
+export function meterPoint(angle: number, radius = 40, centre = 50): [number, number] {
+  const radians = ((angle - 90) * Math.PI) / 180;
+  return [centre + radius * Math.cos(radians), centre + radius * Math.sin(radians)];
+}
+
+/**
  * An SVG arc path for the round shapes, drawn clockwise from `startAngle`
  * over `sweep` degrees of the fraction given.
  *
@@ -91,10 +103,7 @@ export function arcPath(fraction: number, startAngle: number, sweep: number, rad
   // A full circle cannot be drawn as one arc — start and end land on the same
   // point and the renderer draws nothing at all. Two half arcs, always.
   const degrees = filled * sweep;
-  const point = (angle: number) => {
-    const radians = ((angle - 90) * Math.PI) / 180;
-    return [centre + radius * Math.cos(radians), centre + radius * Math.sin(radians)];
-  };
+  const point = (angle: number) => meterPoint(angle, radius, centre);
 
   const [x0, y0] = point(startAngle);
   if (degrees >= 359.999) {
@@ -127,4 +136,65 @@ export function meterReadout(block: Block): string {
   const value = meterValue(block);
   const rounded = Math.round(value * 10) / 10;
   return max === DEFAULT_MAX ? `${Math.round(meterFraction(block) * 100)}%` : `${rounded}/${max}`;
+}
+
+/** The round shapes, as their own type — the three that are drawn as an arc. */
+export type ArcStyle = "circle" | "semicircle" | "gauge";
+
+export function isArcMeter(style: MeterStyle): style is ArcStyle {
+  return style === "circle" || style === "semicircle" || style === "gauge";
+}
+
+/**
+ * Where a point sits along a round meter's sweep, 0 to 1.
+ *
+ * The inverse of `meterPoint`, and the whole of dragging a dial: the pointer's
+ * position in the same 100-wide space the arc is drawn in, turned back into an
+ * angle and then into a fraction of the sweep.
+ *
+ * **A point in the gap snaps to the nearer end rather than to zero.** A gauge
+ * has 90 degrees of nothing at the bottom, and a drag that overshoots the full
+ * end by a few pixels means "all of it", not "none of it" — that reading is
+ * what makes a dial feel broken at exactly the moment you fill it.
+ *
+ * Distance from the centre is ignored on purpose. Requiring the pointer to
+ * stay on a 9-unit-wide ring would mean a drag that drifts inwards silently
+ * stops responding.
+ */
+export function arcFractionAt(style: ArcStyle, x: number, y: number, centre = 50): number {
+  const { start, sweep } = ARC_GEOMETRY[style];
+  const degrees = (Math.atan2(y - centre, x - centre) * 180) / Math.PI + 90;
+  const relative = (((degrees - start) % 360) + 360) % 360;
+  if (relative <= sweep) return relative / sweep;
+  return relative - sweep < (360 - sweep) / 2 ? 1 : 0;
+}
+
+/** Where along a bar a point sits, 0 to 1, clamped to the ends. */
+export function barFractionAt(offsetX: number, width: number): number {
+  if (!(width > 0)) return 0;
+  return Math.min(Math.max(offsetX / width, 0), 1);
+}
+
+/**
+ * The value a fraction of the way along this block's range.
+ *
+ * Rounded to whole units, because every maximum here is either a percentage or
+ * a count of things and neither wants 61.837. Typing still takes decimals —
+ * dragging is the coarse gesture and the box beneath it is the precise one.
+ */
+export function valueAtFraction(block: Block, fraction: number): number {
+  const max = meterMax(block);
+  return Math.round(Math.min(Math.max(fraction, 0), 1) * max);
+}
+
+/**
+ * The value `steps` whole units away from where this block is now, clamped.
+ *
+ * What an arrow key does. It reads through `meterValue` rather than off the
+ * block so a nudge on a meter whose maximum has since shrunk starts from what
+ * is on screen — pressing Up on a meter drawn at 3 must not jump to 9.
+ */
+export function nudgedValue(block: Block, steps: number): number {
+  const max = meterMax(block);
+  return Math.min(Math.max(meterValue(block) + steps, 0), max);
 }

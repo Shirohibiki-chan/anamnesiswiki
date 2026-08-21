@@ -3225,6 +3225,34 @@ screenshot of a creature template she supplied.
 - **Every property field's label row became conditional**, because the shell
   draws the heading now and two of them is one too many.
 
+### Dragging, added the same day
+
+The first cut set a meter by typing into a box, with the shapes display-only.
+Her reaction on seeing it was immediate and correct — being stuck typing
+numbers into a widget whose whole point is that you can see it is tedious — so
+dragging went in before the PR was merged rather than being queued.
+
+- **Every shape is a slider.** A bar drags along its track, the three dials
+  drag round their sweep, and stars and tokens set the level the pointer
+  sweeps across. `arcFractionAt` is the inverse of the geometry that draws
+  them, so the drawing and the dragging cannot disagree.
+- **A point in a dial's gap snaps to the nearer end.** A gauge has 90 degrees
+  of nothing at the bottom; reading a drag that overshoots the full end as
+  "none of it" empties the meter at the exact moment you fill it.
+- **Dragging rounds to whole units, and the boxes stay** for the numbers a drag
+  can't land on. The gesture is coarse by design; the precise path is right
+  underneath it.
+- **`role="slider"` and the arrow keys**, since it is one now — Page Up/Down
+  for ten, Home and End for the ends. A hundred presses to cross a bar is not
+  a keyboard path.
+- **Whether a drag is running is a ref, not `hasPointerCapture`.** Written the
+  tidy way first, and in the probe the bar took the initial press and then
+  ignored every move — capture can be refused or lost without the gesture
+  ending, and the failure mode is a meter that simply doesn't drag. The ref is
+  closed out by `event.buttons` instead.
+- **A pip drag consumes its trailing click.** Otherwise a drag that ends where
+  it started fires the toggle and clears a rating that was only being adjusted.
+
 ### Decisions worth the record
 
 - **Everything is a block, including the picture and the properties**, and a
@@ -3353,12 +3381,13 @@ presentation over them.
 
 ### What shipped
 
-- **`meter-service.ts`** — the defaulting, the clamping, the pip-click rules
-  and the SVG arc geometry, pure and unit-tested. 27 tests.
+- **`meter-service.ts`** — the defaulting, the clamping, the pip-click rules,
+  the SVG arc geometry and its inverse (a pointer position back to a value),
+  pure and unit-tested. 39 tests.
 - **`meter` block kind** with `meter` / `value` / `max` on `Block`, and three
   store actions (`setBlockMeter`, `setBlockValue`, `setBlockMax`).
-- **`MeterBlock.tsx`** — the six renderings, the shape picker, the clickable
-  pips, and the two numbers under every shape.
+- **`MeterBlock.tsx`** — the six renderings, the shape picker, dragging on
+  every shape, the clickable pips, and the two numbers under every shape.
 - **Six entries in Add Block** under a Meters heading, all creating the same
   block with a different shape.
 
@@ -3394,7 +3423,7 @@ presentation over them.
 
 ### Verification
 
-`pnpm lint`, `pnpm test` (1286, 27 new) and `tsc --noEmit` all clean.
+`pnpm lint`, `pnpm test` (1298, 39 new) and `tsc --noEmit` all clean.
 
 Then driven in a throwaway probe mounting the real `BlockPanel`, because a unit
 suite cannot see a sidebar:
@@ -3412,3 +3441,16 @@ suite cannot see a sidebar:
   in the bold teal, not the invisible tint.
 - The stored blocks came out as `{ kind, meter, value }` with no defaults, and
   the console stayed clean throughout.
+
+Then again for dragging, driving real pointer sequences at the real panel:
+
+- A bar took a press at a quarter, followed a drag to 80%, clamped an
+  overshoot to 100%, and ignored a pointer moving over it after release.
+- A gauge pressed at half read 50%, dragged to three-quarters read 75%, and a
+  drag past the full end into the gap read 100% rather than 0.
+- A circle dragged from a quarter to 60% and stayed a single arc.
+- Stars: dragging across to the fifth set five and the click that ended the
+  drag was swallowed; clicking a star straight afterwards still toggled
+  normally; dragging back down lowered it.
+- Keyboard on a focused bar: arrow 1, Page Up 10, End full, Home empty, with
+  `role="slider"` and the aria values present.

@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { Block, MeterStyle } from "../constants/schema";
-import { arcPath, meterFraction, meterMax, meterReadout, meterValue, pipClickValue } from "./meter-service";
+import {
+  arcFractionAt,
+  arcPath,
+  barFractionAt,
+  meterFraction,
+  meterMax,
+  meterPoint,
+  meterReadout,
+  meterValue,
+  nudgedValue,
+  pipClickValue,
+  valueAtFraction,
+} from "./meter-service";
 
 function meter(patch: Partial<Block> = {}): Block {
   return { id: "m", kind: "meter", ...patch };
@@ -145,5 +157,87 @@ describe("meterReadout", () => {
 
   it("doesn't spill a long decimal into a small circle", () => {
     expect(meterReadout(meter({ meter: "circle", max: 3, value: 1 / 3 }))).toBe("0.3/3");
+  });
+});
+
+// Dragging, which is the inverse of the drawing above — so the tests that
+// matter are the round trips: a fraction turned into a point and back.
+describe("arcFractionAt", () => {
+  const roundTrip = (style: "circle" | "semicircle" | "gauge", start: number, sweep: number) =>
+    [0.25, 0.5, 0.75].map((fraction) => {
+      const [x, y] = meterPoint(start + fraction * sweep);
+      return Math.round(arcFractionAt(style, x, y) * 100) / 100;
+    });
+
+  it("reads back the fraction each shape was drawn at", () => {
+    expect(roundTrip("circle", 0, 360)).toEqual([0.25, 0.5, 0.75]);
+    expect(roundTrip("semicircle", 270, 180)).toEqual([0.25, 0.5, 0.75]);
+    expect(roundTrip("gauge", 225, 270)).toEqual([0.25, 0.5, 0.75]);
+  });
+
+  it("reads the start of a sweep as empty", () => {
+    const [x, y] = meterPoint(270);
+    expect(arcFractionAt("semicircle", x, y)).toBeCloseTo(0);
+  });
+
+  // The gap at the bottom of a gauge is 90 degrees of nothing. Overshooting
+  // the full end by a hair has to mean full, or the dial empties itself at the
+  // exact moment you fill it.
+  it("snaps just past the full end to full", () => {
+    const [x, y] = meterPoint(225 + 270 + 10);
+    expect(arcFractionAt("gauge", x, y)).toBe(1);
+  });
+
+  it("snaps just before the empty end to empty", () => {
+    const [x, y] = meterPoint(225 - 10);
+    expect(arcFractionAt("gauge", x, y)).toBe(0);
+  });
+
+  it("ignores how far from the centre the pointer drifted", () => {
+    const near = arcFractionAt("circle", ...(meterPoint(90, 12) as [number, number]));
+    const far = arcFractionAt("circle", ...(meterPoint(90, 300) as [number, number]));
+    expect(near).toBeCloseTo(0.25);
+    expect(far).toBeCloseTo(0.25);
+  });
+});
+
+describe("barFractionAt", () => {
+  it("reads a position along the track", () => {
+    expect(barFractionAt(30, 120)).toBeCloseTo(0.25);
+  });
+
+  it("clamps a drag that left the track", () => {
+    expect(barFractionAt(-40, 120)).toBe(0);
+    expect(barFractionAt(400, 120)).toBe(1);
+  });
+
+  it("survives being measured before the track has a width", () => {
+    expect(barFractionAt(10, 0)).toBe(0);
+  });
+});
+
+describe("valueAtFraction", () => {
+  it("gives whole units, because no maximum here wants a decimal", () => {
+    expect(valueAtFraction(meter({ meter: "bar" }), 0.618)).toBe(62);
+    expect(valueAtFraction(meter({ meter: "gauge", max: 8 }), 0.5)).toBe(4);
+  });
+
+  it("clamps a drag past either end", () => {
+    expect(valueAtFraction(meter({ meter: "bar" }), 1.4)).toBe(100);
+    expect(valueAtFraction(meter({ meter: "bar" }), -0.2)).toBe(0);
+  });
+});
+
+describe("nudgedValue", () => {
+  it("steps by whole units and stops at the ends", () => {
+    expect(nudgedValue(meter({ meter: "bar", value: 40 }), 10)).toBe(50);
+    expect(nudgedValue(meter({ meter: "bar", value: 96 }), 10)).toBe(100);
+    expect(nudgedValue(meter({ meter: "rating", value: 0 }), -1)).toBe(0);
+  });
+
+  // Starts from what is on screen, not from what is stored: a rating whose pip
+  // count shrank draws 3 and must not jump to 9 on one arrow press.
+  it("starts from the drawn value, not the remembered one", () => {
+    expect(nudgedValue(meter({ meter: "rating", max: 3, value: 8 }), 1)).toBe(3);
   });
 });

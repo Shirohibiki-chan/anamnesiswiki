@@ -364,13 +364,46 @@
   gap: var(--space-sm);
 }
 
+/* The track is the slider, so it takes the pointer and the keyboard. Padded
+   vertically rather than made taller: an 8px grab target is a miss waiting to
+   happen, and the padding is invisible while the bar stays thin. */
 .block-meter-track {
+  position: relative;
   flex: 1;
   min-width: 0;
   height: 8px;
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
-  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.block-meter-track::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+
+.block-meter-track:focus-visible,
+.block-meter-arc:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 3px;
+}
+
+/* Centred on the fill's end, which is why it is translated back by half its
+   own width rather than positioned from the left edge. */
+.block-meter-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: var(--radius-full);
+  background: var(--block-accent, var(--color-accent-light));
+  border: 2px solid var(--color-panel);
+  transform: translateY(-50%);
+  transition: left 140ms ease;
+  pointer-events: none;
 }
 
 .block-meter-fill {
@@ -378,6 +411,7 @@
   border-radius: var(--radius-full);
   background: currentcolor;
   transition: width 140ms ease;
+  pointer-events: none;
 }
 
 .block-meter-readout {
@@ -394,6 +428,8 @@
   width: 100%;
   max-width: 132px;
   overflow: visible;
+  cursor: pointer;
+  touch-action: none;
 }
 
 .block-meter-arc-track,
@@ -412,8 +448,19 @@
   transition: d 140ms ease;
 }
 
+/* Sits on the end of the fill, and says the dial can be taken hold of. The
+   ring around it is the panel colour so it reads as sitting above the arc
+   rather than as a bead threaded on it. */
+.block-meter-knob {
+  fill: var(--block-accent, var(--color-accent-light));
+  stroke: var(--color-panel);
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+
 .block-meter-arc-readout {
   fill: var(--color-text-primary);
+  pointer-events: none;
   font-size: 15px;
   font-variant-numeric: tabular-nums;
 }
@@ -422,6 +469,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
+  touch-action: none;
 }
 
 .block-meter-pip {
