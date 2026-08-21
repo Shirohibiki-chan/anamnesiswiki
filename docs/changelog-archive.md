@@ -2,6 +2,16 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-12 — the Assets tab keeps its buttons where you left them
+
+### Fixes
+
+- **The top of the tab no longer scrolls away.** Adding a picture, the count, and the folder row were inside the same scrolling box as the pictures, so going looking through them took every control off the top of the panel. Only the pictures scroll now.
+- **"Add picture" is a button that looks like a button.** It used to be a small icon at the end of the count line, and those icons are invisible until you hover them — which is fine for a control sitting next to the thing it acts on, and useless for the only way into a feature.
+- **Making a folder has its own button next to it**, instead of being the last item in the row of folders. It used to sit immediately after a folder called "New folder", so the button that makes folders and a folder named after what it does looked like the same thing.
+- **"Unsorted" only appears once you've filed something.** With nothing in folders yet it held every picture you have, so it was a second copy of "All pictures" wearing a different name and the same number.
+- **The folder row is hidden until you have a folder.** One chip saying "All pictures" above all your pictures wasn't telling you anything.
+
 ## 2026-08-12 — more room to drop a picture on a page
 
 ### Fixes

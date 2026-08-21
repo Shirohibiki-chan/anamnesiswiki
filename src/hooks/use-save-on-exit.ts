@@ -62,29 +62,63 @@ export function useSaveOnExit(): void {
 
     let unlisten: (() => void) | undefined;
     let disposed = false;
-    // A second close attempt (a second click, or the OS retrying) while the
-    // first is still flushing used to re-enter this handler and race a
-    // second `destroy()` against the first's. Rather than reason about two
-    // destroys landing at once, the second attempt just waits on the first.
-    let closing = false;
+    // The close currently being carried out, if any. A second attempt — a
+    // second click, or the OS retrying — joins it rather than racing a second
+    // `destroy()` against the first.
+    //
+    // **It is a promise rather than a boolean, and that is the fix.** It used
+    // to be a `closing` flag that was set once and never cleared, so a close
+    // that failed to actually take the window away left every later attempt
+    // hitting `preventDefault()` and returning — the X dead for the rest of
+    // the session, silently, which is what she reported on 2026-08-21.
+    // Clearing this when the attempt settles means a failed close can simply
+    // be retried by clicking again.
+    let closeRun: Promise<void> | null = null;
+
+    // `destroy()` can reject, and an exception escaping the close handler is
+    // not recoverable on its own: Tauri cancels the native close whenever a JS
+    // listener exists and only closes the window itself when the handler
+    // resolves without throwing. So a rejection here means the window stays
+    // open *and* nothing said why. Falling back to `close()` gives it a second
+    // route out, and swallowing the failure lets the retry above work.
+    async function takeTheWindowAway(): Promise<void> {
+      try {
+        await getCurrentWindow().destroy();
+      } catch {
+        try {
+          await getCurrentWindow().close();
+        } catch {
+          // Both routes refused. The attempt is over either way, and clearing
+          // `closeRun` is what leaves the next click able to try again.
+        }
+      }
+    }
+
+    async function flushThenClose(): Promise<void> {
+      try {
+        await Promise.race([beginFlush(), new Promise((resolve) => setTimeout(resolve, FLUSH_TIMEOUT_MS))]);
+      } finally {
+        await takeTheWindowAway();
+      }
+    }
 
     // Rejects when the app is running outside Tauri (`pnpm dev` in a plain
     // browser, per CLAUDE.md's Commands section), where there's no window to
     // hook and the listeners above are all there is.
     void getCurrentWindow()
       .onCloseRequested(async (event) => {
-        if (closing) {
-          event.preventDefault();
-          return;
-        }
-        if (!hasPendingSaves() && !inFlight) return;
+        // Nothing to save and nothing already closing: let Tauri close the
+        // window itself, which it does when this handler resolves without
+        // preventing the default.
+        if (!hasPendingSaves() && !inFlight && !closeRun) return;
+
         event.preventDefault();
-        closing = true;
-        try {
-          await Promise.race([beginFlush(), new Promise((resolve) => setTimeout(resolve, FLUSH_TIMEOUT_MS))]);
-        } finally {
-          await getCurrentWindow().destroy();
+        if (!closeRun) {
+          closeRun = flushThenClose().finally(() => {
+            closeRun = null;
+          });
         }
+        await closeRun;
       })
       .then((stop) => {
         if (disposed) stop();
