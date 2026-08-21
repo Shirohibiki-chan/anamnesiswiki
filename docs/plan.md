@@ -157,6 +157,41 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   bundled copies are Ubuntu 22.04's — newer than what an older Fedora carries,
   which is why the new laptop was fine and the old one wasn't.
 
+  **Confirmed 2026-08-21, and the diagnosis above is right.** He ran it again
+  and reported three things that settle it:
+
+  - The bare AppImage dies with `Could not create default EGL display:
+    EGL_BAD_PARAMETER. Aborting...` before a window ever appears.
+  - `LD_PRELOAD=/lib64/libwayland-client.so.0 ./Anamnesis_0.3.0_amd64.AppImage`
+    **runs**. Forcing the host's own copy of that one library is the whole fix,
+    which pins the failure to the bundled `libwayland-client` and nothing else.
+  - **The `.rpm` works** on the same machine. So this is our bundle, not his
+    system, not his GPU, and not webkit.
+
+  **He is the verification.** This repo still has no machine that reproduces it
+  and CI runs the Ubuntu that produces the bad bundle, so the rule above stands
+  — but the "ask him first" half is now done, and a fix can be built and handed
+  to him to run.
+
+  **The fix has a complication worth knowing before starting.** Removing the
+  offending libraries has to happen *before* Tauri packages the AppImage, or
+  the update signature no longer matches the file: `.sig` is generated over the
+  bundled artifact, so unpacking, deleting and repacking afterwards produces an
+  AppImage every existing install refuses to update to. Tauri's bundler exposes
+  no hook between building the AppDir and sealing it, so the options are
+  really:
+
+  1. **Repack and re-sign in CI**, using `tauri signer sign` after the fact.
+     Correct, and it puts a second signing step in the workflow.
+  2. **Build the AppImage ourselves** rather than through `tauri-action`, with
+     `linuxdeploy` and its excludelist. Most correct, most work.
+  3. **Stop shipping an AppImage** and offer `.deb` and `.rpm`, which both
+     work. Cheapest and least satisfying; it drops the one Linux artifact that
+     runs anywhere.
+
+  Whichever way, ship it to him as a draft-release artifact and let him run it
+  before it is published.
+
   **Don't fix this blind.** The fix is to stop bundling those libraries, and
   the way to know it worked is a machine that reproduces the failure — this
   repo has none, and CI runs the same Ubuntu that produces the bad bundle. Ask
