@@ -5,6 +5,7 @@
 // state/dialog-store.ts and components/shell/ConfirmDialog.tsx.
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { PROJECT_TEMPLATE_EXTENSION } from "../constants/project-template";
 
 /**
  * Whether a native picker is already up.
@@ -114,6 +115,48 @@ export async function pickLkSavePath(defaultName: string): Promise<string | null
       filters: [{ name: "LegendKeeper export", extensions: ["lk"] }],
     }),
   );
+}
+
+/**
+ * Where a project template goes when it's exported (Phase 27).
+ *
+ * The filter is named for what she is making rather than for the extension,
+ * because `.antpl` is a string nobody has ever seen before and the file's job
+ * is to be sent to a person, not to be recognised by one.
+ */
+export async function pickTemplateSavePath(defaultName: string): Promise<string | null> {
+  return onePicker(() =>
+    save({
+      title: "Export as a project template",
+      defaultPath: `${defaultName}.${PROJECT_TEMPLATE_EXTENSION}`,
+      filters: [{ name: "Anamnesis project template", extensions: [PROJECT_TEMPLATE_EXTENSION] }],
+    }),
+  );
+}
+
+/**
+ * A template file somebody sent her.
+ *
+ * Second filter for the same reason `pickImportFile` carries one, and it bites
+ * harder here: this is a file that arrives through Discord or a chat window, so
+ * it has every chance of landing as `Starter.antpl.txt` or with its extension
+ * stripped altogether. A file she can see in the folder and can't see in the
+ * picker reads as the app being broken; letting her choose anything means a bad
+ * pick fails at the parse step, which says what's wrong.
+ */
+export async function pickTemplateFile(): Promise<string | null> {
+  const result = await onePicker(() =>
+    open({
+      directory: false,
+      multiple: false,
+      title: "Open a project template",
+      filters: [
+        { name: "Project template", extensions: [PROJECT_TEMPLATE_EXTENSION] },
+        { name: "All files", extensions: ["*"] },
+      ],
+    }),
+  );
+  return typeof result === "string" ? result : null;
 }
 
 /**

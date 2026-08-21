@@ -16,10 +16,11 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–17 are done. The app is shippable**, and **Phase 27 (The World
-Library) is next**, by her call. `docs/plan.md` has the remaining phases plus
-the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
-phase delivered.
+**Phases 0–17 and 27 are done. The app is shippable**, and **Phase 18
+(Sidebar Blocks) is next**. `docs/plan.md` has the remaining phases plus the
+unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase
+delivered. Phase 27 closed 2026-08-20 with project templates — what still binds
+the code from it is §Project templates below.
 
 The most recent ones are the ones a new session is most likely to touch.
 **Phase 14 — Everyday Navigation — closed 2026-08-11**: eleven small things
@@ -2122,6 +2123,43 @@ is below.
   removing first. `PageBanner`'s picker is the in-app picture library, which
   is scoped to the *open* project's assets; nothing is open here, so this
   reaches for the OS's own file dialog instead (`pickImageFile`).
+
+## Project templates
+
+- **A `.antpl` describes a shape; it is not a project copied.** Folders, and a
+  blank starter page of each kind, wired by `parentId` — see
+  `constants/project-template.ts`. There is nowhere in the format to put
+  anybody's writing, and that is the point: "nothing of hers travels" is
+  structural here rather than something each change has to remember.
+- **Don't confuse it with `TemplateLibrary` (`constants/schema.ts`).** That is a
+  *page* template: one page and its subtree, copied whole, prose and pictures
+  included, because that is what "turn this page into a template" means. Same
+  word, different unit, different file. Phase 28's "Templates as files" is the
+  file format for *that* one and is still unbuilt; the two should not be merged
+  without a reason, because it deliberately carries pictures and this
+  deliberately refuses to.
+- **A starter page's tabs are never in the file.** `materializeProjectTemplate`
+  builds them from `template-registry.ts` when the template is used, so a
+  template written a year ago makes pages with today's prompts. Putting page
+  content into the format would freeze whatever the exporter had and quietly
+  break rule 12 (template placeholder copy has one source).
+- **Export collapses pages, per parent, and the first in her order wins.**
+  Stability matters more than which one: exporting the same project twice must
+  give the same file. `orderSiblings` decides, and it tie-breaks on node id when
+  two nodes share a `createdAt` — which is deterministic per project but
+  arbitrary, so don't write a test that assumes creation order without setting
+  `createdAt` explicitly.
+- **The format is parents-before-children, and three things rely on it** —
+  `materializeProjectTemplate` resolves a parent only against ids it has already
+  seen (so a cycle makes roots instead of hanging), the picker computes indent
+  depth in one pass, and sibling order is recorded by array position alone,
+  which is why there is no `rootOrder` or `childOrder` in the file.
+- **Ids in the file are wiring, not identity.** Everything is re-minted on use,
+  so two projects from one template share nothing. An id arriving from outside
+  is an id two things can end up wearing.
+- **No gallery, ever.** The exchange is file-based: she is handed a `.antpl` and
+  opens it. Browsing or downloading templates is a network call nobody pressed a
+  button for — the same line `.lk` import already sits behind.
 
 ## Product decisions
 

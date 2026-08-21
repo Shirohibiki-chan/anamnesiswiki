@@ -23,7 +23,9 @@
 | The start screen — brand, the one centred "New project" button, the filter box, and the rail. Rendered before any project is open | `src/components/start/StartScreen.tsx` |
 | Every project as covers or rows, a page at a time or in one scroll, with the view toggle and the page controls | `src/components/start/ProjectGrid.tsx`, `src/components/start/ProjectTile.tsx` |
 | The start screen's right-hand rail — recently opened, the ways to start something, the cog | `src/components/start/StartRail.tsx` |
-| What the start screen can do that can fail: open a listed project, open a folder she picked (including looking one level in), create a new one | `src/hooks/use-start-actions.ts` |
+| Start from a template — the list of templates, the tree preview of the selected one, and the name box. Its own busy flag and error line, both inside the window | `src/components/start/TemplatePickerDialog.tsx`, `src/hooks/use-project-templates.ts` |
+| The `.antpl` format itself: building one from a project, parsing one she was sent, and turning one into nodes. The shipped default template is a constant | `src/services/project-template.ts`, `src/constants/project-template.ts`, `src/constants/default-project-template.ts` |
+| What the start screen can do that can fail: open a listed project, open a folder she picked (including looking one level in), create a new one, export one as a template | `src/hooks/use-start-actions.ts` |
 | Pages that fit the window, for any long grid. Reads the pages-or-scroll preference. `useMeasuredPagedList` is the variant for a grid whose tile size only the CSS knows — the two picture grids | `src/hooks/use-paged-list.ts`, `src/services/pagination.ts` |
 | The arrows and dots (or the counter) under a paged grid, shared by all three | `src/components/shell/PageNav.tsx` |
 | Startup routing element that reads the last-opened project from Tauri store and either loads it directly or renders `StartScreen` if none exists | `src/components/shell/StartupRouter.tsx` |
