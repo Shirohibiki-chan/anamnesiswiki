@@ -286,19 +286,50 @@ because the boundary is written strict in `CLAUDE.md` at her request.
 
 ## Phase 18b — The Index
 
-**Backlinks, Tag Index and Subpage Index are one job underneath** — an index of
-what points at what. Nothing in the codebase computes a backlink today, so this
-is built from nothing rather than extended. Build the service once; it serves
-all three blocks and is the same data Phase 24's graphs need.
+**Backlinks, Tag Index, Subpage Index and Manual Links are one block with a switchable source.** Scoped 2026-08-21 from two screenshots of the reference: each of those is offered as its own entry in the Add Block menu, and every one of them opens the same *Collection source* picker underneath — Manual Links, Subpages, Tags, Mentions. Our plan had them as three block types plus 18a's link block, which is four things to learn and four things to build. It is one thing with a setting.
 
-- **Backlinks** — every page whose text links here.
-- **Tag Index** — every page carrying a given tag.
-- **Subpage Index** — the children of this page, which the tree already knows
-  and the sidebar currently doesn't show.
-- **Alias** punches above its weight — alternate names that feed search and
-  `[[wikilinks]]`, so "Val" finds Valera Jiang. It belongs here rather than in
-  18a because an alias is an edge into the same index: a link to "Val" has to
-  resolve to Valera's page, and backlinks have to report it as one.
+Build it that way: **one `collection` block kind**, carrying a `source` and the settings that source needs. The Add Block menu still offers four named entries, because "Backlinks" is what she is looking for and "Collection, source: Mentions" is not — each entry seeds the same block with a different source, and the source stays changeable afterwards.
+
+**This replaces 18a's `link` block.** Manual Links is the same feature with a list instead of one target, so the `link` kind is migrated into a `collection` with `source: "manual"` rather than left beside it. One page in her world has a link block on it as of 2026-08-21; it must not break.
+
+### The four sources
+
+- **Mentions** — every page whose writing points here. This is the one she expected to be called a backlink, and the name in the menu should be **Backlinks**, because that is what she went looking for.
+- **Subpages** — this page's children. **Direct children only**, her call. Not every descendant: on a deep branch that becomes a page of results nobody asked for.
+- **Tags** — pages carrying tags chosen *on the block*, her call, and the reference's filter box takes several. A block that read this page's own tags instead would be a different feature and could not be added twice for two different tags.
+- **Manual Links** — a curated list, in the order she puts them in.
+
+### What counts as a mention
+
+**All three kinds count, and each row says which it was.** *My call, not hers — worth checking before it is built.* A page pointing here in prose obviously counts. But a page whose **Friends** property names this one is pointing at it just as hard, and so is a Manual Links block listing it; a Backlinks block that ignored those would read as broken on exactly the character pages where it matters most. The row saying where it came from is what stops the list being mysterious — the reference gives no such hint, and its emptiness is precisely what confused her.
+
+Watch the loop: a Manual Links collection on page A listing page B makes B's Mentions show A. That is correct and wanted. What must not happen is a Mentions collection counting *itself* into another Mentions collection.
+
+### Alias
+
+**Alternate names for a page**, stored on the node, so `[[Val]]` resolves to Valera Jiang and searching "Val" finds her. It belongs in this phase because an alias is an edge into the same index: a mention written as "Val" has to resolve, and Backlinks has to report it.
+
+**Search says which alias matched**, her call — one result, with the alias named on it. Silent matching leaves her asking why a page is in the list, which is the same complaint as an empty Backlinks block with no explanation.
+
+### What `[[Name]]` does when it does not match
+
+Reported from use 2026-08-21, in the reference, and it is the reason the whole phase got questioned. She typed `[[ragatha]]` on the *gangle* page. The reference **created a second page called ragatha as a child of gangle** and linked to that, leaving her existing top-level ragatha untouched — so that page's Backlinks block was correct and useless, because nothing pointed at it. A screenshot of her tree shows both pages.
+
+**Ours must never invent a page as a side effect of typing.** It does not today: `resolveWikilinks` only converts `[[Name]]` into a mention when exactly one page has that exact name, and otherwise leaves the text alone.
+
+**But "leaves the text alone" is its own silence, and it bites hardest in exactly her situation.** With two pages named ragatha the match is ambiguous, so the link quietly stays as literal `[[ragatha]]` — no link, no error, no hint that anything failed. That is the same class of problem as an empty Backlinks block: right, and unexplained. This phase should close it, because it is the thing standing between her and a mention ever existing:
+
+- **No match** — offer to make the page, and let her say *where*. Never silently, and never parented to whatever page she happened to be typing on.
+- **Several matches** — ask which one, the way the mention menu already asks.
+- **Aliases count as names here**, so `[[Val]]` matching Valera is a single match, not a miss.
+
+### The engineering that decides whether this is fast
+
+**A link in prose is already on disk.** BlockNote stores one as an inline `mention` carrying `nodeId` and `label` (`services/editor-blocks/wikilink.ts`), so the edges exist in every page today and nothing needs migrating or reindexing.
+
+**Copy `search-service`'s caching exactly.** It keeps a `WeakMap` keyed on the nodes map, holding a per-node cache of extracted text, so one keystroke does not re-walk the project. The index has the same shape and the same hazard: `nodes` is replaced on every character typed, and a naive index that rebuilds per render would walk every page of prose in the world on each keystroke. Cache per node, recompute the node that changed.
+
+**One service, and Phase 24 reuses it.** Graphs need exactly this data. If the index ends up computed inside the block component, Phase 24 builds it a second time and the two disagree.
 
 ---
 
