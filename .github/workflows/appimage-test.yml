@@ -1,0 +1,113 @@
+# Builds an AppImage with the host's graphics libraries left out of it, and
+# uploads it as a workflow artifact for someone to actually run.
+#
+# **This does not touch releasing.** It exists because the AppImage we ship
+# fails to start on some older Linux systems (see docs/plan.md → Known Bugs)
+# and this repo has no machine that reproduces it — the only way to know a fix
+# works is to hand a built file to the person whose laptop it fails on. Run it
+# from the Actions tab, download the artifact, have him run it, and only then
+# change the real release workflow.
+#
+# Why not just fix release.yml: the update signature is generated over the
+# packaged AppImage, so repacking one after Tauri sealed it produces a file
+# every existing install refuses to update to. Nothing here is signed, because
+# nothing here is published.
+name: AppImage test build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      # Tauri builds the AppDir and seals it. We want the AppDir, which it
+      # leaves behind next to the .AppImage it made.
+      - name: Build the AppImage the normal way
+        run: pnpm tauri build --bundles appimage
+
+      # The AppImage project publishes the list of libraries that must come
+      # from the host rather than the bundle — graphics, GL, driver shims —
+      # because they are bound to the machine's own kernel and GPU stack.
+      # `linuxdeploy` honours it; Tauri's bundler copies webkit2gtk's whole
+      # dependency tree without consulting it, which is how a stray
+      # libwayland-client ends up inside and cannot talk to the host's EGL.
+      - name: Fetch the excludelist
+        run: |
+          curl -fsSL -o excludelist \
+            https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
+          wc -l excludelist
+
+      - name: Strip host libraries out of the AppDir
+        run: |
+          set -euo pipefail
+          APPDIR="$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppDir' | head -1)"
+          test -n "$APPDIR" || { echo "no AppDir was produced"; exit 1; }
+          echo "AppDir: $APPDIR"
+
+          # One name per line, blanks and #comments dropped.
+          grep -v '^\s*#' excludelist | grep -v '^\s*$' | sort -u > names.txt
+
+          removed=0
+          while read -r name; do
+            [ -z "$name" ] && continue
+            # Matches the soname and any versioned suffix beside it, which is
+            # how these are actually installed (libwayland-client.so.0.22.0).
+            while IFS= read -r path; do
+              echo "removing $(basename "$path")"
+              rm -f "$path"
+              removed=$((removed + 1))
+            done < <(find "$APPDIR" -type f -name "${name}*" 2>/dev/null || true)
+          done < names.txt
+
+          echo "removed $removed bundled libraries"
+          # A build that removed nothing means the list did not match the
+          # layout, and shipping that to him would waste a round trip.
+          test "$removed" -gt 0 || { echo "nothing matched — the AppDir layout changed"; exit 1; }
+
+          # The one that has to be gone, per his LD_PRELOAD finding.
+          if find "$APPDIR" -name 'libwayland-client*' | grep -q .; then
+            echo "libwayland-client is still bundled"; exit 1
+          fi
+
+      - name: Repack
+        run: |
+          set -euo pipefail
+          APPDIR="$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppDir' | head -1)"
+          curl -fsSL -o appimagetool \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          # No FUSE on the runner, so run the tool from its extracted contents.
+          ./appimagetool --appimage-extract > /dev/null
+          ARCH=x86_64 ./squashfs-root/AppRun "$APPDIR" Anamnesis-nolibs-x86_64.AppImage
+          ls -la Anamnesis-nolibs-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage-without-host-libraries
+          path: Anamnesis-nolibs-x86_64.AppImage
+          if-no-files-found: error
