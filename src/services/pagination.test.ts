@@ -115,8 +115,8 @@ describe("fitAcross", () => {
     // The bug this exists for: four cards across a fullscreen 2560 monitor
     // were 565 wide against a card drawn at 245, which is a letterboxed band
     // rather than a cover.
-    expect(across(2296)).toBe(8);
-    expect(cardWidth(2296, 8)).toBeCloseTo(276.5, 1);
+    expect(across(2296)).toBe(9);
+    expect(cardWidth(2296, 9)).toBeCloseTo(244.4, 1);
   });
 
   it("drops to two rather than standing the cards on end", () => {
@@ -126,11 +126,33 @@ describe("fitAcross", () => {
     expect(cardWidth(636, 2)).toBe(312);
   });
 
-  it("never lands a card narrower than it asked to be", () => {
+  // The rule used to be "never below target", and it was that rule which cost
+  // her the fourth pin: a row 8px short of four 245s gave three at 328 rather
+  // than four at 243. A card may now come in a little under instead.
+  it("never lands a card more than a hair under what it asked to be", () => {
     for (let width = 400; width <= 4000; width += 7) {
       const n = across(width);
-      if (n > MIN) expect(cardWidth(width, n)).toBeGreaterThanOrEqual(TARGET);
+      if (n > MIN) expect(cardWidth(width, n)).toBeGreaterThanOrEqual(TARGET * 0.98);
     }
+  });
+
+  // The other half, and the one that actually bites: overshoot has no bound of
+  // its own — it is whatever the leftover comes to — so it is what the count
+  // has to be chosen against.
+  it("never inflates a card far past what it asked to be", () => {
+    for (let width = 400; width <= 4000; width += 7) {
+      const n = across(width);
+      if (n > MIN) expect(cardWidth(width, n)).toBeLessThan(TARGET * 1.35);
+    }
+  });
+
+  // The regression itself. 245 is what a card measures at four across on a
+  // 1280 window, so that window sat on exactly 4.000 cards — and moving the
+  // start screen's scrollbar onto the whole column took 8px off it.
+  it("keeps four across at the drawn width once a scrollbar takes its bite", () => {
+    expect(across(1016)).toBe(4);
+    expect(across(1016 - 8)).toBe(4);
+    expect(cardWidth(1016 - 8, 4)).toBe(243);
   });
 
   it("only ever grows the count as the window grows", () => {

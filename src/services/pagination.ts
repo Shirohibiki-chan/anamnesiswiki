@@ -70,11 +70,36 @@ export function pageContaining(itemIndex: number, perPage: number): number {
  * size anybody chose.
  *
  * `target` is the width a card wants to be, not a width it will get: the count
- * is chosen so the cards land at or a little above it, and the leftover is
- * shared out rather than left at the end. `min` is a floor because two cards
- * beside each other still read as a row and one does not.
+ * is chosen so the cards land near it, and the leftover is shared out rather
+ * than left at the end. `min` is a floor because two cards beside each other
+ * still read as a row and one does not.
  */
 export function fitAcross(width: number, target: number, gap: number, min: number): number {
   if (!Number.isFinite(width) || width <= 0 || target <= 0) return min;
-  return Math.max(min, Math.floor((width + gap) / (target + gap)));
+  return Math.max(min, Math.floor((width + gap) / (target * (1 - UNDERSHOOT) + gap)));
 }
+
+/**
+ * How far under its target a card may land rather than the row dropping one.
+ *
+ * **Without it the rule is "never below target", and the cost of that is paid
+ * in the other direction, much larger.** A row 8px short of fitting four
+ * 245px cards does not give four 243px cards — it gives *three* at 328, which
+ * is a third over the size anybody chose. At 1024 it is worse: two cards at
+ * 370 against a target of 245. Overshoot is unbounded because it is whatever
+ * the leftover comes to; undershoot is bounded here, at 2%.
+ *
+ * **Which is also the bug it was added for.** `PIN_TARGET_WIDTH` is 245
+ * because that is what a card measures at four across on a 1280 window — so a
+ * 1280 window landed on exactly 4.000 cards, with no room at all. Moving the
+ * start screen's scrollbar from the grid onto the whole column (2026-08-20)
+ * took 8px off that row and dropped her from four pins to three. Any future
+ * change that costs a pixel would do it again; 4.000 was never a number to
+ * build on.
+ *
+ * 2% is deliberately small — it is the difference between 245 and 240, which
+ * is nothing to look at, and it is enough to clear a scrollbar several times
+ * over. It changes no count at a width that was not already close to a
+ * boundary.
+ */
+const UNDERSHOOT = 0.02;

@@ -2,6 +2,11 @@
 
 ## 2026-08-21
 
+### Fixes
+
+- **Your pinned projects are back to four across.** Making the whole start screen scroll put a scrollbar on the column, which took 8 pixels off the row above it — and at a 1280-wide window that row fitted *exactly* four cards with nothing to spare, so it dropped to three fat ones. The row now lets a card come in a shade under its ideal width rather than losing a whole card, and the space for the scrollbar is reserved whether or not it's showing, so the count can't change as you filter.
+
+
 ### Additions
 
 - **Rename a project from inside the app.** It's on the `⋯` menu on any project, and it changes the name *and* the folder together, so the two can't drift apart. The box opens with the current name in it, selected, since most renames are a fix to part of a name rather than a whole new one. Nothing inside the project changes, and its pins, groups and archive state all follow it. If the folder can't be renamed — something else has it open, or your sync client is mid-copy — the name still changes and it tells you where the folder still is.

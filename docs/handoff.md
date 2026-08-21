@@ -2172,6 +2172,36 @@ is below.
   `fitAcross` on its own, deliberately, and the per-page setting does not touch
   it — a scrolling row cannot land on a page boundary. See Phase 27's record.
 
+## The pinned row's card count
+
+- **A card may land slightly under its target rather than the row dropping
+  one, and the asymmetry is the reason.** Undershoot is bounded (2%, in
+  `UNDERSHOOT` in `pagination.ts`); overshoot is not, because it is whatever
+  the leftover comes to. A row 8px short of four 245px cards does not give four
+  at 243 — it gives three at 328, and at 1024 it gives two at 370. The old rule
+  was "never below target" and it bought that guarantee at a much larger cost
+  in the other direction.
+
+- **`PIN_TARGET_WIDTH` is 245 because that is a card at four across on a 1280
+  window, so 1280 sat on exactly 4.000 cards.** That is not a number to build
+  on, and it broke the first time anything cost a pixel: moving the start
+  screen's scroll container from the grid to the whole column put a scrollbar
+  inside the row's width and took her from four pins to three. If you change
+  anything about that column's width, this is the thing that notices.
+
+- **`.start-main` reserves the scrollbar gutter whether or not it is
+  scrolling.** The pinned row measures that column, so without it the row's
+  width depends on whether the list below happens to be long enough to scroll —
+  filtering down to a few projects would widen the column and reflow the row
+  above it. A count that changes as she types is worse than a count one lower.
+
+- **This cannot be checked in the Browser pane.** `PinnedRow` sizes itself
+  through `useElementSize`, a `ResizeObserver`, and those never fire in a
+  hidden pane — the row renders `PINS_PER_PAGE` (its unmeasured fallback) at
+  every window width, which looks exactly like a correct answer. A probe
+  "confirming" four across there is confirming nothing. The arithmetic is
+  unit-tested instead; the rendered result needs the real window.
+
 ## Renaming a project
 
 - **A project's name and its folder change together, and that is the whole
