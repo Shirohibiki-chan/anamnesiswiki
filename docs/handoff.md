@@ -846,11 +846,13 @@ is below.
   "adding a Note does nothing."
 
 - **`TreePopover` is not tree-only, and the start screen's project menu needs
-  it for a second reason: `.start-area` scrolls.** A menu opened from a tile
-  near the bottom is cut off by that box unless it leaves it — the reason was
-  originally `overflow: hidden` and is now `overflow-y: auto`, which clips the
-  same way. The properties panel already reuses this component; reuse it rather
-  than positioning a menu inside a tile.
+  it for a second reason: `.start-main` scrolls.** A menu opened from a tile
+  near the bottom is cut off by that box unless it leaves it. The clipping
+  element has moved twice — `.start-area` with `overflow: hidden`, then
+  `.start-area` with `overflow-y: auto`, now `.start-main` — and the conclusion
+  has survived all three, because *something* on that screen always scrolls.
+  The properties panel already reuses this component; reuse it rather than
+  positioning a menu inside a tile.
 
 - **A `TreePopover` trigger opens on `click` and must never open on
   `pointerdown` — and it needs a ref to stay a toggle.** Opening on pointer-down
@@ -2117,7 +2119,26 @@ is below.
 - **So the scroll containers must actually scroll.** `.start-area`,
   `.tree-assets-scroll` and `.asset-picker-body` each had a rule clipping them
   while paged, on the reasoning that a scrollbar would contradict the measured
-  count. There is no measured count now; all three scroll in both modes.
+  count. There is no measured count now.
+
+- **On the start screen the scroller is `.start-main`, the whole column — not
+  the grid.** Her second report, same day: the wheel only worked with the
+  pointer over the covers, because the heading, the New Project row and the
+  pinned cards all sit *outside* the element that scrolled. A page you can only
+  scroll from the bottom half of is not a page. `.start-area` is no longer a
+  scroll box at all, and `.start-all` no longer claims the leftover height —
+  a section sized to what's left can't grow past it. **Don't reintroduce a
+  scroll box inside `.start-main`**; two nested scrollers is how a wheel starts
+  moving the wrong one.
+
+- **Which is why the page-turn reset walks up to find its scroller**
+  (`scrollingBoxOf` in `use-paged-list.ts`) rather than scrolling the element
+  the ref is on. The two picture grids scroll themselves; the projects grid is
+  scrolled by an ancestor several levels up that belongs to a different
+  component. Asking the DOM is what lets all three share one rule instead of
+  threading "who scrolls you" down as a prop. It checks *overflowing* as well
+  as `auto`/`scroll`, because an ancestor can be `auto` and never scroll, and
+  stopping there would leave the real scroller untouched.
 - **Turning a page resets the scroll to the top, and that is not optional.**
   It became possible to be wrong the moment a page could scroll: at the bottom
   of page one, "next page" left the scroll where it was and opened page two in

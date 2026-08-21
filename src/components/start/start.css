@@ -38,6 +38,12 @@
   right: calc(var(--rail-w, 232px) - 2px);
 }
 
+/* **The whole column scrolls, and this is the element that does it.** The grid
+   used to be its own scroll box, which meant the wheel only worked with the
+   pointer over the covers — put it on the heading, the New Project row or the
+   pinned cards and nothing moved. That is the failure she reported: a page you
+   can only scroll from the bottom half of. Everything here scrolls together
+   now, the way a page does. */
 .start-main {
   display: flex;
   flex-direction: column;
@@ -45,6 +51,7 @@
   min-width: 0;
   min-height: 0;
   padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  overflow-y: auto;
 }
 
 /* Brand left, the one bright button dead centre, the filter right. Three
@@ -116,11 +123,13 @@
 
 /* --- The library --- */
 
+/* Sized by what's in it rather than by what's left of the window. It used to
+   take the remaining height so the grid inside could be measured against it;
+   nothing is measured now, and a section that claims the leftover height is a
+   section that can't grow past it. */
 .start-all {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-height: 0;
 }
 
 .start-label {
@@ -281,14 +290,12 @@
   color: var(--color-accent-light);
 }
 
-/* Scrolls in both modes, and the difference between them is where it stops.
-   This used to clip while paged, so a page could only ever be what fit the
-   window — which is what made a page eight projects. A page holding twenty has
-   to be allowed to be taller than the area it is drawn in. */
+/* Not a scroll box at all any more — `.start-main` above is. Two nested
+   scrollers is how you get a wheel that moves the wrong one, and it is also
+   what made the pinned row and the heading unscrollable: they sit outside this
+   element, so they were outside the only thing that scrolled. */
 .start-area {
-  flex: 1;
   min-height: 0;
-  overflow-y: auto;
 }
 
 /* These numbers are the stylesheet's own now. They used to be duplicated in

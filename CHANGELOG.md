@@ -22,6 +22,7 @@
 ### Adjustments
 
 - **Twenty projects to a page, not eight.** A page used to hold exactly as many as fitted the window, which on a normal window was about eight — small enough that a page break stopped meaning anything. A page now holds a number you choose, and **Settings → Lists** has the choice: 20, 40, 60 or 100. It's one number for the projects on the start screen and the pictures in both grids. A page taller than your window scrolls, which is what you'd expect — that was never the same thing as a list with no end to it.
+- **The whole start screen scrolls now, from anywhere on it.** The wheel only used to work with the pointer over the covers — on the heading, the New Project row or your pinned projects it did nothing, because only the grid was scrolling. Everything scrolls together, the way a page should. The page arrows sit at the end of the list rather than pinned to the bottom of the window.
 - **Turning the page puts you back at the top of it.** Necessary now that a page can be taller than the window.
 - **Covers and rows page the same way.** They used to break at different places, because a row is shorter so more of them fitted — switching between the two now keeps you on the same projects.
 
