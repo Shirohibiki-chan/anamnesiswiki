@@ -44,8 +44,14 @@ node scripts/set-version.mjs 0.3.0
 That's the version number written into the four places that hold it. Then:
 
 ```bash
-git commit -am "Release v0.3.0" && git tag v0.3.0 && git push && git push --tags
+git commit -am "Release v0.3.0"; git tag v0.3.0; git push; git push --tags
 ```
+
+**The separators are semicolons, not `&&`, on purpose.** Windows PowerShell 5.1
+— which is what the terminal here runs — has no `&&` operator and refuses the
+whole line with a parser error before running any of it. A command written with
+`&&` will look like it did nothing. Git Bash accepts semicolons too, so this
+form works in both.
 
 Pushing the tag is what starts it. Watch it on the
 [Actions tab](https://github.com/Shirohibiki-chan/anamnesiswiki/actions) — it
@@ -53,11 +59,35 @@ takes roughly twenty minutes, most of which is four machines compiling.
 
 When it finishes there's a **draft release** on the releases page with the
 installers attached, **and its description is already filled in** — the build
-reads that version's section out of [`RELEASES.md`](../RELEASES.md) itself. Read
-it, then press **Publish release**.
+reads that version's section out of [`RELEASES.md`](../RELEASES.md) itself.
+Nothing to paste.
+
+**Publish it from the Releases tab, and only from there.** Go to
+[Releases](https://github.com/Shirohibiki-chan/anamnesiswiki/releases), find the
+entry titled **Anamnesis v0.3.0** with a grey **Draft** label beside it, open it,
+and press **Publish release**.
+
+> **Don't use the Tags tab.** Its `⋯` menu offers **Create release**, which
+> sounds right and is not: it makes a *second*, empty release pointing at the
+> same tag — no installers, no notes, no `latest.json` — and publishes that
+> instead. GitHub will happily keep both, with the empty one marked *Latest*, so
+> the update button finds nothing. This happened on v0.4.0. The tell is a
+> release whose title starts with the tag name followed by a commit message, and
+> whose only assets are GitHub's automatic *Source code* archives.
+>
+> To recover: delete the empty release (the tag itself is fine and stays), then
+> publish the real draft.
 
 **Write the section in `RELEASES.md` before tagging.** Not as tidiness — the
 build now refuses to start without it, and the reason is in the next section.
+
+**Write it unwrapped — one line per paragraph, one line per bullet.** GitHub
+renders a release body with every newline as a hard line break, and so does the
+app's update panel, so a section wrapped at 78 columns reaches the reader as a
+narrow ragged column. `scripts/release-notes.test.mjs` fails the build if the
+current version's section is wrapped, so this is enforced rather than
+remembered. Older sections in the file are still wrapped and are left alone;
+they are already published.
 It's the plain-language read of what changed; `CHANGELOG.md` stays the full log
 and is what you write it from.
 
