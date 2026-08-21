@@ -95,7 +95,35 @@ export function deriveBlocks(node: Node, schema: RenderableProperty[]): Block[] 
  * missing value.
  */
 export function blocksFor(node: Node, schema: RenderableProperty[]): Block[] {
-  return node.blocks ?? deriveBlocks(node, schema);
+  return node.blocks ? migrateBlocks(node.blocks) : deriveBlocks(node, schema);
+}
+
+/**
+ * Brings a stored list up to date with block kinds that have since changed.
+ *
+ * Phase 18b replaced the `link` block with a `collection` whose source is
+ * "manual" — the same feature holding a list rather than one page — so a page
+ * carrying a link block from 18a is converted here rather than the app
+ * supporting two ways to link forever.
+ *
+ * **Returns the array it was given when nothing needs changing**, which is not
+ * a micro-optimisation: `blocksFor` runs on every render, and handing back a
+ * fresh array each time would make every sidebar re-render on every keystroke
+ * anywhere in the app, and would break identity checks callers rely on.
+ */
+export function migrateBlocks(blocks: Block[]): Block[] {
+  if (!blocks.some((block) => block.kind === "link")) return blocks;
+  return blocks.map((block) =>
+    block.kind === "link"
+      ? {
+          ...block,
+          kind: "collection" as const,
+          source: "manual" as const,
+          targetIds: block.targetId ? [block.targetId] : [],
+          targetId: undefined,
+        }
+      : block,
+  );
 }
 
 /**

@@ -82,6 +82,13 @@ function ResultRow({ row, isActive, onPick }: { row: SearchRow; isActive: boolea
             #<Highlighted text={row.snippet} start={row.matchStart} end={row.matchEnd} />
           </span>
         )}
+        {/* Phase 18b: an alias hit says which alias, so a page whose own name
+            has nothing to do with the query never looks like a stray result. */}
+        {row.kind === "alias" && (
+          <span className="search-palette-result-tag">
+            also <Highlighted text={row.snippet} start={row.matchStart} end={row.matchEnd} />
+          </span>
+        )}
         {row.kind === "content" && (
           <span className="search-palette-result-snippet">
             <span className="search-palette-result-tab">

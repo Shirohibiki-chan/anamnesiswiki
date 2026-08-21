@@ -116,7 +116,18 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
 // pointer, and the value stays in the field it has always lived in. Only the
 // kinds with genuinely new data (`text`, and Phase 18c's meters) store a value
 // inside the block itself.
-export type BlockKind = "property" | "image" | "tags" | "text" | "link";
+export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias";
+
+/**
+ * Where a `collection` block gets its list of pages. Phase 18b.
+ *
+ * One block with a source rather than four block types, which is how the
+ * reference does it and what the plan worked out underneath: Backlinks, a tag
+ * index and a subpage index are the same question asked three ways. The Add
+ * Block menu still offers them under those four names, because "Backlinks" is
+ * what somebody goes looking for and "Collection, source: mentions" is not.
+ */
+export type CollectionSource = "manual" | "subpages" | "tags" | "mentions";
 
 export type Block = {
   id: string;
@@ -137,9 +148,17 @@ export type Block = {
   // `text` only: the block's own writing. The one kind in 18a whose data
   // exists nowhere else.
   text?: string;
-  // `link` only: the id of the node this points at. Absent while the block is
-  // still asking which page, which is what an empty link block looks like.
+  // `link` only, and no new one is ever created: Phase 18b replaced it with a
+  // `collection` whose source is "manual", which is the same feature holding a
+  // list instead of a single page. Kept readable so the pages that already
+  // have one still open — block-service migrates it on read.
   targetId?: string;
+  // `collection` only. `targetIds` is the curated list for the "manual"
+  // source; `tags` is which tags the "tags" source looks for. Both absent for
+  // the sources that compute their own list.
+  source?: CollectionSource;
+  targetIds?: string[];
+  tags?: string[];
 };
 
 export type Node = {
@@ -163,6 +182,11 @@ export type Node = {
   // templates aren't user-editable until Phase 17, and making one page's
   // order bind every page of that template quietly makes them so.
   propertyOrder?: string[];
+  // Alternate names for this page (Phase 18b). `[[Val]]` resolves to Valera
+  // Jiang through this, search matches on it and says which alias hit, and the
+  // index counts a mention written as an alias as a mention of the page.
+  // Absent for every page that has never been given one, which is most.
+  aliases?: string[];
   // The sidebar, as an ordered list of blocks (Phase 18a). This replaces
   // `propertyOrder` rather than sitting beside it: once every property is a
   // block, this list *is* the order, and two answers to one question is how

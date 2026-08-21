@@ -18,8 +18,16 @@ const WIKILINK_PATTERN = /\[\[([^[\]]+)\]\]/;
 function findNodeByName(nodes: Record<string, Node>, name: string): Node | undefined {
   const target = name.trim().toLowerCase();
   if (!target) return undefined;
-  const matches = Object.values(nodes).filter((node) => node.name.toLowerCase() === target);
-  return matches.length === 1 ? matches[0] : undefined;
+  // Phase 18b: an alias is a name for this purpose, so `[[Val]]` reaches
+  // Valera Jiang. A real name still wins outright — a page actually called
+  // "Val" is not ambiguous just because somebody else answers to it.
+  const named = Object.values(nodes).filter((node) => node.name.toLowerCase() === target);
+  if (named.length === 1) return named[0];
+  if (named.length > 1) return undefined;
+  const aliased = Object.values(nodes).filter((node) =>
+    (node.aliases ?? []).some((alias) => alias.toLowerCase() === target),
+  );
+  return aliased.length === 1 ? aliased[0] : undefined;
 }
 
 // Scans the document for one completed `[[Name]]` run that matches a real

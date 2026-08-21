@@ -2768,6 +2768,53 @@ is below.
   drops *every* block pointing at that key, because a property can be shown
   twice.
 
+## The link index
+
+- **`link-index.ts` is the only answer to "what points at what", and Phase 24's
+  graphs read the same data.** Backlinks, the tag index and the subpage index
+  are one question asked three ways; computed inside a component instead, it
+  gets built a second time for graphs and the two disagree. Anything new that
+  wants to know what references a page asks this service.
+
+- **It is cached exactly the way `search-service` caches tab text, and it has
+  to be.** `nodes` is replaced on every keystroke, so an index rebuilt per
+  render walks every page of prose in the world per character typed. Two
+  layers: a `WeakMap` on the nodes record for the whole index, and a `WeakMap`
+  on each node for its own outgoing edges — so a keystroke on one page
+  re-walks that page and reuses the rest.
+
+- **Reference properties are found through the template schema, never by
+  shape.** A multi-select stores option ids, which are UUIDs exactly like node
+  ids, so "an array of strings that look like ids" would eventually turn a chip
+  into a phantom backlink. Read `getPropertySchema` plus `customProperties` and
+  take only `refs`.
+
+- **One page pointing at another is one row, however many times it does it.**
+  She wrote `@ragatha` twice on one page while testing; two identical rows is
+  the obviously wrong answer. Prose wins over a property when a page does both,
+  because it is the more specific explanation.
+
+- **A `collection` block's source owns its settings, and switching clears
+  them.** `setBlockSource` drops `tags` and `targetIds` on the way through: a
+  block switched to subpages that quietly kept a tag list surprises whoever
+  switches it back, and the stale list is invisible while another source shows.
+
+- **A tag collection with no tags chosen lists nothing, not everything.** "No
+  filter" reading as "the whole project" is how a freshly added block dumps
+  seventy-five pages into a sidebar.
+
+- **`link` blocks no longer exist and must not come back.** Phase 18b replaced
+  them with `collection` + `source: "manual"`, and `migrateBlocks` converts one
+  on read. That function **returns the array it was given when nothing needs
+  changing** — `blocksFor` runs every render, and a fresh array each time
+  re-renders every sidebar on every keystroke and breaks identity checks.
+
+- **An alias is a name wherever a name is resolved.** `wikilink.ts` falls back
+  to aliases only when no page carries the literal name, so a page actually
+  called "Val" still wins over someone's alias. Search matches them too and
+  names the one that hit, which is hers: a result that cannot say why it is in
+  the list is the same complaint as an unexplained backlink.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-21 — backlinks, and lists of pages
+
+### Additions
+
+- **Backlinks.** A block on any page that lists every other page pointing at it. A page counts whether it mentioned this one in its writing, named it in a field like Friends, or put it in a hand-made list — and each row says which, so a page in the list is never a mystery. Write `@ragatha` twice on one page and it's still one row.
+- **Three more lists, and they're all the same block.** Add Block now offers **Backlinks**, **Subpage index** (the pages inside this one), **Tag index** (pages carrying tags you pick) and **Manual links** (a list you build yourself). They're one block with a source you can change afterwards, so a list you set up as subpages can become backlinks without deleting anything.
+- **An empty list tells you why it's empty**, rather than just sitting there. A backlinks block with nothing in it says a backlink appears once another page mentions this one — which is the part that isn't obvious.
+- **Aliases.** Give a page other names it answers to — Valera Jiang can be "Val". Then `[[Val]]` links straight to her, and searching "Val" finds her. The search result says **also Val** underneath, so you can see why a page you didn't name showed up.
+
+### Adjustments
+
+- **The link block became Manual links.** Any link block you already made turns into a Manual links list on its own, holding the page it pointed at. Nothing to redo — it just holds more than one page now.
+- **`[[Name]]` finds pages by alias too.** A page actually called that name still wins; aliases are only used when nothing carries the name itself.
+
 ## 2026-08-21 — the sidebar is blocks now
 
 ### Additions
@@ -305,21 +319,3 @@
 
 - Clicking a thumbnail deliberately doesn't drop it into whatever page you're on. They're small and there are a lot of them, and the gesture for "what is this one" shouldn't be the one that edits your writing. The picture block's Library tab is where you've already said where it goes.
 - Dragging a picture from the tab onto a page isn't in yet.
-
-## 2026-08-12 — a picture library
-
-### Additions
-
-- **Every place that takes a picture now offers the ones you already have.** Click a page's portrait or its cover and you get your library — every picture in the world, with what's using each one — instead of straight to a file browser. Adding one from your computer is a button inside it, so it's still one click away.
-- **Using the same picture twice stops making a second copy of it.** One map on six pages is one file now. Change your mind about the map and you're replacing one thing, not hunting six.
-- **Search by what a picture's used for** — type a page's name and you get its pictures. Filenames here are gibberish by design, so searching them was never going to help.
-- **"Set as cover" stopped duplicating the picture too.** It now points at the same file as the portrait instead of writing a second copy of it.
-
-### Fixes
-
-- **Replacing a page's picture no longer leaves the old one's web address attached to the new one.** Only affected pages imported from LegendKeeper, and only showed up on export — where the wrong address would have gone out with the new picture.
-
-### Worth knowing
-
-- Deleting a picture from one page won't remove the file while another page is still using it. That's the point of sharing, but it does mean the Assets tab is the place to go when you actually want a picture gone.
-- Unsplash and Pinterest, which LegendKeeper offers alongside your own files, aren't here and aren't planned. Both would mean the app talking to someone else's server.
