@@ -275,7 +275,7 @@ export function planPropertyRename(
       for (const key of dropped) delete properties[key];
       patch.properties = properties;
       // A key that no longer exists must not sit in the manual order
-      // influencing where its neighbours land — same rule as removeCustomProperty.
+      // influencing where its neighbours land — same rule as deletePageProperty.
       if (node.propertyOrder) patch.propertyOrder = node.propertyOrder.filter((key) => !dropped.has(key));
     }
 

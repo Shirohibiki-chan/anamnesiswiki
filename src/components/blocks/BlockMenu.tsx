@@ -19,9 +19,9 @@ type BlockMenuProps = {
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
   /**
-   * Deleting the field itself, offered only for a property the user added to
-   * this page. A template's own fields aren't hers to delete, and the other
-   * block kinds have nothing behind them to delete.
+   * Deleting the field itself. Present for any property block — a template's
+   * fields included, since the page is a copy — and absent for the other block
+   * kinds, which have nothing behind them to delete.
    */
   onDeleteProperty?: () => void;
 };
