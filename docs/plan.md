@@ -66,27 +66,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   blocks wearing a different hat, so check that phase before treating this as one
   job.
 
-- **The window's title bar is still the stock Windows one, and it should look
-  like the app.** Flagged by the user 2026-08-21 on sight, reopening the window:
-  the bar above everything is the only part of Anamnesis that doesn't follow the
-  theme, and on a dark theme it reads as the app sitting inside somebody else's
-  chrome. `src-tauri/tauri.conf.json` doesn't set `decorations` at all, so this
-  is the default rather than a decision anyone made.
-
-  **The switch itself is one line and the consequences are not.** Turning
-  decorations off hands us everything the OS was doing: minimise, maximise and
-  close, a drag region, double-click-to-maximise, the resize edges, and — the
-  one that gets missed — Windows 11's snap layouts, which appear on hover over
-  the *native* maximise button and are how a lot of people arrange windows. A
-  custom bar that skips them takes a feature away from her machine to gain a
-  colour.
-
-  **Check Phase 21 before building it.** The Shell Rework rewrites the app's
-  frame, and `TopBar` — already pinned as of PR #234 — is where a custom title
-  bar wants to merge rather than sit above. Built now it is built twice, which
-  is the same argument this file already makes for holding layout work back.
-  Not a reason to refuse it if she wants it sooner; a reason to ask which.
-
 - **The About dialog never got built.** The other half of a Phase 12 bullet
   whose first half shipped as Settings → Patch Notes on 2026-08-08. Small and
   self-contained — version, licence, the fonts' licences, a link to the repo.
@@ -403,6 +382,11 @@ The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` an
 
 - Left rail replacing the top bar, with Project / Templates / Assets moved into it.
 - Splittable columns — open to the right, open in new tab, open in new window, split right, split down.
+- **A title bar that looks like the app**, filed here by the user 2026-08-21 rather than queued separately. The bar across the top of the window is the stock Windows one and the only part of Anamnesis that ignores the theme; on a dark theme the app reads as sitting inside somebody else's chrome. Nobody chose it — `decorations` is absent from `src-tauri/tauri.conf.json`, so it is the default.
+
+  **It belongs to this phase because this phase is already replacing what sits under it.** The top bar goes away here, so a custom title bar built earlier is built against a frame that is about to be deleted, and built twice.
+
+  **The switch is one line and the consequences are not.** Turning decorations off hands us minimise, maximise and close, a drag region, double-click-to-maximise, the resize edges, and — the one that gets missed — Windows 11's snap layouts, which appear on hover over the *native* maximise button and are how a lot of people arrange windows. A custom bar that skips them takes a working feature off her machine to gain a colour. Design that part; the buttons are the easy half.
 
 ---
 
