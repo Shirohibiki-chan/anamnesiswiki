@@ -1576,3 +1576,196 @@
 [data-muted-covers] .manage-pins-thumb {
   filter: grayscale(70%) saturate(60%);
 }
+
+/* --- Start from a template (Phase 27) ------------------------------------ */
+/* Same fixed-height shell as Manage pins, and for the same reason: the list of
+   templates grows as she opens files, and a window that changed shape under a
+   click would move the thing she was aiming at. */
+.template-picker {
+  width: min(44rem, calc(100vw - var(--space-2xl) * 2));
+  height: min(38rem, calc(100vh - var(--space-2xl) * 2));
+  display: flex;
+  flex-direction: column;
+}
+
+.template-picker-head {
+  position: relative;
+  flex: none;
+  padding: var(--space-xl) var(--space-xl) var(--space-md);
+}
+
+.template-picker-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+.template-picker-head p {
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.template-picker-close {
+  position: absolute;
+  top: var(--space-lg);
+  right: var(--space-lg);
+}
+
+/* Two columns: the choices on the left, what the selected one builds on the
+   right. Side by side rather than stacked because they are a question and its
+   answer — reading the answer must not mean scrolling away from the question.
+   The tree is the wider half; a folder name is longer than a template name and
+   it carries the indent as well. */
+.template-picker-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  gap: var(--space-lg);
+  padding: 0 var(--space-xl);
+}
+
+.template-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0 var(--space-2xs) var(--space-md) 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.template-picker-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  text-align: left;
+  cursor: pointer;
+}
+
+.template-picker-choice:hover {
+  border-color: var(--color-border-strong);
+}
+
+.template-picker-choice[aria-checked="true"] {
+  border-color: var(--color-accent-dark);
+  background: var(--color-accent-faint);
+}
+
+.template-picker-choice b {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.template-picker-choice span {
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
+.template-picker-choice em {
+  font-size: var(--fs-2xs);
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-placeholder);
+}
+
+/* Dashed, the same way the pinned row's "Pin a project" tile is: it is a way
+   in rather than one of the things being chosen between, and the border is
+   what says so without a heading between it and the list. */
+.template-picker-open {
+  border-style: dashed;
+  background: none;
+}
+
+.template-picker-preview {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: var(--space-md);
+}
+
+.template-picker-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex: none;
+  margin: 0 0 var(--space-2xs);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.template-picker-subhead em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--color-text-placeholder);
+}
+
+.template-picker-tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  list-style: none;
+}
+
+.template-picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding-block: 3px;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.template-picker-row svg {
+  flex: none;
+  color: var(--color-text-placeholder);
+}
+
+/* Folders read as the structure and pages as what sits in it, which is the one
+   distinction the preview has to make at a glance. */
+.template-picker-folder {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.template-picker-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: none;
+  padding: var(--space-md) var(--space-xl) var(--space-xl);
+}
+
+.template-picker-foot input {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-picker-error {
+  flex: none;
+  margin: var(--space-md) var(--space-xl) 0;
+  font-size: var(--fs-xs);
+  color: var(--color-destructive);
+}

@@ -1895,6 +1895,20 @@ export async function readFileBytesAt(path: string): Promise<Uint8Array> {
   return readFile(path);
 }
 
+/**
+ * One text file, to anywhere on disk — `readTextFileAt`'s mirror.
+ *
+ * For exporting a project template (Phase 27): she picks where the `.antpl`
+ * lands through a native save dialog, so this writes outside any folder the
+ * app owns by design. Text rather than `writeRawFile`'s bytes because that is
+ * what the format is — a `.antpl` is meant to be openable in Notepad, and
+ * encoding it here only to decode it there would be work in service of
+ * nothing.
+ */
+export async function writeTextFileAt(path: string, text: string): Promise<void> {
+  await writeTextFile(path, text);
+}
+
 /** Ends a watch started by `watchCssDirs`. Safe to call more than once. */
 export type StopWatching = () => void;
 

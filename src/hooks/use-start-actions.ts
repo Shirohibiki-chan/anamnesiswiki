@@ -8,9 +8,11 @@
 // screen rather than three.
 import { useCallback, useState } from "react";
 import { extensionForPath } from "../services/asset-urls";
-import { pickImageFile, revealItem, showFolder } from "../services/dialog-service";
+import { pickImageFile, pickTemplateSavePath, revealItem, showFolder } from "../services/dialog-service";
 import * as fsService from "../services/filesystem-service";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
+import { PROJECT_TEMPLATE_EXTENSION } from "../constants/project-template";
+import { buildProjectTemplate, serializeProjectTemplate } from "../services/project-template";
 import type { ListedWorld } from "../services/world-scan";
 import { useAppSettings } from "./use-app-settings";
 import { useDialogs } from "./use-dialogs";
@@ -64,7 +66,28 @@ export type StartActions = {
    * reason on the error line.
    */
   duplicateProject: (project: ListedWorld, name: string) => Promise<boolean>;
+  /**
+   * A project's shape written out as a `.antpl` she can send to someone
+   * (Phase 27). Nothing on disk changes here and nothing is re-scanned, so
+   * this resolves nothing — success is the file existing where she put it, and
+   * a failure lands on the same error line as everything else on this screen.
+   */
+  exportProjectTemplate: (project: ListedWorld) => Promise<void>;
 };
+
+/**
+ * The template's own name, taken off the file she just named.
+ *
+ * The extension goes if it's there and stays if it isn't — a save dialog on a
+ * machine with extensions hidden hands back a path that may or may not carry
+ * one, and a template called "Starter.antpl" in the picker would be the app
+ * showing its filing rather than its contents.
+ */
+function templateNameFromPath(path: string): string {
+  const fileName = fsService.fileNameFromPath(path);
+  const suffix = `.${PROJECT_TEMPLATE_EXTENSION}`;
+  return fileName.toLowerCase().endsWith(suffix) ? fileName.slice(0, -suffix.length) : fileName;
+}
 
 export function useStartActions(): StartActions {
   const { loadProject, createProjectAt } = useProject();
@@ -307,6 +330,55 @@ export function useStartActions(): StartActions {
     }
   }, []);
 
+  // The other half of "start from a template": making one out of a project she
+  // already has. Nothing about *her* project changes — this only reads it.
+  //
+  // **The picker comes first, before the project is read.** A project is a
+  // walk of every file in it, and doing that work before finding out she meant
+  // to cancel is a pause with nothing on the other side of it.
+  //
+  // **The template's name is the name she gave the file.** There is no second
+  // form asking for one, because the save dialog is already a naming step and
+  // a template called something other than its own filename is a thing she
+  // then has to keep track of twice.
+  const exportProjectTemplate = useCallback(async (project: ListedWorld) => {
+    let path: string | null;
+    try {
+      path = await pickTemplateSavePath(`${project.name} Template`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open the save dialog.");
+      return;
+    }
+    if (!path) return;
+
+    setIsBusy(true);
+    try {
+      // Reading a project she hasn't opened mints it an id if it hasn't got
+      // one and writes that back — `loadProject`'s doing, not this action's,
+      // and the same write duplicating already accepts. It is one field, once
+      // per project, and it is what opening the project would have done
+      // anyway; the alternative is a second way to read a project off disk.
+      const loaded = await fsService.loadProject(project.path);
+      if (!loaded) {
+        setError(`Couldn't read "${project.name}" — it may have moved, or its files may be damaged.`);
+        return;
+      }
+      const file = buildProjectTemplate({
+        name: templateNameFromPath(path),
+        description: "",
+        nodes: loaded.nodes,
+        rootOrder: loaded.project.rootOrder,
+        childOrder: loaded.project.childOrder,
+      });
+      await fsService.writeTextFileAt(path, serializeProjectTemplate(file));
+      setError(null);
+    } catch {
+      setError(`Couldn't write the template. Check that ${path} is somewhere you can save to.`);
+    } finally {
+      setIsBusy(false);
+    }
+  }, []);
+
   return {
     isBusy,
     error,
@@ -322,5 +394,6 @@ export function useStartActions(): StartActions {
     removeProjectCover,
     showProjectInFolder,
     duplicateProject,
+    exportProjectTemplate,
   };
 }

@@ -33,6 +33,7 @@ type ProjectTileProps = {
   fileManagerName: string;
   onShowInFolder: () => void;
   onDuplicate: (name: string) => void;
+  onExportTemplate: () => void;
   /**
    * The name of the project this one was copied from, when that project is
    * still in the library. Null covers both "not a copy" and "copied from
@@ -55,6 +56,7 @@ export function ProjectTile({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  onExportTemplate,
   forkedFrom,
   isOpenElsewhere,
 }: ProjectTileProps) {
@@ -148,6 +150,7 @@ export function ProjectTile({
         fileManagerName={fileManagerName}
         onShowInFolder={onShowInFolder}
         onDuplicate={onDuplicate}
+        onExportTemplate={onExportTemplate}
       />
     </div>
   );

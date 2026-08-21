@@ -34,6 +34,18 @@ Templates in Phase 1: Folder, Character, Location, Faction, Item, Event, Species
 
 The **placeholder content** on each tab of each template is deliberately shaped LK-style prompting language ("What is their personality type? Are they funny?…"). Do not reword without asking the user.
 
+**"Template" on its own always means this one — a page template.** Two other things share the word and each has its own entry below: a *user* template (a page of hers, saved to be copied) and a *project* template (a whole project's folder shape, in a file).
+
+## User Template
+
+A page she saved to reuse — Convert to template on any page, optionally with everything nested under it. Unlike the eight above, a user template *is* a page, copied: her writing, her filled-in property values and her pictures all come with it, and inserting one is a copy back out. They live in `templates.json` in the project (`TemplateLibrary` in `src/constants/schema.ts`) and are offered on the new-page screen alongside the built-in eight. One may also stand in for a built-in — "this project's Character" — which is an *override* rather than an extra.
+
+## Project Template
+
+A whole project's *shape*, in one file she can send to somebody: the folders, what nests in what, and a blank starter page of each kind where it belongs. Extension `.antpl`, plain JSON, format in `src/constants/project-template.ts`.
+
+**The one to keep straight against a user template**, because they are close in name and opposite in contents: a user template is a page *copied*, writing and all; a project template is a shape *described*, with none of anybody's writing in it at all — the format has nowhere to put any. Reached from Start from a template on the start screen; made from a project's `⋯` menu.
+
 ## Tab
 
 A section within a page. Every page has one or more tabs — Character has Overview + Backstory, Location has Overview + Map + History, Species has Overview + Biology + Lifestyle + Beliefs + Relations + History, etc.

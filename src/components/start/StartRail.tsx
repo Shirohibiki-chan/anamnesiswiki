@@ -1,11 +1,11 @@
 // The rail down the right of the start screen: the three projects she was in
-// most recently, the two ways to get a project into the library that are not
+// most recently, the three ways to get a project into the library that are not
 // the New Project button, what's new in the last few versions, and the cog.
 //
 // The second heading was "Start Something", which named a mood rather than an
-// errand — neither thing under it starts anything from scratch. Both point the
-// app at a project that already exists, one as a folder and one as a file, and
-// both end with it in the list on the left. So: add.
+// errand. What every entry under it has in common is where it ends — with a
+// project in the list on the left — rather than where it starts, and two of
+// the three point the app at one that already exists. So: add.
 //
 // Recents live here rather than in the middle because they are a shortcut, not
 // the library — the grid beside this already holds every project including
@@ -64,6 +64,7 @@ type StartRailProps = {
   now: number;
   disabled: boolean;
   onOpen: (project: ListedWorld) => void;
+  onStartFromTemplate: () => void;
   onOpenFolder: () => void;
   onImport: () => void;
   /** Which version was clicked, so Settings can open on that one specifically. */
@@ -79,6 +80,7 @@ export function StartRail({
   now,
   disabled,
   onOpen,
+  onStartFromTemplate,
   onOpenFolder,
   onImport,
   onOpenReleases,
@@ -102,6 +104,14 @@ export function StartRail({
         <p className="start-label start-rail-label">
           <span className="start-title">Add a Project</span>
         </p>
+        {/* First of the three, matching the order the section was designed in.
+            It is also the only one that makes something out of nothing, which
+            is what the heading says this section is for — the two below it
+            bring in a project that already exists. */}
+        <button type="button" className="start-item" onClick={onStartFromTemplate} disabled={disabled}>
+          <b>Start from a template</b>
+          <span>A folder setup, ready to build in. Yours, or one you were sent.</span>
+        </button>
         <button type="button" className="start-item" onClick={onOpenFolder} disabled={disabled}>
           <b>A folder on disk</b>
           <span>Open a project you already have, wherever it lives.</span>

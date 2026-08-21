@@ -58,6 +58,7 @@ type ProjectGridProps = {
   fileManagerName: string;
   onShowInFolder: (project: ListedWorld) => void;
   onDuplicate: (project: ListedWorld, name: string) => void;
+  onExportTemplate: (project: ListedWorld) => void;
   /**
    * What each project was copied from, by name. Built from the whole library
    * rather than from what this grid is showing: a fork whose original is in
@@ -83,6 +84,7 @@ export function ProjectGrid({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  onExportTemplate,
   forkNames,
   heldElsewhere,
 }: ProjectGridProps) {
@@ -171,6 +173,7 @@ export function ProjectGrid({
                 fileManagerName={fileManagerName}
                 onShowInFolder={() => onShowInFolder(project)}
                 onDuplicate={(name) => onDuplicate(project, name)}
+                onExportTemplate={() => onExportTemplate(project)}
                 forkedFrom={(project.forkedFromId && forkNames.get(project.forkedFromId)) || null}
                 isOpenElsewhere={heldElsewhere.has(project.path)}
               />

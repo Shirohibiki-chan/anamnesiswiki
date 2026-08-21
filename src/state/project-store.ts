@@ -16,6 +16,7 @@ import {
 } from "../constants/schema";
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import { TEMPLATES_FILE } from "../constants/paths";
+import type { ProjectTemplateFile } from "../constants/project-template";
 import * as fsService from "../services/filesystem-service";
 import { isReservedWorldName } from "../services/world-scan";
 import { assetRef, releaseAssetUrls } from "../services/asset-urls";
@@ -90,6 +91,7 @@ import {
   planTagRename,
 } from "../services/property-service";
 import * as lkImportService from "../services/lk-import";
+import { materializeProjectTemplate } from "../services/project-template";
 import {
   createAssetSources,
   parseAssetSources,
@@ -242,6 +244,17 @@ export type ProjectStoreState = {
   dismissSaveErrors: () => void;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
   createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
+  /**
+   * A new project built from a `.antpl` (Phase 27). Same shape as
+   * `createProjectAt` from the caller's side — a parent folder and a name in,
+   * a path or a reason out — because from hers it is the same errand with the
+   * folders already decided.
+   */
+  createProjectFromTemplate: (
+    parentDir: string,
+    name: string,
+    template: ProjectTemplateFile,
+  ) => Promise<CreateProjectResult>;
   importLkProject: (
     parentDir: string,
     name: string,
@@ -948,6 +961,54 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // user did — leaving them on the stack means the first Ctrl+Z in a brand
       // new world deletes "Worldbuilding".
       useHistoryStore.getState().clear();
+      return { ok: true, rootPath };
+    },
+
+    // Phase 27's third way in. Sits between the two either side of it: more
+    // than `createProjectAt`'s six stub folders, and without any of the
+    // fetching and picture-shuffling `importLkProject` exists to do — a
+    // template file has no pictures in it and nothing to download, by design
+    // (see constants/project-template.ts).
+    //
+    // The nodes are built before anything touches disk, so a template that
+    // turns out to describe nothing fails with the folder unmade rather than
+    // leaving an empty project behind.
+    async createProjectFromTemplate(parentDir, name, template) {
+      const trimmed = name.trim();
+      if (!trimmed) return { ok: false, error: "Give your project a name." };
+
+      // The same refusal the other two make. A project is a project however it
+      // got made, and the app's own folder names are off limits in all three.
+      if (isReservedWorldName(trimmed)) {
+        return { ok: false, error: "That name belongs to one of the app's own folders. Try another." };
+      }
+
+      const { nodes, rootOrder } = materializeProjectTemplate(template);
+      if (nodes.length === 0) {
+        return { ok: false, error: "That template is empty — there are no folders or pages in it to make." };
+      }
+
+      const folderName = fsService.sanitizeSegment(trimmed);
+      const rootPath = await join(parentDir, folderName);
+      if (await fsService.pathExists(rootPath)) {
+        return { ok: false, error: "A folder with that name already exists there." };
+      }
+
+      // Cleared before the state swap rather than after, for the reason
+      // `createProjectAt` spells out: the template's folders are part of making
+      // the project, not a stack of things she did, and the first Ctrl+Z in a
+      // brand new project must not start undoing them.
+      useHistoryStore.getState().clear();
+      const project = createProject({ name: trimmed, rootOrder });
+      const nodesRecord = Object.fromEntries(nodes.map((node) => [node.id, node]));
+      set({ rootPath, project, nodes: nodesRecord, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
+
+      await fsService.saveProject(rootPath, project);
+      // One shared path index for the whole write, the way the LK import does
+      // it — a template is a couple of dozen nodes, but they all land at once.
+      await fsService.saveNodes(rootPath, nodes, nodes);
+      markSaved();
+
       return { ok: true, rootPath };
     },
 

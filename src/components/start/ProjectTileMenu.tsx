@@ -17,7 +17,7 @@
 // which is the same problem the template picker hit near the bottom of a tall
 // tree.
 import { useRef, useState } from "react";
-import { Archive, ArchiveRestore, Check, Copy, FolderOpen, ImagePlus, MoreHorizontal, Plus, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Copy, FolderOpen, ImagePlus, MoreHorizontal, Plus, Share2, X } from "lucide-react";
 import type { ProjectGroup } from "../../services/project-groups";
 import type { ListedWorld } from "../../services/world-scan";
 import { TreePopover } from "../tree/TreePopover";
@@ -56,6 +56,13 @@ type ProjectTileMenuProps = {
   fileManagerName: string;
   onShowInFolder: () => void;
   onDuplicate: (name: string) => void;
+  /**
+   * This project's shape written out as a template file (Phase 27). Up here
+   * with the cover, the file manager and Duplicate rather than down among the
+   * groups: those four are things done *to* the project, and everything below
+   * the Groups label is filing.
+   */
+  onExportTemplate: () => void;
 };
 
 export function ProjectTileMenu({
@@ -68,6 +75,7 @@ export function ProjectTileMenu({
   fileManagerName,
   onShowInFolder,
   onDuplicate,
+  onExportTemplate,
 }: ProjectTileMenuProps) {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   // Which of the two things in this menu is being named, or null. One piece of
@@ -186,6 +194,20 @@ export function ProjectTileMenu({
                 Duplicate…
               </button>
             )}
+
+            <button
+              type="button"
+              role="menuitem"
+              className="project-tile-menu-item"
+              title="Saves this project's folders as a file you can send. None of your writing goes in it."
+              onClick={() => {
+                close();
+                onExportTemplate();
+              }}
+            >
+              <Share2 size={13} />
+              Export as template…
+            </button>
 
             <p className="project-menu-label">Groups</p>
 

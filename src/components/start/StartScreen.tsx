@@ -21,6 +21,7 @@ import { useDialogs } from "../../hooks/use-dialogs";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
 import { useProjectLibrary } from "../../hooks/use-project-library";
+import { useProjectTemplates } from "../../hooks/use-project-templates";
 import { useFileManagerName } from "../../hooks/use-reveal";
 import { useReleaseHistory } from "../../hooks/use-release-history";
 import { useUpdates } from "../../hooks/use-updates";
@@ -34,6 +35,7 @@ import { ImportModal } from "../import/ImportModal";
 import { ResizeHandle } from "../shell/ResizeHandle";
 import { SettingsModal } from "../shell/SettingsModal";
 import { ManagePinsDialog } from "./ManagePinsDialog";
+import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PinnedRow } from "./PinnedRow";
 import { ProjectFilters } from "./ProjectFilters";
 import { ProjectGrid } from "./ProjectGrid";
@@ -99,12 +101,16 @@ export function StartScreen() {
   const [newProjectName, setNewProjectName] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isManagingPins, setIsManagingPins] = useState(false);
+  const [isPickingTemplate, setIsPickingTemplate] = useState(false);
   // The version to open on, or null when the panel isn't open at all — one
   // piece of state rather than a boolean plus a version, so there's no way
   // for the two to say different things about whether it's open.
   const [openReleaseVersion, setOpenReleaseVersion] = useState<string | null>(null);
 
   const library = useProjectLibrary(worlds);
+  // Its own busy flag and its own error line, both living inside the picker
+  // window — see use-project-templates.ts for why they aren't the screen's.
+  const templates = useProjectTemplates();
 
   const { pins, isLoaded: pinsLoaded, pin, unpin, reorder } = usePins(worlds);
   // Resolved against every project rather than against the filtered list: the
@@ -262,6 +268,7 @@ export function StartScreen() {
           onShowInFolder={(project) => void actions.showProjectInFolder(project)}
           forkNames={forkNames}
           heldElsewhere={heldElsewhere}
+          onExportTemplate={(project) => void actions.exportProjectTemplate(project)}
           onDuplicate={(project, name) =>
             void actions.duplicateProject(project, name).then((made) => {
               if (made) void refreshWorlds();
@@ -316,6 +323,7 @@ export function StartScreen() {
         now={scannedAt}
         disabled={actions.isBusy}
         onOpen={(project) => void actions.openListed(project.path, project.name)}
+        onStartFromTemplate={() => setIsPickingTemplate(true)}
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
         onOpenReleases={setOpenReleaseVersion}
@@ -335,6 +343,27 @@ export function StartScreen() {
           initialTab="patch-notes"
           initialVersion={openReleaseVersion}
           onClose={() => setOpenReleaseVersion(null)}
+        />
+      )}
+
+      {isPickingTemplate && (
+        <TemplatePickerDialog
+          choices={templates.choices}
+          isBusy={templates.isBusy}
+          error={templates.error}
+          onOpenFile={templates.openTemplateFile}
+          // The window closes only once the project is actually made — a
+          // failure has to have somewhere to be read, and that somewhere is
+          // the line inside it.
+          onCreate={(choice, name) =>
+            void templates.createFrom(choice, name).then((made) => {
+              if (made) setIsPickingTemplate(false);
+            })
+          }
+          onClose={() => {
+            setIsPickingTemplate(false);
+            templates.dismissError();
+          }}
         />
       )}
 
