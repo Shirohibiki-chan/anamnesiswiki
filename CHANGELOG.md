@@ -1,10 +1,18 @@
 # Changelog
 
+## 2026-08-21 — deleting a property you added works again
+
+### Fixes
+
+- **A property you added to a page can be deleted again.** When the sidebar became blocks, removal moved into each block's `⋯` menu — but that menu only had **Remove block**, which takes a field off the panel and keeps what's in it. Nothing anywhere could actually delete a field you'd added, so one made by mistake could only be hidden. There's a **Delete property** beside it now.
+- **The two are worded apart on purpose.** Remove block hides a field and keeps the value, and Add Block lists everything you've hidden so you can put it back. Delete property throws the value away, asks first if there's anything in it, and doesn't come back in Add Block. Only fields you added yourself can be deleted — a template's own fields belong to the template.
+
 ## 2026-08-21 — the X closes the app again
 
 ### Fixes
 
 - **Closing the window works again, and keeps working.** The app holds the window open for a moment while it finishes writing whatever you last typed, then closes it itself. If that last step ever failed, the app quietly decided a close was already underway and refused every attempt after it — so the X did nothing, for the rest of the session, with nothing on screen to say why. A close that doesn't succeed can now simply be tried again, and there's a second way out if the first is refused.
+
 
 ## 2026-08-21 — open it anyway
 
@@ -278,9 +286,3 @@
 
 - **Everything in the tab is centred now**, matching the two buttons at the top: the folder pills, the captions under each picture, and the messages the tab shows you.
 - The picker dialog keeps its folder pills on the left. It's a wide box rather than a narrow column, and a row of pills floating in the middle of it reads as unfinished.
-
-## 2026-08-12 — the Assets tab loses its count line
-
-### Adjustments
-
-- **"18 pictures · 1 used by nothing" is gone.** The total is already on the All pictures chip, and whether a picture is used is written under the picture — so it was a line repeating what's directly above and below it, and in a narrow sidebar it wrapped onto two lines to do it.

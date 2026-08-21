@@ -30,6 +30,8 @@ type BlockShellProps = {
   onDuplicate: () => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
+  /** Present only for a property block whose field the user added herself. */
+  onDeleteProperty?: () => void;
   children: ReactNode;
 };
 
@@ -47,6 +49,7 @@ export function BlockShell({
   onDuplicate,
   onMove,
   onRemove,
+  onDeleteProperty,
   children,
 }: BlockShellProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -154,6 +157,13 @@ export function BlockShell({
               onRemove();
               setMenuRect(null);
             }}
+            onDeleteProperty={
+              onDeleteProperty &&
+              (() => {
+                onDeleteProperty();
+                setMenuRect(null);
+              })
+            }
           />
         </TreePopover>
       )}

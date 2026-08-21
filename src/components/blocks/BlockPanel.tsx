@@ -25,6 +25,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useBlocks } from "../../hooks/use-blocks";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
 import type { RenderableProperty } from "../../services/property-service";
@@ -57,6 +58,7 @@ export function BlockPanel() {
     addCustomProperty,
     updateCustomProperty,
     removePropertyOption,
+    removeCustomProperty,
     addBlock,
     removeBlock,
     reorderBlocks,
@@ -70,6 +72,7 @@ export function BlockPanel() {
     setBlockTags,
     setNodeAliases,
   } = useProject();
+  const { confirmDestructive } = useDialogs();
   const knownOptions = useKnownOptions();
   const allTags = useAllTags();
   const selectedId = project?.selectedId ?? null;
@@ -263,6 +266,25 @@ export function BlockPanel() {
     return { natural: prop.label, body: renderPropertyField(prop) };
   }
 
+  // Only a property she added herself. A template's own fields belong to the
+  // template, and "delete" on one would either lie or quietly edit every page
+  // of that kind.
+  function customPropertyKeyOf(block: Block): string | undefined {
+    if (block.kind !== "property" || !block.propertyKey) return undefined;
+    const isCustom = (node!.customProperties ?? []).some((spec) => spec.key === block.propertyKey);
+    return isCustom ? block.propertyKey : undefined;
+  }
+
+  // Confirmed only when there is something to lose. Asking about an empty
+  // field she just added by mistake is a dialog for nothing; asking about one
+  // with an afternoon's writing in it is the whole point.
+  async function deleteProperty(key: string, label: string) {
+    const value = node!.properties[key];
+    const hasValue = Array.isArray(value) ? value.length > 0 : value !== undefined && value !== "";
+    if (hasValue && !(await confirmDestructive(`Delete "${label}" and what's in it? This page only.`))) return;
+    removeCustomProperty(node!.id, key);
+  }
+
   function handleApplyTemplate(templateKey: string) {
     void applyTemplate(node!.id, templateKey);
     setTemplateRect(null);
@@ -325,6 +347,7 @@ export function BlockPanel() {
         <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block, index) => {
             const { natural, body } = renderBlock(block);
+            const customKey = customPropertyKeyOf(block);
             return (
               <BlockShell
                 key={block.id}
@@ -341,6 +364,9 @@ export function BlockPanel() {
                 onDuplicate={() => duplicateBlock(node.id, block.id)}
                 onMove={(direction) => reorderBlocks(node.id, index, index + direction)}
                 onRemove={() => removeBlock(node.id, block.id)}
+                onDeleteProperty={
+                  customKey ? () => void deleteProperty(customKey, natural) : undefined
+                }
               >
                 {body}
               </BlockShell>
