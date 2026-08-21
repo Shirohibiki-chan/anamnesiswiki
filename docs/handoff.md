@@ -2815,6 +2815,27 @@ is below.
   names the one that hit, which is hers: a result that cannot say why it is in
   the list is the same complaint as an unexplained backlink.
 
+## Closing the window
+
+- **The close-requested listener must be mounted at the app root, and it is
+  `App.tsx` that does it.** Tauri cancels the native close for good the moment
+  a JS listener is registered on a window, and never restores it — so from then
+  on the *only* thing that can close that window is a handler calling
+  `destroy()`. While the listener lived in `AppLayout`, which exists only while
+  a project is open, going back to the start screen or reloading the page left
+  the window with nothing able to close it: the X did nothing and the app had
+  to be killed from the terminal. Reported twice on 2026-08-21. Anything that
+  moves this back down into a screen-specific component reintroduces it.
+
+- **Nothing may throw out of that handler, and a failed close must be
+  retryable.** Tauri's JS wrapper closes the window itself only when the
+  handler resolves *without* throwing, so an exception leaves the window open
+  with the native close still cancelled. `destroy()` is guarded with `close()`
+  behind it and both failing is swallowed, and the re-entry guard is a promise
+  cleared when the attempt settles rather than a flag that latches — an earlier
+  boolean version meant one failed close killed the X for the rest of the
+  session.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:

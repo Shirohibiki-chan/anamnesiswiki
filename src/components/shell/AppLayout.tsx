@@ -19,7 +19,6 @@ import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
 import { useCreatePage } from "../../hooks/use-new-page";
-import { useSaveOnExit } from "../../hooks/use-save-on-exit";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { PageView } from "../page/PageView";
 import { TemplateView } from "../page/TemplateView";
@@ -53,7 +52,6 @@ export function AppLayout() {
   const widths = usePanelWidths();
   const { setTreeWidth, setPropertiesWidth, resetPanelWidths } = usePanelWidthActions();
 
-  useSaveOnExit();
   // Stable so the shortcut listener is attached once, not rebuilt on every
   // re-render of the shell — see use-global-shortcuts.ts.
   const openSearch = useCallback(() => setIsSearchOpen(true), []);
