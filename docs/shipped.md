@@ -2636,6 +2636,17 @@ that was too small, and offering to make it smaller again would be shipping the
 bug back as a choice. One number for all three grids, the same argument the
 switch above it already won.
 
+**And the scrolling itself was wrong, reported the same day.** The wheel only
+worked with the pointer over the covers: `.start-area` was the scroll box, and
+the heading, the New Project row and the pinned cards all sit outside it. So
+the scroller moved up to `.start-main` — the whole column — and `.start-area`
+stopped being one. That is also why the page-turn reset has to walk up to find
+whatever scrolls it (`scrollingBoxOf`): the two picture grids scroll
+themselves, and the projects grid is scrolled by an ancestor owned by a
+different component. The trade is that the page arrows now sit at the end of
+the list rather than pinned to the window's bottom edge, which is what every
+scrolling paginated page does.
+
 Two things fell out of it. The three scroll containers each had a rule clipping
 them while paged, which had to go — a page has to be allowed to be taller than
 its box. And turning the page had to start resetting the scroll to the top,

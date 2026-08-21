@@ -26,8 +26,9 @@ import { useListPageSize, useListPaging } from "./use-preferences";
 
 export type PagedList<T, E extends HTMLElement> = {
   /**
-   * Goes on the element that scrolls, so turning the page can put her back at
-   * the top of it. Nothing is measured through it; the area's size stopped
+   * Goes on the element holding the list. Turning the page scrolls back to the
+   * top, and this is where the search for "the top of what" starts — see
+   * `scrollingBoxOf`. Nothing is measured through it; the area's size stopped
    * mattering when a page stopped being however much fits in one.
    */
   ref: RefObject<E | null>;
@@ -74,8 +75,35 @@ export function usePagedList<T, E extends HTMLElement = HTMLDivElement>(items: r
   // one, and landing there halfway down is the same fault with a different
   // cause.
   useEffect(() => {
-    if (ref.current) ref.current.scrollTop = 0;
+    const box = scrollingBoxOf(ref.current);
+    if (box) box.scrollTop = 0;
   }, [page]);
 
   return { ref, visible, isPaged: wantsPages && pages > 1, page, pages, goTo };
+}
+
+/**
+ * Whichever box this list is actually inside of, scroll-wise.
+ *
+ * **It is not always the element the ref is on, and that's why this walks.**
+ * The two picture grids scroll themselves — a dialog body and a sidebar panel,
+ * both their own scroll box. The projects grid does not: the whole start
+ * column scrolls, because a page you can only scroll with the pointer over the
+ * covers is one she reported as broken. Asking the DOM which ancestor scrolls
+ * lets all three share one rule instead of each grid being told who its
+ * scroller is by a prop threaded down from wherever that element happens to
+ * live.
+ *
+ * The overflow check alone isn't enough — an ancestor can be `auto` and never
+ * actually scroll, and stopping at that one would leave the real scroller
+ * where it was. So it also has to be overflowing, which is a safe thing to ask
+ * here: this only runs from an effect, after layout.
+ */
+function scrollingBoxOf(start: HTMLElement | null): HTMLElement | null {
+  for (let node = start; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    const scrolls = overflowY === "auto" || overflowY === "scroll";
+    if (scrolls && node.scrollHeight > node.clientHeight) return node;
+  }
+  return null;
 }
