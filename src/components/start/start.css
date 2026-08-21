@@ -55,6 +55,13 @@
      scrolls inside. See the note on that rule. */
   padding: 0 var(--space-xl) var(--space-lg);
   overflow-y: auto;
+  /* **Reserved whether or not it is needed**, because the pinned row measures
+     this column to decide how many cards fit across it. Without this the row's
+     width depends on whether the list below happens to be long enough to
+     scroll — so filtering down to three projects would widen the column by 8px
+     and silently reflow the row above it. A count that changes as she types is
+     worse than a count that is one lower. */
+  scrollbar-gutter: stable;
 }
 
 /* Brand left, the one bright button dead centre, the filter right. Three
