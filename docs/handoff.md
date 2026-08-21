@@ -179,14 +179,8 @@ is below.
   *number* points at different projects at different sizes — dragging the
   window corner would walk the grid somewhere else. `usePagedList` stores the
   index of the first item on screen and asks `pageContaining` where it is now.
-  The measured element clips rather than scrolls while paged, so a scrollbar
-  can never contradict the count the page size was worked out from.
-
-- **`PROJECT_TILE_*` in `constants/layout.ts` and the grid in `start.css` are
-  one set of numbers written twice.** The page size is arithmetic on the
-  constants; the layout is CSS. If they disagree, the last row of every page
-  is either clipped or missing, which looks like a paging bug and isn't.
-  Change both together.
+  Still right after the page size became a setting rather than a measurement —
+  more so, since she can now change the size herself. See §Paged lists.
 
 - **A copy gets a fresh id, and records its parent in `forkedFromId`.** Never
   derive one id from another: the collision suffixes in `filesystem-service.ts`
@@ -852,12 +846,11 @@ is below.
   "adding a Note does nothing."
 
 - **`TreePopover` is not tree-only, and the start screen's project menu needs
-  it for a second reason: `.start-area` is `overflow: hidden` while the grid is
-  paged.** That clipping is deliberate — a page has to be exactly what fits, so
-  a scrollbar there would contradict the arithmetic — which means any menu
-  opened from a tile in the bottom row is cut off unless it leaves the box. The
-  properties panel already reuses this component; reuse it rather than
-  positioning a menu inside a tile.
+  it for a second reason: `.start-area` scrolls.** A menu opened from a tile
+  near the bottom is cut off by that box unless it leaves it — the reason was
+  originally `overflow: hidden` and is now `overflow-y: auto`, which clips the
+  same way. The properties panel already reuses this component; reuse it rather
+  than positioning a menu inside a tile.
 
 - **A `TreePopover` trigger opens on `click` and must never open on
   `pointerdown` — and it needs a ref to stay a toggle.** Opening on pointer-down
@@ -1839,25 +1832,14 @@ is below.
   exactly like a broken hook. **Check it in the real window via
   `pnpm tauri:inspect` instead of debugging what the pane shows you.**
 
-- **A picture tile's size can't be written down as a constant, and that's why
-  `useMeasuredPagedList` exists.** The project grid declares its tile because it
-  has one: 190 by 118, in `constants/layout.ts`, in the same numbers the
-  stylesheet uses. Neither picture grid works that way — both are a counted
-  number of columns across whatever width they are given (two in the sidebar,
-  three past 300px, four in the picker), both make the thumbnail a square of
-  that column, and both sit under a caption that grows with the text-size
-  slider. A constant would be correct in one panel at one text size. **Don't
-  "simplify" the measuring hook into numbers**; the failure it prevents is a
-  page that overflows its area by one row, and the clip cuts that row in half.
-
-  It measures the *border* box, not the content box `useElementSize` reports.
-  Padding and border occupy the row like everything else, and under-measuring
-  is the direction that overflows. Unrounded, too, and `fitAlong` carries half
-  a pixel of slack to meet it: a grid of counted columns divides its row into
-  four fractional widths, so the fit lands exactly on four and any rounding at
-  all floors it to three. Measured 2026-08-19 — 53 pictures came out as
-  eighteen pages of three. **Don't remove the tolerance and don't widen it**;
-  half a pixel cannot promote a tile that misses by a whole one.
+- **Picture tiles are no longer measured, and the hook that did it is gone.**
+  `useMeasuredPagedList` existed because a picture tile is a share of a column
+  rather than a fixed size, so a page of them could only be counted by
+  measuring one — border box, unrounded, with half a pixel of slack in
+  `fitAlong` to stop four fractional columns flooring to three. All of that was
+  in service of "a page is what fits", which is no longer how a page is
+  decided (see §Paged lists). **If you are reintroducing a measured page size,
+  read that section first** — the reason it went is not that it didn't work.
 
 - **A dialog cannot size itself to its content and hold a page of content
   sized to fit it.** The picture picker did both for an afternoon: the page was
@@ -2123,6 +2105,36 @@ is below.
   removing first. `PageBanner`'s picker is the in-app picture library, which
   is scoped to the *open* project's assets; nothing is open here, so this
   reaches for the OS's own file dialog instead (`pickImageFile`).
+
+## Paged lists
+
+- **A page holds a count she picked; it does not hold "however much fits".**
+  The fitting version shipped in Phase 27 and she rejected it on 2026-08-20:
+  her window held eight projects. The mistake underneath it is worth keeping
+  written down because it is easy to make again — *no infinite scroll* and *no
+  scrolling at all* are different requirements, and only the first one was ever
+  asked for. A page is allowed to be taller than the window it is drawn in.
+- **So the scroll containers must actually scroll.** `.start-area`,
+  `.tree-assets-scroll` and `.asset-picker-body` each had a rule clipping them
+  while paged, on the reasoning that a scrollbar would contradict the measured
+  count. There is no measured count now; all three scroll in both modes.
+- **Turning a page resets the scroll to the top, and that is not optional.**
+  It became possible to be wrong the moment a page could scroll: at the bottom
+  of page one, "next page" left the scroll where it was and opened page two in
+  the middle. `usePagedList` owns it, on `page` rather than inside `goTo`, so
+  a filter box clamping her from page five to page one is covered by the same
+  rule.
+- **Nothing about a grid's geometry is known to TypeScript any more.**
+  `fitPerPage`, the measured-tile hook and the five `PROJECT_TILE_*` /
+  `PICTURE_GRID_GAP` constants existed only so the arithmetic and the
+  stylesheet could agree about pixels. They are gone. If you find yourself
+  about to write a tile's size into `constants/layout.ts`, check first whether
+  anything actually needs it — the pinned row genuinely does (`PIN_TARGET_WIDTH`,
+  because its card is a *share* of the row rather than a size), and that is the
+  only one left.
+- **The pinned row is not governed by any of this.** It pages by
+  `fitAcross` on its own, deliberately, and the per-page setting does not touch
+  it — a scrolling row cannot land on a page boundary. See Phase 27's record.
 
 ## Project templates
 

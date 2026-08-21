@@ -168,6 +168,27 @@ export const DECLARED_SETTINGS: readonly {
     keywords: ["double click", "rename", "expand", "open", "tree", "folder", "sidebar", "two clicks"],
   },
   {
+    id: "list-page-size",
+    tabId: "lists",
+    label: "How many to a page",
+    hint: "20, 40, 60 or 100 projects or pictures before the next page",
+    keywords: [
+      "page size",
+      "per page",
+      "how many",
+      // Not "more" or "bigger": both are what somebody types when they want
+      // larger *text*, and this entry outranked the font setting for "make the
+      // text bigger" until the settings-search test said so.
+      "how many per page",
+      "20",
+      "pagination",
+      "page",
+      "grid",
+      "projects",
+      "pictures",
+    ],
+  },
+  {
     id: "list-paging",
     tabId: "lists",
     label: "Pages or scrolling",

@@ -39,6 +39,30 @@ export const LIST_PAGING_MODES = ["pages", "scroll"] as const;
 export type ListPagingMode = (typeof LIST_PAGING_MODES)[number];
 
 /**
+ * How many things go on a page.
+ *
+ * **This used to be "however many fit the window", and that was a mistake she
+ * named on 2026-08-20**: her window held eight projects, which is not a page,
+ * it is a shelf. The reasoning behind fitting was that a page which scrolls is
+ * "back to the thing pages exist to avoid" — and that conflated two different
+ * things. What she asked for was *no infinite scroll*; what got built was *no
+ * scrolling at all*. Those are extremely different, and only the first one was
+ * ever the requirement.
+ *
+ * So a page is a count, and scrolling within one is fine and expected. The
+ * count is hers because the right answer depends on the monitor and on what
+ * she is doing, which is exactly the shape of thing that gets a setting rather
+ * than a compromise everybody lives with — the same argument muted covers and
+ * the paging switch itself already won.
+ *
+ * **20 is the floor, not the middle.** The options only go up: the failure
+ * being fixed is a page that was too small, and offering to make it smaller
+ * again would be putting the bug back in as a choice.
+ */
+export const LIST_PAGE_SIZES = [20, 40, 60, 100] as const;
+export type ListPageSize = (typeof LIST_PAGE_SIZES)[number];
+
+/**
  * Covers or rows, on the start screen.
  *
  * Not in the settings dialog: the control is a pair of icons on the screen
@@ -81,6 +105,7 @@ export const PROJECT_SORT_LABELS: Record<ProjectSort, string> = {
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
   listPaging: ListPagingMode;
+  listPageSize: ListPageSize;
   projectView: ProjectView;
   projectSort: ProjectSort;
 };
@@ -88,6 +113,7 @@ export type Preferences = {
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
   listPaging: "pages",
+  listPageSize: 20,
   projectView: "grid",
   projectSort: "active",
 };
@@ -107,6 +133,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const source = raw as Record<string, unknown>;
   const treeDoubleClick = source.treeDoubleClick;
   const listPaging = source.listPaging;
+  const listPageSize = source.listPageSize;
   const projectView = source.projectView;
   const projectSort = source.projectSort;
   return {
@@ -116,6 +143,13 @@ export function parsePreferences(raw: unknown): Preferences {
     listPaging: LIST_PAGING_MODES.includes(listPaging as ListPagingMode)
       ? (listPaging as ListPagingMode)
       : DEFAULT_PREFERENCES.listPaging,
+    // Membership rather than a range check, deliberately: a number that is not
+    // one of the offered sizes has no control that can show it, so a
+    // hand-edited 37 would sit in the file being obeyed by a settings panel
+    // that shows 20 selected.
+    listPageSize: LIST_PAGE_SIZES.includes(listPageSize as ListPageSize)
+      ? (listPageSize as ListPageSize)
+      : DEFAULT_PREFERENCES.listPageSize,
     projectView: PROJECT_VIEWS.includes(projectView as ProjectView)
       ? (projectView as ProjectView)
       : DEFAULT_PREFERENCES.projectView,

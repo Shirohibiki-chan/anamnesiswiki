@@ -2,7 +2,7 @@
 // CLAUDE.md's layer order — components never import stores directly.
 import { useShallow } from "zustand/react/shallow";
 import { usePreferencesStore } from "../state/preferences-store";
-import type { ListPagingMode, ProjectSort, ProjectView, TreeDoubleClickAction } from "../services/preferences-service";
+import type { ListPageSize, ListPagingMode, ProjectSort, ProjectView, TreeDoubleClickAction } from "../services/preferences-service";
 
 /**
  * Selected down to the one field rather than the whole preferences object,
@@ -23,6 +23,14 @@ export function useListPaging(): ListPagingMode {
   return usePreferencesStore((state) => state.preferences.listPaging);
 }
 
+/**
+ * How many things one page holds. Read by the same grids `useListPaging` is,
+ * and meaningless while that says `scroll` — there are no pages to size.
+ */
+export function useListPageSize(): ListPageSize {
+  return usePreferencesStore((state) => state.preferences.listPageSize);
+}
+
 /** Covers or rows on the start screen. Its control is on that screen, not in settings. */
 export function useProjectView(): ProjectView {
   return usePreferencesStore((state) => state.preferences.projectView);
@@ -38,6 +46,7 @@ export function usePreferenceActions() {
     useShallow((state) => ({
       setTreeDoubleClick: state.setTreeDoubleClick,
       setListPaging: state.setListPaging,
+      setListPageSize: state.setListPageSize,
       setProjectView: state.setProjectView,
       setProjectSort: state.setProjectSort,
     })),

@@ -4,13 +4,18 @@
 //
 // Reusing the sidebar panel's classes rather than growing a second set —
 // they're a fieldset of radios with a hint under each, which is exactly this.
-import { useListPaging, usePreferenceActions } from "../../hooks/use-preferences";
-import { LIST_PAGING_MODES, type ListPagingMode } from "../../services/preferences-service";
+import { useListPageSize, useListPaging, usePreferenceActions } from "../../hooks/use-preferences";
+import {
+  LIST_PAGE_SIZES,
+  LIST_PAGING_MODES,
+  type ListPageSize,
+  type ListPagingMode,
+} from "../../services/preferences-service";
 
 const PAGING_LABELS: Record<ListPagingMode, { label: string; hint: string }> = {
   pages: {
     label: "Pages",
-    hint: "One screenful at a time, with arrows to move between them. The page fills the window, so a bigger window is a bigger page.",
+    hint: "A set number at a time, with arrows to move between them. A page scrolls if it's taller than the window — how many go on one is yours to pick, below.",
   },
   scroll: {
     label: "One long scroll",
@@ -20,7 +25,8 @@ const PAGING_LABELS: Record<ListPagingMode, { label: string; hint: string }> = {
 
 export function ListSettings() {
   const listPaging = useListPaging();
-  const { setListPaging } = usePreferenceActions();
+  const listPageSize = useListPageSize();
+  const { setListPaging, setListPageSize } = usePreferenceActions();
 
   return (
     <div className="appearance-settings">
@@ -45,6 +51,35 @@ export function ListSettings() {
             </span>
           </label>
         ))}
+      </fieldset>
+
+      {/* Shown always rather than only while Pages is on. A control that
+          appears and disappears as she flips the radio above it makes the panel
+          jump under her hand, and the disabled state says the same thing
+          without moving anything. */}
+      <fieldset className="sidebar-setting" data-setting="list-page-size" disabled={listPaging !== "pages"}>
+        <legend className="sidebar-setting-label">How many to a page</legend>
+        <p className="sidebar-setting-blurb">
+          {listPaging === "pages"
+            ? "The same number everywhere — projects and pictures alike. A page taller than the window scrolls; that's expected, and it's not the same thing as a list with no end to it."
+            : "Nothing to set while everything is one long scroll."}
+        </p>
+        {/* The panel's own control for picking one of a few — the same
+            `appearance-select` the font pickers use. A row of pills would be
+            nicer to look at and would be the only one of its kind in Settings,
+            which is how a dialog ends up with six ways to choose a thing. */}
+        <select
+          className="appearance-select"
+          aria-label="How many to a page"
+          value={listPageSize}
+          onChange={(event) => setListPageSize(Number(event.target.value) as ListPageSize)}
+        >
+          {LIST_PAGE_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {size} at a time
+            </option>
+          ))}
+        </select>
       </fieldset>
     </div>
   );
