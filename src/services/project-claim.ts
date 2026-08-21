@@ -29,14 +29,63 @@ export type ProjectClaim = {
   refreshedAt: number;
 };
 
+/** Where this window's id lives between reloads. */
+const SESSION_ID_KEY = "anamnesis.sessionId";
+
 /**
- * This launch's id, minted once when the module loads.
+ * The id for this window, reusing the one it already had if there is one.
+ *
+ * **Reloading must not lock the app out of its own project.** The id used to
+ * be minted on every module load, so a refresh produced a *new* one, found the
+ * marker the previous load had written seconds earlier, and refused to open —
+ * the app treating itself as another copy. Reported from use 2026-08-21, and
+ * unbearable during development, where a reload happens constantly.
+ *
+ * `sessionStorage` is exactly the lifetime wanted here: it survives a reload of
+ * this window and is gone when the window is, so a genuine second launch still
+ * mints a genuinely different id and is still refused.
+ */
+export function resolveSessionId(stored: string | null, mint: () => string): string {
+  return stored ? stored : mint();
+}
+
+// Storage can throw rather than merely be absent — a webview with storage
+// disabled raises on access — so both the read and the write are guarded, and
+// a failure just means the old behaviour of a fresh id per load.
+function sessionStore(): Pick<Storage, "getItem" | "setItem"> | null {
+  try {
+    return typeof sessionStorage === "undefined" ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * This window's id, stable across its reloads.
  *
  * Module scope rather than a hook, for the reason `autosave.ts` is a plain
  * service: it has to survive every re-render and outlive every component, and
  * a new id per mount would make the app a stranger to its own marker.
  */
-export const SESSION_ID = crypto.randomUUID();
+export const SESSION_ID = ((): string => {
+  const store = sessionStore();
+  const stored = ((): string | null => {
+    try {
+      return store?.getItem(SESSION_ID_KEY) ?? null;
+    } catch {
+      return null;
+    }
+  })();
+  const id = resolveSessionId(stored, () => crypto.randomUUID());
+  try {
+    store?.setItem(SESSION_ID_KEY, id);
+  } catch {
+    // Nothing to do: a window that can't remember its id behaves as it did
+    // before, which is to say it waits out the staleness window after a
+    // reload rather than reclaiming immediately.
+  }
+  return id;
+})();
 
 /** Read defensively — this file is written by a version of the app that isn't this one. */
 export function parseProjectClaim(value: unknown): ProjectClaim | null {
