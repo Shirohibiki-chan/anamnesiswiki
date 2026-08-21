@@ -291,13 +291,21 @@ block per property in exactly the order `orderProperties` returns today, a tags
 block if it has tags. The panel then looks identical to how it looks now, the
 first edit writes the real list, and nothing rewrites a world she only opened.
 
-**A blank page is blank; a page made from a template gets the template's
-blocks.** Templates became user-editable in Phase 17, so a template gains a
-block list the same way it already carries a property schema. *Assumption, not
-her stated words* — she asked for a new sidebar to be empty, and in LK a
-templated page still arrives with its fields. Worth confirming before 18a is
-built, because if templates don't carry blocks then applying a template does
-nothing visible and the Templates tab loses most of its point.
+**A blank page is blank; a page made from a template starts with whatever
+blocks suit that template.** Confirmed 2026-08-21 — empty-by-default is about a
+page with no template behind it, not about the templates. Each template carries
+a starting block list, chosen for what that kind of page actually needs rather
+than applied uniformly: LK's own creature template is the reference she gave,
+and it is an image, a Habitat link block, Diet and Summary text blocks and
+tags, with Add block pinned under them.
+
+**This is less new than it sounds** — `template-registry.ts` already gives
+every template a `properties` array that seeds a new page's sidebar. That array
+becomes the ordered block seed, and the work is deciding what else belongs in
+each one now that a picture and a link are things a template can start with.
+The obvious first call: the templates about a *thing you can picture* —
+character, species, location, item — start with an image block, the way the
+creature template above does. `note` and `blank` start empty.
 
 Ships in 18a:
 
