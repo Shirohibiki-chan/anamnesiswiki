@@ -3225,6 +3225,41 @@ screenshot of a creature template she supplied.
 - **Every property field's label row became conditional**, because the shell
   draws the heading now and two of them is one too many.
 
+### Rebuilt the same day, against the reference
+
+The first cut shipped one reading per block, a draggable dot on the fill, a
+2px colour rule down the block's edge, and two number boxes standing under
+every meter. She sent five screenshots of the reference and none of those
+four survived.
+
+- **A block holds a list of readings.** The reference puts four dials under
+  one GAUGE heading, each with an icon, a name and its own numbers — which is
+  what a character's stats are. `Block.meters` is that list; `migrateBlocks`
+  lifts a block written before it into a list of one.
+- **Add meter / Show text / Show max live in the block's own `⋯` menu**, and
+  a reading is removed by the × in its caption. `BlockMenu` grows an optional
+  `meter` group the same way it already grows `onDeleteProperty` — one menu
+  per block, not a second menu inside the first.
+- **The handle is gone; hovering previews instead.** Her words for the dot
+  were that it reads as furniture, and that the semicircle's slid off the end
+  of the arc — both true. The reference shows the value you would get under
+  the cursor, dimmed and pulsing, and commits on click. That is now what every
+  shape does, dragging included, with the pulse dropped under
+  `prefers-reduced-motion`.
+- **A coloured block is coloured.** The wash covers the whole shell and the
+  heading takes the hue, which is what "block colour" meant to her. The
+  heading's colour is written inline by `BlockShell` rather than from a
+  stylesheet — see the note in handoff.
+- **The two standing number boxes are gone.** They were `NumberProperty`,
+  whose input carries a negative margin so its text lines up in a column, and
+  in a tight row that margin hung the focus box out over the meter above it —
+  which is the misalignment she photographed. The readout is the control now:
+  it shows what the reference shows and opens into a value/maximum pair when
+  clicked.
+- **The pip cap went from 20 to 200.** Twenty was a guess about what stays
+  countable; her reference draws seventy-six tokens in a wrapped grid and
+  reads fine. The cap now exists only to stop a typed 5000.
+
 ### Dragging, added the same day
 
 The first cut set a meter by typing into a box, with the shapes display-only.
@@ -3386,8 +3421,12 @@ presentation over them.
   pure and unit-tested. 39 tests.
 - **`meter` block kind** with `meter` / `value` / `max` on `Block`, and three
   store actions (`setBlockMeter`, `setBlockValue`, `setBlockMax`).
-- **`MeterBlock.tsx`** — the six renderings, the shape picker, dragging on
-  every shape, the clickable pips, and the two numbers under every shape.
+- **`MeterBlock.tsx`** — the six renderings, the shape picker, the list of
+  readings, pointing and dragging on every shape, and the click-to-edit
+  numbers.
+- **`constants/glyphs.ts`, `constants/emoji.ts` and `IconPicker.tsx`** — the
+  icon picker `docs/ideas.md` has wanted since 2026-08-18, built here because a
+  meter needs an icon and written to know nothing about meters.
 - **Six entries in Add Block** under a Meters heading, all creating the same
   block with a different shape.
 
@@ -3423,7 +3462,7 @@ presentation over them.
 
 ### Verification
 
-`pnpm lint`, `pnpm test` (1298, 39 new) and `tsc --noEmit` all clean.
+`pnpm lint`, `pnpm test` (1311, 52 new), `tsc --noEmit` and `pnpm build` all clean.
 
 Then driven in a throwaway probe mounting the real `BlockPanel`, because a unit
 suite cannot see a sidebar:
@@ -3454,3 +3493,27 @@ Then again for dragging, driving real pointer sequences at the real panel:
   normally; dragging back down lowered it.
 - Keyboard on a focused bar: arrow 1, Page Up 10, End full, Home empty, with
   `role="slider"` and the aria values present.
+
+And a third time after the rebuild:
+
+- Four gauges added from the block menu laid out two across and stored as a
+  clean four-entry list.
+- The icon picker: 145 glyphs in seven groups, "health" narrowing to the
+  heart, an emoji found by keyword and stored as the character itself, drawn
+  back as text, and cleared through No icon.
+- Hovering an arc drew a pending path and left the stored value untouched;
+  clicking committed it; a real mouse-out cleared the preview.
+- Show text removed the four name boxes and stored `showText: false`; Show max
+  turned `60%` into `60`; turning either back on removed the field again.
+- Readings removed one at a time down to the last, which keeps no × and leaves
+  the block empty rather than refilling itself.
+- A token pool set to 45 of 76 through the click-to-edit numbers drew 76 pips
+  with 45 filled.
+- Colouring a block purple washed the shell and put `#c4b5fd` on the heading.
+
+**Computed styles could not be trusted in this probe** — the browser pane was
+hidden, so the page stopped compositing and even an inline `!important` colour
+failed to show up in `getComputedStyle`. Structure, stored state and event
+behaviour were all still readable and are what the checks above rest on. It is
+also why the heading's colour is set inline rather than left to a cascade that
+could not be measured.

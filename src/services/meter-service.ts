@@ -1,7 +1,7 @@
 // The numbers behind a meter block, and the geometry its arcs are drawn from.
 // Phase 18c. Pure, so the six shapes are presentation over two value models
 // rather than six implementations of "what fraction is this".
-import { PIP_METER_STYLES, type Block, type MeterStyle } from "../constants/schema";
+import { PIP_METER_STYLES, type Block, type MeterEntry, type MeterStyle } from "../constants/schema";
 
 /**
  * A proportional meter reads against 100 unless told otherwise, so "75" means
@@ -11,8 +11,44 @@ import { PIP_METER_STYLES, type Block, type MeterStyle } from "../constants/sche
 export const DEFAULT_MAX = 100;
 export const DEFAULT_PIPS = 5;
 
-/** Above this, pips stop being countable at a glance and the row wraps badly. */
-export const MAX_PIPS = 20;
+/**
+ * A sanity bound on pips, not a design one.
+ *
+ * The first cut capped this at twenty on the theory that more stops being
+ * countable at a glance. Her reference draws seventy-six tokens in a wrapped
+ * grid and it reads fine, so the cap only exists to stop a typed 5000 turning
+ * into 5000 buttons.
+ */
+export const MAX_PIPS = 200;
+
+/** A blank reading. Every meter block has at least one. */
+export function newMeterEntry(extra: Partial<MeterEntry> = {}): MeterEntry {
+  return { id: crypto.randomUUID(), ...extra };
+}
+
+// Shared so a block with no readings hands back the same array every render —
+// a fresh [] each time re-renders every sidebar on every keystroke.
+const NO_ENTRIES: MeterEntry[] = [];
+
+/**
+ * The readings in a block.
+ *
+ * Blocks written before the list existed are lifted into one entry by
+ * `migrateBlocks` on read, so this never has to look at `block.value` — there
+ * is one answer to "what is in this meter" and it is this field.
+ */
+export function metersOf(block: Block): MeterEntry[] {
+  return block.meters ?? NO_ENTRIES;
+}
+
+/** Both display toggles default to on, and are stored only when turned off. */
+export function showsText(block: Block): boolean {
+  return block.showText !== false;
+}
+
+export function showsMax(block: Block): boolean {
+  return block.showMax !== false;
+}
 
 export function isPipMeter(style: MeterStyle): boolean {
   return PIP_METER_STYLES.includes(style);
@@ -22,14 +58,13 @@ export function meterStyleOf(block: Block): MeterStyle {
   return block.meter ?? "bar";
 }
 
-/** The maximum this block reads against, defaulted and kept sane. */
-export function meterMax(block: Block): number {
-  const style = meterStyleOf(block);
+/** The maximum a reading is read against, defaulted and kept sane. */
+export function meterMax(entry: MeterEntry, style: MeterStyle): number {
   const fallback = isPipMeter(style) ? DEFAULT_PIPS : DEFAULT_MAX;
-  const raw = block.max ?? fallback;
+  const raw = entry.max ?? fallback;
   if (!Number.isFinite(raw) || raw <= 0) return fallback;
   // A pip meter's maximum is a count of things drawn on screen, so it is a
-  // whole number and it is capped — "out of 5000" is not a widget.
+  // whole number and it is bounded.
   return isPipMeter(style) ? Math.min(Math.round(raw), MAX_PIPS) : raw;
 }
 
@@ -41,18 +76,18 @@ export function meterMax(block: Block): number {
  * and a meter that draws eight of three is worse than one that says three.
  * The stored number is left alone so raising the maximum again restores it.
  */
-export function meterValue(block: Block): number {
-  const max = meterMax(block);
-  const raw = block.value ?? 0;
+export function meterValue(entry: MeterEntry, style: MeterStyle): number {
+  const max = meterMax(entry, style);
+  const raw = entry.value ?? 0;
   if (!Number.isFinite(raw)) return 0;
   const clamped = Math.min(Math.max(raw, 0), max);
-  return isPipMeter(meterStyleOf(block)) ? Math.round(clamped) : clamped;
+  return isPipMeter(style) ? Math.round(clamped) : clamped;
 }
 
 /** How full it is, 0 to 1. A zero maximum can't happen, but never divide by it. */
-export function meterFraction(block: Block): number {
-  const max = meterMax(block);
-  return max <= 0 ? 0 : meterValue(block) / max;
+export function meterFraction(entry: MeterEntry, style: MeterStyle): number {
+  const max = meterMax(entry, style);
+  return max <= 0 ? 0 : meterValue(entry, style) / max;
 }
 
 /**
@@ -131,11 +166,11 @@ export const ARC_GEOMETRY: Record<"circle" | "semicircle" | "gauge", { start: nu
  * Anything else shows the pair, since 3 out of 8 is not a percentage in
  * anyone's head. Pip shapes never call this — you count the pips.
  */
-export function meterReadout(block: Block): string {
-  const max = meterMax(block);
-  const value = meterValue(block);
-  const rounded = Math.round(value * 10) / 10;
-  return max === DEFAULT_MAX ? `${Math.round(meterFraction(block) * 100)}%` : `${rounded}/${max}`;
+export function meterReadout(entry: MeterEntry, style: MeterStyle, withMax = true): string {
+  const max = meterMax(entry, style);
+  const rounded = Math.round(meterValue(entry, style) * 10) / 10;
+  if (!withMax) return `${rounded}`;
+  return max === DEFAULT_MAX ? `${Math.round(meterFraction(entry, style) * 100)}%` : `${rounded}/${max}`;
 }
 
 /** The round shapes, as their own type — the three that are drawn as an arc. */
@@ -182,9 +217,8 @@ export function barFractionAt(offsetX: number, width: number): number {
  * a count of things and neither wants 61.837. Typing still takes decimals —
  * dragging is the coarse gesture and the box beneath it is the precise one.
  */
-export function valueAtFraction(block: Block, fraction: number): number {
-  const max = meterMax(block);
-  return Math.round(Math.min(Math.max(fraction, 0), 1) * max);
+export function valueAtFraction(entry: MeterEntry, style: MeterStyle, fraction: number): number {
+  return Math.round(Math.min(Math.max(fraction, 0), 1) * meterMax(entry, style));
 }
 
 /**
@@ -194,7 +228,36 @@ export function valueAtFraction(block: Block, fraction: number): number {
  * block so a nudge on a meter whose maximum has since shrunk starts from what
  * is on screen — pressing Up on a meter drawn at 3 must not jump to 9.
  */
-export function nudgedValue(block: Block, steps: number): number {
-  const max = meterMax(block);
-  return Math.min(Math.max(meterValue(block) + steps, 0), max);
+export function nudgedValue(entry: MeterEntry, style: MeterStyle, steps: number): number {
+  const max = meterMax(entry, style);
+  return Math.min(Math.max(meterValue(entry, style) + steps, 0), max);
+}
+
+/**
+ * The readings with one of them changed, or added, or taken out.
+ *
+ * Pure list edits kept beside the arithmetic rather than inlined in the store,
+ * for the reason `block-service` gives: the store's job is which block, and
+ * this is what a meter *is*.
+ *
+ * **Removing the last reading leaves the block empty rather than refilling
+ * it.** An empty meter block is a block she can see and delete; one that grows
+ * a fresh reading every time she removes the last is a block that will not go
+ * away.
+ */
+export function withMeter(entries: MeterEntry[], meterId: string, patch: Partial<MeterEntry>): MeterEntry[] {
+  return entries.map((entry) => {
+    if (entry.id !== meterId) return entry;
+    const next = { ...entry, ...patch };
+    // Written to disk, so an emptied field is removed rather than stored as
+    // undefined — the same rule block-service's withField follows.
+    for (const key of Object.keys(patch) as (keyof MeterEntry)[]) {
+      if (next[key] === undefined) delete next[key];
+    }
+    return next;
+  });
+}
+
+export function withoutMeter(entries: MeterEntry[], meterId: string): MeterEntry[] {
+  return entries.filter((entry) => entry.id !== meterId);
 }

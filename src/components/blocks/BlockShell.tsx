@@ -32,6 +32,14 @@ type BlockShellProps = {
   onRemove: () => void;
   /** Present only for a property block whose field the user added herself. */
   onDeleteProperty?: () => void;
+  /** Present only for a meter block — its own three menu entries. */
+  meter?: {
+    textShown: boolean;
+    maxShown: boolean;
+    onAdd: () => void;
+    onToggleText: () => void;
+    onToggleMax: () => void;
+  };
   children: ReactNode;
 };
 
@@ -50,6 +58,7 @@ export function BlockShell({
   onMove,
   onRemove,
   onDeleteProperty,
+  meter,
   children,
 }: BlockShellProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -101,6 +110,7 @@ export function BlockShell({
             <input
               ref={input}
               className="block-title-input"
+              style={hex ? { color: hex } : undefined}
               autoFocus
               value={draft}
               placeholder={naturalTitle}
@@ -112,7 +122,18 @@ export function BlockShell({
               }}
             />
           ) : (
-            <button type="button" className="ui-eyebrow block-title" onDoubleClick={startRename}>
+            <button
+              type="button"
+              className="ui-eyebrow block-title"
+              // Inline rather than a rule keyed off the shell's colour, on
+              // purpose. The heading is a `.ui-eyebrow` first and a
+              // `.block-title` second, and both of those set a colour from
+              // different files — one of them layered by Tailwind. Writing the
+              // hue here settles it outright instead of leaving a coloured
+              // block's heading depending on which stylesheet loaded last.
+              style={hex ? { color: hex } : undefined}
+              onDoubleClick={startRename}
+            >
               {shown}
             </button>
           ))}
@@ -157,6 +178,15 @@ export function BlockShell({
               onRemove();
               setMenuRect(null);
             }}
+            meter={
+              meter && {
+                ...meter,
+                onAdd: () => {
+                  meter.onAdd();
+                  setMenuRect(null);
+                },
+              }
+            }
             onDeleteProperty={
               onDeleteProperty &&
               (() => {

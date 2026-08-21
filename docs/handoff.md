@@ -2768,6 +2768,23 @@ is below.
   drops *every* block pointing at that key, because a property can be shown
   twice.
 
+- **A meter block holds a *list* of readings, and `metersOf` is the only way
+  to it.** `block.value` / `block.max` are the first cut's single reading and
+  are never written again — `migrateBlocks` lifts one into `meters` on read,
+  the way it does for `link`. Anything that reaches for `block.value` is
+  reading a field that has been empty since the day it shipped.
+
+- **The block's `⋯` menu is the only place a block's settings live.**
+  `BlockMenu` takes an optional group per kind — `onDeleteProperty` for
+  properties, `meter` for meters. A second menu hung off the block itself
+  would be a second place to look for the same three things.
+
+- **A coloured block's heading gets its colour inline from `BlockShell`, not
+  from a stylesheet.** The heading is a `.ui-eyebrow` and a `.block-title` at
+  once, set from two files, one of them inside a Tailwind `@layer` — and which
+  wins is not something to leave to load order for a colour the user picked.
+  The wash on the block itself is still CSS, since nothing else sets it.
+
 - **A meter clamps on read and never on write, and `meter-service` is where
   that lives.** The maximum moves underneath a stored value all the time — a
   rating dropped from ten pips to three leaves an 8 behind — and writing the
@@ -2796,6 +2813,13 @@ is below.
   in a dial's *gap* snaps to the nearer end, which is not a nicety — reading an
   overshoot past full as empty is a meter that empties itself at the moment you
   fill it.
+
+- **Nothing in a meter draws a drag handle.** A dot on the end of the fill
+  was built and rejected: it reads as furniture, and on a semicircle it slides
+  off the end of the arc. What replaced it is the reference's behaviour —
+  hovering previews the value under the pointer, dimmed and pulsing, and a
+  click commits it. Adding a handle back would be re-making a decision she has
+  already made.
 
 - **A meter's fill falls back to `--color-accent-light`, never
   `--color-accent`.** The latter is a 15% tint despite the name — the same trap

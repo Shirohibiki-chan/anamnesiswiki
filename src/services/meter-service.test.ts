@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Block, MeterStyle } from "../constants/schema";
+import type { MeterEntry, MeterStyle } from "../constants/schema";
 import {
   arcFractionAt,
+  metersOf,
   arcPath,
   barFractionAt,
   meterFraction,
@@ -11,71 +12,78 @@ import {
   meterValue,
   nudgedValue,
   pipClickValue,
+  showsMax,
+  showsText,
   valueAtFraction,
+  withMeter,
+  withoutMeter,
 } from "./meter-service";
 
-function meter(patch: Partial<Block> = {}): Block {
-  return { id: "m", kind: "meter", ...patch };
+function entry(patch: Partial<MeterEntry> = {}): MeterEntry {
+  return { id: "m", ...patch };
 }
 
 describe("meterMax", () => {
   it("reads against 100 by default, so a bare 75 means 75%", () => {
-    expect(meterMax(meter({ meter: "bar" }))).toBe(100);
+    expect(meterMax(entry(), "bar")).toBe(100);
   });
 
   it("gives a rating five pips by default", () => {
-    expect(meterMax(meter({ meter: "rating" }))).toBe(5);
+    expect(meterMax(entry(), "rating")).toBe(5);
   });
 
-  it("caps pips at something countable", () => {
-    expect(meterMax(meter({ meter: "rating", max: 500 }))).toBe(20);
+  // The cap is a sanity bound, not a design one: her reference draws 76
+  // tokens in a wrapped grid, so the only job here is stopping a typed 5000.
+  it("bounds pips rather than trusting a typed number", () => {
+    expect(meterMax(entry({ max: 76 }), "pool")).toBe(76);
+    expect(meterMax(entry({ max: 5000 }), "rating")).toBe(200);
   });
 
   it("rounds a fractional pip count, since half a star is not drawable here", () => {
-    expect(meterMax(meter({ meter: "pool", max: 4.6 }))).toBe(5);
+    expect(meterMax(entry({ max: 4.6 }), "pool")).toBe(5);
   });
 
   it("falls back rather than dividing by zero or going negative", () => {
-    expect(meterMax(meter({ meter: "bar", max: 0 }))).toBe(100);
-    expect(meterMax(meter({ meter: "bar", max: -20 }))).toBe(100);
+    expect(meterMax(entry({ max: 0 }), "bar")).toBe(100);
+    expect(meterMax(entry({ max: -20 }), "bar")).toBe(100);
   });
 });
 
 describe("meterValue", () => {
   it("keeps a value inside range", () => {
-    expect(meterValue(meter({ meter: "bar", value: 140 }))).toBe(100);
-    expect(meterValue(meter({ meter: "bar", value: -5 }))).toBe(0);
+    expect(meterValue(entry({ value: 140 }), "bar")).toBe(100);
+    expect(meterValue(entry({ value: -5 }), "bar")).toBe(0);
   });
 
   // The maximum can move under a stored value: dropping a rating from ten
   // pips to three leaves an 8 behind, and drawing eight of three is worse
   // than showing three.
   it("clamps against a maximum that has since shrunk", () => {
-    expect(meterValue(meter({ meter: "rating", max: 3, value: 8 }))).toBe(3);
+    expect(meterValue(entry({ max: 3, value: 8 }), "rating")).toBe(3);
   });
 
   it("leaves the stored number alone, so raising the maximum restores it", () => {
-    const block = meter({ meter: "rating", max: 3, value: 8 });
-    meterValue(block);
-    expect(block.value).toBe(8);
+    const reading = entry({ max: 3, value: 8 });
+    meterValue(reading, "rating");
+    expect(reading.value).toBe(8);
   });
 
   it("is a whole number of pips", () => {
-    expect(meterValue(meter({ meter: "pool", max: 5, value: 2.4 }))).toBe(2);
+    expect(meterValue(entry({ max: 5, value: 2.4 }), "pool")).toBe(2);
   });
 
   it("treats a missing value as empty rather than as a gap", () => {
-    expect(meterValue(meter({ meter: "bar" }))).toBe(0);
+    expect(meterValue(entry(), "bar")).toBe(0);
   });
 });
 
 describe("meterFraction", () => {
   it("reads a proportion", () => {
-    expect(meterFraction(meter({ meter: "bar", value: 75 }))).toBeCloseTo(0.75);
+    expect(meterFraction(entry({ value: 75 }), "bar")).toBeCloseTo(0.75);
   });
 
   it("reads pips as a proportion too, so every shape shares one model", () => {
-    expect(meterFraction(meter({ meter: "rating", max: 4, value: 1 }))).toBeCloseTo(0.25);
+    expect(meterFraction(entry({ max: 4, value: 1 }), "rating")).toBeCloseTo(0.25);
   });
 });
 
@@ -139,24 +147,24 @@ describe("every style", () => {
 
   it("produces a usable maximum and an in-range value", () => {
     for (const style of styles) {
-      const block = meter({ meter: style, value: 3 });
-      expect(meterMax(block), style).toBeGreaterThan(0);
-      expect(meterValue(block), style).toBeLessThanOrEqual(meterMax(block));
+      const reading = entry({ value: 3 });
+      expect(meterMax(reading, style), style).toBeGreaterThan(0);
+      expect(meterValue(reading, style), style).toBeLessThanOrEqual(meterMax(reading, style));
     }
   });
 });
 
 describe("meterReadout", () => {
   it("reads a default meter as a percentage, because that is what the number means", () => {
-    expect(meterReadout(meter({ meter: "circle", value: 75 }))).toBe("75%");
+    expect(meterReadout(entry({ value: 75 }), "circle")).toBe("75%");
   });
 
   it("shows the pair when the maximum is anything else", () => {
-    expect(meterReadout(meter({ meter: "gauge", max: 8, value: 3 }))).toBe("3/8");
+    expect(meterReadout(entry({ max: 8, value: 3 }), "gauge")).toBe("3/8");
   });
 
   it("doesn't spill a long decimal into a small circle", () => {
-    expect(meterReadout(meter({ meter: "circle", max: 3, value: 1 / 3 }))).toBe("0.3/3");
+    expect(meterReadout(entry({ max: 3, value: 1 / 3 }), "circle")).toBe("0.3/3");
   });
 });
 
@@ -218,26 +226,87 @@ describe("barFractionAt", () => {
 
 describe("valueAtFraction", () => {
   it("gives whole units, because no maximum here wants a decimal", () => {
-    expect(valueAtFraction(meter({ meter: "bar" }), 0.618)).toBe(62);
-    expect(valueAtFraction(meter({ meter: "gauge", max: 8 }), 0.5)).toBe(4);
+    expect(valueAtFraction(entry(), "bar", 0.618)).toBe(62);
+    expect(valueAtFraction(entry({ max: 8 }), "gauge", 0.5)).toBe(4);
   });
 
   it("clamps a drag past either end", () => {
-    expect(valueAtFraction(meter({ meter: "bar" }), 1.4)).toBe(100);
-    expect(valueAtFraction(meter({ meter: "bar" }), -0.2)).toBe(0);
+    expect(valueAtFraction(entry(), "bar", 1.4)).toBe(100);
+    expect(valueAtFraction(entry(), "bar", -0.2)).toBe(0);
   });
 });
 
 describe("nudgedValue", () => {
   it("steps by whole units and stops at the ends", () => {
-    expect(nudgedValue(meter({ meter: "bar", value: 40 }), 10)).toBe(50);
-    expect(nudgedValue(meter({ meter: "bar", value: 96 }), 10)).toBe(100);
-    expect(nudgedValue(meter({ meter: "rating", value: 0 }), -1)).toBe(0);
+    expect(nudgedValue(entry({ value: 40 }), "bar", 10)).toBe(50);
+    expect(nudgedValue(entry({ value: 96 }), "bar", 10)).toBe(100);
+    expect(nudgedValue(entry({ value: 0 }), "rating", -1)).toBe(0);
   });
 
   // Starts from what is on screen, not from what is stored: a rating whose pip
   // count shrank draws 3 and must not jump to 9 on one arrow press.
   it("starts from the drawn value, not the remembered one", () => {
-    expect(nudgedValue(meter({ meter: "rating", max: 3, value: 8 }), 1)).toBe(3);
+    expect(nudgedValue(entry({ max: 3, value: 8 }), "rating", 1)).toBe(3);
+  });
+});
+
+describe("meterReadout without the maximum", () => {
+  it("drops the pair when Show Max is off", () => {
+    expect(meterReadout(entry({ max: 10, value: 6 }), "bar", false)).toBe("6");
+  });
+
+  // The percent sign goes with it: "50%" is the value read against 100, and a
+  // block told not to show its maximum shouldn't keep showing it in disguise.
+  it("drops the percent too, since that is the maximum showing", () => {
+    expect(meterReadout(entry({ value: 50 }), "bar", false)).toBe("50");
+  });
+});
+
+describe("the block's display toggles", () => {
+  it("treats absent as on, so a normal block stores nothing", () => {
+    expect(showsText({ id: "b", kind: "meter" })).toBe(true);
+    expect(showsMax({ id: "b", kind: "meter" })).toBe(true);
+  });
+
+  it("reads false as off", () => {
+    expect(showsText({ id: "b", kind: "meter", showText: false })).toBe(false);
+    expect(showsMax({ id: "b", kind: "meter", showMax: false })).toBe(false);
+  });
+});
+
+describe("editing the list of readings", () => {
+  const list = [entry({ id: "a", label: "Health" }), entry({ id: "b", label: "Mana" })];
+
+  it("changes one reading and leaves the rest alone", () => {
+    const next = withMeter(list, "b", { value: 4 });
+    expect(next[1].value).toBe(4);
+    expect(next[0]).toBe(list[0]);
+  });
+
+  // These end up in JSON on disk, so a cleared field has to be absent rather
+  // than present-and-undefined — the same rule block-service's withField keeps.
+  it("removes a field that was cleared rather than storing undefined", () => {
+    const next = withMeter(list, "a", { label: undefined });
+    expect("label" in next[0]).toBe(false);
+  });
+
+  it("leaves the list alone when the id matches nothing", () => {
+    expect(withMeter(list, "gone", { value: 1 })).toEqual(list);
+  });
+
+  it("takes one out", () => {
+    expect(withoutMeter(list, "a").map((reading) => reading.id)).toEqual(["b"]);
+  });
+
+  // An empty meter block is one she can see and delete. One that grows a fresh
+  // reading whenever she removes the last is a block that will not go away.
+  it("lets the last one be removed rather than refilling itself", () => {
+    expect(withoutMeter([entry({ id: "only" })], "only")).toEqual([]);
+  });
+});
+
+describe("metersOf", () => {
+  it("hands back the same array every time for a block with none", () => {
+    expect(metersOf({ id: "b", kind: "meter" })).toBe(metersOf({ id: "c", kind: "meter" }));
   });
 });

@@ -5,17 +5,22 @@
 ### Additions
 
 - **Meters — a number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with six of them, and they sit in the sidebar alongside your properties.
-- **You drag them.** Grab the handle on a bar and slide it, or take hold of a dial and swing it round — the number follows your finger and doesn't have to be typed. Dragging past either end stops there instead of wrapping, including past the gap at the bottom of a gauge, which fills it rather than emptying it.
-- **Stars and tokens drag too.** Sweep across them to set four at once instead of clicking four times. A single click still means what it did.
-- **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so a bar dragged to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
-- **Two of them count whole things:** a **Rating** you click or drag to set a level, and a **Token pool** you click to spend one at a time. Spell charges, favours owed, ammunition, stars out of five. Five to start with, up to twenty if you want them.
+- **One block holds several meters.** A block is a panel of stats, not a single reading: **Add meter** in the block's `⋯` menu puts another one in, and each carries its own icon, name and numbers. Circles, semi-circles and gauges lay out two across; bars and tokens run full width. Remove one with the × beside it.
+- **Every meter has an icon, and there's now an icon picker.** Click the icon slot next to a meter's name for a searchable set of glyphs — search "health", "gold", "magic" — plus a tab of emoji. Emoji are just characters, so anything your system can draw, you can use.
+- **Name each meter whatever it measures.** Type straight into the name beside it.
+- **Show text** and **Show max** in the block's menu, so a row of dials can be just the dials, and "6/10" can be "6".
+- **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so a bar set to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
+- **Two of them count whole things:** a **Rating** you set a level on, and a **Token pool** you spend one at a time. Spell charges, favours owed, ammunition. Five to start with, and as many as you actually want — seventy-six tokens wrap into a grid and stay countable.
+- **Point at a meter and it shows you what you'd get.** The value under your cursor previews as a dimmed, pulsing fill before you commit it, so a click is never a guess. Click to set it, or press and drag to sweep through values. Sweeping across stars or tokens works the same way.
+- **Click the numbers under a meter to type them exactly** — the value and the maximum both. Dragging moves in whole units; the boxes are for 62.5 and for "out of 76".
 - **Clicking a rating's current level clears it**, so a star you didn't mean to click isn't permanent.
-- **The two boxes under every meter are still there** for a number that has to be exact — dragging moves in whole units, and 62.5 is a thing you type.
 - **They work from the keyboard.** Tab to a meter, then arrow keys to nudge it, Page Up and Page Down for ten at a time, Home and End for empty and full.
-- **A meter wears the block's colour.** The swatches in its `⋯` menu are the ones every other block uses, so an influence meter can be purple and a wounded one red.
-- **The shape is a setting, not a decision you're stuck with.** Click the shape's name above the meter and pick another one — the number you typed comes with it, and nothing has to be deleted and rebuilt.
+- **The shape is a setting, not a decision you're stuck with.** Click the shape's name above the meters and pick another one — your numbers come with it.
 - **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.
-- **Rename a meter to whatever it measures** the same way you rename any block's heading — double-click it. A meter called Meter is just the name it arrives with.
+
+### Adjustments
+
+- **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
 
 ## 2026-08-21 — the X really does close the app now
 

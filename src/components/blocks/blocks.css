@@ -8,9 +8,17 @@
 }
 
 /* The accent is set per block as an inline custom property by BlockShell, so a
-   block with no colour simply has no rule to apply and costs nothing. */
+   block with no colour simply has no rule to apply and costs nothing.
+
+   **A coloured block is coloured, not edged.** The first cut drew a 2px rule
+   down the left side, which marks a block rather than colouring one — the
+   reference washes the whole surface and takes the heading with it, and that
+   is the version that reads as "this block is purple". The wash is a low mix
+   so text contrast is untouched. The heading takes the hue at full strength
+   too, but from BlockShell as an inline colour rather than from here — see the
+   comment there for why that fight isn't worth having in a stylesheet. */
 .block-shell[style*="--block-accent"] {
-  border-left: 2px solid var(--block-accent);
+  background: color-mix(in srgb, var(--block-accent) 10%, transparent);
 }
 
 .block-shell-dragging {
@@ -346,42 +354,50 @@
 .block-meter {
   display: flex;
   flex-direction: column;
+  gap: var(--space-md);
+}
+
+.block-meter-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* The round shapes go two across, the way the reference lays them out — four
+   dials stacked in a column would push everything under them off the panel.
+   Bars and pips stay full width because that is the dimension they read in. */
+.block-meter-circle .block-meter-list,
+.block-meter-semicircle .block-meter-list,
+.block-meter-gauge .block-meter-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-lg) var(--space-md);
+}
+
+.block-meter-reading {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-sm);
+  min-width: 0;
 }
 
 /* The fill takes the block's own colour when it has one, which is what makes a
    purple bar purple — the accent is set by BlockShell and inherited here.
    Falls back to the bold teal, never to --color-accent, which is the 15% tint
-   and would draw a meter you can't see. */
+   and would draw a meter nobody can see. */
 .block-meter-fill,
 .block-meter-pip-filled {
   color: var(--block-accent, var(--color-accent-light));
 }
 
-.block-meter-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-/* The track is the slider, so it takes the pointer and the keyboard. Padded
-   vertically rather than made taller: an 8px grab target is a miss waiting to
-   happen, and the padding is invisible while the bar stays thin. */
 .block-meter-track {
   position: relative;
-  flex: 1;
-  min-width: 0;
   height: 8px;
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
+  overflow: hidden;
   cursor: pointer;
   touch-action: none;
-}
-
-.block-meter-track::before {
-  content: "";
-  position: absolute;
-  inset: -8px 0;
 }
 
 .block-meter-track:focus-visible,
@@ -390,23 +406,8 @@
   outline-offset: 3px;
 }
 
-/* Centred on the fill's end, which is why it is translated back by half its
-   own width rather than positioned from the left edge. */
-.block-meter-thumb {
-  position: absolute;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  border-radius: var(--radius-full);
-  background: var(--block-accent, var(--color-accent-light));
-  border: 2px solid var(--color-panel);
-  transform: translateY(-50%);
-  transition: left 140ms ease;
-  pointer-events: none;
-}
-
 .block-meter-fill {
+  position: relative;
   height: 100%;
   border-radius: var(--radius-full);
   background: currentcolor;
@@ -414,26 +415,63 @@
   pointer-events: none;
 }
 
-.block-meter-readout {
-  flex-shrink: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--fs-2xs);
-  font-variant-numeric: tabular-nums;
+/* What a click would do, drawn behind the real fill and pulsing so it reads as
+   a promise rather than as the value. This replaced a draggable dot: a handle
+   is furniture, and on a semicircle it slides off the end of the arc. */
+.block-meter-pending,
+.block-meter-arc-pending {
+  color: var(--block-accent, var(--color-accent-light));
+  pointer-events: none;
+  animation: block-meter-pulse 900ms ease-in-out infinite;
 }
 
-/* Capped rather than full-width: a ring stretched to the width of the panel is
-   a hole in the sidebar, and she can make the panel wide. */
+.block-meter-pending {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-full);
+  background: currentcolor;
+}
+
+.block-meter-pip-pending {
+  color: var(--block-accent, var(--color-accent-light));
+  animation: block-meter-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes block-meter-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* A pulse that never settles is exactly what this preference exists to stop.
+   The preview still shows — it just holds still. */
+@media (prefers-reduced-motion: reduce) {
+  .block-meter-pending,
+  .block-meter-arc-pending,
+  .block-meter-pip-pending {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
+/* Capped rather than full-width: a ring stretched across the panel is a hole
+   in the sidebar, and she can make the panel wide. */
 .block-meter-arc {
   align-self: center;
   width: 100%;
-  max-width: 132px;
+  max-width: 116px;
   overflow: visible;
   cursor: pointer;
   touch-action: none;
 }
 
 .block-meter-arc-track,
-.block-meter-arc-fill {
+.block-meter-arc-fill,
+.block-meter-arc-pending {
   fill: none;
   stroke-width: 9;
   stroke-linecap: round;
@@ -445,24 +483,28 @@
 
 .block-meter-arc-fill {
   stroke: var(--block-accent, var(--color-accent-light));
-  transition: d 140ms ease;
 }
 
-/* Sits on the end of the fill, and says the dial can be taken hold of. The
-   ring around it is the panel colour so it reads as sitting above the arc
-   rather than as a bead threaded on it. */
-.block-meter-knob {
-  fill: var(--block-accent, var(--color-accent-light));
-  stroke: var(--color-panel);
-  stroke-width: 2.5;
-  pointer-events: none;
+.block-meter-arc-pending {
+  stroke: currentcolor;
 }
 
 .block-meter-arc-readout {
   fill: var(--color-text-primary);
-  pointer-events: none;
   font-size: 15px;
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* foreignObject has no layout of its own, so an icon inside one needs a box
+   that centres it or it sits in the corner of the rectangle. */
+.block-meter-arc-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--block-accent, var(--color-text-primary));
+  pointer-events: none;
 }
 
 .block-meter-pips {
@@ -486,27 +528,284 @@
   color: var(--color-text-primary);
 }
 
-.block-meter-pip-filled:hover {
+.block-meter-pip-filled:hover,
+.block-meter-pip-pending:hover {
   color: var(--block-accent, var(--color-accent-light));
 }
 
-/* The two numbers under every shape. They sit on one line rather than as two
-   labelled fields, because "3 of 5" is how the pair is read aloud. */
-.block-meter-numbers {
+/* Icon, name and number on one line under every shape — the reference's
+   caption. It wraps rather than truncating in the two-across grid, because the
+   name is the thing that says which stat this is. */
+.block-meter-caption {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-}
-
-.block-meter-numbers .property-field {
-  flex: 1;
   min-width: 0;
 }
 
-.block-meter-of {
+.block-meter-circle .block-meter-caption,
+.block-meter-semicircle .block-meter-caption,
+.block-meter-gauge .block-meter-caption {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px var(--space-sm);
+}
+
+.block-meter-icon {
+  display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  color: var(--block-accent, var(--color-text-secondary));
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-meter-icon:hover {
+  background: var(--color-hover);
+}
+
+/* The add-an-icon button is a plus that only shows itself when the pointer is
+   in the block or it has focus — an empty slot on every meter is four grey
+   squares in a panel that is mostly white space. */
+.block-meter-icon-empty {
+  opacity: 0;
+  color: var(--color-text-muted);
+  transition: opacity 120ms ease;
+}
+
+.block-shell:hover .block-meter-icon-empty,
+.block-meter-icon-empty:focus-visible {
+  opacity: 1;
+}
+
+/* Borderless until you touch it, like every other value field in the sidebar —
+   but without the negative margin those use to pull their padding back, which
+   is what made this row's box hang out over the meter above it. */
+.block-meter-name {
+  flex: 1;
+  min-width: 0;
+  padding: 1px var(--space-sm);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+
+.block-meter-circle .block-meter-name,
+.block-meter-semicircle .block-meter-name,
+.block-meter-gauge .block-meter-name {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  text-align: center;
+  field-sizing: content;
+}
+
+.block-meter-name::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.block-meter-name:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+.block-meter-name:focus {
+  outline: none;
+  background: var(--color-panel-alt);
+  border-color: var(--color-accent-faint-border);
+}
+
+.block-meter-readout {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+
+.block-meter-readout:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+/* The pair the readout opens into. `field-sizing: content` keeps each box the
+   width of the number in it, so "3 of 8" doesn't become two form fields. */
+.block-meter-numbers {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.block-meter-number {
+  width: 3.5ch;
+  min-width: 3.5ch;
+  max-width: 6ch;
+  padding: 1px var(--space-sm);
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  field-sizing: content;
+}
+
+.block-meter-number:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+.block-meter-of {
   color: var(--color-text-muted);
   font-size: var(--fs-2xs);
+}
+
+.block-meter-circle .block-meter-readout,
+.block-meter-semicircle .block-meter-readout,
+.block-meter-gauge .block-meter-readout,
+.block-meter-circle .block-meter-numbers,
+.block-meter-semicircle .block-meter-numbers,
+.block-meter-gauge .block-meter-numbers {
+  margin-left: 0;
+}
+
+/* ---- The icon picker ---- */
+
+.icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 268px;
+  padding: var(--space-md);
+}
+
+.icon-picker-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-panel-alt);
+  border-radius: var(--radius-sm);
+}
+
+.icon-picker-tab {
+  flex: 1;
+  padding: var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.icon-picker-tab-active {
+  color: var(--color-text-primary);
+  background: var(--color-panel);
+}
+
+.icon-picker-clear {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.icon-picker-clear:hover {
+  background: var(--color-hover);
+}
+
+/* Bounded and scrolled: the whole catalogue is a few hundred things, and a
+   popover as tall as the catalogue is a popover taller than the window. */
+.icon-picker-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.icon-picker-heading {
+  position: sticky;
+  top: 0;
+  padding: var(--space-sm) 0;
+  color: var(--color-text-muted);
+  background: var(--color-panel);
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  padding-bottom: var(--space-sm);
+}
+
+.icon-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.icon-picker-option:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.icon-picker-option-active {
+  color: var(--color-text-primary);
+  background: var(--color-accent-faint);
+  box-shadow: inset 0 0 0 1px var(--color-accent-faint-border);
+}
+
+.icon-picker-emoji {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.icon-picker-empty {
+  margin: 0;
+  padding: var(--space-md) 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* An emoji standing in for a glyph, wherever a stored icon isn't one of ours. */
+.icon-as-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* An unticked row keeps its tick's space, so the two toggles don't jump
+   sideways as they turn on and off. */
+.block-menu-unchecked {
+  opacity: 0;
 }
 
 /* The source menu carries a second line per item, which the tree's own menu

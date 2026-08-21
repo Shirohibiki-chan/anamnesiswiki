@@ -3,7 +3,7 @@
 // job, the same as every other menu in the app — see tree/ContextMenu.tsx,
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
-import { ArrowDown, ArrowUp, Copy, EyeOff, Palette, PencilLine, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Palette, PencilLine, Plus, Trash2, Type } from "lucide-react";
 import { COLOR_PALETTE } from "../../constants/palette";
 
 type BlockMenuProps = {
@@ -24,6 +24,19 @@ type BlockMenuProps = {
    * kinds, which have nothing behind them to delete.
    */
   onDeleteProperty?: () => void;
+  /**
+   * A meter block's own three entries. Present only for `meter`, the same way
+   * `onDeleteProperty` is present only for `property` — this menu is the one
+   * place a block's settings live, and a second menu on a block would be a
+   * second place to look for them.
+   */
+  meter?: {
+    textShown: boolean;
+    maxShown: boolean;
+    onAdd: () => void;
+    onToggleText: () => void;
+    onToggleMax: () => void;
+  };
 };
 
 export function BlockMenu({
@@ -38,6 +51,7 @@ export function BlockMenu({
   onMove,
   onRemove,
   onDeleteProperty,
+  meter,
 }: BlockMenuProps) {
   return (
     <div className="tree-context-menu block-menu">
@@ -47,6 +61,24 @@ export function BlockMenu({
       <button type="button" onClick={onToggleTitle}>
         <Type size={13} /> {titleShown ? "No title" : "Show title"}
       </button>
+
+      {meter && (
+        <>
+          <div className="block-menu-separator" />
+          <button type="button" onClick={meter.onAdd}>
+            <Plus size={13} /> Add meter
+          </button>
+          {/* Ticked rather than worded as the opposite action, because these
+              are states rather than commands — "Hide text" beside a meter that
+              is already hiding it reads as a question. */}
+          <button type="button" onClick={meter.onToggleText}>
+            <Check size={13} className={meter.textShown ? "" : "block-menu-unchecked"} /> Show text
+          </button>
+          <button type="button" onClick={meter.onToggleMax}>
+            <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} /> Show max
+          </button>
+        </>
+      )}
 
       <div className="block-menu-separator" />
 

@@ -133,6 +133,26 @@ export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "rating" | 
 export const PIP_METER_STYLES: MeterStyle[] = ["rating", "pool"];
 
 /**
+ * One reading inside a meter block. Phase 18c.
+ *
+ * **A meter block holds a list of these, not a single number.** The reference
+ * puts several in one block — four dials under one GAUGE heading, each with
+ * its own icon, name and numbers — and that is the shape she asked for: a
+ * character's meters are a panel of stats, not five separate blocks stacked up
+ * with five headings between them.
+ *
+ * `icon` is a name from constants/glyphs.ts, or an emoji character outright;
+ * anything unrecognised is drawn as text, so an emoji needs no registry.
+ */
+export type MeterEntry = {
+  id: string;
+  icon?: string;
+  label?: string;
+  value?: number;
+  max?: number;
+};
+
+/**
  * Where a `collection` block gets its list of pages. Phase 18b.
  *
  * One block with a source rather than four block types, which is how the
@@ -173,11 +193,18 @@ export type Block = {
   source?: CollectionSource;
   targetIds?: string[];
   tags?: string[];
-  // `meter` only. `value` is what it reads, `max` what it reads against — 100
-  // for the proportional shapes, a pip count for the discrete ones. Both
-  // absent on a block that has never been touched, which reads as the
-  // defaults in meter-service rather than as zero of zero.
+  // `meter` only. The shape every reading in the block is drawn in, and the
+  // readings themselves. `showText` and `showMax` are the block's two display
+  // toggles — absent means on, the way `showTitle` does it, so a block that
+  // looks normal carries no fields saying so.
   meter?: MeterStyle;
+  meters?: MeterEntry[];
+  showText?: boolean;
+  showMax?: boolean;
+  // The first cut of `meter` kept one reading directly on the block. No new
+  // one is written — block-service lifts these into a single entry on read,
+  // the way it does for `link`. Kept readable so a meter made before the list
+  // existed still opens.
   value?: number;
   max?: number;
 };

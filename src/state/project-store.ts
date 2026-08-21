@@ -12,6 +12,7 @@ import {
   type CollectionSource,
   type CustomPropertySpec,
   type MeterStyle,
+  type MeterEntry,
   createTemplateLibrary,
   type Node,
   type Project,
@@ -69,7 +70,14 @@ import {
   seedBlocks,
   withField,
 } from "../services/block-service";
-import { isPipMeter, meterStyleOf } from "../services/meter-service";
+import {
+  isPipMeter,
+  metersOf,
+  meterStyleOf,
+  newMeterEntry,
+  withMeter,
+  withoutMeter,
+} from "../services/meter-service";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   addOverride,
@@ -312,10 +320,14 @@ export type ProjectStoreState = {
   setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
   setBlockText: (nodeId: string, blockId: string, text: string) => void;
   setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
-  // Phase 18c's meters.
+  // Phase 18c's meters. A meter block holds a list of readings, so everything
+  // below the first two names a reading as well as a block.
   setBlockMeter: (nodeId: string, blockId: string, style: MeterStyle) => void;
-  setBlockValue: (nodeId: string, blockId: string, value: number | undefined) => void;
-  setBlockMax: (nodeId: string, blockId: string, max: number | undefined) => void;
+  setBlockMeterText: (nodeId: string, blockId: string, shown: boolean) => void;
+  setBlockMeterMax: (nodeId: string, blockId: string, shown: boolean) => void;
+  addMeter: (nodeId: string, blockId: string) => void;
+  removeMeter: (nodeId: string, blockId: string, meterId: string) => void;
+  editMeter: (nodeId: string, blockId: string, meterId: string, patch: Partial<MeterEntry>) => void;
   // Phase 18b's collection settings.
   setBlockSource: (nodeId: string, blockId: string, source: CollectionSource) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
@@ -1484,7 +1496,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // and then applies the change to it. Reading a page never writes, and a
     // world she only opened is never rewritten.
     addBlock(nodeId, kind, extra) {
-      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, extra)]);
+      // A meter block arrives with one reading in it. An empty one would draw
+      // as a heading and nothing else, which reads as a block that failed to
+      // add rather than as one waiting to be filled in.
+      const seeded = kind === "meter" ? { meters: [newMeterEntry()], ...extra } : extra;
+      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, seeded)]);
     },
 
     // Removing a block removes the block, and nothing else. A property block
@@ -1553,24 +1569,65 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         blocks.map((block) => {
           if (block.id !== blockId) return block;
           const next = withField(block, "meter", style);
-          return isPipMeter(style) === isPipMeter(meterStyleOf(block)) ? next : withField(next, "max", undefined);
+          if (isPipMeter(style) === isPipMeter(meterStyleOf(block))) return next;
+          // The maximum belongs to the model, and every reading in the block
+          // is drawn in the same shape — so switching the shape resets all of
+          // them, not just the one the click landed near.
+          return withField(
+            next,
+            "meters",
+            metersOf(block).map((entry) => {
+              const cleared = { ...entry };
+              delete cleared.max;
+              return cleared;
+            }),
+          );
         }),
       );
     },
 
-    // Both of these store the raw number and let meter-service clamp on read.
-    // Writing the clamped value instead would quietly destroy what she typed:
-    // a rating dropped to three pips and raised back to ten would come back
-    // as three, not as the eight it was.
-    setBlockValue(nodeId, blockId, value) {
+    // True is the default and is stored as absent, the way showTitle is.
+    setBlockMeterText(nodeId, blockId, shown) {
       editBlocks(nodeId, (blocks) =>
-        blocks.map((block) => (block.id === blockId ? withField(block, "value", value) : block)),
+        blocks.map((block) => (block.id === blockId ? withField(block, "showText", shown ? undefined : false) : block)),
       );
     },
 
-    setBlockMax(nodeId, blockId, max) {
+    setBlockMeterMax(nodeId, blockId, shown) {
       editBlocks(nodeId, (blocks) =>
-        blocks.map((block) => (block.id === blockId ? withField(block, "max", max) : block)),
+        blocks.map((block) => (block.id === blockId ? withField(block, "showMax", shown ? undefined : false) : block)),
+      );
+    },
+
+    addMeter(nodeId, blockId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", [...metersOf(block), newMeterEntry()]) : block,
+        ),
+      );
+    },
+
+    // Taking out the last reading leaves the block empty rather than refilling
+    // it — an empty meter block is one she can see and delete, and one that
+    // grows a new reading every time she clears it is one that won't go away.
+    removeMeter(nodeId, blockId, meterId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", withoutMeter(metersOf(block), meterId)) : block,
+        ),
+      );
+    },
+
+    // One action for every field of a reading, because they are all the same
+    // edit to the same record and four near-identical actions would only be
+    // four places to forget the clamping rule. The raw number is stored and
+    // meter-service clamps on read: writing the clamped one would quietly
+    // destroy what she typed the moment a maximum moved under it.
+    editMeter(nodeId, blockId, meterId, patch) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", withMeter(metersOf(block), meterId, patch)) : block,
+        ),
       );
     },
 

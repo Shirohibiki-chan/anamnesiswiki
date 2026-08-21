@@ -57,11 +57,23 @@ pages, and the Policy Boundary rules out fetching one.
 fill on a map. There's no atlas here (see the top of this file), and the colour
 is already a per-node thing we have. Read the glyph; leave the other two.
 
-**What's undecided and needs her, not a guess:** whether an icon replaces the
-template's or sits beside it, whether folders get one too, and how it's picked
-(a searchable list of every Lucide icon is the obvious answer and also ~1500
-things in a popover). Related but separate: the colour control's placement,
-below in Queued Adjustments.
+**Half of this is now built.** Phase 18c needed an icon per meter and so it
+shipped the picker and the registry underneath it: `constants/glyphs.ts` is a
+curated Lucide set with search keywords, `constants/emoji.ts` is the emoji
+half, and `components/blocks/IconPicker.tsx` is the control — deliberately
+written to take a value and a callback and know nothing about meters, so a
+page's icon can use it as-is. **How it's picked is therefore answered**, and
+the answer to "~1500 things in a popover" was: don't ship 1500, ship a curated
+few hundred grouped and searchable, and add to the list when something is
+missing. An unknown stored name degrades to text rather than to a crash, which
+is also what makes an emoji storable as itself.
+
+**What's still undecided and needs her, not a guess:** whether a page's icon
+replaces the template's or sits beside it, and whether folders get one too.
+The LK glyph-name map for import is also still unwritten — that's the part
+that makes this an import fix, and `glyphs.ts` is where the target names now
+live. Related but separate: the colour control's placement, below in Queued
+Adjustments.
 
 ---
 

@@ -72,8 +72,11 @@ export function BlockPanel() {
     setBlockTargets,
     setBlockTags,
     setBlockMeter,
-    setBlockValue,
-    setBlockMax,
+    setBlockMeterText,
+    setBlockMeterMax,
+    addMeter,
+    removeMeter,
+    editMeter,
     setNodeAliases,
   } = useProject();
   const { confirmDestructive } = useDialogs();
@@ -259,8 +262,9 @@ export function BlockPanel() {
           <MeterBlock
             block={block}
             onSetStyle={(style) => setBlockMeter(node!.id, block.id, style)}
-            onSetValue={(value) => setBlockValue(node!.id, block.id, value)}
-            onSetMax={(max) => setBlockMax(node!.id, block.id, max)}
+            onEdit={(meterId, patch) => editMeter(node!.id, block.id, meterId, patch)}
+            onRemove={(meterId) => removeMeter(node!.id, block.id, meterId)}
+            onAdd={() => addMeter(node!.id, block.id)}
           />
         ),
       };
@@ -396,6 +400,17 @@ export function BlockPanel() {
                 onMove={(direction) => reorderBlocks(node.id, index, index + direction)}
                 onRemove={() => removeBlock(node.id, block.id)}
                 onDeleteProperty={propertyKey ? () => void deleteProperty(propertyKey, natural) : undefined}
+                meter={
+                  block.kind === "meter"
+                    ? {
+                        textShown: block.showText !== false,
+                        maxShown: block.showMax !== false,
+                        onAdd: () => addMeter(node.id, block.id),
+                        onToggleText: () => setBlockMeterText(node.id, block.id, block.showText === false),
+                        onToggleMax: () => setBlockMeterMax(node.id, block.id, block.showMax === false),
+                      }
+                    : undefined
+                }
               >
                 {body}
               </BlockShell>
