@@ -10,7 +10,7 @@ import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/r
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
-import { getCalloutSlashMenuItems } from "../services/editor-blocks/callout-slash-menu";
+import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
@@ -92,7 +92,10 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   }
 
   async function getSlashMenuItems(query: string): Promise<DefaultReactSuggestionItem[]> {
-    return filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), ...getCalloutSlashMenuItems(editor)], query);
+    return filterSuggestionItems(
+      [...withoutBuiltInQuote(getDefaultReactSlashMenuItems(editor)), ...getCalloutSlashMenuItems(editor)],
+      query,
+    );
   }
 
   async function getMentionItems(query: string): Promise<DefaultReactSuggestionItem[]> {
