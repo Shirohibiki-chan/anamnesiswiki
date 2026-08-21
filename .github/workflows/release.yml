@@ -138,3 +138,140 @@ jobs:
           # the .sig contents inlined was the fiddliest part of the old process.
           includeUpdaterJson: true
           args: ${{ matrix.args }}
+
+  # Takes the host's graphics libraries back out of the AppImage the matrix
+  # job just built, re-signs it, and corrects latest.json.
+  #
+  # **Why this is a separate job after the fact rather than part of the build.**
+  # Tauri's bundler seals the AppImage itself and offers no hook between
+  # assembling the AppDir and packaging it, so the only place to remove
+  # anything is afterwards — and the update signature is generated over the
+  # packaged file, so a repack invalidates it. That means re-signing, and
+  # re-signing means correcting the copy of the signature inside latest.json.
+  # Doing that here, once every matrix leg has finished, is what keeps it from
+  # racing: each leg merges its own entry into latest.json, so patching from
+  # inside one of them would be overwritten by whichever finished later.
+  #
+  # It works on the built artifact rather than rebuilding, so this costs a
+  # download and a repack rather than another five-minute compile.
+  #
+  # See docs/plan.md → Known Bugs for the failure this fixes: the bundled
+  # libwayland-client cannot talk to an older host's EGL, and the app dies with
+  # EGL_BAD_PARAMETER before a window appears. Confirmed fixed on Fedora and
+  # CachyOS, 2026-08-21, by the person whose machine it failed on.
+  fix-linux-appimage:
+    needs: [check-version, release]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Node dependencies only — this job never compiles Rust. It needs the
+      # Tauri CLI for `signer sign` and nothing else.
+      - run: pnpm install --frozen-lockfile
+
+      - name: Take the release's AppImage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release download "$GITHUB_REF_NAME" --pattern '*.AppImage' --dir . --clobber
+          APPIMAGE="$(ls *.AppImage)"
+          echo "APPIMAGE=$APPIMAGE" >> "$GITHUB_ENV"
+          echo "took $APPIMAGE"
+
+      - name: Strip the host's libraries out of it
+        run: |
+          set -euo pipefail
+          curl -fsSL -o excludelist \
+            https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
+          chmod +x "$APPIMAGE"
+          # Extracting gives back the AppDir the bundler sealed. It always
+          # lands in ./squashfs-root, which is also where appimagetool
+          # unpacks itself later — so this one is renamed out of the way now.
+          ./"$APPIMAGE" --appimage-extract > /dev/null
+          rm -rf appdir && mv squashfs-root appdir
+          grep -v '^\s*#' excludelist | grep -v '^\s*$' | sort -u > names.txt
+
+          removed=0
+          while read -r name; do
+            [ -z "$name" ] && continue
+            while IFS= read -r path; do
+              echo "removing $(basename "$path")"
+              rm -f "$path"
+              removed=$((removed + 1))
+            done < <(find appdir -type f -name "${name}*" 2>/dev/null || true)
+          done < names.txt
+          echo "removed $removed bundled libraries"
+
+          # Both checks exist so a silent no-op can never be published. The
+          # second names the library his LD_PRELOAD finding pinned it to.
+          test "$removed" -gt 0 || { echo "nothing matched the excludelist"; exit 1; }
+          if find appdir -name 'libwayland-client*' | grep -q .; then
+            echo "libwayland-client is still bundled"; exit 1
+          fi
+
+      - name: Repack under the same name
+        run: |
+          set -euo pipefail
+          curl -fsSL -o appimagetool \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          # No FUSE on the runner, so run the tool out of its own contents.
+          ./appimagetool --appimage-extract > /dev/null
+          # Same name as the file the release already has, so the upload below
+          # replaces it rather than adding a second one beside it.
+          rm -f "$APPIMAGE"
+          ARCH=x86_64 ./squashfs-root/AppRun appdir "$APPIMAGE"
+          ls -la "$APPIMAGE"
+
+      # The .sig the matrix job uploaded describes the file that existed
+      # before the repack. Every installed copy checks the signature before
+      # applying an update, so shipping the old one means nobody can update.
+      - name: Sign it again
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Key and password come from the environment, which the CLI reads
+          # itself — passing them as arguments would put the private key in
+          # the runner's process list.
+          pnpm tauri signer sign "$APPIMAGE"
+          test -f "$APPIMAGE.sig" || { echo "no signature was written"; exit 1; }
+
+      - name: Put both back on the release, and correct latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "$GITHUB_REF_NAME" "$APPIMAGE" "$APPIMAGE.sig" --clobber
+
+          gh release download "$GITHUB_REF_NAME" --pattern 'latest.json' --dir . --clobber
+          SIGNATURE="$(cat "$APPIMAGE.sig")"
+          # Only the AppImage entries move. The deb and rpm carry their own
+          # signatures over their own files and were never touched.
+          SIGNATURE="$SIGNATURE" node -e '
+            const fs = require("fs");
+            const manifest = JSON.parse(fs.readFileSync("latest.json", "utf8"));
+            const signature = process.env.SIGNATURE.trim();
+            let patched = 0;
+            for (const [platform, entry] of Object.entries(manifest.platforms ?? {})) {
+              if (!platform.startsWith("linux")) continue;
+              if (!/\.AppImage($|\?)/.test(entry.url ?? "")) continue;
+              entry.signature = signature;
+              patched++;
+            }
+            if (patched === 0) throw new Error("latest.json names no AppImage to correct");
+            fs.writeFileSync("latest.json", JSON.stringify(manifest, null, 2));
+            console.log("corrected " + patched + " entries");
+          '
+          gh release upload "$GITHUB_REF_NAME" latest.json --clobber
