@@ -2,6 +2,13 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-12 — the Assets tab reads down the middle
+
+### Adjustments
+
+- **Everything in the tab is centred now**, matching the two buttons at the top: the folder pills, the captions under each picture, and the messages the tab shows you.
+- The picker dialog keeps its folder pills on the left. It's a wide box rather than a narrow column, and a row of pills floating in the middle of it reads as unfinished.
+
 ## 2026-08-12 — the Assets tab loses its count line
 
 ### Adjustments

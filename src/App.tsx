@@ -5,6 +5,7 @@ import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
+import { useSaveOnExit } from "./hooks/use-save-on-exit";
 import { useThemeBootstrap } from "./hooks/use-theme";
 
 function App() {
@@ -15,6 +16,18 @@ function App() {
   // and NoticeDialog can be raised from the start screen as well as from a
   // project, so the thing that keeps Tab inside them has to exist on both.
   useDialogFocusTrap();
+  // **At the root, not in AppLayout, and this is the difference between the
+  // window closing and not.** Registering a close-requested listener makes
+  // Tauri cancel the native close from then on and it never restores it — so
+  // once a project had been opened, leaving it for the start screen (which
+  // unmounts AppLayout) or reloading the page left the window with nothing
+  // able to destroy it. The X did nothing and the app had to be killed from
+  // the terminal. Reported 2026-08-21, twice.
+  //
+  // Mounted here it exists on every screen, so whatever cancelled the native
+  // close is always matched by something that can complete it. It needs no
+  // project: the flush it guards is autosave's, which is a plain service.
+  useSaveOnExit();
   return (
     <>
       <StartupRouter />
