@@ -170,6 +170,16 @@ export type MeterEntry = {
    * for. This is the other half: one of them being red on its own.
    */
   color?: string;
+  /**
+   * This reading drawn in segments, overriding the block's setting.
+   *
+   * The same override `color` is, and asked for on the same grounds: the four
+   * dials under one heading are four different things, and one of them being
+   * counted off in units while the others sweep is an ordinary thing to want.
+   * Absent means "whatever the block says", and toggling a reading back to
+   * agree with its block stores nothing again rather than pinning it.
+   */
+  segmented?: boolean;
 };
 
 /**
@@ -222,7 +232,13 @@ export type Block = {
   showText?: boolean;
   showMax?: boolean;
   face?: MeterFace;
-  /** Drawn as a run of segments rather than one solid sweep. */
+  /**
+   * Drawn as a run of segments rather than one solid sweep.
+   *
+   * The block's answer, which every reading follows unless it carries its own
+   * — see `MeterEntry.segmented`. On a composed pie this is read directly and
+   * means a gap between the slices, since there is one shape there.
+   */
   segmented?: boolean;
   /**
    * What a rating or a token pool is counted in: a glyph name, or an emoji.

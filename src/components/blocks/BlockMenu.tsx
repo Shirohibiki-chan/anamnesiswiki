@@ -56,7 +56,10 @@ type BlockMenuProps = {
     meterColor?: string;
     onSetMeterColor?: (color: string | undefined) => void;
     face: MeterFace;
+    /** Resolved: the right-clicked reading's answer, or the block's. */
     segmented: boolean;
+    /** Whether the toggle above is about to write to one reading or the block. */
+    segmentsAreThisMeters: boolean;
     onSetFace: (face: MeterFace) => void;
     onToggleSegments: () => void;
     /** Present only for the two counting shapes: what they are counted in. */
@@ -180,11 +183,22 @@ export function BlockMenu({
           <button type="button" onClick={meter.onToggleText}>
             <Check size={13} className={meter.textShown ? "" : "block-menu-unchecked"} /> Show text
           </button>
+          {/* A pie has no maximum to show — the same toggle hides the share of
+              the whole instead, which is the same job: whether the number gets
+              its context printed beside it. */}
           <button type="button" onClick={meter.onToggleMax}>
-            <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} /> Show max
+            <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} />{" "}
+            {meter.style === "pie" ? "Show share" : "Show max"}
           </button>
+          {/* **Opened on one reading, this sets that reading; opened from the
+              block's own ⋯, it sets the block.** Exactly how the colour above
+              works, and for the reason she gave for colour: four dials under
+              one heading are four different things. A reading toggled back into
+              agreement with its block stores nothing again rather than pinning
+              itself, so the block's own setting keeps working afterwards. */}
           <button type="button" onClick={meter.onToggleSegments}>
-            <Grid2x2 size={13} className={meter.segmented ? "" : "block-menu-unchecked"} /> Segmented
+            <Grid2x2 size={13} className={meter.segmented ? "" : "block-menu-unchecked"} />{" "}
+            {meter.segmentsAreThisMeters ? "Segmented (this meter)" : "Segmented"}
           </button>
           {/* Stars are only the default. A rating counted in acorns, skulls or
               coins is the same widget, and which symbol it uses is the thing

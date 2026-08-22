@@ -65,3 +65,37 @@ export function getPaletteHex(key: string | undefined): string | null {
 export function isHexColor(value: string): boolean {
   return /^#[0-9a-f]{6}$/i.test(value.trim());
 }
+
+/**
+ * The colours a pie chart's slices take when nobody has picked one.
+ *
+ * **A chart needs as many colours as it has slices, and a block only has one.**
+ * Every other meter draws in the block's colour, or its own reading's, and that
+ * is right when each reading is its own shape. Slices of one circle are the
+ * exception: eight wedges in one accent is a solid disc, so an unpicked slice
+ * takes the next colour along this list instead. Picking one on the reading
+ * still wins, the way it does everywhere else.
+ *
+ * Chosen for separation rather than harmony — neighbours in the list are what
+ * end up next to each other on the chart, so consecutive entries never share a
+ * hue, and no two are close enough to be confused across a legend.
+ */
+export const SLICE_COLORS: string[] = [
+  "teal",
+  "amber",
+  "indigo",
+  "coral",
+  "sage",
+  "violet",
+  "orange",
+  "cyan",
+  "pink",
+  "blue",
+  "bronze",
+  "gray",
+];
+
+/** The default colour for the slice in position `index`, as a hex. */
+export function sliceColorAt(index: number): string {
+  return getPaletteHex(SLICE_COLORS[index % SLICE_COLORS.length]) ?? "#a1a1aa";
+}

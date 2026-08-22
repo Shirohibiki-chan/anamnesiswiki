@@ -26,7 +26,7 @@
 // position back into a value.
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Plus, X } from "lucide-react";
-import { getPaletteHex } from "../../constants/palette";
+import { getPaletteHex, sliceColorAt } from "../../constants/palette";
 import { useColorPreview } from "../../hooks/use-color-preview";
 import type { Block, MeterEntry, MeterFace, MeterStyle } from "../../constants/schema";
 import {
@@ -36,8 +36,20 @@ import {
   arcSpan,
   piePath,
   barFractionAt,
+  boundaryIndexAt,
+  dragSliceBoundary,
   isArcMeter,
+  isComposedPie,
   meterFace,
+  meterPoint,
+  meterSegmented,
+  pieAngleAt,
+  pieSlices,
+  pieTotal,
+  seedEqualSlices,
+  sliceIndexAt,
+  PIE_RADIUS,
+  type PieSlice,
   meterFraction,
   meterColor,
   meterPip,
@@ -66,13 +78,34 @@ const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gau
 type MeterBlockProps = {
   block: Block;
   onEdit: (meterId: string, patch: Partial<MeterEntry>) => void;
+  /** Several readings at once — what dragging a pie's edge writes. */
+  onEditMany: (patches: Record<string, Partial<MeterEntry>>) => void;
   onRemove: (meterId: string) => void;
   onAdd: () => void;
 };
 
-export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) {
+export function MeterBlock({ block, onEdit, onEditMany, onRemove, onAdd }: MeterBlockProps) {
   const style = meterStyleOf(block);
   const entries = metersOf(block);
+
+  // **A pie with several readings is one chart, not several pies.** Every
+  // other shape measures one number against its own maximum and so gets one
+  // drawing each; a pie divides a whole between them, which is a single circle
+  // with a legend under it. See meter-service's pie section for why a pie
+  // holding exactly one reading still draws the wedge it always did.
+  if (isComposedPie(style, entries)) {
+    return (
+      <div className={`block-meter block-meter-${style} block-meter-composed`}>
+        <MeterPieChart
+          block={block}
+          entries={entries}
+          onEdit={onEdit}
+          onEditMany={onEditMany}
+          onRemove={onRemove}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`block-meter block-meter-${style}`}>
@@ -92,7 +125,7 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
               pip={meterPip(block)}
               colour={getPaletteHex(meterColor(block, entry))}
               face={meterFace(block, entry)}
-              segmented={block.segmented === true}
+              segmented={meterSegmented(block, entry)}
               withText={showsText(block)}
               withMax={showsMax(block)}
               onEdit={(patch) => onEdit(entry.id, patch)}
@@ -142,24 +175,6 @@ function MeterReading({
   // What the pointer is currently promising. Null means not hovering, and the
   // meter draws only what it holds.
   const [preview, setPreview] = useState<number | null>(null);
-  const [iconRect, setIconRect] = useState<DOMRect | null>(null);
-  // **One field, in the place the number already is.** Typing `4` sets the
-  // value and `4/10` sets both, which is how the reference does it and how
-  // anybody writes those numbers down. It replaced a pair of boxes with an
-  // "of" between them, which was a form bolted under the meter.
-  const [numberDraft, setNumberDraft] = useState<string | null>(null);
-
-  function openNumber() {
-    setNumberDraft(meterReadout(entry, style, withMax));
-  }
-
-  function typeNumber(text: string) {
-    setNumberDraft(text);
-    const patch = parseMeterInput(text);
-    // Nothing sensible typed *yet* — "4/" on the way to "4/10". Left alone
-    // rather than emptied, so a meter never flickers to nothing mid-keystroke.
-    if (patch) onEdit(patch);
-  }
 
   // The same preview the shell watches, for one reading rather than the block.
   const previewHex = useColorPreview(entry.id);
@@ -303,14 +318,7 @@ function MeterReading({
   const caption = (
     <div className="block-meter-caption">
       {!iconInShape && (
-        <button
-          type="button"
-          className={`block-meter-icon${entry.icon ? "" : " block-meter-icon-empty"}`}
-          aria-label={entry.icon ? "Change icon" : "Add an icon"}
-          onClick={(e) => setIconRect(e.currentTarget.getBoundingClientRect())}
-        >
-          {entry.icon ? <MeterIcon icon={entry.icon} /> : <Plus size={12} />}
-        </button>
+        <MeterIconButton icon={entry.icon} onPick={(icon) => onEdit({ icon })} className="block-meter-icon" />
       )}
       {withText && (
         <input
@@ -324,24 +332,13 @@ function MeterReading({
       {/* **The number is printed once.** A dial showing it in the middle and
           again under the name is the same fact twice, which is not what the
           reference does — so when the shape has it, the caption doesn't. */}
-      {!numberInShape &&
-        (numberDraft === null ? (
-          <button type="button" className="block-meter-readout" onClick={openNumber}>
-            {meterReadout(entry, style, withMax)}
-          </button>
-        ) : (
-          <input
-            className="block-meter-readout block-meter-readout-input"
-            autoFocus
-            aria-label="Value, or value/maximum"
-            value={numberDraft}
-            onChange={(e) => typeNumber(e.target.value)}
-            onBlur={() => setNumberDraft(null)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === "Escape") setNumberDraft(null);
-            }}
-          />
-        ))}
+      {!numberInShape && (
+        <MeterNumberField
+          text={meterReadout(entry, style, withMax)}
+          className="block-meter-readout"
+          onEdit={onEdit}
+        />
+      )}
     </div>
   );
 
@@ -353,21 +350,6 @@ function MeterReading({
     <button type="button" className="block-meter-remove" aria-label="Remove this meter" onClick={onRemove}>
       <X size={11} />
     </button>
-  );
-
-  // Mounted once, beside whichever shape is drawn, because the button that
-  // opens it lives in the caption for some shapes and inside the dial for
-  // others.
-  const picker = iconRect && (
-    <TreePopover anchorRect={iconRect} onClose={() => setIconRect(null)}>
-      <IconPicker
-        value={entry.icon}
-        onPick={(icon) => {
-          onEdit({ icon });
-          setIconRect(null);
-        }}
-      />
-    </TreePopover>
   );
 
   if (style === "bar") {
@@ -413,7 +395,6 @@ function MeterReading({
         </div>
         {caption}
         {remove}
-        {picker}
       </div>
     );
   }
@@ -478,56 +459,31 @@ function MeterReading({
               picks one, so a dial showing an icon is also where you change it. */}
           {face !== "value" && (
             <foreignObject x="26" y={READOUT_Y[style] - (face === "both" ? 22 : 13)} width="48" height="26">
-              <button
-                type="button"
-                className={`block-meter-arc-icon${entry.icon ? "" : " block-meter-arc-icon-empty"}`}
-                aria-label={entry.icon ? "Change icon" : "Add an icon"}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIconRect(e.currentTarget.getBoundingClientRect());
-                }}
-              >
-                {entry.icon ? <MeterIcon icon={entry.icon} size={face === "both" ? 15 : 20} /> : <Plus size={16} />}
-              </button>
+              <MeterIconButton
+                icon={entry.icon}
+                onPick={(icon) => onEdit({ icon })}
+                className="block-meter-arc-icon"
+                size={face === "both" ? 15 : 20}
+                plusSize={16}
+                stopPointer
+              />
             </foreignObject>
           )}
           {/* Edited where it is drawn, rather than opening something below —
               the dial's middle is where the number lives. */}
           {face !== "icon" && (
             <foreignObject x="18" y={READOUT_Y[style] - 11 + (face === "both" ? 8 : 0)} width="64" height="22">
-              {numberDraft === null ? (
-                <button
-                  type="button"
-                  className="block-meter-arc-readout"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openNumber();
-                  }}
-                >
-                  {meterReadout(entry, style, withMax)}
-                </button>
-              ) : (
-                <input
-                  className="block-meter-arc-readout block-meter-readout-input"
-                  autoFocus
-                  aria-label="Value, or value/maximum"
-                  value={numberDraft}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onChange={(e) => typeNumber(e.target.value)}
-                  onBlur={() => setNumberDraft(null)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === "Escape") setNumberDraft(null);
-                  }}
-                />
-              )}
+              <MeterNumberField
+                text={meterReadout(entry, style, withMax)}
+                className="block-meter-arc-readout"
+                onEdit={onEdit}
+                stopPointer
+              />
             </foreignObject>
           )}
         </svg>
         {caption}
         {remove}
-        {picker}
       </div>
     );
   }
@@ -602,7 +558,352 @@ function MeterReading({
       </div>
       {caption}
       {remove}
-      {picker}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The two controls every reading carries, wherever it is drawn.
+//
+// Pulled out of the caption when the pie grew a legend: a slice's row wants
+// the same icon button and the same click-the-number-to-type-it field that a
+// dial's caption has, and three copies of the draft-state dance would be three
+// places for it to drift.
+// ---------------------------------------------------------------------------
+
+type IconButtonProps = {
+  icon: string | undefined;
+  /** Undefined clears it — the picker offers "no icon" as an option. */
+  onPick: (icon: string | undefined) => void;
+  /** The base class; the empty state adds `-empty` to it. */
+  className: string;
+  size?: number;
+  plusSize?: number;
+  /** Inside an SVG the shape underneath is listening for the same press. */
+  stopPointer?: boolean;
+};
+
+function MeterIconButton({ icon, onPick, className, size, plusSize = 12, stopPointer }: IconButtonProps) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`${className}${icon ? "" : ` ${className}-empty`}`}
+        aria-label={icon ? "Change icon" : "Add an icon"}
+        onPointerDown={stopPointer ? (e) => e.stopPropagation() : undefined}
+        onClick={(e) => {
+          if (stopPointer) e.stopPropagation();
+          setRect(e.currentTarget.getBoundingClientRect());
+        }}
+      >
+        {icon ? <MeterIcon icon={icon} size={size} /> : <Plus size={plusSize} />}
+      </button>
+      {rect && (
+        <TreePopover anchorRect={rect} onClose={() => setRect(null)}>
+          <IconPicker
+            value={icon}
+            onPick={(next) => {
+              onPick(next);
+              setRect(null);
+            }}
+          />
+        </TreePopover>
+      )}
+    </>
+  );
+}
+
+type NumberFieldProps = {
+  /** What the meter is showing when nobody is typing. */
+  text: string;
+  className: string;
+  onEdit: (patch: Partial<MeterEntry>) => void;
+  stopPointer?: boolean;
+};
+
+/**
+ * The number, and typing over it.
+ *
+ * **One field, not two boxes.** Typing `4` sets the value and `4/10` sets both,
+ * which is how the reference does it and how anybody writes those numbers down.
+ * Half-typed states like `4/` parse to nothing and leave the meter alone rather
+ * than emptying it, so it never flickers to nought mid-keystroke.
+ */
+function MeterNumberField({ text, className, onEdit, stopPointer }: NumberFieldProps) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  if (draft === null) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onPointerDown={stopPointer ? (e) => e.stopPropagation() : undefined}
+        onClick={(e) => {
+          if (stopPointer) e.stopPropagation();
+          setDraft(text);
+        }}
+      >
+        {text}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      className={`${className} block-meter-readout-input`}
+      autoFocus
+      aria-label="Value, or value/maximum"
+      value={draft}
+      onPointerDown={stopPointer ? (e) => e.stopPropagation() : undefined}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const patch = parseMeterInput(e.target.value);
+        if (patch) onEdit(patch);
+      }}
+      onBlur={() => setDraft(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Escape") setDraft(null);
+      }}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// A pie chart: every reading in the block as a slice of one circle.
+// ---------------------------------------------------------------------------
+
+type PieChartProps = {
+  block: Block;
+  entries: MeterEntry[];
+  onEdit: (meterId: string, patch: Partial<MeterEntry>) => void;
+  onEditMany: (patches: Record<string, Partial<MeterEntry>>) => void;
+  onRemove: (meterId: string) => void;
+};
+
+function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove }: PieChartProps) {
+  const svg = useRef<SVGSVGElement | null>(null);
+  // Which edge the drag is pushing, or null. A ref for the same reason the
+  // other shapes keep one: pointer capture can be refused or lost without the
+  // gesture ending, and reading it back leaves a chart that ignores the mouse.
+  const dragging = useRef<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [aimed, setAimed] = useState<number | null>(null);
+
+  const segmented = block.segmented === true;
+  const slices = pieSlices(entries, segmented);
+  const total = pieTotal(entries);
+  const withText = showsText(block);
+  // A pie has no maximum to show, so the toggle that hides one hides the share
+  // instead — it is the same control doing the same job, which is whether the
+  // number gets its context printed beside it. The menu renames itself to match.
+  const withShare = showsMax(block);
+
+  /** The pointer in the 100-wide box the chart is drawn in. */
+  function pointIn(event: PointerEvent<SVGSVGElement>): [number, number] | null {
+    const rect = svg.current?.getBoundingClientRect();
+    if (!rect || !(rect.width > 0)) return null;
+    const scale = rect.width / 100;
+    return [(event.clientX - rect.left) / scale, (event.clientY - rect.top) / scale];
+  }
+
+  function handleMove(event: PointerEvent<SVGSVGElement>) {
+    const point = pointIn(event);
+    if (!point) return;
+    const [x, y] = point;
+
+    if (event.buttons === 0) dragging.current = null;
+    const edge = dragging.current;
+
+    if (edge !== null) {
+      // Dragging: the two slices either side of this edge trade, and every
+      // other slice stays exactly where it is. See dragSliceBoundary.
+      onEditMany(dragSliceBoundary(entries, edge, pieAngleAt(x, y) / 360));
+      return;
+    }
+
+    setAimed(boundaryIndexAt(slices, x, y));
+    setHovered(sliceIndexAt(slices, x, y));
+  }
+
+  function handleDown(event: PointerEvent<SVGSVGElement>) {
+    const point = pointIn(event);
+    if (!point) return;
+    const edge = boundaryIndexAt(slices, point[0], point[1]);
+    if (edge === null) return;
+
+    dragging.current = edge;
+    setAimed(edge);
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Already gone; the drag still works while the pointer stays over the
+      // chart, which is the ordinary case.
+    }
+    // **A pie nobody has typed into draws equal slices out of nothing.** The
+    // first press is what writes those implied numbers down, so there is a
+    // total for the drag that follows to divide.
+    if (total <= 0) onEditMany(seedEqualSlices(entries));
+  }
+
+  function release() {
+    dragging.current = null;
+  }
+
+  return (
+    <>
+      <svg
+        ref={svg}
+        className={`block-meter-pie-chart${aimed !== null ? " block-meter-pie-aiming" : ""}`}
+        viewBox="0 0 100 100"
+        role="img"
+        aria-label={`Pie chart: ${slices
+          .map((slice) => `${slice.entry.label || "unnamed"} ${Math.round(slice.share * 100)}%`)
+          .join(", ")}`}
+        onPointerDown={handleDown}
+        onPointerMove={handleMove}
+        onPointerUp={release}
+        onPointerCancel={release}
+        onPointerLeave={() => {
+          setHovered(null);
+          setAimed(null);
+        }}
+      >
+        {slices.map((slice, index) => (
+          <PieSlicePath
+            key={slice.entry.id}
+            slice={slice}
+            index={index}
+            lifted={hovered === index}
+            dimmed={hovered !== null && hovered !== index}
+          />
+        ))}
+        {/* The edge being aimed at, drawn as a line from the middle out. It is
+            the only handle on the chart, and without it the fact that an edge
+            can be pushed at all is invisible until somebody guesses. */}
+        {aimed !== null && slices[aimed] && (
+          <line
+            className="block-meter-slice-handle"
+            x1="50"
+            y1="50"
+            x2={meterPoint(slices[aimed].start + slices[aimed].sweep, PIE_RADIUS)[0]}
+            y2={meterPoint(slices[aimed].start + slices[aimed].sweep, PIE_RADIUS)[1]}
+          />
+        )}
+      </svg>
+
+      {/* The legend is where a slice is named, numbered and coloured — a pie
+          cannot carry that inside itself the way a dial carries its caption. */}
+      <div className="block-meter-legend">
+        {slices.map((slice, index) => (
+          <SliceRow
+            key={slice.entry.id}
+            slice={slice}
+            index={index}
+            highlighted={hovered === index}
+            withText={withText}
+            withShare={withShare && total > 0}
+            onHover={(on) => setHovered(on ? index : null)}
+            onEdit={(patch) => onEdit(slice.entry.id, patch)}
+            onRemove={() => onRemove(slice.entry.id)}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+/**
+ * The colour a slice draws in.
+ *
+ * Its own when one has been picked, and the next colour along `SLICE_COLORS`
+ * otherwise — a chart needs as many colours as it has slices and a block only
+ * has one, so this is the one meter that does not fall back to the block's.
+ */
+function useSliceColor(entry: MeterEntry, index: number): string {
+  const preview = useColorPreview(entry.id);
+  return preview ?? getPaletteHex(entry.color) ?? sliceColorAt(index);
+}
+
+/**
+ * One wedge.
+ *
+ * Its own component so it can watch the colour preview for its own reading —
+ * hovering a swatch in the menu has to light up one slice, and a hook cannot
+ * be called once per item of a list that changes length.
+ */
+function PieSlicePath({
+  slice,
+  index,
+  lifted,
+  dimmed,
+}: {
+  slice: PieSlice;
+  index: number;
+  lifted: boolean;
+  dimmed: boolean;
+}) {
+  const colour = useSliceColor(slice.entry, index);
+  return (
+    <path
+      className={`block-meter-slice${lifted ? " block-meter-slice-lifted" : ""}${
+        dimmed ? " block-meter-slice-dimmed" : ""
+      }`}
+      // Right-clicking a slice opens the block's menu pointed at that reading,
+      // the same way right-clicking a dial does — see BlockShell.
+      data-meter-id={slice.entry.id}
+      d={slice.path}
+      fill={colour}
+    >
+      <title>{`${slice.entry.label || "Unnamed"}: ${Math.round(slice.share * 100)}%`}</title>
+    </path>
+  );
+}
+
+type SliceRowProps = {
+  slice: PieSlice;
+  index: number;
+  highlighted: boolean;
+  withText: boolean;
+  withShare: boolean;
+  onHover: (on: boolean) => void;
+  onEdit: (patch: Partial<MeterEntry>) => void;
+  onRemove: () => void;
+};
+
+function SliceRow({ slice, index, highlighted, withText, withShare, onHover, onEdit, onRemove }: SliceRowProps) {
+  const colour = useSliceColor(slice.entry, index);
+  const rounded = Math.round(slice.value * 10) / 10;
+
+  return (
+    <div
+      className={`block-meter-legend-row${highlighted ? " block-meter-legend-row-on" : ""}`}
+      data-meter-id={slice.entry.id}
+      onPointerEnter={() => onHover(true)}
+      onPointerLeave={() => onHover(false)}
+    >
+      <span className="block-meter-swatch" style={{ background: colour }} aria-hidden />
+      <MeterIconButton
+        icon={slice.entry.icon}
+        onPick={(icon) => onEdit({ icon })}
+        className="block-meter-icon"
+        plusSize={11}
+      />
+      {withText && (
+        <input
+          className="block-meter-name"
+          value={slice.entry.label ?? ""}
+          placeholder="Name"
+          aria-label="Slice name"
+          onChange={(e) => onEdit({ label: e.target.value || undefined })}
+        />
+      )}
+      <MeterNumberField text={`${rounded}`} className="block-meter-readout" onEdit={onEdit} />
+      {withShare && <span className="block-meter-share">{Math.round(slice.share * 100)}%</span>}
+      <button type="button" className="block-meter-slice-remove" aria-label="Remove this slice" onClick={onRemove}>
+        <X size={11} />
+      </button>
     </div>
   );
 }

@@ -40,10 +40,13 @@ type BlockShellProps = {
     textShown: boolean;
     maxShown: boolean;
     face: MeterFace;
+    /** The block's own answer; a reading may override it — see meterSegmented. */
     segmented: boolean;
     onSetStyle: (style: MeterStyle) => void;
     onSetFace: (face: MeterFace) => void;
-    onToggleSegments: () => void;
+    /** Null for the block itself, a reading's id when the menu was opened on one. */
+    onToggleSegments: (meterId: string | null) => void;
+    segmentedOfMeter: (meterId: string) => boolean;
     pip?: string;
     onPickPip?: () => void;
     onAdd: () => void;
@@ -239,6 +242,12 @@ export function BlockShell({
             meter={
               meter && {
                 ...meter,
+                // Segments follow the rule the colour below does: opened on a
+                // reading it is that reading's, opened from the `⋯` button it
+                // is the block's. Same menu row, and it says which it means.
+                segmented: menuMeterId ? meter.segmentedOfMeter(menuMeterId) : meter.segmented,
+                segmentsAreThisMeters: menuMeterId !== null,
+                onToggleSegments: () => meter.onToggleSegments(menuMeterId),
                 onAdd: () => {
                   meter.onAdd();
                   setMenuRect(null);

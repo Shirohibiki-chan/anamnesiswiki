@@ -381,3 +381,260 @@ export function parseMeterInput(text: string): { value?: number; max?: number } 
   }
   return patch;
 }
+
+// ---------------------------------------------------------------------------
+// A pie with more than one reading in it.
+//
+// **A pie chart with one wedge is a circle wearing a chart's name.** Phase 18c
+// drew every reading as its own shape, which is right for the five shapes that
+// measure one number against its own maximum and wrong for the one shape whose
+// entire meaning is how several numbers divide a whole.
+//
+// So a pie block with two or more readings composes them into one circle, and
+// each reading is a slice sized by its share of their total. **A pie holding a
+// single reading still reads against its maximum**, exactly as it did before —
+// one number can only be a share of itself, and a lone slice redrawn as a full
+// circle would be a worse answer than the wedge it replaced. It also means no
+// pie already made changes under anyone.
+//
+// Nothing is migrated and nothing is lost: `max` stays on disk untouched while
+// a pie ignores it, so switching a composed pie back to a circle brings every
+// reading's maximum back with it.
+// ---------------------------------------------------------------------------
+
+/** A pie draws to here, and its slices are aimed and hit-tested in the same box. */
+export const PIE_RADIUS = 44;
+
+/**
+ * How wide a slice's share is, before anything divides it.
+ *
+ * **Deliberately not `meterValue`.** That clamps against the reading's maximum,
+ * which defaults to 100 — and a pie of populations (5000 against 3000) would
+ * come back as two equal halves, both flattened to the default. A slice's
+ * maximum means nothing; only its size relative to the others does.
+ */
+export function sliceValue(entry: MeterEntry): number {
+  const raw = entry.value ?? 0;
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/** What the whole circle adds up to. Zero when nothing has been typed yet. */
+export function pieTotal(entries: MeterEntry[]): number {
+  return entries.reduce((sum, entry) => sum + sliceValue(entry), 0);
+}
+
+/** A composed pie needs two readings to divide anything. */
+export function isComposedPie(style: MeterStyle, entries: MeterEntry[]): boolean {
+  return style === "pie" && entries.length > 1;
+}
+
+/**
+ * One slice, both as it is drawn and as it is aimed at.
+ *
+ * `start` and `sweep` are the true angles — what the slice *is*, used for
+ * hit-testing. `path` is what gets drawn, which is the same wedge with the
+ * segment gap taken out of it. Keeping them apart is what stops a gapped pie
+ * from having dead strips between its slices that answer no clicks.
+ */
+export type PieSlice = {
+  entry: MeterEntry;
+  value: number;
+  /** 0 to 1. */
+  share: number;
+  start: number;
+  sweep: number;
+  path: string;
+};
+
+/** The gap a segmented pie leaves between its slices, in degrees. */
+export const SLICE_GAP = 2.5;
+
+/**
+ * The readings as slices of one circle, clockwise from twelve o'clock.
+ *
+ * **A pie nobody has typed a number into draws equal slices** rather than
+ * nothing at all. Three empty readings are three thirds waiting to be dragged,
+ * which is a chart you can start using; three zero-width slices are a blank
+ * circle and a bug report.
+ */
+export function pieSlices(entries: MeterEntry[], segmented = false): PieSlice[] {
+  const total = pieTotal(entries);
+  const gap = segmented && entries.length > 1 ? SLICE_GAP : 0;
+  let cursor = 0;
+
+  return entries.map((entry) => {
+    const value = sliceValue(entry);
+    const share = total > 0 ? value / total : 1 / entries.length;
+    const start = cursor;
+    const sweep = share * 360;
+    cursor += sweep;
+    return {
+      entry,
+      value,
+      share,
+      start,
+      sweep,
+      path: slicePath(start + gap / 2, Math.max(sweep - gap, 0)),
+    };
+  });
+}
+
+/**
+ * A wedge from the centre, between two angles.
+ *
+ * `piePath` is the one-reading version of this and stays because it answers a
+ * different question — how full is this — from twelve o'clock every time. This
+ * one starts wherever the slice before it ended.
+ */
+export function slicePath(startAngle: number, sweep: number, radius = PIE_RADIUS, centre = 50): string {
+  if (sweep <= 0.001) return "";
+
+  // A slice that is the whole circle cannot be drawn as one arc: its two ends
+  // are the same point and nothing renders. The same trap as arcPath's.
+  if (sweep >= 359.999) {
+    const [x0, y0] = meterPoint(startAngle, radius, centre);
+    const [xm, ym] = meterPoint(startAngle + 180, radius, centre);
+    return `M ${x0} ${y0} A ${radius} ${radius} 0 1 1 ${xm} ${ym} A ${radius} ${radius} 0 1 1 ${x0} ${y0} Z`;
+  }
+
+  const [x0, y0] = meterPoint(startAngle, radius, centre);
+  const [x1, y1] = meterPoint(startAngle + sweep, radius, centre);
+  return `M ${centre} ${centre} L ${x0} ${y0} A ${radius} ${radius} 0 ${sweep > 180 ? 1 : 0} 1 ${x1} ${y1} Z`;
+}
+
+/** Where a point sits around the circle, in degrees clockwise from the top. */
+export function pieAngleAt(x: number, y: number, centre = 50): number {
+  const degrees = (Math.atan2(y - centre, x - centre) * 180) / Math.PI + 90;
+  return ((degrees % 360) + 360) % 360;
+}
+
+/** How far a point is from the middle, in the same 100-wide box. */
+export function pieDistanceAt(x: number, y: number, centre = 50): number {
+  return Math.hypot(x - centre, y - centre);
+}
+
+/**
+ * Which slice a point is over, or null for a point outside the circle.
+ *
+ * The true angles are used rather than the drawn ones, so a segmented pie
+ * answers over its gaps instead of having thin dead stripes in it.
+ */
+export function sliceIndexAt(slices: PieSlice[], x: number, y: number, centre = 50): number | null {
+  if (slices.length === 0) return null;
+  if (pieDistanceAt(x, y, centre) > PIE_RADIUS + 1) return null;
+
+  const angle = pieAngleAt(x, y, centre);
+  for (let index = 0; index < slices.length; index += 1) {
+    const slice = slices[index];
+    if (angle >= slice.start && angle < slice.start + slice.sweep) return index;
+  }
+  // Floating point can leave the last slice ending at 359.9999.
+  return slices.length - 1;
+}
+
+/** How close to an edge counts as aiming at it, in degrees. */
+export const BOUNDARY_TOLERANCE = 7;
+
+/**
+ * The edge a point is aiming at, or null.
+ *
+ * **Twelve o'clock is not one of them.** The first slice's leading edge is
+ * where the chart starts, and a chart whose origin can be dragged is one whose
+ * slices all appear to move when you touch one of them. So there are `n - 1`
+ * edges for `n` slices, each the end of the slice it is numbered after.
+ *
+ * A point near the middle is refused: every edge converges there, so a pointer
+ * at the centre is a coin toss between all of them.
+ */
+export function boundaryIndexAt(slices: PieSlice[], x: number, y: number, centre = 50): number | null {
+  const distance = pieDistanceAt(x, y, centre);
+  if (distance > PIE_RADIUS + 3 || distance < 10) return null;
+
+  const angle = pieAngleAt(x, y, centre);
+  let best: number | null = null;
+  let bestGap = BOUNDARY_TOLERANCE;
+
+  for (let index = 0; index < slices.length - 1; index += 1) {
+    const edge = slices[index].start + slices[index].sweep;
+    const raw = Math.abs(angle - edge);
+    const gap = Math.min(raw, 360 - raw);
+    if (gap < bestGap) {
+      best = index;
+      bestGap = gap;
+    }
+  }
+  return best;
+}
+
+/**
+ * Every reading given an equal share of a hundred.
+ *
+ * What the first drag on an untyped pie does. The equal slices it already
+ * draws are a picture of nothing — there are no numbers behind them — so the
+ * moment somebody moves an edge, the numbers those slices imply are written
+ * down and the drag lands on top of them.
+ */
+export function seedEqualSlices(entries: MeterEntry[]): Record<string, Partial<MeterEntry>> {
+  const each = Math.round(DEFAULT_MAX / Math.max(entries.length, 1));
+  return Object.fromEntries(entries.map((entry) => [entry.id, { value: each }]));
+}
+
+/**
+ * Dragging the edge between two slices: what those two readings become.
+ *
+ * **Their total is preserved, so nothing else on the chart moves.** Growing
+ * one slice takes from the slice after it and from nowhere else — a drag that
+ * rescaled every other reading to keep the circle full would silently rewrite
+ * numbers nobody was pointing at.
+ *
+ * `fraction` is where the pointer is around the whole circle, 0 to 1 from
+ * twelve o'clock. It is clamped to the pair's own stretch, so overshooting an
+ * edge collapses that slice to nothing rather than wrapping past it and
+ * inverting the pair.
+ */
+export function dragSliceBoundary(
+  entries: MeterEntry[],
+  index: number,
+  fraction: number,
+): Record<string, Partial<MeterEntry>> {
+  const first = entries[index];
+  const next = entries[index + 1];
+  if (index < 0 || !first || !next) return {};
+
+  const total = pieTotal(entries);
+  if (total <= 0) return seedEqualSlices(entries);
+
+  const before = entries.slice(0, index).reduce((sum, entry) => sum + sliceValue(entry), 0) / total;
+  const pair = sliceValue(first) + sliceValue(next);
+  const offset = Math.min(Math.max(fraction - before, 0), pair / total);
+
+  // Rounded to whole units for the same reason valueAtFraction is: dragging is
+  // the coarse gesture, and the number under it is the precise one.
+  const grown = Math.round(offset * total);
+  return {
+    [first.id]: { value: grown || undefined },
+    // The remainder rather than a second rounding, so the pair still adds up to
+    // what it did and every slice past this edge stays exactly where it was.
+    [next.id]: { value: pair - grown || undefined },
+  };
+}
+
+/** Several readings patched in one write. See withMeter for the deletion rule. */
+export function withMeters(entries: MeterEntry[], patches: Record<string, Partial<MeterEntry>>): MeterEntry[] {
+  return Object.entries(patches).reduce((list, [meterId, patch]) => withMeter(list, meterId, patch), entries);
+}
+
+/**
+ * Whether this reading is drawn in segments.
+ *
+ * **A reading's own answer wins, and absent means the block's** — the same
+ * shape as `meterColor`, and for the same reason colour has it: four dials
+ * under one heading are four different things, and one of them being ticked
+ * off in units while the others sweep is a normal thing to want.
+ *
+ * A composed pie ignores this and reads the block's flag directly, because
+ * there is one shape there rather than one per reading.
+ */
+export function meterSegmented(block: Block, entry: MeterEntry): boolean {
+  return entry.segmented ?? block.segmented === true;
+}
