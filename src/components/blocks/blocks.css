@@ -151,9 +151,36 @@
   background: var(--color-hover);
 }
 
+/* **This menu scrolls, and its headings hold their place while it does.**
+   Every phase adds entries to it — 18a made three, 18b four, 18c six — and a
+   menu that answers by getting taller eventually runs off the screen. It gets
+   a ceiling and a scrollbar instead, so the next six cost nothing. */
 .block-add-menu {
-  min-width: 200px;
-  padding: var(--space-sm) 0;
+  min-width: 208px;
+  max-height: min(62vh, 440px);
+  padding: 0 0 var(--space-sm);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The categories were a whisper — same size and nearly the same colour as the
+   items under them, so a list of eighteen things read as one list. They are
+   the map of this menu, so they look like one: brighter, spaced, ruled off,
+   and stuck to the top edge while their own section is what you're scrolling
+   through. */
+.block-add-menu .tree-context-menu-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: var(--space-2xs);
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .block-add-heading {

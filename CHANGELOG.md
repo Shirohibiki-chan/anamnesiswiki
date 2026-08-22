@@ -23,6 +23,8 @@
 
 ### Adjustments
 
+- **Add Block's headings are readable, and the menu scrolls.** Media, Blocks, Meters and Properties stand out from the things under them and stay put at the top while you scroll their section — and the menu stops growing at a sensible height instead of running off the screen as more block types arrive.
+
 - **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block from edge to edge of the sidebar and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
 - **Right-clicking a block opens its menu**, which is what right-clicking anything should do. It was doing nothing before, so you got whatever menu happened to be underneath. Right-clicking a particular meter inside a block also offers to duplicate or delete that one, and right-clicking the empty space under the blocks offers Add Block.
 - **The block menu got shorter.** The colour row is a grid of swatches rather than a long strip, and the shape picker is six small tiles.
