@@ -37,25 +37,25 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
   const savedColors = useSavedColors();
   const { saveColor, forgetColor } = useColorActions();
 
-  // **The colour input is read on `change`, never on `input`.** A colour input
-  // fires while the pointer moves around the system dialog, and React's
-  // `onChange` is that live event — so one drag through the purples wrote a
-  // hundred colours to the block, a hundred entries to the undo history and a
-  // hundred saves to disk. That is both the lag and the row of eight
-  // near-identical purples. `change` fires once, when the dialog is done.
-  const commitOnly = useCallback(
+  // **The colour applies live; only *keeping* it waits for the dialog to
+  // close.** A colour input fires continuously while the pointer moves around
+  // the system dialog, and both halves used to run on every one of those: the
+  // block was recoloured — which is right, and is the live preview — and the
+  // colour was also saved into preferences, which writes app-settings.json.
+  // A file write per mouse move is what made the picker crawl, and it filled
+  // the saved row with every shade passed through on the way.
+  //
+  // Recolouring is cheap: `updateNode` sets state and debounces its save, so
+  // the preview costs a render. Saving is the expensive half, and `change`
+  // fires once, when the dialog is done.
+  const keepOnCommit = useCallback(
     (input: HTMLInputElement | null) => {
       if (!input) return;
-      const commit = () => {
-        onPick(input.value);
-        // Kept the moment it is used, rather than behind a "save" nobody would
-        // press. Re-picking one already saved moves it to the front.
-        saveColor(input.value);
-      };
-      input.addEventListener("change", commit);
-      return () => input.removeEventListener("change", commit);
+      const keep = () => saveColor(input.value);
+      input.addEventListener("change", keep);
+      return () => input.removeEventListener("change", keep);
     },
-    [onPick, saveColor],
+    [saveColor],
   );
 
   const named = COLOR_PALETTE.filter((color) => color.hex);
@@ -98,10 +98,11 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
           target and the browser still opens the system dialog on a real
           click — which is all a colour input needs to do. */}
       <input
-        ref={commitOnly}
+        ref={keepOnCommit}
         type="color"
         aria-label="Mix a colour"
-        defaultValue={value && isHexColor(value) ? value : "#8b5cf6"}
+        value={value && isHexColor(value) ? value : "#8b5cf6"}
+        onChange={(e) => onPick(e.target.value)}
       />
     </label>
   );
