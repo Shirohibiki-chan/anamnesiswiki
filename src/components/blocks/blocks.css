@@ -1168,11 +1168,35 @@
   padding: var(--space-sm);
 }
 
+.color-swatch-all {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+}
+
+.color-swatch-back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.color-swatch-back:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
 .color-swatch-grid {
   display: grid;
-  grid-template-columns: repeat(8, 22px);
+  grid-template-columns: repeat(8, 28px);
   gap: 4px;
-  padding: var(--space-md);
 }
 
 .color-swatch {
@@ -1180,8 +1204,8 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   color: var(--color-text-muted);
   background: none;
@@ -1225,24 +1249,29 @@
   filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.9));
 }
 
-/* The OS colour dialog, as one more tile. `appearance: none` strips the
-   browser's own chrome so it sits in the grid at the same size as the swatches
-   beside it, and the two inner pseudo-elements strip the padding it would
-   otherwise draw around its colour. */
+/* The OS colour dialog, as one more tile: a label carrying the tile's look,
+   with the input filling it invisibly so the whole square is the target. The
+   input was styled directly for a while and `appearance: none` stripped the
+   very swatch it exists to draw, which is why this tile looked like it had
+   vanished. */
 .color-swatch-custom {
-  appearance: none;
-  padding: 0;
-  border: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+  border-color: var(--color-border);
   cursor: pointer;
 }
 
-.color-swatch-custom::-webkit-color-swatch-wrapper {
+.color-swatch-custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   padding: 0;
-}
-
-.color-swatch-custom::-webkit-color-swatch {
   border: none;
-  border-radius: 2px;
+  opacity: 0;
+  cursor: pointer;
 }
 
 /* ---- What sits inside a dial ---- */

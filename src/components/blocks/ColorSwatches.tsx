@@ -1,4 +1,4 @@
-// The colour control: one short row, and a "+" that opens the rest.
+// The colour control: one short row, and a "+" that opens the rest in place.
 // Phase 18c.
 //
 // **A row, not a grid.** It was the whole palette inline, and a menu carrying
@@ -7,16 +7,20 @@
 // that reason: the common answer is one of a handful, and everything else can
 // afford a second click.
 //
+// **The rest opens inside the menu, not in a popover over it.** A popover
+// inside a popover reads as a click outside the first one, which closed the
+// whole menu the instant anything in the second was clicked — so picking from
+// the full palette appeared to do nothing at all. Swapping the contents in
+// place is also what the tree's own menu does for "Set color".
+//
 // **Nothing here closes anything.** Picking a colour is something you do two
-// or three times in a row while looking at the result, so neither this row nor
-// the menu holding it gets out of the way after one click.
+// or three times in a row while looking at the result.
 //
 // A named colour is stored by name so it follows the theme; a colour mixed in
 // the system picker is stored as its hex, because it has no name to look up.
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { ChevronLeft, Plus, X } from "lucide-react";
 import { COLOR_PALETTE, isHexColor } from "../../constants/palette";
-import { TreePopover } from "../tree/TreePopover";
 
 /** The six offered without a second click. */
 const QUICK_KEYS = ["teal", "sky", "indigo", "purple", "rose", "amber"];
@@ -28,7 +32,7 @@ type ColorSwatchesProps = {
 };
 
 export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
-  const [moreRect, setMoreRect] = useState<DOMRect | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const named = COLOR_PALETTE.filter((color) => color.hex);
   const quick = QUICK_KEYS.map((key) => named.find((color) => color.key === key)).filter(
@@ -45,7 +49,7 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
       : (named.find((color) => color.key === elsewhere)?.hex ?? undefined)
     : undefined;
 
-  function swatch(color: (typeof named)[number], onClose?: () => void) {
+  function swatch(color: (typeof named)[number]) {
     return (
       <button
         key={color.key}
@@ -55,11 +59,41 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
         title={color.name}
         aria-label={color.name}
         aria-pressed={value === color.key}
-        onClick={() => {
-          onPick(color.key);
-          onClose?.();
-        }}
+        onClick={() => onPick(color.key)}
       />
+    );
+  }
+
+  const custom = (
+    <label
+      className={`color-swatch color-swatch-custom${value && isHexColor(value) ? " color-swatch-active" : ""}`}
+      style={value && isHexColor(value) ? { backgroundColor: value } : undefined}
+      title="Pick any colour"
+    >
+      {!(value && isHexColor(value)) && <Plus size={14} />}
+      {/* The input fills its label and is invisible, so the whole tile is the
+          target and the browser still opens the system dialog on a real
+          click — which is all a colour input needs to do. */}
+      <input
+        type="color"
+        aria-label="Pick any colour"
+        value={value && isHexColor(value) ? value : "#8b5cf6"}
+        onChange={(e) => onPick(e.target.value)}
+      />
+    </label>
+  );
+
+  if (showAll) {
+    return (
+      <div className="color-swatch-all">
+        <button type="button" className="color-swatch-back" onClick={() => setShowAll(false)}>
+          <ChevronLeft size={13} /> Fewer colours
+        </button>
+        <div className="color-swatch-grid">
+          {named.map((color) => swatch(color))}
+          {custom}
+        </div>
+      </div>
     );
   }
 
@@ -75,7 +109,7 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
         aria-pressed={!value}
         onClick={() => onPick(undefined)}
       >
-        <X size={12} />
+        <X size={14} />
       </button>
 
       {quick.map((color) => swatch(color))}
@@ -86,30 +120,10 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
         style={elsewhereHex ? { backgroundColor: elsewhereHex } : undefined}
         title="More colours"
         aria-label="More colours"
-        onClick={(e) => setMoreRect(e.currentTarget.getBoundingClientRect())}
+        onClick={() => setShowAll(true)}
       >
-        <Plus size={12} />
+        <Plus size={14} />
       </button>
-
-      {moreRect && (
-        <TreePopover anchorRect={moreRect} onClose={() => setMoreRect(null)}>
-          <div className="color-swatch-grid">
-            {named.map((color) => swatch(color))}
-
-            {/* The system's own picker, as one more tile. A bare colour input
-                *is* a swatch — wrapping one in a label with the input hidden
-                underneath looked the same and didn't open on click. */}
-            <input
-              type="color"
-              className={`color-swatch color-swatch-custom${value && isHexColor(value) ? " color-swatch-active" : ""}`}
-              title="Pick any colour"
-              aria-label="Pick any colour"
-              value={value && isHexColor(value) ? value : "#8b5cf6"}
-              onChange={(e) => onPick(e.target.value)}
-            />
-          </div>
-        </TreePopover>
-      )}
     </div>
   );
 }
