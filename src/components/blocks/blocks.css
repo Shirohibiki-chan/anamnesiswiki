@@ -221,13 +221,40 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  min-width: 220px;
+  width: 232px;
   padding: var(--space-md);
 }
 
 .block-link-results {
+  display: flex;
+  flex-direction: column;
   max-height: 220px;
   overflow-y: auto;
+}
+
+/* **These rows had no styling of their own at all.** They are bare buttons, so
+   they inherited the page's font size and sat as plain text in a box — a tag
+   picker that looked like a bug rather than a list. They are menu rows, and
+   they look like every other menu row in the app. */
+.block-link-results button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.block-link-results button:hover,
+.block-link-results button:focus-visible {
+  background: var(--color-hover);
+  outline: none;
 }
 
 .block-link-empty-hint {
@@ -361,11 +388,11 @@
 .block-meter-circle .block-meter-list,
 .block-meter-semicircle .block-meter-list,
 .block-meter-gauge .block-meter-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  justify-items: center;
-  align-items: start;
-  gap: var(--space-2xl) var(--space-md);
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-xl) var(--space-lg);
 }
 
 /* Two across when there is room, and centred when there isn't — a grid put a
@@ -375,9 +402,9 @@
 .block-meter-circle .block-meter-reading,
 .block-meter-semicircle .block-meter-reading,
 .block-meter-gauge .block-meter-reading {
+  flex: 0 0 auto;
   align-items: center;
-  width: auto;
-  max-width: 100%;
+  width: 88px;
 }
 
 .block-meter-reading {
@@ -552,7 +579,7 @@
    in the sidebar, and she can make the panel wide. */
 .block-meter-arc {
   align-self: center;
-  width: 92px;
+  width: 88px;
   max-width: 100%;
   overflow: visible;
   cursor: pointer;
@@ -646,9 +673,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 auto;
-  min-width: 14px;
-  max-width: 48px;
+  flex: 0 0 auto;
+  width: 28px;
   padding: 0;
   color: var(--color-text-muted);
   background: none;
@@ -657,8 +683,8 @@
   cursor: pointer;
 }
 
-/* The symbol grows with its button, so five across a panel are large and
-   seventy-six across it are small, without either needing its own size. */
+/* The symbol fills its button, which is a fixed width — so a row of five and a
+   row of seventy-six are drawn at the same size and simply wrap differently. */
 .block-meter-pip svg {
   width: 100%;
   height: auto;
@@ -756,7 +782,7 @@
 .block-meter-gauge .block-meter-name {
   width: auto;
   min-width: 3ch;
-  max-width: 92px;
+  max-width: 88px;
   text-align: center;
   text-overflow: ellipsis;
   field-sizing: content;

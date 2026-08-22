@@ -43,6 +43,10 @@
 - **A long meter name no longer wrecks the layout.** It used to stretch its dial's column and shove everything off-centre; it's capped and trimmed now.
 - **A dial's name and number stack under it**, both centred on the shape, instead of sitting side by side where neither could line up with it. The name box is as wide as the name rather than as wide as the column.
 - **Meters light up when you point at them**, so a panel of four reads as four things — and so it's clear which one the × in the corner belongs to.
+- **Dials sit closer together**, three across a normal-width panel, with the highlight hugging each one rather than filling the space between them.
+- **A dial's icon lives inside the dial or nowhere.** It used to also sit beside the name, which ate the width in the narrowest part of the panel. Switch a block to Icon or Both to bring it back.
+- **Stars and tokens are a fixed size.** They used to stretch to fill their row, so the last few tokens of a big pool came out enormous while the rest stayed small.
+- **The tag and page pickers look like menus.** Their rows had no styling at all and rendered as oversized plain text in a box.
 - **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
 - **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.
 

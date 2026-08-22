@@ -258,12 +258,13 @@ function MeterReading({
   // The icon, the name and the number under every shape. `withText` hides the
   // name only — the number is what a meter *is*, and one with no number
   // showing is a decoration.
-  // **The caption doesn't repeat an icon the shape is already showing.** A
-  // dial drawing the icon in its middle and again beside its name is the same
-  // icon twice in one meter, which she flagged. The button stays when it is
-  // the only place the icon appears, and becomes the faint plus when there is
-  // no icon at all — otherwise the way to change one is the block's menu.
-  const iconInShape = isArcMeter(style) && face !== "value";
+  // **A dial's caption never carries an icon.** When the dial is showing one
+  // it would be the same icon twice; when the dial is showing its number
+  // instead, an icon beside the name is a row of furniture in the narrowest
+  // part of the panel — her words, and right. The icon lives inside the dial
+  // or nowhere, so switching a block to Icon or Both is what puts it back.
+  // Bars and pips keep theirs: it is the only place they have for one.
+  const iconInShape = isArcMeter(style);
   const caption = (
     <div className="block-meter-caption">
       {!iconInShape && (
