@@ -35,7 +35,8 @@
 
 - **Tokens and stars respond to every click now.** About half of them did nothing: the pip you pressed and the pip that got told about it could disagree, so the tap was swallowed. Pressing sets the value the moment you press, the way the bars and dials already did.
 - **A lone dial is centred.** One circle in a block sat hard against the left edge, because the layout was built for two side by side.
-- **The progress bar isn't a hairline any more**, and lowering a dial no longer draws a ragged second outline over it — the preview sits at the end of the fill instead of being painted on top of it.
+- **Lowering a dial no longer draws a ragged second outline over it** — the preview sits at the end of the fill instead of being painted on top of it.
+- **A meter block has room to breathe.** A progress bar block was heading, hairline, caption, done — it read as a squashed strip. The bar itself is the same thin track it always was; the block around it isn't cramped any more.
 - **A dial showing its icon doesn't repeat it beside the name**, and the icon inside a dial is the button that changes it.
 - **The three dial faces actually look different now.** Asking for the icon on a meter that hasn't got one used to quietly show the number instead, so all three choices looked identical — it shows an empty icon slot you can click.
 - **Pages in a list are readable.** They were painted in a colour that's almost the background — the same near-invisible tint that made the import progress bar disappear once before.
