@@ -43,6 +43,7 @@ import {
   meterValue,
   metersOf,
   nudgedValue,
+  parseMeterInput,
   pipClickValue,
   showsMax,
   showsText,
@@ -134,9 +135,23 @@ function MeterReading({
   // meter draws only what it holds.
   const [preview, setPreview] = useState<number | null>(null);
   const [iconRect, setIconRect] = useState<DOMRect | null>(null);
-  // Held here rather than inside the number itself, because the thing that
-  // opens it is the number *inside the dial* when the dial is showing one.
-  const [editingNumbers, setEditingNumbers] = useState(false);
+  // **One field, in the place the number already is.** Typing `4` sets the
+  // value and `4/10` sets both, which is how the reference does it and how
+  // anybody writes those numbers down. It replaced a pair of boxes with an
+  // "of" between them, which was a form bolted under the meter.
+  const [numberDraft, setNumberDraft] = useState<string | null>(null);
+
+  function openNumber() {
+    setNumberDraft(meterReadout(entry, style, withMax));
+  }
+
+  function typeNumber(text: string) {
+    setNumberDraft(text);
+    const patch = parseMeterInput(text);
+    // Nothing sensible typed *yet* — "4/" on the way to "4/10". Left alone
+    // rather than emptied, so a meter never flickers to nothing mid-keystroke.
+    if (patch) onEdit(patch);
+  }
 
   const max = meterMax(entry, style);
   const value = meterValue(entry, style);
@@ -292,19 +307,25 @@ function MeterReading({
       )}
       {/* **The number is printed once.** A dial showing it in the middle and
           again under the name is the same fact twice, which is not what the
-          reference does — so when the shape has it, the caption doesn't, and
-          the one in the middle is what opens the editor. */}
-      {(!numberInShape || editingNumbers) && (
-        <MeterNumbers
-          entry={entry}
-          style={style}
-          withMax={withMax}
-          editing={editingNumbers}
-          onOpen={() => setEditingNumbers(true)}
-          onClose={() => setEditingNumbers(false)}
-          onEdit={onEdit}
-        />
-      )}
+          reference does — so when the shape has it, the caption doesn't. */}
+      {!numberInShape &&
+        (numberDraft === null ? (
+          <button type="button" className="block-meter-readout" onClick={openNumber}>
+            {meterReadout(entry, style, withMax)}
+          </button>
+        ) : (
+          <input
+            className="block-meter-readout block-meter-readout-input"
+            autoFocus
+            aria-label="Value, or value/maximum"
+            value={numberDraft}
+            onChange={(e) => typeNumber(e.target.value)}
+            onBlur={() => setNumberDraft(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === "Escape") setNumberDraft(null);
+            }}
+          />
+        ))}
     </div>
   );
 
@@ -431,20 +452,36 @@ function MeterReading({
               </button>
             </foreignObject>
           )}
+          {/* Edited where it is drawn, rather than opening something below —
+              the dial's middle is where the number lives. */}
           {face !== "icon" && (
-            <foreignObject x="14" y={READOUT_Y[style] - 10 + (face === "both" ? 8 : 0)} width="72" height="22">
-              <button
-                type="button"
-                className="block-meter-arc-readout"
-                title="Set the numbers"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingNumbers(true);
-                }}
-              >
-                {meterReadout(entry, style, withMax)}
-              </button>
+            <foreignObject x="18" y={READOUT_Y[style] - 11 + (face === "both" ? 8 : 0)} width="64" height="22">
+              {numberDraft === null ? (
+                <button
+                  type="button"
+                  className="block-meter-arc-readout"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openNumber();
+                  }}
+                >
+                  {meterReadout(entry, style, withMax)}
+                </button>
+              ) : (
+                <input
+                  className="block-meter-arc-readout block-meter-readout-input"
+                  autoFocus
+                  aria-label="Value, or value/maximum"
+                  value={numberDraft}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onChange={(e) => typeNumber(e.target.value)}
+                  onBlur={() => setNumberDraft(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Escape") setNumberDraft(null);
+                  }}
+                />
+              )}
             </foreignObject>
           )}
         </svg>
@@ -523,108 +560,5 @@ function MeterReading({
       {remove}
       {picker}
     </div>
-  );
-}
-
-/**
- * The numbers under a meter: text until you click them, two boxes after that.
- *
- * **The maximum has to be reachable and it is not something a drag can say.**
- * The first cut kept two number boxes standing under every meter, which is
- * four boxes on a four-reading block and reads as a form rather than as a
- * panel of stats — and those boxes used the sidebar's bleed-out input style,
- * whose negative margin hung the focus ring out over the meter above. So the
- * readout is the control: it shows what the reference shows, and clicking it
- * opens the pair.
- *
- * The drafts are strings, for the reason NumberProperty spells out: "-", "1."
- * and "1e" are all states you pass through on the way to a number, and a
- * controlled numeric input that reparses each keystroke fights you through
- * every one of them.
- */
-function MeterNumbers({
-  entry,
-  style,
-  withMax,
-  editing,
-  onOpen,
-  onClose,
-  onEdit,
-}: {
-  entry: MeterEntry;
-  style: MeterStyle;
-  withMax: boolean;
-  /** Owned by the reading, since a dial opens this from its own middle. */
-  editing: boolean;
-  onOpen: () => void;
-  onClose: () => void;
-  onEdit: (patch: Partial<MeterEntry>) => void;
-}) {
-  const [draft, setDraft] = useState({ value: "", max: "" });
-
-  // Re-read whenever the pair opens, so it starts from what is stored rather
-  // than from whatever was typed the last time it was open.
-  const [wasEditing, setWasEditing] = useState(editing);
-  if (editing !== wasEditing) {
-    setWasEditing(editing);
-    if (editing) {
-      setDraft({
-        value: entry.value === undefined ? "" : String(entry.value),
-        max: entry.max === undefined ? "" : String(entry.max),
-      });
-    }
-  }
-
-  function parse(text: string): number | undefined {
-    const trimmed = text.trim();
-    if (!trimmed) return undefined;
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  if (!editing) {
-    return (
-      <button type="button" className="block-meter-readout" title="Set the numbers" onClick={onOpen}>
-        {meterReadout(entry, style, withMax)}
-      </button>
-    );
-  }
-
-  return (
-    <span
-      className="block-meter-numbers"
-      // Closes when focus leaves the pair rather than on either box's own
-      // blur, or tabbing from the value to the maximum would shut it.
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onClose();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === "Escape") onClose();
-      }}
-    >
-      <input
-        className="block-meter-number"
-        autoFocus
-        inputMode="decimal"
-        aria-label="Value"
-        value={draft.value}
-        onChange={(e) => {
-          setDraft({ ...draft, value: e.target.value });
-          onEdit({ value: parse(e.target.value) });
-        }}
-      />
-      <span className="block-meter-of">of</span>
-      <input
-        className="block-meter-number"
-        inputMode="decimal"
-        aria-label="Maximum"
-        placeholder={String(meterMax(entry, style))}
-        value={draft.max}
-        onChange={(e) => {
-          setDraft({ ...draft, max: e.target.value });
-          onEdit({ max: parse(e.target.value) });
-        }}
-      />
-    </span>
   );
 }

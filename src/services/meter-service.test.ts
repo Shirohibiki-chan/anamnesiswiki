@@ -14,6 +14,7 @@ import {
   pipClickValue,
   showsMax,
   showsText,
+  parseMeterInput,
   valueAtFraction,
   withMeter,
   withoutMeter,
@@ -308,5 +309,44 @@ describe("editing the list of readings", () => {
 describe("metersOf", () => {
   it("hands back the same array every time for a block with none", () => {
     expect(metersOf({ id: "b", kind: "meter" })).toBe(metersOf({ id: "c", kind: "meter" }));
+  });
+});
+
+describe("parseMeterInput", () => {
+  it("takes a bare number as the value", () => {
+    expect(parseMeterInput("62")).toEqual({ value: 62 });
+  });
+
+  // Typing back what the meter was showing must not be an error.
+  it("ignores a trailing percent", () => {
+    expect(parseMeterInput("62%")).toEqual({ value: 62 });
+    expect(parseMeterInput("62 %")).toEqual({ value: 62 });
+  });
+
+  it("takes x/y as both numbers at once", () => {
+    expect(parseMeterInput("4/10")).toEqual({ value: 4, max: 10 });
+    expect(parseMeterInput(" 4 / 10 ")).toEqual({ value: 4, max: 10 });
+  });
+
+  it("stores a zero as absent, like every other default", () => {
+    expect(parseMeterInput("0")).toEqual({ value: undefined });
+    expect(parseMeterInput("0/8")).toEqual({ value: undefined, max: 8 });
+  });
+
+  it("empties the value when the box is cleared", () => {
+    expect(parseMeterInput("   ")).toEqual({ value: undefined });
+  });
+
+  // Refusing rather than guessing: a half-typed "4/" should leave the meter
+  // where it was, not blank its maximum on the way through.
+  it("refuses what isn't a number, and half-typed states", () => {
+    expect(parseMeterInput("lots")).toBeNull();
+    expect(parseMeterInput("4/")).toBeNull();
+    expect(parseMeterInput("4/0")).toBeNull();
+    expect(parseMeterInput("1/2/3")).toBeNull();
+  });
+
+  it("takes a decimal, since typing is the precise path", () => {
+    expect(parseMeterInput("62.5")).toEqual({ value: 62.5 });
   });
 });

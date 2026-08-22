@@ -303,3 +303,38 @@ export function withMeter(entries: MeterEntry[], meterId: string, patch: Partial
 export function withoutMeter(entries: MeterEntry[], meterId: string): MeterEntry[] {
   return entries.filter((entry) => entry.id !== meterId);
 }
+
+/**
+ * What somebody typed into a meter's number, read back as a value and maybe a
+ * maximum.
+ *
+ * **One field, not two boxes.** The reference lets you type `4` into a
+ * percentage meter and `4/10` into a counted one, and both are one gesture
+ * ending in Enter — which is how anybody would write those numbers down
+ * anyway. Two boxes with an "of" between them is a form, and a form is what
+ * this replaced.
+ *
+ * A trailing `%` is accepted and ignored: it is what the meter was showing
+ * when the box opened, so re-typing it must not be an error. Returns `null`
+ * for anything that isn't a number, which leaves the meter as it was rather
+ * than emptying it — half-typed states like "4/" pass through that way.
+ */
+export function parseMeterInput(text: string): { value?: number; max?: number } | null {
+  const trimmed = text.trim().replace(/%\s*$/, "").trim();
+  if (!trimmed) return { value: undefined };
+
+  const parts = trimmed.split("/");
+  if (parts.length > 2) return null;
+
+  const value = Number(parts[0].trim());
+  if (!Number.isFinite(value)) return null;
+  // Zero is the default and is stored as absent, the way every block field is.
+  const patch: { value?: number; max?: number } = { value: value || undefined };
+
+  if (parts.length === 2) {
+    const max = Number(parts[1].trim());
+    if (!Number.isFinite(max) || max <= 0) return null;
+    patch.max = max;
+  }
+  return patch;
+}

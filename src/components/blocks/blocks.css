@@ -670,6 +670,24 @@
   background: var(--color-hover);
 }
 
+/* The field is the number: same place, same size, no box growing out of the
+   middle of a dial. Typing `4` sets the value and `4/10` sets both. */
+.block-meter-readout-input {
+  min-width: 0;
+  text-align: center;
+  border: 1px solid var(--color-accent-faint-border);
+  background: var(--color-panel-alt);
+  font: inherit;
+}
+
+.block-meter-arc-readout.block-meter-readout-input {
+  font-size: 14px;
+}
+
+.block-meter-readout-input:focus {
+  outline: none;
+}
+
 /* foreignObject has no layout of its own, so an icon inside one needs a box
    that centres it or it sits in the corner of the rectangle. */
 /* Centred in its foreignObject, which has no layout of its own, and clickable
@@ -863,6 +881,8 @@
 
 .block-meter-readout {
   flex-shrink: 0;
+  width: auto;
+  max-width: 88px;
   margin-left: auto;
   padding: 1px var(--space-sm);
   color: var(--color-text-secondary);
@@ -879,41 +899,6 @@
   color: var(--color-text-primary);
   background: var(--color-hover);
   border-color: var(--color-border);
-}
-
-/* The pair the readout opens into. `field-sizing: content` keeps each box the
-   width of the number in it, so "3 of 8" doesn't become two form fields. */
-.block-meter-numbers {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: auto;
-}
-
-.block-meter-number {
-  width: 3.5ch;
-  min-width: 3.5ch;
-  max-width: 6ch;
-  padding: 1px var(--space-sm);
-  color: var(--color-text-primary);
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: var(--fs-2xs);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  field-sizing: content;
-}
-
-.block-meter-number:focus {
-  outline: none;
-  border-color: var(--color-accent-faint-border);
-}
-
-.block-meter-of {
-  color: var(--color-text-muted);
-  font-size: var(--fs-2xs);
 }
 
 .block-meter-circle .block-meter-readout,
