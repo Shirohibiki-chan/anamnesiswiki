@@ -46,6 +46,8 @@
 - **Dials sit closer together**, three across a normal-width panel, with the highlight hugging each one rather than filling the space between them.
 - **A dial's icon lives inside the dial or nowhere.** It used to also sit beside the name, which ate the width in the narrowest part of the panel. Switch a block to Icon or Both to bring it back.
 - **Stars and tokens are a fixed size.** They used to stretch to fill their row, so the last few tokens of a big pool came out enormous while the rest stayed small.
+- **A token pool is drawn in tokens, not in stars.** They were coming out at a rating's size — seventy-six of those filled the panel. They're small now: 76 tokens sit in six rows.
+- **Tokens and stars are coloured again.** A filled one was being painted in the empty colour, so a pool was grey however full it was. Filled ones take the block's colour; empty ones are a faint version of the same colour rather than grey.
 - **The tag and page pickers look like menus.** Their rows had no styling at all and rendered as oversized plain text in a box.
 - **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
 - **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.

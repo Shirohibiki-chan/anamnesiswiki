@@ -479,8 +479,7 @@
    purple bar purple — the accent is set by BlockShell and inherited here.
    Falls back to the bold teal, never to --color-accent, which is the 15% tint
    and would draw a meter nobody can see. */
-.block-meter-fill,
-.block-meter-pip-filled {
+.block-meter-fill {
   color: var(--block-accent, var(--color-accent-light));
 }
 
@@ -669,6 +668,10 @@
   touch-action: none;
 }
 
+.block-meter-pool .block-meter-pips {
+  gap: 3px;
+}
+
 .block-meter-pip {
   display: inline-flex;
   align-items: center;
@@ -676,11 +679,27 @@
   flex: 0 0 auto;
   width: 28px;
   padding: 0;
-  color: var(--color-text-muted);
+  /* An unspent token is a faint version of the meter's own colour, not grey —
+     the reference draws a pool as one hue at two strengths, which reads as a
+     count of one thing rather than as two kinds of dot. */
+  color: color-mix(in srgb, var(--block-accent, var(--color-accent-light)) 30%, transparent);
   background: none;
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+/* Below `.block-meter-pip`, deliberately: these carry the same specificity, so
+   whichever comes last wins and the filled state has to be the last word. */
+.block-meter-pip-filled {
+  color: var(--block-accent, var(--color-accent-light));
+}
+
+/* **A token is not a star.** A rating is five big symbols and a pool is
+   however many small ones — drawing seventy-six of them at a rating's size is
+   what turned a pool into sixteen rows of dinner plates. */
+.block-meter-pool .block-meter-pip {
+  width: 16px;
 }
 
 /* The symbol fills its button, which is a fixed width — so a row of five and a
