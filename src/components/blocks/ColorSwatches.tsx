@@ -18,7 +18,7 @@
 //
 // A named colour is stored by name so it follows the theme; a colour mixed in
 // the system picker is stored as its hex, because it has no name to look up.
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ChevronLeft, Plus, X } from "lucide-react";
 import { COLOR_PALETTE, isHexColor } from "../../constants/palette";
 import { useColorActions, useSavedColors } from "../../hooks/use-preferences";
@@ -36,6 +36,27 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
   const [showAll, setShowAll] = useState(false);
   const savedColors = useSavedColors();
   const { saveColor, forgetColor } = useColorActions();
+
+  // **The colour input is read on `change`, never on `input`.** A colour input
+  // fires while the pointer moves around the system dialog, and React's
+  // `onChange` is that live event — so one drag through the purples wrote a
+  // hundred colours to the block, a hundred entries to the undo history and a
+  // hundred saves to disk. That is both the lag and the row of eight
+  // near-identical purples. `change` fires once, when the dialog is done.
+  const commitOnly = useCallback(
+    (input: HTMLInputElement | null) => {
+      if (!input) return;
+      const commit = () => {
+        onPick(input.value);
+        // Kept the moment it is used, rather than behind a "save" nobody would
+        // press. Re-picking one already saved moves it to the front.
+        saveColor(input.value);
+      };
+      input.addEventListener("change", commit);
+      return () => input.removeEventListener("change", commit);
+    },
+    [onPick, saveColor],
+  );
 
   const named = COLOR_PALETTE.filter((color) => color.hex);
   const quick = QUICK_KEYS.map((key) => named.find((color) => color.key === key)).filter(
@@ -77,15 +98,10 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
           target and the browser still opens the system dialog on a real
           click — which is all a colour input needs to do. */}
       <input
+        ref={commitOnly}
         type="color"
         aria-label="Mix a colour"
-        value={value && isHexColor(value) ? value : "#8b5cf6"}
-        onChange={(e) => {
-          onPick(e.target.value);
-          // Kept the moment it is used, rather than behind a "save" nobody
-          // would press. Re-picking one already saved moves it to the front.
-          saveColor(e.target.value);
-        }}
+        defaultValue={value && isHexColor(value) ? value : "#8b5cf6"}
       />
     </label>
   );
