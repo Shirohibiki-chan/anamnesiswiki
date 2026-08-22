@@ -41,6 +41,8 @@
 - **The three dial faces actually look different now.** Asking for the icon on a meter that hasn't got one used to quietly show the number instead, so all three choices looked identical — it shows an empty icon slot you can click.
 - **Pages in a list are readable.** They were painted in a colour that's almost the background — the same near-invisible tint that made the import progress bar disappear once before.
 - **A long meter name no longer wrecks the layout.** It used to stretch its dial's column and shove everything off-centre; it's capped and trimmed now.
+- **A dial's name and number stack under it**, both centred on the shape, instead of sitting side by side where neither could line up with it. The name box is as wide as the name rather than as wide as the column.
+- **Meters light up when you point at them**, so a panel of four reads as four things — and so it's clear which one the × in the corner belongs to.
 - **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
 - **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.
 

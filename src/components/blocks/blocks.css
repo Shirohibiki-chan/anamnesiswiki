@@ -387,6 +387,30 @@
   min-width: 0;
 }
 
+/* The meter under the pointer lifts slightly. It is what makes a panel of four
+   dials feel like four things rather than one picture — and it is the cue that
+   the X in the corner belongs to this one. Drawn on a pseudo-element so it can
+   bleed past the reading's box without pushing anything around. */
+.block-meter-reading::before {
+  content: "";
+  position: absolute;
+  inset: -6px -8px;
+  border-radius: var(--radius-md);
+  background: var(--color-hover);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.block-meter-reading:hover::before {
+  opacity: 1;
+}
+
+/* Everything else in the reading sits above the wash. */
+.block-meter-reading > * {
+  position: relative;
+}
+
 /* Takes one meter out, without going through a menu. Invisible until the
    pointer is on that meter — four of these standing on a block of four dials
    would be four delete buttons looking for an accident. */
@@ -646,12 +670,16 @@
   min-width: 0;
 }
 
+/* A dial's caption is a column, not a row: the name on one line and the number
+   under it, both centred on the dial. Side by side they can only be centred as
+   a pair, which leaves neither of them over the middle of the shape. */
 .block-meter-circle .block-meter-caption,
 .block-meter-semicircle .block-meter-caption,
 .block-meter-gauge .block-meter-caption {
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 2px var(--space-sm);
+  gap: 2px;
   width: 100%;
   max-width: 100%;
 }
@@ -706,13 +734,19 @@
    its text stretched the whole reading, which broke the two-across layout and
    pushed the dial off-centre the moment a name got long — she photographed it.
    The box stays the width of the column and the text ellipses. */
+/* Sized to what is typed rather than to the column, so an empty one isn't a
+   long blank box under a small dial. `max-width` is what keeps a long name
+   from stretching the reading — that stretching is why this was pinned to
+   100% before, and the cap fixes it without the empty-box side effect. */
 .block-meter-circle .block-meter-name,
 .block-meter-semicircle .block-meter-name,
 .block-meter-gauge .block-meter-name {
-  width: 100%;
-  min-width: 0;
+  width: auto;
+  min-width: 3ch;
+  max-width: 100%;
   text-align: center;
   text-overflow: ellipsis;
+  field-sizing: content;
 }
 
 .block-meter-name::placeholder {
