@@ -25,7 +25,7 @@
 // they can be tested — including the inverse used here, turning a pointer
 // position back into a value.
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Circle, Plus, Star, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import type { Block, MeterEntry, MeterFace, MeterStyle } from "../../constants/schema";
 import {
   ARC_GEOMETRY,
@@ -36,6 +36,7 @@ import {
   isArcMeter,
   meterFace,
   meterFraction,
+  meterPip,
   meterMax,
   meterReadout,
   meterStyleOf,
@@ -83,6 +84,7 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
               key={entry.id}
               entry={entry}
               style={style}
+              pip={meterPip(block)}
               face={meterFace(block, entry)}
               segmented={block.segmented === true}
               withText={showsText(block)}
@@ -100,6 +102,8 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
 type ReadingProps = {
   entry: MeterEntry;
   style: MeterStyle;
+  /** The symbol this block counts in — see meterPip. */
+  pip: string;
   face: MeterFace;
   segmented: boolean;
   withText: boolean;
@@ -111,6 +115,7 @@ type ReadingProps = {
 function MeterReading({
   entry,
   style,
+  pip,
   face,
   segmented,
   withText,
@@ -426,7 +431,6 @@ function MeterReading({
     );
   }
 
-  const Pip = style === "rating" ? Star : Circle;
   const promisedTo = preview === null ? value : Math.min(Math.max(preview, 0), max);
 
   return (
@@ -486,7 +490,7 @@ function MeterReading({
                 commit(pipClickValue(style, value, index));
               }}
             >
-              <Pip size={13} fill={filled || promised ? "currentColor" : "none"} />
+              <MeterIcon icon={pip} size={20} filled={filled || promised} />
             </button>
           );
         })}

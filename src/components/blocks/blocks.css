@@ -361,22 +361,23 @@
 .block-meter-circle .block-meter-list,
 .block-meter-semicircle .block-meter-list,
 .block-meter-gauge .block-meter-list {
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: var(--space-2xl) var(--space-xl);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  justify-items: center;
+  align-items: start;
+  gap: var(--space-2xl) var(--space-md);
 }
 
 /* Two across when there is room, and centred when there isn't — a grid put a
    lone dial in the first cell, hard against the left edge. */
+/* As wide as the dial, not as wide as its column — which is what keeps the
+   highlight tight while the columns themselves stay well apart. */
 .block-meter-circle .block-meter-reading,
 .block-meter-semicircle .block-meter-reading,
 .block-meter-gauge .block-meter-reading {
-  flex: 0 1 calc(50% - var(--space-xl));
   align-items: center;
-  min-width: 84px;
-  max-width: 100px;
+  width: auto;
+  max-width: 100%;
 }
 
 .block-meter-reading {
@@ -551,8 +552,8 @@
    in the sidebar, and she can make the panel wide. */
 .block-meter-arc {
   align-self: center;
-  width: 100%;
-  max-width: 92px;
+  width: 92px;
+  max-width: 100%;
   overflow: visible;
   cursor: pointer;
   touch-action: none;
@@ -637,18 +638,30 @@
 .block-meter-pips {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: var(--space-xs);
   touch-action: none;
 }
 
 .block-meter-pip {
   display: inline-flex;
-  padding: 1px;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 14px;
+  max-width: 48px;
+  padding: 0;
   color: var(--color-text-muted);
   background: none;
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+/* The symbol grows with its button, so five across a panel are large and
+   seventy-six across it are small, without either needing its own size. */
+.block-meter-pip svg {
+  width: 100%;
+  height: auto;
 }
 
 .block-meter-pip:hover {
@@ -743,7 +756,7 @@
 .block-meter-gauge .block-meter-name {
   width: auto;
   min-width: 3ch;
-  max-width: 100%;
+  max-width: 92px;
   text-align: center;
   text-overflow: ellipsis;
   field-sizing: content;

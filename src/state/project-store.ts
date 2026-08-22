@@ -328,6 +328,7 @@ export type ProjectStoreState = {
   setBlockMeterMax: (nodeId: string, blockId: string, shown: boolean) => void;
   setBlockMeterFace: (nodeId: string, blockId: string, face: MeterFace) => void;
   setBlockMeterSegmented: (nodeId: string, blockId: string, segmented: boolean) => void;
+  setBlockMeterPip: (nodeId: string, blockId: string, pip: string | undefined) => void;
   addMeter: (nodeId: string, blockId: string) => void;
   duplicateMeter: (nodeId: string, blockId: string, meterId: string) => void;
   removeMeter: (nodeId: string, blockId: string, meterId: string) => void;
@@ -1621,6 +1622,12 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     setBlockMeterSegmented(nodeId, blockId, segmented) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "segmented", segmented || undefined) : block)),
+      );
+    },
+
+    setBlockMeterPip(nodeId, blockId, pip) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "pip", pip) : block)),
       );
     },
 

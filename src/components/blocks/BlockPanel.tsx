@@ -27,6 +27,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useBlocks } from "../../hooks/use-blocks";
+import { isPipMeter, meterPip } from "../../services/meter-service";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
@@ -45,6 +46,7 @@ import { AddBlockMenu } from "./AddBlockMenu";
 import { AliasBlock } from "./AliasBlock";
 import { BlockShell } from "./BlockShell";
 import { CollectionBlock } from "./CollectionBlock";
+import { IconPicker } from "./IconPicker";
 import { MeterBlock } from "./MeterBlock";
 import { TextBlock } from "./TextBlock";
 import "../properties/properties.css";
@@ -78,6 +80,7 @@ export function BlockPanel() {
     setBlockMeterMax,
     setBlockMeterFace,
     setBlockMeterSegmented,
+    setBlockMeterPip,
     addMeter,
     duplicateMeter,
     removeMeter,
@@ -91,6 +94,10 @@ export function BlockPanel() {
   const node = selectedId ? nodes[selectedId] : undefined;
   const { blocks, properties, unshown } = useBlocks(node);
 
+  // Which block's rating symbol is being chosen. The picker is a popover over
+  // the panel rather than inside the block, because the menu that opens it has
+  // already closed by the time it appears.
+  const [pipBlockId, setPipBlockId] = useState<string | null>(null);
   const [templateRect, setTemplateRect] = useState<DOMRect | null>(null);
   const [addRect, setAddRect] = useState<DOMRect | null>(null);
   const [isAddingProperty, setIsAddingProperty] = useState(false);
@@ -425,6 +432,8 @@ export function BlockPanel() {
                         onSetStyle: (style) => setBlockMeter(node.id, block.id, style),
                         onSetFace: (face) => setBlockMeterFace(node.id, block.id, face),
                         onToggleSegments: () => setBlockMeterSegmented(node.id, block.id, block.segmented !== true),
+                        pip: isPipMeter(block.meter ?? "bar") ? meterPip(block) : undefined,
+                        onPickPip: isPipMeter(block.meter ?? "bar") ? () => setPipBlockId(block.id) : undefined,
                         onAdd: () => addMeter(node.id, block.id),
                         onDuplicateMeter: (meterId) => duplicateMeter(node.id, block.id, meterId),
                         onRemoveMeter: (meterId) => removeMeter(node.id, block.id, meterId),
@@ -511,6 +520,18 @@ export function BlockPanel() {
           setAddRect(new DOMRect(e.clientX, e.clientY, 0, 0));
         }}
       />
+
+      {pipBlockId && (
+        <TreePopover anchorRect={new DOMRect(160, 160, 0, 0)} onClose={() => setPipBlockId(null)}>
+          <IconPicker
+            value={blocks.find((b) => b.id === pipBlockId)?.pip}
+            onPick={(pip) => {
+              setBlockMeterPip(node.id, pipBlockId, pip);
+              setPipBlockId(null);
+            }}
+          />
+        </TreePopover>
+      )}
 
       {addRect && (
         <TreePopover anchorRect={addRect} onClose={() => setAddRect(null)}>

@@ -215,6 +215,13 @@ export type Block = {
   face?: MeterFace;
   /** Drawn as a run of segments rather than one solid sweep. */
   segmented?: boolean;
+  /**
+   * What a rating or a token pool is counted in: a glyph name, or an emoji.
+   * Absent means a star for a rating and a disc for a pool, which is what they
+   * were before this could be chosen. Same two kinds of value as an entry's
+   * `icon`, read back through the same resolver.
+   */
+  pip?: string;
   // The first cut of `meter` kept one reading directly on the block. No new
   // one is written — block-service lifts these into a single entry on read,
   // the way it does for `link`. Kept readable so a meter made before the list

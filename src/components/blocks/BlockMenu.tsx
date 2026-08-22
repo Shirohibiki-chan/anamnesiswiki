@@ -8,6 +8,7 @@ import { COLLECTION_SOURCES } from "../../constants/collection-sources";
 import { METER_STYLES } from "../../constants/meter-styles";
 import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
 import { ColorSwatches } from "./ColorSwatches";
+import { MeterIcon } from "./IconPicker";
 
 type BlockMenuProps = {
   /** Whether the block is currently showing a title strip. */
@@ -52,6 +53,9 @@ type BlockMenuProps = {
     segmented: boolean;
     onSetFace: (face: MeterFace) => void;
     onToggleSegments: () => void;
+    /** Present only for the two counting shapes: what they are counted in. */
+    pip?: string;
+    onPickPip?: () => void;
   };
   /** Present only for a collection block: where it gets its pages. */
   collection?: {
@@ -158,6 +162,14 @@ export function BlockMenu({
           <button type="button" onClick={meter.onToggleSegments}>
             <Grid2x2 size={13} className={meter.segmented ? "" : "block-menu-unchecked"} /> Segmented
           </button>
+          {/* Stars are only the default. A rating counted in acorns, skulls or
+              coins is the same widget, and which symbol it uses is the thing
+              that makes it belong to a world rather than to a review site. */}
+          {meter.onPickPip && (
+            <button type="button" onClick={meter.onPickPip}>
+              <MeterIcon icon={meter.pip} size={13} /> Rating symbol
+            </button>
+          )}
           {/* What sits inside a dial. Three tiles rather than three rows,
               because they are three pictures of the same meter. */}
           <div className="block-menu-faces">

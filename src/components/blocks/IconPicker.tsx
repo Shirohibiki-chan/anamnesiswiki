@@ -221,11 +221,20 @@ export function NodeIcon({
  * nothing". A glyph name that later leaves the catalogue lands here too, and
  * shows its own name instead of vanishing.
  */
-export function MeterIcon({ icon, size = 15 }: { icon: string | undefined; size?: number }) {
+export function MeterIcon({
+  icon,
+  size = 15,
+  filled = false,
+}: {
+  icon: string | undefined;
+  size?: number;
+  /** Drawn solid — what a counted pip looks like when it is one of the ones you have. */
+  filled?: boolean;
+}) {
   if (!icon) return null;
   const Glyph = getGlyph(icon);
   // eslint-disable-next-line react-hooks/static-components -- getGlyph reads a fixed lookup table, so a given name returns the same stable component reference every render
-  if (Glyph) return <Glyph size={size} />;
+  if (Glyph) return <Glyph size={size} fill={filled ? "currentColor" : "none"} />;
   return (
     <span className="icon-as-text" style={{ fontSize: size }}>
       {icon}

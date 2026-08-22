@@ -50,6 +50,11 @@ export function showsMax(block: Block): boolean {
   return block.showMax !== false;
 }
 
+/** The symbol a pip meter counts in. */
+export function meterPip(block: Block): string {
+  return block.pip ?? (meterStyleOf(block) === "rating" ? "star" : "circle");
+}
+
 /**
  * What goes inside a round meter, resolved.
  *

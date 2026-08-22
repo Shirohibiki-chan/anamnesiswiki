@@ -43,6 +43,8 @@ type BlockShellProps = {
     onSetStyle: (style: MeterStyle) => void;
     onSetFace: (face: MeterFace) => void;
     onToggleSegments: () => void;
+    pip?: string;
+    onPickPip?: () => void;
     onAdd: () => void;
     onDuplicateMeter: (meterId: string) => void;
     onRemoveMeter: (meterId: string) => void;
