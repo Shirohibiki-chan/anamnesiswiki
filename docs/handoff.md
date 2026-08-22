@@ -2775,11 +2775,19 @@ is below.
   insets itself by `--space-2xl`. Anything new dropped into that panel needs
   the same inset or it will sit flush against the edge.
 
-- **A block's heading is its only name.** A meter block's heading *is* the
-  shape ("CIRCLE"), rather than a generic name with the shape repeated
-  underneath — that second label existed and was the thing that made the panel
-  look wrong. Don't add a label inside a block that restates what its heading
-  says.
+- **A block's heading is its only name, and that rule is not just about
+  meters.** A meter's heading *is* its shape and a collection's *is* its source
+  — both read their label from a constants list that the block's menu reads
+  too. Three blocks shipped with a second label inside them restating the
+  heading (meter, collection, image) and all three looked broken to the user.
+  **Never draw a label inside a block that restates its heading**; if a block
+  has a setting worth naming, it goes in the block's menu.
+
+- **`--color-accent` has now made text invisible twice.** It is a 15% tint
+  despite the name — once for the import progress bar, once for the page names
+  inside a collection block, where it read as an empty list. Anything that has
+  to be *seen* wants `--color-accent-light` or a text colour. The token's own
+  comment in `index.css` says so; it is worth believing.
 
 - **Opening a tree row's menu must not select the row.** Selecting a page opens
   it, so a menu that selects first throws away whatever the user was reading to

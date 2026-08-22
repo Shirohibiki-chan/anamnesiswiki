@@ -3260,6 +3260,28 @@ four survived.
   countable; her reference draws seventy-six tokens in a wrapped grid and
   reads fine. The cap now exists only to stop a typed 5000.
 
+### A fourth pass — the same bug in the blocks 18c hadn't touched
+
+- **Three blocks had two names.** 18c fixed the meter and left the collection
+  block drawing a source pill and the image block drawing an "Image" label,
+  both directly under a heading that already said it. The source moved into
+  the block menu with a tick on the current one; the image label is gone.
+- **"Tagged" wasn't a name anything else used.** The source labels now come
+  from `constants/collection-sources.ts`, which is also what Add Block reads,
+  so a block added as a Tag index calls itself a Tag index.
+- **Pages inside a collection were drawn in `--color-accent`** — the 15% tint,
+  the same trap as the import progress bar — which is why they were, in her
+  words, impossible to see.
+- **All three dial faces looked identical on a meter with no icon**, because
+  asking for the icon fell back to the number. It draws an empty slot instead,
+  and that slot is the button that picks an icon — which also answers "the
+  icon inside the dial should be clickable".
+- **A long name stretched its dial's column** and pushed the layout off
+  centre. `field-sizing: content` was doing that; the name is capped and
+  ellipsised now.
+- **A page's icon is clickable in the header.** The tree's menu still does a
+  whole selection at once, which is what it is for.
+
 ### And a third pass, from ten more screenshots
 
 - **Half the taps on a token pool did nothing** — the pips container holds

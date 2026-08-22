@@ -261,7 +261,7 @@ function MeterReading({
   // icon twice in one meter, which she flagged. The button stays when it is
   // the only place the icon appears, and becomes the faint plus when there is
   // no icon at all — otherwise the way to change one is the block's menu.
-  const iconInShape = isArcMeter(style) && !!entry.icon && face !== "value";
+  const iconInShape = isArcMeter(style) && face !== "value";
   const caption = (
     <div className="block-meter-caption">
       {!iconInShape && (
@@ -289,18 +289,22 @@ function MeterReading({
           <X size={11} />
         </button>
       )}
-      {iconRect && (
-        <TreePopover anchorRect={iconRect} onClose={() => setIconRect(null)}>
-          <IconPicker
-            value={entry.icon}
-            onPick={(icon) => {
-              onEdit({ icon });
-              setIconRect(null);
-            }}
-          />
-        </TreePopover>
-      )}
     </div>
+  );
+
+  // Mounted once, beside whichever shape is drawn, because the button that
+  // opens it lives in the caption for some shapes and inside the dial for
+  // others.
+  const picker = iconRect && (
+    <TreePopover anchorRect={iconRect} onClose={() => setIconRect(null)}>
+      <IconPicker
+        value={entry.icon}
+        onPick={(icon) => {
+          onEdit({ icon });
+          setIconRect(null);
+        }}
+      />
+    </TreePopover>
   );
 
   if (style === "bar") {
@@ -341,6 +345,7 @@ function MeterReading({
           )}
         </div>
         {caption}
+        {picker}
       </div>
     );
   }
@@ -378,25 +383,32 @@ function MeterReading({
             />
           )}
           {/* Three faces, as the reference offers: the number, the icon, or
-              both stacked. Never neither — an empty ring reads as a meter that
-              failed to draw. */}
-          {entry.icon && face !== "value" && (
-            <foreignObject
-              x="30"
-              y={READOUT_Y[style] - (face === "both" ? 21 : 12)}
-              width="40"
-              height="24"
-            >
-              <div className="block-meter-arc-icon">
-                <MeterIcon icon={entry.icon} size={face === "both" ? 15 : 19} />
-              </div>
+              both stacked. **A face that asks for an icon shows an empty slot
+              when there isn't one** rather than quietly falling back to the
+              number — that fallback is why all three options looked identical
+              on a meter nobody had given an icon. The slot is the button that
+              picks one, so a dial showing an icon is also where you change it. */}
+          {face !== "value" && (
+            <foreignObject x="26" y={READOUT_Y[style] - (face === "both" ? 22 : 13)} width="48" height="26">
+              <button
+                type="button"
+                className={`block-meter-arc-icon${entry.icon ? "" : " block-meter-arc-icon-empty"}`}
+                aria-label={entry.icon ? "Change icon" : "Add an icon"}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIconRect(e.currentTarget.getBoundingClientRect());
+                }}
+              >
+                {entry.icon ? <MeterIcon icon={entry.icon} size={face === "both" ? 15 : 20} /> : <Plus size={16} />}
+              </button>
             </foreignObject>
           )}
-          {(face !== "icon" || !entry.icon) && (
+          {face !== "icon" && (
             <text
               className="block-meter-arc-readout"
               x="50"
-              y={READOUT_Y[style] + (face === "both" && entry.icon ? 6 : 0)}
+              y={READOUT_Y[style] + (face === "both" ? 8 : 0)}
               textAnchor="middle"
               dominantBaseline="middle"
             >
@@ -405,6 +417,7 @@ function MeterReading({
           )}
         </svg>
         {caption}
+        {picker}
       </div>
     );
   }
@@ -475,6 +488,7 @@ function MeterReading({
         })}
       </div>
       {caption}
+      {picker}
     </div>
   );
 }

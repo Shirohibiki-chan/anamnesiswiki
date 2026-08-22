@@ -117,7 +117,6 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
 
   return (
     <div className="property-field">
-      <div className="ui-eyebrow property-field-label">Image</div>
       <div
         ref={frameRef}
         className={slotClasses}

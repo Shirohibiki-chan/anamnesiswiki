@@ -12,7 +12,7 @@ import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getPaletteHex } from "../../constants/palette";
-import type { MeterFace, MeterStyle } from "../../constants/schema";
+import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
 import { TreePopover } from "../tree/TreePopover";
 import { BlockMenu } from "./BlockMenu";
 
@@ -49,6 +49,11 @@ type BlockShellProps = {
     onToggleText: () => void;
     onToggleMax: () => void;
   };
+  /** Present only for a collection block. */
+  collection?: {
+    source: CollectionSource;
+    onSetSource: (source: CollectionSource) => void;
+  };
   children: ReactNode;
 };
 
@@ -68,6 +73,7 @@ export function BlockShell({
   onRemove,
   onDeleteProperty,
   meter,
+  collection,
   children,
 }: BlockShellProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -210,6 +216,15 @@ export function BlockShell({
               onRemove();
               setMenuRect(null);
             }}
+            collection={
+              collection && {
+                ...collection,
+                onSetSource: (source) => {
+                  collection.onSetSource(source);
+                  setMenuRect(null);
+                },
+              }
+            }
             meter={
               meter && {
                 ...meter,

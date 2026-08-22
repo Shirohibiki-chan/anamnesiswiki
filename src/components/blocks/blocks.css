@@ -169,6 +169,11 @@
   gap: var(--space-md);
 }
 
+/* **Not `--color-accent`.** That is a 15% tint despite the name — the same
+   trap the import progress bar fell into — and a page name painted in it is
+   the "impossible to see the links" she reported. Page names in a list are
+   ordinary text with a link's colour on hover; the bold accent everywhere
+   would make a sidebar of six lists shout. */
 .block-link {
   display: inline-flex;
   align-items: center;
@@ -176,7 +181,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   font-size: var(--fs-sm);
   cursor: pointer;
   overflow: hidden;
@@ -185,6 +190,7 @@
 }
 
 .block-link:hover {
+  color: var(--color-accent-light);
   text-decoration: underline;
 }
 
@@ -391,7 +397,7 @@
 
 .block-meter-track {
   position: relative;
-  height: 11px;
+  height: 14px;
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
   overflow: hidden;
@@ -539,13 +545,32 @@
 
 /* foreignObject has no layout of its own, so an icon inside one needs a box
    that centres it or it sits in the corner of the rectangle. */
+/* Centred in its foreignObject, which has no layout of its own, and clickable
+   — the icon inside a dial is the way to change that icon, so a dial set to
+   show one doesn't have to be sent back to a menu. */
 .block-meter-arc-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   height: 100%;
+  padding: 0;
   color: var(--block-accent, var(--color-text-primary));
-  pointer-events: none;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-meter-arc-icon:hover {
+  background: var(--color-hover);
+}
+
+/* Nothing picked yet, on a dial that has been told to show an icon. Faint, so
+   an unfilled slot reads as an invitation rather than as a broken meter. */
+.block-meter-arc-icon-empty {
+  color: var(--color-text-muted);
+  opacity: 0.55;
 }
 
 .block-meter-pips {
@@ -590,6 +615,8 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 2px var(--space-sm);
+  width: 100%;
+  max-width: 100%;
 }
 
 .block-meter-icon {
@@ -638,14 +665,17 @@
   font-size: var(--fs-sm);
 }
 
+/* **Capped, and never `field-sizing: content` here.** A name that grows with
+   its text stretched the whole reading, which broke the two-across layout and
+   pushed the dial off-centre the moment a name got long — she photographed it.
+   The box stays the width of the column and the text ellipses. */
 .block-meter-circle .block-meter-name,
 .block-meter-semicircle .block-meter-name,
 .block-meter-gauge .block-meter-name {
-  flex: 0 1 auto;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
   text-align: center;
-  field-sizing: content;
+  text-overflow: ellipsis;
 }
 
 .block-meter-name::placeholder {
@@ -841,6 +871,11 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+.block-menu-trailing-check {
+  margin-left: auto;
+  color: var(--color-accent-light);
 }
 
 /* An unticked row keeps its tick's space, so the two toggles don't jump

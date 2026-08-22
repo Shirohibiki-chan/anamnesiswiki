@@ -1285,3 +1285,23 @@
   line-height: 1.5;
   color: var(--color-text-muted);
 }
+
+/* The page's icon is a button now — clicking it picks a new one. Styled to
+   nothing so the header looks exactly as it did, with a hover that says the
+   icon is a control. */
+.page-title-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: var(--space-sm);
+  margin: calc(var(--space-sm) * -1);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.page-title-icon-button:hover {
+  background: var(--color-hover);
+}

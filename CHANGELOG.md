@@ -26,7 +26,9 @@
 - **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block from edge to edge of the sidebar and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
 - **Right-clicking a block opens its menu**, which is what right-clicking anything should do. It was doing nothing before, so you got whatever menu happened to be underneath. Right-clicking a particular meter inside a block also offers to duplicate or delete that one, and right-clicking the empty space under the blocks offers Add Block.
 - **The block menu got shorter.** The colour row is a grid of swatches rather than a long strip, and the shape picker is six small tiles.
-- **A block has one name again.** It used to show its own heading and then repeat the shape underneath — a section called METER with PROGRESS BAR written under it. The heading is the shape's name now, in the top left, and renaming it still wins.
+- **Every block has one name.** They used to show a heading and then repeat themselves underneath — METER with PROGRESS BAR under it, BACKLINKS with BACKLINKS under it, IMAGE with IMAGE under it. The heading says what the block is, in the top left, and renaming it still wins.
+- **A list of pages says where it comes from in its menu**, with a tick on the one it's using, instead of on a label under its own heading. A **Tag index** is called a Tag index there — it used to call itself "Tagged", which is a different word for a different thing.
+- **Click a page's icon to change it.** The icon beside the page's name opens the picker. Right-click → Set icon still works for changing several at once.
 - **Blocks line up with each other.** The drag handle moved out of the heading's way, so every heading starts at the same edge as the block under it.
 
 ### Fixes
@@ -34,7 +36,10 @@
 - **Tokens and stars respond to every click now.** About half of them did nothing: the pip you pressed and the pip that got told about it could disagree, so the tap was swallowed. Pressing sets the value the moment you press, the way the bars and dials already did.
 - **A lone dial is centred.** One circle in a block sat hard against the left edge, because the layout was built for two side by side.
 - **The progress bar isn't a hairline any more**, and lowering a dial no longer draws a ragged second outline over it — the preview sits at the end of the fill instead of being painted on top of it.
-- **A dial showing its icon doesn't repeat it beside the name.**
+- **A dial showing its icon doesn't repeat it beside the name**, and the icon inside a dial is the button that changes it.
+- **The three dial faces actually look different now.** Asking for the icon on a meter that hasn't got one used to quietly show the number instead, so all three choices looked identical — it shows an empty icon slot you can click.
+- **Pages in a list are readable.** They were painted in a colour that's almost the background — the same near-invisible tint that made the import progress bar disappear once before.
+- **A long meter name no longer wrecks the layout.** It used to stretch its dial's column and shove everything off-centre; it's capped and trimmed now.
 - **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
 - **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.
 

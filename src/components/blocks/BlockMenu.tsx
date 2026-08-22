@@ -4,8 +4,9 @@
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
 import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Grid2x2, PencilLine, Plus, Trash2, Type } from "lucide-react";
+import { COLLECTION_SOURCES } from "../../constants/collection-sources";
 import { METER_STYLES } from "../../constants/meter-styles";
-import type { MeterFace, MeterStyle } from "../../constants/schema";
+import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
 import { ColorSwatches } from "./ColorSwatches";
 
 type BlockMenuProps = {
@@ -52,6 +53,11 @@ type BlockMenuProps = {
     onSetFace: (face: MeterFace) => void;
     onToggleSegments: () => void;
   };
+  /** Present only for a collection block: where it gets its pages. */
+  collection?: {
+    source: CollectionSource;
+    onSetSource: (source: CollectionSource) => void;
+  };
 };
 
 export function BlockMenu({
@@ -67,6 +73,7 @@ export function BlockMenu({
   onRemove,
   onDeleteProperty,
   meter,
+  collection,
 }: BlockMenuProps) {
   return (
     <div className="tree-context-menu block-menu">
@@ -76,6 +83,31 @@ export function BlockMenu({
       <button type="button" onClick={onToggleTitle}>
         <Type size={13} /> {titleShown ? "No title" : "Show title"}
       </button>
+
+      {collection && (
+        <>
+          <div className="block-menu-separator" />
+          <div className="tree-context-menu-heading">Where these come from</div>
+          {COLLECTION_SOURCES.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={collection.source === option.key ? "tree-context-menu-checked" : undefined}
+              aria-pressed={collection.source === option.key}
+              onClick={() => collection.onSetSource(option.key)}
+            >
+              <option.icon size={13} />
+              <span className="block-source-label">
+                {option.label}
+                <small>{option.hint}</small>
+              </span>
+              {/* The current one says so. A picker that shows four options and
+                  no answer makes you go back out and look at the block. */}
+              {collection.source === option.key && <Check size={13} className="block-menu-trailing-check" />}
+            </button>
+          ))}
+        </>
+      )}
 
       {meter && (
         <>

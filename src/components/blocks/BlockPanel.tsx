@@ -14,6 +14,7 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
+import { getCollectionSourceOption } from "../../constants/collection-sources";
 import { getMeterStyleOption } from "../../constants/meter-styles";
 import { getPropertySuggestions } from "../../constants/property-suggestions";
 import {
@@ -226,26 +227,18 @@ export function BlockPanel() {
     }
 
     if (block.kind === "collection") {
-      // The heading follows the source, so a block switched from Subpages to
-      // Backlinks stops claiming to be the other thing — unless she has given
-      // it a title of her own, which BlockShell honours over this.
-      const natural =
-        block.source === "mentions"
-          ? "Backlinks"
-          : block.source === "subpages"
-            ? "Subpages"
-            : block.source === "tags"
-              ? "Tagged"
-              : "Links";
+      // The heading *is* the source's name — one name per block, the way a
+      // meter's heading is its shape. It uses the names Add Block offers, so
+      // a block you added as a Tag index doesn't come back calling itself
+      // "Tagged". Renaming still wins over this.
       return {
-        natural,
+        natural: getCollectionSourceOption(block.source).label,
         body: (
           <CollectionBlock
             block={block}
             node={node!}
             nodes={nodes}
             allTags={allTags}
-            onSetSource={(source) => setBlockSource(node!.id, block.id, source)}
             onSetTargets={(ids) => setBlockTargets(node!.id, block.id, ids)}
             onSetTags={(tags) => setBlockTags(node!.id, block.id, tags)}
             onOpen={(id) => selectNode(id)}
@@ -413,6 +406,14 @@ export function BlockPanel() {
                 onMove={(direction) => reorderBlocks(node.id, index, index + direction)}
                 onRemove={() => removeBlock(node.id, block.id)}
                 onDeleteProperty={propertyKey ? () => void deleteProperty(propertyKey, natural) : undefined}
+                collection={
+                  block.kind === "collection"
+                    ? {
+                        source: block.source ?? "manual",
+                        onSetSource: (source) => setBlockSource(node.id, block.id, source),
+                      }
+                    : undefined
+                }
                 meter={
                   block.kind === "meter"
                     ? {
