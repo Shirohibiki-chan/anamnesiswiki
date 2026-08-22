@@ -5,7 +5,7 @@
 ### Additions
 
 - **Meters — a number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with six of them, and they sit in the sidebar alongside your properties.
-- **One block holds several meters.** A block is a panel of stats, not a single reading: **Add meter** in the block's `⋯` menu puts another one in, and each carries its own icon, name and numbers. Circles, semi-circles and gauges lay out two across; bars and tokens run full width. Remove one with the × beside it.
+- **One block holds several meters.** A block is a panel of stats, not a single reading: **Add meter** in the block's `⋯` menu puts another one in, and each carries its own icon, name and numbers. Circles, semi-circles and gauges lay out two across; bars and tokens run full width. **Point at any meter for an × in its corner** to take just that one out — including the last one, which leaves the block waiting for a new one.
 - **Every meter has an icon, and there's now an icon picker.** Click the icon slot next to a meter's name for **every icon the app ships — about 1,900 of them** — searchable by name, plus a tab of emoji. The ones worth suggesting for a world are grouped at the top and findable by what you'd call them ("health" finds the heart), and the rest is underneath. Emoji are just characters, so anything your system can draw, you can use.
 - **A dial can show its number, its icon, or both**, and can be drawn in **segments** instead of one solid sweep. Both are in the block's menu.
 - **Name each meter whatever it measures.** Type straight into the name beside it.

@@ -380,10 +380,41 @@
 }
 
 .block-meter-reading {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   min-width: 0;
+}
+
+/* Takes one meter out, without going through a menu. Invisible until the
+   pointer is on that meter — four of these standing on a block of four dials
+   would be four delete buttons looking for an accident. */
+.block-meter-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  color: var(--color-text-muted);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.block-meter-reading:hover .block-meter-remove,
+.block-meter-remove:focus-visible {
+  opacity: 1;
+}
+
+.block-meter-remove:hover {
+  color: var(--color-palette-rose);
+  border-color: currentcolor;
 }
 
 .block-meter-bar .block-meter-reading,

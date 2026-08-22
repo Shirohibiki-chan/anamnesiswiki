@@ -87,7 +87,6 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
               segmented={block.segmented === true}
               withText={showsText(block)}
               withMax={showsMax(block)}
-              removable={entries.length > 1}
               onEdit={(patch) => onEdit(entry.id, patch)}
               onRemove={() => onRemove(entry.id)}
             />
@@ -105,7 +104,6 @@ type ReadingProps = {
   segmented: boolean;
   withText: boolean;
   withMax: boolean;
-  removable: boolean;
   onEdit: (patch: Partial<MeterEntry>) => void;
   onRemove: () => void;
 };
@@ -117,7 +115,6 @@ function MeterReading({
   segmented,
   withText,
   withMax,
-  removable,
   onEdit,
   onRemove,
 }: ReadingProps) {
@@ -284,12 +281,17 @@ function MeterReading({
         />
       )}
       <MeterNumbers entry={entry} style={style} withMax={withMax} onEdit={onEdit} />
-      {removable && (
-        <button type="button" className="ui-inline-remove" aria-label="Remove this meter" onClick={onRemove}>
-          <X size={11} />
-        </button>
-      )}
     </div>
+  );
+
+  // Sits in the reading's own top-right corner and appears with the pointer,
+  // the way the block's own grip and menu do. One meter of four is a thing you
+  // remove on its own, and hunting for the right row of a right-click menu to
+  // do it is a detour past the thing you are pointing at.
+  const remove = (
+    <button type="button" className="block-meter-remove" aria-label="Remove this meter" onClick={onRemove}>
+      <X size={11} />
+    </button>
   );
 
   // Mounted once, beside whichever shape is drawn, because the button that
@@ -345,6 +347,7 @@ function MeterReading({
           )}
         </div>
         {caption}
+        {remove}
         {picker}
       </div>
     );
@@ -417,6 +420,7 @@ function MeterReading({
           )}
         </svg>
         {caption}
+        {remove}
         {picker}
       </div>
     );
@@ -488,6 +492,7 @@ function MeterReading({
         })}
       </div>
       {caption}
+      {remove}
       {picker}
     </div>
   );
