@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PREFERENCES, LIST_PAGE_SIZES, parsePreferences } from "./preferences-service";
+import { DEFAULT_PREFERENCES, LIST_PAGE_SIZES, MAX_SAVED_COLORS, parsePreferences, withSavedColor } from "./preferences-service";
 
 describe("parsePreferences", () => {
   it("defaults an empty or absent settings file", () => {
@@ -63,5 +63,45 @@ describe("parsePreferences", () => {
     expect(parsePreferences({ listPageSize: 0 }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
     expect(parsePreferences({ listPageSize: "40" }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
     expect(parsePreferences({ listPageSize: 1e9 }).listPageSize).toBe(DEFAULT_PREFERENCES.listPageSize);
+  });
+});
+
+describe("withSavedColor", () => {
+  it("puts a newly mixed colour at the front", () => {
+    expect(withSavedColor(["#111111"], "#ff5577")).toEqual(["#ff5577", "#111111"]);
+  });
+
+  // Re-picking one already kept should move it back to the front, not fill the
+  // row with the same colour twice.
+  it("moves a colour already saved rather than repeating it", () => {
+    expect(withSavedColor(["#111111", "#ff5577"], "#FF5577")).toEqual(["#ff5577", "#111111"]);
+  });
+
+  it("keeps the row a row", () => {
+    const full = Array.from({ length: MAX_SAVED_COLORS }, (_, i) => `#0000${i}${i}`);
+    const next = withSavedColor(full, "#ff5577");
+    expect(next).toHaveLength(MAX_SAVED_COLORS);
+    expect(next[0]).toBe("#ff5577");
+    expect(next).not.toContain(full[MAX_SAVED_COLORS - 1]);
+  });
+
+  // These end up in a style attribute, so anything that isn't a hex is refused
+  // rather than stored and handed on.
+  it("refuses what isn't a hex", () => {
+    expect(withSavedColor(["#111111"], "red")).toEqual(["#111111"]);
+    expect(withSavedColor(["#111111"], "#abc")).toEqual(["#111111"]);
+  });
+});
+
+describe("parsePreferences and saved colours", () => {
+  it("keeps the hexes and drops anything else", () => {
+    expect(parsePreferences({ savedColors: ["#ff5577", "red", 7, "#22AA88"] }).savedColors).toEqual([
+      "#ff5577",
+      "#22aa88",
+    ]);
+  });
+
+  it("defaults to none when the field is nonsense", () => {
+    expect(parsePreferences({ savedColors: "blue" }).savedColors).toEqual([]);
   });
 });

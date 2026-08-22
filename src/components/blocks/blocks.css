@@ -1193,6 +1193,44 @@
   background: var(--color-hover);
 }
 
+/* Her own mixed colours, and the tile that makes another. A row of its own
+   under the palette — these follow her between projects and one of them can be
+   thrown away, neither of which is true of the named colours above. */
+.color-swatch-mine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.color-swatch-saved {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Appears on the swatch it belongs to. A saved list with no way out only ever
+   grows, and eight is the whole row. */
+.color-swatch-forget {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  color: var(--color-text-primary);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.color-swatch-saved:hover .color-swatch-forget,
+.color-swatch-forget:focus-visible {
+  opacity: 1;
+}
+
 .color-swatch-grid {
   display: grid;
   grid-template-columns: repeat(8, 28px);

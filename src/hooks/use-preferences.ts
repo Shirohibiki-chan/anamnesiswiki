@@ -41,6 +41,22 @@ export function useProjectSort(): ProjectSort {
   return usePreferencesStore((state) => state.preferences.projectSort);
 }
 
+/**
+ * The colours she has mixed herself, newest first.
+ *
+ * Read wherever a colour is chosen — a page, a block, one meter — which is the
+ * point of keeping them in preferences rather than in a project.
+ */
+export function useSavedColors(): string[] {
+  return usePreferencesStore((state) => state.preferences.savedColors);
+}
+
+export function useColorActions() {
+  return usePreferencesStore(
+    useShallow((state) => ({ saveColor: state.saveColor, forgetColor: state.forgetColor })),
+  );
+}
+
 export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({

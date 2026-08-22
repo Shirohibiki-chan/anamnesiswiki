@@ -21,6 +21,7 @@
 import { useState } from "react";
 import { ChevronLeft, Plus, X } from "lucide-react";
 import { COLOR_PALETTE, isHexColor } from "../../constants/palette";
+import { useColorActions, useSavedColors } from "../../hooks/use-preferences";
 
 /** The six offered without a second click. */
 const QUICK_KEYS = ["teal", "sky", "indigo", "purple", "rose", "amber"];
@@ -33,6 +34,8 @@ type ColorSwatchesProps = {
 
 export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
   const [showAll, setShowAll] = useState(false);
+  const savedColors = useSavedColors();
+  const { saveColor, forgetColor } = useColorActions();
 
   const named = COLOR_PALETTE.filter((color) => color.hex);
   const quick = QUICK_KEYS.map((key) => named.find((color) => color.key === key)).filter(
@@ -64,24 +67,54 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
     );
   }
 
+  // **Keeps its plus whatever it is wearing.** This tile is the way to the
+  // system picker, and a tile that swaps its plus for a colour stops looking
+  // like the way to anything.
   const custom = (
-    <label
-      className={`color-swatch color-swatch-custom${value && isHexColor(value) ? " color-swatch-active" : ""}`}
-      style={value && isHexColor(value) ? { backgroundColor: value } : undefined}
-      title="Pick any colour"
-    >
-      {!(value && isHexColor(value)) && <Plus size={14} />}
+    <label className="color-swatch color-swatch-custom" title="Mix a colour">
+      <Plus size={14} />
       {/* The input fills its label and is invisible, so the whole tile is the
           target and the browser still opens the system dialog on a real
           click — which is all a colour input needs to do. */}
       <input
         type="color"
-        aria-label="Pick any colour"
+        aria-label="Mix a colour"
         value={value && isHexColor(value) ? value : "#8b5cf6"}
-        onChange={(e) => onPick(e.target.value)}
+        onChange={(e) => {
+          onPick(e.target.value);
+          // Kept the moment it is used, rather than behind a "save" nobody
+          // would press. Re-picking one already saved moves it to the front.
+          saveColor(e.target.value);
+        }}
       />
     </label>
   );
+
+  // The colours she has mixed, usable anywhere a colour is chosen. Each can be
+  // dropped from the row by the × that appears on it, which is the only way
+  // out of a list that would otherwise only ever grow.
+  const saved = savedColors.map((hex) => (
+    <span key={hex} className="color-swatch-saved">
+      <button
+        type="button"
+        className={`color-swatch${value === hex ? " color-swatch-active" : ""}`}
+        style={{ backgroundColor: hex }}
+        title={hex}
+        aria-label={hex}
+        aria-pressed={value === hex}
+        onClick={() => onPick(hex)}
+      />
+      <button
+        type="button"
+        className="color-swatch-forget"
+        title={`Forget ${hex}`}
+        aria-label={`Forget ${hex}`}
+        onClick={() => forgetColor(hex)}
+      >
+        <X size={9} />
+      </button>
+    </span>
+  ));
 
   if (showAll) {
     return (
@@ -89,8 +122,13 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
         <button type="button" className="color-swatch-back" onClick={() => setShowAll(false)}>
           <ChevronLeft size={13} /> Fewer colours
         </button>
-        <div className="color-swatch-grid">
-          {named.map((color) => swatch(color))}
+        <div className="color-swatch-grid">{named.map((color) => swatch(color))}</div>
+
+        {/* Mixed colours sit apart from the named ones: these are hers, they
+            follow her between projects, and one of them can be thrown away —
+            none of which is true of the palette above. */}
+        <div className="color-swatch-mine">
+          {saved}
           {custom}
         </div>
       </div>
