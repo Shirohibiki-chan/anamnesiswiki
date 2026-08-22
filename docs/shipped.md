@@ -3758,3 +3758,23 @@ the CSS — `.block-panel { padding: 0 }` against a prompt with only left and
 right margins — and the fix is a margin plus an absolutely positioned button.
 The dismissal's persistence is covered by types and by `updateNode` writing the
 whole node, but was not watched happening.
+
+### Then two more, from the next screenshots
+
+- **Enter did nothing in a meter's name field.** Worth recording that there was
+  no data bug here at all: the name is written on every keystroke and always
+  was, so what she was reading as "it didn't save" was the complete absence of
+  feedback — the field kept focus and nothing on screen moved. `leaveOnEnter`
+  blurs on Enter and on Escape, which is what the number beside it already did.
+  Escape does not restore the old name, for the same reason the number does
+  not: the edit has already landed, and undo is what takes one back.
+- **The `+` was rendering on a line above its label.** `.block-inline-link` set
+  no `display`, so the button was block-level and its icon and words were two
+  runs of inline content that wrapped the moment anything narrowed it. Now an
+  `inline-flex` row with `gap`, `white-space: nowrap` and `flex: none`, which
+  also fixes the two collection buttons that share the class.
+
+Measured in the probe across pie, gauge, bar and rating: the button went from
+29px tall (two lines) to 17px with the icon on the same line, left of the text
+and centred in its list. Enter and Escape both leave the name field on the
+legend row and on a bar's caption, with the typed name still stored.

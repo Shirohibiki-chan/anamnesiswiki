@@ -312,7 +312,16 @@
   background: var(--color-border-subtle);
 }
 
+/* **A row, not a block.** These are all an icon followed by two words, and a
+   bare button is block-level here — so the icon and the label were laid out as
+   two lines of inline content and wrapped, putting the + on a line above the
+   text. She photographed it. Nothing may shrink it below its own words. */
 .block-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
   background: none;
   border: none;
   padding: 0;
@@ -1561,8 +1570,13 @@
   font-size: var(--fs-2xs);
 }
 
-/* The way to add another reading, in the panel rather than behind a menu. */
+/* The way to add another reading, in the panel rather than behind a menu.
+   `align-self` centres it across whichever way its list runs — the legend and
+   the bars stack, the dials go two across — and it is the full width of the
+   row it lands on so it never shares one with a dial. */
 .block-meter-add {
   align-self: center;
+  width: 100%;
+  justify-content: center;
   margin-top: 2px;
 }

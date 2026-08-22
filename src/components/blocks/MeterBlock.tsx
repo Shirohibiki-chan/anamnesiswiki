@@ -77,6 +77,21 @@ const READOUT_Y: Record<ArcStyle, number> = { circle: 50, semicircle: 44, gauge:
 /** How much of the 100-wide box each round shape actually draws in. */
 const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gauge: 90, pie: 100 };
 
+/**
+ * Enter and Escape leave a name field.
+ *
+ * **The name was always saved on every keystroke; Enter simply did nothing**,
+ * which is indistinguishable from it not having taken — the field kept focus
+ * and nothing on screen changed. Reported that way 2026-08-22. Blurring is the
+ * confirmation, and it matches the number beside it, which closes on the same
+ * two keys. Escape does not put the old name back for the same reason the
+ * number does not: the edit has already been applied, and undo is what takes
+ * a change back here.
+ */
+function leaveOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
+}
+
 type MeterBlockProps = {
   block: Block;
   onEdit: (meterId: string, patch: Partial<MeterEntry>) => void;
@@ -336,6 +351,7 @@ function MeterReading({
           placeholder="Name"
           aria-label="Meter name"
           onChange={(e) => onEdit({ label: e.target.value || undefined })}
+          onKeyDown={leaveOnEnter}
         />
       )}
       {/* **The number is printed once.** A dial showing it in the middle and
@@ -962,6 +978,7 @@ function SliceRow({ slice, index, highlighted, withText, withShare, onHover, onE
           placeholder="Name"
           aria-label="Slice name"
           onChange={(e) => onEdit({ label: e.target.value || undefined })}
+          onKeyDown={leaveOnEnter}
         />
       )}
       <MeterNumberField text={`${rounded}`} className="block-meter-readout" onEdit={onEdit} />

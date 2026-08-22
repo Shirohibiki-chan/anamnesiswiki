@@ -14,6 +14,8 @@
 
 - **The template prompt was jammed against the title bar** with no gap above it, since the sidebar's top padding moved onto its blocks. It has room now.
 - **Clicking a dial's number opened a text box very nearly as wide as the dial.** The box is the width of what's in it now, and grows only if you type something longer.
+- **Enter now finishes naming a meter.** It did nothing at all before, which looked like the name hadn't taken — it always had, since a name saves as you type it. Enter and Escape both step out of the field now, the same as they do on the number.
+- **The + on Add slice and Add meter was sitting on its own line above the words.** A bare button lays its icon and its label out as two lines of text if anything squeezes it. Both sit on one line now, centred, on every meter shape.
 
 ## 2026-08-21 — pie charts
 
