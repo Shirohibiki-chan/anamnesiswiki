@@ -7,6 +7,10 @@
 // that reason: the common answer is one of a handful, and everything else can
 // afford a second click.
 //
+// **Nothing here closes anything.** Picking a colour is something you do two
+// or three times in a row while looking at the result, so neither this row nor
+// the menu holding it gets out of the way after one click.
+//
 // A named colour is stored by name so it follows the theme; a colour mixed in
 // the system picker is stored as its hex, because it has no name to look up.
 import { useState } from "react";
@@ -14,7 +18,7 @@ import { Plus, X } from "lucide-react";
 import { COLOR_PALETTE, isHexColor } from "../../constants/palette";
 import { TreePopover } from "../tree/TreePopover";
 
-/** The six offered without a second click — one of each family, lightest row. */
+/** The six offered without a second click. */
 const QUICK_KEYS = ["teal", "sky", "indigo", "purple", "rose", "amber"];
 
 type ColorSwatchesProps = {
@@ -30,8 +34,10 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
   const quick = QUICK_KEYS.map((key) => named.find((color) => color.key === key)).filter(
     (color): color is (typeof named)[number] => !!color,
   );
-  // Whatever is currently chosen, when it isn't one of the six. It rides on the
-  // "+" tile so the row always shows the answer it is holding.
+
+  // What the "+" is wearing. A colour chosen from the full palette or mixed in
+  // the system picker has nowhere in the row to show itself, so it rides on the
+  // plus — which stays a plus, because that tile is still the way to the rest.
   const elsewhere = value && !QUICK_KEYS.includes(value) ? value : undefined;
   const elsewhereHex = elsewhere
     ? isHexColor(elsewhere)
@@ -39,17 +45,20 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
       : (named.find((color) => color.key === elsewhere)?.hex ?? undefined)
     : undefined;
 
-  function swatch(key: string, hex: string, title: string) {
+  function swatch(color: (typeof named)[number], onClose?: () => void) {
     return (
       <button
-        key={key}
+        key={color.key}
         type="button"
-        className={`color-swatch${value === key ? " color-swatch-active" : ""}`}
-        style={{ backgroundColor: hex }}
-        title={title}
-        aria-label={title}
-        aria-pressed={value === key}
-        onClick={() => onPick(key)}
+        className={`color-swatch${value === color.key ? " color-swatch-active" : ""}`}
+        style={{ backgroundColor: color.hex as string }}
+        title={color.name}
+        aria-label={color.name}
+        aria-pressed={value === color.key}
+        onClick={() => {
+          onPick(color.key);
+          onClose?.();
+        }}
       />
     );
   }
@@ -66,56 +75,38 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
         aria-pressed={!value}
         onClick={() => onPick(undefined)}
       >
-        <X size={11} />
+        <X size={12} />
       </button>
 
-      {quick.map((color) => swatch(color.key, color.hex as string, color.name))}
+      {quick.map((color) => swatch(color))}
 
       <button
         type="button"
-        className={`color-swatch color-swatch-more${elsewhere ? " color-swatch-active" : ""}`}
+        className={`color-swatch color-swatch-more${elsewhereHex ? " color-swatch-carrying" : ""}`}
         style={elsewhereHex ? { backgroundColor: elsewhereHex } : undefined}
         title="More colours"
         aria-label="More colours"
         onClick={(e) => setMoreRect(e.currentTarget.getBoundingClientRect())}
       >
-        {!elsewhereHex && <Plus size={11} />}
+        <Plus size={12} />
       </button>
 
       {moreRect && (
         <TreePopover anchorRect={moreRect} onClose={() => setMoreRect(null)}>
           <div className="color-swatch-grid">
-            {named.map((color) => (
-              <button
-                key={color.key}
-                type="button"
-                className={`color-swatch${value === color.key ? " color-swatch-active" : ""}`}
-                style={{ backgroundColor: color.hex as string }}
-                title={color.name}
-                aria-label={color.name}
-                aria-pressed={value === color.key}
-                onClick={() => {
-                  onPick(color.key);
-                  setMoreRect(null);
-                }}
-              />
-            ))}
+            {named.map((color) => swatch(color))}
 
-            {/* A real colour input, which is the OS's own picker — no wheel of
-                our own to build, and nothing fetched to draw it. */}
-            <label
+            {/* The system's own picker, as one more tile. A bare colour input
+                *is* a swatch — wrapping one in a label with the input hidden
+                underneath looked the same and didn't open on click. */}
+            <input
+              type="color"
               className={`color-swatch color-swatch-custom${value && isHexColor(value) ? " color-swatch-active" : ""}`}
-              style={value && isHexColor(value) ? { backgroundColor: value } : undefined}
               title="Pick any colour"
-            >
-              {!(value && isHexColor(value)) && <Plus size={11} />}
-              <input
-                type="color"
-                value={value && isHexColor(value) ? value : "#8b5cf6"}
-                aria-label="Pick any colour"
-                onChange={(e) => onPick(e.target.value)}
-              />
-            </label>
+              aria-label="Pick any colour"
+              value={value && isHexColor(value) ? value : "#8b5cf6"}
+              onChange={(e) => onPick(e.target.value)}
+            />
           </div>
         </TreePopover>
       )}

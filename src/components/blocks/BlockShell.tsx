@@ -204,10 +204,11 @@ export function BlockShell({
               onToggleTitle();
               setMenuRect(null);
             }}
-            onColor={(next) => {
-              onColor(next);
-              setMenuRect(null);
-            }}
+            // **Picking a colour leaves the menu open.** It is a thing you
+            // do two or three times in a row while watching the block change,
+            // and a menu that shuts after each one makes that four clicks
+            // instead of two.
+            onColor={onColor}
             onDuplicate={() => {
               onDuplicate();
               setMenuRect(null);
@@ -250,12 +251,10 @@ export function BlockShell({
                   : undefined,
                 meterColor: menuMeterId ? meter.colorOfMeter(menuMeterId) : undefined,
                 // Only offered when the menu was opened on a reading: from the
-                // `⋯` button there is no "this meter" to mean.
+                // `⋯` button there is no "this meter" to mean. Stays open
+                // after a pick, like the block's own colour above.
                 onSetMeterColor: menuMeterId
-                  ? (color: string | undefined) => {
-                      meter.onSetMeterColor(menuMeterId, color);
-                      setMenuRect(null);
-                    }
+                  ? (color: string | undefined) => meter.onSetMeterColor(menuMeterId, color)
                   : undefined,
               }
             }
