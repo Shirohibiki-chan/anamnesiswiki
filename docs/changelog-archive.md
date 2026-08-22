@@ -2,6 +2,17 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-12 — code blocks get a header, and a copy button
+
+### Additions
+
+- **A code block has a proper header bar now**, with the language on the left and a **Copy** button on the right. Copy takes everything in the block; the button says **Copied** for a moment so you know it worked.
+
+### Fixes
+
+- **The language picker no longer lights up when you're just moving the mouse over the block.** It was appearing as a grey rectangle sitting on top of your writing any time the pointer went near. It reacts to being pointed at itself now, and nothing else does.
+- The picker no longer floats over the first line of code — it has its own strip to sit in.
+
 ## 2026-08-12 — code blocks
 
 ### Additions

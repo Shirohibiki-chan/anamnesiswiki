@@ -2919,6 +2919,35 @@ is below.
   `BlockPanel` is deliberate: pinning the same answer would quietly stop the
   block's own toggle from reaching that reading afterwards.
 
+- **Adding a reading has to be visible in the panel, not only in the `⋯` menu.**
+  Reported from use 2026-08-21: with the pie shipped, there was no way to guess
+  that "Add meter" was how you got another slice. Both the legend and the
+  reading list carry a `+` for this reason — moving it back into the menu is
+  re-making a decision that was already tested and failed.
+
+- **A slice's label and the line above the chart are one feature, not two.**
+  `MIN_LABEL_SHARE` means a thin slice carries no label at all, and the readout
+  above the chart is what names it on hover. Adding labels to every slice
+  regardless would overflow the wedges; removing the readout would leave the
+  thin ones unreadable. Neither half stands alone.
+
+- **A dial's number field is sized by its content.** Left to fill its
+  `foreignObject` it is 64 of the 100 units the circle is drawn in — a text box
+  nearly the width of the chart, which she asked to have shrunk twice. The
+  centring `block-meter-arc-slot` exists so the field can be narrower than its
+  slot without sliding into the corner of it.
+
+- **Dismissing the template prompt must never be the only way out.** That
+  prompt was the single route to applying a template to a page that already
+  exists, so `AddBlockMenu` carries one too. Anything that hides the prompt has
+  to keep that second route alive.
+
+- **`updateNode` takes `{ touch: false }` for changes that are not edits.**
+  The sidebar prints "Updated <date>", so marking a page edited because
+  somebody closed a box in it is a lie she can read. Dismissing the template
+  prompt is the first caller; anything else that stores a preference rather
+  than content belongs there too.
+
 - **A composed pie's slices take `SLICE_COLORS`, not the block colour.** The one
   meter that does not fall back to the block's — eight wedges in one accent is a
   solid disc. A reading's own colour still wins.

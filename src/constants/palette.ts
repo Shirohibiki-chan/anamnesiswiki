@@ -99,3 +99,22 @@ export const SLICE_COLORS: string[] = [
 export function sliceColorAt(index: number): string {
   return getPaletteHex(SLICE_COLORS[index % SLICE_COLORS.length]) ?? "#a1a1aa";
 }
+
+/**
+ * Black or white, whichever can be read on top of this colour.
+ *
+ * A pie's slices carry their own labels, and the palette runs from `#fcd34d`
+ * to `#3730a3` — one text colour cannot sit on both. Relative luminance by the
+ * WCAG formula, with the threshold nudged above the usual 0.179 because these
+ * labels are small and dark-on-pastel is the more comfortable half of the range.
+ */
+export function readableTextOn(hex: string): string {
+  if (!isHexColor(hex)) return "#ffffff";
+  const digits = hex.trim().slice(1);
+  const channel = (index: number) => {
+    const value = parseInt(digits.slice(index, index + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+  return luminance > 0.35 ? "#11111a" : "#ffffff";
+}

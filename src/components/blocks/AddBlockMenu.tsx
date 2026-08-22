@@ -9,7 +9,17 @@
 // The properties section is the way back to a field whose block was removed.
 // Removing a property block keeps the value on purpose, so without this the
 // data would be stranded where only the file on disk shows it.
-import { AtSign, FileText, Image as ImageIcon, Link2, ListTree, Sparkles, Tags, Tags as TagsIcon } from "lucide-react";
+import {
+  AtSign,
+  FileText,
+  Image as ImageIcon,
+  LayoutTemplate,
+  Link2,
+  ListTree,
+  Sparkles,
+  Tags,
+  Tags as TagsIcon,
+} from "lucide-react";
 import { METER_STYLES } from "../../constants/meter-styles";
 import type { BlockKind, CollectionSource, MeterStyle } from "../../constants/schema";
 import type { RenderableProperty } from "../../services/property-service";
@@ -18,6 +28,15 @@ type AddBlockMenuProps = {
   /** Fields the page has that no block is currently showing. */
   unshown: RenderableProperty[];
   onAdd: (kind: BlockKind) => void;
+  /**
+   * Present only on a page with no template yet.
+   *
+   * **This is the reason the prompt above the panel can be dismissed at all.**
+   * Before it existed that prompt was the only route to applying a template to
+   * a page that already exists, so sending it away would have stranded the
+   * page. See `hideTemplatePrompt` in schema.ts.
+   */
+  onApplyTemplate?: () => void;
   onAddCollection: (source: CollectionSource) => void;
   onAddMeter: (style: MeterStyle) => void;
   onAddProperty: (key: string) => void;
@@ -36,6 +55,7 @@ type AddBlockMenuProps = {
 export function AddBlockMenu({
   unshown,
   onAdd,
+  onApplyTemplate,
   onAddCollection,
   onAddMeter,
   onAddProperty,
@@ -43,6 +63,15 @@ export function AddBlockMenu({
 }: AddBlockMenuProps) {
   return (
     <div className="tree-context-menu block-add-menu">
+      {onApplyTemplate && (
+        <>
+          <button type="button" onClick={onApplyTemplate}>
+            <LayoutTemplate size={13} /> Apply a template
+          </button>
+          <div className="block-menu-separator" />
+        </>
+      )}
+
       <div className="tree-context-menu-heading">Media</div>
       <button type="button" onClick={() => onAdd("image")}>
         <ImageIcon size={13} /> Image

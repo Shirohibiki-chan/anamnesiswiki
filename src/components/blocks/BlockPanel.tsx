@@ -13,7 +13,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { getCollectionSourceOption } from "../../constants/collection-sources";
 import { getMeterStyleOption } from "../../constants/meter-styles";
 import { getPropertySuggestions } from "../../constants/property-suggestions";
@@ -87,6 +87,7 @@ export function BlockPanel() {
     editMeter,
     editMeters,
     setNodeAliases,
+    setTemplatePromptHidden,
   } = useProject();
   const { confirmDestructive } = useDialogs();
   const knownOptions = useKnownOptions();
@@ -375,8 +376,22 @@ export function BlockPanel() {
         setAddRect(new DOMRect(e.clientX, e.clientY, 0, 0));
       }}
     >
-      {node.templateKey === BLANK_TEMPLATE_KEY && (
+      {/* **Dismissable, and it stays dismissed.** A page that means to stay
+          blank was being asked about it every time it was opened, with the
+          prompt sitting in the way of the blocks underneath. The way back is
+          Add Block, which carries the same picker — see AddBlockMenu, and the
+          note on `hideTemplatePrompt` about why that route had to exist first. */}
+      {node.templateKey === BLANK_TEMPLATE_KEY && !node.hideTemplatePrompt && (
         <div className="properties-panel-apply-template">
+          <button
+            type="button"
+            className="properties-panel-apply-dismiss"
+            aria-label="Don't ask about a template for this page"
+            title="Don't ask again on this page"
+            onClick={() => setTemplatePromptHidden(node.id, true)}
+          >
+            <X size={12} />
+          </button>
           <p>This page doesn't have a template yet.</p>
           <button
             type="button"
@@ -385,12 +400,12 @@ export function BlockPanel() {
           >
             Apply a template
           </button>
-          {templateRect && (
-            <TreePopover anchorRect={templateRect} onClose={() => setTemplateRect(null)}>
-              <TemplatePicker onSelect={handleApplyTemplate} excludeKeys={["folder", "blank"]} />
-            </TreePopover>
-          )}
         </div>
+      )}
+      {templateRect && (
+        <TreePopover anchorRect={templateRect} onClose={() => setTemplateRect(null)}>
+          <TemplatePicker onSelect={handleApplyTemplate} excludeKeys={["folder", "blank"]} />
+        </TreePopover>
       )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -561,6 +576,16 @@ export function BlockPanel() {
         <TreePopover anchorRect={addRect} onClose={() => setAddRect(null)}>
           <AddBlockMenu
             unshown={unshown}
+            onApplyTemplate={
+              node.templateKey === BLANK_TEMPLATE_KEY
+                ? () => {
+                    // Anchored where the menu was, since the button that would
+                    // normally anchor it may have been dismissed.
+                    setTemplateRect(addRect);
+                    setAddRect(null);
+                  }
+                : undefined
+            }
             onAdd={(kind) => {
               addBlock(node.id, kind);
               setAddRect(null);

@@ -10,7 +10,9 @@ import {
   pieTotal,
   seedEqualSlices,
   sliceIndexAt,
+  sliceLabelPoint,
   slicePath,
+  PIE_RADIUS,
   sliceValue,
   withMeters,
   metersOf,
@@ -623,5 +625,22 @@ describe("meterSegmented", () => {
     const off = { ...entry, segmented: false };
     expect(meterSegmented({ id: "b", kind: "meter" }, on)).toBe(true);
     expect(meterSegmented({ id: "b", kind: "meter", segmented: true }, off)).toBe(false);
+  });
+});
+
+describe("sliceLabelPoint", () => {
+  it("puts a label on the slice's middle line", () => {
+    const [top] = pieSlices([slice(1), slice(1)]);
+    // The first of two slices runs from twelve to six, so its middle line
+    // points at three o'clock — the label sits to the right of centre.
+    const [x, y] = sliceLabelPoint(top);
+    expect(x).toBeGreaterThan(50);
+    expect(y).toBeCloseTo(50);
+  });
+
+  it("keeps the label inside the wedge, not out on the rim", () => {
+    const [only] = pieSlices([slice(1), slice(1)]);
+    const [x, y] = sliceLabelPoint(only);
+    expect(Math.hypot(x - 50, y - 50)).toBeLessThan(PIE_RADIUS);
   });
 });

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-22 — pie labels, and a few things in the way
+
+### Additions
+
+- **Every slice big enough to hold one now has its percentage written on it**, in black or white depending on what it's sitting on.
+- **A line above the chart names whatever you're pointing at** — its name, its number and its share, at full size. That's the answer for the slivers too thin to hold a label of their own. With nothing under the pointer it shows what the whole chart adds up to.
+- **A visible + Add slice under the pie**, and **+ Add meter** under every other meter block. Adding another one lived only in the block's `⋯` menu, which isn't where anyone would look for it.
+- **The template prompt can be sent away.** There's an × on it now, and the page remembers — no more being asked about a page that's meant to stay blank. Dismissing it doesn't mark the page as edited.
+- **Add Block now offers Apply a template** on a page that hasn't got one, so dismissing the prompt never closes the only door.
+
+### Fixes
+
+- **The template prompt was jammed against the title bar** with no gap above it, since the sidebar's top padding moved onto its blocks. It has room now.
+- **Clicking a dial's number opened a text box very nearly as wide as the dial.** The box is the width of what's in it now, and grows only if you type something longer.
+- **Enter now finishes naming a meter.** It did nothing at all before, which looked like the name hadn't taken — it always had, since a name saves as you type it. Enter and Escape both step out of the field now, the same as they do on the number.
+- **The + on Add slice and Add meter was sitting on its own line above the words.** A bare button lays its icon and its label out as two lines of text if anything squeezes it. Both sit on one line now, centred, on every meter shape.
+
 ## 2026-08-21 — pie charts
 
 ### Additions
@@ -314,14 +331,3 @@
 ### Worth knowing
 
 - **Three backticks and a space makes a code block**, the same as typing `/code`. It's always worked; nothing said so.
-
-## 2026-08-12 — code blocks get a header, and a copy button
-
-### Additions
-
-- **A code block has a proper header bar now**, with the language on the left and a **Copy** button on the right. Copy takes everything in the block; the button says **Copied** for a moment so you know it worked.
-
-### Fixes
-
-- **The language picker no longer lights up when you're just moving the mouse over the block.** It was appearing as a grey rectangle sitting on top of your writing any time the pointer went near. It reacts to being pointed at itself now, and nothing else does.
-- The picker no longer floats over the first line of code — it has its own strip to sit in.

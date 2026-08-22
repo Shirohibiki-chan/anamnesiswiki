@@ -312,7 +312,16 @@
   background: var(--color-border-subtle);
 }
 
+/* **A row, not a block.** These are all an icon followed by two words, and a
+   bare button is block-level here — so the icon and the label were laid out as
+   two lines of inline content and wrapped, putting the + on a line above the
+   text. She photographed it. Nothing may shrink it below its own words. */
 .block-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
   background: none;
   border: none;
   padding: 0;
@@ -712,13 +721,27 @@
   }
 }
 
-.block-meter-arc-readout {
+/* Centres whatever sits in a dial's foreignObject, which has no layout of its
+   own — so the number inside can be the width of the number. */
+.block-meter-arc-slot {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: 0;
+}
+
+/* **As wide as the number, not as wide as the dial.** This filled its slot,
+   which is 64 of the 100 units the circle is drawn in, so clicking to type
+   opened a box very nearly the width of the chart. */
+.block-meter-arc-readout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  padding: 0 5px;
   color: var(--color-text-primary);
   background: none;
   border: none;
@@ -1392,13 +1415,28 @@
   cursor: ew-resize;
 }
 
-.block-meter-slice {
-  stroke: var(--color-panel);
-  stroke-width: 0.75;
+.block-meter-slice-group {
   transform-origin: 50% 50%;
   transition:
     opacity 120ms ease,
     transform 120ms ease;
+}
+
+.block-meter-slice {
+  stroke: var(--color-panel);
+  stroke-width: 0.75;
+}
+
+/* The share, written on the slice it belongs to. Only the slices wide enough
+   to hold one get it — see MIN_LABEL_SHARE; the line above the chart is what
+   answers for the rest. Never a click target: the wedge underneath is. */
+.block-meter-slice-label {
+  font-size: 9px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
 }
 
 /* The slice under the pointer, and the ones that aren't. Lifting one and
@@ -1488,4 +1526,57 @@
 .block-meter-slice-remove:hover {
   background: var(--color-panel-alt);
   color: var(--color-palette-rose);
+}
+
+/* **The line above the chart, which is how a sliver gets read.** A 2% slice
+   cannot hold a label, so pointing at one names it here at full size instead.
+   Fixed height and always present: a line that appears on hover shoves the
+   chart down the panel every time the pointer crosses it. */
+.block-meter-pie-readout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 20px;
+  padding: 0 var(--space-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.block-meter-pie-readout-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-meter-pie-readout-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: none;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.block-meter-pie-readout-value em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-size: var(--fs-2xs);
+}
+
+.block-meter-pie-readout-total {
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+}
+
+/* The way to add another reading, in the panel rather than behind a menu.
+   `align-self` centres it across whichever way its list runs — the legend and
+   the bars stack, the dials go two across — and it is the full width of the
+   row it lands on so it never shares one with a dial. */
+.block-meter-add {
+  align-self: center;
+  width: 100%;
+  justify-content: center;
+  margin-top: 2px;
 }

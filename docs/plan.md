@@ -101,6 +101,25 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   project has neither. One re-import picks up both — worth doing in a single
   pass rather than twice.
 
+- **A meter that is a spectrum between two words, with no number on it.**
+  Wanted 2026-08-22 by one of her co-writers, and it is a character sheet
+  idea rather than a statistic one: `nonchalant ——x———— emotional`, where the
+  only thing that matters is where the marker sits between two named ends.
+
+  **Most of it already exists.** It is the Progress bar with its number hidden
+  — `showText` and `showMax` are already per-block toggles — plus a second
+  label, and the bar already drags and previews. What is genuinely new is the
+  *pair* of labels: `MeterEntry.label` is one name, and this needs a name at
+  each end with the reading's own name sitting above or beside them.
+
+  **The one decision to make before building it** is whether it is a seventh
+  entry in the Meters group or a setting on the bar. Phase 18c settled the
+  same question for the six that shipped — one block kind, one menu entry per
+  shape, because nobody adding a rating wants to add a bar and then hunt for
+  the setting — so the answer is probably a seventh entry, and worth a minute's
+  thought rather than an assumption. Do not silently widen it into a "custom
+  labels" system for the other five shapes; that is a different feature.
+
 ---
 
 ## Known Bugs

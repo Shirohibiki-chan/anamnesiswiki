@@ -269,6 +269,19 @@ export type Node = {
    * is what every page had before. Asked for 2026-08-18, built 2026-08-21.
    */
   icon?: string;
+  /**
+   * The "this page doesn't have a template yet" prompt, sent away for good on
+   * this page.
+   *
+   * Only ever true on a blank page — applying a template hides the prompt by
+   * itself, so this is the other way it goes: a page that is *meant* to have
+   * no template and does not want to be asked again.
+   *
+   * **Dismissing it must never be the only way out.** Before this existed the
+   * prompt was the single route to applying a template to a page that already
+   * exists, so Add Block carries one too — see `AddBlockMenu`.
+   */
+  hideTemplatePrompt?: boolean;
   tabs: Tab[];
   properties: Record<string, unknown>;
   // Optional (not defaulted to []) because pages saved before this field

@@ -3703,3 +3703,78 @@ this is visible to a unit suite:
 Colours and boxes were not measured — the pane was hidden, which makes
 `getComputedStyle` stale. Everything above is structure, geometry read off the
 path data, and stored state, all of which stay trustworthy there.
+
+---
+
+## Pie labels, and four things in the way ✅ Shipped 2026-08-22
+
+All four reported from use within an hour of the pie landing, plus one more
+that arrived mid-build.
+
+### What shipped
+
+- **Slice labels and a hover readout.** `MIN_LABEL_SHARE` (7%) decides which
+  slices can hold their own percentage; `sliceLabelPoint` puts it two thirds of
+  the way out along the wedge's middle line. Everything thinner is answered by
+  a fixed-height line above the chart naming whatever is under the pointer —
+  her own suggestion, and the right one, because a 2% sliver cannot hold text
+  at any size. `readableTextOn` in `palette.ts` picks black or white per slice
+  by WCAG relative luminance, since the palette runs from `#fcd34d` to `#3730a3`.
+- **A `+` in the panel.** `+ Add slice` under the pie's legend and `+ Add meter`
+  under every other reading list. Add meter existed only in the block's `⋯`
+  menu, and nothing pointed at it.
+- **The number field hugs its number.** It filled its `foreignObject`, which is
+  64 of the 100 units a dial is drawn in, so clicking to type opened a box
+  nearly as wide as the chart. Now `3ch + 14px` at minimum, growing with what
+  is typed, centred by a new `block-meter-arc-slot`.
+- **The template prompt got its gap back and an ×.** Phase 18a moved the
+  panel's padding onto its blocks, which left the prompt flush under the title
+  bar. `hideTemplatePrompt` on `Node` remembers the dismissal per page.
+- **Add Block carries Apply a template** on a blank page — built first, because
+  that prompt was the only route to applying a template to an existing page and
+  dismissing it would otherwise have stranded the page.
+- **`updateNode` grew `{ touch: false }`**, so dismissing the prompt does not
+  print a new "Updated" date on a page nobody edited.
+
+### Verification
+
+`pnpm lint`, `pnpm test` (1366, 5 new), `tsc --noEmit` and `pnpm build` clean.
+
+Driven in the probe again, on 30 / 3 / 67 so one slice is deliberately too thin
+to label:
+
+- The 30% and 67% slices carried their percentages in `#11111a`; the 3% one
+  carried none, which is the threshold doing its job.
+- Idle, the line above the chart read "100 in total". Pointing at the sliver
+  read "Demonic AU 3 3%" — the case the whole feature exists for.
+- The `+` read "Add slice" under the pie and "Add meter" under a gauge.
+- The number field: the dial is 88px, the field 36px for "30%" (was a fixed
+  ~56px, 64% of the dial), growing to 56px while typing "30/1000".
+
+**The template prompt was not driven in the app.** Mounting `BlockPanel` needs a
+loaded project, which the probe route cannot give it, and her window was mid-use
+so the CDP bridge was not worth a relaunch. The cause was read directly out of
+the CSS — `.block-panel { padding: 0 }` against a prompt with only left and
+right margins — and the fix is a margin plus an absolutely positioned button.
+The dismissal's persistence is covered by types and by `updateNode` writing the
+whole node, but was not watched happening.
+
+### Then two more, from the next screenshots
+
+- **Enter did nothing in a meter's name field.** Worth recording that there was
+  no data bug here at all: the name is written on every keystroke and always
+  was, so what she was reading as "it didn't save" was the complete absence of
+  feedback — the field kept focus and nothing on screen moved. `leaveOnEnter`
+  blurs on Enter and on Escape, which is what the number beside it already did.
+  Escape does not restore the old name, for the same reason the number does
+  not: the edit has already landed, and undo is what takes one back.
+- **The `+` was rendering on a line above its label.** `.block-inline-link` set
+  no `display`, so the button was block-level and its icon and words were two
+  runs of inline content that wrapped the moment anything narrowed it. Now an
+  `inline-flex` row with `gap`, `white-space: nowrap` and `flex: none`, which
+  also fixes the two collection buttons that share the class.
+
+Measured in the probe across pie, gauge, bar and rating: the button went from
+29px tall (two lines) to 17px with the icon on the same line, left of the text
+and centred in its list. Enter and Escape both leave the name field on the
+legend row and on a bar's caption, with the typed name still stored.
