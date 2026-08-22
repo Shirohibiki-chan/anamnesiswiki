@@ -21,6 +21,7 @@ import {
   FolderOpen,
   Home,
   Palette,
+  Smile,
   PencilLine,
   Pin,
   PinOff,
@@ -60,6 +61,7 @@ type ContextMenuProps = {
    */
   canSort: boolean;
   onRename: () => void;
+  onSetIcon: () => void;
   onDuplicate: () => void;
   onMoveTo: () => void;
   onSetColor: () => void;
@@ -87,6 +89,7 @@ export function ContextMenu({
   hasChildren,
   canSort,
   onRename,
+  onSetIcon,
   onDuplicate,
   onMoveTo,
   onSetColor,
@@ -155,6 +158,13 @@ export function ContextMenu({
       </button>
       <button type="button" onClick={onSetColor}>
         <Palette size={13} /> Set color
+      </button>
+      {/* Swaps this popover for the picker, like Set color — so it is bound
+          directly rather than through `run`, which would close what it opens.
+          Multi-selection included: giving a folder's worth of pages one icon
+          is the same errand as giving them one colour. */}
+      <button type="button" onClick={onSetIcon}>
+        <Smile size={13} /> Set icon
       </button>
       {/* Single selection only. It copies one page's shape, and three pages
           have three shapes — "save these as a template" would have to either

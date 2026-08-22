@@ -1,0 +1,418 @@
+// The icons the picker offers, and how a stored icon name turns back into
+// something drawable. Phase 18c.
+//
+// **This is the curated front of the picker, not the whole of it.** These are
+// the icons worth suggesting for worldbuilding, grouped the way somebody
+// looking for one would look and carrying the words they would actually type.
+// Every other Lucide icon is reachable too — see `glyph-catalogue.ts`, which
+// holds all ~1500 — so this list decides what gets offered first, not what is
+// available.
+//
+// `docs/ideas.md` §Icons you choose yourself is the larger version of this: a
+// page's own icon, plus reading LegendKeeper's Font Awesome glyph names on
+// import. Both want exactly this registry underneath, which is why it lives in
+// constants rather than beside the meter that needed it first.
+import {
+  Anchor,
+  Apple,
+  Award,
+  Axe,
+  Backpack,
+  Banknote,
+  Battery,
+  Beaker,
+  Bell,
+  Bird,
+  Bomb,
+  Bone,
+  BookOpen,
+  Bookmark,
+  Brain,
+  Briefcase,
+  Bug,
+  Building,
+  Calendar,
+  Candy,
+  Castle,
+  Cat,
+  Church,
+  Clock,
+  Cloud,
+  CloudLightning,
+  CloudRain,
+  Clover,
+  Coins,
+  Compass,
+  Cpu,
+  Crown,
+  Diamond,
+  Dices,
+  Dog,
+  DoorOpen,
+  Dot,
+  Drama,
+  Droplet,
+  Drum,
+  Dumbbell,
+  Ear,
+  Egg,
+  Eye,
+  Feather,
+  Fish,
+  Flag,
+  Flame,
+  FlaskConical,
+  Flower,
+  Footprints,
+  Gavel,
+  Gem,
+  Ghost,
+  Gift,
+  Glasses,
+  Globe,
+  Grape,
+  Guitar,
+  Hammer,
+  Hand,
+  Handshake,
+  Heart,
+  HeartCrack,
+  Hexagon,
+  Hourglass,
+  House,
+  Key,
+  Landmark,
+  Leaf,
+  Library,
+  Lightbulb,
+  Link,
+  Lock,
+  Map as MapIcon,
+  MapPin,
+  Martini,
+  Medal,
+  Megaphone,
+  Milestone,
+  Moon,
+  Mountain,
+  Music,
+  Navigation,
+  Network,
+  Orbit,
+  Package,
+  Palette,
+  PawPrint,
+  Pen,
+  PersonStanding,
+  PiggyBank,
+  Pill,
+  Pizza,
+  Plane,
+  Puzzle,
+  Rabbit,
+  Radiation,
+  Rat,
+  Rocket,
+  Scale,
+  Scissors,
+  ScrollText,
+  Shell,
+  Shield,
+  ShieldAlert,
+  Ship,
+  Shirt,
+  Shovel,
+  Skull,
+  Snowflake,
+  Sparkles,
+  Star,
+  Sun,
+  Sunrise,
+  Swords,
+  Syringe,
+  Target,
+  Telescope,
+  Tent,
+  Theater,
+  Thermometer,
+  Ticket,
+  Timer,
+  TrainFront,
+  TreeDeciduous,
+  TreePine,
+  Trophy,
+  Truck,
+  Turtle,
+  Umbrella,
+  User,
+  Users,
+  Utensils,
+  Venus,
+  Volume2,
+  Wallet,
+  Wand,
+  Watch,
+  Waves,
+  Wheat,
+  Wind,
+  Wine,
+  Wrench,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { ALL_GLYPHS, ALL_GLYPHS_BY_NAME } from "./glyph-catalogue";
+
+export type GlyphGroup = { name: string; glyphs: { name: string; icon: LucideIcon; keywords?: string }[] };
+
+/**
+ * The catalogue, grouped for browsing and searched by name plus keywords.
+ *
+ * Keywords exist because the Lucide name is often not the word somebody types:
+ * nobody looks for a health meter under "heart-crack", and "flask-conical" is
+ * what a potion is called by a design system, not by a writer.
+ */
+export const GLYPH_GROUPS: GlyphGroup[] = [
+  {
+    name: "Vitals",
+    glyphs: [
+      { name: "heart", icon: Heart, keywords: "health life love hp" },
+      { name: "heart-crack", icon: HeartCrack, keywords: "damage wound broken grief" },
+      { name: "zap", icon: Zap, keywords: "energy power mana lightning stamina" },
+      { name: "battery", icon: Battery, keywords: "energy charge stamina" },
+      { name: "brain", icon: Brain, keywords: "sanity mind intelligence wisdom" },
+      { name: "droplet", icon: Droplet, keywords: "blood water mana potion" },
+      { name: "flame", icon: Flame, keywords: "fire rage heat burn" },
+      { name: "snowflake", icon: Snowflake, keywords: "cold ice frost" },
+      { name: "skull", icon: Skull, keywords: "death poison danger undead" },
+      { name: "radiation", icon: Radiation, keywords: "poison corruption toxic" },
+      { name: "bone", icon: Bone, keywords: "death undead skeleton" },
+      { name: "thermometer", icon: Thermometer, keywords: "temperature fever heat" },
+      { name: "pill", icon: Pill, keywords: "medicine drug healing" },
+      { name: "syringe", icon: Syringe, keywords: "medicine cure serum" },
+      { name: "beaker", icon: Beaker, keywords: "potion alchemy science" },
+      { name: "flask", icon: FlaskConical, keywords: "potion alchemy elixir brew" },
+    ],
+  },
+  {
+    name: "Conflict",
+    glyphs: [
+      { name: "swords", icon: Swords, keywords: "attack war battle combat fight" },
+      { name: "shield", icon: Shield, keywords: "defence armour protection guard" },
+      { name: "shield-alert", icon: ShieldAlert, keywords: "defence broken warning" },
+      { name: "axe", icon: Axe, keywords: "weapon chop war" },
+      { name: "hammer", icon: Hammer, keywords: "weapon craft forge" },
+      { name: "bomb", icon: Bomb, keywords: "explosive danger" },
+      { name: "target", icon: Target, keywords: "aim accuracy goal quest" },
+      { name: "flag", icon: Flag, keywords: "faction banner territory claim" },
+      { name: "crown", icon: Crown, keywords: "king queen rule royalty power" },
+      { name: "gavel", icon: Gavel, keywords: "law judgement court order" },
+      { name: "scale", icon: Scale, keywords: "justice balance law trade" },
+      { name: "handshake", icon: Handshake, keywords: "alliance peace deal trust" },
+      { name: "megaphone", icon: Megaphone, keywords: "influence fame reputation voice" },
+      { name: "dumbbell", icon: Dumbbell, keywords: "strength training might" },
+      { name: "footprints", icon: Footprints, keywords: "stealth tracking speed" },
+      { name: "eye", icon: Eye, keywords: "perception watch sight spy" },
+    ],
+  },
+  {
+    name: "Wealth",
+    glyphs: [
+      { name: "coins", icon: Coins, keywords: "money gold currency wealth" },
+      { name: "banknote", icon: Banknote, keywords: "money cash currency" },
+      { name: "gem", icon: Gem, keywords: "jewel treasure wealth rare" },
+      { name: "diamond", icon: Diamond, keywords: "jewel treasure" },
+      { name: "wallet", icon: Wallet, keywords: "money purse funds" },
+      { name: "piggy-bank", icon: PiggyBank, keywords: "savings money" },
+      { name: "package", icon: Package, keywords: "item inventory goods cargo" },
+      { name: "backpack", icon: Backpack, keywords: "inventory carry gear" },
+      { name: "briefcase", icon: Briefcase, keywords: "work business job" },
+      { name: "gift", icon: Gift, keywords: "present reward favour" },
+      { name: "key", icon: Key, keywords: "access unlock secret" },
+      { name: "lock", icon: Lock, keywords: "secret closed secure" },
+      { name: "trophy", icon: Trophy, keywords: "win award achievement" },
+      { name: "medal", icon: Medal, keywords: "honour award rank" },
+      { name: "award", icon: Award, keywords: "honour rank prize" },
+      { name: "ticket", icon: Ticket, keywords: "pass entry favour" },
+    ],
+  },
+  {
+    name: "Magic & myth",
+    glyphs: [
+      { name: "sparkles", icon: Sparkles, keywords: "magic spell enchant shine" },
+      { name: "wand", icon: Wand, keywords: "magic spell wizard" },
+      { name: "moon", icon: Moon, keywords: "night lunar dark" },
+      { name: "sun", icon: Sun, keywords: "day light solar" },
+      { name: "sunrise", icon: Sunrise, keywords: "dawn morning hope" },
+      { name: "star", icon: Star, keywords: "rating fame favourite" },
+      { name: "orbit", icon: Orbit, keywords: "planet space cycle" },
+      { name: "ghost", icon: Ghost, keywords: "spirit haunt undead" },
+      { name: "hexagon", icon: Hexagon, keywords: "rune sigil shape" },
+      { name: "clover", icon: Clover, keywords: "luck fortune chance" },
+      { name: "dices", icon: Dices, keywords: "luck chance fate gamble" },
+      { name: "hourglass", icon: Hourglass, keywords: "time fate patience" },
+      { name: "scroll", icon: ScrollText, keywords: "lore spell document quest" },
+      { name: "book", icon: BookOpen, keywords: "lore knowledge study" },
+      { name: "telescope", icon: Telescope, keywords: "discovery stars search" },
+      { name: "puzzle", icon: Puzzle, keywords: "mystery piece riddle" },
+    ],
+  },
+  {
+    name: "World",
+    glyphs: [
+      { name: "map", icon: MapIcon, keywords: "world atlas region" },
+      { name: "map-pin", icon: MapPin, keywords: "place location here" },
+      { name: "compass", icon: Compass, keywords: "direction travel explore" },
+      { name: "globe", icon: Globe, keywords: "world planet earth" },
+      { name: "mountain", icon: Mountain, keywords: "terrain peak climb" },
+      { name: "waves", icon: Waves, keywords: "sea ocean water river" },
+      { name: "tree", icon: TreeDeciduous, keywords: "forest nature wood" },
+      { name: "pine", icon: TreePine, keywords: "forest nature north" },
+      { name: "leaf", icon: Leaf, keywords: "nature growth plant" },
+      { name: "flower", icon: Flower, keywords: "nature beauty spring" },
+      { name: "wheat", icon: Wheat, keywords: "food harvest farm rations" },
+      { name: "castle", icon: Castle, keywords: "keep fortress stronghold" },
+      { name: "house", icon: House, keywords: "home building dwelling" },
+      { name: "building", icon: Building, keywords: "city structure" },
+      { name: "church", icon: Church, keywords: "temple faith religion" },
+      { name: "landmark", icon: Landmark, keywords: "monument civic institution" },
+      { name: "library", icon: Library, keywords: "books knowledge archive" },
+      { name: "tent", icon: Tent, keywords: "camp travel shelter" },
+      { name: "door", icon: DoorOpen, keywords: "entrance passage exit" },
+      { name: "milestone", icon: Milestone, keywords: "progress journey marker" },
+      { name: "cloud", icon: Cloud, keywords: "weather sky" },
+      { name: "cloud-rain", icon: CloudRain, keywords: "weather rain storm" },
+      { name: "cloud-lightning", icon: CloudLightning, keywords: "storm weather thunder" },
+      { name: "wind", icon: Wind, keywords: "weather air breeze" },
+      { name: "umbrella", icon: Umbrella, keywords: "shelter rain protection" },
+    ],
+  },
+  {
+    name: "Creatures",
+    glyphs: [
+      { name: "person", icon: PersonStanding, keywords: "human character people" },
+      { name: "user", icon: User, keywords: "character person portrait" },
+      { name: "users", icon: Users, keywords: "group faction party crowd" },
+      { name: "paw", icon: PawPrint, keywords: "beast animal creature" },
+      { name: "cat", icon: Cat, keywords: "animal familiar feline" },
+      { name: "dog", icon: Dog, keywords: "animal hound companion" },
+      { name: "bird", icon: Bird, keywords: "animal flight messenger" },
+      { name: "fish", icon: Fish, keywords: "animal sea food" },
+      { name: "rabbit", icon: Rabbit, keywords: "animal speed prey" },
+      { name: "rat", icon: Rat, keywords: "animal vermin plague" },
+      { name: "turtle", icon: Turtle, keywords: "animal slow shell" },
+      { name: "bug", icon: Bug, keywords: "insect swarm pest" },
+      { name: "shell", icon: Shell, keywords: "sea spiral ocean" },
+      { name: "feather", icon: Feather, keywords: "quill writing light" },
+      { name: "egg", icon: Egg, keywords: "birth beginning fragile" },
+      { name: "venus", icon: Venus, keywords: "gender feminine symbol" },
+    ],
+  },
+  {
+    name: "Everyday",
+    glyphs: [
+      { name: "clock", icon: Clock, keywords: "time hour" },
+      { name: "timer", icon: Timer, keywords: "countdown time limit" },
+      { name: "watch", icon: Watch, keywords: "time schedule" },
+      { name: "calendar", icon: Calendar, keywords: "date event schedule" },
+      { name: "bell", icon: Bell, keywords: "alarm alert warning" },
+      { name: "bookmark", icon: Bookmark, keywords: "save mark favourite" },
+      { name: "pen", icon: Pen, keywords: "write note author" },
+      { name: "palette", icon: Palette, keywords: "art colour paint" },
+      { name: "music", icon: Music, keywords: "song sound bard" },
+      { name: "guitar", icon: Guitar, keywords: "music instrument bard" },
+      { name: "drum", icon: Drum, keywords: "music rhythm war" },
+      { name: "volume", icon: Volume2, keywords: "sound loud noise" },
+      { name: "drama", icon: Drama, keywords: "theatre mask acting" },
+      { name: "theater", icon: Theater, keywords: "stage performance" },
+      { name: "glasses", icon: Glasses, keywords: "sight study scholar" },
+      { name: "lightbulb", icon: Lightbulb, keywords: "idea insight invention" },
+      { name: "wrench", icon: Wrench, keywords: "repair craft tool" },
+      { name: "shovel", icon: Shovel, keywords: "dig work tool" },
+      { name: "scissors", icon: Scissors, keywords: "cut craft" },
+      { name: "shirt", icon: Shirt, keywords: "clothing outfit gear" },
+      { name: "utensils", icon: Utensils, keywords: "food meal eat" },
+      { name: "apple", icon: Apple, keywords: "food fruit rations" },
+      { name: "grape", icon: Grape, keywords: "food fruit wine" },
+      { name: "pizza", icon: Pizza, keywords: "food meal" },
+      { name: "candy", icon: Candy, keywords: "sweet treat" },
+      { name: "wine", icon: Wine, keywords: "drink tavern" },
+      { name: "martini", icon: Martini, keywords: "drink tavern cocktail" },
+      { name: "anchor", icon: Anchor, keywords: "ship sea harbour" },
+      { name: "ship", icon: Ship, keywords: "sea travel vessel" },
+      { name: "plane", icon: Plane, keywords: "travel flight" },
+      { name: "truck", icon: Truck, keywords: "cargo travel haul" },
+      { name: "train", icon: TrainFront, keywords: "travel rail" },
+      { name: "rocket", icon: Rocket, keywords: "space launch speed" },
+      { name: "navigation", icon: Navigation, keywords: "direction travel arrow" },
+      { name: "network", icon: Network, keywords: "connection web relations" },
+      { name: "link", icon: Link, keywords: "connection bond chain" },
+      { name: "cpu", icon: Cpu, keywords: "machine tech construct" },
+      { name: "hand", icon: Hand, keywords: "touch grasp offer" },
+      { name: "ear", icon: Ear, keywords: "hearing listen" },
+      { name: "dot", icon: Dot, keywords: "token plain simple" },
+    ],
+  },
+];
+
+const CURATED_BY_NAME = new Map(
+  GLYPH_GROUPS.flatMap((group) => group.glyphs).map((glyph) => [glyph.name, glyph.icon]),
+);
+
+/**
+ * The component for a stored icon name, or nothing.
+ *
+ * **Nothing is the normal answer for an emoji**, which is stored as the
+ * character itself and drawn as text — so an emoji needs no entry here, and a
+ * glyph dropped from the catalogue degrades to its own name rather than to a
+ * crash.
+ */
+export function getGlyph(name: string | undefined): LucideIcon | undefined {
+  if (!name) return undefined;
+  return CURATED_BY_NAME.get(name) ?? ALL_GLYPHS_BY_NAME.get(name);
+}
+
+/** Whether a stored icon is one of ours, as opposed to an emoji she typed. */
+export function isGlyph(name: string | undefined): boolean {
+  return getGlyph(name) !== undefined;
+}
+
+/**
+ * Everything not already suggested above, for browsing past the curated set.
+ *
+ * The curated names are held back so the same picture isn't offered twice in
+ * one scroll — they are already at the top with better words attached.
+ */
+export function restOfCatalogue(): { name: string; icon: LucideIcon }[] {
+  return ALL_GLYPHS.filter((glyph) => !CURATED_BY_NAME.has(glyph.name));
+}
+
+/**
+ * Every icon whose name matches, curated or not.
+ *
+ * Searching the whole catalogue is what makes the picker feel as large as it
+ * is: the curated groups answer "show me something for health", and this
+ * answers "I know there is a lighthouse in here somewhere".
+ */
+export function searchCatalogue(query: string): { name: string; icon: LucideIcon }[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return [];
+  return ALL_GLYPHS.filter((glyph) => glyph.name.includes(trimmed) && !CURATED_BY_NAME.has(glyph.name));
+}
+
+/**
+ * The glyphs matching a search, or every glyph when nothing is typed.
+ *
+ * Matches the name and the keywords, so "health" reaches the heart and "hp"
+ * does too. Groups with nothing left in them drop out rather than showing an
+ * empty heading.
+ */
+export function searchGlyphs(query: string): GlyphGroup[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return GLYPH_GROUPS;
+  return GLYPH_GROUPS.map((group) => ({
+    name: group.name,
+    glyphs: group.glyphs.filter(
+      (glyph) => glyph.name.includes(trimmed) || (glyph.keywords ?? "").includes(trimmed),
+    ),
+  })).filter((group) => group.glyphs.length > 0);
+}

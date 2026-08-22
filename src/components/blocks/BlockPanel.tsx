@@ -14,6 +14,8 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
+import { getCollectionSourceOption } from "../../constants/collection-sources";
+import { getMeterStyleOption } from "../../constants/meter-styles";
 import { getPropertySuggestions } from "../../constants/property-suggestions";
 import {
   BLANK_TEMPLATE_KEY,
@@ -25,6 +27,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useBlocks } from "../../hooks/use-blocks";
+import { isPipMeter, meterPip, metersOf } from "../../services/meter-service";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
@@ -43,6 +46,8 @@ import { AddBlockMenu } from "./AddBlockMenu";
 import { AliasBlock } from "./AliasBlock";
 import { BlockShell } from "./BlockShell";
 import { CollectionBlock } from "./CollectionBlock";
+import { IconPicker } from "./IconPicker";
+import { MeterBlock } from "./MeterBlock";
 import { TextBlock } from "./TextBlock";
 import "../properties/properties.css";
 import "./blocks.css";
@@ -70,6 +75,16 @@ export function BlockPanel() {
     setBlockSource,
     setBlockTargets,
     setBlockTags,
+    setBlockMeter,
+    setBlockMeterText,
+    setBlockMeterMax,
+    setBlockMeterFace,
+    setBlockMeterSegmented,
+    setBlockMeterPip,
+    addMeter,
+    duplicateMeter,
+    removeMeter,
+    editMeter,
     setNodeAliases,
   } = useProject();
   const { confirmDestructive } = useDialogs();
@@ -79,6 +94,10 @@ export function BlockPanel() {
   const node = selectedId ? nodes[selectedId] : undefined;
   const { blocks, properties, unshown } = useBlocks(node);
 
+  // Which block's rating symbol is being chosen. The picker is a popover over
+  // the panel rather than inside the block, because the menu that opens it has
+  // already closed by the time it appears.
+  const [pipBlockId, setPipBlockId] = useState<string | null>(null);
   const [templateRect, setTemplateRect] = useState<DOMRect | null>(null);
   const [addRect, setAddRect] = useState<DOMRect | null>(null);
   const [isAddingProperty, setIsAddingProperty] = useState(false);
@@ -215,29 +234,41 @@ export function BlockPanel() {
     }
 
     if (block.kind === "collection") {
-      // The heading follows the source, so a block switched from Subpages to
-      // Backlinks stops claiming to be the other thing — unless she has given
-      // it a title of her own, which BlockShell honours over this.
-      const natural =
-        block.source === "mentions"
-          ? "Backlinks"
-          : block.source === "subpages"
-            ? "Subpages"
-            : block.source === "tags"
-              ? "Tagged"
-              : "Links";
+      // The heading *is* the source's name — one name per block, the way a
+      // meter's heading is its shape. It uses the names Add Block offers, so
+      // a block you added as a Tag index doesn't come back calling itself
+      // "Tagged". Renaming still wins over this.
       return {
-        natural,
+        natural: getCollectionSourceOption(block.source).label,
         body: (
           <CollectionBlock
             block={block}
             node={node!}
             nodes={nodes}
             allTags={allTags}
-            onSetSource={(source) => setBlockSource(node!.id, block.id, source)}
             onSetTargets={(ids) => setBlockTargets(node!.id, block.id, ids)}
             onSetTags={(tags) => setBlockTags(node!.id, block.id, tags)}
             onOpen={(id) => selectNode(id)}
+          />
+        ),
+      };
+    }
+
+    if (block.kind === "meter") {
+      // The heading is the shape's name — one name per section, in the top
+      // left, the way the reference does it. The first cut drew "Meter" here
+      // and repeated the shape on a pill underneath, which is two names for
+      // one thing. Renaming still wins over this, and is the normal case: a
+      // block called "Circle" is a widget and one called after what it
+      // measures is worldbuilding.
+      return {
+        natural: getMeterStyleOption(block.meter).label,
+        body: (
+          <MeterBlock
+            block={block}
+            onEdit={(meterId, patch) => editMeter(node!.id, block.id, meterId, patch)}
+            onRemove={(meterId) => removeMeter(node!.id, block.id, meterId)}
+            onAdd={() => addMeter(node!.id, block.id)}
           />
         ),
       };
@@ -332,7 +363,16 @@ export function BlockPanel() {
   }
 
   return (
-    <div className="properties-panel block-panel">
+    <div
+      className="properties-panel block-panel"
+      // Right-clicking the panel itself — the gaps between blocks, the header
+      // strip — offers Add Block. A block's own right-click stops the event
+      // before it gets here, so the two never both fire.
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setAddRect(new DOMRect(e.clientX, e.clientY, 0, 0));
+      }}
+    >
       {node.templateKey === BLANK_TEMPLATE_KEY && (
         <div className="properties-panel-apply-template">
           <p>This page doesn't have a template yet.</p>
@@ -373,6 +413,37 @@ export function BlockPanel() {
                 onMove={(direction) => reorderBlocks(node.id, index, index + direction)}
                 onRemove={() => removeBlock(node.id, block.id)}
                 onDeleteProperty={propertyKey ? () => void deleteProperty(propertyKey, natural) : undefined}
+                collection={
+                  block.kind === "collection"
+                    ? {
+                        source: block.source ?? "manual",
+                        onSetSource: (source) => setBlockSource(node.id, block.id, source),
+                      }
+                    : undefined
+                }
+                meter={
+                  block.kind === "meter"
+                    ? {
+                        style: block.meter ?? "bar",
+                        textShown: block.showText !== false,
+                        maxShown: block.showMax !== false,
+                        face: block.face ?? "icon",
+                        segmented: block.segmented === true,
+                        onSetStyle: (style) => setBlockMeter(node.id, block.id, style),
+                        onSetFace: (face) => setBlockMeterFace(node.id, block.id, face),
+                        onToggleSegments: () => setBlockMeterSegmented(node.id, block.id, block.segmented !== true),
+                        pip: isPipMeter(block.meter ?? "bar") ? meterPip(block) : undefined,
+                        onPickPip: isPipMeter(block.meter ?? "bar") ? () => setPipBlockId(block.id) : undefined,
+                        onAdd: () => addMeter(node.id, block.id),
+                        onDuplicateMeter: (meterId) => duplicateMeter(node.id, block.id, meterId),
+                        onRemoveMeter: (meterId) => removeMeter(node.id, block.id, meterId),
+                        colorOfMeter: (meterId) => metersOf(block).find((m) => m.id === meterId)?.color,
+                        onSetMeterColor: (meterId, color) => editMeter(node.id, block.id, meterId, { color }),
+                        onToggleText: () => setBlockMeterText(node.id, block.id, block.showText === false),
+                        onToggleMax: () => setBlockMeterMax(node.id, block.id, block.showMax === false),
+                      }
+                    : undefined
+                }
               >
                 {body}
               </BlockShell>
@@ -441,6 +512,29 @@ export function BlockPanel() {
         </button>
       )}
 
+      {/* The empty space under the last block answers a right-click too, with
+          the same menu the button opens. Right-clicking where a block would go
+          is how you ask for one, and it was doing nothing. */}
+      <div
+        className="block-panel-space"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setAddRect(new DOMRect(e.clientX, e.clientY, 0, 0));
+        }}
+      />
+
+      {pipBlockId && (
+        <TreePopover anchorRect={new DOMRect(160, 160, 0, 0)} onClose={() => setPipBlockId(null)}>
+          <IconPicker
+            value={blocks.find((b) => b.id === pipBlockId)?.pip}
+            onPick={(pip) => {
+              setBlockMeterPip(node.id, pipBlockId, pip);
+              setPipBlockId(null);
+            }}
+          />
+        </TreePopover>
+      )}
+
       {addRect && (
         <TreePopover anchorRect={addRect} onClose={() => setAddRect(null)}>
           <AddBlockMenu
@@ -451,6 +545,10 @@ export function BlockPanel() {
             }}
             onAddCollection={(source) => {
               addBlock(node.id, "collection", { source });
+              setAddRect(null);
+            }}
+            onAddMeter={(style) => {
+              addBlock(node.id, "meter", { meter: style });
               setAddRect(null);
             }}
             onAddProperty={(key) => {

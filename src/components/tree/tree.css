@@ -476,6 +476,14 @@ button.tree-path-crumb:hover {
   display: flex;
 }
 
+/* Which row a menu belongs to. This used to be free — opening a menu selected
+   the row — but selecting a page opens it, so right-clicking one page while
+   reading another threw the reader onto it. The menu leaves the selection
+   alone now, and marks its row this way instead. */
+.tree-row-active:not(.tree-row-selected) {
+  background: var(--color-hover);
+}
+
 /* A page held back from anyone the world is shown to. Dimmed and italic, the
    same treatment hidden *tabs* already get in the tab strip, so the two read as
    one idea at two levels rather than two features. Deliberately still fully
@@ -534,20 +542,17 @@ button.tree-path-crumb:hover {
   gap: var(--space-xs);
 }
 
-.tree-color-swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-  cursor: pointer;
+/* The swatches themselves moved to the shared `.color-swatches` grid in
+   blocks.css — a page and a block are coloured from one control now. */
+.tree-color-picker {
+  width: 232px;
 }
 
-.tree-color-swatch-active {
-  border-color: var(--color-text-primary);
+.tree-color-inherited {
+  margin: 0;
+  padding: 0 var(--space-sm) var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
 }
 
 .tree-template-picker {
@@ -1651,4 +1656,18 @@ button.tree-path-crumb:hover {
 .tree-assets-delete:hover {
   background: var(--color-hover-strong);
   color: var(--color-destructive);
+}
+
+/* A page wearing its own icon rather than its template's. The box is the size
+   a Lucide icon draws at, so a wide emoji doesn't shove the name sideways and
+   a row keeps the same rhythm whichever kind of icon it carries. */
+.tree-row-icon-own {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 13px;
+  line-height: 1;
 }

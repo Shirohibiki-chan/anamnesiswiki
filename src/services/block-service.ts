@@ -6,6 +6,7 @@
 import {
   type Block,
   type BlockKind,
+  type MeterEntry,
   type CustomPropertySpec,
   type Node,
   FOLDER_TEMPLATE_KEY,
@@ -104,7 +105,9 @@ export function blocksFor(node: Node, schema: RenderableProperty[]): Block[] {
  * Phase 18b replaced the `link` block with a `collection` whose source is
  * "manual" — the same feature holding a list rather than one page — so a page
  * carrying a link block from 18a is converted here rather than the app
- * supporting two ways to link forever.
+ * supporting two ways to link forever. Phase 18c's meters went the same way a
+ * day later: one reading on the block became a list of them, and a block from
+ * before that is lifted into a list of one here.
  *
  * **Returns the array it was given when nothing needs changing**, which is not
  * a micro-optimisation: `blocksFor` runs on every render, and handing back a
@@ -112,18 +115,33 @@ export function blocksFor(node: Node, schema: RenderableProperty[]): Block[] {
  * anywhere in the app, and would break identity checks callers rely on.
  */
 export function migrateBlocks(blocks: Block[]): Block[] {
-  if (!blocks.some((block) => block.kind === "link")) return blocks;
-  return blocks.map((block) =>
-    block.kind === "link"
-      ? {
-          ...block,
-          kind: "collection" as const,
-          source: "manual" as const,
-          targetIds: block.targetId ? [block.targetId] : [],
-          targetId: undefined,
-        }
-      : block,
-  );
+  const stale = (block: Block) =>
+    block.kind === "link" || (block.kind === "meter" && !block.meters);
+  if (!blocks.some(stale)) return blocks;
+
+  return blocks.map((block) => {
+    if (block.kind === "link") {
+      return {
+        ...block,
+        kind: "collection" as const,
+        source: "manual" as const,
+        targetIds: block.targetId ? [block.targetId] : [],
+        targetId: undefined,
+      };
+    }
+
+    // A meter block used to hold one reading directly. It becomes a list of
+    // one, keeping whatever was set — a meter she had already filled in must
+    // not come back empty because the block learned to hold four.
+    if (block.kind === "meter" && !block.meters) {
+      const first: MeterEntry = { id: `${block.id}-1` };
+      if (block.value !== undefined) first.value = block.value;
+      if (block.max !== undefined) first.max = block.max;
+      return { ...block, meters: [first], value: undefined, max: undefined };
+    }
+
+    return block;
+  });
 }
 
 /**

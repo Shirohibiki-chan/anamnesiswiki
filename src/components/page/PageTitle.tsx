@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ChevronRight, EyeOff, Home } from "lucide-react";
 import type { Node } from "../../constants/schema";
-import { getTemplateIcon } from "../../constants/icons";
+import { IconPicker, NodeIcon } from "../blocks/IconPicker";
+import { TreePopover } from "../tree/TreePopover";
 import { getPaletteHex } from "../../constants/palette";
 import { useProjectActions, useProjectHomeId, useProjectName } from "../../hooks/use-project";
 import { useBreadcrumbTrail, useEffectiveColor, useHiddenByAncestor } from "../../hooks/use-tree-data";
@@ -21,12 +22,12 @@ type PageTitleProps = {
 export function PageTitle({ node, startEditing = false }: PageTitleProps) {
   const projectName = useProjectName();
   const homeNodeId = useProjectHomeId();
-  const { renameNode, selectNode } = useProjectActions();
+  const { renameNode, selectNode, setNodeIcon } = useProjectActions();
   const [isEditing, setIsEditing] = useState(startEditing);
+  const [iconRect, setIconRect] = useState<DOMRect | null>(null);
 
   const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
-  const Icon = getTemplateIcon(node.templateKey);
   const trail = useBreadcrumbTrail(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const looksHidden = Boolean(node.hidden) || hiddenByAncestor;
@@ -105,8 +106,36 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
       </nav>
 
       <div className="page-title-row">
-        {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
-        <Icon size={24} className="page-title-icon" style={effectiveHex ? { color: effectiveHex } : undefined} />
+        {/* **The icon is the button.** Clicking the thing you want to change
+            is the first gesture anyone tries, and sending them to a right-click
+            menu in the tree to change what is on screen in front of them is a
+            detour. The tree's menu still offers it, for a selection. */}
+        <button
+          type="button"
+          className="page-title-icon-button"
+          title="Change this page's icon"
+          aria-label="Change this page's icon"
+          onClick={(e) => setIconRect(e.currentTarget.getBoundingClientRect())}
+        >
+          <NodeIcon
+            icon={node.icon}
+            templateKey={node.templateKey}
+            size={24}
+            className="page-title-icon"
+            style={effectiveHex ? { color: effectiveHex } : undefined}
+          />
+        </button>
+        {iconRect && (
+          <TreePopover anchorRect={iconRect} onClose={() => setIconRect(null)}>
+            <IconPicker
+              value={node.icon}
+              onPick={(icon) => {
+                setNodeIcon([node.id], icon);
+                setIconRect(null);
+              }}
+            />
+          </TreePopover>
+        )}
         {isEditing ? (
           <input
             className="page-title-input"

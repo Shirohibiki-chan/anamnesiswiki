@@ -114,9 +114,63 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
 // property index and the templates — a block that kept its own copy of any of
 // those would fork them silently. So a block record holds presentation plus a
 // pointer, and the value stays in the field it has always lived in. Only the
-// kinds with genuinely new data (`text`, and Phase 18c's meters) store a value
-// inside the block itself.
-export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias";
+// kinds with genuinely new data (`text` and `meter`) store a value inside the
+// block itself.
+export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter";
+
+/**
+ * How a `meter` block draws itself. Phase 18c.
+ *
+ * Six shapes, two value models. The first four read one number against a
+ * maximum and differ only in how they draw it; the last two count whole units
+ * and differ only in what a click means. One block with a switchable shape
+ * rather than six kinds, the same way `collection` carries a source — a bar
+ * that should have been a gauge is a setting, not a delete and a rebuild.
+ */
+export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "pie" | "rating" | "pool";
+
+/** The shapes that count whole units rather than measuring a proportion. */
+export const PIP_METER_STYLES: MeterStyle[] = ["rating", "pool"];
+
+/**
+ * What sits inside a round meter. Phase 18c.
+ *
+ * The reference offers the same dial three ways — the number, the icon, or
+ * both — and they read differently enough to be worth choosing between: a wall
+ * of dials showing icons is a dashboard, and the same wall showing numbers is
+ * a character sheet. Absent means "the icon if there is one, otherwise the
+ * number", which is what a meter did before this existed.
+ */
+export type MeterFace = "value" | "icon" | "both";
+
+/**
+ * One reading inside a meter block. Phase 18c.
+ *
+ * **A meter block holds a list of these, not a single number.** The reference
+ * puts several in one block — four dials under one GAUGE heading, each with
+ * its own icon, name and numbers — and that is the shape she asked for: a
+ * character's meters are a panel of stats, not five separate blocks stacked up
+ * with five headings between them.
+ *
+ * `icon` is a name from constants/glyphs.ts, or an emoji character outright;
+ * anything unrecognised is drawn as text, so an emoji needs no registry.
+ */
+export type MeterEntry = {
+  id: string;
+  icon?: string;
+  label?: string;
+  value?: number;
+  max?: number;
+  /**
+   * This reading's own colour, overriding the block's. A palette key or a hex,
+   * the same as `Block.color`.
+   *
+   * Four dials under one heading are four different things — health, mana,
+   * favour, rations — and colouring them together is what a *block* colour is
+   * for. This is the other half: one of them being red on its own.
+   */
+  color?: string;
+};
 
 /**
  * Where a `collection` block gets its list of pages. Phase 18b.
@@ -159,6 +213,30 @@ export type Block = {
   source?: CollectionSource;
   targetIds?: string[];
   tags?: string[];
+  // `meter` only. The shape every reading in the block is drawn in, and the
+  // readings themselves. `showText` and `showMax` are the block's two display
+  // toggles — absent means on, the way `showTitle` does it, so a block that
+  // looks normal carries no fields saying so.
+  meter?: MeterStyle;
+  meters?: MeterEntry[];
+  showText?: boolean;
+  showMax?: boolean;
+  face?: MeterFace;
+  /** Drawn as a run of segments rather than one solid sweep. */
+  segmented?: boolean;
+  /**
+   * What a rating or a token pool is counted in: a glyph name, or an emoji.
+   * Absent means a star for a rating and a disc for a pool, which is what they
+   * were before this could be chosen. Same two kinds of value as an entry's
+   * `icon`, read back through the same resolver.
+   */
+  pip?: string;
+  // The first cut of `meter` kept one reading directly on the block. No new
+  // one is written — block-service lifts these into a single entry on read,
+  // the way it does for `link`. Kept readable so a meter made before the list
+  // existed still opens.
+  value?: number;
+  max?: number;
 };
 
 export type Node = {
@@ -166,6 +244,15 @@ export type Node = {
   parentId: string | null;
   templateKey: string;
   name: string;
+  /**
+   * The page's own icon, replacing its template's. A glyph name from
+   * constants/glyphs.ts, or an emoji character outright — the same two kinds a
+   * meter's icon takes, read back through the same resolver.
+   *
+   * Absent is the normal state and means "whatever this template uses", which
+   * is what every page had before. Asked for 2026-08-18, built 2026-08-21.
+   */
+  icon?: string;
   tabs: Tab[];
   properties: Record<string, unknown>;
   // Optional (not defaulted to []) because pages saved before this field

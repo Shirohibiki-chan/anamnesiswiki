@@ -6,6 +6,7 @@ import * as appSettings from "../services/app-settings-service";
 import {
   DEFAULT_PREFERENCES,
   parsePreferences,
+  withSavedColor,
   type ListPageSize,
   type ListPagingMode,
   type Preferences,
@@ -23,6 +24,9 @@ export type PreferencesStoreState = {
   setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
   setProjectSort: (sort: ProjectSort) => void;
+  /** Keeps a colour mixed in the system picker, for use anywhere else. */
+  saveColor: (color: string) => void;
+  forgetColor: (color: string) => void;
 };
 
 export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
@@ -67,6 +71,19 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setProjectSort(sort) {
       apply({ ...get().preferences, projectSort: sort });
+    },
+
+    saveColor(color) {
+      const saved = withSavedColor(get().preferences.savedColors, color);
+      if (saved === get().preferences.savedColors) return;
+      apply({ ...get().preferences, savedColors: saved });
+    },
+
+    forgetColor(color) {
+      apply({
+        ...get().preferences,
+        savedColors: get().preferences.savedColors.filter((entry) => entry !== color.toLowerCase()),
+      });
     },
   };
 });

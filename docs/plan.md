@@ -287,52 +287,15 @@ pass, the design system beneath it, themes, property types, everyday
 navigation, the right-click menu's full pass, pictures and tags, the Templates
 and Assets tabs, and the project library the start screen became. Their detail
 is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phases 18a and 18b shipped 2026-08-21** — the panel is a block canvas,
+**Phase 18 shipped whole on 2026-08-21** — the panel is a block canvas,
 everything in it is a block, pages written before it derive their layout on
-read, and one collection block answers what-points-at-what four ways. Detail is
-in `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phase 18c is next**, and it is the next one in this file.
+read, one collection block answers what-points-at-what four ways, and a meter
+block draws one number six ways. Detail is in `docs/shipped.md`; what still
+binds the code is in `docs/handoff.md`.
+**Phase 19 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 18 — Sidebar Blocks
-
-The big one, and a genuinely new concept: the right panel becomes a second
-block canvas rather than a fixed list of fields. **Scoped 2026-08-21 and split
-into three phases** — 18a builds the canvas, 18b builds the index the three
-index blocks share, 18c builds the meters. The split is not cosmetic: 18a
-changes how every page's sidebar is stored, and shipping that alone means the
-data model is proven by use before eleven more block types are built on it.
-
-Keep the distinction sharp in the *user's* language — **properties** are
-labelled facts (`Age: 26`), **meters** are arranged widgets (a 75% purple bar
-called "Hollow Emperor's Influence"). Underneath, after 18a, they are the same
-thing: a block in an ordered list.
-
-**No YouTube, Spotify or map embeds** — LK's media group minus everything that
-fetches. Her reason, 2026-07-31, was aesthetic, not the offline policy, which
-she has never personally agreed with. If embeds come back that's a policy
-conversation to have with her and she'll likely wave it through; ask anyway,
-because the boundary is written strict in `CLAUDE.md` at her request.
-
----
-
-## Phase 18c — Meters
-
-Six blocks, two value models, six renderings — build the models first and the
-six are presentation.
-
-- **A 0–100 value:** Progress Bar · Circle · Semi-circle · Gauge.
-- **N of M discrete pips:** Rating · Token Pool, differing only in whether a
-  click sets the level or spends one.
-
-**Token Pool stays in**, questioned 2026-08-21 as a D&D artefact. It isn't one
-once Rating exists — the two are the same widget — and counted-in-whole-units
-is ordinary worldbuilding: spell charges, rations, favours owed, remaining
-heirs, ammunition.
 
 ---
 
@@ -342,6 +305,46 @@ Unglamorous and probably the highest-value work in this document. This app has a
 
 - **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else. **Obsidian's "File Recovery" is the shape to copy**, rather than designing one: automatic periodic snapshots kept on disk, a per-file list of past versions you can browse and restore, and arrow-key navigation through that list (the keyboard part is new in 1.13). Copying a known-good model matters more here than anywhere else in this document, because this is the feature that exists to catch the failure that already happened once (`docs/handoff.md` §Storage) and a half-designed version of it is worse than none — it would be trusted.
 - **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
+
+---
+
+## Phase 28 — Blocks in the Page
+
+**Scoped 2026-08-21, from her screenshots of the reference, and not built with
+the rest of Phase 18.** It is a feature rather than a fix and it wants its own
+change; it is written down here rather than in Queued Adjustments because it
+is not an adjustment to anything.
+
+**A sidebar block can be dragged into the middle of the page**, where it keeps
+working and gets more room — her screenshots show a gauge block in the page
+body holding eleven dials in a wide grid, which the sidebar's two-across
+layout could never show. **It is resizable there**, by dragging either side.
+
+- **The block model already fits; the document model is the work.** A block is
+  a record in an ordered list (`Block` in `constants/schema.ts`) and the panel
+  is a renderer over it. Putting one in the page means BlockNote holding it,
+  which is a custom block — `src/services/editor-blocks/` already has three
+  (Info, Quote, Secret) and `CLAUDE.md` says to extend BlockNote through its
+  documented API and never fork it.
+- **Decide where such a block's data lives before writing any of it.** A block
+  in the page could keep its record in `node.blocks` and let the document hold
+  a pointer, or move into the document outright. The pointer version keeps one
+  answer to "what blocks does this page have" and makes dragging between the
+  two places a move rather than a conversion; the document version is simpler
+  to write and forks the model. **Prefer the pointer**, and be sure before
+  committing — this is the decision that is expensive to change later.
+- **Width is per-block and belongs on the block**, not on the page. It is the
+  one piece of presentation the sidebar has no use for, so it needs a sensible
+  reading when the same block is shown in a 340px panel: ignore it there.
+- **Not to be confused with Phase 21's splittable columns.** That rearranges
+  the app's panels; this puts one block inside the document. They meet only in
+  that both make the middle of the window less fixed than it is today.
+
+**Why it is worth doing:** the sidebar is a column, and a panel of stats is a
+grid. Everything Phase 18c built is squeezed by that column — four gauges go
+two-across and a fifth pushes the page's fields off the bottom. This is the
+part of the reference she compared ours to and found ours wanting, and it is
+the one part of that comparison the sidebar itself cannot answer.
 
 ---
 

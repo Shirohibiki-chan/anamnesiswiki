@@ -5,22 +5,16 @@
 // question asked three ways. The Add Block menu still offers those names — see
 // AddBlockMenu — and this is what they all create.
 import { useState } from "react";
-import { Link2, ListTree, Sparkles, Tags as TagsIcon, X } from "lucide-react";
-import type { Block, CollectionSource, Node } from "../../constants/schema";
+import { X } from "lucide-react";
+import type { Block, Node } from "../../constants/schema";
 import { useCollection } from "../../hooks/use-link-index";
+import { NodeIcon } from "./IconPicker";
 import { TreePopover } from "../tree/TreePopover";
-
-const SOURCES: { key: CollectionSource; label: string; hint: string; icon: typeof Link2 }[] = [
-  { key: "manual", label: "Manual links", hint: "A list you curate yourself", icon: Link2 },
-  { key: "subpages", label: "Subpages", hint: "This page's children", icon: ListTree },
-  { key: "tags", label: "Tags", hint: "Pages carrying tags you pick", icon: TagsIcon },
-  { key: "mentions", label: "Backlinks", hint: "Pages that mention this one", icon: Sparkles },
-];
 
 // What an empty collection says. Each source is empty for a different reason,
 // and a single "Nothing here" is exactly the dead end that sent her digging
 // through the reference's settings — see docs/plan.md Phase 18b.
-const EMPTY: Record<CollectionSource, string> = {
+const EMPTY: Record<string, string> = {
   manual: "No pages added yet.",
   subpages: "This page has no pages inside it.",
   tags: "Pick a tag to list pages by.",
@@ -32,7 +26,6 @@ type CollectionBlockProps = {
   node: Node;
   nodes: Record<string, Node>;
   allTags: { label: string }[];
-  onSetSource: (source: CollectionSource) => void;
   onSetTargets: (targetIds: string[]) => void;
   onSetTags: (tags: string[]) => void;
   onOpen: (nodeId: string) => void;
@@ -43,12 +36,10 @@ export function CollectionBlock({
   node,
   nodes,
   allTags,
-  onSetSource,
   onSetTargets,
   onSetTags,
   onOpen,
 }: CollectionBlockProps) {
-  const [sourceRect, setSourceRect] = useState<DOMRect | null>(null);
   const [pickerRect, setPickerRect] = useState<DOMRect | null>(null);
   const [query, setQuery] = useState("");
 
@@ -68,14 +59,6 @@ export function CollectionBlock({
 
   return (
     <div className="block-collection">
-      <button
-        type="button"
-        className="block-collection-source"
-        onClick={(e) => setSourceRect(e.currentTarget.getBoundingClientRect())}
-      >
-        {SOURCES.find((s) => s.key === source)?.label ?? "Manual links"}
-      </button>
-
       {source === "tags" && (
         <div className="block-collection-tags">
           {chosenTags.map((tag) => (
@@ -107,8 +90,13 @@ export function CollectionBlock({
         <ul className="block-collection-list">
           {rows.map((row) => (
             <li key={row.node.id} className="block-collection-row">
+              {/* The page's own icon in front of its name, and the whole row
+                  is the target — a list of bare white words was the complaint,
+                  and a page in a list should look the way it looks in the
+                  tree. */}
               <button type="button" className="block-link" onClick={() => onOpen(row.node.id)}>
-                {row.node.name || "Untitled"}
+                <NodeIcon icon={row.node.icon} templateKey={row.node.templateKey} size={13} />
+                <span className="block-link-name">{row.node.name || "Untitled"}</span>
               </button>
               {/* Backlinks say where each one came from. A list that cannot
                   explain itself is the failure this whole phase started from. */}
@@ -142,30 +130,6 @@ export function CollectionBlock({
         </button>
       )}
 
-      {sourceRect && (
-        <TreePopover anchorRect={sourceRect} onClose={() => setSourceRect(null)}>
-          <div className="tree-context-menu block-source-menu">
-            <div className="tree-context-menu-heading">Collection source</div>
-            {SOURCES.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => {
-                  onSetSource(option.key);
-                  setSourceRect(null);
-                }}
-              >
-                <option.icon size={13} />
-                <span className="block-source-label">
-                  {option.label}
-                  <small>{option.hint}</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </TreePopover>
-      )}
-
       {pickerRect && (
         <TreePopover
           anchorRect={pickerRect}
@@ -194,7 +158,7 @@ export function CollectionBlock({
                         setQuery("");
                       }}
                     >
-                      {tag.label}
+                      <span className="block-collection-tag">{tag.label}</span>
                     </button>
                   ))
                 : pageMatches.map((candidate) => (
@@ -207,6 +171,7 @@ export function CollectionBlock({
                         setQuery("");
                       }}
                     >
+                      <NodeIcon icon={candidate.icon} templateKey={candidate.templateKey} size={13} />
                       {candidate.name || "Untitled"}
                     </button>
                   ))}

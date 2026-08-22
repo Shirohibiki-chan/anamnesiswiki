@@ -102,12 +102,30 @@ export const PROJECT_SORT_LABELS: Record<ProjectSort, string> = {
   "name-desc": "Name Z–A",
 };
 
+/**
+ * How many mixed colours are kept. Phase 18c.
+ *
+ * A row of them, the way the reference does it — enough that the two or three
+ * a world actually uses are always to hand, few enough that the row stays a
+ * row. Oldest falls off the end when a new one arrives.
+ */
+export const MAX_SAVED_COLORS = 8;
+
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
   listPaging: ListPagingMode;
   listPageSize: ListPageSize;
   projectView: ProjectView;
   projectSort: ProjectSort;
+  /**
+   * Colours mixed in the system picker, kept so they can be used again.
+   *
+   * **In preferences rather than in a project**, because a colour she mixed is
+   * hers rather than the world's — the same hex should be one click away on a
+   * page, a block and a meter, in whichever project is open. Stored as hexes,
+   * since a mixed colour has no palette name to be looked up by.
+   */
+  savedColors: string[];
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -116,7 +134,22 @@ export const DEFAULT_PREFERENCES: Preferences = {
   listPageSize: 20,
   projectView: "grid",
   projectSort: "active",
+  savedColors: [],
 };
+
+/**
+ * The saved list with one colour on the front of it.
+ *
+ * Most-recent-first and de-duplicated, so re-picking a colour already saved
+ * moves it back to the front rather than filling the row with itself. Pure,
+ * and here rather than in the store, because "which colours are kept" is a
+ * rule and the store's job is only to write the answer down.
+ */
+export function withSavedColor(saved: string[], color: string): string[] {
+  const cleaned = color.trim().toLowerCase();
+  if (!/^#[0-9a-f]{6}$/.test(cleaned)) return saved;
+  return [cleaned, ...saved.filter((existing) => existing.toLowerCase() !== cleaned)].slice(0, MAX_SAVED_COLORS);
+}
 
 /**
  * Whatever came back out of app-settings.json, reduced to preferences we'd
@@ -136,6 +169,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const listPageSize = source.listPageSize;
   const projectView = source.projectView;
   const projectSort = source.projectSort;
+  const savedColors = source.savedColors;
   return {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
@@ -156,5 +190,14 @@ export function parsePreferences(raw: unknown): Preferences {
     projectSort: PROJECT_SORTS.includes(projectSort as ProjectSort)
       ? (projectSort as ProjectSort)
       : DEFAULT_PREFERENCES.projectSort,
+    // Filtered rather than trusted: this file outlives any version of the app,
+    // and a hand-edited entry that isn't a hex would be handed to a style
+    // attribute otherwise.
+    savedColors: Array.isArray(savedColors)
+      ? savedColors
+          .filter((entry): entry is string => typeof entry === "string" && /^#[0-9a-f]{6}$/i.test(entry))
+          .map((entry) => entry.toLowerCase())
+          .slice(0, MAX_SAVED_COLORS)
+      : DEFAULT_PREFERENCES.savedColors,
   };
 }

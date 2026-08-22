@@ -16,11 +16,11 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–17 and 27 are done. The app is shippable**, and **Phase 18
-(Sidebar Blocks) is next**. `docs/plan.md` has the remaining phases plus the
-unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase
-delivered. Phase 27 closed 2026-08-20 with project templates — what still binds
-the code from it is §Project templates below.
+**Phases 0–18 and 27 are done. The app is shippable**, and **Phase 19 (Safety
+Net) is next**. `docs/plan.md` has the remaining phases plus the unscheduled
+Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
+Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
+§Sidebar blocks below.
 
 The most recent ones are the ones a new session is most likely to touch.
 **Phase 14 — Everyday Navigation — closed 2026-08-11**: eleven small things
@@ -2726,8 +2726,8 @@ is below.
   assets tab, the lightbox, the crop and export's `imageSource`;
   `node.properties` feeds the property index and the templates. A block that
   kept its own copy of any of those would fork them silently and the fork would
-  only show up somewhere else in the app. Only `text` — and Phase 18c's meters
-  — hold their own value. Anything new that looks like it wants a copy of an
+  only show up somewhere else in the app. Only `text` and `meter` hold their
+  own value. Anything new that looks like it wants a copy of an
   existing field wants a pointer instead.
 
 - **A derived block's id must be deterministic, and `derivedId` is why.** A
@@ -2767,6 +2767,133 @@ is below.
   `unshownPropertyKeys`. `removeCustomProperty` is the destructive one, and it
   drops *every* block pointing at that key, because a property can be shown
   twice.
+
+- **The block panel has no padding of its own; every block carries it.** A
+  coloured block has to reach the sidebar's edges — that is what "colour the
+  block" means, and a block inside a padded column stops short of them and
+  reads as a floating box. So `.block-panel` is padding-free and each child
+  insets itself by `--space-2xl`. Anything new dropped into that panel needs
+  the same inset or it will sit flush against the edge.
+
+- **A block's heading is its only name, and that rule is not just about
+  meters.** A meter's heading *is* its shape and a collection's *is* its source
+  — both read their label from a constants list that the block's menu reads
+  too. Three blocks shipped with a second label inside them restating the
+  heading (meter, collection, image) and all three looked broken to the user.
+  **Never draw a label inside a block that restates its heading**; if a block
+  has a setting worth naming, it goes in the block's menu.
+
+- **`--color-accent` has now made text invisible twice.** It is a 15% tint
+  despite the name — once for the import progress bar, once for the page names
+  inside a collection block, where it read as an empty list. Anything that has
+  to be *seen* wants `--color-accent-light` or a text colour. The token's own
+  comment in `index.css` says so; it is worth believing.
+
+- **Opening a tree row's menu must not select the row.** Selecting a page opens
+  it, so a menu that selects first throws away whatever the user was reading to
+  reach another page's menu. `targetIds()` already answers with the clicked row
+  whenever it isn't inside a multi-selection, so nothing needs the select;
+  `tree-row-active` marks which row the menu belongs to.
+
+- **A meter block holds a *list* of readings, and `metersOf` is the only way
+  to it.** `block.value` / `block.max` are the first cut's single reading and
+  are never written again — `migrateBlocks` lifts one into `meters` on read,
+  the way it does for `link`. Anything that reaches for `block.value` is
+  reading a field that has been empty since the day it shipped.
+
+- **The block's `⋯` menu is the only place a block's settings live.**
+  `BlockMenu` takes an optional group per kind — `onDeleteProperty` for
+  properties, `meter` for meters. A second menu hung off the block itself
+  would be a second place to look for the same three things.
+
+- **`glyph-catalogue.ts` imports all of Lucide on purpose, and it costs about
+  550KB.** Measured 2026-08-21: the main chunk went from 1.89MB to 2.44MB when
+  the picker stopped being a curated few hundred. That was the trade for a
+  picker that can find things, made after her comparison against the reference.
+  If launch ever feels slow this is the first place to look — and the fix is
+  loading it when the picker opens, not trimming the list again.
+
+- **A coloured block's heading gets its colour inline from `BlockShell`, not
+  from a stylesheet.** The heading is a `.ui-eyebrow` and a `.block-title` at
+  once, set from two files, one of them inside a Tailwind `@layer` — and which
+  wins is not something to leave to load order for a colour the user picked.
+  The wash on the block itself is still CSS, since nothing else sets it.
+
+- **A meter clamps on read and never on write, and `meter-service` is where
+  that lives.** The maximum moves underneath a stored value all the time — a
+  rating dropped from ten pips to three leaves an 8 behind — and writing the
+  clamped number instead would destroy what she typed the moment she nudged a
+  setting. Drawing eight of three is the other wrong answer, which is why the
+  clamp exists at all. Anything new that reads a meter reads it through
+  `meterValue`, not out of the block.
+
+- **Changing a meter's shape keeps the value and drops the maximum only when
+  the value *model* changes.** Bar to gauge is the same fact drawn differently
+  and keeps everything; bar to rating is not, and a bar reading against 200
+  carried across would draw twenty stars to click. `setBlockMeter` is the one
+  place that decides this — see `isPipMeter`.
+
+- **A live colour preview goes through `color-preview-store`, never through
+  the project.** Recolouring for real looks cheap — `updateNode` sets state and
+  debounces its own save — but it replaces the whole `nodes` record, and that
+  record is what `link-index` and `search-service` key their `WeakMap` caches
+  on. So one pointer move inside the system colour dialog re-walks every page
+  of prose in the world, and a drag does it a hundred times. **This only shows
+  up in a real project**: a probe with one page has nothing to re-walk, which
+  is how it shipped twice. The store is read by `BlockShell` and one meter
+  reading and by nothing else, so a preview costs those a render.
+
+- **A meter's pips commit on `pointerdown`, never on a click.** The pips
+  container takes pointer capture so a drag can cross them, and capture
+  retargets the following click to the *container* — so a per-pip `onClick`
+  fires only when the press and release happen to agree. That is why about half
+  the taps on a token pool did nothing. Keyboard activation is the one thing
+  still on the button, as its own `onKeyDown`.
+
+- **The hover preview is drawn beside the fill, never over it.** The fill stops
+  at whichever is lower — the value or the pointer's promise — and the
+  difference is one pulsing band. Painting the removal on top in the track's
+  colour is what it did first, and it left a hard inner edge on a bar and a
+  visibly ragged one on an arc.
+
+- **`getPaletteHex` accepts a raw hex as well as a palette key.** The pickers
+  let her mix a colour, and a mixed one has no name to look up. Prefer a key
+  wherever a name exists — those follow the theme, a stored hex cannot — but
+  anything reading a colour must cope with both.
+
+- **A meter is a slider, and whether a drag is running is a ref — never
+  `hasPointerCapture`.** Reading the capture back is the tidier-looking version
+  and it is not reliable: capture can be refused or lost without the gesture
+  ending, and the failure mode is silent, a meter that takes the initial press
+  and then ignores every move. Measured in a probe, after the unit tests
+  passed. The ref is closed out by `event.buttons`, which cannot disagree with
+  whether a button is down.
+
+- **`arcFractionAt` is the inverse of `meterPoint` and they must stay that
+  way.** Dragging a dial is the drawing read backwards; a second copy of the
+  polar maths drifts and the handle stops sitting on the line it sets. A point
+  in a dial's *gap* snaps to the nearer end, which is not a nicety — reading an
+  overshoot past full as empty is a meter that empties itself at the moment you
+  fill it.
+
+- **Nothing in a meter draws a drag handle.** A dot on the end of the fill
+  was built and rejected: it reads as furniture, and on a semicircle it slides
+  off the end of the arc. What replaced it is the reference's behaviour —
+  hovering previews the value under the pointer, dimmed and pulsing, and a
+  click commits it. Adding a handle back would be re-making a decision she has
+  already made.
+
+- **A meter's fill falls back to `--color-accent-light`, never
+  `--color-accent`.** The latter is a 15% tint despite the name — the same trap
+  that made the import progress bar invisible, documented at the token itself.
+  A meter drawn in it looks like an empty meter, which is a bug that reads as a
+  data problem.
+
+- **No YouTube, Spotify or map embeds in the sidebar.** Phase 18's scope, hers,
+  and aesthetic rather than a consequence of the offline policy she has never
+  personally agreed with. If an embed block is ever wanted it is a conversation
+  to have with her first, because `CLAUDE.md` draws that boundary strict at her
+  request — not a judgement call to make while building something else.
 
 ## The link index
 

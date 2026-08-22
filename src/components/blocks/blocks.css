@@ -1,16 +1,30 @@
 /* The sidebar's block canvas — Phase 18a. The fields inside a block still come
    from properties.css; this file is only the frame around them. */
 
+/* **The panel's padding lives on the blocks, not on the panel.** A coloured
+   block has to reach the edges of the sidebar — the reference fills the whole
+   section — and a block inside a padded column stops short of them, which
+   reads as a box floating in a gutter rather than as a coloured section. So
+   `.block-panel` has no padding of its own and every child carries the same
+   horizontal inset instead. */
 .block-shell {
   position: relative;
-  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  padding: var(--space-xl) var(--space-2xl);
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
 /* The accent is set per block as an inline custom property by BlockShell, so a
-   block with no colour simply has no rule to apply and costs nothing. */
+   block with no colour simply has no rule to apply and costs nothing.
+
+   **A coloured block is coloured, not edged.** The first cut drew a 2px rule
+   down the left side, which marks a block rather than colouring one — the
+   reference washes the whole surface and takes the heading with it, and that
+   is the version that reads as "this block is purple". The wash is a low mix
+   so text contrast is untouched. The heading takes the hue at full strength
+   too, but from BlockShell as an inline colour rather than from here — see the
+   comment there for why that fight isn't worth having in a stylesheet. */
 .block-shell[style*="--block-accent"] {
-  border-left: 2px solid var(--block-accent);
+  background: color-mix(in srgb, var(--block-accent) 12%, transparent);
 }
 
 .block-shell-dragging {
@@ -43,9 +57,15 @@
   transition: opacity 120ms ease;
 }
 
+/* Lifted out of the row and into the block's left padding, so the heading
+   starts at the same edge everything under it does. In the flow it pushed the
+   section name ~18px inwards, which is the gap that made the panel look like
+   it had lost its alignment — the reference keeps the grip in the gutter. */
 .block-grip {
+  position: absolute;
+  left: 5px;
+  top: var(--space-xl);
   cursor: grab;
-  margin-left: -4px;
 }
 
 .block-shell:hover .block-grip,
@@ -94,7 +114,7 @@
 }
 
 .block-shell-body {
-  margin-top: var(--space-sm);
+  margin-top: var(--space-lg);
 }
 
 /* A block with no title still needs its menu reachable, so the bar stays in
@@ -116,7 +136,9 @@
   align-items: center;
   gap: var(--space-sm);
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
+  /* Matches the blocks' own inset now that the panel has none, so the row
+     lines up with the headings above it and its hover still spans the panel. */
+  padding: var(--space-md) var(--space-2xl);
   color: var(--color-text-muted);
   background: none;
   border: none;
@@ -129,42 +151,41 @@
   background: var(--color-hover);
 }
 
+/* **This menu scrolls, and its headings hold their place while it does.**
+   Every phase adds entries to it — 18a made three, 18b four, 18c six — and a
+   menu that answers by getting taller eventually runs off the screen. It gets
+   a ceiling and a scrollbar instead, so the next six cost nothing. */
 .block-add-menu {
-  min-width: 200px;
-  padding: var(--space-sm) 0;
+  min-width: 208px;
+  max-height: max(240px, min(62vh, 440px));
+  padding: 0 0 var(--space-sm);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The categories were a whisper — same size and nearly the same colour as the
+   items under them, so a list of eighteen things read as one list. They are
+   the map of this menu, so they look like one: brighter, spaced, ruled off,
+   and stuck to the top edge while their own section is what you're scrolling
+   through. */
+.block-add-menu .tree-context-menu-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: var(--space-2xs);
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .block-add-heading {
   padding: var(--space-sm) var(--space-lg);
   color: var(--color-text-muted);
-}
-
-/* ---- The per-block menu ---- */
-
-.block-menu {
-  min-width: 210px;
-  padding: var(--space-sm) 0;
-}
-
-.block-menu-color-row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
-}
-
-.block-menu-color-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-md);
-  color: var(--color-text-muted);
-  font-size: var(--fs-sm);
-}
-
-.block-menu-color-swatches {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
 }
 
 /* ---- Link block ---- */
@@ -175,6 +196,11 @@
   gap: var(--space-md);
 }
 
+/* **Not `--color-accent`.** That is a 15% tint despite the name — the same
+   trap the import progress bar fell into — and a page name painted in it is
+   the "impossible to see the links" she reported. Page names in a list are
+   ordinary text with a link's colour on hover; the bold accent everywhere
+   would make a sidebar of six lists shout. */
 .block-link {
   display: inline-flex;
   align-items: center;
@@ -182,7 +208,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   font-size: var(--fs-sm);
   cursor: pointer;
   overflow: hidden;
@@ -191,6 +217,7 @@
 }
 
 .block-link:hover {
+  color: var(--color-accent-light);
   text-decoration: underline;
 }
 
@@ -221,13 +248,40 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  min-width: 220px;
-  padding: var(--space-md);
+  width: 208px;
+  padding: var(--space-sm);
 }
 
 .block-link-results {
+  display: flex;
+  flex-direction: column;
   max-height: 220px;
   overflow-y: auto;
+}
+
+/* **These rows had no styling of their own at all.** They are bare buttons, so
+   they inherited the page's font size and sat as plain text in a box — a tag
+   picker that looked like a bug rather than a list. They are menu rows, and
+   they look like every other menu row in the app. */
+.block-link-results button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 3px var(--space-sm);
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.block-link-results button:hover,
+.block-link-results button:focus-visible {
+  background: var(--color-hover);
+  outline: none;
 }
 
 .block-link-empty-hint {
@@ -239,6 +293,18 @@
 /* Menu bits that the tree's context-menu styles don't already cover. The menus
    themselves reuse `.tree-context-menu`, whose `button` rule styles every item
    — so an item here carries no class of its own on purpose. */
+
+/* The block's menu scrolls for the same reason Add Block's does: a meter block
+   carries a shape grid, two colour rows, three display toggles and the meter
+   entries, and that is already most of a short window. */
+.block-menu {
+  /* Floored as well as capped: a viewport height that reports as zero — a
+     window still being laid out, a pane not yet painting — would otherwise
+     resolve 70vh to nothing and collapse the menu to a scrollbar. */
+  max-height: max(240px, min(70vh, 520px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 .block-menu-separator {
   height: 1px;
@@ -299,6 +365,28 @@
   align-items: center;
   gap: var(--space-sm);
   min-width: 0;
+  border-radius: var(--radius-sm);
+}
+
+.block-collection-row:hover {
+  background: var(--color-hover);
+}
+
+.block-collection-row .block-link {
+  flex: 1;
+  min-width: 0;
+  padding: 3px var(--space-sm);
+  color: var(--color-text-secondary);
+}
+
+.block-collection-row:hover .block-link {
+  color: var(--color-text-primary);
+}
+
+.block-link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Why a row is in the list, for the sources where that isn't obvious. Sized
@@ -328,6 +416,7 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  max-width: 100%;
   padding: 1px var(--space-sm);
   border-radius: var(--radius-full);
   background: var(--color-panel-alt);
@@ -339,6 +428,715 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+}
+
+/* ---- Meters (Phase 18c) ---- */
+
+.block-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.block-meter-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* The round shapes go two across, the way the reference lays them out — four
+   dials stacked in a column would push everything under them off the panel.
+   Bars and pips stay full width because that is the dimension they read in. */
+.block-meter-circle .block-meter-list,
+.block-meter-semicircle .block-meter-list,
+.block-meter-gauge .block-meter-list {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-xl) var(--space-lg);
+}
+
+/* Two across when there is room, and centred when there isn't — a grid put a
+   lone dial in the first cell, hard against the left edge. */
+/* As wide as the dial, not as wide as its column — which is what keeps the
+   highlight tight while the columns themselves stay well apart. */
+.block-meter-circle .block-meter-reading,
+.block-meter-semicircle .block-meter-reading,
+.block-meter-gauge .block-meter-reading {
+  flex: 0 0 auto;
+  align-items: center;
+  width: 88px;
+}
+
+.block-meter-reading {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+/* The meter under the pointer lifts slightly. It is what makes a panel of four
+   dials feel like four things rather than one picture — and it is the cue that
+   the X in the corner belongs to this one. Drawn on a pseudo-element so it can
+   bleed past the reading's box without pushing anything around. */
+.block-meter-reading::before {
+  content: "";
+  position: absolute;
+  inset: -6px -3px;
+  border-radius: var(--radius-md);
+  background: var(--color-hover);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.block-meter-reading:hover::before {
+  opacity: 1;
+}
+
+/* Everything else in the reading sits above the wash. */
+.block-meter-reading > * {
+  position: relative;
+}
+
+/* Takes one meter out, without going through a menu. Invisible until the
+   pointer is on that meter — four of these standing on a block of four dials
+   would be four delete buttons looking for an accident. */
+.block-meter-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  color: var(--color-text-muted);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.block-meter-reading:hover .block-meter-remove,
+.block-meter-remove:focus-visible {
+  opacity: 1;
+}
+
+.block-meter-remove:hover {
+  color: var(--color-palette-rose);
+  border-color: currentcolor;
+}
+
+.block-meter-bar .block-meter-reading,
+.block-meter-rating .block-meter-reading,
+.block-meter-pool .block-meter-reading {
+  gap: var(--space-lg);
+}
+
+/* The fill takes the block's own colour when it has one, which is what makes a
+   purple bar purple — the accent is set by BlockShell and inherited here.
+   Falls back to the bold teal, never to --color-accent, which is the 15% tint
+   and would draw a meter nobody can see. */
+.block-meter-fill {
+  color: var(--block-accent, var(--color-accent-light));
+}
+
+.block-meter-track {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.block-meter-track:focus-visible,
+.block-meter-arc:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 3px;
+}
+
+.block-meter-fill {
+  position: relative;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: currentcolor;
+  transition: width 140ms ease;
+  pointer-events: none;
+}
+
+/* What a click would do, pulsing so it reads as a promise rather than as the
+   value. This replaced a draggable dot: a handle is furniture, and on a
+   semicircle it slides off the end of the arc.
+
+   **It works in both directions.** Aiming above the value shows what would be
+   added, drawn behind the fill; aiming below it shows what would be taken
+   away, drawn *over* the fill in the same pulse — otherwise reducing a meter
+   previews nothing at all, because the real fill covers the whole promise. */
+.block-meter-pending,
+.block-meter-arc-pending {
+  color: var(--block-accent, var(--color-accent-light));
+  pointer-events: none;
+  animation: block-meter-pulse 900ms ease-in-out infinite;
+}
+
+/* Sits at the end of the fill rather than under it, so nothing is painted
+   over anything — see the comment in MeterBlock. */
+.block-meter-pending {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-full);
+  background: currentcolor;
+}
+
+.block-meter-pip-losing {
+  animation: block-meter-pulse-out 900ms ease-in-out infinite;
+}
+
+@keyframes block-meter-pulse-out {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.block-meter-pip-pending {
+  color: var(--block-accent, var(--color-accent-light));
+  animation: block-meter-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes block-meter-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* A pulse that never settles is exactly what this preference exists to stop.
+   The preview still shows — it just holds still. */
+@media (prefers-reduced-motion: reduce) {
+  .block-meter-pending,
+  .block-meter-arc-pending,
+  .block-meter-pip-pending,
+  .block-meter-pip-losing {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
+/* Capped rather than full-width: a ring stretched across the panel is a hole
+   in the sidebar, and she can make the panel wide. */
+.block-meter-arc {
+  align-self: center;
+  width: 88px;
+  max-width: 100%;
+  overflow: visible;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.block-meter-arc-track,
+.block-meter-arc-fill,
+.block-meter-arc-pending {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.block-meter-arc-track {
+  stroke: var(--color-panel-alt);
+}
+
+.block-meter-arc-fill {
+  stroke: var(--block-accent, var(--color-accent-light));
+}
+
+.block-meter-arc-pending {
+  stroke: currentcolor;
+}
+
+/* Segments rather than one sweep. On an arc that is a dash pattern in user
+   units — the viewBox is always 100 wide, so one pattern suits every shape.
+   A butt cap, because a rounded one on a 7-unit dash draws lozenges. */
+.block-meter-segmented .block-meter-arc-track,
+.block-meter-segmented .block-meter-arc-fill,
+.block-meter-segmented .block-meter-arc-pending {
+  stroke-dasharray: 6 3.2;
+  stroke-linecap: butt;
+}
+
+/* On a bar, the same idea as a gradient over both the fill and the track, so
+   the segments stay in step as the fill moves across them. */
+.block-meter-track.block-meter-segmented,
+.block-meter-track.block-meter-segmented .block-meter-fill,
+.block-meter-track.block-meter-segmented .block-meter-pending {
+  border-radius: 2px;
+  mask-image: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 13px);
+}
+
+/* Inside a dial, and a button — clicking the number is how you set it, which
+   is the whole reason the caption no longer prints it a second time. */
+/* A pie is filled to the middle rather than stroked round the edge, so it uses
+   fills where the arcs use strokes. Same geometry underneath — see piePath. */
+.block-meter-pie-track {
+  fill: var(--color-panel-alt);
+}
+
+.block-meter-pie-fill {
+  fill: var(--block-accent, var(--color-accent-light));
+}
+
+/* The wedge a click would leave behind, drawn under the real one so the
+   difference shows at whichever end it falls. */
+.block-meter-pie-pending {
+  fill: var(--block-accent, var(--color-accent-light));
+  opacity: 0.35;
+  animation: block-meter-pulse 900ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-meter-pie-pending {
+    animation: none;
+  }
+}
+
+.block-meter-arc-readout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+
+.block-meter-arc-readout:hover {
+  background: var(--color-hover);
+}
+
+/* The field is the number: same place, same size, no box growing out of the
+   middle of a dial. Typing `4` sets the value and `4/10` sets both. */
+.block-meter-readout-input {
+  min-width: 0;
+  text-align: center;
+  border: 1px solid var(--color-accent-faint-border);
+  background: var(--color-panel-alt);
+  font: inherit;
+}
+
+.block-meter-arc-readout.block-meter-readout-input {
+  font-size: 14px;
+}
+
+.block-meter-readout-input:focus {
+  outline: none;
+}
+
+/* foreignObject has no layout of its own, so an icon inside one needs a box
+   that centres it or it sits in the corner of the rectangle. */
+/* Centred in its foreignObject, which has no layout of its own, and clickable
+   — the icon inside a dial is the way to change that icon, so a dial set to
+   show one doesn't have to be sent back to a menu. */
+.block-meter-arc-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  color: var(--block-accent, var(--color-text-primary));
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-meter-arc-icon:hover {
+  background: var(--color-hover);
+}
+
+/* Nothing picked yet, on a dial that has been told to show an icon. Faint, so
+   an unfilled slot reads as an invitation rather than as a broken meter. */
+.block-meter-arc-icon-empty {
+  color: var(--color-text-muted);
+  opacity: 0.55;
+}
+
+.block-meter-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  touch-action: none;
+}
+
+.block-meter-pool .block-meter-pips {
+  gap: 3px;
+}
+
+.block-meter-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  padding: 0;
+  /* An unspent token is a faint version of the meter's own colour, not grey —
+     the reference draws a pool as one hue at two strengths, which reads as a
+     count of one thing rather than as two kinds of dot. */
+  color: color-mix(in srgb, var(--block-accent, var(--color-accent-light)) 30%, transparent);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+/* Below `.block-meter-pip`, deliberately: these carry the same specificity, so
+   whichever comes last wins and the filled state has to be the last word. */
+.block-meter-pip-filled {
+  color: var(--block-accent, var(--color-accent-light));
+}
+
+/* **A token is not a star.** A rating is five big symbols and a pool is
+   however many small ones — drawing seventy-six of them at a rating's size is
+   what turned a pool into sixteen rows of dinner plates. */
+.block-meter-pool .block-meter-pip {
+  width: 16px;
+}
+
+/* The symbol fills its button, which is a fixed width — so a row of five and a
+   row of seventy-six are drawn at the same size and simply wrap differently. */
+.block-meter-pip svg {
+  width: 100%;
+  height: auto;
+}
+
+.block-meter-pip:hover {
+  color: var(--color-text-primary);
+}
+
+.block-meter-pip-filled:hover,
+.block-meter-pip-pending:hover {
+  color: var(--block-accent, var(--color-accent-light));
+}
+
+/* Icon, name and number on one line under every shape — the reference's
+   caption. It wraps rather than truncating in the two-across grid, because the
+   name is the thing that says which stat this is. */
+.block-meter-caption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* A dial's caption is a column, not a row: the name on one line and the number
+   under it, both centred on the dial. Side by side they can only be centred as
+   a pair, which leaves neither of them over the middle of the shape. */
+.block-meter-circle .block-meter-caption,
+.block-meter-semicircle .block-meter-caption,
+.block-meter-gauge .block-meter-caption {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.block-meter-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  color: var(--block-accent, var(--color-text-secondary));
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-meter-icon:hover {
+  background: var(--color-hover);
+}
+
+/* The add-an-icon button is a plus that only shows itself when the pointer is
+   in the block or it has focus — an empty slot on every meter is four grey
+   squares in a panel that is mostly white space. */
+.block-meter-icon-empty {
+  opacity: 0;
+  color: var(--color-text-muted);
+  transition: opacity 120ms ease;
+}
+
+.block-shell:hover .block-meter-icon-empty,
+.block-meter-icon-empty:focus-visible {
+  opacity: 1;
+}
+
+/* Borderless until you touch it, like every other value field in the sidebar —
+   but without the negative margin those use to pull their padding back, which
+   is what made this row's box hang out over the meter above it. */
+.block-meter-name {
+  flex: 1;
+  min-width: 0;
+  padding: 1px var(--space-sm);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+
+/* **Capped, and never `field-sizing: content` here.** A name that grows with
+   its text stretched the whole reading, which broke the two-across layout and
+   pushed the dial off-centre the moment a name got long — she photographed it.
+   The box stays the width of the column and the text ellipses. */
+/* Sized to what is typed rather than to the column, so an empty one isn't a
+   long blank box under a small dial. `max-width` is what keeps a long name
+   from stretching the reading — that stretching is why this was pinned to
+   100% before, and the cap fixes it without the empty-box side effect. */
+.block-meter-circle .block-meter-name,
+.block-meter-semicircle .block-meter-name,
+.block-meter-gauge .block-meter-name {
+  width: auto;
+  min-width: 3ch;
+  max-width: 88px;
+  text-align: center;
+  text-overflow: ellipsis;
+  field-sizing: content;
+}
+
+.block-meter-name::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.block-meter-name:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+.block-meter-name:focus {
+  outline: none;
+  background: var(--color-panel-alt);
+  border-color: var(--color-accent-faint-border);
+}
+
+.block-meter-readout {
+  flex-shrink: 0;
+  width: auto;
+  max-width: 88px;
+  margin-left: auto;
+  padding: 1px var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+
+.block-meter-readout:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+.block-meter-circle .block-meter-readout,
+.block-meter-semicircle .block-meter-readout,
+.block-meter-gauge .block-meter-readout,
+.block-meter-circle .block-meter-numbers,
+.block-meter-semicircle .block-meter-numbers,
+.block-meter-gauge .block-meter-numbers {
+  margin-left: 0;
+}
+
+/* ---- The icon picker ---- */
+
+.icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 268px;
+  padding: var(--space-md);
+}
+
+.icon-picker-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-panel-alt);
+  border-radius: var(--radius-sm);
+}
+
+.icon-picker-tab {
+  flex: 1;
+  padding: var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.icon-picker-tab-active {
+  color: var(--color-text-primary);
+  background: var(--color-panel);
+}
+
+.icon-picker-clear {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.icon-picker-clear:hover {
+  background: var(--color-hover);
+}
+
+/* Bounded and scrolled: the whole catalogue is a few hundred things, and a
+   popover as tall as the catalogue is a popover taller than the window. */
+.icon-picker-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.icon-picker-heading {
+  position: sticky;
+  top: 0;
+  padding: var(--space-sm) 0;
+  color: var(--color-text-muted);
+  background: var(--color-panel);
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  padding-bottom: var(--space-sm);
+}
+
+.icon-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.icon-picker-option:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.icon-picker-option-active {
+  color: var(--color-text-primary);
+  background: var(--color-accent-faint);
+  box-shadow: inset 0 0 0 1px var(--color-accent-faint-border);
+}
+
+.icon-picker-emoji {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.icon-picker-empty {
+  margin: 0;
+  padding: var(--space-md) 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* An emoji standing in for a glyph, wherever a stored icon isn't one of ours. */
+.icon-as-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.block-menu-trailing-check {
+  margin-left: auto;
+  color: var(--color-accent-light);
+}
+
+/* An unticked row keeps its tick's space, so the two toggles don't jump
+   sideways as they turn on and off. */
+.block-menu-unchecked {
+  opacity: 0;
+}
+
+/* Six shapes as a grid inside the block's menu — they differ by how they look,
+   so they are picked by looking rather than read off a list of names. */
+.block-menu-shapes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 var(--space-sm);
+}
+
+.block-menu-shape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.block-menu-shape small {
+  font-size: var(--fs-2xs);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.block-menu-shape:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.block-menu-shape-active {
+  color: var(--color-text-primary);
+  background: var(--color-accent-faint);
+  box-shadow: inset 0 0 0 1px var(--color-accent-faint-border);
 }
 
 /* The source menu carries a second line per item, which the tree's own menu
@@ -356,4 +1154,213 @@
 .block-source-label small {
   color: var(--color-text-muted);
   font-size: var(--fs-2xs);
+}
+
+/* ---- The colour row, shared by a block's menu and the tree's picker ---- */
+
+/* One row in a menu, the whole palette behind the "+". Two of these appear in
+   a meter block's menu — the meter's colour and the block's — and as grids
+   that made the menu taller than the window. */
+.color-swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-sm);
+}
+
+.color-swatch-all {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+}
+
+.color-swatch-back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.color-swatch-back:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+/* Her own mixed colours, and the tile that makes another. A row of its own
+   under the palette — these follow her between projects and one of them can be
+   thrown away, neither of which is true of the named colours above. */
+.color-swatch-mine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.color-swatch-saved {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Appears on the swatch it belongs to. A saved list with no way out only ever
+   grows, and eight is the whole row. */
+.color-swatch-forget {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  color: var(--color-text-primary);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.color-swatch-saved:hover .color-swatch-forget,
+.color-swatch-forget:focus-visible {
+  opacity: 1;
+}
+
+.color-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 28px);
+  gap: 4px;
+}
+
+.color-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.color-swatch:hover {
+  border-color: var(--color-text-secondary);
+}
+
+/* A ring outside the swatch rather than a border inside it, so the colour it
+   is showing doesn't shrink when it becomes the chosen one. */
+.color-swatch-active {
+  box-shadow: 0 0 0 2px var(--color-panel), 0 0 0 3px var(--color-text-primary);
+}
+
+.color-swatch-none,
+.color-swatch-more {
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+  border-color: var(--color-border);
+}
+
+.color-swatch-none:hover,
+.color-swatch-more:hover {
+  background: var(--color-hover);
+}
+
+/* The "+" carries whatever is chosen when that isn't one of the six, so the
+   row always shows the answer it is holding — and it stays a plus, because it
+   is still the way to the rest of the palette. A ring behind the glyph, since
+   a plus alone is unreadable on half the palette. */
+.color-swatch-carrying {
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.85);
+}
+
+.color-swatch-carrying svg {
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.9));
+}
+
+/* The OS colour dialog, as one more tile: a label carrying the tile's look,
+   with the input filling it invisibly so the whole square is the target. The
+   input was styled directly for a while and `appearance: none` stripped the
+   very swatch it exists to draw, which is why this tile looked like it had
+   vanished. */
+.color-swatch-custom {
+  position: relative;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+  border-color: var(--color-border);
+  cursor: pointer;
+}
+
+.color-swatch-custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ---- What sits inside a dial ---- */
+
+.block-menu-faces {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 var(--space-sm);
+}
+
+.block-menu-face {
+  padding: 3px 2px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.block-menu-face:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.block-menu-face-active {
+  color: var(--color-text-primary);
+  background: var(--color-accent-faint);
+  box-shadow: inset 0 0 0 1px var(--color-accent-faint-border);
+}
+
+/* Reveals the rest of the icon catalogue a screenful at a time. */
+.icon-picker-more {
+  width: 100%;
+  padding: var(--space-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.icon-picker-more:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+/* The empty run under the last block. It has to have height for a right-click
+   to land on it, and it fills whatever is left of the panel. */
+.block-panel-space {
+  min-height: 96px;
 }

@@ -40,6 +40,7 @@ export function useProjectActions() {
       deleteTemplate: state.deleteTemplate,
       applyCustomTemplate: state.applyCustomTemplate,
       setNodeColor: state.setNodeColor,
+      setNodeIcon: state.setNodeIcon,
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
       setProjectHome: state.setProjectHome,

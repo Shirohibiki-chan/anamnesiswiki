@@ -4,7 +4,7 @@
 // §Node colors.
 import { type CSSProperties } from "react";
 import type { Node } from "../../constants/schema";
-import { getTemplateIcon } from "../../constants/icons";
+import { NodeIcon } from "../blocks/IconPicker";
 import { getPaletteHex } from "../../constants/palette";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useEffectiveColor } from "../../hooks/use-tree-data";
@@ -14,14 +14,18 @@ export function FolderView({ node }: { node: Node }) {
 
   const { color: effectiveKey } = useEffectiveColor(node.id);
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
-  const Icon = getTemplateIcon(node.templateKey);
 
   const containerStyle: CSSProperties = effectiveHex ? { backgroundColor: `${effectiveHex}14` } : {};
 
   return (
     <div className="folder-view" style={containerStyle}>
-      {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon reads a fixed lookup table, so it returns the same stable component reference for a given templateKey every render */}
-      <Icon size={32} className="folder-view-icon" style={effectiveHex ? { color: effectiveHex } : undefined} />
+      <NodeIcon
+        icon={node.icon}
+        templateKey={node.templateKey}
+        size={32}
+        className="folder-view-icon"
+        style={effectiveHex ? { color: effectiveHex } : undefined}
+      />
       <h1 className="folder-view-name" style={effectiveHex ? { color: effectiveHex } : undefined}>
         {node.name}
       </h1>

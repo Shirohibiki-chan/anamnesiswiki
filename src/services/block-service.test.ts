@@ -4,6 +4,7 @@ import {
   blocksFor,
   deriveBlocks,
   duplicateBlock,
+  migrateBlocks,
   moveBlock,
   newBlock,
   seedBlocks,
@@ -186,5 +187,27 @@ describe("withField", () => {
     const block = newBlock("text", { color: "teal" });
     withField(block, "color", undefined);
     expect(block.color).toBe("teal");
+  });
+});
+
+describe("migrateBlocks and meters", () => {
+  // A meter used to hold one reading directly on the block. It becomes a list
+  // of one, keeping what was set — a meter she had already filled in must not
+  // come back empty because the block learned to hold four.
+  it("lifts a block's own reading into the list", () => {
+    const [migrated] = migrateBlocks([{ id: "m", kind: "meter", meter: "bar", value: 75, max: 200 }]);
+    expect(migrated.meters).toEqual([{ id: "m-1", value: 75, max: 200 }]);
+    expect(migrated.value).toBeUndefined();
+    expect(migrated.max).toBeUndefined();
+  });
+
+  it("gives an untouched one an empty reading rather than no list", () => {
+    const [migrated] = migrateBlocks([{ id: "m", kind: "meter", meter: "rating" }]);
+    expect(migrated.meters).toEqual([{ id: "m-1" }]);
+  });
+
+  it("leaves a block that already has a list alone", () => {
+    const blocks = [{ id: "m", kind: "meter" as const, meters: [{ id: "one", value: 3 }] }];
+    expect(migrateBlocks(blocks)).toBe(blocks);
   });
 });

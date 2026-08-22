@@ -3225,6 +3225,155 @@ screenshot of a creature template she supplied.
 - **Every property field's label row became conditional**, because the shell
   draws the heading now and two of them is one too many.
 
+### Rebuilt the same day, against the reference
+
+The first cut shipped one reading per block, a draggable dot on the fill, a
+2px colour rule down the block's edge, and two number boxes standing under
+every meter. She sent five screenshots of the reference and none of those
+four survived.
+
+- **A block holds a list of readings.** The reference puts four dials under
+  one GAUGE heading, each with an icon, a name and its own numbers — which is
+  what a character's stats are. `Block.meters` is that list; `migrateBlocks`
+  lifts a block written before it into a list of one.
+- **Add meter / Show text / Show max live in the block's own `⋯` menu**, and
+  a reading is removed by the × in its caption. `BlockMenu` grows an optional
+  `meter` group the same way it already grows `onDeleteProperty` — one menu
+  per block, not a second menu inside the first.
+- **The handle is gone; hovering previews instead.** Her words for the dot
+  were that it reads as furniture, and that the semicircle's slid off the end
+  of the arc — both true. The reference shows the value you would get under
+  the cursor, dimmed and pulsing, and commits on click. That is now what every
+  shape does, dragging included, with the pulse dropped under
+  `prefers-reduced-motion`.
+- **A coloured block is coloured.** The wash covers the whole shell and the
+  heading takes the hue, which is what "block colour" meant to her. The
+  heading's colour is written inline by `BlockShell` rather than from a
+  stylesheet — see the note in handoff.
+- **The two standing number boxes are gone.** They were `NumberProperty`,
+  whose input carries a negative margin so its text lines up in a column, and
+  in a tight row that margin hung the focus box out over the meter above it —
+  which is the misalignment she photographed. The readout is the control now:
+  it shows what the reference shows and opens into a value/maximum pair when
+  clicked.
+- **The pip cap went from 20 to 200.** Twenty was a guess about what stays
+  countable; her reference draws seventy-six tokens in a wrapped grid and
+  reads fine. The cap now exists only to stop a typed 5000.
+
+### A fourth pass — the same bug in the blocks 18c hadn't touched
+
+- **Three blocks had two names.** 18c fixed the meter and left the collection
+  block drawing a source pill and the image block drawing an "Image" label,
+  both directly under a heading that already said it. The source moved into
+  the block menu with a tick on the current one; the image label is gone.
+- **"Tagged" wasn't a name anything else used.** The source labels now come
+  from `constants/collection-sources.ts`, which is also what Add Block reads,
+  so a block added as a Tag index calls itself a Tag index.
+- **Pages inside a collection were drawn in `--color-accent`** — the 15% tint,
+  the same trap as the import progress bar — which is why they were, in her
+  words, impossible to see.
+- **All three dial faces looked identical on a meter with no icon**, because
+  asking for the icon fell back to the number. It draws an empty slot instead,
+  and that slot is the button that picks an icon — which also answers "the
+  icon inside the dial should be clickable".
+- **A long name stretched its dial's column** and pushed the layout off
+  centre. `field-sizing: content` was doing that; the name is capped and
+  ellipsised now.
+- **A page's icon is clickable in the header.** The tree's menu still does a
+  whole selection at once, which is what it is for.
+
+### And a third pass, from ten more screenshots
+
+- **Half the taps on a token pool did nothing** — the pips container holds
+  pointer capture so a drag can cross them, and capture retargets the click
+  that follows to the container, so a per-pip `onClick` only fired when press
+  and release agreed. Pips commit on `pointerdown` now, like every other shape.
+- **The preview was painted over the fill** when lowering, in the track's
+  colour, which left a ragged second edge on an arc. The fill stops at
+  whichever is lower and the difference is one pulsing band.
+- **A lone dial sat against the left edge**, because the arcs laid out in a
+  two-column grid. Flex-wrap with `justify-content: center` puts one in the
+  middle and keeps two side by side.
+- **The icon picker was a few hundred icons and the reference has thousands.**
+  `glyph-catalogue.ts` now takes all of Lucide — 1,864 after dropping the
+  `LucideX`/`XIcon` aliases — with the curated groups still first and the rest
+  revealed a screenful at a time. Costs ~550KB in the main chunk (1.89MB →
+  2.44MB, measured).
+- **A page's icon only reached its tree row.** `NodeIcon` resolves it for the
+  tree, the page title and a folder's empty state alike.
+- **Eleven pastels, no custom colour.** Twenty-four in three weights, plus an
+  `<input type="color">` styled as one more swatch, in a grid shared by the
+  block menu and the tree's picker — which had been two different controls
+  disagreeing about how many colours exist. `getPaletteHex` reads a raw hex.
+- **Three faces and segments**, both from her screenshots: a dial shows its
+  number, its icon or both, and can be drawn as segments rather than a sweep.
+- **A dial with its icon inside was repeating it beside the name**, and the
+  block menu was long enough to need scrolling. Both trimmed.
+
+### And rebuilt again, from five more screenshots
+
+The same day, after the pass above. Her comparison was that ours was
+embarrassing next to the reference's, and the specifics were all fair.
+
+- **Two names for one section.** The block drew its own heading and then
+  repeated the shape underneath it. The heading is the shape now, in the top
+  left where the reference puts it, and the shape moved into the block's menu
+  as a grid of six pictures — which is how you pick between things that differ
+  by how they look.
+- **The colour stopped at an invisible edge.** `.properties-panel` had the
+  padding, so a coloured block was a box floating in a gutter. The padding
+  moved onto the blocks; the panel has none. The drag grip moved into that
+  gutter at the same time, since in the flow it pushed every heading ~18px
+  right of the content under it.
+- **The preview only worked upwards.** Aiming below a meter's value previewed
+  nothing, because the real fill covers the promise — so lowering was a blind
+  click. There is now a second preview drawn *over* the fill for the part that
+  would be removed, in all three shapes.
+- **Right-click did nothing on a block**, so the webview answered instead.
+  `BlockShell` opens the same menu at the pointer now, and reads
+  `data-meter-id` off the target so right-clicking one reading can offer to
+  duplicate or delete that one.
+- **The icon picker existed for meters and not for pages**, which was half of
+  what `docs/ideas.md` wanted it for. `Node.icon`, `setNodeIcon` (list-taking,
+  like `setNodeColor`) and Set icon in the tree's menu close that half. A
+  page's own icon replaces its template's; absent keeps the template's, which
+  is what every page had before.
+- **Right-clicking a page dragged you onto it** — `openMenu` called
+  `node.select()`, and selecting is navigating. Removed; nothing needed it.
+
+**Not built, and scoped instead:** blocks that can be dragged into the middle
+of the page and resized there, which is `docs/plan.md` Phase 28. It is a
+feature with a data-model decision in it rather than a fix, and folding it into
+this change would have made an already large one unreviewable.
+
+### Dragging, added the same day
+
+The first cut set a meter by typing into a box, with the shapes display-only.
+Her reaction on seeing it was immediate and correct — being stuck typing
+numbers into a widget whose whole point is that you can see it is tedious — so
+dragging went in before the PR was merged rather than being queued.
+
+- **Every shape is a slider.** A bar drags along its track, the three dials
+  drag round their sweep, and stars and tokens set the level the pointer
+  sweeps across. `arcFractionAt` is the inverse of the geometry that draws
+  them, so the drawing and the dragging cannot disagree.
+- **A point in a dial's gap snaps to the nearer end.** A gauge has 90 degrees
+  of nothing at the bottom; reading a drag that overshoots the full end as
+  "none of it" empties the meter at the exact moment you fill it.
+- **Dragging rounds to whole units, and the boxes stay** for the numbers a drag
+  can't land on. The gesture is coarse by design; the precise path is right
+  underneath it.
+- **`role="slider"` and the arrow keys**, since it is one now — Page Up/Down
+  for ten, Home and End for the ends. A hundred presses to cross a bar is not
+  a keyboard path.
+- **Whether a drag is running is a ref, not `hasPointerCapture`.** Written the
+  tidy way first, and in the probe the bar took the initial press and then
+  ignored every move — capture can be refused or lost without the gesture
+  ending, and the failure mode is a meter that simply doesn't drag. The ref is
+  closed out by `event.buttons` instead.
+- **A pip drag consumes its trailing click.** Otherwise a drag that ends where
+  it started fires the toggle and clears a rating that was only being adjusted.
+
 ### Decisions worth the record
 
 - **Everything is a block, including the picture and the properties**, and a
@@ -3341,3 +3490,116 @@ another, a child page, a shared tag, and an 18a link block:
   heading followed.
 - The 18a link block arrived as a Manual links collection.
 - Adding an alias worked, and the existing one rendered.
+
+---
+
+## Phase 18c — Meters ✅ Shipped 2026-08-21
+
+Six meters — Progress bar, Circle, Semi-circle, Gauge, Rating, Token pool — as
+**one `meter` block with a switchable shape**, closing Phase 18. The plan's own
+framing turned out to be the design: two value models, and the six shapes are
+presentation over them.
+
+### What shipped
+
+- **`meter-service.ts`** — the defaulting, the clamping, the pip-click rules,
+  the SVG arc geometry and its inverse (a pointer position back to a value),
+  pure and unit-tested. 39 tests.
+- **`meter` block kind** with `meter` / `value` / `max` on `Block`, and three
+  store actions (`setBlockMeter`, `setBlockValue`, `setBlockMax`).
+- **`MeterBlock.tsx`** — the six renderings, the shape picker, the list of
+  readings, pointing and dragging on every shape, and the click-to-edit
+  numbers.
+- **`constants/glyphs.ts`, `constants/emoji.ts` and `IconPicker.tsx`** — the
+  icon picker `docs/ideas.md` has wanted since 2026-08-18, built here because a
+  meter needs an icon and written to know nothing about meters.
+- **Six entries in Add Block** under a Meters heading, all creating the same
+  block with a different shape.
+
+### Decisions worth the record
+
+- **Six menu entries, one block kind.** The same shape the collection block
+  settled on in 18b: nobody adding a rating wants to add a progress bar and
+  then hunt for the setting, but a bar that should have been a gauge should
+  not have to be deleted and rebuilt either.
+- **The number survives every shape change; the maximum does not survive a
+  change of *model*.** Redrawing a bar as a gauge is the same fact drawn
+  differently, so everything stays. Turning a bar that reads against 200 into
+  a rating would otherwise hand her twenty stars to click, so the maximum is
+  dropped and the value kept.
+- **Clamping happens on read, never on write.** A rating dropped from ten pips
+  to three still stores the 8 it had, and shows 3; putting the ten back brings
+  the 8 back. Storing the clamped number instead would destroy it silently.
+- **Nothing default is written.** A meter with a value and no maximum is three
+  keys of JSON — `withField` drops anything undefined, the way 18a set up.
+- **Meters take the block colour rather than owning one.** The `⋯` menu's
+  palette was already there from 18a, so a purple influence bar needed no new
+  UI at all. The one trap was which token to fall back to: `--color-accent` is
+  a 15% tint, and a meter drawn in it is invisible — see `--color-accent-light`
+  in the CSS.
+- **Token Pool stayed in**, questioned the same day as a D&D artefact. Once
+  Rating exists the two are one widget differing by a single click rule, and
+  counting whole units is ordinary worldbuilding: spell charges, rations,
+  favours owed, ammunition.
+- **No YouTube, Spotify or map embeds**, carried from the Phase 18 scope and
+  still standing. Her reason on 2026-07-31 was aesthetic rather than the
+  offline policy, which she has never personally agreed with — so if embeds
+  come back it is a conversation to have with her, not a line to quietly cross.
+
+### Verification
+
+`pnpm lint`, `pnpm test` (1311, 52 new), `tsc --noEmit` and `pnpm build` all clean.
+
+Then driven in a throwaway probe mounting the real `BlockPanel`, because a unit
+suite cannot see a sidebar:
+
+- All six added from the menu and rendered — bar, three arcs with their own
+  viewBoxes, and two rows of five pips.
+- Typing 75 into a bar filled it to 75% and read "75%"; a circle at 40 drew a
+  single arc and a full ring drew as two.
+- Rating: clicking the third star set 3, clicking it again cleared to 0,
+  clicking the fourth set 4. Token pool: filling to 5 then clicking the third
+  token spent down to 2.
+- Raising a rating to 10 drew ten pips; switching that block to a bar kept the
+  value, dropped the maximum back to 100, and redrew as 4%.
+- Colouring the block purple turned the fill `#c4b5fd`; an uncoloured arc drew
+  in the bold teal, not the invisible tint.
+- The stored blocks came out as `{ kind, meter, value }` with no defaults, and
+  the console stayed clean throughout.
+
+Then again for dragging, driving real pointer sequences at the real panel:
+
+- A bar took a press at a quarter, followed a drag to 80%, clamped an
+  overshoot to 100%, and ignored a pointer moving over it after release.
+- A gauge pressed at half read 50%, dragged to three-quarters read 75%, and a
+  drag past the full end into the gap read 100% rather than 0.
+- A circle dragged from a quarter to 60% and stayed a single arc.
+- Stars: dragging across to the fifth set five and the click that ended the
+  drag was swallowed; clicking a star straight afterwards still toggled
+  normally; dragging back down lowered it.
+- Keyboard on a focused bar: arrow 1, Page Up 10, End full, Home empty, with
+  `role="slider"` and the aria values present.
+
+And a third time after the rebuild:
+
+- Four gauges added from the block menu laid out two across and stored as a
+  clean four-entry list.
+- The icon picker: 145 glyphs in seven groups, "health" narrowing to the
+  heart, an emoji found by keyword and stored as the character itself, drawn
+  back as text, and cleared through No icon.
+- Hovering an arc drew a pending path and left the stored value untouched;
+  clicking committed it; a real mouse-out cleared the preview.
+- Show text removed the four name boxes and stored `showText: false`; Show max
+  turned `60%` into `60`; turning either back on removed the field again.
+- Readings removed one at a time down to the last, which keeps no × and leaves
+  the block empty rather than refilling itself.
+- A token pool set to 45 of 76 through the click-to-edit numbers drew 76 pips
+  with 45 filled.
+- Colouring a block purple washed the shell and put `#c4b5fd` on the heading.
+
+**Computed styles could not be trusted in this probe** — the browser pane was
+hidden, so the page stopped compositing and even an inline `!important` colour
+failed to show up in `getComputedStyle`. Structure, stored state and event
+behaviour were all still readable and are what the checks above rest on. It is
+also why the heading's colour is set inline rather than left to a cascade that
+could not be measured.

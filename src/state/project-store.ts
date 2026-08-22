@@ -11,6 +11,9 @@ import {
   type BlockKind,
   type CollectionSource,
   type CustomPropertySpec,
+  type MeterStyle,
+  type MeterEntry,
+  type MeterFace,
   createTemplateLibrary,
   type Node,
   type Project,
@@ -68,6 +71,14 @@ import {
   seedBlocks,
   withField,
 } from "../services/block-service";
+import {
+  isPipMeter,
+  metersOf,
+  meterStyleOf,
+  newMeterEntry,
+  withMeter,
+  withoutMeter,
+} from "../services/meter-service";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   addOverride,
@@ -310,6 +321,18 @@ export type ProjectStoreState = {
   setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
   setBlockText: (nodeId: string, blockId: string, text: string) => void;
   setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
+  // Phase 18c's meters. A meter block holds a list of readings, so everything
+  // below the first two names a reading as well as a block.
+  setBlockMeter: (nodeId: string, blockId: string, style: MeterStyle) => void;
+  setBlockMeterText: (nodeId: string, blockId: string, shown: boolean) => void;
+  setBlockMeterMax: (nodeId: string, blockId: string, shown: boolean) => void;
+  setBlockMeterFace: (nodeId: string, blockId: string, face: MeterFace) => void;
+  setBlockMeterSegmented: (nodeId: string, blockId: string, segmented: boolean) => void;
+  setBlockMeterPip: (nodeId: string, blockId: string, pip: string | undefined) => void;
+  addMeter: (nodeId: string, blockId: string) => void;
+  duplicateMeter: (nodeId: string, blockId: string, meterId: string) => void;
+  removeMeter: (nodeId: string, blockId: string, meterId: string) => void;
+  editMeter: (nodeId: string, blockId: string, meterId: string, patch: Partial<MeterEntry>) => void;
   // Phase 18b's collection settings.
   setBlockSource: (nodeId: string, blockId: string, source: CollectionSource) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
@@ -324,6 +347,14 @@ export type ProjectStoreState = {
   renameOptionEverywhere: (propertyLabel: string, optionLabel: string, newLabel: string) => void;
   recolourOptionEverywhere: (propertyLabel: string, optionLabel: string, color: string) => void;
   deleteOptionEverywhere: (propertyLabel: string, optionLabel: string) => void;
+  /**
+   * A page's own icon, or `undefined` to go back to its template's.
+   *
+   * Takes a list because the tree's menu acts on the selection, the way
+   * `setNodeColor` does — giving nine pages the same icon is one action and
+   * one undo, not nine.
+   */
+  setNodeIcon: (nodeIds: string[], icon: string | undefined) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   /**
    * Point the portrait at a picture the project already has, rather than
@@ -1478,7 +1509,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // and then applies the change to it. Reading a page never writes, and a
     // world she only opened is never rewritten.
     addBlock(nodeId, kind, extra) {
-      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, extra)]);
+      // A meter block arrives with one reading in it. An empty one would draw
+      // as a heading and nothing else, which reads as a block that failed to
+      // add rather than as one waiting to be filled in.
+      const seeded = kind === "meter" ? { meters: [newMeterEntry()], ...extra } : extra;
+      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, seeded)]);
     },
 
     // Removing a block removes the block, and nothing else. A property block
@@ -1532,6 +1567,115 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     setBlockLink(nodeId, blockId, targetId) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "targetId", targetId) : block)),
+      );
+    },
+
+    // ---- Phase 18c: meters ----
+    //
+    // Changing the shape keeps the number, because a bar redrawn as a gauge is
+    // the same fact drawn differently. It drops the *maximum* when the value
+    // model changes, though: 0-100 and a count of pips are different
+    // questions, and a bar reading against 200 carried into a rating would
+    // hand her twenty stars to click.
+    setBlockMeter(nodeId, blockId, style) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => {
+          if (block.id !== blockId) return block;
+          const next = withField(block, "meter", style);
+          if (isPipMeter(style) === isPipMeter(meterStyleOf(block))) return next;
+          // The maximum belongs to the model, and every reading in the block
+          // is drawn in the same shape — so switching the shape resets all of
+          // them, not just the one the click landed near.
+          return withField(
+            next,
+            "meters",
+            metersOf(block).map((entry) => {
+              const cleared = { ...entry };
+              delete cleared.max;
+              return cleared;
+            }),
+          );
+        }),
+      );
+    },
+
+    // True is the default and is stored as absent, the way showTitle is.
+    setBlockMeterText(nodeId, blockId, shown) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "showText", shown ? undefined : false) : block)),
+      );
+    },
+
+    setBlockMeterMax(nodeId, blockId, shown) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "showMax", shown ? undefined : false) : block)),
+      );
+    },
+
+    setBlockMeterFace(nodeId, blockId, face) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "face", face) : block)),
+      );
+    },
+
+    // Off is the default and is stored as absent, like every other block flag.
+    setBlockMeterSegmented(nodeId, blockId, segmented) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "segmented", segmented || undefined) : block)),
+      );
+    },
+
+    setBlockMeterPip(nodeId, blockId, pip) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "pip", pip) : block)),
+      );
+    },
+
+    addMeter(nodeId, blockId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", [...metersOf(block), newMeterEntry()]) : block,
+        ),
+      );
+    },
+
+    // A copy of one reading, directly under it, keeping its icon, name and
+    // numbers — four stats that differ by a word and a number are the normal
+    // case, and duplicating one that came back blank would save nothing.
+    duplicateMeter(nodeId, blockId, meterId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => {
+          if (block.id !== blockId) return block;
+          const entries = metersOf(block);
+          const index = entries.findIndex((entry) => entry.id === meterId);
+          if (index === -1) return block;
+          const copy = { ...entries[index], id: crypto.randomUUID() };
+          return withField(block, "meters", [...entries.slice(0, index + 1), copy, ...entries.slice(index + 1)]);
+        }),
+      );
+    },
+
+    // Taking out the last reading leaves the block empty rather than refilling
+    // it — an empty meter block is one she can see and delete, and one that
+    // grows a new reading every time she clears it is one that won't go away.
+    removeMeter(nodeId, blockId, meterId) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", withoutMeter(metersOf(block), meterId)) : block,
+        ),
+      );
+    },
+
+    // One action for every field of a reading, because they are all the same
+    // edit to the same record and four near-identical actions would only be
+    // four places to forget the clamping rule. The raw number is stored and
+    // meter-service clamps on read: writing the clamped one would quietly
+    // destroy what she typed the moment a maximum moved under it.
+    editMeter(nodeId, blockId, meterId, patch) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", withMeter(metersOf(block), meterId, patch)) : block,
+        ),
       );
     },
 
@@ -2571,6 +2715,28 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         `recolouring ${countLabel(targets.length, "page")}`,
         () => apply((id) => previousColors.get(id)),
         () => apply(() => color),
+      );
+    },
+
+    // The same shape as setNodeColor above, and for the same reason: the tree's
+    // menu acts on the selection, so nine pages getting one icon is one action
+    // and one undo. Absent means "use the template's", which is what every
+    // page had before this existed.
+    setNodeIcon(nodeIds, icon) {
+      const { nodes } = get();
+      const targets = nodeIds.filter((id) => nodes[id]);
+      if (targets.length === 0) return;
+
+      const previous = new Map(targets.map((id) => [id, nodes[id].icon]));
+      const apply = (next: (id: string) => string | undefined) => {
+        for (const id of targets) get().updateNode(id, { icon: next(id) });
+      };
+
+      apply(() => icon);
+      record(
+        `changing the icon on ${countLabel(targets.length, "page")}`,
+        () => apply((id) => previous.get(id)),
+        () => apply(() => icon),
       );
     },
 

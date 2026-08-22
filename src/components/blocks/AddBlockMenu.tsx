@@ -10,7 +10,8 @@
 // Removing a property block keeps the value on purpose, so without this the
 // data would be stranded where only the file on disk shows it.
 import { AtSign, FileText, Image as ImageIcon, Link2, ListTree, Sparkles, Tags, Tags as TagsIcon } from "lucide-react";
-import type { BlockKind, CollectionSource } from "../../constants/schema";
+import { METER_STYLES } from "../../constants/meter-styles";
+import type { BlockKind, CollectionSource, MeterStyle } from "../../constants/schema";
 import type { RenderableProperty } from "../../services/property-service";
 
 type AddBlockMenuProps = {
@@ -18,11 +19,28 @@ type AddBlockMenuProps = {
   unshown: RenderableProperty[];
   onAdd: (kind: BlockKind) => void;
   onAddCollection: (source: CollectionSource) => void;
+  onAddMeter: (style: MeterStyle) => void;
   onAddProperty: (key: string) => void;
   onNewProperty: () => void;
 };
 
-export function AddBlockMenu({ unshown, onAdd, onAddCollection, onAddProperty, onNewProperty }: AddBlockMenuProps) {
+// The meters are one block kind with a shape setting, but they are offered as
+// one entry each: nobody adding a rating wants to add a progress bar and then
+// go looking for where to change it. The shape stays switchable afterwards —
+// see MeterBlock.
+//
+// **Read from METER_STYLES rather than listed again here.** This menu kept its
+// own copy and a seventh shape went into the constants without appearing in
+// it, which is exactly the disagreement that file exists to prevent.
+
+export function AddBlockMenu({
+  unshown,
+  onAdd,
+  onAddCollection,
+  onAddMeter,
+  onAddProperty,
+  onNewProperty,
+}: AddBlockMenuProps) {
   return (
     <div className="tree-context-menu block-add-menu">
       <div className="tree-context-menu-heading">Media</div>
@@ -54,6 +72,13 @@ export function AddBlockMenu({ unshown, onAdd, onAddCollection, onAddProperty, o
       <button type="button" onClick={() => onAdd("alias")}>
         <AtSign size={13} /> Alias
       </button>
+
+      <div className="tree-context-menu-heading">Meters</div>
+      {METER_STYLES.map((meter) => (
+        <button key={meter.key} type="button" onClick={() => onAddMeter(meter.key)}>
+          <meter.icon size={13} /> {meter.label}
+        </button>
+      ))}
 
       <div className="tree-context-menu-heading">Properties</div>
       <button type="button" onClick={onNewProperty}>
