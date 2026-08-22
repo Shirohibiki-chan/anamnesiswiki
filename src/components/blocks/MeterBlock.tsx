@@ -134,6 +134,9 @@ function MeterReading({
   // meter draws only what it holds.
   const [preview, setPreview] = useState<number | null>(null);
   const [iconRect, setIconRect] = useState<DOMRect | null>(null);
+  // Held here rather than inside the number itself, because the thing that
+  // opens it is the number *inside the dial* when the dial is showing one.
+  const [editingNumbers, setEditingNumbers] = useState(false);
 
   const max = meterMax(entry, style);
   const value = meterValue(entry, style);
@@ -265,6 +268,7 @@ function MeterReading({
   // or nowhere, so switching a block to Icon or Both is what puts it back.
   // Bars and pips keep theirs: it is the only place they have for one.
   const iconInShape = isArcMeter(style);
+  const numberInShape = isArcMeter(style) && face !== "icon";
   const caption = (
     <div className="block-meter-caption">
       {!iconInShape && (
@@ -286,7 +290,21 @@ function MeterReading({
           onChange={(e) => onEdit({ label: e.target.value || undefined })}
         />
       )}
-      <MeterNumbers entry={entry} style={style} withMax={withMax} onEdit={onEdit} />
+      {/* **The number is printed once.** A dial showing it in the middle and
+          again under the name is the same fact twice, which is not what the
+          reference does — so when the shape has it, the caption doesn't, and
+          the one in the middle is what opens the editor. */}
+      {(!numberInShape || editingNumbers) && (
+        <MeterNumbers
+          entry={entry}
+          style={style}
+          withMax={withMax}
+          editing={editingNumbers}
+          onOpen={() => setEditingNumbers(true)}
+          onClose={() => setEditingNumbers(false)}
+          onEdit={onEdit}
+        />
+      )}
     </div>
   );
 
@@ -414,15 +432,20 @@ function MeterReading({
             </foreignObject>
           )}
           {face !== "icon" && (
-            <text
-              className="block-meter-arc-readout"
-              x="50"
-              y={READOUT_Y[style] + (face === "both" ? 8 : 0)}
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              {meterReadout(entry, style, withMax)}
-            </text>
+            <foreignObject x="14" y={READOUT_Y[style] - 10 + (face === "both" ? 8 : 0)} width="72" height="22">
+              <button
+                type="button"
+                className="block-meter-arc-readout"
+                title="Set the numbers"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingNumbers(true);
+                }}
+              >
+                {meterReadout(entry, style, withMax)}
+              </button>
+            </foreignObject>
           )}
         </svg>
         {caption}
@@ -523,22 +546,33 @@ function MeterNumbers({
   entry,
   style,
   withMax,
+  editing,
+  onOpen,
+  onClose,
   onEdit,
 }: {
   entry: MeterEntry;
   style: MeterStyle;
   withMax: boolean;
+  /** Owned by the reading, since a dial opens this from its own middle. */
+  editing: boolean;
+  onOpen: () => void;
+  onClose: () => void;
   onEdit: (patch: Partial<MeterEntry>) => void;
 }) {
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ value: "", max: "" });
 
-  function open() {
-    setDraft({
-      value: entry.value === undefined ? "" : String(entry.value),
-      max: entry.max === undefined ? "" : String(entry.max),
-    });
-    setEditing(true);
+  // Re-read whenever the pair opens, so it starts from what is stored rather
+  // than from whatever was typed the last time it was open.
+  const [wasEditing, setWasEditing] = useState(editing);
+  if (editing !== wasEditing) {
+    setWasEditing(editing);
+    if (editing) {
+      setDraft({
+        value: entry.value === undefined ? "" : String(entry.value),
+        max: entry.max === undefined ? "" : String(entry.max),
+      });
+    }
   }
 
   function parse(text: string): number | undefined {
@@ -550,7 +584,7 @@ function MeterNumbers({
 
   if (!editing) {
     return (
-      <button type="button" className="block-meter-readout" title="Set the numbers" onClick={open}>
+      <button type="button" className="block-meter-readout" title="Set the numbers" onClick={onOpen}>
         {meterReadout(entry, style, withMax)}
       </button>
     );
@@ -562,10 +596,10 @@ function MeterNumbers({
       // Closes when focus leaves the pair rather than on either box's own
       // blur, or tabbing from the value to the maximum would shut it.
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setEditing(false);
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onClose();
       }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === "Escape") setEditing(false);
+        if (e.key === "Enter" || e.key === "Escape") onClose();
       }}
     >
       <input

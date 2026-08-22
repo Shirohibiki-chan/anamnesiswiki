@@ -8,6 +8,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import type { Block, Node } from "../../constants/schema";
 import { useCollection } from "../../hooks/use-link-index";
+import { NodeIcon } from "./IconPicker";
 import { TreePopover } from "../tree/TreePopover";
 
 // What an empty collection says. Each source is empty for a different reason,
@@ -89,8 +90,13 @@ export function CollectionBlock({
         <ul className="block-collection-list">
           {rows.map((row) => (
             <li key={row.node.id} className="block-collection-row">
+              {/* The page's own icon in front of its name, and the whole row
+                  is the target — a list of bare white words was the complaint,
+                  and a page in a list should look the way it looks in the
+                  tree. */}
               <button type="button" className="block-link" onClick={() => onOpen(row.node.id)}>
-                {row.node.name || "Untitled"}
+                <NodeIcon icon={row.node.icon} templateKey={row.node.templateKey} size={13} />
+                <span className="block-link-name">{row.node.name || "Untitled"}</span>
               </button>
               {/* Backlinks say where each one came from. A list that cannot
                   explain itself is the failure this whole phase started from. */}
@@ -152,7 +158,7 @@ export function CollectionBlock({
                         setQuery("");
                       }}
                     >
-                      {tag.label}
+                      <span className="block-collection-tag">{tag.label}</span>
                     </button>
                   ))
                 : pageMatches.map((candidate) => (
@@ -165,6 +171,7 @@ export function CollectionBlock({
                         setQuery("");
                       }}
                     >
+                      <NodeIcon icon={candidate.icon} templateKey={candidate.templateKey} size={13} />
                       {candidate.name || "Untitled"}
                     </button>
                   ))}
