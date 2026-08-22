@@ -157,7 +157,7 @@
    a ceiling and a scrollbar instead, so the next six cost nothing. */
 .block-add-menu {
   min-width: 208px;
-  max-height: min(62vh, 440px);
+  max-height: max(240px, min(62vh, 440px));
   padding: 0 0 var(--space-sm);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -293,6 +293,18 @@
 /* Menu bits that the tree's context-menu styles don't already cover. The menus
    themselves reuse `.tree-context-menu`, whose `button` rule styles every item
    — so an item here carries no class of its own on purpose. */
+
+/* The block's menu scrolls for the same reason Add Block's does: a meter block
+   carries a shape grid, two colour rows, three display toggles and the meter
+   entries, and that is already most of a short window. */
+.block-menu {
+  /* Floored as well as capped: a viewport height that reports as zero — a
+     window still being laid out, a pane not yet painting — would otherwise
+     resolve 70vh to nothing and collapse the menu to a scrollbar. */
+  max-height: max(240px, min(70vh, 520px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 .block-menu-separator {
   height: 1px;
@@ -676,6 +688,30 @@
 
 /* Inside a dial, and a button — clicking the number is how you set it, which
    is the whole reason the caption no longer prints it a second time. */
+/* A pie is filled to the middle rather than stroked round the edge, so it uses
+   fills where the arcs use strokes. Same geometry underneath — see piePath. */
+.block-meter-pie-track {
+  fill: var(--color-panel-alt);
+}
+
+.block-meter-pie-fill {
+  fill: var(--block-accent, var(--color-accent-light));
+}
+
+/* The wedge a click would leave behind, drawn under the real one so the
+   difference shows at whichever end it falls. */
+.block-meter-pie-pending {
+  fill: var(--block-accent, var(--color-accent-light));
+  opacity: 0.35;
+  animation: block-meter-pulse 900ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-meter-pie-pending {
+    animation: none;
+  }
+}
+
 .block-meter-arc-readout {
   display: flex;
   align-items: center;
@@ -1122,18 +1158,30 @@
 
 /* ---- The colour row, shared by a block's menu and the tree's picker ---- */
 
-.color-swatches {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
+/* One row in a menu, the whole palette behind the "+". Two of these appear in
+   a meter block's menu — the meter's colour and the block's — and as grids
+   that made the menu taller than the window. */
+.color-swatch-row {
+  display: flex;
+  align-items: center;
   gap: 3px;
   padding: var(--space-sm);
+}
+
+.color-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 22px);
+  gap: 4px;
+  padding: var(--space-md);
 }
 
 .color-swatch {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
   padding: 0;
   color: var(--color-text-muted);
   background: none;
@@ -1153,8 +1201,15 @@
 }
 
 .color-swatch-none,
+.color-swatch-more,
 .color-swatch-custom {
   border-color: var(--color-border);
+}
+
+/* The "+" carries whatever is chosen when that isn't one of the six, so the
+   row always shows the answer it is holding. */
+.color-swatch-more {
+  margin-left: auto;
 }
 
 /* The OS colour dialog, opened by a swatch that looks like the others. The

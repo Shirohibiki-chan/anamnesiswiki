@@ -49,6 +49,9 @@ type BlockMenuProps = {
      */
     onDuplicateMeter?: () => void;
     onRemoveMeter?: () => void;
+    /** The right-clicked reading's own colour, and how to set it. */
+    meterColor?: string;
+    onSetMeterColor?: (color: string | undefined) => void;
     face: MeterFace;
     segmented: boolean;
     onSetFace: (face: MeterFace) => void;
@@ -135,6 +138,19 @@ export function BlockMenu({
               </button>
             ))}
           </div>
+
+          {/* One reading's own colour, when the menu was opened on one. Four
+              dials under a heading are four different things, and colouring
+              them together is what the block's colour below is for; this is
+              the other half. Clearing it hands the reading back to the
+              block's. */}
+          {meter.onSetMeterColor && (
+            <>
+              <div className="block-menu-separator" />
+              <div className="tree-context-menu-heading">This meter's colour</div>
+              <ColorSwatches value={meter.meterColor} onPick={meter.onSetMeterColor} />
+            </>
+          )}
 
           <div className="block-menu-separator" />
           <button type="button" onClick={meter.onAdd}>

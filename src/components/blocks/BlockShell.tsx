@@ -48,6 +48,8 @@ type BlockShellProps = {
     onAdd: () => void;
     onDuplicateMeter: (meterId: string) => void;
     onRemoveMeter: (meterId: string) => void;
+    colorOfMeter: (meterId: string) => string | undefined;
+    onSetMeterColor: (meterId: string, color: string | undefined) => void;
     onToggleText: () => void;
     onToggleMax: () => void;
   };
@@ -243,6 +245,15 @@ export function BlockShell({
                 onRemoveMeter: menuMeterId
                   ? () => {
                       meter.onRemoveMeter(menuMeterId);
+                      setMenuRect(null);
+                    }
+                  : undefined,
+                meterColor: menuMeterId ? meter.colorOfMeter(menuMeterId) : undefined,
+                // Only offered when the menu was opened on a reading: from the
+                // `⋯` button there is no "this meter" to mean.
+                onSetMeterColor: menuMeterId
+                  ? (color: string | undefined) => {
+                      meter.onSetMeterColor(menuMeterId, color);
                       setMenuRect(null);
                     }
                   : undefined,

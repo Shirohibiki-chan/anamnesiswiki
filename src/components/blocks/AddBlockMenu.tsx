@@ -9,22 +9,8 @@
 // The properties section is the way back to a field whose block was removed.
 // Removing a property block keeps the value on purpose, so without this the
 // data would be stranded where only the file on disk shows it.
-import {
-  AtSign,
-  Circle,
-  Coins,
-  Donut,
-  FileText,
-  Gauge,
-  Image as ImageIcon,
-  Link2,
-  ListTree,
-  RectangleHorizontal,
-  Sparkles,
-  Star,
-  Tags,
-  Tags as TagsIcon,
-} from "lucide-react";
+import { AtSign, FileText, Image as ImageIcon, Link2, ListTree, Sparkles, Tags, Tags as TagsIcon } from "lucide-react";
+import { METER_STYLES } from "../../constants/meter-styles";
 import type { BlockKind, CollectionSource, MeterStyle } from "../../constants/schema";
 import type { RenderableProperty } from "../../services/property-service";
 
@@ -38,18 +24,14 @@ type AddBlockMenuProps = {
   onNewProperty: () => void;
 };
 
-// The six meters are one block kind with a shape setting, but they are offered
-// as six entries: nobody adding a rating wants to add a progress bar and then
+// The meters are one block kind with a shape setting, but they are offered as
+// one entry each: nobody adding a rating wants to add a progress bar and then
 // go looking for where to change it. The shape stays switchable afterwards —
 // see MeterBlock.
-const METERS: { style: MeterStyle; label: string; icon: typeof Circle }[] = [
-  { style: "bar", label: "Progress bar", icon: RectangleHorizontal },
-  { style: "circle", label: "Circle", icon: Circle },
-  { style: "semicircle", label: "Semi-circle", icon: Donut },
-  { style: "gauge", label: "Gauge", icon: Gauge },
-  { style: "rating", label: "Rating", icon: Star },
-  { style: "pool", label: "Token pool", icon: Coins },
-];
+//
+// **Read from METER_STYLES rather than listed again here.** This menu kept its
+// own copy and a seventh shape went into the constants without appearing in
+// it, which is exactly the disagreement that file exists to prevent.
 
 export function AddBlockMenu({
   unshown,
@@ -92,8 +74,8 @@ export function AddBlockMenu({
       </button>
 
       <div className="tree-context-menu-heading">Meters</div>
-      {METERS.map((meter) => (
-        <button key={meter.style} type="button" onClick={() => onAddMeter(meter.style)}>
+      {METER_STYLES.map((meter) => (
+        <button key={meter.key} type="button" onClick={() => onAddMeter(meter.key)}>
           <meter.icon size={13} /> {meter.label}
         </button>
       ))}

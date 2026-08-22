@@ -51,6 +51,16 @@ export function showsMax(block: Block): boolean {
 }
 
 /** The symbol a pip meter counts in. */
+/**
+ * The colour a reading draws in: its own, or the block's, or neither.
+ *
+ * A reading's own wins, because setting one is a deliberate act on that
+ * reading — see MeterEntry.color.
+ */
+export function meterColor(block: Block, entry: MeterEntry): string | undefined {
+  return entry.color ?? block.color;
+}
+
 export function meterPip(block: Block): string {
   return block.pip ?? (meterStyleOf(block) === "rating" ? "star" : "circle");
 }
@@ -194,11 +204,38 @@ export function arcSpan(
 }
 
 /** Where each round shape starts and how far it sweeps. */
-export const ARC_GEOMETRY: Record<"circle" | "semicircle" | "gauge", { start: number; sweep: number }> = {
+export const ARC_GEOMETRY: Record<ArcStyle, { start: number; sweep: number }> = {
   circle: { start: 0, sweep: 360 },
   semicircle: { start: 270, sweep: 180 },
   gauge: { start: 225, sweep: 270 },
+  pie: { start: 0, sweep: 360 },
 };
+
+/**
+ * A filled wedge from the centre, for a pie.
+ *
+ * Not an arc with a thick stroke: a pie is solid to the middle, so it is a
+ * path that goes centre → edge → round → back. Shares its angles with the
+ * round shapes above, which is what lets a pie be dragged by exactly the same
+ * maths as a circle.
+ */
+export function piePath(fraction: number, radius = 44, centre = 50): string {
+  const filled = Math.min(Math.max(fraction, 0), 1);
+  if (filled <= 0) return "";
+
+  // A whole pie is a circle, and drawing it as one wedge would leave a seam
+  // where the two ends meet at the same point.
+  if (filled >= 0.9999) {
+    const [top] = [meterPoint(0, radius, centre)];
+    const bottom = meterPoint(180, radius, centre);
+    return `M ${top[0]} ${top[1]} A ${radius} ${radius} 0 1 1 ${bottom[0]} ${bottom[1]} A ${radius} ${radius} 0 1 1 ${top[0]} ${top[1]} Z`;
+  }
+
+  const degrees = filled * 360;
+  const [x0, y0] = meterPoint(0, radius, centre);
+  const [x1, y1] = meterPoint(degrees, radius, centre);
+  return `M ${centre} ${centre} L ${x0} ${y0} A ${radius} ${radius} 0 ${degrees > 180 ? 1 : 0} 1 ${x1} ${y1} Z`;
+}
 
 /**
  * The number drawn inside a round meter.
@@ -215,11 +252,17 @@ export function meterReadout(entry: MeterEntry, style: MeterStyle, withMax = tru
   return max === DEFAULT_MAX ? `${Math.round(meterFraction(entry, style) * 100)}%` : `${rounded}/${max}`;
 }
 
-/** The round shapes, as their own type — the three that are drawn as an arc. */
-export type ArcStyle = "circle" | "semicircle" | "gauge";
+/**
+ * The round shapes: the three drawn as an arc, and the pie.
+ *
+ * A pie is in here because it is aimed and dragged exactly like a circle —
+ * same centre, same angles, same inverse. It is only *drawn* differently, and
+ * that difference lives in the component.
+ */
+export type ArcStyle = "circle" | "semicircle" | "gauge" | "pie";
 
 export function isArcMeter(style: MeterStyle): style is ArcStyle {
-  return style === "circle" || style === "semicircle" || style === "gauge";
+  return style === "circle" || style === "semicircle" || style === "gauge" || style === "pie";
 }
 
 /**

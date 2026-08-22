@@ -10,7 +10,7 @@
 - **A dial can show its number, its icon, or both**, and can be drawn in **segments** instead of one solid sweep. Both are in the block's menu.
 - **Name each meter whatever it measures.** Type straight into the name beside it.
 - **Show text** and **Show max** in the block's menu, so a row of dials can be just the dials, and "6/10" can be "6".
-- **Four of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle** and **Gauge**. They read against 100 unless you say otherwise, so a bar set to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
+- **Five of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle**, **Gauge** and **Pie chart**. They read against 100 unless you say otherwise, so a bar set to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
 - **Two of them count whole things:** a **Rating** you set a level on, and a **Token pool** you spend one at a time. Spell charges, favours owed, ammunition. They span the whole block, so five stars are five big stars — and seventy-six tokens shrink and wrap into a grid instead. **Pick what they're counted in** with **Rating symbol** in the block's menu: skulls, coins, acorns, an emoji, anything in the picker.
 - **Point at a meter and it shows you what you'd get.** The value under your cursor previews as a dimmed, pulsing fill before you commit it, so a click is never a guess — **both ways**: aim above the value and it shows what would be added, aim below and it shows what would be taken away. Click to set it, or press and drag to sweep through values. Sweeping across stars or tokens works the same way.
 - **Click a meter's number and type it.** One field, where the number already is: type **62** on a percentage meter and it's 62%, type **4/10** on a counted one and it's four out of ten. Enter to finish, Escape to back out. Dragging moves in whole units; typing is for 62.5 and for "out of 76".
@@ -18,11 +18,13 @@
 - **They work from the keyboard.** Tab to a meter, then arrow keys to nudge it, Page Up and Page Down for ten at a time, Home and End for empty and full.
 - **The shape is a setting, not a decision you're stuck with.** Pick another from the six in the block's menu — your numbers come with it, and the block's heading follows.
 - **Pages can have their own icon.** Right-click a page → **Set icon**, and it's the same picker the meters use, glyphs and emoji both. It replaces the icon its template gave it and shows everywhere that page appears — the tree, its title, its breadcrumb. Clearing it puts the template's back. Works on a whole selection at once, like Set color.
-- **Far more colours, and any colour you like.** The palette went from eleven pastels to twenty-four in three weights, and there's a **+** on the end that opens your system's colour picker for anything else. Pages and blocks share one colour control now, so they can't disagree about what's on offer.
+- **Far more colours, and any colour you like.** Six are offered in the menu itself, the other eighteen sit behind the **+**, and at the end of those is your system's colour picker for anything at all. Pages and blocks share one colour control now, so they can't disagree about what's on offer.
+- **A single meter can have its own colour.** Right-click one for **This meter's colour**, so four dials under one heading can be four colours. Clearing it hands that meter back to the block's colour.
 - **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.
 
 ### Adjustments
 
+- **A block's own menu scrolls** rather than running off the screen.
 - **Add Block's headings are readable, and the menu scrolls.** Media, Blocks, Meters and Properties stand out from the things under them and stay put at the top while you scroll their section — and the menu stops growing at a sensible height instead of running off the screen as more block types arrive.
 
 - **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block from edge to edge of the sidebar and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.

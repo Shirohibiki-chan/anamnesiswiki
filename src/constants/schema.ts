@@ -127,7 +127,7 @@ export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "colle
  * rather than six kinds, the same way `collection` carries a source — a bar
  * that should have been a gauge is a setting, not a delete and a rebuild.
  */
-export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "rating" | "pool";
+export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "pie" | "rating" | "pool";
 
 /** The shapes that count whole units rather than measuring a proportion. */
 export const PIP_METER_STYLES: MeterStyle[] = ["rating", "pool"];
@@ -161,6 +161,15 @@ export type MeterEntry = {
   label?: string;
   value?: number;
   max?: number;
+  /**
+   * This reading's own colour, overriding the block's. A palette key or a hex,
+   * the same as `Block.color`.
+   *
+   * Four dials under one heading are four different things — health, mana,
+   * favour, rations — and colouring them together is what a *block* colour is
+   * for. This is the other half: one of them being red on its own.
+   */
+  color?: string;
 };
 
 /**

@@ -27,7 +27,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useBlocks } from "../../hooks/use-blocks";
-import { isPipMeter, meterPip } from "../../services/meter-service";
+import { isPipMeter, meterPip, metersOf } from "../../services/meter-service";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
@@ -437,6 +437,8 @@ export function BlockPanel() {
                         onAdd: () => addMeter(node.id, block.id),
                         onDuplicateMeter: (meterId) => duplicateMeter(node.id, block.id, meterId),
                         onRemoveMeter: (meterId) => removeMeter(node.id, block.id, meterId),
+                        colorOfMeter: (meterId) => metersOf(block).find((m) => m.id === meterId)?.color,
+                        onSetMeterColor: (meterId, color) => editMeter(node.id, block.id, meterId, { color }),
                         onToggleText: () => setBlockMeterText(node.id, block.id, block.showText === false),
                         onToggleMax: () => setBlockMeterMax(node.id, block.id, block.showMax === false),
                       }

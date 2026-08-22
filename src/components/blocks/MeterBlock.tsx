@@ -24,18 +24,21 @@
 // The arithmetic and the arc geometry are in meter-service, which is where
 // they can be tested — including the inverse used here, turning a pointer
 // position back into a value.
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Plus, X } from "lucide-react";
+import { getPaletteHex } from "../../constants/palette";
 import type { Block, MeterEntry, MeterFace, MeterStyle } from "../../constants/schema";
 import {
   ARC_GEOMETRY,
   arcFractionAt,
   arcPath,
   arcSpan,
+  piePath,
   barFractionAt,
   isArcMeter,
   meterFace,
   meterFraction,
+  meterColor,
   meterPip,
   meterMax,
   meterReadout,
@@ -54,10 +57,10 @@ import { TreePopover } from "../tree/TreePopover";
 import { IconPicker, MeterIcon } from "./IconPicker";
 
 /** Where the readout sits inside each round shape. */
-const READOUT_Y: Record<ArcStyle, number> = { circle: 50, semicircle: 44, gauge: 58 };
+const READOUT_Y: Record<ArcStyle, number> = { circle: 50, semicircle: 44, gauge: 58, pie: 50 };
 
 /** How much of the 100-wide box each round shape actually draws in. */
-const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gauge: 90 };
+const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gauge: 90, pie: 100 };
 
 type MeterBlockProps = {
   block: Block;
@@ -86,6 +89,7 @@ export function MeterBlock({ block, onEdit, onRemove, onAdd }: MeterBlockProps) 
               entry={entry}
               style={style}
               pip={meterPip(block)}
+              colour={getPaletteHex(meterColor(block, entry))}
               face={meterFace(block, entry)}
               segmented={block.segmented === true}
               withText={showsText(block)}
@@ -105,6 +109,8 @@ type ReadingProps = {
   style: MeterStyle;
   /** The symbol this block counts in — see meterPip. */
   pip: string;
+  /** This reading's colour as a hex, its own or the block's. */
+  colour: string | null;
   face: MeterFace;
   segmented: boolean;
   withText: boolean;
@@ -117,6 +123,7 @@ function MeterReading({
   entry,
   style,
   pip,
+  colour,
   face,
   segmented,
   withText,
@@ -282,8 +289,12 @@ function MeterReading({
   // part of the panel — her words, and right. The icon lives inside the dial
   // or nowhere, so switching a block to Icon or Both is what puts it back.
   // Bars and pips keep theirs: it is the only place they have for one.
-  const iconInShape = isArcMeter(style);
-  const numberInShape = isArcMeter(style) && face !== "icon";
+  // A pie has no hole: an icon or a number in the middle of one sits on top of
+  // the wedge it is describing. Both stay in the caption for a pie, which is
+  // also where a chart normally carries its label.
+  const solidShape = style === "pie";
+  const iconInShape = isArcMeter(style) && !solidShape;
+  const numberInShape = isArcMeter(style) && !solidShape && face !== "icon";
   const caption = (
     <div className="block-meter-caption">
       {!iconInShape && (
@@ -356,7 +367,11 @@ function MeterReading({
 
   if (style === "bar") {
     return (
-      <div className="block-meter-reading" data-meter-id={entry.id}>
+      <div
+        className="block-meter-reading"
+        data-meter-id={entry.id}
+        style={colour ? ({ ["--block-accent" as string]: colour } as CSSProperties) : undefined}
+      >
         <div
           {...slider}
           ref={track}
@@ -401,7 +416,11 @@ function MeterReading({
   if (isArcMeter(style)) {
     const geometry = ARC_GEOMETRY[style];
     return (
-      <div className="block-meter-reading" data-meter-id={entry.id}>
+      <div
+        className="block-meter-reading"
+        data-meter-id={entry.id}
+        style={colour ? ({ ["--block-accent" as string]: colour } as CSSProperties) : undefined}
+      >
         <svg
           {...slider}
           ref={arc}
@@ -422,13 +441,29 @@ function MeterReading({
           {/* The empty part of the shape is drawn as a full sweep underneath
               rather than as a separate outline, so the two always agree about
               where the ends are. */}
-          <path className="block-meter-arc-track" d={arcPath(1, geometry.start, geometry.sweep)} />
-          <path className="block-meter-arc-fill" d={arcPath(solidFraction, geometry.start, geometry.sweep)} />
-          {previewFraction !== null && previewFraction !== fraction && (
-            <path
-              className="block-meter-arc-pending"
-              d={arcSpan(previewFraction, fraction, geometry.start, geometry.sweep)}
-            />
+          {solidShape ? (
+            <>
+              <circle className="block-meter-pie-track" cx="50" cy="50" r="44" />
+              {/* The promise is drawn *under* the certain part, spanning to
+                  whichever of the two is larger — so raising shows a pale
+                  wedge past the solid one, and lowering shows the pale wedge
+                  the solid one has retreated out of. */}
+              {previewFraction !== null && previewFraction !== fraction && (
+                <path className="block-meter-pie-pending" d={piePath(Math.max(previewFraction, fraction))} />
+              )}
+              <path className="block-meter-pie-fill" d={piePath(solidFraction)} />
+            </>
+          ) : (
+            <>
+              <path className="block-meter-arc-track" d={arcPath(1, geometry.start, geometry.sweep)} />
+              <path className="block-meter-arc-fill" d={arcPath(solidFraction, geometry.start, geometry.sweep)} />
+              {previewFraction !== null && previewFraction !== fraction && (
+                <path
+                  className="block-meter-arc-pending"
+                  d={arcSpan(previewFraction, fraction, geometry.start, geometry.sweep)}
+                />
+              )}
+            </>
           )}
           {/* Three faces, as the reference offers: the number, the icon, or
               both stacked. **A face that asks for an icon shows an empty slot
@@ -495,7 +530,11 @@ function MeterReading({
   const promisedTo = preview === null ? value : Math.min(Math.max(preview, 0), max);
 
   return (
-    <div className="block-meter-reading" data-meter-id={entry.id}>
+    <div
+      className="block-meter-reading"
+      data-meter-id={entry.id}
+      style={colour ? ({ ["--block-accent" as string]: colour } as CSSProperties) : undefined}
+    >
       <div
         className="block-meter-pips"
         // **Committed on pointerdown, not on a click.** Capturing the pointer

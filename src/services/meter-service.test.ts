@@ -15,6 +15,7 @@ import {
   showsMax,
   showsText,
   parseMeterInput,
+  piePath,
   valueAtFraction,
   withMeter,
   withoutMeter,
@@ -348,5 +349,39 @@ describe("parseMeterInput", () => {
 
   it("takes a decimal, since typing is the precise path", () => {
     expect(parseMeterInput("62.5")).toEqual({ value: 62.5 });
+  });
+});
+
+describe("piePath", () => {
+  it("draws nothing when empty", () => {
+    expect(piePath(0)).toBe("");
+  });
+
+  // A wedge runs centre, edge, round, back — so it starts at the middle and
+  // closes, which is what makes it solid rather than a line.
+  it("draws a wedge from the centre and closes it", () => {
+    const path = piePath(0.25);
+    expect(path.startsWith("M 50 50 L")).toBe(true);
+    expect(path.endsWith("Z")).toBe(true);
+  });
+
+  it("starts at the top, like every other round shape here", () => {
+    expect(piePath(0.25)).toContain("L 50 6 ");
+  });
+
+  it("flags the long way round past halfway", () => {
+    expect(piePath(0.75)).toContain(" 1 1 ");
+    expect(piePath(0.25)).toContain(" 0 1 ");
+  });
+
+  // A whole pie is a circle: one wedge from a point back to the same point
+  // draws nothing, so it becomes two half arcs.
+  it("draws a full pie as two arcs rather than a seam", () => {
+    expect(piePath(1).match(/A /g)?.length).toBe(2);
+    expect(piePath(1).includes("L")).toBe(false);
+  });
+
+  it("clamps an overfull fraction", () => {
+    expect(piePath(3)).toBe(piePath(1));
   });
 });
