@@ -2833,6 +2833,16 @@ is below.
   carried across would draw twenty stars to click. `setBlockMeter` is the one
   place that decides this — see `isPipMeter`.
 
+- **A live colour preview goes through `color-preview-store`, never through
+  the project.** Recolouring for real looks cheap — `updateNode` sets state and
+  debounces its own save — but it replaces the whole `nodes` record, and that
+  record is what `link-index` and `search-service` key their `WeakMap` caches
+  on. So one pointer move inside the system colour dialog re-walks every page
+  of prose in the world, and a drag does it a hundred times. **This only shows
+  up in a real project**: a probe with one page has nothing to re-walk, which
+  is how it shipped twice. The store is read by `BlockShell` and one meter
+  reading and by nothing else, so a preview costs those a render.
+
 - **A meter's pips commit on `pointerdown`, never on a click.** The pips
   container takes pointer capture so a drag can cross them, and capture
   retargets the following click to the *container* — so a per-pip `onClick`

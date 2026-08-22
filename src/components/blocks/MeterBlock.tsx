@@ -27,6 +27,7 @@
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { getPaletteHex } from "../../constants/palette";
+import { useColorPreview } from "../../hooks/use-color-preview";
 import type { Block, MeterEntry, MeterFace, MeterStyle } from "../../constants/schema";
 import {
   ARC_GEOMETRY,
@@ -159,6 +160,10 @@ function MeterReading({
     // rather than emptied, so a meter never flickers to nothing mid-keystroke.
     if (patch) onEdit(patch);
   }
+
+  // The same preview the shell watches, for one reading rather than the block.
+  const previewHex = useColorPreview(entry.id);
+  const accent = previewHex ?? colour;
 
   const max = meterMax(entry, style);
   const value = meterValue(entry, style);
@@ -370,7 +375,7 @@ function MeterReading({
       <div
         className="block-meter-reading"
         data-meter-id={entry.id}
-        style={colour ? ({ ["--block-accent" as string]: colour } as CSSProperties) : undefined}
+        style={accent ? ({ ["--block-accent" as string]: accent } as CSSProperties) : undefined}
       >
         <div
           {...slider}
@@ -419,7 +424,7 @@ function MeterReading({
       <div
         className="block-meter-reading"
         data-meter-id={entry.id}
-        style={colour ? ({ ["--block-accent" as string]: colour } as CSSProperties) : undefined}
+        style={accent ? ({ ["--block-accent" as string]: accent } as CSSProperties) : undefined}
       >
         <svg
           {...slider}
@@ -533,7 +538,7 @@ function MeterReading({
     <div
       className="block-meter-reading"
       data-meter-id={entry.id}
-      style={colour ? ({ ["--block-accent" as string]: colour } as CSSProperties) : undefined}
+      style={accent ? ({ ["--block-accent" as string]: accent } as CSSProperties) : undefined}
     >
       <div
         className="block-meter-pips"

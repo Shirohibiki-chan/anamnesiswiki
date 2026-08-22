@@ -21,6 +21,7 @@
 import { useCallback, useState } from "react";
 import { ChevronLeft, Plus, X } from "lucide-react";
 import { COLOR_PALETTE, isHexColor } from "../../constants/palette";
+import { useColorPreviewActions } from "../../hooks/use-color-preview";
 import { useColorActions, useSavedColors } from "../../hooks/use-preferences";
 
 /** The six offered without a second click. */
@@ -30,32 +31,43 @@ type ColorSwatchesProps = {
   /** The stored value: a palette key, a hex, or nothing. */
   value: string | undefined;
   onPick: (value: string | undefined) => void;
+  /**
+   * What the system picker should recolour live: a block id, or a meter
+   * reading's id. Absent means no live preview — the colour lands when the
+   * dialog closes, which is right for anything that can't show one cheaply.
+   */
+  previewTarget?: string;
 };
 
-export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
+export function ColorSwatches({ value, onPick, previewTarget }: ColorSwatchesProps) {
   const [showAll, setShowAll] = useState(false);
   const savedColors = useSavedColors();
   const { saveColor, forgetColor } = useColorActions();
+  const { preview, clear } = useColorPreviewActions();
 
-  // **The colour applies live; only *keeping* it waits for the dialog to
-  // close.** A colour input fires continuously while the pointer moves around
-  // the system dialog, and both halves used to run on every one of those: the
-  // block was recoloured — which is right, and is the live preview — and the
-  // colour was also saved into preferences, which writes app-settings.json.
-  // A file write per mouse move is what made the picker crawl, and it filled
-  // the saved row with every shade passed through on the way.
+  // **Live is a preview; the edit happens once, on `change`.** A colour input
+  // fires on every pointer move inside the system dialog, and *neither* real
+  // half is cheap enough for that: saving into preferences writes
+  // app-settings.json, and recolouring for real replaces the project's `nodes`
+  // record, which is what link-index and search key their caches on — so a
+  // drag re-walks every page of prose in the world, once per pixel.
   //
-  // Recolouring is cheap: `updateNode` sets state and debounces its save, so
-  // the preview costs a render. Saving is the expensive half, and `change`
-  // fires once, when the dialog is done.
-  const keepOnCommit = useCallback(
+  // Both were tried and both crawled. What runs live now is the preview store,
+  // which only the thing being recoloured reads.
+  const commitOnClose = useCallback(
     (input: HTMLInputElement | null) => {
       if (!input) return;
-      const keep = () => saveColor(input.value);
-      input.addEventListener("change", keep);
-      return () => input.removeEventListener("change", keep);
+      const commit = () => {
+        clear();
+        onPick(input.value);
+        // Kept the moment it is used, rather than behind a "save" nobody would
+        // press. Re-picking one already saved moves it to the front.
+        saveColor(input.value);
+      };
+      input.addEventListener("change", commit);
+      return () => input.removeEventListener("change", commit);
     },
-    [saveColor],
+    [clear, onPick, saveColor],
   );
 
   const named = COLOR_PALETTE.filter((color) => color.hex);
@@ -98,11 +110,14 @@ export function ColorSwatches({ value, onPick }: ColorSwatchesProps) {
           target and the browser still opens the system dialog on a real
           click — which is all a colour input needs to do. */}
       <input
-        ref={keepOnCommit}
+        ref={commitOnClose}
         type="color"
         aria-label="Mix a colour"
-        value={value && isHexColor(value) ? value : "#8b5cf6"}
-        onChange={(e) => onPick(e.target.value)}
+        defaultValue={value && isHexColor(value) ? value : "#8b5cf6"}
+        onChange={(e) => previewTarget && preview(previewTarget, e.target.value)}
+        // A dialog dismissed rather than accepted still ends with focus coming
+        // back here, so this is what stops a preview outliving the picker.
+        onBlur={clear}
       />
     </label>
   );

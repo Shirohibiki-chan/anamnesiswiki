@@ -11,6 +11,8 @@ import { ColorSwatches } from "./ColorSwatches";
 import { MeterIcon } from "./IconPicker";
 
 type BlockMenuProps = {
+  /** This block's id, so the colour picker can preview against it. */
+  blockId: string;
   /** Whether the block is currently showing a title strip. */
   titleShown: boolean;
   color: string | undefined;
@@ -50,6 +52,7 @@ type BlockMenuProps = {
     onDuplicateMeter?: () => void;
     onRemoveMeter?: () => void;
     /** The right-clicked reading's own colour, and how to set it. */
+    meterId?: string;
     meterColor?: string;
     onSetMeterColor?: (color: string | undefined) => void;
     face: MeterFace;
@@ -68,6 +71,7 @@ type BlockMenuProps = {
 };
 
 export function BlockMenu({
+  blockId,
   titleShown,
   color,
   canMoveUp,
@@ -148,7 +152,11 @@ export function BlockMenu({
             <>
               <div className="block-menu-separator" />
               <div className="tree-context-menu-heading">This meter's colour</div>
-              <ColorSwatches value={meter.meterColor} onPick={meter.onSetMeterColor} />
+              <ColorSwatches
+                value={meter.meterColor}
+                onPick={meter.onSetMeterColor}
+                previewTarget={meter.meterId}
+              />
             </>
           )}
 
@@ -205,7 +213,7 @@ export function BlockMenu({
 
       <div className="block-menu-separator" />
 
-      <ColorSwatches value={color} onPick={onColor} />
+      <ColorSwatches value={color} onPick={onColor} previewTarget={blockId} />
 
       <div className="block-menu-separator" />
 

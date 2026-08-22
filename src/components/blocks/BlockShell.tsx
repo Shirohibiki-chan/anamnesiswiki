@@ -12,6 +12,7 @@ import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getPaletteHex } from "../../constants/palette";
+import { useColorPreview } from "../../hooks/use-color-preview";
 import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
 import { TreePopover } from "../tree/TreePopover";
 import { BlockMenu } from "./BlockMenu";
@@ -92,7 +93,11 @@ export function BlockShell({
   const input = useRef<HTMLInputElement | null>(null);
 
   const shown = title ?? naturalTitle;
-  const hex = getPaletteHex(color);
+  // A colour being tried in the system picker wins while it is open. It comes
+  // from a store nothing else reads, so watching one costs this block a render
+  // and the rest of the app nothing — see color-preview-store.
+  const previewHex = useColorPreview(id);
+  const hex = previewHex ?? getPaletteHex(color);
 
   // Right-clicking a block opens the same menu the `⋯` button does, at the
   // pointer. It is the gesture people try first and it was doing nothing here,
@@ -195,6 +200,7 @@ export function BlockShell({
       {menuRect && (
         <TreePopover anchorRect={menuRect} onClose={() => setMenuRect(null)}>
           <BlockMenu
+            blockId={id}
             titleShown={titleShown}
             color={color}
             canMoveUp={canMoveUp}
@@ -249,6 +255,7 @@ export function BlockShell({
                       setMenuRect(null);
                     }
                   : undefined,
+                meterId: menuMeterId ?? undefined,
                 meterColor: menuMeterId ? meter.colorOfMeter(menuMeterId) : undefined,
                 // Only offered when the menu was opened on a reading: from the
                 // `⋯` button there is no "this meter" to mean. Stays open
