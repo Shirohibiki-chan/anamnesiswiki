@@ -286,7 +286,14 @@ export type ProjectStoreState = {
   ) => Promise<CreateProjectResult>;
   closeProject: () => void;
   addNode: (input: { parentId: string | null; templateKey: string; name: string; blocks?: Block[] }) => Node;
-  updateNode: (id: string, patch: Partial<Omit<Node, "id">>) => void;
+  /**
+   * `touch: false` leaves `updatedAt` alone.
+   *
+   * For changes that are not edits to the page — dismissing the template
+   * prompt is the first — because the sidebar prints "Updated <date>" and
+   * marking a page edited for closing a box in it is a lie she can read.
+   */
+  updateNode: (id: string, patch: Partial<Omit<Node, "id">>, options?: { touch?: boolean }) => void;
   updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
   toggleTabHidden: (nodeId: string, tabId: string) => void;
   addTab: (nodeId: string, label: string) => Tab;
@@ -357,6 +364,7 @@ export type ProjectStoreState = {
    * one undo, not nine.
    */
   setNodeIcon: (nodeIds: string[], icon: string | undefined) => void;
+  setTemplatePromptHidden: (nodeId: string, hidden: boolean) => void;
   setNodeImage: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   /**
    * Point the portrait at a picture the project already has, rather than
@@ -1268,12 +1276,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       return node;
     },
 
-    updateNode(id, patch) {
+    updateNode(id, patch, options) {
       const { rootPath, nodes } = get();
       const existing = nodes[id];
       if (!rootPath || !existing) return;
 
-      const updated: Node = { ...existing, ...patch, updatedAt: Date.now() };
+      const updated: Node = {
+        ...existing,
+        ...patch,
+        updatedAt: options?.touch === false ? existing.updatedAt : Date.now(),
+      };
       set({ nodes: { ...nodes, [id]: updated } });
 
       // Snapshot the graph when the debounce actually fires, not when it's
@@ -2729,6 +2741,25 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         `recolouring ${countLabel(targets.length, "page")}`,
         () => apply((id) => previousColors.get(id)),
         () => apply(() => color),
+      );
+    },
+
+    // Sending the template prompt away, and undoably — it is one click that
+    // changes what a page shows, which is exactly the kind of thing that gets
+    // clicked by accident. Applying a template hides the prompt by itself, so
+    // this is only ever about a page that means to stay blank.
+    setTemplatePromptHidden(nodeId, hidden) {
+      const node = get().nodes[nodeId];
+      if (!node) return;
+      const before = node.hideTemplatePrompt;
+      const apply = (next: boolean | undefined) =>
+        get().updateNode(nodeId, { hideTemplatePrompt: next }, { touch: false });
+
+      apply(hidden || undefined);
+      record(
+        hidden ? "dismissing the template prompt" : "bringing the template prompt back",
+        () => apply(before),
+        () => apply(hidden || undefined),
       );
     },
 

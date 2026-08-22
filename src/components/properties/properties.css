@@ -18,6 +18,13 @@
   margin-right: var(--space-2xl);
 }
 
+/* The panel's own top padding went onto the blocks in 18a, which left this
+   box tucked under the title bar with nothing above it. It is the first thing
+   in the panel, so it needs the gap the padding used to give it. */
+.block-panel .properties-panel-apply-template {
+  margin-top: var(--space-2xl);
+}
+
 .properties-panel-empty {
   height: 100%;
   display: flex;
@@ -790,11 +797,36 @@
 /* --- Apply-a-template prompt (blank pages) --- */
 
 .properties-panel-apply-template {
+  position: relative;
   margin-bottom: var(--space-2xl);
   padding: var(--space-lg);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
   text-align: center;
+}
+
+/* Sits inside the box's own corner rather than over its edge: the border is
+   dashed, and a button straddling a dashed line reads as damage. Always
+   visible rather than shown on hover — a way out you have to discover by
+   pointing at the thing in your way is not a way out. */
+.properties-panel-apply-dismiss {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.properties-panel-apply-dismiss:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
 }
 
 .properties-panel-apply-template p {

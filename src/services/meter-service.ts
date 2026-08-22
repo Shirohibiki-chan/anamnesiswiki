@@ -638,3 +638,17 @@ export function withMeters(entries: MeterEntry[], patches: Record<string, Partia
 export function meterSegmented(block: Block, entry: MeterEntry): boolean {
   return entry.segmented ?? block.segmented === true;
 }
+
+/** A slice narrower than this has no room for a label inside it. */
+export const MIN_LABEL_SHARE = 0.07;
+
+/**
+ * Where a slice's own label sits: on its middle line, out towards the rim.
+ *
+ * Two thirds of the way out rather than halfway, because a wedge is widest at
+ * its edge and a label centred in the middle of a narrow one overhangs both
+ * sides of it.
+ */
+export function sliceLabelPoint(slice: PieSlice, radius = PIE_RADIUS * 0.66, centre = 50): [number, number] {
+  return meterPoint(slice.start + slice.sweep / 2, radius, centre);
+}

@@ -26,7 +26,7 @@
 // position back into a value.
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Plus, X } from "lucide-react";
-import { getPaletteHex, sliceColorAt } from "../../constants/palette";
+import { getPaletteHex, readableTextOn, sliceColorAt } from "../../constants/palette";
 import { useColorPreview } from "../../hooks/use-color-preview";
 import type { Block, MeterEntry, MeterFace, MeterStyle } from "../../constants/schema";
 import {
@@ -43,11 +43,13 @@ import {
   meterFace,
   meterPoint,
   meterSegmented,
+  MIN_LABEL_SHARE,
   pieAngleAt,
   pieSlices,
   pieTotal,
   seedEqualSlices,
   sliceIndexAt,
+  sliceLabelPoint,
   PIE_RADIUS,
   type PieSlice,
   meterFraction,
@@ -102,6 +104,7 @@ export function MeterBlock({ block, onEdit, onEditMany, onRemove, onAdd }: Meter
           onEdit={onEdit}
           onEditMany={onEditMany}
           onRemove={onRemove}
+          onAdd={onAdd}
         />
       </div>
     );
@@ -132,6 +135,12 @@ export function MeterBlock({ block, onEdit, onEditMany, onRemove, onAdd }: Meter
               onRemove={() => onRemove(entry.id)}
             />
           ))}
+          {/* The same + the pie's legend carries, and for the same reason:
+              Add meter lived only in the block's `⋯` menu, which is not where
+              anybody looks to put a second dial under the first. */}
+          <button type="button" className="block-inline-link block-meter-add" onClick={onAdd}>
+            <Plus size={12} /> Add meter
+          </button>
         </div>
       )}
     </div>
@@ -473,12 +482,17 @@ function MeterReading({
               the dial's middle is where the number lives. */}
           {face !== "icon" && (
             <foreignObject x="18" y={READOUT_Y[style] - 11 + (face === "both" ? 8 : 0)} width="64" height="22">
-              <MeterNumberField
-                text={meterReadout(entry, style, withMax)}
-                className="block-meter-arc-readout"
-                onEdit={onEdit}
-                stopPointer
-              />
+              {/* A foreignObject has no layout of its own, so the field would
+                  sit in the corner of its box at any width but 100%. This
+                  centres it and lets it be as wide as its number. */}
+              <div className="block-meter-arc-slot">
+                <MeterNumberField
+                  text={meterReadout(entry, style, withMax)}
+                  className="block-meter-arc-readout"
+                  onEdit={onEdit}
+                  stopPointer
+                />
+              </div>
             </foreignObject>
           )}
         </svg>
@@ -655,6 +669,11 @@ function MeterNumberField({ text, className, onEdit, stopPointer }: NumberFieldP
       className={`${className} block-meter-readout-input`}
       autoFocus
       aria-label="Value, or value/maximum"
+      // **The box is the width of what is in it.** Left to fill its slot it
+      // ran the whole width of the dial it sits in, which is a text field the
+      // size of the chart. Three characters is the floor so a one-digit value
+      // still has something to click.
+      style={{ width: `calc(${Math.max(draft.length, 3)}ch + 14px)` }}
       value={draft}
       onPointerDown={stopPointer ? (e) => e.stopPropagation() : undefined}
       onChange={(e) => {
@@ -680,9 +699,10 @@ type PieChartProps = {
   onEdit: (meterId: string, patch: Partial<MeterEntry>) => void;
   onEditMany: (patches: Record<string, Partial<MeterEntry>>) => void;
   onRemove: (meterId: string) => void;
+  onAdd: () => void;
 };
 
-function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove }: PieChartProps) {
+function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove, onAdd }: PieChartProps) {
   const svg = useRef<SVGSVGElement | null>(null);
   // Which edge the drag is pushing, or null. A ref for the same reason the
   // other shapes keep one: pointer capture can be refused or lost without the
@@ -751,8 +771,32 @@ function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove }: PieChar
     dragging.current = null;
   }
 
+  const shown = hovered === null ? null : slices[hovered];
+
   return (
     <>
+      {/* **A slice too thin to hold a label still has to be readable.** Her
+          case, and the reason this line exists rather than only the labels
+          inside the wedges: pointing at a 2% sliver names it and gives its
+          number at full size. With nothing under the pointer it holds the
+          total, so the line never appears and disappears under the chart. */}
+      <div className="block-meter-pie-readout" aria-live="polite">
+        {shown ? (
+          <>
+            {shown.entry.icon && <MeterIcon icon={shown.entry.icon} size={13} />}
+            <span className="block-meter-pie-readout-name">{shown.entry.label || "Unnamed"}</span>
+            <span className="block-meter-pie-readout-value">
+              {Math.round(shown.value * 10) / 10}
+              {withShare && total > 0 && <em>{Math.round(shown.share * 100)}%</em>}
+            </span>
+          </>
+        ) : (
+          <span className="block-meter-pie-readout-total">
+            {total > 0 ? `${Math.round(total * 10) / 10} in total` : "Drag an edge to begin"}
+          </span>
+        )}
+      </div>
+
       <svg
         ref={svg}
         className={`block-meter-pie-chart${aimed !== null ? " block-meter-pie-aiming" : ""}`}
@@ -777,6 +821,7 @@ function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove }: PieChar
             index={index}
             lifted={hovered === index}
             dimmed={hovered !== null && hovered !== index}
+            withShare={withShare && total > 0}
           />
         ))}
         {/* The edge being aimed at, drawn as a line from the middle out. It is
@@ -809,6 +854,13 @@ function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove }: PieChar
             onRemove={() => onRemove(slice.entry.id)}
           />
         ))}
+        {/* **A slice is added from here, not from a menu.** The block's `⋯`
+            menu has Add meter and always did, and it was not a thing anybody
+            would think to go looking for to get another wedge — her words, and
+            fair. A chart with a list under it wants a + at the end of the list. */}
+        <button type="button" className="block-inline-link block-meter-add" onClick={onAdd}>
+          <Plus size={12} /> Add slice
+        </button>
       </div>
     </>
   );
@@ -838,26 +890,39 @@ function PieSlicePath({
   index,
   lifted,
   dimmed,
+  withShare,
 }: {
   slice: PieSlice;
   index: number;
   lifted: boolean;
   dimmed: boolean;
+  withShare: boolean;
 }) {
   const colour = useSliceColor(slice.entry, index);
+  // A slice narrower than this cannot hold a number; the readout above the
+  // chart is what answers for those.
+  const labelled = withShare && slice.share >= MIN_LABEL_SHARE;
+  const [labelX, labelY] = sliceLabelPoint(slice);
+
   return (
-    <path
-      className={`block-meter-slice${lifted ? " block-meter-slice-lifted" : ""}${
+    <g
+      className={`block-meter-slice-group${lifted ? " block-meter-slice-lifted" : ""}${
         dimmed ? " block-meter-slice-dimmed" : ""
       }`}
       // Right-clicking a slice opens the block's menu pointed at that reading,
       // the same way right-clicking a dial does — see BlockShell.
       data-meter-id={slice.entry.id}
-      d={slice.path}
-      fill={colour}
     >
+      <path className="block-meter-slice" d={slice.path} fill={colour} />
+      {labelled && (
+        // Black or white, whichever can be read on this slice — the palette
+        // runs from a pale amber to a navy and one colour cannot sit on both.
+        <text className="block-meter-slice-label" x={labelX} y={labelY} fill={readableTextOn(colour)}>
+          {Math.round(slice.share * 100)}%
+        </text>
+      )}
       <title>{`${slice.entry.label || "Unnamed"}: ${Math.round(slice.share * 100)}%`}</title>
-    </path>
+    </g>
   );
 }
 
