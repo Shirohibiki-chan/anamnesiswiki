@@ -77,6 +77,7 @@ import {
   meterStyleOf,
   newMeterEntry,
   withMeter,
+  withMeters,
   withoutMeter,
 } from "../services/meter-service";
 import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
@@ -333,6 +334,7 @@ export type ProjectStoreState = {
   duplicateMeter: (nodeId: string, blockId: string, meterId: string) => void;
   removeMeter: (nodeId: string, blockId: string, meterId: string) => void;
   editMeter: (nodeId: string, blockId: string, meterId: string, patch: Partial<MeterEntry>) => void;
+  editMeters: (nodeId: string, blockId: string, patches: Record<string, Partial<MeterEntry>>) => void;
   // Phase 18b's collection settings.
   setBlockSource: (nodeId: string, blockId: string, source: CollectionSource) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
@@ -1675,6 +1677,18 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) =>
           block.id === blockId ? withField(block, "meters", withMeter(metersOf(block), meterId, patch)) : block,
+        ),
+      );
+    },
+
+    // Several readings in one write, which dragging a pie's edge needs: it
+    // changes the two slices either side at once, and doing that as two edits
+    // would put a frame between them where the chart does not add up — and,
+    // once Phase 19 lands undo, two steps to take back one gesture.
+    editMeters(nodeId, blockId, patches) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "meters", withMeters(metersOf(block), patches)) : block,
         ),
       );
     },

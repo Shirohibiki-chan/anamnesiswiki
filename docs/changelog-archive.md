@@ -2,6 +2,25 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-12 — code blocks
+
+### Additions
+
+- **A code block now looks like one.** Dark box, real border, monospaced text. Type `/code` on an empty line to make one.
+- **Syntax colouring**, with a language picker in the block's top right corner. Fifteen languages: plain text, JSON, JSON with comments, YAML, regular expressions, Markdown, XML, HTML, CSS, JavaScript, TypeScript, Python, Shell, SQL and Lua.
+- **Long lines wrap** instead of running off the right-hand edge where you can't read them.
+
+### Fixes
+
+- **A code block imported from LegendKeeper used to arrive empty.** The app didn't recognise the block and dropped everything inside it — not the formatting, the actual text. Fixed both ways: importing keeps the code, and exporting writes a real code block back out.
+
+### Worth knowing
+
+- **A code block existed before today** — it just had no colours, no border, no language picker and nothing pointing at it, so there was no reason to think it did. Anything you already put in one is still there and now looks like the rest.
+- **Plain text is the default on purpose, and it's never coloured.** Bot prompts have no syntax, and the point of putting one in here is that `{{char}}`, `**asterisks**` and braces stay exactly the characters you typed. Nothing touches them.
+- **Code blocks stay dark even if the rest of the app is light.** The colours the code is painted in aren't ours to choose, and they're built for a dark background.
+- **If any page in your world came in from LegendKeeper with a code block on it, that page is still missing its code.** Re-importing just those pages would bring it back now.
+
 ## 2026-08-12 — pictures have names
 
 ### Additions

@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { MeterEntry, MeterStyle } from "../constants/schema";
 import {
   arcFractionAt,
+  boundaryIndexAt,
+  dragSliceBoundary,
+  isComposedPie,
+  meterSegmented,
+  pieSlices,
+  pieTotal,
+  seedEqualSlices,
+  sliceIndexAt,
+  slicePath,
+  sliceValue,
+  withMeters,
   metersOf,
   arcPath,
   barFractionAt,
@@ -383,5 +394,234 @@ describe("piePath", () => {
 
   it("clamps an overfull fraction", () => {
     expect(piePath(3)).toBe(piePath(1));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A pie with several readings in it.
+// ---------------------------------------------------------------------------
+
+function slice(value: number | undefined, extra: Partial<MeterEntry> = {}): MeterEntry {
+  return { id: `s${value ?? "x"}${extra.label ?? ""}`, value, ...extra };
+}
+
+describe("pieTotal and sliceValue", () => {
+  // The whole reason a slice does not read through meterValue: that clamps
+  // against a default maximum of 100, and a pie of populations would come back
+  // as a set of equal halves all flattened to it.
+  it("does not clamp a slice against the default maximum", () => {
+    expect(sliceValue(slice(5000))).toBe(5000);
+    expect(pieTotal([slice(5000), slice(3000)])).toBe(8000);
+  });
+
+  it("reads an unset, negative or broken value as nothing", () => {
+    expect(sliceValue(slice(undefined))).toBe(0);
+    expect(sliceValue(slice(-4))).toBe(0);
+    expect(sliceValue(slice(Number.NaN))).toBe(0);
+  });
+});
+
+describe("isComposedPie", () => {
+  it("needs a pie and more than one reading", () => {
+    expect(isComposedPie("pie", [slice(1), slice(1)])).toBe(true);
+    // One reading still reads against its own maximum, exactly as before —
+    // a lone slice redrawn as a full circle would say less than the wedge.
+    expect(isComposedPie("pie", [slice(1)])).toBe(false);
+    expect(isComposedPie("circle", [slice(1), slice(1)])).toBe(false);
+  });
+});
+
+describe("pieSlices", () => {
+  it("sizes each slice by its share of the total", () => {
+    const slices = pieSlices([slice(30), slice(10)]);
+    expect(slices[0].share).toBeCloseTo(0.75);
+    expect(slices[1].share).toBeCloseTo(0.25);
+    expect(slices[0].sweep).toBeCloseTo(270);
+  });
+
+  it("lays them out clockwise from twelve o'clock, end to end", () => {
+    const slices = pieSlices([slice(1), slice(1), slice(2)]);
+    expect(slices[0].start).toBe(0);
+    expect(slices[1].start).toBeCloseTo(90);
+    expect(slices[2].start).toBeCloseTo(180);
+    expect(slices[2].start + slices[2].sweep).toBeCloseTo(360);
+  });
+
+  // A pie nobody has typed into is a chart you can start dragging, not a blank
+  // circle — three empty readings are three thirds.
+  it("draws equal slices when nothing has been typed", () => {
+    const slices = pieSlices([slice(undefined), slice(undefined), slice(undefined)]);
+    expect(slices.map((s) => Math.round(s.share * 100))).toEqual([33, 33, 33]);
+    expect(slices.every((s) => s.path !== "")).toBe(true);
+  });
+
+  // The gap comes out of what is *drawn*; the angles a click is measured
+  // against are untouched, or a segmented pie would have dead stripes in it.
+  it("takes the segment gap out of the path but not the angles", () => {
+    const [plain] = pieSlices([slice(1), slice(1)]);
+    const [gapped] = pieSlices([slice(1), slice(1)], true);
+    expect(gapped.sweep).toBe(plain.sweep);
+    expect(gapped.path).not.toBe(plain.path);
+  });
+
+  it("leaves no gap in a pie holding one slice", () => {
+    expect(pieSlices([slice(5)], true)[0].path).toBe(pieSlices([slice(5)])[0].path);
+  });
+});
+
+describe("slicePath", () => {
+  it("draws a wedge from the centre", () => {
+    expect(slicePath(0, 90).startsWith("M 50 50 L")).toBe(true);
+  });
+
+  it("draws a whole circle as two arcs rather than a seam", () => {
+    expect(slicePath(0, 360).match(/A /g)?.length).toBe(2);
+  });
+
+  it("draws nothing at all for a slice with no size", () => {
+    expect(slicePath(0, 0)).toBe("");
+  });
+
+  it("sets the large-arc flag past a half turn", () => {
+    expect(slicePath(0, 200).includes(" 1 1 ")).toBe(true);
+    expect(slicePath(0, 100).includes(" 0 1 ")).toBe(true);
+  });
+});
+
+describe("sliceIndexAt", () => {
+  const slices = pieSlices([slice(1), slice(1), slice(1), slice(1)]);
+
+  it("finds the slice a point is over", () => {
+    // Twelve o'clock is the first slice; three o'clock the second.
+    expect(sliceIndexAt(slices, 50, 20)).toBe(0);
+    expect(sliceIndexAt(slices, 80, 50)).toBe(1);
+    expect(sliceIndexAt(slices, 50, 80)).toBe(2);
+    expect(sliceIndexAt(slices, 20, 50)).toBe(3);
+  });
+
+  it("ignores a point outside the circle", () => {
+    expect(sliceIndexAt(slices, 2, 2)).toBeNull();
+  });
+
+  // The gaps in a segmented pie are drawn, not real: a click in one still
+  // belongs to a slice.
+  it("answers over the gaps of a segmented pie", () => {
+    const gapped = pieSlices([slice(1), slice(1)], true);
+    expect(sliceIndexAt(gapped, 50, 20)).not.toBeNull();
+  });
+});
+
+describe("boundaryIndexAt", () => {
+  const slices = pieSlices([slice(1), slice(1), slice(1), slice(1)]);
+
+  it("finds the edge a point is aiming at", () => {
+    // The first edge sits at three o'clock with four equal slices.
+    expect(boundaryIndexAt(slices, 90, 50)).toBe(0);
+    expect(boundaryIndexAt(slices, 50, 90)).toBe(1);
+  });
+
+  it("refuses a point in the middle of a slice", () => {
+    expect(boundaryIndexAt(slices, 50, 20)).toBeNull();
+  });
+
+  // Twelve o'clock is where the chart starts, and a chart whose origin can be
+  // dragged is one where touching a slice appears to move all of them.
+  it("never offers the edge at twelve o'clock", () => {
+    expect(boundaryIndexAt(slices, 50, 10)).toBeNull();
+    expect(boundaryIndexAt(slices, 50.5, 8)).toBeNull();
+  });
+
+  // Every edge converges on the centre, so a pointer there is a coin toss.
+  it("refuses a point too near the middle", () => {
+    expect(boundaryIndexAt(slices, 52, 50)).toBeNull();
+  });
+});
+
+describe("dragSliceBoundary", () => {
+  const entries = [slice(25, { label: "a" }), slice(25, { label: "b" }), slice(50, { label: "c" })];
+
+  it("moves the pair either side of the edge and nothing else", () => {
+    // Pushing the first edge from a quarter round to a half gives the first
+    // slice everything the second had.
+    const patch = dragSliceBoundary(entries, 0, 0.5);
+    expect(patch[entries[0].id].value).toBe(50);
+    expect(patch[entries[1].id].value).toBeUndefined();
+    expect(patch[entries[2].id]).toBeUndefined();
+  });
+
+  it("keeps the pair's total exactly, so the slices past the edge stay put", () => {
+    const patch = dragSliceBoundary(entries, 0, 0.37);
+    const total = (patch[entries[0].id].value ?? 0) + (patch[entries[1].id].value ?? 0);
+    expect(total).toBe(50);
+  });
+
+  it("respects where the pair starts rather than measuring from the top", () => {
+    // The second edge sits at half a turn; dragging it to 0.75 hands the
+    // second slice a quarter of the circle on top of what it had.
+    const patch = dragSliceBoundary(entries, 1, 0.75);
+    expect(patch[entries[1].id].value).toBe(50);
+    expect(patch[entries[2].id].value).toBe(25);
+  });
+
+  // Overshooting an edge collapses that slice rather than wrapping past it and
+  // turning the pair inside out.
+  it("clamps a drag past either end of the pair", () => {
+    expect(dragSliceBoundary(entries, 0, 0.99)[entries[1].id].value).toBeUndefined();
+    expect(dragSliceBoundary(entries, 0, 0)[entries[0].id].value).toBeUndefined();
+  });
+
+  it("seeds equal values when nothing has been typed yet", () => {
+    const blank = [slice(undefined), slice(undefined, { label: "b" })];
+    expect(dragSliceBoundary(blank, 0, 0.9)).toEqual({
+      [blank[0].id]: { value: 50 },
+      [blank[1].id]: { value: 50 },
+    });
+  });
+
+  it("does nothing for an edge that isn't there", () => {
+    expect(dragSliceBoundary(entries, 2, 0.5)).toEqual({});
+  });
+});
+
+describe("seedEqualSlices", () => {
+  it("hands every reading an equal share of a hundred", () => {
+    const blank = [slice(undefined), slice(undefined, { label: "b" }), slice(undefined, { label: "c" })];
+    expect(Object.values(seedEqualSlices(blank))).toEqual([{ value: 33 }, { value: 33 }, { value: 33 }]);
+  });
+});
+
+describe("withMeters", () => {
+  const entries = [slice(1, { label: "a" }), slice(2, { label: "b" })];
+
+  it("patches several readings in one pass", () => {
+    const next = withMeters(entries, { [entries[0].id]: { value: 9 }, [entries[1].id]: { value: 8 } });
+    expect(next.map((entry) => entry.value)).toEqual([9, 8]);
+  });
+
+  it("drops an emptied field rather than storing undefined", () => {
+    const next = withMeters(entries, { [entries[0].id]: { value: undefined } });
+    expect("value" in next[0]).toBe(false);
+  });
+
+  it("leaves readings nobody patched alone", () => {
+    expect(withMeters(entries, {})).toEqual(entries);
+  });
+});
+
+describe("meterSegmented", () => {
+  const entry = slice(5);
+
+  it("follows the block when the reading has no answer", () => {
+    expect(meterSegmented({ id: "b", kind: "meter", segmented: true }, entry)).toBe(true);
+    expect(meterSegmented({ id: "b", kind: "meter" }, entry)).toBe(false);
+  });
+
+  // The other half of what colour does: four dials under one heading are four
+  // different things, and one of them counted off in units is fair to want.
+  it("lets a reading disagree with its block in either direction", () => {
+    const on = { ...entry, segmented: true };
+    const off = { ...entry, segmented: false };
+    expect(meterSegmented({ id: "b", kind: "meter" }, on)).toBe(true);
+    expect(meterSegmented({ id: "b", kind: "meter", segmented: true }, off)).toBe(false);
   });
 });

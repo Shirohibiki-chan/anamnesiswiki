@@ -2889,6 +2889,40 @@ is below.
   A meter drawn in it looks like an empty meter, which is a bug that reads as a
   data problem.
 
+- **A pie block with two or more readings is one chart; with one it is the old
+  wedge.** `isComposedPie` is the switch, and the one-reading case is not a
+  leftover to tidy up — composing a single reading draws a full circle, which
+  says less than the wedge and would silently change every pie already on disk.
+  Two is where a share can first mean anything.
+
+- **A slice reads `sliceValue`, never `meterValue`.** `meterValue` clamps
+  against the reading's maximum, which defaults to 100, so a pie of populations
+  (5000 against 3000) comes back as two equal halves both flattened to the
+  default. A slice's maximum means nothing; only its size next to the others
+  does. This is easy to "fix" back into a bug.
+
+- **A pie ignores `max` but must never delete it.** Switching a composed pie to
+  a Circle has to bring every reading's maximum back, which is the whole reason
+  nothing was migrated when slices arrived.
+
+- **Dragging a slice edge preserves the pair's total, and twelve o'clock does
+  not move.** Rescaling the other slices to keep the circle full rewrites
+  numbers nobody was pointing at; making the origin draggable makes touching
+  one slice appear to move all of them. Both were considered and both are worse.
+
+- **A segmented pie's gap comes out of the drawn path, never the angles.**
+  `PieSlice` carries `start`/`sweep` (true) and `path` (drawn) separately.
+  Hit-testing against the drawn angles puts dead stripes in the chart.
+
+- **A reading's `segmented` overrides its block's, and agreeing with the block
+  stores nothing.** Same shape as `meterColor`. The self-clearing rule in
+  `BlockPanel` is deliberate: pinning the same answer would quietly stop the
+  block's own toggle from reaching that reading afterwards.
+
+- **A composed pie's slices take `SLICE_COLORS`, not the block colour.** The one
+  meter that does not fall back to the block's — eight wedges in one accent is a
+  solid disc. A reading's own colour still wins.
+
 - **No YouTube, Spotify or map embeds in the sidebar.** Phase 18's scope, hers,
   and aesthetic rather than a consequence of the offline policy she has never
   personally agreed with. If an embed block is ever wanted it is a conversation
@@ -2972,6 +3006,13 @@ Deferred on purpose, not forgotten:
   75-resource `Valeraverse.lk`, which proves the mapping is self-consistent —
   not that LK accepts the file. That needs an actual LK account and an import
   attempt.
+- **A composed pie's edges can only be moved with a pointer.** Every other
+  meter is a `slider` with arrow keys, Home and End; the chart is a `role="img"`
+  with a described breakdown, and its numbers are edited from the legend's
+  fields, which are reachable by keyboard. So the values are all settable
+  without a mouse and only the drag itself is not. Wiring arrow keys to an edge
+  needs an answer to *which* edge is focused, which is a design question rather
+  than a missing line of code.
 - **`duplicateNode` stamps every clone in a subtree with the same `createdAt`**,
   so a duplicated folder's children come out in arbitrary order. Cosmetic.
 - **The "15 broken cross-reference links" were never the user's links** — that

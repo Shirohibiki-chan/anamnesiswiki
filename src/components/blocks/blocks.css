@@ -1364,3 +1364,128 @@
 .block-panel-space {
   min-height: 96px;
 }
+
+/* ---------------------------------------------------------------------------
+   A pie chart: every reading in the block as a slice of one circle, with a
+   legend under it. The per-reading shapes above draw one meter each; this is
+   the one meter that draws them all together.
+   --------------------------------------------------------------------------- */
+
+.block-meter-composed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.block-meter-pie-chart {
+  width: 132px;
+  height: 132px;
+  /* Room for a lifted slice to grow into without the circle clipping itself. */
+  overflow: visible;
+  touch-action: none;
+}
+
+/* Aiming at an edge is the one moment the chart is about to be changed rather
+   than read, so the cursor says which way that edge moves. */
+.block-meter-pie-aiming {
+  cursor: ew-resize;
+}
+
+.block-meter-slice {
+  stroke: var(--color-panel);
+  stroke-width: 0.75;
+  transform-origin: 50% 50%;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+/* The slice under the pointer, and the ones that aren't. Lifting one and
+   fading the rest is how a legend row and a wedge say they are the same thing
+   without drawing a line between them. */
+.block-meter-slice-lifted {
+  transform: scale(1.04);
+}
+
+.block-meter-slice-dimmed {
+  opacity: 0.45;
+}
+
+/* The only handle on the chart. Drawn on the edge being aimed at, because
+   otherwise the fact that an edge can be pushed is invisible until guessed. */
+.block-meter-slice-handle {
+  stroke: var(--color-text-primary);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.block-meter-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+}
+
+.block-meter-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: background 120ms ease;
+}
+
+.block-meter-legend-row-on {
+  background: var(--color-panel-alt);
+}
+
+/* The one thing a legend row has that a caption doesn't: which wedge it is. */
+.block-meter-swatch {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 2px;
+}
+
+.block-meter-legend-row .block-meter-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.block-meter-share {
+  flex: none;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sits in the row rather than in a corner the way a reading's does — a legend
+   row is already a row, so the button belongs at the end of it. */
+.block-meter-slice-remove {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--color-text-muted);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.block-meter-legend-row:hover .block-meter-slice-remove,
+.block-meter-slice-remove:focus-visible {
+  opacity: 1;
+}
+
+.block-meter-slice-remove:hover {
+  background: var(--color-panel-alt);
+  color: var(--color-palette-rose);
+}

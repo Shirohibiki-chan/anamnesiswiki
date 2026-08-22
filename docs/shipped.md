@@ -3603,3 +3603,103 @@ failed to show up in `getComputedStyle`. Structure, stored state and event
 behaviour were all still readable and are what the checks above rest on. It is
 also why the heading's colour is set inline rather than left to a cascade that
 could not be measured.
+
+---
+
+## Pie charts, and segments per meter ✅ Shipped 2026-08-21
+
+Two follow-ons to 18c, asked for together the day after it shipped and built
+as one change because she did not want to come back to meters a third time.
+
+**The pie chart could not have slices.** 18c drew every reading as its own
+shape, which is right for the five shapes that measure one number against its
+own maximum and wrong for the one shape whose entire meaning is how several
+numbers divide a whole — a Pie chart block with four readings drew four
+separate pies. Her words were that having slices is the whole point of a pie
+chart, and she was right; what shipped was a circle wearing a chart's name.
+
+### What shipped
+
+- **A pie block holding two or more readings composes them into one circle.**
+  `pieSlices` in `meter-service.ts` turns the readings into wedges, each sized
+  by its share of their total, laid out clockwise from twelve o'clock.
+- **Dragging the edge between two slices.** `boundaryIndexAt` finds the edge
+  being aimed at, `dragSliceBoundary` works out what the pair either side
+  becomes. Pure and tested; the component only converts pointer pixels into
+  the 100-wide box the chart is drawn in, the same way the arcs already did.
+- **A legend**, one row per slice — swatch, icon, name, number, share, remove.
+  A pie cannot carry a caption inside itself the way a dial can.
+- **`MeterEntry.segmented`**, and `meterSegmented` to resolve it against the
+  block's. The menu row writes to the reading when it was opened on one and to
+  the block when it came from the `⋯` button, which is exactly how the colour
+  above it already worked.
+- **`editMeters`** in the store, and `withMeters` beside `withMeter` — one
+  write for the two readings a boundary drag changes.
+- **`SLICE_COLORS` and `sliceColorAt`** in `constants/palette.ts`.
+- **`MeterIconButton` and `MeterNumberField`** pulled out of the caption, so
+  the legend, the caption and the inside of a dial share one implementation of
+  the icon popover and one of click-the-number-to-type-it. Three copies of that
+  draft-state dance was the alternative.
+
+### Decisions worth the record
+
+- **A pie with one reading still reads against its maximum.** One number can
+  only be a share of itself, so composing it would draw a full circle and say
+  less than the wedge it replaced — and it would silently change every pie
+  already on disk. Two readings is where composition starts, which is also the
+  first moment it can mean anything.
+- **A slice does not read through `meterValue`.** That clamps against the
+  maximum, which defaults to 100, so a pie of populations — 5000 against 3000 —
+  would have come back as two equal halves both flattened to the default. Only
+  a slice's size relative to the others matters, so `sliceValue` reads raw.
+- **Nothing was migrated and nothing is lost.** `max` stays on disk untouched
+  while a pie ignores it, so switching a composed pie to a Circle brings every
+  reading's maximum back with it.
+- **A boundary drag preserves the pair's total.** Growing one slice takes from
+  the slice after it and from nowhere else. Rescaling everything to keep the
+  circle full was the alternative and it rewrites numbers nobody pointed at.
+- **Twelve o'clock is not draggable.** With `n` slices there are `n - 1` edges.
+  A chart whose origin can be moved is one where touching a single slice
+  appears to move all of them.
+- **An untyped pie draws equal slices, and the first press writes them down.**
+  Three empty readings are three thirds waiting to be dragged; three
+  zero-width slices are a blank circle and a bug report. Nothing is stored
+  until she actually moves an edge, so a pie she only looked at stays empty.
+- **A slice takes the next colour along a list rather than the block's.** This
+  is the one meter that does not fall back to the block colour: eight wedges
+  in one accent is a solid disc. Picking a colour on the reading still wins.
+- **Show max becomes Show share on a pie.** A pie has no maximum to show, and
+  the toggle is doing the same job either way — whether the number gets its
+  context printed beside it. A renamed row beats a dead one and a new field.
+- **The gap of a segmented pie comes out of what is drawn, never out of the
+  angles.** `PieSlice` carries both, so a segmented pie answers clicks over its
+  gaps instead of having thin dead stripes in it.
+
+### Verification
+
+`pnpm lint`, `pnpm test` (1361, 31 new), `tsc --noEmit` all clean.
+
+Then driven in a throwaway probe mounting the real `MeterBlock`, since none of
+this is visible to a unit suite:
+
+- Three readings at 30/10/60 drew **one** SVG with three wedges, shares
+  30/10/60, three different default colours, each slice starting exactly where
+  the last ended, and the 60% one carrying the large-arc flag.
+- Hovering an edge set the aiming class and drew the handle. Pressing and
+  dragging the first edge from 30% to 35% gave 35 and 5 — pair total kept at
+  40, the third reading untouched at 60. Overshooting it round the circle gave
+  40 and nothing, still leaving the third alone.
+- Blanking all three drew three equal slices with **nothing stored**, and the
+  legend hid the percentages rather than printing a share of nothing. The first
+  press seeded 33/33/33; dragging then gave 41/25/33, pair preserved again.
+- Removing readings down to one fell back to the old single wedge —
+  `block-meter-pie-fill` over `block-meter-pie-track`, one `block-meter-reading`
+  — proving no pie already made changes.
+- Regression on the refactor: switching to Gauge drew three arcs with their
+  readouts; clicking one opened the input and typing `44/88` set value and
+  maximum on that reading alone. The icon button in a legend row opened the
+  picker, portalled to `document.body` as `tree-popover`.
+
+Colours and boxes were not measured — the pane was hidden, which makes
+`getComputedStyle` stale. Everything above is structure, geometry read off the
+path data, and stored state, all of which stay trustworthy there.

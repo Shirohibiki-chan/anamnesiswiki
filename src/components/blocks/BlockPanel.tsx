@@ -27,7 +27,7 @@ import {
   type PropertyOption,
 } from "../../constants/schema";
 import { useBlocks } from "../../hooks/use-blocks";
-import { isPipMeter, meterPip, metersOf } from "../../services/meter-service";
+import { isPipMeter, meterPip, meterSegmented, metersOf } from "../../services/meter-service";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
@@ -85,6 +85,7 @@ export function BlockPanel() {
     duplicateMeter,
     removeMeter,
     editMeter,
+    editMeters,
     setNodeAliases,
   } = useProject();
   const { confirmDestructive } = useDialogs();
@@ -267,6 +268,7 @@ export function BlockPanel() {
           <MeterBlock
             block={block}
             onEdit={(meterId, patch) => editMeter(node!.id, block.id, meterId, patch)}
+            onEditMany={(patches) => editMeters(node!.id, block.id, patches)}
             onRemove={(meterId) => removeMeter(node!.id, block.id, meterId)}
             onAdd={() => addMeter(node!.id, block.id)}
           />
@@ -431,7 +433,27 @@ export function BlockPanel() {
                         segmented: block.segmented === true,
                         onSetStyle: (style) => setBlockMeter(node.id, block.id, style),
                         onSetFace: (face) => setBlockMeterFace(node.id, block.id, face),
-                        onToggleSegments: () => setBlockMeterSegmented(node.id, block.id, block.segmented !== true),
+                        segmentedOfMeter: (meterId) => {
+                          const entry = metersOf(block).find((m) => m.id === meterId);
+                          return entry ? meterSegmented(block, entry) : block.segmented === true;
+                        },
+                        // **A reading that agrees with its block stores
+                        // nothing.** Toggling one back into agreement clears
+                        // the override rather than pinning the same answer, so
+                        // the block's own setting keeps reaching it afterwards
+                        // — the same rule every other block field follows.
+                        onToggleSegments: (meterId) => {
+                          if (!meterId) {
+                            setBlockMeterSegmented(node.id, block.id, block.segmented !== true);
+                            return;
+                          }
+                          const entry = metersOf(block).find((m) => m.id === meterId);
+                          if (!entry) return;
+                          const next = !meterSegmented(block, entry);
+                          editMeter(node.id, block.id, meterId, {
+                            segmented: next === (block.segmented === true) ? undefined : next,
+                          });
+                        },
                         pip: isPipMeter(block.meter ?? "bar") ? meterPip(block) : undefined,
                         onPickPip: isPipMeter(block.meter ?? "bar") ? () => setPipBlockId(block.id) : undefined,
                         onAdd: () => addMeter(node.id, block.id),
