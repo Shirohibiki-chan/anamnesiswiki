@@ -75,7 +75,7 @@ import {
   isPipMeter,
   metersOf,
   meterStyleOf,
-  newMeterEntry,
+  newMeterFor,
   withMeter,
   withMeters,
   withoutMeter,
@@ -1526,7 +1526,12 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // A meter block arrives with one reading in it. An empty one would draw
       // as a heading and nothing else, which reads as a block that failed to
       // add rather than as one waiting to be filled in.
-      const seeded = kind === "meter" ? { meters: [newMeterEntry()], ...extra } : extra;
+      //
+      // What is in that reading depends on the shape — a spectrum starts at
+      // its midpoint rather than at zero, which is a real stored number and
+      // not a rule about empty ones. See newMeterFor.
+      const seeded =
+        kind === "meter" ? { meters: [newMeterFor(extra?.meter ?? "bar")], ...extra } : extra;
       editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, seeded)]);
     },
 
@@ -1648,7 +1653,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     addMeter(nodeId, blockId) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) =>
-          block.id === blockId ? withField(block, "meters", [...metersOf(block), newMeterEntry()]) : block,
+          block.id === blockId
+            ? withField(block, "meters", [...metersOf(block), newMeterFor(meterStyleOf(block))])
+            : block,
         ),
       );
     },

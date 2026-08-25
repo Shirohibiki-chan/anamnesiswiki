@@ -21,6 +21,14 @@
 // so what a click will do is visible before it happens. Dragging still works;
 // the preview is the affordance.
 //
+// **The spectrum is the one exception, and it is not a handle.** Seven of the
+// eight shapes say what they hold by how much of themselves is filled, so a
+// dot on the end is decoration over a fact already drawn. A spectrum between
+// two words has no fill to read — filling from `nonchalant` towards
+// `emotional` would say there is more of it, which is exactly the meaning it
+// exists to avoid — so the marker *is* the reading, and taking it away leaves
+// an empty line. It still previews the same way everything else does.
+//
 // The arithmetic and the arc geometry are in meter-service, which is where
 // they can be tested — including the inverse used here, turning a pointer
 // position back into a value.
@@ -40,6 +48,8 @@ import {
   dragSliceBoundary,
   isArcMeter,
   isComposedPie,
+  isSpectrum,
+  spectrumReadout,
   meterFace,
   meterPoint,
   meterSegmented,
@@ -90,6 +100,11 @@ const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gau
  */
 function leaveOnEnter(event: KeyboardEvent<HTMLInputElement>) {
   if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
+}
+
+/** Where a spectrum's marker sits, kept inside the ends of its own line. */
+function markerAt(fraction: number): string {
+  return `calc(${Math.min(Math.max(fraction, 0), 1)} * (100% - var(--spectrum-marker)) + var(--spectrum-marker) / 2)`;
 }
 
 type MeterBlockProps = {
@@ -336,6 +351,7 @@ function MeterReading({
   // A pie has no hole: an icon or a number in the middle of one sits on top of
   // the wedge it is describing. Both stay in the caption for a pie, which is
   // also where a chart normally carries its label.
+  const spectrum = isSpectrum(style);
   const solidShape = style === "pie";
   const iconInShape = isArcMeter(style) && !solidShape;
   const numberInShape = isArcMeter(style) && !solidShape && face !== "icon";
@@ -356,8 +372,14 @@ function MeterReading({
       )}
       {/* **The number is printed once.** A dial showing it in the middle and
           again under the name is the same fact twice, which is not what the
-          reference does — so when the shape has it, the caption doesn't. */}
-      {!numberInShape && (
+          reference does — so when the shape has it, the caption doesn't.
+
+          **A spectrum prints it nowhere.** Its number is machinery — where the
+          marker sits between two words — and a "60%" beside `shy` and `bold`
+          invites the reading that somebody is 60% of a person. It is still
+          there, still dragged, still nudged by the arrow keys, and still what
+          comes back if the block is switched to a bar. */}
+      {!numberInShape && !spectrum && (
         <MeterNumberField
           text={meterReadout(entry, style, withMax)}
           className="block-meter-readout"
@@ -376,6 +398,81 @@ function MeterReading({
       <X size={11} />
     </button>
   );
+
+  // **A spectrum is the bar's geometry with a different meaning drawn on it.**
+  // Same track, same `barValueAt`, same drag and the same arrow keys — what
+  // changes is that the value is a position rather than an amount, so it draws
+  // a marker rather than a fill and names the two ends rather than printing a
+  // number. The name sits above and the two words sit under the ends they
+  // belong to, which is where anybody writing `shy ——x—— bold` puts them.
+  if (spectrum) {
+    return (
+      <div
+        className="block-meter-reading"
+        data-meter-id={entry.id}
+        style={accent ? ({ ["--block-accent" as string]: accent } as CSSProperties) : undefined}
+      >
+        {caption}
+        <div
+          {...slider}
+          // The words are the value here, so the percentage on its own would
+          // be the one thing a spectrum does not mean. See spectrumReadout.
+          aria-valuetext={spectrumReadout(entry)}
+          ref={track}
+          className={`block-meter-spectrum-rail${segmented ? " block-meter-segmented" : ""}`}
+          onPointerDown={(e) => {
+            capture(e);
+            const next = barValueAt(e);
+            if (next !== null) commit(next);
+          }}
+          onPointerMove={(e) => aim(barValueAt(e), e)}
+          onPointerLeave={() => setPreview(null)}
+          onPointerUp={release}
+          onPointerCancel={release}
+          onBlur={() => setPreview(null)}
+        >
+          {/* The line is a child rather than the hit area itself: a 4px strip
+              is a hard thing to aim at, and the rail around it is what
+              actually answers the pointer. */}
+          <div className="block-meter-spectrum-line" />
+          {/* **Both markers travel the line minus their own width**, so the one
+              at either extreme sits inside the end rather than hanging half of
+              itself off it. It costs half a marker of accuracy against the
+              pointer at the very ends, which is what every slider ever built
+              does and what stops the dot colliding with the panel's edge.
+              Written on the same 13px so the pale one stays concentric with
+              the solid one wherever they meet. */}
+          {previewFraction !== null && previewFraction !== fraction && (
+            <span className="block-meter-spectrum-pending" style={{ left: markerAt(previewFraction) }} />
+          )}
+          <span className="block-meter-spectrum-marker" style={{ left: markerAt(fraction) }} />
+        </div>
+        {/* The two ends. Typed straight into, like the name above them, and
+            left as placeholders until they are — a spectrum whose ends are
+            unnamed is a spectrum nobody has finished, and it should look
+            like one rather than inventing a pair of words. */}
+        <div className="block-meter-ends">
+          <input
+            className="block-meter-end"
+            value={entry.startLabel ?? ""}
+            placeholder="One end"
+            aria-label="The word at the left end"
+            onChange={(e) => onEdit({ startLabel: e.target.value || undefined })}
+            onKeyDown={leaveOnEnter}
+          />
+          <input
+            className="block-meter-end block-meter-end-last"
+            value={entry.endLabel ?? ""}
+            placeholder="The other"
+            aria-label="The word at the right end"
+            onChange={(e) => onEdit({ endLabel: e.target.value || undefined })}
+            onKeyDown={leaveOnEnter}
+          />
+        </div>
+        {remove}
+      </div>
+    );
+  }
 
   if (style === "bar") {
     return (

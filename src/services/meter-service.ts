@@ -1,6 +1,6 @@
 // The numbers behind a meter block, and the geometry its arcs are drawn from.
-// Phase 18c. Pure, so the six shapes are presentation over two value models
-// rather than six implementations of "what fraction is this".
+// Phase 18c. Pure, so the eight shapes are presentation over three value
+// models rather than eight implementations of "what fraction is this".
 import { PIP_METER_STYLES, type Block, type MeterEntry, type MeterFace, type MeterStyle } from "../constants/schema";
 
 /**
@@ -24,6 +24,25 @@ export const MAX_PIPS = 200;
 /** A blank reading. Every meter block has at least one. */
 export function newMeterEntry(extra: Partial<MeterEntry> = {}): MeterEntry {
   return { id: crypto.randomUUID(), ...extra };
+}
+
+/**
+ * A fresh reading for a block of this shape.
+ *
+ * **A new spectrum starts in the middle.** Every other shape starts empty and
+ * reads as empty — a bar with nothing in it, a rating with no stars picked. A
+ * spectrum has no empty: its marker is always somewhere, and at zero it sits
+ * jammed against the first word, which reads as an answer she did not give.
+ * The midpoint is the neutral one and it is the position she would drag from.
+ *
+ * It is a real stored 50, not a rule about absent values. Dragging to the far
+ * left stores nothing again — zero is absent, the way every block field does
+ * it — and absent draws at the left end, which is where the pointer was. A
+ * midpoint-when-absent rule would instead snap the marker back to the centre
+ * the moment she dragged it to the end.
+ */
+export function newMeterFor(style: MeterStyle, extra: Partial<MeterEntry> = {}): MeterEntry {
+  return newMeterEntry(style === "spectrum" ? { value: DEFAULT_MAX / 2, ...extra } : extra);
 }
 
 // Shared so a block with no readings hands back the same array every render —
@@ -78,6 +97,37 @@ export function meterFace(block: Block, entry: MeterEntry): MeterFace {
 
 export function isPipMeter(style: MeterStyle): boolean {
   return PIP_METER_STYLES.includes(style);
+}
+
+/**
+ * The shape that is a position rather than a quantity. Added 2026-08-25.
+ *
+ * Asked for by one of her co-writers as a character-sheet idea rather than a
+ * statistic one: `nonchalant ——x———— emotional`, where the only thing that
+ * matters is where the marker sits between two named ends. It is the progress
+ * bar underneath — same 0-to-max value, same drag, same arrow keys — and it
+ * differs in what it draws: a marker instead of a fill, two words instead of a
+ * number, and no number anywhere at all.
+ */
+export function isSpectrum(style: MeterStyle): boolean {
+  return style === "spectrum";
+}
+
+/**
+ * What a spectrum says to a screen reader.
+ *
+ * The percentage on its own is the one thing a spectrum deliberately does not
+ * mean — "60%" of a scale between shy and bold is not a fact anybody wants —
+ * so the words come first and the number is the position between them. Falls
+ * back to the plain readout while the ends are still unnamed, since a bare
+ * percentage beats saying nothing.
+ */
+export function spectrumReadout(entry: MeterEntry): string {
+  const percent = Math.round(meterFraction(entry, "spectrum") * 100);
+  const start = entry.startLabel?.trim();
+  const end = entry.endLabel?.trim();
+  if (!start && !end) return `${percent}%`;
+  return `${percent}% from ${start || "one end"} towards ${end || "the other end"}`;
 }
 
 export function meterStyleOf(block: Block): MeterStyle {

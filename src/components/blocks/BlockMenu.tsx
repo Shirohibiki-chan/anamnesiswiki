@@ -185,11 +185,19 @@ export function BlockMenu({
           </button>
           {/* A pie has no maximum to show — the same toggle hides the share of
               the whole instead, which is the same job: whether the number gets
-              its context printed beside it. */}
-          <button type="button" onClick={meter.onToggleMax}>
-            <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} />{" "}
-            {meter.style === "pie" ? "Show share" : "Show max"}
-          </button>
+              its context printed beside it.
+
+              **A spectrum has no number anywhere**, so the row is not shown at
+              all rather than left there doing nothing. Its setting is kept, not
+              cleared: switch the block back to a bar and it means what it did.
+              "Show text" stays, because that hides the reading's *name*, which
+              a spectrum does have — the two words at its ends are not it. */}
+          {meter.style !== "spectrum" && (
+            <button type="button" onClick={meter.onToggleMax}>
+              <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} />{" "}
+              {meter.style === "pie" ? "Show share" : "Show max"}
+            </button>
+          )}
           {/* **Opened on one reading, this sets that reading; opened from the
               block's own ⋯, it sets the block.** Exactly how the colour above
               works, and for the reason she gave for colour: four dials under
