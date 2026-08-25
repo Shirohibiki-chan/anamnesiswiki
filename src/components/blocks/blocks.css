@@ -576,6 +576,23 @@
   border-radius: var(--radius-md);
 }
 
+/* **The name wraps too, on this shape only** — same reason as the two ends, see
+   `.block-meter-end`. The icon beside it has to stop centring itself against a
+   name that can now be two or three lines tall, or it drifts down the row as
+   the name grows; `flex-start` pins it to the first line. */
+.block-meter-spectrum .block-meter-caption {
+  align-items: flex-start;
+}
+
+.block-meter-spectrum .block-meter-name {
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  resize: none;
+  field-sizing: content;
+}
+
 /* Inside its corner rather than hanging off it, now there is a corner. */
 .block-meter-spectrum .block-meter-remove {
   top: 5px;
@@ -820,10 +837,19 @@
 
 /* Borderless until you touch it, like the name above it — and sized to what is
    typed, so an unnamed end is a short placeholder rather than a long empty box
-   sitting under half the axis. */
+   sitting under half the axis.
+
+   **It wraps rather than ellipsing, which is why it is a textarea.** Reported
+   2026-08-25 with a screenshot: both ends cut to `aiiiiiisu…`, and the only way
+   to read either was to drag the whole sidebar out. The word at the end of an
+   axis *is* the reading — a spectrum whose ends can't be read is a picture of
+   nothing — so the field takes as many lines as the phrase needs and the card
+   grows downward. `anywhere` rather than `break-word`: `break-word` leaves the
+   min-content width at the whole word, so one long unbroken token — exactly
+   what she typed — would still overflow instead of breaking. */
 .block-meter-end {
   min-width: 4ch;
-  max-width: 45%;
+  max-width: 48%;
   padding: 1px var(--space-sm);
   color: var(--color-text-secondary);
   background: transparent;
@@ -831,7 +857,11 @@
   border-radius: var(--radius-sm);
   font: inherit;
   font-size: var(--fs-2xs);
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  resize: none;
   field-sizing: content;
 }
 

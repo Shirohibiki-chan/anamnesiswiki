@@ -98,8 +98,23 @@ const VIEW_HEIGHT: Record<ArcStyle, number> = { circle: 100, semicircle: 58, gau
  * number does not: the edit has already been applied, and undo is what takes
  * a change back here.
  */
-function leaveOnEnter(event: KeyboardEvent<HTMLInputElement>) {
-  if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
+function leaveOnEnter(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  // Enter is stopped as well as acted on, because a spectrum's three word
+  // fields are textareas: without this, the key that finishes the field would
+  // also drop a line break into it on the way out.
+  if (event.key === "Enter" || event.key === "Escape") {
+    event.preventDefault();
+    event.currentTarget.blur();
+  }
+}
+
+/**
+ * What a wrapping field stores: one phrase, never the line breaks a paste
+ * arrived with. The words wrap because the panel is narrow — that is a drawing
+ * decision, and the value underneath stays a single line.
+ */
+function oneLine(text: string): string | undefined {
+  return text.replace(/[\r\n]+/g, " ") || undefined;
 }
 
 /** Where a spectrum's marker sits, kept inside the ends of its own line. */
@@ -360,16 +375,33 @@ function MeterReading({
       {!iconInShape && (
         <MeterIconButton icon={entry.icon} onPick={(icon) => onEdit({ icon })} className="block-meter-icon" />
       )}
-      {withText && (
-        <input
-          className="block-meter-name"
-          value={entry.label ?? ""}
-          placeholder="Name"
-          aria-label="Meter name"
-          onChange={(e) => onEdit({ label: e.target.value || undefined })}
-          onKeyDown={leaveOnEnter}
-        />
-      )}
+      {withText &&
+        (spectrum ? (
+          // **A spectrum's name wraps where every other shape's ellipses.** The
+          // cap and the ellipsis on `.block-meter-name` are there because a name
+          // that grew with its text stretched the reading and pushed a dial
+          // off-centre. A spectrum has no chart beside its name — the name owns
+          // the row — so there is nothing to push, and the truncation that is
+          // right next to a dial is just an unreadable name here.
+          <textarea
+            className="block-meter-name"
+            rows={1}
+            value={entry.label ?? ""}
+            placeholder="Name"
+            aria-label="Meter name"
+            onChange={(e) => onEdit({ label: oneLine(e.target.value) })}
+            onKeyDown={leaveOnEnter}
+          />
+        ) : (
+          <input
+            className="block-meter-name"
+            value={entry.label ?? ""}
+            placeholder="Name"
+            aria-label="Meter name"
+            onChange={(e) => onEdit({ label: e.target.value || undefined })}
+            onKeyDown={leaveOnEnter}
+          />
+        ))}
       {/* **The number is printed once.** A dial showing it in the middle and
           again under the name is the same fact twice, which is not what the
           reference does — so when the shape has it, the caption doesn't.
@@ -452,20 +484,22 @@ function MeterReading({
             unnamed is a spectrum nobody has finished, and it should look
             like one rather than inventing a pair of words. */}
         <div className="block-meter-ends">
-          <input
+          <textarea
             className="block-meter-end"
+            rows={1}
             value={entry.startLabel ?? ""}
             placeholder="One end"
             aria-label="The word at the left end"
-            onChange={(e) => onEdit({ startLabel: e.target.value || undefined })}
+            onChange={(e) => onEdit({ startLabel: oneLine(e.target.value) })}
             onKeyDown={leaveOnEnter}
           />
-          <input
+          <textarea
             className="block-meter-end block-meter-end-last"
+            rows={1}
             value={entry.endLabel ?? ""}
             placeholder="The other"
             aria-label="The word at the right end"
-            onChange={(e) => onEdit({ endLabel: e.target.value || undefined })}
+            onChange={(e) => onEdit({ endLabel: oneLine(e.target.value) })}
             onKeyDown={leaveOnEnter}
           />
         </div>
