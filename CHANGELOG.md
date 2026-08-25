@@ -8,6 +8,10 @@
 - **A new spectrum starts in the middle**, ready to be dragged, rather than jammed against the first word.
 - **Each one sits on its own card**, so a block holding three of them reads as three things rather than nine rows of words.
 
+### Fixes
+
+- **A long word at either end of a spectrum was cut short with no way to read the rest of it** — the only way to see the whole thing was to drag the sidebar wider. The end words now wrap onto as many lines as they need and the card grows to fit, so nothing is hidden at any panel width. The reading's name above them does the same. Long words with no space in them break across lines rather than running off the edge.
+
 ### Worth knowing
 
 - **It's the same reading underneath as a progress bar.** Switch a spectrum to a bar and the number is there — where the marker sat, out of a hundred. Switch it back and the two end words are still there too; nothing is thrown away by changing shape.
