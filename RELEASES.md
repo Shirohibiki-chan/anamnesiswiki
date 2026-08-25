@@ -13,6 +13,48 @@ that.
 
 ---
 
+## v0.5.0 — 2026-08-25
+
+The right-hand panel stopped being a fixed list of fields and became something you arrange yourself. Everything in it is a block now — the picture, your tags, every property — and there are new kinds to add: backlinks and lists of pages, and meters, which draw a number as a picture. Plus aliases, and a long run of fixes to keys that weren't doing what they said.
+
+### The sidebar is a canvas
+
+- **Everything in the panel is a block you can add, remove, reorder and duplicate.** Drag one by the grip that appears when you hover it, or use Move up / Move down in its `⋯` menu.
+- **Every block has its own menu** — rename its heading, turn the heading off, give it a colour, duplicate it, move it, remove it. Double-clicking a heading renames it too.
+- **Two new kinds: Text block and Link block.** A text block is somewhere to write beside the page rather than in it. A link block points at another page and follows it if you rename that page.
+- **Removing a block never deletes what you typed.** Take a property off the panel and the value stays on the page — it's hidden, not gone, and Add Block lists everything you've hidden. Deleting a field for real is **Delete property**, worded apart on purpose, and it asks first if there's anything in it.
+- **Your existing pages look exactly as they did.** Every page written before this works out its own layout the first time you open it, and nothing is rewritten until you actually change something.
+
+### Lists of pages, and backlinks
+
+- **Backlinks.** A block that lists every other page pointing at this one — whether it mentioned this page in its writing, named it in a field like Friends, or put it in a hand-made list. Each row says which, so a page in the list is never a mystery.
+- **Three more lists, and they're all the same block.** Add Block offers **Backlinks**, **Subpage index**, **Tag index** and **Manual links**. One block with a source you can change afterwards, so a list you set up as subpages can become backlinks without deleting anything.
+- **An empty list tells you why it's empty** rather than just sitting there.
+- **Aliases.** Give a page other names it answers to — Valera Jiang can be "Val". `[[Val]]` links straight to her, and searching "Val" finds her.
+
+### Meters
+
+- **A number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with eight shapes: Progress bar, Spectrum, Circle, Semi-circle, Gauge, Pie chart, Rating and Token pool.
+- **One block holds several meters** — a panel of stats, not a single reading. Each carries its own icon, name, numbers and colour.
+- **Every meter has an icon**, picked from about 1,900 of them, searchable by what you'd call it — "health" finds the heart — plus a tab of emoji.
+- **Drag any of them to set it.** Hovering shows what a click would do before it does it. Arrow keys work too.
+- **A pie chart divides one circle between all its meters.** Each slice is sized by its share, coloured for you, labelled with its percentage, and you can drag the edge between two slices to move it — the two either side trade with each other and nothing else on the chart moves. A line above the chart names whatever you're pointing at.
+- **A Spectrum is a marker between two words, with no number on it** — `nonchalant ——●—— emotional`. For the things about a character that aren't a quantity. Type the two words straight into the ends; each one sits on its own card so a block of them stays readable.
+- **Type into a meter's number to set it exactly**, as `62` or as `4/10`. Or draw it in segments instead of one solid sweep, per meter or for the whole block.
+
+### Fixes
+
+- **Menus answer the keyboard.** Opening one puts the cursor on its first item, Up and Down walk the list and wrap around, Enter picks, Escape closes and puts the cursor back on the button that opened it. Tab stays inside the menu instead of sailing past it into the page behind.
+- **Tab stays inside dialogs too** — Settings, Import, Export, the picture picker, Manage pins and the rest all keep the cursor in, wrapping at either end.
+- **Tab in the `[[` menu takes the highlighted page**, the way `]]` already did. Before, it fell through into the editor and rearranged the block you were writing in — that's the "it turns into a quote" you kept hitting. Same for `/` and `@`.
+- **`[[name]]` no longer picks silently between two pages called the same thing.** It holds the menu open with both on it and waits for you to choose. And a page whose name you typed exactly now wins over a longer one listed above it.
+- **The X closes the app from every screen**, including the start screen and after a refresh, and a close that fails can simply be tried again instead of jamming the button for the rest of the session.
+- **Refreshing the app no longer locks you out of the project you had open.** A window remembers who it is across a refresh and takes its own project straight back. Two genuinely separate copies are still kept apart.
+- **When Anamnesis says a project is open in another window, you can overrule it.** An **Open it anyway** link sits beside the message — the check is a guess, and a crash or a sync client looks exactly like a second window from the outside.
+- **The template prompt can be sent away**, with an × on it, and the page remembers. Add Block offers **Apply a template** afterwards, so dismissing it never closes the only door.
+
+---
+
 ## v0.4.0 — 2026-08-21
 
 The screen you land on is a library now — every project you have, with covers, pinned favourites, groups and an archive, instead of the last eight you opened. Alongside that: pictures anywhere in a page and a library to keep them in, templates you can actually edit, four new kinds of property, and a lot of small things that were in the way every day.
