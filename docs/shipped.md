@@ -3830,6 +3830,13 @@ Her two calls before building, given as a numbered pair:
   on the same 13px so the two stay concentric.
 - **Segmented reuses the bar's mask** rather than inventing notch geometry, so
   a spectrum ticked into steps reads as the same setting doing the same thing.
+- **Each spectrum sits on its own card**, which the first cut did not do and
+  which she rejected on sight: three of them stacked is three rows of *words*
+  each, and the ends of one read as belonging to the name below it. Two lighter
+  treatments were drawn beside it — a divider line between readings, and
+  putting the track itself on a pill — and neither groups the words the way a
+  card does. The line inside a card is `--color-border`, since the card wears
+  the colour the line used to.
 - **The midpoint is a stored 50.** See `handoff.md` — the inferred version
   breaks on the first drag to the left end.
 - **Not widened into custom labels for the other shapes**, which the plan

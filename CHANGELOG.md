@@ -6,6 +6,7 @@
 
 - **A Spectrum: a meter that is a position between two words rather than a number.** `nonchalant ——●—— emotional`. Add Block → Meters has it under Progress bar, and it works the way every other meter does — drag the marker, or use the arrow keys — except that it prints no number anywhere. Type the two words straight into the ends underneath it; the reading's own name sits above, so one block can hold several axes with their own names.
 - **A new spectrum starts in the middle**, ready to be dragged, rather than jammed against the first word.
+- **Each one sits on its own card**, so a block holding three of them reads as three things rather than nine rows of words.
 
 ### Worth knowing
 

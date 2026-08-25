@@ -546,11 +546,40 @@
   gap: var(--space-lg);
 }
 
-/* Tighter than the others, because a spectrum is three rows that read as one
-   thing — the name, the axis, the two words under its ends. Spaced like the
-   bar they would drift into three unrelated lines. */
+/* **A spectrum sits on its own card.** It is the only shape that is three rows
+   of *words* — the name, then two more under the ends of the line — and
+   stacked three-deep with nothing but a gap between them, the ends of one read
+   as belonging to the name below it. Judged unusable on sight, 2026-08-25, and
+   she was right. The card is what says where one stops.
+
+   Tighter inside than the gap outside, which is the whole job: the three rows
+   have to read as one thing before the card can separate them from the next. */
 .block-meter-spectrum .block-meter-reading {
   gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg) var(--space-md);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* The line is `--color-panel-alt` everywhere else, which is the card's own
+   colour — on one it would be invisible. */
+.block-meter-spectrum .block-meter-spectrum-line {
+  background: var(--color-border);
+}
+
+/* The hover wash bleeds past the reading's box on every other shape, which is
+   what makes a dial feel picked out. On a card that would be a halo standing
+   outside its own edges, so here it lines up with the card instead. */
+.block-meter-spectrum .block-meter-reading::before {
+  inset: 0;
+  border-radius: var(--radius-md);
+}
+
+/* Inside its corner rather than hanging off it, now there is a corner. */
+.block-meter-spectrum .block-meter-remove {
+  top: 5px;
+  right: 5px;
 }
 
 /* The fill takes the block's own colour when it has one, which is what makes a
