@@ -580,11 +580,27 @@
    `.block-meter-end`. The icon beside it has to stop centring itself against a
    name that can now be two or three lines tall, or it drifts down the row as
    the name grows; `flex-start` pins it to the first line. */
+/* **And the row stops short of the corner the × lives in.** The button is
+   absolute, so it doesn't push anything — it just sat on top of the name box,
+   photographed 2026-08-25. Reserved space rather than a moved button: the ×
+   belongs in the card's corner, and it is the row underneath that has to keep
+   out of it. The gap stays when the × is hidden, which is what stops the name
+   jumping sideways as the pointer arrives. */
 .block-meter-spectrum .block-meter-caption {
   align-items: flex-start;
+  padding-right: 20px;
 }
 
+/* **Sized to what is typed, like a dial's name is.** `flex: 1` gave an empty
+   spectrum a Name box the width of the whole card — nothing else on that row
+   wanted the space, because a spectrum prints no number beside its name. Her
+   screenshot, same day. Growing to the full row is still allowed once there is
+   something long in it; what's gone is the empty box that starts that wide. */
 .block-meter-spectrum .block-meter-name {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 6ch;
+  max-width: 100%;
   line-height: 1.35;
   white-space: pre-wrap;
   overflow-wrap: anywhere;

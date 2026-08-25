@@ -10,6 +10,7 @@
 
 ### Fixes
 
+- **An empty spectrum's Name box was as wide as the card**, with the × for removing the meter sitting on top of it. The box is the width of what's in it now — a short box when it's empty, growing only as you type — and it stops short of the corner the × lives in.
 - **A long word at either end of a spectrum was cut short with no way to read the rest of it** — the only way to see the whole thing was to drag the sidebar wider. The end words now wrap onto as many lines as they need and the card grows to fit, so nothing is hidden at any panel width. The reading's name above them does the same. Long words with no space in them break across lines rather than running off the edge.
 
 ### Worth knowing
