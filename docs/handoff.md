@@ -2876,12 +2876,32 @@ is below.
   overshoot past full as empty is a meter that empties itself at the moment you
   fill it.
 
-- **Nothing in a meter draws a drag handle.** A dot on the end of the fill
-  was built and rejected: it reads as furniture, and on a semicircle it slides
-  off the end of the arc. What replaced it is the reference's behaviour —
-  hovering previews the value under the pointer, dimmed and pulsing, and a
-  click commits it. Adding a handle back would be re-making a decision she has
-  already made.
+- **Nothing in a meter draws a drag handle — except the spectrum, where the
+  marker is the reading.** A dot on the end of the fill was built and rejected:
+  it reads as furniture, and on a semicircle it slides off the end of the arc.
+  What replaced it is the reference's behaviour — hovering previews the value
+  under the pointer, dimmed and pulsing, and a click commits it. Adding a
+  handle back to any of the other seven shapes would be re-making a decision
+  she has already made. The spectrum is not that decision reopened: it draws no
+  fill at all (a fill from `nonchalant` towards `emotional` would claim there is
+  *more* of it, which is the reading the shape exists to avoid), so without the
+  marker there is nothing on the line. It previews the same way everything else
+  does.
+
+- **A spectrum's number exists and is never printed.** It is a bar underneath —
+  same 0-to-max value, same `barFractionAt`, same arrow keys — and the whole
+  point of the shape is that "60%" is not what it means. So the caption drops
+  the number for `spectrum` and `BlockMenu` hides Show max, while `showMax`
+  itself is kept on disk and means what it always did the moment the block is
+  switched to another shape. Anything that starts printing that number has
+  undone the feature.
+
+- **A new spectrum's midpoint is stored, not inferred.** `newMeterFor` writes a
+  real 50. The tempting alternative — reading an absent value as the middle —
+  breaks on the first drag to the left end: zero is stored as absent, the way
+  every block field is, so the marker would snap back to the centre at exactly
+  the moment she put it at the end. Absent means zero here, the same as
+  everywhere else.
 
 - **A meter's fill falls back to `--color-accent-light`, never
   `--color-accent`.** The latter is a 15% tint despite the name — the same trap

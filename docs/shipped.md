@@ -3778,3 +3778,81 @@ Measured in the probe across pie, gauge, bar and rating: the button went from
 29px tall (two lines) to 17px with the icon on the same line, left of the text
 and centred in its list. Enter and Escape both leave the name field on the
 legend row and on a bar's caption, with the typed name still stored.
+
+---
+
+## Spectrum meters ✅ Shipped 2026-08-25
+
+The last thing left in Queued Adjustments from the 18c run, asked for
+2026-08-22 by one of her co-writers: `nonchalant ——x———— emotional`, a meter
+where the only thing that matters is where the marker sits between two named
+ends. A character-sheet idea rather than a statistic one.
+
+Her two calls before building, given as a numbered pair:
+
+1. **A shape of its own, not a setting on the bar.** The same answer 18c gave
+   for the six that shipped — one menu entry per shape, because nobody adding a
+   rating wants to add a bar and then hunt for the setting.
+2. **The reading's name above, the two words under the ends they belong to.**
+
+### What shipped
+
+- **`"spectrum"` in `MeterStyle`**, and a row in `METER_STYLES` directly after
+  Progress bar. That constant is read by three places — the block heading, the
+  shape grid in the block's menu, and Add Block's Meters group — so registering
+  it there is the whole of putting it in the UI. The icon is lucide's
+  `GitCommitHorizontal`, which is literally a dot on a line.
+- **`MeterEntry.startLabel` and `.endLabel`.** On the reading, not the block:
+  one block holds several of these and each is its own axis, so calm/furious
+  and shy/bold under one heading is the ordinary case. Inert but preserved on
+  every other shape.
+- **A render branch in `MeterReading`**, above the bar's. It reuses the bar
+  wholesale — `track` ref, `barValueAt`, `capture`/`aim`/`commit`, `handleKey`
+  — and changes only what is drawn: a rail with a line in it, a marker, the two
+  end fields, and no number.
+- **`isSpectrum`, `spectrumReadout`, `newMeterFor`** in `meter-service`, with
+  tests. `spectrumReadout` is `aria-valuetext`: the percentage alone is the one
+  thing the shape does not mean, so the words carry it.
+- **`newMeterFor(style)` replaces `newMeterEntry()` at both creation sites** in
+  the store (`addBlock`'s seed and `addMeter`), which is what puts a new
+  spectrum at its midpoint and leaves every other shape starting empty.
+- **Show max is not offered on a spectrum** in `BlockMenu`; Show text stays,
+  because it hides the reading's *name* and the two end words are not that.
+
+### Decisions worth the record
+
+- **The marker travels the line minus its own width.** `markerAt` writes a
+  `calc()` against `--spectrum-marker`, so the dot at either extreme sits
+  inside the end of the line rather than hanging half of itself off it. It
+  costs up to half a marker of accuracy against the pointer at the very ends,
+  which is what every slider ever built does, and it is what stops the dot
+  colliding with the edge of the panel. The pale preview marker is positioned
+  on the same 13px so the two stay concentric.
+- **Segmented reuses the bar's mask** rather than inventing notch geometry, so
+  a spectrum ticked into steps reads as the same setting doing the same thing.
+- **Each spectrum sits on its own card**, which the first cut did not do and
+  which she rejected on sight: three of them stacked is three rows of *words*
+  each, and the ends of one read as belonging to the name below it. Two lighter
+  treatments were drawn beside it — a divider line between readings, and
+  putting the track itself on a pill — and neither groups the words the way a
+  card does. The line inside a card is `--color-border`, since the card wears
+  the colour the line used to.
+- **The midpoint is a stored 50.** See `handoff.md` — the inferred version
+  breaks on the first drag to the left end.
+- **Not widened into custom labels for the other shapes**, which the plan
+  explicitly warned against. `startLabel`/`endLabel` are read by the spectrum
+  branch and nowhere else.
+
+### Verification
+
+`tsc --noEmit`, `pnpm lint`, `pnpm build` and `pnpm test` (1375 tests, 56
+files) all clean, with 9 new tests covering `isSpectrum`, `spectrumReadout`
+in its four states, and `newMeterFor` for both the seeded and unseeded shapes.
+
+The layout was checked in a headless Chromium against the real `blocks.css`,
+since components have no test setup and `pnpm dev` cannot open a project in a
+browser — the fs plugin is not there. A static page carrying the exact markup
+of the branch was served from `public/` and screenshotted at 2x: caption above,
+rail, ends row at the extremes, the segmented variant, and the preview marker
+beside the real one. The first pass is what caught the marker hanging off the
+end at 0% and 100%, which is why `markerAt` exists.

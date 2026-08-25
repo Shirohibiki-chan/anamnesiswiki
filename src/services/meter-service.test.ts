@@ -5,6 +5,9 @@ import {
   boundaryIndexAt,
   dragSliceBoundary,
   isComposedPie,
+  isSpectrum,
+  newMeterFor,
+  spectrumReadout,
   meterSegmented,
   pieSlices,
   pieTotal,
@@ -158,7 +161,7 @@ describe("arcPath", () => {
 });
 
 describe("every style", () => {
-  const styles: MeterStyle[] = ["bar", "circle", "semicircle", "gauge", "rating", "pool"];
+  const styles: MeterStyle[] = ["bar", "spectrum", "circle", "semicircle", "gauge", "rating", "pool"];
 
   it("produces a usable maximum and an in-range value", () => {
     for (const style of styles) {
@@ -642,5 +645,57 @@ describe("sliceLabelPoint", () => {
     const [only] = pieSlices([slice(1), slice(1)]);
     const [x, y] = sliceLabelPoint(only);
     expect(Math.hypot(x - 50, y - 50)).toBeLessThan(PIE_RADIUS);
+  });
+});
+
+// ---- The spectrum: a position between two words (2026-08-25) ----
+
+describe("a spectrum", () => {
+  it("is the only shape that is one", () => {
+    expect(isSpectrum("spectrum")).toBe(true);
+    for (const style of ["bar", "circle", "semicircle", "gauge", "pie", "rating", "pool"] as MeterStyle[]) {
+      expect(isSpectrum(style), style).toBe(false);
+    }
+  });
+
+  it("reads against the same hundred a bar does, so switching shape keeps the reading", () => {
+    const reading = entry({ value: 40 });
+    expect(meterFraction(reading, "spectrum")).toBeCloseTo(meterFraction(reading, "bar"));
+  });
+
+  // The midpoint is stored, not inferred — see newMeterFor. A rule that read
+  // an absent value as the middle would snap the marker back to centre the
+  // moment she dragged it to the left end, since zero is stored as absent.
+  it("starts in the middle, as a real number", () => {
+    expect(newMeterFor("spectrum").value).toBe(50);
+  });
+
+  it("leaves every other shape starting empty", () => {
+    expect(newMeterFor("bar").value).toBeUndefined();
+    expect(newMeterFor("rating").value).toBeUndefined();
+  });
+
+  it("still takes what it is given", () => {
+    expect(newMeterFor("spectrum", { value: 10, startLabel: "shy" })).toMatchObject({ value: 10, startLabel: "shy" });
+  });
+});
+
+describe("spectrumReadout", () => {
+  it("names both ends and where the marker sits between them", () => {
+    expect(spectrumReadout(entry({ value: 60, startLabel: "nonchalant", endLabel: "emotional" }))).toBe(
+      "60% from nonchalant towards emotional",
+    );
+  });
+
+  it("falls back to the bare percentage while neither end is named", () => {
+    expect(spectrumReadout(entry({ value: 25 }))).toBe("25%");
+  });
+
+  it("fills in the end that hasn't been named yet", () => {
+    expect(spectrumReadout(entry({ value: 0, endLabel: "bold" }))).toBe("0% from one end towards bold");
+  });
+
+  it("ignores an end that is only whitespace", () => {
+    expect(spectrumReadout(entry({ value: 50, startLabel: "   ", endLabel: "   " }))).toBe("50%");
   });
 });

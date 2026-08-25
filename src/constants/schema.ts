@@ -119,15 +119,17 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
 export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter";
 
 /**
- * How a `meter` block draws itself. Phase 18c.
+ * How a `meter` block draws itself. Phase 18c, plus `spectrum` on 2026-08-25.
  *
- * Six shapes, two value models. The first four read one number against a
- * maximum and differ only in how they draw it; the last two count whole units
- * and differ only in what a click means. One block with a switchable shape
- * rather than six kinds, the same way `collection` carries a source — a bar
- * that should have been a gauge is a setting, not a delete and a rebuild.
+ * Eight shapes, three value models. `bar`, `circle`, `semicircle`, `gauge` and
+ * `pie` read one number against a maximum and differ only in how they draw it;
+ * `rating` and `pool` count whole units and differ only in what a click means;
+ * `spectrum` marks a position between two named ends and prints no number at
+ * all. One block with a switchable shape rather than eight kinds, the same way
+ * `collection` carries a source — a bar that should have been a gauge is a
+ * setting, not a delete and a rebuild.
  */
-export type MeterStyle = "bar" | "circle" | "semicircle" | "gauge" | "pie" | "rating" | "pool";
+export type MeterStyle = "bar" | "spectrum" | "circle" | "semicircle" | "gauge" | "pie" | "rating" | "pool";
 
 /** The shapes that count whole units rather than measuring a proportion. */
 export const PIP_METER_STYLES: MeterStyle[] = ["rating", "pool"];
@@ -180,6 +182,24 @@ export type MeterEntry = {
    * agree with its block stores nothing again rather than pinning it.
    */
   segmented?: boolean;
+  /**
+   * The words at either end of a `spectrum`. Added 2026-08-25.
+   *
+   * **A pair, not a name.** `label` is what the reading is called — "Temper" —
+   * and these are the two poles it sits between: `nonchalant` at the empty end
+   * and `emotional` at the full one. Every other shape measures a number
+   * against a maximum and needs one name; a spectrum is only meaningful as a
+   * distance between two words, so it needs both and never draws the number.
+   *
+   * Stored on the reading rather than on the block because a block holds
+   * several of these and each is its own axis — calm/furious and shy/bold
+   * under one heading is the ordinary case.
+   *
+   * On any other shape they are inert: kept on disk, not drawn, and back the
+   * moment the block is switched to a spectrum again.
+   */
+  startLabel?: string;
+  endLabel?: string;
 };
 
 /**
