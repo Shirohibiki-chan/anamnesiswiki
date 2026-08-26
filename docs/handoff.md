@@ -3067,6 +3067,19 @@ choices, and both live in `e2e/harness/launch-app.ts`:
   Tauri opens to a window that cannot read a file, so `launchApp` refuses to
   start against one rather than failing as a wall of timeouts.
 
+**Never touch `electronUpdater.autoUpdater` at module scope.** It is a getter
+that *constructs* the platform's updater, and that constructor reads
+`app.getVersion()` and rejects anything that is not valid semver. An unpackaged
+run on Linux answers `0.0`, so naming the property threw during module load —
+before `app.whenReady()`, so no window was ever created and nothing appeared on
+screen or in the app's own logs. **The Electron shell could not be run from
+source on Linux at all**, on the one platform this whole phase exists for.
+Windows never showed it: an unpackaged run there answers `44.0.0`, which is
+valid semver by luck. `getUpdater()` in `electron/main.js` now builds it on
+first use and remembers the failure if it cannot. Found 2026-08-26 by the app
+suite, and only after taking Playwright out of the way — attaching to the main
+process is what reroutes its console, so the error was invisible for six runs.
+
 **`pnpm-workspace.yaml` is pnpm 11 syntax, and three workflows still ask for
 pnpm 10.** `allowBuilds` — which packages may run an install step — arrived in
 pnpm 11, and pnpm 10 ignores the field rather than failing on it. So on any

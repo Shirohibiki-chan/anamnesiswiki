@@ -291,7 +291,7 @@ handle("app:restart", () => {
   // runs as the app is going away — so the restart is where the new version
   // actually arrives. Without an update waiting, this is an ordinary restart.
   if (updateReadyToInstall) {
-    autoUpdater.quitAndInstall();
+    getUpdater().quitAndInstall();
     return;
   }
   app.relaunch();
@@ -445,34 +445,80 @@ handle("store:save", async (_event, fileName) => {
 
 // ----------------------------------------------------------------- updates
 
-const { autoUpdater } = electronUpdater;
-
-// Nothing happens without a button press: no check at launch, no check on a
-// timer, no download until the panel asks for one. That was true of the Tauri
-// updater and it stays true here.
-autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = false;
-
 /**
- * **This app is not code signed, and that is a decision rather than an
- * oversight** (2026-08-25): a Windows certificate is a few hundred a year to
- * remove a first-run warning, and an Apple one is another hundred on top. So
- * there is no publisher name for electron-updater to check a download against,
- * and what stands behind an update instead is the SHA-512 published in the
- * release feed and fetched from GitHub over HTTPS.
+ * The updater, built the first time something asks for it rather than on load.
  *
- * **Worth knowing before an electron-builder major upgrade:** skipping this
- * check is deprecated. A future version treats a missing publisher as a failed
- * verification rather than a skipped one, which would stop updates dead. See
- * docs/releasing.md.
+ * **`electronUpdater.autoUpdater` is a getter that constructs the updater**, so
+ * naming the property is not free — it picks the platform's implementation and
+ * runs its constructor there and then. That constructor reads
+ * `app.getVersion()` and refuses anything that is not valid semver.
+ *
+ * **On Linux, an unpackaged run answers `0.0`, so this threw during module
+ * load** — before `app.whenReady()`, before any window existed. Electron
+ * reported a main process that failed to load and then sat there: no window, no
+ * error on screen, nothing in the app's own logs. The Electron shell could not
+ * be run from source on Linux at all, which matters rather a lot for a phase
+ * whose entire reason is Linux. Windows never saw it, because an unpackaged run
+ * there answers `44.0.0` — Electron's own version, valid semver by luck.
+ *
+ * Found by the app test suite on 2026-08-26, after six CI runs that could only
+ * say "ready, but no window".
+ *
+ * Deferring it also matches when the updater is actually wanted: nothing here
+ * checks for an update until a button is pressed.
+ *
+ * @returns {import("electron-updater").AppUpdater}
  */
-if ("verifyUpdateCodeSignature" in autoUpdater) autoUpdater.verifyUpdateCodeSignature = false;
+function getUpdater() {
+  if (updater) return updater;
+  // Remembered rather than retried. It fails identically every time, and the
+  // Updates panel needs a sentence rather than a spinner.
+  if (updaterUnavailable) throw updaterUnavailable;
+
+  let built;
+  try {
+    built = electronUpdater.autoUpdater;
+  } catch (error) {
+    updaterUnavailable = new Error(
+      `Updates aren't available in this build: ${error && error.message ? error.message : error}`,
+    );
+    throw updaterUnavailable;
+  }
+
+  // Nothing happens without a button press: no check at launch, no check on a
+  // timer, no download until the panel asks for one. That was true of the Tauri
+  // updater and it stays true here.
+  built.autoDownload = false;
+  built.autoInstallOnAppQuit = false;
+
+  // **This app is not code signed, and that is a decision rather than an
+  // oversight** (2026-08-25): a Windows certificate is a few hundred a year to
+  // remove a first-run warning, and an Apple one is another hundred on top. So
+  // there is no publisher name for electron-updater to check a download
+  // against, and what stands behind an update instead is the SHA-512 published
+  // in the release feed and fetched from GitHub over HTTPS.
+  //
+  // **Worth knowing before an electron-builder major upgrade:** skipping this
+  // check is deprecated. A future version treats a missing publisher as a
+  // failed verification rather than a skipped one, which would stop updates
+  // dead. See docs/releasing.md.
+  if ("verifyUpdateCodeSignature" in built) built.verifyUpdateCodeSignature = false;
+
+  updater = built;
+  return updater;
+}
+
+/** @type {import("electron-updater").AppUpdater | null} */
+let updater = null;
+
+/** @type {Error | null} */
+let updaterUnavailable = null;
 
 /** Set once a download has finished, so quitting can hand over to the installer. */
 let updateReadyToInstall = false;
 
 handle("updates:check", async () => {
-  const result = await autoUpdater.checkForUpdates();
+  const result = await getUpdater().checkForUpdates();
   if (!result?.updateInfo) return null;
   if (result.updateInfo.version === app.getVersion()) return null;
 
@@ -486,18 +532,19 @@ handle("updates:check", async () => {
 });
 
 handle("updates:download", async (event) => {
+  const updating = getUpdater();
   const forward = (progress) => {
     event.sender.send("updates:progress", {
       received: progress.transferred,
       total: typeof progress.total === "number" ? progress.total : null,
     });
   };
-  autoUpdater.on("download-progress", forward);
+  updating.on("download-progress", forward);
   try {
-    await autoUpdater.downloadUpdate();
+    await updating.downloadUpdate();
     updateReadyToInstall = true;
   } finally {
-    autoUpdater.off("download-progress", forward);
+    updating.off("download-progress", forward);
   }
 });
 
