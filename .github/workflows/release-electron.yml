@@ -1,0 +1,133 @@
+# Builds and publishes the Electron release when a version tag is pushed.
+#
+# **Replaces release.yml**, which built the Tauri app and is kept on manual
+# dispatch only while Phase 29 settles. The old one had to compile Rust per
+# platform, sign every bundle with minisign, assemble latest.json across four
+# jobs, and then unpack and repack the AppImage to take the host's graphics
+# libraries back out. None of that applies here: electron-builder produces the
+# installers and the update feed together, and there is no Rust to compile.
+#
+# Nothing here touches the user or her worlds — it builds public source on
+# GitHub's runners.
+name: Release (Electron)
+
+on:
+  push:
+    tags:
+      - "v*"
+  # A dry run against any commit: builds all three platforms and uploads the
+  # installers as workflow artifacts without creating or touching a release.
+  # This is how the pipeline gets tested without spending a version number.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # Fails in seconds if the tag and the version files disagree, before anything
+  # spends minutes building. A mismatch here is the failure that used to ship:
+  # the installer says one version, the updater compares another, and the
+  # update button goes quiet for everyone.
+  check-version:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
+    outputs:
+      notes: ${{ steps.notes.outputs.body }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Version files must match the tag
+        run: node scripts/check-version.mjs "${GITHUB_REF_NAME#v}"
+      # Fails here, in seconds, if this version has no section written for it.
+      # These notes are not only what the releases page shows — they are copied
+      # into the update feed, which is what Settings → Updates puts in front of
+      # someone deciding whether to install.
+      - name: Release notes must exist for this version
+        id: notes
+        run: |
+          {
+            echo 'body<<RELEASE_NOTES_EOF'
+            node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}"
+            echo
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    # `always()` so a manual dry run, which skips the version check entirely,
+    # still builds. On a tag the check must have passed.
+    needs: check-version
+    if: always() && needs.check-version.result != 'failure'
+    strategy:
+      # One platform failing shouldn't bin the others — a release with two of
+      # three installers is worth having, and the missing one can be re-run.
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            name: windows
+          - platform: macos-latest
+            name: macos
+          - platform: ubuntu-22.04
+            name: linux
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Once, on the cheapest runner, rather than three times. The old workflow
+      # ran these per platform, which is three identical answers to the same
+      # question — nothing in lint or the test suite is platform-dependent.
+      - name: Lint and test
+        if: matrix.name == 'linux'
+        run: |
+          pnpm lint
+          pnpm test
+
+      - name: Build and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Quoted through the environment rather than inlined into the command
+          # below, so a release note containing a quote or a backtick cannot
+          # rewrite it. Empty on a dry run, which never publishes anything.
+          RELEASE_NOTES: ${{ needs.check-version.outputs.notes }}
+          # **Stops macOS looking for a signing identity it will not find.**
+          # This app is deliberately unsigned (2026-08-25) — a Windows
+          # certificate is a few hundred a year to remove a first-run warning
+          # and an Apple one is another hundred on top. Without this, the mac
+          # build searches the keychain and fails the job rather than producing
+          # an unsigned dmg. See docs/releasing.md.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # Published as a draft, so the release can be read before anyone's
+            # update button finds it.
+            pnpm electron:package --publish always \
+              -c.releaseInfo.releaseNotes="${RELEASE_NOTES}"
+          else
+            pnpm electron:package --publish never
+          fi
+
+      - name: Keep the installers from a dry run
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: anamnesis-${{ matrix.name }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/*.yml
+          if-no-files-found: error
+          retention-days: 7

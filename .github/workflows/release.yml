@@ -9,12 +9,19 @@
 # Nothing here touches the user or her worlds — it builds public source on
 # GitHub's runners. See CLAUDE.md's Policy Boundary; that line is about what the
 # *app* sends, and the app still sends nothing.
-name: Release
+name: Release (Tauri — superseded)
 
+# **Kept as a fallback, not as the release path.** Phase 29 moved the app from
+# Tauri to Electron, and `release-electron.yml` is what a version tag builds
+# now. This one no longer fires on a tag; it can still be run by hand from the
+# Actions tab if the Electron pipeline ever needs a way back. Delete it once
+# the Electron release has shipped and settled — and delete `src-tauri` with it.
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The existing tag to build (for example v0.5.0)
+        required: true
 
 # The release job creates a GitHub release and uploads to it.
 permissions:
@@ -116,8 +123,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Anamnesis ${{ github.ref_name }}
+          tagName: ${{ inputs.tag }}
+          releaseName: Anamnesis ${{ inputs.tag }}
           # This version's section of RELEASES.md, read by the job above. It is
           # not only what the releases page shows: tauri-action copies it into
           # latest.json's `notes`, and that is what Settings → Updates puts in

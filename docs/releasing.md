@@ -1,9 +1,54 @@
 # Cutting a release
 
 Publishing a new version is three commands. GitHub does the rest — it builds
-Anamnesis for Windows, macOS and Linux, signs the update, writes the file the
-update button reads, and puts it all on the releases page as a draft for you to
-look at before anyone gets it.
+Anamnesis for Windows, macOS and Linux, writes the file the update button reads,
+and puts it all on the releases page as a draft for you to look at before anyone
+gets it.
+
+## What changed in Phase 29 (2026-08-25)
+
+The app moved from Tauri to Electron, and the release pipeline moved with it.
+The commands below are the same. What is different underneath:
+
+- **`release-electron.yml` is what a version tag builds now.** The old
+  `release.yml` still exists, set to manual-only, as a way back if the new one
+  ever fails badly. Delete it once an Electron release has shipped and settled.
+- **The updater's signing key is no longer used.** Tauri verified each update
+  against a key you hold; electron-updater verifies the SHA-512 published in the
+  release feed and fetched from GitHub over HTTPS. The
+  `TAURI_SIGNING_PRIVATE_KEY` secret is harmless where it is and does nothing —
+  leave it until the old workflow is deleted.
+- **The AppImage repack job is gone**, along with the problem it existed for.
+  That was Tauri's bundler sealing the host's graphics libraries into the
+  AppImage; electron-builder builds its own. **Whether the underlying crash is
+  gone is unproven** — nobody has run an Electron AppImage on the Fedora machine
+  that hit it.
+- **You can test the pipeline without spending a version number.** Actions tab →
+  Release (Electron) → Run workflow. It builds all three platforms and attaches
+  the installers to the run instead of creating a release.
+
+## Nothing is code signed, on purpose
+
+Decided 2026-08-25, after pricing it: a Windows certificate is a few hundred a
+year and an Apple one is another hundred on top, and all they buy is the absence
+of a warning. The Tauri builds were never signed either, so this is not a
+change — it is the same position, written down.
+
+What that means for whoever installs it:
+
+- **Windows** shows "Windows protected your PC" the first time. More info → Run
+  anyway. Same as every release so far.
+- **Linux** neither asks nor cares.
+- **macOS refuses to open it from a double-click.** The way past is right-click
+  the app → Open → Open. **Say so in the release notes when there is a Mac
+  build**, because someone hitting that with no explanation reads it as broken.
+  Mac updates also have to be done by hand — the automatic updater cannot
+  install an unsigned build on that platform.
+
+**One thing to check before upgrading electron-builder across a major version:**
+skipping the update signature check is deprecated. A future version treats a
+missing publisher name as a *failed* verification rather than a skipped one,
+which would stop Windows updates dead. See the comment in `electron/main.js`.
 
 ## One-time setup — ✅ done 2026-07-31
 
@@ -41,7 +86,8 @@ not into a commit. The repository is public.
 node scripts/set-version.mjs 0.3.0
 ```
 
-That's the version number written into the four places that hold it. Then:
+That's the version number written into the four places that hold it — including
+`package.json`, which is the one the Electron build reads. Then:
 
 ```bash
 git commit -am "Release v0.3.0"; git tag v0.3.0; git push; git push --tags
