@@ -12,6 +12,15 @@ directories:
   output: release
   buildResources: src-tauri/icons
 
+# Where updates come from, and where a tagged build uploads to. Draft on
+# purpose: it keeps a release readable before anyone's update button finds it,
+# which is the convention the Tauri pipeline already used.
+publish:
+  provider: github
+  owner: Shirohibiki-chan
+  repo: anamnesiswiki
+  releaseType: draft
+
 # What goes inside the package. `dist` is the built page, `electron` is the
 # shell around it, and package.json is there because the main process reads the
 # version out of it — see readAppVersion in electron/main.js.

@@ -38,6 +38,7 @@
     "@tauri-apps/plugin-store": "^2.4.4",
     "@tauri-apps/plugin-updater": "^2.10.1",
     "date-fns": "^4.4.0",
+    "electron-updater": "^6.8.9",
     "fuse.js": "^7.5.0",
     "lucide-react": "^1.27.0",
     "react": "^19.1.0",

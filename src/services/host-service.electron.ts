@@ -58,7 +58,9 @@ type HostBridge = {
   storeSet(fileName: string, key: string, value: unknown): Promise<void>;
   storeDelete(fileName: string, key: string): Promise<boolean>;
   storeSave(fileName: string): Promise<void>;
-  checkForUpdate(): Promise<null>;
+  checkForUpdate(): Promise<{ version: string; body?: string } | null>;
+  downloadUpdate(): Promise<void>;
+  onUpdateProgress(handler: (progress: DownloadProgress) => void): () => void;
 };
 
 /**
@@ -261,14 +263,32 @@ export async function openKeyValueStore(fileName: string): Promise<KeyValueStore
 // --------------------------------------------------------------- updates
 
 /**
- * **Always "nothing newer" in this build, on purpose.** The updater needs a
- * feed, signing keys and a release pipeline, and all three are Phase 29 step 3.
- * A half-wired updater is worse than an absent one, because it is the one
- * feature whose job is to run an installer. Reporting the app as current is
- * true of any build that has no way to update itself.
+ * Asks the host whether there is a newer version, and hands back the handle
+ * that downloads it.
+ *
+ * **`install` downloads; the restart is what installs.** On this shell the
+ * installer can only run as the app goes away, so `restart()` hands over to it
+ * — which matches the panel's own flow of installing and then offering to
+ * restart. The Tauri build ran the installer during `install` and restarted
+ * afterwards; the visible sequence is the same either way.
  */
 export async function checkForShellUpdate(): Promise<ShellUpdate | null> {
-  return bridge().checkForUpdate();
+  const host = bridge();
+  const info = await host.checkForUpdate();
+  if (!info) return null;
+
+  return {
+    version: info.version,
+    body: info.body,
+    install: async (onProgress) => {
+      const stopListening = host.onUpdateProgress(onProgress);
+      try {
+        await host.downloadUpdate();
+      } finally {
+        stopListening();
+      }
+    },
+  };
 }
 
 // **Compile-time proof that this shell can do everything the app asks of one.**

@@ -83,4 +83,10 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
 
   // ---- updates
   checkForUpdate: () => ipcRenderer.invoke("updates:check"),
+  downloadUpdate: () => ipcRenderer.invoke("updates:download"),
+  onUpdateProgress: (handler) => {
+    const listener = (_event, progress) => handler(progress);
+    ipcRenderer.on("updates:progress", listener);
+    return () => ipcRenderer.off("updates:progress", listener);
+  },
 });

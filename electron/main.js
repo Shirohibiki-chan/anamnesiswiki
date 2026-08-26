@@ -13,6 +13,7 @@
 // reach the filesystem except through the handlers below. That is the same
 // shape Tauri enforced from Rust, kept deliberately rather than inherited.
 import { app, BrowserWindow, dialog, ipcMain, Menu, net, shell } from "electron";
+import electronUpdater from "electron-updater";
 import fs from "node:fs/promises";
 import { watch as watchFs } from "node:fs";
 import path from "node:path";
@@ -248,6 +249,14 @@ ipcMain.handle("window:watchClose", (_event, wanted) => {
 ipcMain.handle("app:version", () => readAppVersion());
 
 ipcMain.handle("app:restart", () => {
+  // **After a download, restarting means installing.** The panel's flow is
+  // "install, then restart to finish", and on this shell the installer only
+  // runs as the app is going away — so the restart is where the new version
+  // actually arrives. Without an update waiting, this is an ordinary restart.
+  if (updateReadyToInstall) {
+    autoUpdater.quitAndInstall();
+    return;
+  }
   app.relaunch();
   app.exit(0);
 });
@@ -399,13 +408,61 @@ ipcMain.handle("store:save", async (_event, fileName) => {
 
 // ----------------------------------------------------------------- updates
 
-// **Deliberately answering "nothing to update to" for now.** The updater is
-// step 3's work: it needs a feed, signing keys and a release pipeline, none of
-// which exist for an Electron build yet, and a half-wired updater is worse than
-// an absent one — it is the one feature that runs an installer. Until then the
-// Check for updates button reports the app as current, which is true of every
-// build that can't be updated. See docs/plan.md → Phase 29.
-ipcMain.handle("updates:check", () => null);
+const { autoUpdater } = electronUpdater;
+
+// Nothing happens without a button press: no check at launch, no check on a
+// timer, no download until the panel asks for one. That was true of the Tauri
+// updater and it stays true here.
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+
+/**
+ * **This app is not code signed, and that is a decision rather than an
+ * oversight** (2026-08-25): a Windows certificate is a few hundred a year to
+ * remove a first-run warning, and an Apple one is another hundred on top. So
+ * there is no publisher name for electron-updater to check a download against,
+ * and what stands behind an update instead is the SHA-512 published in the
+ * release feed and fetched from GitHub over HTTPS.
+ *
+ * **Worth knowing before an electron-builder major upgrade:** skipping this
+ * check is deprecated. A future version treats a missing publisher as a failed
+ * verification rather than a skipped one, which would stop updates dead. See
+ * docs/releasing.md.
+ */
+if ("verifyUpdateCodeSignature" in autoUpdater) autoUpdater.verifyUpdateCodeSignature = false;
+
+/** Set once a download has finished, so quitting can hand over to the installer. */
+let updateReadyToInstall = false;
+
+ipcMain.handle("updates:check", async () => {
+  const result = await autoUpdater.checkForUpdates();
+  if (!result?.updateInfo) return null;
+  if (result.updateInfo.version === app.getVersion()) return null;
+
+  const notes = result.updateInfo.releaseNotes;
+  return {
+    version: result.updateInfo.version,
+    // GitHub hands these back as a string; other providers can send an array of
+    // per-version entries, which is not a shape anything above the door reads.
+    body: typeof notes === "string" ? notes : undefined,
+  };
+});
+
+ipcMain.handle("updates:download", async (event) => {
+  const forward = (progress) => {
+    event.sender.send("updates:progress", {
+      received: progress.transferred,
+      total: typeof progress.total === "number" ? progress.total : null,
+    });
+  };
+  autoUpdater.on("download-progress", forward);
+  try {
+    await autoUpdater.downloadUpdate();
+    updateReadyToInstall = true;
+  } finally {
+    autoUpdater.off("download-progress", forward);
+  }
+});
 
 // -------------------------------------------------------------- lifecycle
 
