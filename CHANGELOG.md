@@ -4,8 +4,8 @@
 
 ### Additions
 
-- **A Privacy section in Settings, with a switch for usage reporting.** Anamnesis will be able to report which of its features get used — that a page was made, which template it used, which version and operating system it is running on — so the time spent on the app goes to the parts that actually get opened. **Nothing you write is ever part of that**: no page titles, no world names, no tags, no text from the editor, no file paths, and your worlds stay on your own disk exactly as they always have. The section lists everything it covers in full.
-- **Nothing is being reported yet.** This build has no account set up behind it, so the switch is there and remembers what you set it to, and nothing is sent whatever it says. When that changes you get a one-time note explaining it before anything is reported, with the choice to say no.
+- **A Privacy section in Settings, with a switch for usage reporting.** Anamnesis can report which of its features get used — that a page was made, which template it used, which version and operating system it is running on — so the time spent on the app goes to the parts that actually get opened. **Nothing you write is ever part of that**: no page titles, no world names, no tags, no text from the editor, no file paths, and your worlds stay on your own disk exactly as they always have. The section lists everything it covers in full.
+- **You get a one-time note about it before anything is ever sent**, with the choice to say no right there. That goes for an installation you have been running for months as well as a fresh one — nobody starts being counted without being told first. Turning it off in Settings stops it there and then; nothing is stored up to be sent later.
 
 ### Fixes
 
