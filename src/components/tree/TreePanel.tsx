@@ -3,7 +3,7 @@
 // its own pixel sizing (react-arborist doesn't auto-size itself).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Tree, type TreeApi } from "react-arborist";
-import { TREE_INDENT } from "../../constants/layout";
+import { TREE_INDENT, TREE_OVERSCAN_ROWS } from "../../constants/layout";
 import { useProject } from "../../hooks/use-project";
 import { useSearchMatcher, useTreeData, type TreeSearchMode } from "../../hooks/use-tree-data";
 import { useElementSize } from "../../hooks/use-element-size";
@@ -138,6 +138,10 @@ export function TreePanel() {
             width={size.width}
             height={size.height}
             indent={TREE_INDENT}
+            // Why this is set at all, and why this number: see
+            // TREE_OVERSCAN_ROWS. Short version — the library's default of 1
+            // leaves the strip you are scrolling into blank for a frame.
+            overscanCount={TREE_OVERSCAN_ROWS}
             openByDefault={false}
             initialOpenState={initialOpenState}
             // react-arborist's own mount effect deselects everything whenever
