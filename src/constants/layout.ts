@@ -11,6 +11,27 @@
 export const TREE_INDENT = 18;
 
 /**
+ * How many extra tree rows react-arborist renders beyond the visible strip.
+ *
+ * **This is what stops the tree flashing while you scroll.** The library
+ * defaults to 1, which is a single 24px row of buffer, and it renders in
+ * response to the scroll event — one frame behind the scroll itself. A wheel
+ * gesture moves the list a few hundred pixels in that frame, so the strip
+ * being revealed has nothing drawn in it yet and shows through as blank until
+ * React catches up on the next frame. On a small tree the gap is off-screen
+ * and nobody sees it; measured on a 480-row tree it was up to a full viewport
+ * of empty, on every frame of the scroll.
+ *
+ * 24 rows is roughly one viewport at the current row height — enough that a
+ * fast scroll still lands on rows that are already drawn. The cost is about
+ * fifty more rows rendered, which for a row this simple does not register.
+ *
+ * Raise it if the flash ever comes back at a larger window size; don't lower
+ * it to save renders without scrolling a big tree first.
+ */
+export const TREE_OVERSCAN_ROWS = 24;
+
+/**
  * How wide the two side panels can be dragged, in pixels, and where they start.
  *
  * The defaults are the widths both panels were fixed at before Phase 14 made

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-26 — a steadier tree
+
+### Fixes
+
+- **The page tree no longer flickers while you scroll it.** On a big world, the strip you were scrolling into went blank for a moment before the pages appeared in it — going up and going down both, and on every frame of the scroll rather than now and then. The tree now draws about a screenful of pages beyond what you can see, so whatever you scroll into is already drawn. Measured on a 480-row tree: an empty strip on all 25 frames of an ordinary scroll before, none after.
+
 ## 2026-08-25 — spectrum meters
 
 ### Additions
@@ -319,19 +325,3 @@
 - **The folder dropdown grows a search box once you have eight folders or more.** Type a few letters and the list narrows to what matches; Enter takes the top one. Under eight it stays a plain list, because reading four rows is faster than typing at them. Escape closes the menu.
 - **The folders in the Assets tab are a dropdown now.** One line saying which folder you're in, and the list opens over the pictures when you click it. It scrolls itself and doesn't push anything down, so fifty folders works as well as four — where the old block of folders would have been 26 rows deep and shown a fifth of itself at a time. Picking a folder closes it. Dragging a picture onto the line opens it so you can drop the picture into a folder, and renaming a folder turns that line into the name box.
 - **Folders in the picture picker are tiles, several to a row.** They were rounded pills meant to sit side by side, and none of them ever did — a folder's name plus its count is wider than half the sidebar, so each one took a row to itself and four folders filled the panel. The tiles put the count under the name and line up in a grid. Long names cut off with a "…" and show in full when you hover.
-
-## 2026-08-14
-
-### Additions
-
-- **Pictures you uploaded yourself can now go to LegendKeeper too.** The export dialog offers to carry them inside the file, and tells you how much bigger that makes it before you decide. Off by default, because a world full of photos turns a tiny file into a large one. Portraits, covers and pictures in the text all come along.
-- **A picture that came from LegendKeeper can now go back to LegendKeeper.** Exporting a page with a picture in its text used to leave the picture behind and just keep the caption. If that picture arrived in an import, the app remembers the address it came from and hands it back, so the page comes out whole. Same for a picture you added by pasting a web address.
-- Pictures you uploaded from your own computer still can't go into a `.lk` file — it stores addresses of pictures on LegendKeeper's servers, not the pictures themselves. The export summary still tells you when that happens.
-- **Only worlds imported from now on get this.** A world imported before today didn't record where its pictures came from, so it would need re-importing to gain it.
-
-### Fixes
-
-- **The trashcan is on every picture, and it only affects the library.** It used to appear only on a picture nothing was using, which looked like a broken button rather than a rule. Now it takes the picture out of the Assets tab and leaves your pages completely alone — any page already showing it keeps showing it, exactly as before. Undoable.
-- **Pictures you'd placed inside a page's text now come across when you import from LegendKeeper.** They used to vanish — not arrive broken, just not arrive, with the words closed up over the gap and nothing to tell you it had happened. They arrive as real pictures in your project's own `assets/` folder now, at roughly the size and alignment they had before. Your Valeraverse world has none of these, so it was never affected; the other export you sent has 27.
-- **A picture, code block or callout tucked inside a bullet point survives the import too.** Only paragraphs and sub-lists were kept before; anything else in a bullet was thrown away silently. Things inside a bullet also stay in the order you wrote them, where sub-lists used to get shuffled to the bottom.
-- **The import summary now mentions a picture it couldn't bring across.** If LegendKeeper's export doesn't store an address for one, the preview says so instead of leaving you to find the hole later.
