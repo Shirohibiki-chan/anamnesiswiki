@@ -51,6 +51,20 @@ export function useSavedColors(): string[] {
   return usePreferencesStore((state) => state.preferences.savedColors);
 }
 
+/** Whether the app reports which features get used. Read by Settings -> Privacy. */
+export function useAnalyticsEnabled(): boolean {
+  return usePreferencesStore((state) => state.preferences.analytics);
+}
+
+/**
+ * Whether the one-time notice has been answered. Two readers, and they want it
+ * for opposite reasons: the notice itself renders while this is false, and
+ * `use-analytics` sends nothing until it is true.
+ */
+export function useAnalyticsNoticeSeen(): boolean {
+  return usePreferencesStore((state) => state.preferences.analyticsNoticeSeen);
+}
+
 export function useColorActions() {
   return usePreferencesStore(
     useShallow((state) => ({ saveColor: state.saveColor, forgetColor: state.forgetColor })),
@@ -65,6 +79,8 @@ export function usePreferenceActions() {
       setListPageSize: state.setListPageSize,
       setProjectView: state.setProjectView,
       setProjectSort: state.setProjectSort,
+      setAnalytics: state.setAnalytics,
+      markAnalyticsNoticeSeen: state.markAnalyticsNoticeSeen,
     })),
   );
 }

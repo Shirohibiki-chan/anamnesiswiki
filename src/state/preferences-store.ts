@@ -24,6 +24,8 @@ export type PreferencesStoreState = {
   setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
   setProjectSort: (sort: ProjectSort) => void;
+  setAnalytics: (enabled: boolean) => void;
+  markAnalyticsNoticeSeen: () => void;
   /** Keeps a colour mixed in the system picker, for use anywhere else. */
   saveColor: (color: string) => void;
   forgetColor: (color: string) => void;
@@ -71,6 +73,17 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setProjectSort(sort) {
       apply({ ...get().preferences, projectSort: sort });
+    },
+
+    setAnalytics(enabled) {
+      apply({ ...get().preferences, analytics: enabled });
+    },
+
+    // Separate from the switch, and one-way: being shown the notice is a thing
+    // that happened, not a preference. Nothing is sent until this is true.
+    markAnalyticsNoticeSeen() {
+      if (get().preferences.analyticsNoticeSeen) return;
+      apply({ ...get().preferences, analyticsNoticeSeen: true });
     },
 
     saveColor(color) {
