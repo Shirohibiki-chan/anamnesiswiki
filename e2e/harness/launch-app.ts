@@ -92,11 +92,19 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
   try {
     window = await electron.firstWindow({ timeout: WINDOW_TIMEOUT_MS });
   } catch {
+    // **Asked before quitting, and asked of the main process.** Playwright only
+    // reports a window it can attach to, so "no window" covers everything from
+    // a window that was never created to one that exists and is still hidden
+    // because the renderer has not said it drew — which are opposite problems
+    // with the same symptom. The main process can be asked either way, because
+    // it is reachable without a page.
+    const account = await describeWindows(electron);
     await quit(electron);
     const said = startupOutput.join("").trim();
     throw new Error(
       `The app started but never opened a window within ${WINDOW_TIMEOUT_MS / 1000}s.\n` +
-        (said ? `Electron said:\n${said}` : "Electron printed nothing at all."),
+        `The main process says: ${account}\n` +
+        (said ? `Electron's own output:\n${said}` : "Electron printed nothing at all."),
     );
   }
 
@@ -123,6 +131,38 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
   };
 
   return { window, electron, world, errors, close };
+}
+
+/**
+ * What the main process thinks it has, for when Playwright says it has nothing.
+ *
+ * Deliberately tolerant: every part of this runs inside a failure, so it says
+ * what went wrong rather than throwing a second error over the first one. If
+ * even this cannot be asked, the main process is gone, which is itself the
+ * answer.
+ */
+async function describeWindows(electron: ElectronApplication): Promise<string> {
+  try {
+    return await electron.evaluate(({ BrowserWindow }) => {
+      const windows = BrowserWindow.getAllWindows();
+      if (windows.length === 0) return "no windows exist at all.";
+      return windows
+        .map((win, index) => {
+          const contents = win.webContents;
+          return (
+            `window ${index + 1}: ` +
+            `visible=${win.isVisible()}, ` +
+            `destroyed=${win.isDestroyed()}, ` +
+            `loading=${contents.isLoading()}, ` +
+            `crashed=${contents.isCrashed()}, ` +
+            `url=${contents.getURL() || "(none)"}`
+          );
+        })
+        .join("; ");
+    });
+  } catch (error) {
+    return `it could not be asked (${String(error)}).`;
+  }
 }
 
 /**
