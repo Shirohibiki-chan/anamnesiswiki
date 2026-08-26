@@ -2269,9 +2269,12 @@ is below.
 - **Ids in the file are wiring, not identity.** Everything is re-minted on use,
   so two projects from one template share nothing. An id arriving from outside
   is an id two things can end up wearing.
-- **No gallery, ever.** The exchange is file-based: she is handed a `.antpl` and
-  opens it. Browsing or downloading templates is a network call nobody pressed a
-  button for — the same line `.lk` import already sits behind.
+- **No gallery today, and the reason has changed.** The exchange is file-based:
+  she is handed a `.antpl` and opens it. That used to be justified by the
+  retired network policy (`CLAUDE.md` → Two Promises), which is no longer a
+  reason for anything. What still holds is smaller and worth saying honestly: a
+  gallery is a service someone has to host and moderate, and nobody has asked
+  for one. If she wants it, it is a feature to design, not a boundary to cross.
 
 ## Product decisions
 

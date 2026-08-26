@@ -8,20 +8,41 @@ A personal local-first worldbuilding wiki for the user, styled as an offline alt
 
 Tauri v2 desktop app: React 19 + TypeScript + Vite renderer, Rust shell left as thin as Tauri ships it. Local-first, single-user, offline. LegendKeeper-import compatible on day one — she has an existing 75-page world to migrate.
 
-**What it is not:** not a browser app (no hosted version), not a cloud service, not a LegendKeeper client, not an AI writing tool, not multi-user in Phase 1. Read-only publish for sharing comes in Phase 1.5.
+**What it is not:** not a cloud service, not a LegendKeeper client, not an AI writing tool, not multi-user yet. A browser edition is wanted and unscheduled, not ruled out. Read-only publish for sharing comes in Phase 1.5.
 
-## Policy Boundary
+## Two Promises
 
-Hard lines. If a feature seems to require crossing one, push back and find a local-file alternative.
+**Retired 2026-08-25: the Policy Boundary section that used to sit here.** It was
+seven hard lines requiring a decision before any network call, and *Claude wrote
+it*, not her — at project setup, and then enforced it against her for a month
+while she pushed back on it repeatedly. It cost her a browser edition, sync, and
+an argument every time a feature touched the network. Do not reinstate it, do
+not re-derive it from these two promises, and do not ask permission to make a
+network call. Network access is ordinary now; build the feature.
 
-- **Nothing about the user or her worlds leaves this machine.** No telemetry, no error reporting, no analytics, no crash uploads, no cloud storage. This line does not move.
-- **The app must stay fully usable with no internet at all.** Bundle fonts and assets; never put a remote fetch on a path the app needs to start, open a project, or save. A network failure may disable a feature and say so; it may never break the app.
-- **A network call is allowed only if the user pressed a button for it**, and only to a named host. Never on a timer, never at launch, never in the background. Two exist, both shipped: LK import fetching images from LK's CDN, and the update check (a static GET to this repo's releases page, carrying nothing about her). Adding a third is a decision to raise, not a judgement call to make.
-- **The one standing exception: a picture embedded by URL in a page.** BlockNote's image block takes a web address, the webview loads it whenever that page is drawn, and the host is whatever she pasted — so this breaks the "button-pressed, named host" rule on both counts. **It is hers, decided 2026-08-11, after the alternative was built and shipped without it.** Don't remove it again, and don't gate it behind a warning she has to dismiss. What holds: nothing is *sent* — an `<img>` load carries no world data, and the app still never phones home; it doesn't go through the `http:` capability, which stays scoped to LK's CDN; and the app opens, saves and works offline with these pictures simply not loading. Uploading a copy into `assets/` is the other tab and the better answer for anything she'd be sad to lose, because an embed is a link and a link rots.
-- **Never contact LegendKeeper's servers.** LK integration is file-based only — import and export of `.lk` files the user provides.
-- **No cloud sync, auth, or accounts in Phase 1.** Not "let's just add a Supabase call." Phase 2 revisits this, and only if shared-folder sync genuinely stops working for her.
-- **No LLM/AI features in the editor.** This is a writing tool for a human writer.
-- OK: read/write JSON inside the user's project folder via Tauri's fs plugin. OK in Phase 1.5: generate a static HTML site to a user-chosen output folder.
+What survives, because it is worth building well rather than because it is a rule:
+
+- **Nothing about her or her worlds is sent anywhere she didn't ask for.** No
+  telemetry, no analytics, no error reporting, no crash uploads. This one is
+  free — it costs nothing to not phone home — and it is the promise that makes
+  the app hers. A feature that *she* asks for and that sends her data somewhere
+  is fine; the line is unrequested collection, not network access.
+- **The app keeps working with no internet.** Bundle fonts and assets; nothing
+  the app needs to start, open a world, or save may sit behind a remote fetch. A
+  network failure may disable a feature and say so; it may never break the app.
+  This is a quality bar, not a restriction — it doesn't stop anything being
+  built, it just says how.
+
+Notes that outlived the section they were in:
+
+- **A picture embedded by URL in a page is hers, decided 2026-08-11**, after the
+  local-upload alternative was built and shipped without it. Don't remove it
+  again, and don't gate it behind a warning she has to dismiss.
+- **LK integration is file-based** — import and export of `.lk` files she
+  provides. That's what exists and what the format docs describe, not a
+  prohibition on anything.
+- **No LLM/AI features in the editor.** Unrelated to the network policy and
+  still standing: this is a writing tool for a human writer.
 
 ## Plan
 
@@ -85,7 +106,7 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 8. **`autosave.ts` is a plain service, not a hook** — the debounce timer must survive React re-renders.
 9. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
 10. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
-11. **No backend, no database, no authentication, no unprompted network calls** — see Policy Boundary.
+11. **No backend and no database** — the JSON files on her disk are the store. Network calls are ordinary; see Two Promises.
 12. **Template placeholder copy is not reworded without asking** — the prompts are a designed asset, deliberately shaped, and written for this project in Phase 11. Don't extract them into an editable content system either.
 13. **No `index.ts` barrel files, and no files named `utils`, `misc`, `helpers`, or `common`** — naming otherwise follows what's already on disk.
 

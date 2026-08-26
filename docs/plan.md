@@ -485,7 +485,8 @@ overlay, a sample project that opens on first launch, or a page inside the app
 is a decision for whoever picks this up, with her. The one constraint that's
 already fixed: whether someone has seen it is a local setting like every other
 (`app-settings-service.ts`) — there is no "did they finish onboarding" to
-report anywhere, per the policy boundary in `CLAUDE.md`.
+report anywhere — nobody wants onboarding analytics, which is the one promise
+that outlived the retired policy section (`CLAUDE.md` → Two Promises).
 
 ---
 
