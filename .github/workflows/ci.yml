@@ -42,3 +42,36 @@ jobs:
       # Cheap, and it catches the mistake that quietly breaks the update button:
       # a version bumped in some of the four files but not all of them.
       - run: node scripts/check-version.mjs
+
+  # The scenarios in `e2e/` — the real app, started, driven and read from.
+  #
+  # **A separate job from `check` rather than another step in it**, for the same
+  # reason the two suites have separate configs: this one downloads Electron,
+  # builds the page and opens a window, and `check` is the fast answer that
+  # should not wait on any of that. Separate also means a failure here is
+  # legible at a glance as "the app misbehaved" rather than "something in CI
+  # went wrong".
+  #
+  # Still not the desktop *build* — that is a release-time job. This runs the
+  # built page inside the Electron that `pnpm install` already fetched.
+  app:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # **A runner has no screen, and Electron will not open a window without
+      # one.** `xvfb-run` supplies a virtual display: the app genuinely starts
+      # and genuinely draws, into a framebuffer nobody is looking at. This is
+      # the whole reason these tests cannot simply live in `pnpm test`.
+      - run: xvfb-run --auto-servernum pnpm test:app

@@ -78,9 +78,10 @@ pnpm build           # Vite production build → dist/
 pnpm tauri build     # installers → src-tauri/target/release/bundle/
 pnpm lint            # ESLint
 pnpm test            # Vitest, single run
+pnpm test:app        # the scenarios in e2e/ — builds the page, then drives the real app
 ```
 
-Tests are Vitest, colocated as `*.test.ts`. Services are the unit-tested layer — pure logic (path resolution, tree shape, LK conversion, autosave) is testable without a DOM, and that's where the bugs that cost real data have shown up. Components aren't tested; there's no jsdom/RTL setup and adding one isn't scoped.
+**Two suites — `docs/testing.md` is the detail.** `pnpm test` is Vitest, colocated as `*.test.ts`, and services are the unit-tested layer: pure logic (path resolution, tree shape, LK conversion, autosave) is testable without a DOM, and that's where the bugs that cost real data have shown up. Components have no jsdom/RTL setup and aren't unit tested. `pnpm test:app` is the other half — Playwright starting the built Electron app against a generated world in a temp folder, which is the only thing that can check what the app *shows* against what it stored. Add a scenario there in the vocabulary of `e2e/harness/screen.ts`, never with CSS classes of its own.
 
 ## Architecture
 
@@ -167,6 +168,7 @@ Import shows a preview (tree + inferred template counts + a plain-language list 
 - `docs/constants-and-theming.md` — CSS token system, palette, callout tokens
 - `docs/components-reference.md` — feature → component file map
 - `docs/project-summary.md` — plain-language overview for planning
+- `docs/testing.md` — the two test suites, and how to add a scenario that drives the real app
 
 ## Deployment
 
@@ -181,6 +183,8 @@ When an Edit fails on unicode (em-dashes, curly quotes in placeholder copy), use
 The user (shiro) is non-technical. Explain choices in plain language, not just code. She knows her use case — LK workflow, worldbuilding habits, how she and her co-writers actually work — better than the codebase implies. When she pushes back with non-technical reasoning, that's information about the product, not a preference to override.
 
 When a discussion has multiple open decisions, end with a numbered list — one decision per item, options as `(a)/(b)/(c)` — self-contained enough that she can reply `1. a, 2. b, 3. yes`. Reasoning and tradeoffs go in prose above it.
+
+**Answering three of those four questions is not approval for the fourth.** A skipped item is still open — build nothing that assumes an answer to it, and ask again rather than picking the obvious one. Silence on a question is the least reliable signal there is: it as often means *she hasn't decided* as *she doesn't mind*.
 
 Match her tone: casual, contractions. Don't manage her — no unsolicited advice about scope, pace, or self-care.
 

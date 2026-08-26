@@ -3049,9 +3049,40 @@ is below.
   boolean version meant one failed close killed the X for the rest of the
   session.
 
+## The app test suite
+
+Added 2026-08-26. `pnpm test:app` starts the real Electron app and drives it;
+`docs/testing.md` is the how-to. Two things about it are constraints rather than
+choices, and both live in `e2e/harness/launch-app.ts`:
+
+- **A run must not be able to touch her data, and two separate things make that
+  true.** The world is generated into the system temp folder, and
+  `--user-data-dir` moves `app.getPath("userData")` somewhere temporary so the
+  settings file the app reads is one the harness wrote a moment earlier. Remove
+  the second and the app reads the real store and opens whichever world she had
+  open last — into a suite that creates, renames and deletes pages.
+- **It runs the built page, never a dev server.** A scenario racing a compiler
+  can always have its failure blamed on hot reload, and `dist/` is what a
+  release actually ships. The build has to be the Electron one; a page built for
+  Tauri opens to a window that cannot read a file, so `launchApp` refuses to
+  start against one rather than failing as a wall of timeouts.
+
+Scenarios are written in the vocabulary of `e2e/harness/screen.ts` and add no
+selectors of their own — the app has almost no test hooks in its markup, so
+driving it means CSS class names, and scattering those across scenario files
+means an ordinary refactor breaks each one separately and mysteriously.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:
+
+- **Nothing checks layout automatically.** The app suite proves pages open and
+  show the right names; it does not check that text isn't truncated with no way
+  to read the rest, that nothing sits off the edge, or that no control is
+  covered by something else — which is where the real bug history is. That work
+  rides on the harness and is the obvious next thing to build on it. Worth
+  copying the discipline of starting each rule as a findings list and only
+  promoting it to a hard failure once the count is genuinely zero.
 
 - **Nothing has been imported into real LegendKeeper from an export we wrote.**
   The round trip is verified through our own importer, against the real

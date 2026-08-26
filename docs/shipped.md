@@ -3856,3 +3856,75 @@ of the branch was served from `public/` and screenshotted at 2x: caption above,
 rail, ends row at the extremes, the segmented variant, and the preview marker
 beside the real one. The first pass is what caught the marker hanging off the
 end at 0% and 100%, which is why `markerAt` exists.
+
+---
+
+## A harness that drives the app ✅ Shipped 2026-08-26
+
+**The largest gap on the list that came out of reviewing MKP-Lorebook-Builder.**
+The test world (PR #279) was built as groundwork for this and then nothing used
+it: the app could be driven — `pnpm electron:inspect` opens a debug port, which
+is how the tree-scroll bug was diagnosed — but none of it was written down,
+reusable or repeatable, and none of it ran anywhere but by hand.
+
+### What it is
+
+`pnpm test:app` builds the page for Electron and runs the scenarios in `e2e/`
+against the real app. Playwright's `_electron` starts it, a generated world in
+the temp folder is what it opens, and `e2e/harness/screen.ts` is the vocabulary
+scenarios are written in. `docs/testing.md` is the how-to; `handoff.md` has the
+two constraints that must not be lost.
+
+Sixteen scenarios in three files: opening a world, finding and navigating a
+large one, and the names a filesystem cannot store as typed.
+
+### Choices worth knowing
+
+- **playwright-core, not `@playwright/test`.** The driving is Playwright's; the
+  runner stays Vitest, which the repo already has. `playwright-core` downloads
+  no browsers — Electron is the browser — so this cost one dev dependency and
+  nothing at install time.
+- **A separate config and a separate command.** `pnpm test` is 1405 tests in
+  seconds with no window; folding these in would make the quick check slow and
+  the slow check the only one anyone runs. `*.e2e.ts` rather than `*.test.ts` so
+  neither suite can pick up the other whatever a config later says.
+- **`fileParallelism: false`.** Each file starts a real app; several competing
+  for one window manager is how a suite comes to fail differently every run.
+- **No test hooks were added to the app.** Not one line of `src/` changed. The
+  same principle the test world was built on — the app opens a directory, so a
+  test world is a directory — extends to the settings: point `--user-data-dir`
+  somewhere temporary and the app reads a file the harness wrote.
+
+### What it caught while being written
+
+Two mismatches between what was assumed and what the app does, both found by the
+first scenario failing rather than by reading code:
+
+- A world is named by its `project.json`, not by its folder. A generated world's
+  two names differ, so an assertion against the folder name would have passed
+  for the wrong reason on a real world.
+- Folders render `FolderView`, which draws its own heading and has no
+  breadcrumb — `.page-title-name` does not exist for them. The harness covers
+  both so scenarios do not have to know which they clicked.
+
+### Verification
+
+`pnpm lint` clean. `pnpm test` unchanged at 1405 tests across 59 files — the new
+files are outside its include. `pnpm test:app` is 16 passing across 3 files in
+about 7 seconds on Windows, plus a ~20 second build.
+
+Checked that the assertions can fail rather than passing vacuously: the
+duplicate-sibling count was flipped from 3 to 4 and the suite reported it, and
+the two mismatches above were real failures before they were fixed.
+
+**The CI job has never run.** It is written against `ubuntu-22.04` under
+`xvfb-run`, with `--no-sandbox` added on Linux under CI, and the first push is
+what tests it.
+
+### What this replaces
+
+The workaround at the bottom of the spectrum-meter entry above — serving a
+static page carrying a component's exact markup out of `public/` and
+screenshotting it. That existed because components had no test setup and
+`pnpm dev` cannot open a project in a browser. A replica of the markup can
+always be wrong in the way the real thing is broken; this opens the real app.
