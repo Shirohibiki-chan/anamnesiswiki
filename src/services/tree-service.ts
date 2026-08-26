@@ -289,6 +289,21 @@ export function isHiddenByAncestor(nodeId: string, nodes: Record<string, Node>):
   return false;
 }
 
+// Whether anything is parented to this node. A boolean rather than a count,
+// because every caller so far only asks "is it empty" — and a count would make
+// the folder view re-render on each page added to a folder holding two hundred
+// of them, for a number nothing displays.
+//
+// Reads `parentId` off the nodes rather than `childOrder`, for the same reason
+// buildTreeData falls back to it: `childOrder` records arrangement, not
+// membership, and a child that has never been dragged isn't in it.
+export function hasChildren(nodeId: string, nodes: Record<string, Node>): boolean {
+  for (const node of Object.values(nodes)) {
+    if (node.parentId === nodeId) return true;
+  }
+  return false;
+}
+
 // Ancestors from the project root down to (but excluding) nodeId itself —
 // used for the page view's breadcrumb trail.
 export function getAncestorChain(nodeId: string, nodes: Record<string, Node>): Node[] {

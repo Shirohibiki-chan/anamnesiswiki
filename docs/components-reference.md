@@ -65,7 +65,7 @@
 | Tab strip beneath the title — one button per tab, active-tab underline in accent color, click-the-eye toggle to hide/show a tab. Hidden tabs render dimmer and italic. | `src/components/page/PageTabs.tsx` |
 | BlockNote editor wrapper for the active tab's content — configures BlockNote with the custom Info / Quote / Secret blocks, mention extension, and wikilink parsing; debounces content changes to the autosave service | `src/components/page/Editor.tsx` |
 | The chip a mention or wikilink renders as, and the card it shows on hover after 350ms. Both link kinds are this one component — wikilinks resolve into mentions. | `src/services/editor-blocks/MentionChip.tsx`, `HoverPreviewCard.tsx` |
-| Empty-content view shown for folder nodes — folder name, color-tint background, and a "Folders hold other pages" hint with a button that makes a page inside this folder | `src/components/page/FolderView.tsx` |
+| Content-less view shown for folder nodes — folder name, color-tint background, and a button that makes a page inside this folder. The "Folders hold other pages" hint below the name appears only while the folder is empty. | `src/components/page/FolderView.tsx` |
 | What a brand-new page shows before it's anything in particular — the grid of template choices, and a "skip this" that leaves the page blank with somewhere to write. Replaces the popover that used to ask before the page existed. | `src/components/page/NewPageLanding.tsx` |
 | Placeholder rendered when no node is selected (rare — usually the app auto-selects a page on load) | `src/components/page/EmptyPageView.tsx` |
 
