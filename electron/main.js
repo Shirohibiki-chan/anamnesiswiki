@@ -126,14 +126,51 @@ function createWindow() {
   else void mainWindow.loadFile(path.join(here, "..", "dist", "index.html"));
 }
 
+/**
+ * Registers a handler whose failures cross the wire as data.
+ *
+ * **Electron logs every rejection out of an `ipcMain.handle` as an unhandled
+ * error, with a stack trace.** Plenty of failures here are ordinary and
+ * expected — the commonest is reading a world's open-marker file that isn't
+ * there, which is how the app asks "is anyone else in this world?" and gets
+ * told no. Left as a rejection, opening the start screen printed a wall of
+ * stack traces into the console window, which is the window she is told to
+ * keep open and reads as the app's state. It looked broken and was not.
+ *
+ * So a failure comes back as `{ ok: false }` carrying the message and the
+ * system's error code, and the preload turns it back into a thrown error on
+ * the other side. Callers see exactly what they saw before: a rejected promise
+ * with the same message on it.
+ *
+ * **The code does not reach the page**, and that was worth measuring rather
+ * than assuming — contextBridge strips custom properties off an Error as it
+ * crosses into the renderer's world, so `error.code` arrives undefined. It is
+ * carried here anyway because the preload can read it, and because Node writes
+ * the code at the front of its own message (`ENOENT: no such file...`), which
+ * is the part that does survive.
+ */
+function handle(channel, responder) {
+  ipcMain.handle(channel, async (event, ...args) => {
+    try {
+      return { ok: true, value: await responder(event, ...args) };
+    } catch (error) {
+      return {
+        ok: false,
+        message: String(error && error.message ? error.message : error),
+        code: error && error.code ? error.code : null,
+      };
+    }
+  });
+}
+
 // ------------------------------------------------------------------- paths
 
-ipcMain.handle("path:documentsDir", () => app.getPath("documents"));
-ipcMain.handle("path:join", (_event, segments) => path.join(...segments));
+handle("path:documentsDir", () => app.getPath("documents"));
+handle("path:join", (_event, segments) => path.join(...segments));
 
 // ------------------------------------------------------------- filesystem
 
-ipcMain.handle("fs:exists", async (_event, target) => {
+handle("fs:exists", async (_event, target) => {
   try {
     await fs.access(target);
     return true;
@@ -142,20 +179,20 @@ ipcMain.handle("fs:exists", async (_event, target) => {
   }
 });
 
-ipcMain.handle("fs:readTextFile", (_event, target) => fs.readFile(target, "utf8"));
+handle("fs:readTextFile", (_event, target) => fs.readFile(target, "utf8"));
 
-ipcMain.handle("fs:writeTextFile", (_event, target, contents) => fs.writeFile(target, contents, "utf8"));
+handle("fs:writeTextFile", (_event, target, contents) => fs.writeFile(target, contents, "utf8"));
 
-ipcMain.handle("fs:readFile", async (_event, target) => {
+handle("fs:readFile", async (_event, target) => {
   const buffer = await fs.readFile(target);
   // A Buffer is a Uint8Array, but it arrives in the renderer as one only if it
   // is sent as plain bytes rather than as Node's subclass.
   return new Uint8Array(buffer);
 });
 
-ipcMain.handle("fs:writeFile", (_event, target, contents) => fs.writeFile(target, Buffer.from(contents)));
+handle("fs:writeFile", (_event, target, contents) => fs.writeFile(target, Buffer.from(contents)));
 
-ipcMain.handle("fs:readDir", async (_event, target) => {
+handle("fs:readDir", async (_event, target) => {
   const entries = await fs.readdir(target, { withFileTypes: true });
   return entries.map((entry) => ({
     name: entry.name,
@@ -164,17 +201,17 @@ ipcMain.handle("fs:readDir", async (_event, target) => {
   }));
 });
 
-ipcMain.handle("fs:makeDir", (_event, target, options) => fs.mkdir(target, { recursive: !!options?.recursive }));
+handle("fs:makeDir", (_event, target, options) => fs.mkdir(target, { recursive: !!options?.recursive }));
 
-ipcMain.handle("fs:remove", (_event, target, options) =>
+handle("fs:remove", (_event, target, options) =>
   fs.rm(target, { recursive: !!options?.recursive, force: false }),
 );
 
-ipcMain.handle("fs:rename", (_event, from, to) => fs.rename(from, to));
+handle("fs:rename", (_event, from, to) => fs.rename(from, to));
 
-ipcMain.handle("fs:copyFile", (_event, from, to) => fs.copyFile(from, to));
+handle("fs:copyFile", (_event, from, to) => fs.copyFile(from, to));
 
-ipcMain.handle("fs:fileInfo", async (_event, target) => {
+handle("fs:fileInfo", async (_event, target) => {
   const info = await fs.stat(target);
   return { size: info.size, modifiedAt: info.mtime ?? null };
 });
@@ -184,7 +221,7 @@ ipcMain.handle("fs:fileInfo", async (_event, target) => {
 const watches = new Map();
 let nextWatchId = 1;
 
-ipcMain.handle("fs:watch", (event, targets, options) => {
+handle("fs:watch", (event, targets, options) => {
   const id = nextWatchId++;
   const roots = Array.isArray(targets) ? targets : [targets];
   /** @type {Set<string>} */
@@ -219,36 +256,36 @@ ipcMain.handle("fs:watch", (event, targets, options) => {
   return id;
 });
 
-ipcMain.handle("fs:unwatch", (_event, id) => {
+handle("fs:unwatch", (_event, id) => {
   watches.get(id)?.close();
   watches.delete(id);
 });
 
 // ------------------------------------------------------------------ window
 
-ipcMain.handle("window:show", () => {
+handle("window:show", () => {
   mainWindow?.show();
 });
 
-ipcMain.handle("window:close", () => {
+handle("window:close", () => {
   closeApproved = true;
   mainWindow?.close();
 });
 
-ipcMain.handle("window:destroy", () => {
+handle("window:destroy", () => {
   closeApproved = true;
   mainWindow?.destroy();
 });
 
-ipcMain.handle("window:watchClose", (_event, wanted) => {
+handle("window:watchClose", (_event, wanted) => {
   rendererWantsCloseSay = !!wanted;
 });
 
 // -------------------------------------------------------------- app itself
 
-ipcMain.handle("app:version", () => readAppVersion());
+handle("app:version", () => readAppVersion());
 
-ipcMain.handle("app:restart", () => {
+handle("app:restart", () => {
   // **After a download, restarting means installing.** The panel's flow is
   // "install, then restart to finish", and on this shell the installer only
   // runs as the app is going away — so the restart is where the new version
@@ -263,7 +300,7 @@ ipcMain.handle("app:restart", () => {
 
 // ----------------------------------------------------------------- dialogs
 
-ipcMain.handle("dialog:chooseDirectory", async (_event, options) => {
+handle("dialog:chooseDirectory", async (_event, options) => {
   const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
     title: options?.title,
     defaultPath: options?.defaultPath,
@@ -272,7 +309,7 @@ ipcMain.handle("dialog:chooseDirectory", async (_event, options) => {
   return result.canceled ? null : (result.filePaths[0] ?? null);
 });
 
-ipcMain.handle("dialog:chooseFile", async (_event, options) => {
+handle("dialog:chooseFile", async (_event, options) => {
   const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
     title: options?.title,
     defaultPath: options?.defaultPath,
@@ -282,7 +319,7 @@ ipcMain.handle("dialog:chooseFile", async (_event, options) => {
   return result.canceled ? null : (result.filePaths[0] ?? null);
 });
 
-ipcMain.handle("dialog:chooseSavePath", async (_event, options) => {
+handle("dialog:chooseSavePath", async (_event, options) => {
   const result = await dialog.showSaveDialog(mainWindow ?? undefined, {
     title: options?.title,
     defaultPath: options?.defaultPath,
@@ -293,11 +330,11 @@ ipcMain.handle("dialog:chooseSavePath", async (_event, options) => {
 
 // ------------------------------------------------- handing things to the OS
 
-ipcMain.handle("os:openPath", (_event, target) => shell.openPath(target));
+handle("os:openPath", (_event, target) => shell.openPath(target));
 
-ipcMain.handle("os:openExternal", (_event, url) => shell.openExternal(url));
+handle("os:openExternal", (_event, url) => shell.openExternal(url));
 
-ipcMain.handle("os:revealItem", (_event, target) => {
+handle("os:revealItem", (_event, target) => {
   shell.showItemInFolder(target);
 });
 
@@ -306,7 +343,7 @@ ipcMain.handle("os:revealItem", (_event, target) => {
 // Goes out from the main process rather than the page, which is what stops the
 // page's own origin rules applying — the same reason the Tauri build proxied
 // this through Rust. See `fetchLkImage` in lk-import.
-ipcMain.handle("net:fetch", async (_event, url) => {
+handle("net:fetch", async (_event, url) => {
   const response = await net.fetch(url);
   return {
     ok: response.ok,
@@ -383,24 +420,24 @@ async function loadStore(fileName) {
   return store;
 }
 
-ipcMain.handle("store:load", async (_event, fileName) => {
+handle("store:load", async (_event, fileName) => {
   await loadStore(fileName);
 });
 
-ipcMain.handle("store:get", async (_event, fileName, key) => (await loadStore(fileName))[key]);
+handle("store:get", async (_event, fileName, key) => (await loadStore(fileName))[key]);
 
-ipcMain.handle("store:set", async (_event, fileName, key, value) => {
+handle("store:set", async (_event, fileName, key, value) => {
   (await loadStore(fileName))[key] = value;
 });
 
-ipcMain.handle("store:delete", async (_event, fileName, key) => {
+handle("store:delete", async (_event, fileName, key) => {
   const store = await loadStore(fileName);
   const had = key in store;
   delete store[key];
   return had;
 });
 
-ipcMain.handle("store:save", async (_event, fileName) => {
+handle("store:save", async (_event, fileName) => {
   const store = await loadStore(fileName);
   await fs.mkdir(app.getPath("userData"), { recursive: true });
   await fs.writeFile(storePath(fileName), JSON.stringify(store, null, 2), "utf8");
@@ -434,7 +471,7 @@ if ("verifyUpdateCodeSignature" in autoUpdater) autoUpdater.verifyUpdateCodeSign
 /** Set once a download has finished, so quitting can hand over to the installer. */
 let updateReadyToInstall = false;
 
-ipcMain.handle("updates:check", async () => {
+handle("updates:check", async () => {
   const result = await autoUpdater.checkForUpdates();
   if (!result?.updateInfo) return null;
   if (result.updateInfo.version === app.getVersion()) return null;
@@ -448,7 +485,7 @@ ipcMain.handle("updates:check", async () => {
   };
 });
 
-ipcMain.handle("updates:download", async (event) => {
+handle("updates:download", async (event) => {
   const forward = (progress) => {
     event.sender.send("updates:progress", {
       received: progress.transferred,

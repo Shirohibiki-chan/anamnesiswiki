@@ -19,27 +19,50 @@ const { contextBridge, ipcRenderer } = require("electron");
 // is running, so it is read once here rather than being a round trip.
 const separator = process.platform === "win32" ? "\\" : "/";
 
+/**
+ * Calls the main process and turns a reported failure back into a thrown one.
+ *
+ * Every handler over there answers with `{ ok }` rather than by rejecting —
+ * see the note on `handle` in main.js for why — so this is where that becomes
+ * an ordinary rejected promise again. Callers above this file never see the
+ * envelope.
+ *
+ * The code is attached here but **does not survive into the renderer**:
+ * contextBridge strips custom properties off an Error on the way across,
+ * measured 2026-08-26. What reaches the page is the message, which begins with
+ * the code because that is how Node writes it.
+ */
+async function invoke(channel, ...args) {
+  const result = await ipcRenderer.invoke(channel, ...args);
+  if (result && result.ok === false) {
+    const error = new Error(result.message);
+    if (result.code) error.code = result.code;
+    throw error;
+  }
+  return result ? result.value : undefined;
+}
+
 contextBridge.exposeInMainWorld("anamnesisHost", {
   separator,
 
   // ---- paths
-  documentsDir: () => ipcRenderer.invoke("path:documentsDir"),
-  joinPath: (segments) => ipcRenderer.invoke("path:join", segments),
+  documentsDir: () => invoke("path:documentsDir"),
+  joinPath: (segments) => invoke("path:join", segments),
 
   // ---- filesystem
-  exists: (target) => ipcRenderer.invoke("fs:exists", target),
-  readTextFile: (target) => ipcRenderer.invoke("fs:readTextFile", target),
-  writeTextFile: (target, contents) => ipcRenderer.invoke("fs:writeTextFile", target, contents),
-  readFile: (target) => ipcRenderer.invoke("fs:readFile", target),
-  writeFile: (target, contents) => ipcRenderer.invoke("fs:writeFile", target, contents),
-  readDir: (target) => ipcRenderer.invoke("fs:readDir", target),
-  makeDir: (target, options) => ipcRenderer.invoke("fs:makeDir", target, options),
-  removePath: (target, options) => ipcRenderer.invoke("fs:remove", target, options),
-  renamePath: (from, to) => ipcRenderer.invoke("fs:rename", from, to),
-  copyFile: (from, to) => ipcRenderer.invoke("fs:copyFile", from, to),
-  fileInfo: (target) => ipcRenderer.invoke("fs:fileInfo", target),
-  watch: (targets, options) => ipcRenderer.invoke("fs:watch", targets, options),
-  unwatch: (id) => ipcRenderer.invoke("fs:unwatch", id),
+  exists: (target) => invoke("fs:exists", target),
+  readTextFile: (target) => invoke("fs:readTextFile", target),
+  writeTextFile: (target, contents) => invoke("fs:writeTextFile", target, contents),
+  readFile: (target) => invoke("fs:readFile", target),
+  writeFile: (target, contents) => invoke("fs:writeFile", target, contents),
+  readDir: (target) => invoke("fs:readDir", target),
+  makeDir: (target, options) => invoke("fs:makeDir", target, options),
+  removePath: (target, options) => invoke("fs:remove", target, options),
+  renamePath: (from, to) => invoke("fs:rename", from, to),
+  copyFile: (from, to) => invoke("fs:copyFile", from, to),
+  fileInfo: (target) => invoke("fs:fileInfo", target),
+  watch: (targets, options) => invoke("fs:watch", targets, options),
+  unwatch: (id) => invoke("fs:unwatch", id),
   onWatchEvent: (handler) => {
     const listener = (_event, id, changed) => handler(id, changed);
     ipcRenderer.on("fs:watch-event", listener);
@@ -47,10 +70,10 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
   },
 
   // ---- window
-  showWindow: () => ipcRenderer.invoke("window:show"),
-  closeWindow: () => ipcRenderer.invoke("window:close"),
-  destroyWindow: () => ipcRenderer.invoke("window:destroy"),
-  watchClose: (wanted) => ipcRenderer.invoke("window:watchClose", wanted),
+  showWindow: () => invoke("window:show"),
+  closeWindow: () => invoke("window:close"),
+  destroyWindow: () => invoke("window:destroy"),
+  watchClose: (wanted) => invoke("window:watchClose", wanted),
   onCloseRequested: (handler) => {
     const listener = () => handler();
     ipcRenderer.on("window:close-requested", listener);
@@ -58,32 +81,32 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
   },
 
   // ---- the app itself
-  appVersion: () => ipcRenderer.invoke("app:version"),
-  restart: () => ipcRenderer.invoke("app:restart"),
+  appVersion: () => invoke("app:version"),
+  restart: () => invoke("app:restart"),
 
   // ---- dialogs
-  chooseDirectory: (options) => ipcRenderer.invoke("dialog:chooseDirectory", options),
-  chooseFile: (options) => ipcRenderer.invoke("dialog:chooseFile", options),
-  chooseSavePath: (options) => ipcRenderer.invoke("dialog:chooseSavePath", options),
+  chooseDirectory: (options) => invoke("dialog:chooseDirectory", options),
+  chooseFile: (options) => invoke("dialog:chooseFile", options),
+  chooseSavePath: (options) => invoke("dialog:chooseSavePath", options),
 
   // ---- handing things to the OS
-  openInSystem: (target) => ipcRenderer.invoke("os:openPath", target),
-  openInBrowser: (url) => ipcRenderer.invoke("os:openExternal", url),
-  revealInFileManager: (target) => ipcRenderer.invoke("os:revealItem", target),
+  openInSystem: (target) => invoke("os:openPath", target),
+  openInBrowser: (url) => invoke("os:openExternal", url),
+  revealInFileManager: (target) => invoke("os:revealItem", target),
 
   // ---- network
-  fetchBytes: (url) => ipcRenderer.invoke("net:fetch", url),
+  fetchBytes: (url) => invoke("net:fetch", url),
 
   // ---- settings
-  storeLoad: (fileName) => ipcRenderer.invoke("store:load", fileName),
-  storeGet: (fileName, key) => ipcRenderer.invoke("store:get", fileName, key),
-  storeSet: (fileName, key, value) => ipcRenderer.invoke("store:set", fileName, key, value),
-  storeDelete: (fileName, key) => ipcRenderer.invoke("store:delete", fileName, key),
-  storeSave: (fileName) => ipcRenderer.invoke("store:save", fileName),
+  storeLoad: (fileName) => invoke("store:load", fileName),
+  storeGet: (fileName, key) => invoke("store:get", fileName, key),
+  storeSet: (fileName, key, value) => invoke("store:set", fileName, key, value),
+  storeDelete: (fileName, key) => invoke("store:delete", fileName, key),
+  storeSave: (fileName) => invoke("store:save", fileName),
 
   // ---- updates
-  checkForUpdate: () => ipcRenderer.invoke("updates:check"),
-  downloadUpdate: () => ipcRenderer.invoke("updates:download"),
+  checkForUpdate: () => invoke("updates:check"),
+  downloadUpdate: () => invoke("updates:download"),
   onUpdateProgress: (handler) => {
     const listener = (_event, progress) => handler(progress);
     ipcRenderer.on("updates:progress", listener);
