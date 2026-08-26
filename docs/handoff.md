@@ -46,7 +46,7 @@ Further back but still load-bearing: **Phase 9 — LK Export — shipped
 2026-07-31**, so the format goes both ways; §LK export has the constraints that
 govern it and §Known gaps has the one thing it doesn't prove. **Phase 10 closed
 the same day** — search, keyboard shortcuts and rebinding, sidebar undo/redo,
-and releases that build and sign themselves for four platforms on a tag push.
+and releases that build themselves for four platforms on a tag push.
 §Search, §Shortcuts, §Undo and §Updates below are the parts of that still
 binding on the code.
 

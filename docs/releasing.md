@@ -50,35 +50,22 @@ skipping the update signature check is deprecated. A future version treats a
 missing publisher name as a *failed* verification rather than a skipped one,
 which would stop Windows updates dead. See the comment in `electron/main.js`.
 
-## One-time setup — ✅ done 2026-07-31
+## The updater key — retired, not needed
 
-**Already handled. The signing key is in the repository's Actions secrets, so
-releases work now.** Kept below because it's what to redo if the key is ever
-rotated or the secret is deleted, and because nothing in this repo may touch the
-key — only you can do this part.
+**There is no one-time setup any more.** This section used to walk through
+putting a minisign key into the repository Actions secrets, because Tauri
+verified every update against a key she holds. Electron does not work that way:
+`electron-updater` checks the SHA-512 published in the release feed and fetched
+from GitHub over HTTPS, and no key of ours is involved.
 
-Anamnesis signs its updates so the app can tell a real update from something
-pretending to be one. The key that does the signing lives on your machine at:
+So `TAURI_SIGNING_PRIVATE_KEY` and its password secret do nothing. They are
+harmless where they are and should be left until `release.yml` is deleted,
+which is what still reads them. **Nothing needs to be set up before an Electron
+release can be cut.**
 
-```
-C:\Users\shiro\.tauri\anamnesis-updater.key
-```
-
-GitHub needs a copy to sign the builds it makes. Copies of it go in GitHub's
-encrypted secrets, which are write-only — once saved, nobody (including you) can
-read it back out of the web page.
-
-1. Open that key file in Notepad and copy **all** of it.
-2. Go to
-   [the repository's Actions secrets](https://github.com/Shirohibiki-chan/anamnesiswiki/settings/secrets/actions).
-3. **New repository secret**. Name it exactly `TAURI_SIGNING_PRIVATE_KEY`, paste
-   the key into the value box, and save.
-4. If you set a password on the key when you made it, add a second secret called
-   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` with that password. If you didn't, skip
-   this — an empty one is fine.
-
-Don't paste the key anywhere else: not into a file in the repo, not into a chat,
-not into a commit. The repository is public.
+This is unrelated to code signing, which is a separate thing the project
+deliberately does not do — see the section above. The key was free and local;
+a certificate is neither.
 
 ## Every release after that
 

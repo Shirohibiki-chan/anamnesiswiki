@@ -170,7 +170,7 @@ Import shows a preview (tree + inferred template counts + a plain-language list 
 
 ## Deployment
 
-Pushing a `v*` tag builds, signs and drafts a release for all four platforms; `.github/workflows/ci.yml` runs lint, tests and the frontend build on every push. **`docs/releasing.md` is the procedure** — read it before changing anything about versioning. Version numbers live in four files and are set with `node scripts/set-version.mjs <version>`, never by hand.
+Pushing a `v*` tag builds and drafts a release for all four platforms — nothing is code signed, on purpose, and `docs/releasing.md` says what that costs a user; `.github/workflows/ci.yml` runs lint, tests and the frontend build on every push. **`docs/releasing.md` is the procedure** — read it before changing anything about versioning. Version numbers live in four files and are set with `node scripts/set-version.mjs <version>`, never by hand.
 
 ## File Editing
 
