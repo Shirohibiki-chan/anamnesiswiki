@@ -3099,6 +3099,18 @@ means an ordinary refactor breaks each one separately and mysteriously.
 
 Deferred on purpose, not forgotten:
 
+- **At 900px wide, the properties panel overlaps the top bar, and the button
+  that hides it is underneath.** Found by the layout rules on 2026-08-26 and
+  confirmed the hard way: the panel's left edge lands at x=601 while the button
+  spans 607–635, and asking Playwright to click it times out because the element
+  genuinely does not receive the press. 900 is not a contrived width — it is
+  `minWidth` on the window, so it is the narrowest a person can drag to, and the
+  panel eats several of the top bar's right-hand controls before that. Two other
+  screens lose a second control the same way. **Recorded rather than fixed**:
+  whether the top bar should span the full width above the panels, or the panel
+  should start below it, is a layout decision rather than a missing line, and it
+  is hers. Pinned as an allowance in `e2e/layout-rules.e2e.ts` so it cannot
+  spread while it waits.
 - **A block's title is ellipsised with nothing behind it**, found by the layout
   rules on 2026-08-26 and left alone deliberately. It is the one
   `dead-end-truncation` finding in the app, and what a too-long block title

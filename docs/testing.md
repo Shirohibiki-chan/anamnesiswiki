@@ -95,16 +95,22 @@ a runner; a run on somebody's own Linux desktop keeps the sandbox.
 
 ## Layout rules
 
-`e2e/layout-rules.e2e.ts` opens five screens and measures what is drawn on each.
-Four questions, all of them from this app's own bug history rather than from a
-generic checklist:
+`e2e/layout-rules.e2e.ts` opens five screens and measures what is drawn on each,
+twice over: once at 1280×800 and once at 900×640, the narrowest the window lets
+anyone drag to. Five questions, all of them from this app's own bug history
+rather than from a generic checklist:
 
 | Rule | What it looks for |
 |---|---|
 | `dead-end-truncation` | text cut off with no tooltip and no other way to read the rest |
 | `off-the-edge` | something sticking past the window with nothing clipping it |
+| `sideways-scroll` | the page itself scrolling horizontally |
 | `covered-control` | a control whose middle belongs to some other element |
 | `tiny-target` | an icon-only control smaller than 24×24 |
+
+A sixth question, asked once per app rather than per screen: **did anything
+throw at the console while all that was going on?** Resizing a window is when a
+layout throws, and none of the measurements above would notice.
 
 **Every rule starts as a count, not a failure.** `ALLOWED` in that file records
 what each screen has *today*; a change that adds to a number fails, and a change
@@ -114,8 +120,9 @@ suite people ignore is worse than none.
 
 **The numbers only ever go down.** Raising one to make a build pass converts a
 bug report into permission, and it is the one edit to that file that needs a
-reason written next to it. `off-the-edge` and `covered-control` are already at
-zero everywhere and must stay there.
+reason written next to it. `off-the-edge` and `sideways-scroll` are at zero
+everywhere and must stay there; `covered-control` is zero at 1280 and is not at
+900, which is a real bug rather than a tolerance — see `handoff.md`.
 
 Findings print on every run, pass or fail, because a count says a screen is
 wrong and only the list says where.
@@ -135,8 +142,10 @@ for that pass; a noisy rule is worse than a missing one.
 
 ## What this suite does not do yet
 
-- **One window size.** Everything is measured at the default 1280×800. Narrow
-  windows are where truncation bites hardest and nothing checks them.
+- **Two window sizes, not a range.** 1280×800 and 900×640, the second being
+  `minWidth`/`minHeight` on the window. The interesting failures cluster at the
+  narrow end, and 900 found a covered control on four screens that 1280 says
+  nothing about — but nothing sweeps the sizes in between.
 - **No screenshot on failure.** A CI failure gives you the assertion, the error
   log and the counts, not a picture.
 - **Settings is unswept.** It is the densest screen in the app and the layout

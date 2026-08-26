@@ -143,6 +143,52 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
 }
 
 /**
+ * Resizes the window and waits until the page has actually laid out at the new
+ * size.
+ *
+ * **Width is where this app's layout bugs live.** The three fixes merged before
+ * this suite existed — the spectrum's name field being as wide as its card, its
+ * end words truncating with no way to read them, and the field-sizing fallback —
+ * were all about a panel too narrow for what was in it, and none of them would
+ * show at a comfortable 1280. A sweep at one width is a sweep that agrees with
+ * whoever's monitor it ran on.
+ *
+ * Driven from the main process because an Electron window has no viewport for
+ * Playwright to set; `setContentSize` is the real thing a person does by
+ * dragging a corner. Waiting on `innerWidth` rather than a timer, because a
+ * resize that has not reached the page yet measures the old layout and reports
+ * findings that were never on screen.
+ */
+export async function resizeWindow(app: RunningApp, width: number, height: number): Promise<void> {
+  await app.electron.evaluate(({ BrowserWindow }, size) => {
+    const [window] = BrowserWindow.getAllWindows();
+    window?.setContentSize(size.width, size.height);
+  }, { width, height });
+  await app.window.waitForFunction(
+    (wanted) => Math.abs(window.innerWidth - wanted) <= 2,
+    width,
+    { timeout: WINDOW_TIMEOUT_MS },
+  );
+
+  // **The window being the right size is not the page being finished.** The
+  // panels animate their width, and measuring during that animation reports a
+  // layout that was never on screen — the first narrow sweep claimed the top
+  // bar's buttons were underneath the properties panel, which is not a place
+  // they ever are. Waiting on the animations themselves rather than on a guessed
+  // delay, and capped, because an animation that never ends must not hang a
+  // test run. The two frames after are for the layout the last animation
+  // triggered.
+  await app.window.evaluate(async () => {
+    const running = document.getAnimations().map((animation) => animation.finished.catch(() => {}));
+    await Promise.race([
+      Promise.all(running),
+      new Promise((resolve) => setTimeout(resolve, 1000)),
+    ]);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
+/**
  * What the main process thinks it has, for when Playwright says it has nothing.
  *
  * Deliberately tolerant: every part of this runs inside a failure, so it says

@@ -23,6 +23,7 @@ import type { Page } from "playwright-core";
 export type LayoutRule =
   | "dead-end-truncation"
   | "off-the-edge"
+  | "sideways-scroll"
   | "covered-control"
   | "tiny-target";
 
@@ -245,12 +246,19 @@ export async function findLayoutProblems(window: Page): Promise<LayoutFinding[]>
         }
       }
 
-      // A page that scrolls sideways is one finding about the page, not one per
-      // element — the elements causing it are already reported above.
+      // **Its own rule, not a variety of `off-the-edge`.** The two look alike
+      // and are not: one element can hang past the window without the page
+      // gaining a scrollbar, and a page can scroll sideways because of margins
+      // and widths with no single element to blame. Kept apart so each keeps
+      // its own count, and because "the whole page slides" is the one a person
+      // notices first.
+      //
+      // One finding about the page rather than one per element — whatever is
+      // sticking out is already reported above.
       const page = document.documentElement;
       if (page.scrollWidth > page.clientWidth + 1) {
         findings.push({
-          rule: "off-the-edge",
+          rule: "sideways-scroll",
           where: "the page itself",
           text: "",
           detail: `scrolls sideways: ${page.scrollWidth}px of content in ${page.clientWidth}px`,
@@ -268,6 +276,7 @@ export function countByRule(findings: LayoutFinding[]): Record<LayoutRule, numbe
   const counts = {
     "dead-end-truncation": 0,
     "off-the-edge": 0,
+    "sideways-scroll": 0,
     "covered-control": 0,
     "tiny-target": 0,
   } satisfies Record<LayoutRule, number>;
