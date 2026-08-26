@@ -1,21 +1,21 @@
 // The only file that reads or writes project data on disk. See CLAUDE.md's
 // architecture rules and docs/spec.md §Data model for the on-disk layout.
-import { sep } from "@tauri-apps/api/path";
 import {
   copyFile,
   exists,
-  mkdir,
+  fileInfo,
+  makeDir as mkdir,
+  pathSeparator as sep,
   readDir,
   readFile,
   readTextFile,
-  remove,
-  rename,
-  stat,
-  watch,
+  removePath as remove,
+  renamePath as rename,
+  watchPath,
   writeFile,
   writeTextFile,
   type DirEntry,
-} from "@tauri-apps/plugin-fs";
+} from "./host-service";
 import { FOLDER_TEMPLATE_KEY, type Node, type Project, type TemplateLibrary } from "../constants/schema";
 import { alwaysDirectory } from "./template-registry";
 import {
@@ -53,10 +53,11 @@ const READ_CONCURRENCY = 16;
 // stylesheet halfway through that shows her a file that never existed.
 const WATCH_DELAY_MS = 300;
 
-// `@tauri-apps/api/path`'s `join` is an async round trip into Rust *per call*,
-// and the load and save paths call it several times per node. `sep` is not: it
-// reads a value the Tauri runtime hands the webview at startup, synchronously.
-// So pay for it once and do the string work here instead.
+// The host's own path `join` is an async round trip into the shell *per call*
+// (see host-service's `joinPath`), and the load and save paths call it several
+// times per node. The separator is not: it reads a value the shell hands the
+// page at startup, synchronously. So pay for that once and do the string work
+// here instead.
 //
 // Resolved lazily rather than at module scope because the runtime global
 // doesn't exist under `pnpm dev`'s browser-only mode or in Vitest, where only
@@ -865,7 +866,7 @@ export async function readWorldSummary(path: string): Promise<WorldFile | null> 
 
   let modifiedAt: number | null = null;
   try {
-    modifiedAt = (await stat(projectPath)).mtime?.getTime() ?? null;
+    modifiedAt = (await fileInfo(projectPath)).modifiedAt?.getTime() ?? null;
   } catch {
     // A timestamp is a sort key, not the world. Losing it costs this world its
     // place in the default order, never its place in the list.
@@ -1767,7 +1768,7 @@ export async function listAssetImages(rootPath: string): Promise<{ fileName: str
     if (entry.name === ASSET_FOLDERS_FILE || entry.name === ASSET_NAMES_FILE || entry.name === ASSET_SOURCES_FILE || entry.name === ASSET_REMOVED_FILE)
       continue;
     try {
-      const info = await stat(joinPath(assetsDir, entry.name));
+      const info = await fileInfo(joinPath(assetsDir, entry.name));
       files.push({ fileName: entry.name, size: info.size });
     } catch {
       files.push({ fileName: entry.name, size: 0 });
@@ -1988,12 +1989,11 @@ export async function watchCssDirs(dirs: readonly string[], onChange: () => void
   }
   if (present.length === 0) throw new Error("nothing to watch");
 
-  return watch(
+  return watchPath(
     present,
-    (event) => {
+    (paths) => {
       // A folder is also where editors leave swap files, `.tmp` renames and
       // lock files, and none of those are a theme.
-      const paths: string[] = Array.isArray(event.paths) ? event.paths : [];
       if (paths.some((path) => path.toLowerCase().endsWith(".css"))) onChange();
     },
     { delayMs: WATCH_DELAY_MS, recursive: false },

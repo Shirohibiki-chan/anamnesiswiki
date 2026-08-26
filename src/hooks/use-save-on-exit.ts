@@ -21,7 +21,7 @@
 // `prevent_close()` whenever a JS listener exists) and its JS wrapper (which
 // only auto-destroys when the handler resolves *without* throwing).
 import { useEffect } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { closeWindow, destroyWindow, onWindowCloseRequested } from "../services/host-service";
 import { flushAllSaves, hasPendingSaves } from "../services/autosave";
 
 // If a write wedges, the window must still close — losing the tail of one
@@ -83,10 +83,10 @@ export function useSaveOnExit(): void {
     // route out, and swallowing the failure lets the retry above work.
     async function takeTheWindowAway(): Promise<void> {
       try {
-        await getCurrentWindow().destroy();
+        await destroyWindow();
       } catch {
         try {
-          await getCurrentWindow().close();
+          await closeWindow();
         } catch {
           // Both routes refused. The attempt is over either way, and clearing
           // `closeRun` is what leaves the next click able to try again.
@@ -105,21 +105,21 @@ export function useSaveOnExit(): void {
     // Rejects when the app is running outside Tauri (`pnpm dev` in a plain
     // browser, per CLAUDE.md's Commands section), where there's no window to
     // hook and the listeners above are all there is.
-    void getCurrentWindow()
-      .onCloseRequested(async (event) => {
-        // Nothing to save and nothing already closing: let Tauri close the
-        // window itself, which it does when this handler resolves without
-        // preventing the default.
-        if (!hasPendingSaves() && !inFlight && !closeRun) return;
+    void onWindowCloseRequested(async () => {
+      // Nothing to save and nothing already closing: say yes, and the host
+      // closes the window itself.
+      if (!hasPendingSaves() && !inFlight && !closeRun) return true;
 
-        event.preventDefault();
-        if (!closeRun) {
-          closeRun = flushThenClose().finally(() => {
-            closeRun = null;
-          });
-        }
-        await closeRun;
-      })
+      if (!closeRun) {
+        closeRun = flushThenClose().finally(() => {
+          closeRun = null;
+        });
+      }
+      await closeRun;
+      // Answering no holds the close; flushThenClose has already taken the
+      // window away itself by the time the writes are done.
+      return false;
+    })
       .then((stop) => {
         if (disposed) stop();
         else unlisten = stop;

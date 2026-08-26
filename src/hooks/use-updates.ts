@@ -1,7 +1,7 @@
 // Drives the "Check for updates" button. Every transition here starts with a
 // click — there is no polling, no interval, and nothing runs on mount.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getVersion } from "@tauri-apps/api/app";
+import { appVersion } from "../services/host-service";
 import { flushAllSaves } from "../services/autosave";
 import {
   checkForUpdate,
@@ -39,7 +39,7 @@ export function useUpdates() {
     let cancelled = false;
     // Absent outside the desktop shell (`pnpm dev` in a plain browser), where
     // there's no version to report and no updating to do either.
-    getVersion()
+    appVersion()
       .then((version) => {
         if (!cancelled) setCurrentVersion(version);
       })

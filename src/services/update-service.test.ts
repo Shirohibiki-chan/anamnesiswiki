@@ -82,57 +82,45 @@ describe("checkForUpdate", () => {
   });
 });
 
+// The counting that turns a download into a progress bar moved to
+// host-service in Phase 29 step 1, and its tests went with it — see
+// host-service.test.ts. What is left to check here is that this service passes
+// the host's progress straight out to the panel and adds nothing of its own.
 describe("installUpdate", () => {
-  function pending(handler: (emit: (event: unknown) => void) => void): PendingUpdate {
+  function pending(play: (report: (progress: { received: number; total: number | null }) => void) => void): PendingUpdate {
     return {
       version: "0.2.0",
       notes: [],
       handle: {
-        downloadAndInstall: async (onEvent: (event: unknown) => void) => handler(onEvent),
+        version: "0.2.0",
+        install: async (onProgress: (progress: { received: number; total: number | null }) => void) => play(onProgress),
       },
     } as unknown as PendingUpdate;
   }
 
-  it("accumulates chunk lengths into a running byte total", async () => {
+  it("passes the host's progress through untouched", async () => {
     const seen: { received: number; total: number | null }[] = [];
     await installUpdate(
-      pending((emit) => {
-        emit({ event: "Started", data: { contentLength: 300 } });
-        emit({ event: "Progress", data: { chunkLength: 100 } });
-        emit({ event: "Progress", data: { chunkLength: 50 } });
-        emit({ event: "Finished" });
+      pending((report) => {
+        report({ received: 0, total: 300 });
+        report({ received: 150, total: 300 });
+        report({ received: 300, total: 300 });
       }),
       (progress) => seen.push({ ...progress }),
     );
 
     expect(seen).toEqual([
       { received: 0, total: 300 },
-      { received: 100, total: 300 },
       { received: 150, total: 300 },
       { received: 300, total: 300 },
     ]);
   });
 
-  // The progress bar divides by this, so an undeclared length has to arrive as
-  // null rather than 0 or undefined.
-  it("reports a null total when the server declares no content length", async () => {
-    const seen: (number | null)[] = [];
-    await installUpdate(
-      pending((emit) => {
-        emit({ event: "Started", data: {} });
-        emit({ event: "Progress", data: { chunkLength: 42 } });
-      }),
-      (progress) => seen.push(progress.total),
-    );
-    expect(seen).toEqual([null, null]);
-  });
-
   it("works without a progress callback", async () => {
     await expect(
       installUpdate(
-        pending((emit) => {
-          emit({ event: "Started", data: { contentLength: 10 } });
-          emit({ event: "Finished" });
+        pending((report) => {
+          report({ received: 10, total: 10 });
         }),
       ),
     ).resolves.toBeUndefined();

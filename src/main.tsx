@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { showWindow } from "./services/host-service";
 import App from "./App";
 import { FONT_SLOTS } from "./constants/themes";
 import { applyCachedAppearance } from "./services/theme-service";
@@ -32,9 +32,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 function revealWindow() {
   // Absent outside the desktop shell (`pnpm dev` in a plain browser), where
   // there is no window to reveal and nothing was ever hidden.
-  getCurrentWindow()
-    .show()
-    .catch(() => {});
+  showWindow().catch(() => {});
 }
 
 requestAnimationFrame(() => requestAnimationFrame(revealWindow));
