@@ -73,6 +73,7 @@ pnpm dev             # Vite only, browser-only — fast UI iteration, no Rust re
 pnpm tauri dev       # full desktop app, hot reload
 pnpm tauri:inspect   # same, plus a local port to read the running window from — dev only
 pnpm electron:dev    # the Electron shell (Phase 29), on port 1430 so it runs beside the Tauri one
+pnpm electron:inspect # same, plus a port to read the running window from — dev only
 pnpm build           # Vite production build → dist/
 pnpm tauri build     # installers → src-tauri/target/release/bundle/
 pnpm lint            # ESLint

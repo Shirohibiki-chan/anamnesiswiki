@@ -1,6 +1,8 @@
 // Runs the app inside Electron against a dev server, with hot reload.
 //
-//   pnpm electron:dev
+//   pnpm electron:dev              # just run it
+//   pnpm electron:inspect          # same, plus a port to read the window from
+//   pnpm electron:inspect 9333     # some other port
 //
 // **Why this exists as a script rather than two commands.** Electron has to be
 // told where the page is, and it must not be started before the page is there —
@@ -14,6 +16,22 @@
 // build into the shipped one.
 import { spawn } from "node:child_process";
 import electronBinary from "electron";
+
+// **Inspection is off unless asked for, and it is a dev-only arrangement.**
+// A listening debug port is arbitrary code execution inside the app holding
+// her worlds, so it must never reach a shipped build: this sets a flag on one
+// child process, writes nothing to any config file, and the flag is gone when
+// the process exits. That separation is the whole safety argument and it has to
+// stay that way — the same reasoning as scripts/tauri-dev-inspect.mjs, which
+// this replaces for the Electron shell.
+//
+// Unlike the Tauri one, there is no per-platform guesswork here. Electron is
+// Chromium everywhere, so the same switch works on all three, and there is no
+// `--remote-allow-origins` dance because the debugger is not being reached
+// through a webview host.
+const wantsInspection = process.argv.includes("--inspect");
+const portArgument = process.argv.find((argument) => /^\d+$/.test(argument));
+const inspectionPort = portArgument ?? "9222";
 
 const PORT = 1430;
 const URL = `http://localhost:${PORT}`;
@@ -55,10 +73,20 @@ vite.on("exit", (code) => stopEverything(code ?? 0));
 
 await waitForServer();
 
-const electron = spawn(electronBinary, ["electron/main.js"], {
-  env: { ...shellEnv, ANAMNESIS_DEV_URL: URL },
-  stdio: "inherit",
-});
+if (wantsInspection) {
+  console.log(`Inspection port: ${inspectionPort}. Dev only — see the note at the top of this file.`);
+}
+
+const electron = spawn(
+  electronBinary,
+  wantsInspection
+    ? ["electron/main.js", `--remote-debugging-port=${inspectionPort}`]
+    : ["electron/main.js"],
+  {
+    env: { ...shellEnv, ANAMNESIS_DEV_URL: URL },
+    stdio: "inherit",
+  },
+);
 children.push(electron);
 electron.on("exit", (code) => stopEverything(code ?? 0));
 
