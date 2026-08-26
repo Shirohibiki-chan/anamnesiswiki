@@ -299,7 +299,94 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ---
 
+## Phase 29 — The Shell
+
+**Scoped 2026-08-25. Replace Tauri with Electron.** The app keeps its own
+Chromium instead of borrowing whatever browser engine the operating system
+happens to have.
+
+### Why, in the order the reasons actually matter
+
+- **Linux is a real platform for this app, and it has the worst engine.** Her
+  partner runs it on two Fedora machines — one current, one old — having moved
+  off Obsidian because she suggested this instead. **She intends to move to
+  Linux herself.** So Linux is not a build target nobody runs; it is where this
+  app is heading.
+- **Tauri borrows the OS webview**, which means Chromium on Windows, WebKit on
+  macOS and WebKitGTK on Linux. Three engines, one of which lags badly and none
+  of which she can update on a user's behalf.
+- **This is already biting, today.** The spectrum meter's wrapping word fields
+  need CSS `field-sizing`, which WebKitGTK only shipped in 2.52 (March 2026).
+  On the older Fedora box those fields draw one line and clip the rest — worse
+  than the truncation they replaced, and invisible from Windows. A fallback
+  ships separately and immediately; it is a patch over the real problem.
+- **Phase 19 is the reason to do this now rather than later.** Snapshots and
+  file recovery are the most filesystem-heavy work left in this document, and
+  the filesystem layer is exactly what a shell swap rewrites. Building 19 on
+  Tauri and then moving it is doing it twice.
+- **The switch does not get cheaper by waiting, and barely gets dearer.**
+  Measured 2026-08-25: 235 source files, ~41,600 lines, of which **ten files
+  touch Tauri at all**, across about seventeen call sites, plus 22 lines of
+  hand-written Rust. Feature work lands in the other 225 files. What grows the
+  coupled surface is new *kinds* of OS access — which is precisely what Phase 19
+  would add.
+
+### What is accepted, deliberately
+
+- **More memory, and a bigger installer** — roughly 8 MB → ~150 MB, and a
+  heavier process tree. **Her answer, 2026-08-25: anyone who wants a light
+  version can use the eventual browser edition.** That is the trade being made
+  on purpose, and it raises the browser edition from "someday" to "the other
+  half of this decision" (`docs/ideas.md` → Browser version).
+- **One manual reinstall each.** A Tauri installation cannot auto-update into an
+  Electron one — different updater, different signing. Both existing users
+  install once by hand; updates resume normally after that.
+- **Losing Tauri's capability scoping.** It enforced the network policy that was
+  retired the same day, so there is nothing left for it to enforce.
+
+### What is explicitly not in scope
+
+**The data format does not change.** Same JSON, same folder-per-node layout,
+same `assets/`. A world written by the Tauri build opens in the Electron build
+untouched — if that ever looks like it needs to bend, stop and raise it.
+No feature work rides along. No visual changes.
+
+### The work, in three steps
+
+1. **One door.** Pull those seventeen call sites behind a single module, so that
+   nothing outside it knows which shell is underneath. This is architecture rule
+   5 (`filesystem-service.ts` is the only file that touches disk) finally
+   enforced — nine other files quietly break it today: `constants/paths.ts`,
+   `hooks/use-save-on-exit.ts`, `hooks/use-updates.ts`, `main.tsx`,
+   `services/app-settings-service.ts`, `services/dialog-service.ts`,
+   `services/lk-import.ts`, `services/update-service.ts`, `state/project-store.ts`.
+   **Worth doing on its own merits even if the rest is never built**, and it is
+   day one of the swap either way. Ships as its own PR, no behaviour change.
+2. **The Electron side of the door.** A main process implementing the same
+   contract over Node: file reads and writes, the native dialogs, settings, the
+   window. Node's `fs` is richer than the plugin, so this is mostly narrowing,
+   not inventing.
+3. **The pipeline, which is the real work.** `electron-builder` for Windows,
+   macOS and Linux; code signing; the updater and its feed; rebuilding
+   `.github/workflows` and `docs/releasing.md`. This is the part that took the
+   longest last time (see the AppImage saga) and it should be estimated as the
+   bulk of the phase, not the tail of it.
+
+### Unknowns to settle while building, not before
+
+- Whether the updater keeps the current release-page check or moves to
+  `electron-updater`'s own feed.
+- macOS notarisation, which Tauri was handling.
+- Whether `pnpm tauri:inspect` disappears entirely — Electron ships DevTools, so
+  the debug-port arrangement in `docs/handoff.md` becomes unnecessary rather
+  than being ported.
+
+---
+
 ## Phase 19 — Safety Net
+
+**Runs after Phase 29** — see that phase for why: this is the most
+filesystem-heavy work left, and the shell swap rewrites the filesystem layer.
 
 Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
 
