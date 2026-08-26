@@ -1,2 +1,7 @@
 allowBuilds:
+  # Squirrel.Windows, which this project does not use — the Windows installer
+  # is NSIS (see electron-builder.yml). electron-builder pulls the package in
+  # regardless; there is no reason to let it run a postinstall for a target
+  # nothing builds.
+  electron-winstaller: false
   esbuild: true

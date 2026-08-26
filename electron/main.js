@@ -20,6 +20,22 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
+// **Both of these have to happen before anything asks Electron a question**,
+// because the answers depend on them.
+//
+// The name decides where settings live (`%APPDATA%/Anamnesis` rather than
+// `%APPDATA%/anamnesis`), and it has to match between a run from source and an
+// installed build or the two keep separate settings.
+//
+// The app id is what Windows uses to decide which windows belong to which
+// program — taskbar grouping, pinning, notifications, and the icon on the title
+// bar. **Left unset, an unpackaged Electron app shares whatever default is
+// lying around**, and this app was seen wearing another Electron app's icon on
+// 2026-08-25 because of exactly that. It matches `tauri.conf.json`'s identifier
+// so an installed Anamnesis keeps its identity across the shell change.
+app.setName("Anamnesis");
+app.setAppUserModelId("com.anamnesis.app");
+
 /**
  * The app's own version, read from its `package.json` rather than asked of
  * Electron.
@@ -69,6 +85,9 @@ function createWindow() {
     minHeight: 600,
     backgroundColor: "#0f0f14",
     show: false,
+    // Windows and macOS take the icon from the built executable; Linux takes it
+    // from here, and so does any unpackaged run on any platform.
+    icon: path.join(here, "..", "src-tauri", "icons", "icon.png"),
     webPreferences: {
       preload: path.join(here, "preload.cjs"),
       contextIsolation: true,
@@ -296,20 +315,63 @@ function storePath(fileName) {
   return path.join(app.getPath("userData"), fileName);
 }
 
+/**
+ * Where the Tauri build kept the same file, so an existing installation's
+ * settings are not lost when the shell changes.
+ *
+ * **Worlds were never in here** — they are folders of JSON on disk and both
+ * shells read the same ones. What is here is the small stuff that would
+ * otherwise silently reset: which projects are recent, which one was open last,
+ * and the projects folder if she moved it. Losing that is not data loss, but it
+ * is the app forgetting her on first launch, which reads like one.
+ *
+ * Keyed by the same identifier Tauri used. Several candidates because Tauri's
+ * store sits under a different base directory per platform.
+ */
+function legacyStorePaths(fileName) {
+  const home = app.getPath("home");
+  const bases =
+    process.platform === "win32"
+      ? [path.join(app.getPath("appData"), "com.anamnesis.app")]
+      : process.platform === "darwin"
+        ? [path.join(home, "Library", "Application Support", "com.anamnesis.app")]
+        : [
+            path.join(home, ".config", "com.anamnesis.app"),
+            path.join(home, ".local", "share", "com.anamnesis.app"),
+          ];
+  return bases.map((base) => path.join(base, fileName));
+}
+
+async function readJsonIfPresent(target) {
+  try {
+    const parsed = JSON.parse(await fs.readFile(target, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    // Missing, or not JSON any more. Neither is worth refusing to start over.
+    return null;
+  }
+}
+
 async function loadStore(fileName) {
   const existing = stores.get(fileName);
   if (existing) return existing;
-  /** @type {Record<string, unknown>} */
-  let contents = {};
-  try {
-    contents = JSON.parse(await fs.readFile(storePath(fileName), "utf8"));
-  } catch {
-    // No file yet, or an unreadable one. An unreadable settings file is not
-    // worth refusing to start over — the worst case is defaults.
-    contents = {};
+
+  let contents = await readJsonIfPresent(storePath(fileName));
+
+  if (contents === null) {
+    // **Read, never moved.** The Tauri build may still be installed and may
+    // still be the one she opens tomorrow; taking its settings away would break
+    // it to fix this. The copy is one-way and happens once, because after this
+    // run there is a file of our own to find.
+    for (const legacy of legacyStorePaths(fileName)) {
+      contents = await readJsonIfPresent(legacy);
+      if (contents !== null) break;
+    }
   }
-  stores.set(fileName, contents);
-  return contents;
+
+  const store = contents ?? {};
+  stores.set(fileName, store);
+  return store;
 }
 
 ipcMain.handle("store:load", async (_event, fileName) => {

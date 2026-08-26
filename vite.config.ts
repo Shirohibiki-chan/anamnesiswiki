@@ -63,8 +63,16 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 3. tell Vite to ignore watching `src-tauri`, and the two build outputs.
+      //
+      // **`release` is not housekeeping — a watcher on it breaks packaging.**
+      // electron-builder extracts ~370MB of Electron into `release/…tmp` and
+      // then renames that directory into place, and a file watcher holding a
+      // handle inside it makes the rename fail with EPERM every time. Found
+      // 2026-08-25: the same build succeeded immediately when its output went
+      // anywhere outside this folder. A dev server has no business watching
+      // build output anyway.
+      ignored: ["**/src-tauri/**", "**/release/**", "**/dist/**"],
     },
   },
 }));
