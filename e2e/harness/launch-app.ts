@@ -87,6 +87,15 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
   const startupOutput: string[] = [];
   electron.process().stdout?.on("data", (chunk) => startupOutput.push(String(chunk)));
   electron.process().stderr?.on("data", (chunk) => startupOutput.push(String(chunk)));
+  // **And the main process's console separately, because Playwright takes it.**
+  // Attaching to the main process routes its console through the debugger
+  // rather than the pipes above, so anything `electron/main.js` logs — or throws
+  // where Electron logs it for you — is invisible to a reader of raw stderr.
+  // Which is the half that matters: the pipes carried nothing useful through
+  // four failed CI runs while this channel was never being read.
+  electron.on("console", (message) => {
+    startupOutput.push(`[main] ${message.type()}: ${message.text()}`);
+  });
 
   let window: Page;
   try {
@@ -143,9 +152,18 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
  */
 async function describeWindows(electron: ElectronApplication): Promise<string> {
   try {
-    return await electron.evaluate(({ BrowserWindow }) => {
+    return await electron.evaluate(({ app, BrowserWindow }) => {
       const windows = BrowserWindow.getAllWindows();
-      if (windows.length === 0) return "no windows exist at all.";
+      if (windows.length === 0) {
+        // **`createWindow` runs off `app.whenReady()`, so which of these two is
+        // true says where to look.** Not ready means Electron itself never
+        // finished starting, and nothing in this repo is implicated. Ready with
+        // no window means `createWindow` was reached and did not produce one.
+        return (
+          `no windows exist at all — app.isReady()=${app.isReady()}, ` +
+          `DISPLAY=${process.env.DISPLAY ?? "(unset)"}.`
+        );
+      }
       return windows
         .map((win, index) => {
           const contents = win.webContents;
