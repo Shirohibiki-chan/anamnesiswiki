@@ -1,7 +1,7 @@
 // In-memory node graph. Never imported directly by components — access is
 // always through src/hooks/use-project.ts. See CLAUDE.md's layer order.
 import { create } from "zustand";
-import { join } from "@tauri-apps/api/path";
+import { joinPath } from "../services/host-service";
 import {
   createNode,
   createProject,
@@ -1052,7 +1052,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       }
 
       const folderName = fsService.sanitizeSegment(trimmed);
-      const rootPath = await join(parentDir, folderName);
+      const rootPath = await joinPath(parentDir, folderName);
       if (await fsService.pathExists(rootPath)) {
         return { ok: false, error: "A folder with that name already exists there." };
       }
@@ -1093,7 +1093,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       }
 
       const folderName = fsService.sanitizeSegment(trimmed);
-      const rootPath = await join(parentDir, folderName);
+      const rootPath = await joinPath(parentDir, folderName);
       if (await fsService.pathExists(rootPath)) {
         return { ok: false, error: "A folder with that name already exists there." };
       }
@@ -1135,7 +1135,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       }
 
       const folderName = fsService.sanitizeSegment(trimmed);
-      const rootPath = await join(parentDir, folderName);
+      const rootPath = await joinPath(parentDir, folderName);
       if (await fsService.pathExists(rootPath)) {
         return { ok: false, error: "A folder with that name already exists there." };
       }

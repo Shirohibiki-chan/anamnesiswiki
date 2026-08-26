@@ -1,8 +1,7 @@
 // App-level settings that live outside any project folder (which project was
 // open last, which ones are recent) — persisted via Tauri's key-value store
 // in the app's own data dir, never inside a project folder.
-import { load, type Store } from "@tauri-apps/plugin-store";
-import { getDefaultProjectsDir } from "../constants/paths";
+import { documentsDir, joinPath, openKeyValueStore, type KeyValueStore } from "./host-service";
 import type { Pin } from "./pins";
 import { isProjectGroup, type ProjectGroup } from "./project-groups";
 import { isProjectRef, type ProjectRef } from "./project-refs";
@@ -15,10 +14,10 @@ export type RecentProject = {
   lastOpenedAt: number;
 };
 
-let storePromise: Promise<Store> | null = null;
+let storePromise: Promise<KeyValueStore> | null = null;
 
-function getStore(): Promise<Store> {
-  if (!storePromise) storePromise = load(SETTINGS_FILE);
+function getStore(): Promise<KeyValueStore> {
+  if (!storePromise) storePromise = openKeyValueStore(SETTINGS_FILE);
   return storePromise;
 }
 
@@ -205,6 +204,18 @@ export async function setShortcutOverrides(overrides: Record<string, unknown>): 
  * so a default that moves in a later version follows anyone who never set it,
  * the same reasoning as the shortcut overrides above.
  */
+/**
+ * Where projects live when she hasn't chosen somewhere else.
+ *
+ * Lived in `constants/paths.ts` until Phase 29 step 1. It has to ask the host
+ * where documents are, and constants sit below services in the layer order, so
+ * a constants file reaching for the shell broke the layering as well as the
+ * shell boundary. Its only caller was always the function below.
+ */
+export async function getDefaultProjectsDir(): Promise<string> {
+  return joinPath(await documentsDir(), "Anamnesis");
+}
+
 export async function getProjectsDir(): Promise<string> {
   const store = await getStore();
   return (await store.get<string>("projectsDir")) ?? (await getDefaultProjectsDir());

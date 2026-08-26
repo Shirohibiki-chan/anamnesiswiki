@@ -5,7 +5,7 @@
 // approved by the user for this explicit, one-time import action — see
 // docs/handoff.md) is isolated in fetchLkImage so it's easy to find and
 // audit against the app's normal zero-network-calls policy.
-import { fetch as httpFetch } from "@tauri-apps/plugin-http";
+import { hostFetch } from "./host-service";
 import { normalizeCodeLanguage } from "../constants/code-languages";
 import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { IMAGE_MIN_PREVIEW_WIDTH } from "../constants/limits";
@@ -80,11 +80,11 @@ export async function parseLkBytes(bytes: Uint8Array): Promise<unknown> {
   return JSON.parse(text);
 }
 
-// The Rust-proxied fetch from @tauri-apps/plugin-http, not the webview's own
-// fetch — LK's image CDN doesn't need to grant our origin CORS access this
-// way, since the request never runs as a same-origin browser fetch at all.
+// The host's own fetch (see host-service's `hostFetch`), not the web page's —
+// LK's image CDN doesn't need to grant our origin CORS access this way, since
+// the request never runs as a same-origin browser fetch at all.
 export async function fetchLkImage(url: string): Promise<Uint8Array> {
-  const response = await httpFetch(url);
+  const response = await hostFetch(url);
   if (!response.ok) throw new Error(`Couldn't download image (${response.status}): ${url}`);
   return new Uint8Array(await response.arrayBuffer());
 }

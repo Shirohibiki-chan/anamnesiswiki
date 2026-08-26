@@ -7,9 +7,7 @@
 // back is a signed manifest; the installer is verified against the public key
 // baked into `tauri.conf.json` before it is allowed to run, so a tampered
 // download is refused rather than installed. See docs/handoff.md → Updates.
-import { check, type Update } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { checkForShellUpdate, openInBrowser, restart, type ShellUpdate } from "./host-service";
 import { RELEASES_PAGE_URL, releaseTagUrl } from "../constants/links";
 import { parseReleaseNotes, type ReleaseNoteBlock } from "./release-notes";
 
@@ -20,8 +18,8 @@ export type PendingUpdate = {
   // markdown, and parsed into data rather than markup; release-notes.ts says
   // why that distinction is the important one.
   notes: ReleaseNoteBlock[];
-  // Kept opaque to callers — it's the plugin's handle for the actual download.
-  handle: Update;
+  // Kept opaque to callers — it's the host's handle for the actual download.
+  handle: ShellUpdate;
 };
 
 export type UpdateCheck =
@@ -48,7 +46,7 @@ function describeFailure(error: unknown): string {
 
 export async function checkForUpdate(): Promise<UpdateCheck> {
   try {
-    const update = await check();
+    const update = await checkForShellUpdate();
     if (!update) return { status: "up-to-date" };
     return {
       status: "available",
@@ -73,35 +71,20 @@ export async function installUpdate(
   update: PendingUpdate,
   onProgress?: (progress: DownloadProgress) => void,
 ): Promise<void> {
-  let received = 0;
-  let total: number | null = null;
-
-  await update.handle.downloadAndInstall((event) => {
-    switch (event.event) {
-      case "Started":
-        total = event.data.contentLength ?? null;
-        onProgress?.({ received, total });
-        break;
-      case "Progress":
-        received += event.data.chunkLength;
-        onProgress?.({ received, total });
-        break;
-      case "Finished":
-        onProgress?.({ received: total ?? received, total });
-        break;
-    }
-  });
+  // The counting lives in host-service now, with the host's own event shapes:
+  // what arrives here is bytes so far and the total, if the server declared one.
+  await update.handle.install((progress) => onProgress?.(progress));
 }
 
 export async function restartApp(): Promise<void> {
-  await relaunch();
+  await restart();
 }
 
 // Hands the releases page to the system browser, for the rest of the notes the
 // panel doesn't show. Not a fetch — the app makes no request here, it asks the
 // OS to open a link, and only ever this one.
 export async function openReleasesPage(): Promise<void> {
-  await openUrl(RELEASES_PAGE_URL);
+  await openInBrowser(RELEASES_PAGE_URL);
 }
 
 // The same, for one named version — Settings → Patch Notes links each release
@@ -109,5 +92,5 @@ export async function openReleasesPage(): Promise<void> {
 // handing a releases URL to the OS; nothing about it belongs to the updater's
 // state machine above.
 export async function openReleaseTag(version: string): Promise<void> {
-  await openUrl(releaseTagUrl(version));
+  await openInBrowser(releaseTagUrl(version));
 }

@@ -1,6 +1,4 @@
 // Default on-disk locations. See docs/constants-and-theming.md §Key Constants.
-import { documentDir, join } from "@tauri-apps/api/path";
-
 export const PROJECT_FILE = "project.json";
 export const FOLDER_META_FILE = "_folder.json";
 // Own-data marker for a nestable non-folder node (character/location/faction/
@@ -224,6 +222,3 @@ export const MOVE_TEMP_PREFIX = ".anamnesis-move-";
 // an app that was killed mid-probe is inert, not a page waiting to be found.
 export const PROBE_TEMP_PREFIX = ".anamnesis-probe-";
 
-export async function getDefaultProjectsDir(): Promise<string> {
-  return join(await documentDir(), "Anamnesis");
-}

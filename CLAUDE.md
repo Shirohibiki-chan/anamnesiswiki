@@ -82,7 +82,7 @@ Tests are Vitest, colocated as `*.test.ts`. Services are the unit-tested layer �
 
 ## Architecture
 
-**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job.
+**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job. **Nothing outside `services/host-service.ts` knows what the shell is** — see rule 5. Anything that can only be answered by the thing hosting the page belongs behind that door; anything that is a decision does not.
 
 State is **Zustand** in `src/state/`. Editor is **BlockNote** — custom Info/Quote/Secret callout blocks live in `src/services/editor-blocks/`; extend it via its documented API, never fork it. Tree is **react-arborist**.
 
@@ -100,7 +100,7 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 2. **Components render only** — all logic lives in hooks or services.
 3. **No component imports stores directly** — always go through a hook.
 4. **No component imports services directly** — always go through a hook.
-5. **`filesystem-service.ts` is the only file that touches disk** — no exceptions.
+5. **`host-service.ts` is the only file that imports `@tauri-apps/*`, and `filesystem-service.ts` is the only file that decides what to do with the disk** — no exceptions to either. The first is the shell boundary (Phase 29 step 1): paths, files, dialogs, the window, the updater, the settings store and the host's fetch all go through that one door, so swapping the shell touches one file. The second is the older rule and still the important one: the tree walking, the name collisions and the relocation planning are where the bugs that cost real data live.
 6. **`lk-import.ts` and `lk-export.ts` are the only files that touch `.lk` format** — no exceptions.
 7. **`template-registry.ts` owns all template definitions** — no template metadata elsewhere.
 8. **`autosave.ts` is a plain service, not a hook** — the debounce timer must survive React re-renders.

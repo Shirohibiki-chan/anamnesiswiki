@@ -1,10 +1,18 @@
-// Thin wrapper around Tauri's native dialog plugin — the only file that
-// touches @tauri-apps/plugin-dialog directly. Folder browsing stays a native
-// OS dialog (that's the expected look for a file picker); destructive
-// confirm prompts moved to an in-app themed modal instead — see
-// state/dialog-store.ts and components/shell/ConfirmDialog.tsx.
-import { open, save } from "@tauri-apps/plugin-dialog";
-import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+// Every native dialog the app opens, and the one-at-a-time guard around them.
+// The dialogs themselves come from the host (see host-service.ts); what lives
+// here is which dialog each errand wants, what it is called and what it
+// filters for. Folder browsing stays a native OS dialog — that is the expected
+// look for a file picker; destructive confirm prompts moved to an in-app
+// themed modal instead, see state/dialog-store.ts and
+// components/shell/ConfirmDialog.tsx.
+import {
+  chooseDirectory,
+  chooseFile,
+  chooseSavePath,
+  openInBrowser,
+  openInSystem,
+  revealInFileManager,
+} from "./host-service";
 import { PROJECT_TEMPLATE_EXTENSION } from "../constants/project-template";
 
 /**
@@ -61,7 +69,7 @@ async function onePicker<T>(run: () => Promise<T>): Promise<T | null> {
  * written, Explorer is just pointed at somewhere.
  */
 export async function showFolder(path: string): Promise<void> {
-  await openPath(path);
+  await openInSystem(path);
 }
 
 /**
@@ -77,7 +85,7 @@ export async function showFolder(path: string): Promise<void> {
  * differently on each OS and on Windows tends to open Documents instead.
  */
 export async function revealItem(path: string): Promise<void> {
-  await revealItemInDir(path);
+  await revealInFileManager(path);
 }
 
 /**
@@ -97,8 +105,7 @@ export function fileManagerName(): string {
 }
 
 export async function pickFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null> {
-  const result = await onePicker(() => open({ directory: true, multiple: false, ...options }));
-  return typeof result === "string" ? result : null;
+  return onePicker(() => chooseDirectory(options));
 }
 
 // Phase 9 export destination. A native save dialog, same reasoning as the
@@ -106,7 +113,7 @@ export async function pickFolder(options?: { title?: string; defaultPath?: strin
 // puts the file wherever they point it rather than somewhere we chose.
 export async function pickLkSavePath(defaultName: string): Promise<string | null> {
   return onePicker(() =>
-    save({
+    chooseSavePath({
       // Still named here, unlike the import side: this file is *for* that
       // app, and a generic label would hide the one thing she needs to know
       // about it. The export modal behind it says the same.
@@ -126,7 +133,7 @@ export async function pickLkSavePath(defaultName: string): Promise<string | null
  */
 export async function pickTemplateSavePath(defaultName: string): Promise<string | null> {
   return onePicker(() =>
-    save({
+    chooseSavePath({
       title: "Export as a project template",
       defaultPath: `${defaultName}.${PROJECT_TEMPLATE_EXTENSION}`,
       filters: [{ name: "Anamnesis project template", extensions: [PROJECT_TEMPLATE_EXTENSION] }],
@@ -146,9 +153,7 @@ export async function pickTemplateSavePath(defaultName: string): Promise<string 
  */
 export async function pickTemplateFile(): Promise<string | null> {
   const result = await onePicker(() =>
-    open({
-      directory: false,
-      multiple: false,
+    chooseFile({
       title: "Open a project template",
       filters: [
         { name: "Project template", extensions: [PROJECT_TEMPLATE_EXTENSION] },
@@ -167,7 +172,7 @@ export async function pickTemplateFile(): Promise<string | null> {
  * right extension.
  */
 export async function pickImageSavePath(defaultName: string): Promise<string | null> {
-  return onePicker(() => save({ title: "Save a copy of this picture", defaultPath: defaultName }));
+  return onePicker(() => chooseSavePath({ title: "Save a copy of this picture", defaultPath: defaultName }));
 }
 
 /**
@@ -178,7 +183,7 @@ export async function pickImageSavePath(defaultName: string): Promise<string | n
  * tool for that.
  */
 export async function openExternalUrl(url: string): Promise<void> {
-  await openUrl(url);
+  await openInBrowser(url);
 }
 
 /**
@@ -190,9 +195,7 @@ export async function openExternalUrl(url: string): Promise<void> {
  */
 export async function pickThemeFile(): Promise<string | null> {
   const result = await onePicker(() =>
-    open({
-      directory: false,
-      multiple: false,
+    chooseFile({
       title: "Import a theme or palette",
       filters: [
         { name: "Theme or palette", extensions: ["css", "json"] },
@@ -211,9 +214,7 @@ export async function pickThemeFile(): Promise<string | null> {
  */
 export async function pickImageFile(): Promise<string | null> {
   const result = await onePicker(() =>
-    open({
-      directory: false,
-      multiple: false,
+    chooseFile({
       title: "Choose a cover",
       filters: [{ name: "Pictures", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp"] }],
     }),
@@ -239,9 +240,7 @@ export async function pickImageFile(): Promise<string | null> {
  */
 export async function pickImportFile(): Promise<string | null> {
   const result = await onePicker(() =>
-    open({
-      directory: false,
-      multiple: false,
+    chooseFile({
       title: "Import a project",
       filters: [
         { name: "Project export (.lk)", extensions: ["lk"] },
