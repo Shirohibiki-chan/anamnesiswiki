@@ -5,6 +5,7 @@
 ### Additions
 
 - **A Test Anamnesis shortcut, beside the other launchers.** Double-click it and the app is built, opened, and driven through a set of checks on a made-up world — pages opened by name, a world too big to see all of, and the awkward names that a filesystem can't store as typed. Windows flash open and shut while it runs; that's the checking, not a fault. **It can't touch your worlds**: every one it opens is invented in a temporary folder and deleted afterwards. Takes about half a minute.
+- **Those checks now measure the layout too.** On every screen they open, they look for text cut off with no way to read the rest, anything sticking out past the window, a control with something on top of it, and buttons too small to hit comfortably. What each screen has today is written down, so nothing can quietly get worse — and the two worst kinds, things off the edge and controls covered by other things, are already at none anywhere and stay that way.
 
 ### Fixes
 

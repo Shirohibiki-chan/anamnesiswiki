@@ -5,7 +5,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "src-tauri", "node_modules"] },
+  { ignores: ["dist", "src-tauri", "node_modules", ".claude"] },
   // The shell's own two files run in Electron, not in a page: Node globals,
   // and the preload is CommonJS because a sandboxed preload has to be.
   {

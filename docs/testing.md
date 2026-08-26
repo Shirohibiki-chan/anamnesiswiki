@@ -93,13 +93,53 @@ Points worth knowing before writing one:
 also passes `--no-sandbox`, because Chromium's setuid helper is not configured in
 a runner; a run on somebody's own Linux desktop keeps the sandbox.
 
-### What this suite does not do yet
+## Layout rules
 
-- **No layout rules.** Nothing checks that text is not truncated with no way to
-  read the rest, that nothing sits off the edge, or that no control is covered
-  by something else — which is the actual bug history. That work rides on this
-  harness and is the next thing worth building on it.
-- **No screenshot on failure.** A CI failure gives you the assertion and the
-  error log, not a picture.
+`e2e/layout-rules.e2e.ts` opens five screens and measures what is drawn on each.
+Four questions, all of them from this app's own bug history rather than from a
+generic checklist:
+
+| Rule | What it looks for |
+|---|---|
+| `dead-end-truncation` | text cut off with no tooltip and no other way to read the rest |
+| `off-the-edge` | something sticking past the window with nothing clipping it |
+| `covered-control` | a control whose middle belongs to some other element |
+| `tiny-target` | an icon-only control smaller than 24×24 |
+
+**Every rule starts as a count, not a failure.** `ALLOWED` in that file records
+what each screen has *today*; a change that adds to a number fails, and a change
+that removes from one is expected to lower the number in the same commit. A
+check that goes red the day it is written teaches everyone to ignore it, and a
+suite people ignore is worse than none.
+
+**The numbers only ever go down.** Raising one to make a build pass converts a
+bug report into permission, and it is the one edit to that file that needs a
+reason written next to it. `off-the-edge` and `covered-control` are already at
+zero everywhere and must stay there.
+
+Findings print on every run, pass or fail, because a count says a screen is
+wrong and only the list says where.
+
+### Adding a rule
+
+Rules live in `e2e/harness/layout.ts` and run as one pass inside the page —
+asking Playwright about elements one at a time takes minutes for a few thousand
+nodes, which is slow enough that nobody would sweep more than one screen.
+
+**A rule earns its place by catching something real, and its first job is to be
+quiet about everything else.** The `tiny-target` rule's first draft reported
+twenty findings a screen, nineteen of them breadcrumb links and block titles
+that are the width of their own words and perfectly easy to press. It only
+became useful once it was narrowed to controls carrying no words at all. Budget
+for that pass; a noisy rule is worse than a missing one.
+
+## What this suite does not do yet
+
+- **One window size.** Everything is measured at the default 1280×800. Narrow
+  windows are where truncation bites hardest and nothing checks them.
+- **No screenshot on failure.** A CI failure gives you the assertion, the error
+  log and the counts, not a picture.
+- **Settings is unswept.** It is the densest screen in the app and the layout
+  rules never open it.
 - **Linux only in CI.** It runs on Windows and macOS locally, but nothing checks
   those automatically.

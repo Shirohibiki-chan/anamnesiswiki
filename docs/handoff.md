@@ -3099,13 +3099,19 @@ means an ordinary refactor breaks each one separately and mysteriously.
 
 Deferred on purpose, not forgotten:
 
-- **Nothing checks layout automatically.** The app suite proves pages open and
-  show the right names; it does not check that text isn't truncated with no way
-  to read the rest, that nothing sits off the edge, or that no control is
-  covered by something else — which is where the real bug history is. That work
-  rides on the harness and is the obvious next thing to build on it. Worth
-  copying the discipline of starting each rule as a findings list and only
-  promoting it to a hard failure once the count is genuinely zero.
+- **A block's title is ellipsised with nothing behind it**, found by the layout
+  rules on 2026-08-26 and left alone deliberately. It is the one
+  `dead-end-truncation` finding in the app, and what a too-long block title
+  should do instead — wrap, or carry its full text on hover — is a design
+  question rather than a missing line of code. Recorded as an allowance in
+  `e2e/layout-rules.e2e.ts` so it cannot get worse while it waits.
+- **Icon-only controls in the tree are 14–16px**, against a 24px minimum: the
+  expand chevron, the colour dot, the ⋯ menu and the +. Counted rather than
+  fixed for the same reason — making them bigger changes how a tree row looks,
+  which is hers to decide. Related: the colour dot's placement is already a
+  queued adjustment in `docs/plan.md`.
+- **Layout is only measured at 1280×800**, and narrow windows are where
+  truncation bites hardest.
 
 - **Nothing has been imported into real LegendKeeper from an export we wrote.**
   The round trip is verified through our own importer, against the real
