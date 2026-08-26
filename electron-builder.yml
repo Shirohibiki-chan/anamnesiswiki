@@ -43,9 +43,13 @@ extraResources:
 npmRebuild: false
 nodeGypRebuild: false
 
-# Nothing here is signed yet, and that is deliberate rather than forgotten: the
-# signing keys and the updater feed are the second half of step 3. An unsigned
-# installer warns on first run; a wrongly signed one is worse.
+# **Nothing here is code signed, and nothing is going to be.** Decided
+# 2026-08-25 after pricing it: a Windows certificate is a few hundred a year
+# and an Apple one is more on top, and all they buy is the absence of a
+# warning. The Tauri builds were never signed either, so this is the same
+# position rather than a change. See docs/releasing.md for what that costs a
+# user on each platform - macOS is the one where it is felt. Do not add
+# signing config back here.
 win:
   target:
     - target: nsis

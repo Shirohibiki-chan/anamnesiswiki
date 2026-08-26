@@ -15,7 +15,7 @@ Import/export of LegendKeeper's `.lk` format is a Phase 1 must-have because the 
 **Phases 0 through 10 are built and working**: the data layer, app shell, tree,
 page view, BlockNote editor with custom callouts and `@`/`[[ ]]` cross-references,
 properties panel, all templates, LegendKeeper import *and* export, project-wide
-search, rebindable keyboard shortcuts, sidebar undo/redo, and automated signed
+search, rebindable keyboard shortcuts, sidebar undo/redo, and automated unsigned
 releases for four platforms. **The app is shippable.** Phase 1.5 (read-only
 publish) is next up; phases 11–23 are planned in `docs/plan.md`.
 

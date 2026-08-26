@@ -358,7 +358,40 @@ No feature work rides along. No visual changes.
 `electron/` implement the same contract over Electron and Node — verified
 running: the real window opens, reads her projects off disk, round-trips text
 and binary files, watches a directory, and closes through the save-on-exit
-handshake. **Step 3 is what is left**, and it is the bulk of the phase.
+handshake.
+
+**Most of step 3 has shipped too**, later the same day and after this section
+was last written: `electron-builder.yml`, `release-electron.yml`, the updater
+on `electron-updater`, and `docs/releasing.md` rewritten around all of it.
+
+What is genuinely left is the part that can only be settled by running it:
+
+- **No Electron release has actually shipped.** The pipeline can be exercised
+  without spending a version number — Actions → Release (Electron) → Run
+  workflow attaches installers to the run instead of publishing — and that has
+  not been done.
+- **The Linux AppImage is unproven on the machine that had the problem.**
+  Tauri's bundler sealing the host's graphics libraries into the AppImage was
+  the original crash; electron-builder builds its own, so the cause should be
+  gone. Nobody has run one on the older Fedora box to find out.
+- **`release.yml` and `appimage-test.yml` are still there**, kept as a way back.
+  They go once an Electron release has shipped and settled.
+- **Analytics**, folded in here by her decision 2026-08-26 rather than run as
+  its own phase: it lands in the same main process and rides the same release
+  plumbing, so doing both together means touching each once.
+
+  **Asked for, not imposed** — she wants to see how the app is used, and the
+  Two Promises in `CLAUDE.md` rule out *unrequested* collection rather than
+  network access. Three things decided with it, and they are the design:
+
+  - **A visible on/off switch in Settings**, from the first version. Cheap now,
+    and it is what keeps this a feature rather than something done to people.
+  - **Events name features, never content.** "Opened a meter block" is data;
+    the title of a page, the name of a world, or anything typed into one is
+    not, and no event may carry a string that came from her writing.
+  - **A desktop tool, not a web one.** Page-view analytics has nothing to
+    measure here — nobody loads a page. Aptabase is the candidate: open
+    source, free tier, self-hostable, and it has an Electron SDK.
 
 ### The work, in three steps
 
@@ -376,19 +409,32 @@ handshake. **Step 3 is what is left**, and it is the bulk of the phase.
    window. Node's `fs` is richer than the plugin, so this is mostly narrowing,
    not inventing.
 3. **The pipeline, which is the real work.** `electron-builder` for Windows,
-   macOS and Linux; code signing; the updater and its feed; rebuilding
-   `.github/workflows` and `docs/releasing.md`. This is the part that took the
-   longest last time (see the AppImage saga) and it should be estimated as the
-   bulk of the phase, not the tail of it.
+   macOS and Linux; the updater and its feed; rebuilding `.github/workflows`
+   and `docs/releasing.md`. This is the part that took the longest last time
+   (see the AppImage saga) and it should be estimated as the bulk of the phase,
+   not the tail of it.
 
-### Unknowns to settle while building, not before
+   **Nothing is code signed, and that is a decision rather than a gap** — see
+   `docs/releasing.md` § *Nothing is code signed, on purpose*. The Tauri builds
+   were never signed either, so this is the same position written down, not a
+   change. Don't re-add signing to this list.
 
-- Whether the updater keeps the current release-page check or moves to
-  `electron-updater`'s own feed.
-- macOS notarisation, which Tauri was handling.
-- Whether `pnpm tauri:inspect` disappears entirely — Electron ships DevTools, so
-  the debug-port arrangement in `docs/handoff.md` becomes unnecessary rather
-  than being ported.
+### Unknowns, all since settled
+
+Kept because the answers are the useful part:
+
+- **The updater moved to `electron-updater`'s own feed.** It verifies the
+  SHA-512 published in the release feed, fetched from GitHub over HTTPS, rather
+  than a key she holds. Tauri's minisign key is unused; the secret is harmless
+  where it is until `release.yml` goes.
+- **macOS notarisation does not apply**, because nothing is signed. The cost is
+  that a Mac will not open the app from a double-click and its updates have to
+  be installed by hand — both written up in `docs/releasing.md`, and both
+  things to say in the release notes when there is a Mac build.
+- **`pnpm tauri:inspect` did not disappear; it grew a twin.**
+  `pnpm electron:inspect` opens the same kind of debug port on the Electron
+  window (PR #277), which is what made the tree-scroll bug measurable rather
+  than a matter of opinion.
 
 ---
 
