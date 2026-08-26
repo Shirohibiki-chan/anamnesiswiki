@@ -1,0 +1,74 @@
+# How the Electron build becomes something you can install (Phase 29 step 3).
+#
+# The identifiers are deliberately the ones the Tauri build already used, so an
+# installed Anamnesis keeps its identity across the shell change: the same app
+# id Windows groups windows by, the same product name the settings folder is
+# named after. Changing either of these orphans somebody's settings.
+appId: com.anamnesis.app
+productName: Anamnesis
+copyright: Anamnesis
+
+directories:
+  output: release
+  buildResources: src-tauri/icons
+
+# What goes inside the package. `dist` is the built page, `electron` is the
+# shell around it, and package.json is there because the main process reads the
+# version out of it — see readAppVersion in electron/main.js.
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+
+# The icon the window and the taskbar use on Linux, and the one an unpackaged
+# run picks up everywhere. Windows and macOS take theirs from the per-platform
+# blocks below, which embed it into the executable itself.
+extraResources:
+  - from: src-tauri/icons/icon.png
+    to: icon.png
+
+# **No native modules anywhere in this app**, so there is nothing to rebuild
+# against Electron's own Node — and letting electron-builder run an install of
+# its own during packaging turns a packaging step into a dependency resolution
+# step, which is how this first failed.
+npmRebuild: false
+nodeGypRebuild: false
+
+# Nothing here is signed yet, and that is deliberate rather than forgotten: the
+# signing keys and the updater feed are the second half of step 3. An unsigned
+# installer warns on first run; a wrongly signed one is worse.
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: src-tauri/icons/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  # Shortcuts carry the app id, which is what keeps the taskbar icon and the
+  # window's own identity the same thing.
+  shortcutName: Anamnesis
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: src-tauri/icons/icon.icns
+  category: public.app-category.productivity
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: src-tauri/icons/icon.png
+  category: Office
+  synopsis: A local-first worldbuilding wiki
+  description: >-
+    Anamnesis keeps worlds — characters, locations, factions and species — as a
+    tree of pages stored as plain JSON files in a folder you choose.
