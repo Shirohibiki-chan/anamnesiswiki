@@ -9,12 +9,16 @@
 //
 // Files are named `*.e2e.ts` rather than `*.test.ts` so the two suites cannot
 // pick each other up by accident, whatever either config later says.
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     environment: "node",
     include: ["e2e/**/*.e2e.ts"],
+
+    // A background agent's worktree is a second checkout of this repo inside
+    // it. Same reason as `vitest.config.ts` — see the note there.
+    exclude: [...configDefaults.exclude, "**/.claude/**"],
 
     // **One app at a time.** Each file starts its own Electron process against
     // its own generated world, and several of those competing for one machine's
