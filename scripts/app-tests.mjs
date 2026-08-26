@@ -17,6 +17,7 @@
 // which is fine once and tiresome while writing a scenario — `--no-build` is
 // for the second and subsequent runs when only the test file has changed.
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const skipBuild = args.includes("--no-build");
@@ -29,6 +30,23 @@ function run(command, commandArgs, env) {
     const child = spawn(command, commandArgs, { env, stdio: "inherit" });
     child.on("exit", (code) => resolve(code ?? 0));
   });
+}
+
+// **Electron the npm package is not Electron the program.** The package is a
+// pointer; the program is fetched by its install step, which pnpm only runs for
+// packages named in `allowBuilds` (pnpm-workspace.yaml). On a checkout where
+// that did not happen, importing `electron` kicks the download off *lazily* —
+// and then the first test races a 100 MB extract, which is exactly how this
+// suite failed its first three CI runs on 2026-08-26.
+//
+// So it is fetched here instead, where waiting for it is the whole point.
+// Electron's own installer is what pnpm would have run and does nothing when
+// the program is already there, so on a normal checkout this is one `existsSync`
+// and no output.
+if (!existsSync("node_modules/electron/dist")) {
+  console.log("Electron isn't installed yet — fetching it before the tests start.");
+  const fetched = await run("node", ["node_modules/electron/install.js"], shellEnv);
+  if (fetched !== 0) process.exit(fetched);
 }
 
 if (!skipBuild) {

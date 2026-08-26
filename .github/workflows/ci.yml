@@ -22,9 +22,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # **11 rather than 10, because `pnpm-workspace.yaml` is written in 11's
+      # syntax.** `allowBuilds` — the list saying which packages may run an
+      # install step — is a pnpm 11 field, and pnpm 10 does not fail on it, it
+      # ignores it. So every entry in that file has been silently doing nothing
+      # here since it was added: Electron never got installed, and the two
+      # deliberate decisions beside it never applied either.
+      #
+      # The other three workflows still pin 10 and have the same problem. Left
+      # alone in this change on purpose — a release workflow that has never been
+      # run is not something to alter blind alongside a test fix.
       - uses: pnpm/action-setup@v6
         with:
-          version: 10
+          version: 11
 
       - uses: actions/setup-node@v7
         with:
@@ -61,7 +71,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 10
+          version: 11
 
       - uses: actions/setup-node@v7
         with:

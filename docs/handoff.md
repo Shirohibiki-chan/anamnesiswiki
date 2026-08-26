@@ -3067,6 +3067,16 @@ choices, and both live in `e2e/harness/launch-app.ts`:
   Tauri opens to a window that cannot read a file, so `launchApp` refuses to
   start against one rather than failing as a wall of timeouts.
 
+**`pnpm-workspace.yaml` is pnpm 11 syntax, and three workflows still ask for
+pnpm 10.** `allowBuilds` — which packages may run an install step — arrived in
+pnpm 11, and pnpm 10 ignores the field rather than failing on it. So on any
+runner pinned to 10 that file does nothing at all: Electron's install step never
+runs, and the package installs as a pointer to a program that was never fetched.
+`ci.yml` was moved to 11 on 2026-08-26 when the app suite hit exactly this.
+**`release-electron.yml`, `release.yml` and `appimage-test.yml` still pin 10**
+and carry the same defect; they were left alone because no release has ever been
+cut and changing one blind is worse than knowing about it.
+
 Scenarios are written in the vocabulary of `e2e/harness/screen.ts` and add no
 selectors of their own — the app has almost no test hooks in its markup, so
 driving it means CSS class names, and scattering those across scenario files
