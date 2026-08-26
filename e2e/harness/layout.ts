@@ -233,6 +233,38 @@ export async function findLayoutProblems(window: Page): Promise<LayoutFinding[]>
         if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
         if (style.pointerEvents === "none") continue;
 
+        // **Scrolled out of its own strip is not the same as covered.** A tab
+        // strip with `overflow-x: auto` lays its children out past its own edge
+        // on purpose: they are reached by scrolling to them, and what is
+        // painted where they currently sit is whatever the strip is standing in
+        // front of. Counting those as covered controls makes the rule fire on a
+        // strip that works perfectly — which is precisely how a check stops
+        // being read, and the reason this file starts with that warning.
+        //
+        // Measured on the page tab strip at 900px (2026-08-26): 352px of tabs
+        // in a 252px strip, with the add-tab button 52px past the centre
+        // column and its middle landing on the properties panel. Scrolling the
+        // strip 100px brings it inside the column, and the click lands.
+        //
+        // Only an ancestor that genuinely has somewhere to scroll counts. An
+        // `overflow: hidden` ancestor clips without offering a way to reach
+        // what it clipped, and that is not something to wave through.
+        let reachableByScrolling = false;
+        for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+          const parentStyle = getComputedStyle(parent);
+          const canScrollX =
+            /auto|scroll/.test(parentStyle.overflowX) && parent.scrollWidth > parent.clientWidth;
+          const canScrollY =
+            /auto|scroll/.test(parentStyle.overflowY) && parent.scrollHeight > parent.clientHeight;
+          if (!canScrollX && !canScrollY) continue;
+          const edge = parent.getBoundingClientRect();
+          if (x < edge.left || x > edge.right || y < edge.top || y > edge.bottom) {
+            reachableByScrolling = true;
+            break;
+          }
+        }
+        if (reachableByScrolling) continue;
+
         const whatIsThere = document.elementFromPoint(x, y);
         if (!whatIsThere) continue;
         // A hit on a child is the control; a hit on a wrapper is still the

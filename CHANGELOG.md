@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-26 — a button you couldn't click
+
+### Fixes
+
+- **The button that shows and hides the properties panel couldn't be clicked on a narrow window.** Drag Anamnesis as narrow as it goes and the row of controls along the top ran out of room, so the last one slid underneath the properties panel itself and stopped responding — the button that would have given you the room back was the one you couldn't reach. The row now shortens the Search button to its icon when it's short of space, which frees more than enough; the keyboard shortcut it used to display is on the button's tooltip. Nothing changes at a comfortable window size.
+- **This also happens when you drag the panels rather than the window.** The top row is only as wide as the space between the two side panels, so widening those squeezes it exactly the same way — the fix follows the room the row actually has, not the size of the screen, so it holds either way.
+
 ## 2026-08-26 — starting up on Linux
 
 ### Additions
@@ -283,28 +290,3 @@
 - **The start screen's rail had less room than it needed.** Recently Opened, Add a Project, and New Releases all sit a little less cramped now.
 - **The rail's sections now stand apart from each other.** Twice the gap between Recently Opened, Add a Project and New Releases, with a little more air under each heading, so the three read as separate errands rather than one long list with rules through it. A folder on disk and Import sit a touch further apart too.
 - **The pinned covers stopped cutting heads off.** They are taller than they were, and what is left of a portrait after the crop is now taken from above centre rather than the middle — so the part that survives is the part with the face in it, not the feet.
-
-## 2026-08-19
-
-### Additions
-
-- **Keep the projects you actually use at the top.** There's a Pinned row across the top of the start screen now — tall covers with the picture fading up into the background instead of sitting in a box, as many across as the window has room for. Pinning and rearranging both happen in one window behind the Manage pins button: drag the rows into the order you want, and every project you haven't pinned sits underneath as covers, so putting one up there is one click. The row shows a dashed "Pin a project" tile even when nothing is pinned, so it doesn't hide until you already know about it. Nothing is capped — the row pages instead, and a page always holds whole covers rather than half of one.
-- **Put the projects in whatever order you want.** There's a pill above the grid, next to the covers-or-rows buttons, that opens a short menu: newest first, oldest first, name A–Z, or name Z–A. Newest first is still what you get and still means whichever happened last — you opening a project, or it changing — so nothing moves unless you ask it to. Oldest first is the one for finding what you haven't touched in months. The app remembers your choice, and picking a new order takes you back to the first page rather than leaving you halfway down a list that just rearranged itself.
-- **Every project shows where it lives on disk.** Under its name, on covers and in the list alike. Long paths lose their middle rather than their end, so the folder the project actually sits in is always the part you can still read — which is the part that tells two projects with the same name apart. Covers and rows are both a little taller to carry it.
-- **The rail down the side of the start screen can be dragged.** Take hold of the line between it and the projects and pull: the covers get the room you don't give the rail, and the pinned row refits itself to whatever is left. It works the same way the sidebar inside a project does, down to double-clicking the line to put it back where it started, and the arrow keys if you'd rather not drag. Your width is remembered.
-- **The rail now tells you what's new.** The three most recent versions, newest tagged **New**, at the bottom of the rail. Click one and it opens Settings straight to that version's patch notes rather than making you go find it.
-- **Your projects folder has a button now**, at the very foot of the rail, above the cog. Click it and it opens straight into your file manager — the same thing Settings → Projects already let you find, just one click away instead of a trip through there.
-- **Mute project covers**, in Settings → Theme. Desaturates every cover on the start screen — the colours the app makes up and any picture you set yourself alike. Off by default, and on automatically if your system already asks for higher contrast.
-- **Set your own cover for a project.** Hover a cover in the grid and a small button appears in the corner — pick a picture from anywhere on disk, and it takes over from the generated colour everywhere that project's cover shows: the grid, the pinned row, the rail's Recently Opened, and the Manage pins window. The same button removes it and hands the project back its colour. Grid view only — a list row's thumbnail is too small for a button of its own, and list is already the view for someone who never sets a cover at all.
-- **The Recently Opened list in the rail now names the page you were on**, under the project's own name, so you can see where you'll land before you click.
-
-### Fixes
-
-- **Closing the window sometimes did nothing.** Once anything needed saving on the way out, a rare failure in that path could leave the window unable to close for the rest of the session — no error, no explanation, the X just stopped working. It always finishes the close now, however the save on the way out goes.
-- **One project no longer stretches across the whole screen in the list view.** A row put the name at the far left and the date at the far right, so making the window wider only put more nothing between them — about 2000 pixels of it with the window full screen. A row is now two lines: the name with its location under it, and the date beside them, centred. That lets a row be narrow enough for the list to make a second, third or fourth column of them as there's room, instead of stretching one across everything.
-- **The pinned covers no longer stretch out of shape on a wide window.** The row was always four across, which is the right number at about the size the app opens at and wrong everywhere else: fullscreen on a wide monitor pulled four covers into long thin bands, and shrinking the window stood them on end and started cutting the names off. It now fits as many as the width has room for — eight across a fullscreen 2560 monitor, two on the narrowest window — and a cover keeps the same shape at every size, so a picture you put on one is always cropped the same way rather than losing its sides on one window and its top and bottom on another.
-
-### Adjustments
-
-- **The Elsewhere marker moved onto the line with the project's location.** It used to sit in the corner of a cover, over the picture. It says the same thing the path under the name says, so it now sits at the front of that line in both views — which also gave the date on a row its right-hand edge back, since the marker had been holding a column open on every row whether or not it was used.
-- **Two controls now show which one you picked.** The covers-or-rows toggle drew its icon in exactly the colour of its own highlight, so the side you were on was the side you couldn't see; the sort menu had the same problem on the order it was set to. Both are the bright teal now.
