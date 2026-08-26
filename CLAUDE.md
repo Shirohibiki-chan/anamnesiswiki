@@ -72,6 +72,7 @@ pnpm install
 pnpm dev             # Vite only, browser-only — fast UI iteration, no Rust rebuild
 pnpm tauri dev       # full desktop app, hot reload
 pnpm tauri:inspect   # same, plus a local port to read the running window from — dev only
+pnpm electron:dev    # the Electron shell (Phase 29), on port 1430 so it runs beside the Tauri one
 pnpm build           # Vite production build → dist/
 pnpm tauri build     # installers → src-tauri/target/release/bundle/
 pnpm lint            # ESLint
@@ -82,7 +83,9 @@ Tests are Vitest, colocated as `*.test.ts`. Services are the unit-tested layer �
 
 ## Architecture
 
-**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job. **Nothing outside `services/host-service.ts` knows what the shell is** — see rule 5. Anything that can only be answered by the thing hosting the page belongs behind that door; anything that is a decision does not.
+**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job. **Nothing outside the door knows what the shell is** — see rule 5. Anything that can only be answered by the thing hosting the page belongs behind it; anything that is a decision does not.
+
+**There are two shells** (Phase 29). `services/host-contract.ts` is the vocabulary, `host-service.ts` speaks Tauri, `host-service.electron.ts` speaks Electron, and both end with a `satisfies HostContract` block so neither can quietly lose a capability. `ANAMNESIS_SHELL=electron` picks the second one, in `vite.config.ts`; unset means Tauri, which is still what ships. `electron/main.js` and `electron/preload.cjs` are the other side of the Electron door — the preload is the security boundary and exposes a fixed list of functions, so adding a capability means adding it in both files on purpose.
 
 State is **Zustand** in `src/state/`. Editor is **BlockNote** — custom Info/Quote/Secret callout blocks live in `src/services/editor-blocks/`; extend it via its documented API, never fork it. Tree is **react-arborist**.
 

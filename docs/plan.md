@@ -351,6 +351,15 @@ same `assets/`. A world written by the Tauri build opens in the Electron build
 untouched — if that ever looks like it needs to bend, stop and raise it.
 No feature work rides along. No visual changes.
 
+### Where it has got to
+
+**Steps 1 and 2 have shipped.** Every Tauri call is behind
+`services/host-service.ts` (PR #272), and `host-service.electron.ts` plus
+`electron/` implement the same contract over Electron and Node — verified
+running: the real window opens, reads her projects off disk, round-trips text
+and binary files, watches a directory, and closes through the save-on-exit
+handshake. **Step 3 is what is left**, and it is the bulk of the phase.
+
 ### The work, in three steps
 
 1. **One door.** Pull those seventeen call sites behind a single module, so that
