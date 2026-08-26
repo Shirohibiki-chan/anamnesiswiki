@@ -3049,9 +3049,63 @@ is below.
   boolean version meant one failed close killed the X for the rest of the
   session.
 
+## The app test suite
+
+Added 2026-08-26. `pnpm test:app` starts the real Electron app and drives it;
+`docs/testing.md` is the how-to. Two things about it are constraints rather than
+choices, and both live in `e2e/harness/launch-app.ts`:
+
+- **A run must not be able to touch her data, and two separate things make that
+  true.** The world is generated into the system temp folder, and
+  `--user-data-dir` moves `app.getPath("userData")` somewhere temporary so the
+  settings file the app reads is one the harness wrote a moment earlier. Remove
+  the second and the app reads the real store and opens whichever world she had
+  open last — into a suite that creates, renames and deletes pages.
+- **It runs the built page, never a dev server.** A scenario racing a compiler
+  can always have its failure blamed on hot reload, and `dist/` is what a
+  release actually ships. The build has to be the Electron one; a page built for
+  Tauri opens to a window that cannot read a file, so `launchApp` refuses to
+  start against one rather than failing as a wall of timeouts.
+
+**Never touch `electronUpdater.autoUpdater` at module scope.** It is a getter
+that *constructs* the platform's updater, and that constructor reads
+`app.getVersion()` and rejects anything that is not valid semver. An unpackaged
+run on Linux answers `0.0`, so naming the property threw during module load —
+before `app.whenReady()`, so no window was ever created and nothing appeared on
+screen or in the app's own logs. **The Electron shell could not be run from
+source on Linux at all**, on the one platform this whole phase exists for.
+Windows never showed it: an unpackaged run there answers `44.0.0`, which is
+valid semver by luck. `getUpdater()` in `electron/main.js` now builds it on
+first use and remembers the failure if it cannot. Found 2026-08-26 by the app
+suite, and only after taking Playwright out of the way — attaching to the main
+process is what reroutes its console, so the error was invisible for six runs.
+
+**`pnpm-workspace.yaml` is pnpm 11 syntax, and three workflows still ask for
+pnpm 10.** `allowBuilds` — which packages may run an install step — arrived in
+pnpm 11, and pnpm 10 ignores the field rather than failing on it. So on any
+runner pinned to 10 that file does nothing at all: Electron's install step never
+runs, and the package installs as a pointer to a program that was never fetched.
+`ci.yml` was moved to 11 on 2026-08-26 when the app suite hit exactly this.
+**`release-electron.yml`, `release.yml` and `appimage-test.yml` still pin 10**
+and carry the same defect; they were left alone because no release has ever been
+cut and changing one blind is worse than knowing about it.
+
+Scenarios are written in the vocabulary of `e2e/harness/screen.ts` and add no
+selectors of their own — the app has almost no test hooks in its markup, so
+driving it means CSS class names, and scattering those across scenario files
+means an ordinary refactor breaks each one separately and mysteriously.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:
+
+- **Nothing checks layout automatically.** The app suite proves pages open and
+  show the right names; it does not check that text isn't truncated with no way
+  to read the rest, that nothing sits off the edge, or that no control is
+  covered by something else — which is where the real bug history is. That work
+  rides on the harness and is the obvious next thing to build on it. Worth
+  copying the discipline of starting each rule as a findings list and only
+  promoting it to a hard failure once the count is genuinely zero.
 
 - **Nothing has been imported into real LegendKeeper from an export we wrote.**
   The round trip is verified through our own importer, against the real
