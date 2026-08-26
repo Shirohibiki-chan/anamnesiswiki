@@ -85,3 +85,22 @@ jobs:
       # and genuinely draws, into a framebuffer nobody is looking at. This is
       # the whole reason these tests cannot simply live in `pnpm test`.
       - run: xvfb-run --auto-servernum pnpm test:app
+
+      # **Temporary, while the job above is being made to pass on Linux.**
+      #
+      # Five runs have now ended with "Electron is ready, the display is there,
+      # and no window exists", and nothing has said why. Attaching to the main
+      # process reroutes its console through the debugger, so the one channel
+      # that would carry an error from `createWindow` is the one Playwright is
+      # holding. This starts the same app with nothing attached to it, so
+      # whatever it says goes straight to the log.
+      #
+      # `if: always()` because the step above having failed is the entire reason
+      # to run it, and it never fails the job itself — it is a measurement.
+      # `dist/` is already built by then, by the step above.
+      - name: What the app says when nothing is attached to it
+        if: always()
+        run: |
+          xvfb-run --auto-servernum timeout 25 \
+            ./node_modules/electron/dist/electron electron/main.js \
+            --no-sandbox --user-data-dir="$RUNNER_TEMP/probe" 2>&1 | head -60 || true
