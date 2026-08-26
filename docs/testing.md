@@ -36,6 +36,31 @@ second and subsequent runs while writing a scenario. Name a file to run one:
 pnpm test:app --no-build e2e/awkward-names.e2e.ts
 ```
 
+### Running it without pnpm
+
+**`pnpm` cannot be run from her PowerShell at all**, and it never could — the
+`pnpm` command is a script file, PowerShell refuses to run script files under
+its default execution policy, and the failure is a wall of red about
+`pnpm.ps1 cannot be loaded`. It has nothing to do with this project: `pnpm dev`
+and `pnpm build` fail identically. Every launcher in `scripts/` calls `node`
+directly for exactly this reason and says so in its own comments.
+
+So the same three commands, without pnpm:
+
+```bash
+node scripts/app-tests.mjs
+node scripts/app-tests.mjs --no-build
+node scripts/app-tests.mjs --no-build e2e/awkward-names.e2e.ts
+```
+
+Or **double-click `scripts/Test Anamnesis.bat`**, which needs no terminal and is
+the one to point her at.
+
+**Do not tell her to change the execution policy to make `pnpm` work.** It is a
+real option — `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` — but it
+changes how her machine treats scripts everywhere, and nothing here needs it.
+Hers to choose, not a step in anyone's instructions.
+
 ### What it actually does
 
 Each scenario file starts its own copy of the app and throws it away afterwards.

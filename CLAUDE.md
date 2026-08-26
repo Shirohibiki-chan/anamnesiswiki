@@ -81,6 +81,8 @@ pnpm test            # Vitest, single run
 pnpm test:app        # the scenarios in e2e/ — builds the page, then drives the real app
 ```
 
+**These are commands for *me*, not for her — `pnpm` cannot run in her PowerShell** and never could, because it is a script file and the default execution policy refuses script files. Anything you hand her runs through `node` (`node scripts/app-tests.mjs`) or through a `.bat` in `scripts/`. Don't paste a `pnpm` line into a reply to her, and don't tell her to change the execution policy to fix it — that's hers to decide, and nothing here needs it. See `docs/testing.md` § Running it without pnpm.
+
 **Two suites — `docs/testing.md` is the detail.** `pnpm test` is Vitest, colocated as `*.test.ts`, and services are the unit-tested layer: pure logic (path resolution, tree shape, LK conversion, autosave) is testable without a DOM, and that's where the bugs that cost real data have shown up. Components have no jsdom/RTL setup and aren't unit tested. `pnpm test:app` is the other half — Playwright starting the built Electron app against a generated world in a temp folder, which is the only thing that can check what the app *shows* against what it stored. Add a scenario there in the vocabulary of `e2e/harness/screen.ts`, never with CSS classes of its own.
 
 ## Architecture
