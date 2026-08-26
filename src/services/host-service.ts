@@ -22,11 +22,11 @@
 // directories, no naming files, no working out whether a world is valid. The
 // door is thin on purpose; everything above it stays testable without a shell.
 //
-// **What to do when the shell changes** (Phase 29 step 2): write another file
-// exporting these same names over Electron and Node, and change nothing else.
-// The signatures below were chosen to be describable without Tauri — plain
-// paths, plain strings, plain callbacks — with one exception, marked at
-// `ShellUpdate`, where the updater's own shape leaks a little.
+// **The other shell already exists**: `host-service.electron.ts`, added in
+// Phase 29 step 2. Both files are checked against `host-contract.ts`, which is
+// where the vocabulary lives, and `vite.config.ts` decides which one the app is
+// built with. Add a capability here and the build fails until the other shell
+// has it too — that is the contract doing its job, not an obstacle.
 import { getVersion } from "@tauri-apps/api/app";
 import { documentDir, join, sep } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -50,6 +50,15 @@ import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { load as loadStore, type Store } from "@tauri-apps/plugin-store";
 import { check as checkUpdate } from "@tauri-apps/plugin-updater";
+import type {
+  DirEntry,
+  DownloadProgress,
+  FileFilter,
+  FileInfo,
+  HostContract,
+  KeyValueStore,
+  ShellUpdate,
+} from "./host-contract";
 
 // ---------------------------------------------------------------- paths
 
@@ -77,13 +86,6 @@ export function pathSeparator(): string {
 }
 
 // ------------------------------------------------------------ filesystem
-
-/** One entry in a directory listing. */
-export type DirEntry = {
-  name: string;
-  isDirectory: boolean;
-  isFile: boolean;
-};
 
 export function exists(path: string): Promise<boolean> {
   return fsExists(path);
@@ -128,13 +130,6 @@ export function renamePath(from: string, to: string): Promise<void> {
 export function copyFile(from: string, to: string): Promise<void> {
   return fsCopyFile(from, to);
 }
-
-/** What this app has ever wanted to know about a file it isn't reading. */
-export type FileInfo = {
-  size: number;
-  /** Null where the host doesn't report a modification time. */
-  modifiedAt: Date | null;
-};
 
 /**
  * Narrower than the host's own `stat` on purpose. Two things are asked of a
@@ -213,8 +208,6 @@ export async function restart(): Promise<void> {
 
 // -------------------------------------------------------------- dialogs
 
-export type FileFilter = { name: string; extensions: string[] };
-
 /** Asks for one existing folder. Null if the picker was dismissed. */
 export async function chooseDirectory(options?: { title?: string; defaultPath?: string }): Promise<string | null> {
   const picked = await openDialog({ directory: true, multiple: false, ...options });
@@ -273,18 +266,6 @@ export function hostFetch(url: string): Promise<Response> {
 
 // -------------------------------------------------------- settings store
 
-/**
- * A small key-value file the host keeps for us — app settings, not world data.
- * Worlds are plain JSON written through `filesystem-service.ts`; this is for
- * the handful of things that belong to the installation instead.
- */
-export type KeyValueStore = {
-  get<T>(key: string): Promise<T | undefined>;
-  set(key: string, value: unknown): Promise<void>;
-  delete(key: string): Promise<boolean>;
-  save(): Promise<void>;
-};
-
 export async function openKeyValueStore(fileName: string): Promise<KeyValueStore> {
   const store: Store = await loadStore(fileName);
   return {
@@ -296,24 +277,6 @@ export async function openKeyValueStore(fileName: string): Promise<KeyValueStore
 }
 
 // --------------------------------------------------------------- updates
-
-/**
- * An update the host is offering.
- *
- * **The leakiest thing in this file, and deliberately the smallest leak
- * available.** An updater is the one capability that can't be reduced to a
- * function call: it hands back a handle, and the download reports progress
- * through it. What the next shell has to provide is this — a version, whatever
- * notes came with it, and an `install` that reports bytes. The host's own
- * event shapes are translated below rather than passed upward, so nothing
- * outside this file has ever seen them.
- */
-export type ShellUpdate = {
-  version: string;
-  /** Release notes exactly as the feed supplied them, if it supplied any. */
-  body?: string;
-  install(onProgress: (progress: { received: number; total: number | null }) => void): Promise<void>;
-};
 
 /** Asks whether there's a newer version. Null means this one is current. */
 export async function checkForShellUpdate(): Promise<ShellUpdate | null> {
@@ -344,3 +307,43 @@ export async function checkForShellUpdate(): Promise<ShellUpdate | null> {
     },
   };
 }
+
+// **Compile-time proof that this shell can do everything the app asks of one.**
+// If a capability is added to the contract and not to this file, or its shape
+// drifts from the Electron side, the build fails here rather than on somebody's
+// machine. `host-service.electron.ts` carries the same block.
+const conformance = {
+  documentsDir,
+  joinPath,
+  pathSeparator,
+  exists,
+  readTextFile,
+  writeTextFile,
+  readFile,
+  writeFile,
+  readDir,
+  makeDir,
+  removePath,
+  renamePath,
+  copyFile,
+  fileInfo,
+  watchPath,
+  showWindow,
+  closeWindow,
+  destroyWindow,
+  onWindowCloseRequested,
+  appVersion,
+  restart,
+  chooseDirectory,
+  chooseFile,
+  chooseSavePath,
+  openInSystem,
+  openInBrowser,
+  revealInFileManager,
+  hostFetch,
+  openKeyValueStore,
+  checkForShellUpdate,
+} satisfies HostContract;
+void conformance;
+
+export type { DirEntry, DownloadProgress, FileFilter, FileInfo, KeyValueStore, ShellUpdate };

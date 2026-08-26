@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:inspect": "node scripts/tauri-dev-inspect.mjs",
+    "electron:dev": "node scripts/electron-dev.mjs",
     "lint": "eslint .",
     "test": "vitest run"
   },
@@ -47,6 +48,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "electron": "^44.0.0",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
