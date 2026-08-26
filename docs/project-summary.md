@@ -64,7 +64,7 @@ publish) is next up; phases 11–23 are planned in `docs/plan.md`.
 - **lucide-react** — icon set
 - **Local JSON files** — sole persistence; every node is a JSON file on disk, folder-per-folder mirroring the tree
 
-No backend, no database, no auth, no telemetry, no network calls in Phase 1.
+No backend, no database, no auth, no telemetry. Network access is allowed and unremarkable; the app just has to keep working without it.
 
 ---
 
@@ -195,4 +195,4 @@ When bringing a plan into a Claude Code session, include:
 3. Any behavior decisions made during planning (edge cases, scope choices, constraints agreed on)
 4. Which phase this belongs to per `docs/plan.md`, and confirmation that earlier phases are complete enough to build on
 
-If a proposed feature seems to require cloud sync, network calls, LK server access, or LLM/AI integration — that's a policy boundary trip. Push back and find a local-file alternative.
+A feature that needs the network is an ordinary feature — build it. The hard-line policy that used to sit here was retired 2026-08-25; `CLAUDE.md` → Two Promises has what replaced it and why. LLM/AI features in the editor are still out, which was never part of that policy.
