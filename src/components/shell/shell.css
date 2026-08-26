@@ -242,6 +242,8 @@
   padding: 0 var(--space-xl);
   background: var(--gradient-topbar, none), var(--color-panel-alt);
   border-bottom: 1px solid var(--color-border-strong);
+  /* The box the search button measures itself against, below. */
+  container: top-bar / inline-size;
 }
 
 /* Tighter than `.top-bar-right`'s gap: these three are one control in three
@@ -280,6 +282,43 @@
 .top-bar-search-button:hover {
   background: var(--color-hover);
   color: var(--color-text-primary);
+}
+
+/* **The search button gives up its label before the bar runs out of room.**
+   This bar lives in the centre column, and both side panels are draggable, so
+   the width it gets is not a function of the window's — dragging the tree and
+   the properties panel wider squeezes it at any window size. That is why this
+   is a container query and not a media query: what matters is the room this
+   bar actually has, not how wide the screen is.
+
+   Measured at the narrowest the window goes (900×640, both panels at their
+   default widths): 391px of content in a 340px column. The overflow ran out
+   past the column's right edge, and because the properties panel paints after
+   it, the properties toggle — the last control in the bar — ended up
+   underneath the panel it toggles and could not be clicked at all.
+
+   Dropping the word and the shortcut takes the button from 123px to 28px,
+   which is 95px back. The threshold sits a little above where it actually
+   breaks so the save and history indicators, which are 0px wide until
+   something is happening, have somewhere to appear without putting it straight
+   back. The shortcut stays on the button's tooltip either way.
+
+   **This does not cover a centre column squeezed to nothing by dragging.**
+   TREE_MAX_WIDTH and PROPERTIES_MAX_WIDTH add up to 1080, wider than the 900
+   minimum window, so both panels dragged full puts the bar back underneath the
+   panel whatever this rule does. That is the caps' problem, not this one's —
+   see docs/plan.md under Known Bugs. */
+@container top-bar (max-width: 420px) {
+  .top-bar-search-button {
+    width: 1.75rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .top-bar-search-label,
+  .top-bar-kbd {
+    display: none;
+  }
 }
 
 .top-bar-kbd {

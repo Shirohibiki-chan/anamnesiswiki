@@ -34,9 +34,19 @@ export function TopBar({ isRightPanelOpen, onToggleRightPanel, onSwitchProject, 
         <SaveIndicator />
         {/* A visible way in as well as the shortcut — nothing else in the app
             advertises that Cmd+K exists. */}
-        <button type="button" className="top-bar-search-button" onClick={onOpenSearch}>
+        {/* Both the word and the shortcut hide themselves when the bar is
+            short of room (shell.css), so neither the button's name nor the
+            hint may depend on them being on screen — hence the label and the
+            tooltip, which say the same thing whatever is visible. */}
+        <button
+          type="button"
+          className="top-bar-search-button"
+          aria-label={`Search (${searchShortcut})`}
+          title={`Search (${searchShortcut})`}
+          onClick={onOpenSearch}
+        >
           <Search size={14} />
-          <span>Search</span>
+          <span className="top-bar-search-label">Search</span>
           <kbd className="top-bar-kbd">{searchShortcut}</kbd>
         </button>
         <button type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Switch project" onClick={onSwitchProject}>

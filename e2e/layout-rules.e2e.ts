@@ -50,21 +50,25 @@ const ALLOWED: Record<string, Partial<Record<LayoutRule, number>>> = {
   // the header's small icon button at 20×20. Present on every screen, since the
   // tree is.
   "a folder @1280": { "tiny-target": 5 },
-  // **At 900 the properties panel overlaps the top bar**, and the button that
-  // would hide it is underneath it — confirmed by trying to click it, which
-  // times out. Real, and reachable by dragging the window to the narrowest
-  // size the app itself allows. Recorded rather than fixed: where the top bar
-  // should sit relative to the panels is a design question. See handoff.md.
-  "a folder @900": { "tiny-target": 5, "covered-control": 1 },
+  // **`covered-control` was 1 here until 2026-08-26, on all four screens
+  // below.** It was the same control every time: the top bar needed 391px in a
+  // 340px centre column, so its last button — the properties toggle — sat past
+  // the column's edge with the properties panel painted over it. Fixed in
+  // shell.css, where the reasoning is; zero now, and it stays zero.
+  "a folder @900": { "tiny-target": 5 },
   // The one truncation finding in the app: a block's title ellipsised with
   // nothing behind it, which is the exact shape of complaint this rule exists
   // for. Plus a meter's 8px drag track and an 11×11 × for removing one.
   "every meter at once @1280": { "dead-end-truncation": 1, "tiny-target": 7 },
-  "every meter at once @900": { "dead-end-truncation": 1, "tiny-target": 7, "covered-control": 1 },
+  "every meter at once @900": { "dead-end-truncation": 1, "tiny-target": 7 },
   "a name too long for a filename @1280": { "tiny-target": 8 },
-  "a name too long for a filename @900": { "tiny-target": 8, "covered-control": 2 },
+  // The second of this screen's two was never a bug: the page tab strip
+  // scrolls sideways, and its add-tab button was simply scrolled out of it
+  // rather than covered by anything. The rule could not tell those apart and
+  // now can — see the note beside it in harness/layout.ts.
+  "a name too long for a filename @900": { "tiny-target": 8 },
   "nine levels down @1280": { "tiny-target": 7 },
-  "nine levels down @900": { "tiny-target": 7, "covered-control": 1 },
+  "nine levels down @900": { "tiny-target": 7 },
   // **Clean, and the only screen that is.** It is also the first thing anybody
   // ever sees, so keeping this at nothing is worth more than it looks.
   "the start screen @1280": {},
