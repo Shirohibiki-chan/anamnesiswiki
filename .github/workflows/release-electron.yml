@@ -15,11 +15,6 @@ on:
   push:
     tags:
       - "v*"
-    # TEMPORARY: proves the pipeline on all three platforms before this is
-    # merged, since workflow_dispatch only appears once a workflow is on the
-    # default branch. Removed before this branch merges.
-    branches:
-      - feature/phase-29-updater-release
   # A dry run against any commit: builds all three platforms and uploads the
   # installers as workflow artifacts without creating or touching a release.
   # This is how the pipeline gets tested without spending a version number.
