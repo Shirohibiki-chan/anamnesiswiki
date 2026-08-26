@@ -56,11 +56,13 @@ const ALLOWED: Record<string, Partial<Record<LayoutRule, number>>> = {
   // the column's edge with the properties panel painted over it. Fixed in
   // shell.css, where the reasoning is; zero now, and it stays zero.
   "a folder @900": { "tiny-target": 5 },
-  // The one truncation finding in the app: a block's title ellipsised with
-  // nothing behind it, which is the exact shape of complaint this rule exists
-  // for. Plus a meter's 8px drag track and an 11×11 × for removing one.
-  "every meter at once @1280": { "dead-end-truncation": 1, "tiny-target": 7 },
-  "every meter at once @900": { "dead-end-truncation": 1, "tiny-target": 7 },
+  // **`dead-end-truncation` is zero everywhere as of 2026-08-26, which makes it
+  // the second rule here that is a rule rather than a count.** The one finding
+  // was this screen's block title, ellipsised with nothing behind it; it wraps
+  // now (blocks.css). What is left is a meter's 8px drag track and an 11×11 ×
+  // for removing one.
+  "every meter at once @1280": { "tiny-target": 7 },
+  "every meter at once @900": { "tiny-target": 7 },
   "a name too long for a filename @1280": { "tiny-target": 8 },
   // The second of this screen's two was never a bug: the page tab strip
   // scrolls sideways, and its add-tab button was simply scrolled out of it

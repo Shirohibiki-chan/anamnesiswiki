@@ -3107,12 +3107,6 @@ Deferred on purpose, not forgotten:
   became unclickable at the app's own minimum window size, fixed 2026-08-26.
   Anything added to that bar has to earn its width or give some back; the
   container query in `shell.css` is where that is handled and why.
-- **A block's title is ellipsised with nothing behind it**, found by the layout
-  rules on 2026-08-26 and left alone deliberately. It is the one
-  `dead-end-truncation` finding in the app, and what a too-long block title
-  should do instead — wrap, or carry its full text on hover — is a design
-  question rather than a missing line of code. Recorded as an allowance in
-  `e2e/layout-rules.e2e.ts` so it cannot get worse while it waits.
 - **Icon-only controls in the tree are 14–16px**, against a 24px minimum: the
   expand chevron, the colour dot, the ⋯ menu and the +. Counted rather than
   fixed for the same reason — making them bigger changes how a tree row looks,
