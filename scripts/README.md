@@ -1,11 +1,43 @@
 # Launchers
 
-Two double-clickable scripts, both for the same problem: the copy of Anamnesis
-in the Start menu only changes when someone publishes a release, so between
-releases it's behind whatever's in the repo.
+Double-clickable scripts, all for the same problem: the copy of Anamnesis in the
+Start menu only changes when someone publishes a release, so between releases
+it's behind whatever's in the repo.
 
-Shortcuts to both live on the Desktop. Neither needs a terminal, and neither
-needs anything typed.
+Shortcuts live on the Desktop. None of them needs a terminal, and none needs
+anything typed.
+
+**Two shells exist at the moment** (Phase 29 — see `docs/plan.md`). The Electron
+pair is the one the app is moving to; the Tauri pair below it is what is
+installed today. Both open the same worlds, so it is safe to go back and forth.
+
+### `Anamnesis Electron (latest code).bat`  — the Phase 29 shell
+
+Same idea as the Tauri one below, for the app's new shell: opens Anamnesis
+running from the source in this folder, pulls first, keeps a black window open
+that *is* the app.
+
+Two differences worth knowing. It needs no Rust, so there is one less thing that
+can be missing or out of date. And it runs its dev server on a different port
+from the Tauri launcher, so both can be open at once — useful while the two
+shells still exist side by side.
+
+Use when: you want today's work in the new shell, right now.
+
+### `Install Anamnesis (Electron).bat`
+
+Builds an installer from the current source and runs it, so the new shell ends
+up in your Start menu like an ordinary program.
+
+**It installs alongside the copy you already have**, so until you uninstall the
+old one there will be two Start menu entries both called Anamnesis. They read
+the same worlds — nothing is duplicated except the entry.
+
+Windows will say the publisher is unknown. That is expected: nothing here is
+code signed, by choice (see `docs/releasing.md`). More info, then Run anyway.
+
+Builds into `%TEMP%` rather than into the project folder, because a dev server
+watching this repo makes the packaging step fail — see the note in the script.
 
 ### `Anamnesis (latest code).bat`
 
