@@ -105,3 +105,31 @@ describe("parsePreferences and saved colours", () => {
     expect(parsePreferences({ savedColors: "blue" }).savedColors).toEqual([]);
   });
 });
+
+describe("parsePreferences and the analytics pair", () => {
+  // The switch starts on because analytics that starts off measures nothing;
+  // what makes that honest is the notice, which starts unseen.
+  it("starts on, and unannounced", () => {
+    const prefs = parsePreferences({});
+    expect(prefs.analytics).toBe(true);
+    expect(prefs.analyticsNoticeSeen).toBe(false);
+  });
+
+  // The one that would regress silently: a settings file written before these
+  // fields existed must come back with the notice *unseen*, so somebody who
+  // has been running the app for months is told before being counted.
+  it("shows the notice to an existing installation", () => {
+    const prefs = parsePreferences({ treeDoubleClick: "rename", savedColors: [] });
+    expect(prefs.analyticsNoticeSeen).toBe(false);
+  });
+
+  it("keeps a real answer either way", () => {
+    expect(parsePreferences({ analytics: false, analyticsNoticeSeen: true }).analytics).toBe(false);
+    expect(parsePreferences({ analytics: false, analyticsNoticeSeen: true }).analyticsNoticeSeen).toBe(true);
+  });
+
+  it("ignores a hand-edited value that is not a boolean", () => {
+    expect(parsePreferences({ analytics: "no" }).analytics).toBe(true);
+    expect(parsePreferences({ analyticsNoticeSeen: 1 }).analyticsNoticeSeen).toBe(false);
+  });
+});

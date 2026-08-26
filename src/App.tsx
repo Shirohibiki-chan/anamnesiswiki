@@ -1,9 +1,11 @@
+import { AnalyticsNotice } from "./components/shell/AnalyticsNotice";
 import { AssetPickerDialog } from "./components/shell/AssetPickerDialog";
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
+import { useReportLaunch } from "./hooks/use-analytics";
 import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
 import { useSaveOnExit } from "./hooks/use-save-on-exit";
 import { useThemeBootstrap } from "./hooks/use-theme";
@@ -28,6 +30,10 @@ function App() {
   // close is always matched by something that can complete it. It needs no
   // project: the flush it guards is autosave's, which is a plain service.
   useSaveOnExit();
+  // Above the router because a launch is a fact about the app rather than
+  // about whichever screen it opened on. It waits for the notice below to be
+  // answered before it sends anything - see use-analytics.
+  useReportLaunch();
   return (
     <>
       <StartupRouter />
@@ -57,6 +63,11 @@ function App() {
           cover so far, and the list will grow — which is the reason it sits up
           here with the others rather than beside either one of them. */}
       <AssetPickerDialog />
+      {/* Last in the list and first on screen: it renders only until it has
+          been answered, and nothing is reported until then. At the root
+          because a first run can land on either the start screen or straight
+          into a project. */}
+      <AnalyticsNotice />
     </>
   );
 }

@@ -47,6 +47,7 @@ import { SidebarSettings } from "./SidebarSettings";
 import { SnippetSettings } from "./SnippetSettings";
 import { ThemeEditor } from "./ThemeEditor";
 import { PatchNotes } from "./PatchNotes";
+import { PrivacySettings } from "./PrivacySettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { UpdateCheck } from "./UpdateCheck";
 
@@ -64,6 +65,7 @@ const PANELS: Record<string, () => React.JSX.Element> = {
   projects: ProjectsSettings,
   keyboard: ShortcutSettings,
   updates: UpdateCheck,
+  privacy: PrivacySettings,
   "patch-notes": PatchNotes,
 };
 

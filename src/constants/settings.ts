@@ -73,6 +73,12 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     blurb: "Check for a new version. Only ever when you press the button.",
   },
   {
+    id: "privacy",
+    group: "app",
+    label: "Privacy",
+    blurb: "Whether the app reports which features get used, and exactly what that covers.",
+  },
+  {
     id: "patch-notes",
     group: "app",
     label: "Patch Notes",
@@ -104,6 +110,20 @@ export const DECLARED_SETTINGS: readonly {
   hint: string;
   keywords: string[];
 }[] = [
+  {
+    id: "analytics-toggle",
+    tabId: "privacy",
+    label: "Report which features I use",
+    hint: "turn usage reporting on or off",
+    keywords: ["analytics", "telemetry", "tracking", "usage", "stats", "data", "privacy", "opt out", "collect", "phone home", "aptabase"],
+  },
+  {
+    id: "analytics-what",
+    tabId: "privacy",
+    label: "What gets sent",
+    hint: "the full list of what usage reporting covers",
+    keywords: ["analytics", "telemetry", "privacy", "what is sent", "collected", "data", "personal", "worlds"],
+  },
   {
     id: "theme-pick",
     tabId: "theme",

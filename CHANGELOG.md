@@ -2,6 +2,11 @@
 
 ## 2026-08-26 — a steadier tree
 
+### Additions
+
+- **A Privacy section in Settings, with a switch for usage reporting.** Anamnesis will be able to report which of its features get used — that a page was made, which template it used, which version and operating system it is running on — so the time spent on the app goes to the parts that actually get opened. **Nothing you write is ever part of that**: no page titles, no world names, no tags, no text from the editor, no file paths, and your worlds stay on your own disk exactly as they always have. The section lists everything it covers in full.
+- **Nothing is being reported yet.** This build has no account set up behind it, so the switch is there and remembers what you set it to, and nothing is sent whatever it says. When that changes you get a one-time note explaining it before anything is reported, with the choice to say no.
+
 ### Fixes
 
 - **The page tree no longer flickers while you scroll it.** On a big world, the strip you were scrolling into went blank for a moment before the pages appeared in it — going up and going down both, and on every frame of the scroll rather than now and then. The tree now draws about a screenful of pages beyond what you can see, so whatever you scroll into is already drawn. Measured on a 480-row tree: an empty strip on all 25 frames of an ordinary scroll before, none after.

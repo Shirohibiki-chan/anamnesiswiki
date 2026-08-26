@@ -126,6 +126,30 @@ export type Preferences = {
    * since a mixed colour has no palette name to be looked up by.
    */
   savedColors: string[];
+  /**
+   * Whether the app reports which features get used.
+   *
+   * **On by default, and told about rather than assumed** — her call
+   * 2026-08-26. Off-by-default analytics measures almost nothing and is not
+   * worth having; on-by-default with no notice collects from people who never
+   * agreed. So the pair below is the answer: this starts true, and
+   * `analyticsNoticeSeen` guarantees nobody is reported on before being shown
+   * what is collected and where this switch is.
+   *
+   * What it can carry is fixed in `constants/analytics.ts`: feature names,
+   * never anything written in the app.
+   */
+  analytics: boolean;
+  /**
+   * Whether the one-time notice explaining the above has been shown.
+   *
+   * Separate from `analytics` because they answer different questions, and
+   * collapsing them loses the difference between "turned it off" and "has not
+   * been asked yet". **Nothing is sent while this is false**, whatever
+   * `analytics` says — which is what makes on-by-default honest rather than
+   * quiet.
+   */
+  analyticsNoticeSeen: boolean;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -135,6 +159,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   projectView: "grid",
   projectSort: "active",
   savedColors: [],
+  analytics: true,
+  analyticsNoticeSeen: false,
 };
 
 /**
@@ -199,5 +225,15 @@ export function parsePreferences(raw: unknown): Preferences {
           .map((entry) => entry.toLowerCase())
           .slice(0, MAX_SAVED_COLORS)
       : DEFAULT_PREFERENCES.savedColors,
+    // Only a real boolean counts. A settings file written before these existed
+    // has neither, and both then take their default — which for the notice
+    // means an existing installation is shown it once, exactly like a new one.
+    // That is the intent rather than an accident of parsing: nobody who has
+    // been running this app should start being reported on without being told.
+    analytics: typeof source.analytics === "boolean" ? source.analytics : DEFAULT_PREFERENCES.analytics,
+    analyticsNoticeSeen:
+      typeof source.analyticsNoticeSeen === "boolean"
+        ? source.analyticsNoticeSeen
+        : DEFAULT_PREFERENCES.analyticsNoticeSeen,
   };
 }
