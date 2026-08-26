@@ -12,6 +12,7 @@ import {
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
+  hasChildren,
   isHiddenByAncestor,
   moveDestinations,
   type BreadcrumbTrail,
@@ -87,6 +88,15 @@ export function useAncestorChain(nodeId: string): Node[] {
 export function useBreadcrumbTrail(nodeId: string): BreadcrumbTrail {
   const ancestors = useAncestorChain(nodeId);
   return useMemo(() => collapseBreadcrumb(ancestors, BREADCRUMB_MAX_ANCESTORS), [ancestors]);
+}
+
+/**
+ * Whether this node has anything inside it. Also a plain boolean, so the folder
+ * view only re-renders when the folder goes from empty to not — not on every
+ * page added to one that already had some.
+ */
+export function useHasChildren(nodeId: string): boolean {
+  return useProjectStore((state) => hasChildren(nodeId, state.nodes));
 }
 
 // A plain boolean, so no shallow compare needed — this only re-renders the row

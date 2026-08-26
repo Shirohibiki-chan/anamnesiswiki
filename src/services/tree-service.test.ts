@@ -5,6 +5,7 @@ import {
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
+  hasChildren,
   isDescendantOf,
   isHiddenByAncestor,
   moveDestinations,
@@ -156,6 +157,41 @@ describe("isHiddenByAncestor", () => {
     const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
     const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note" });
     expect(isHiddenByAncestor("page", byId([canon, page]))).toBe(false);
+  });
+});
+
+describe("hasChildren", () => {
+  it("is false for a folder with nothing in it", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    expect(hasChildren("canon", byId([canon]))).toBe(false);
+  });
+
+  it("is true when a page is parented to it", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "page", name: "Page", parentId: "canon", templateKey: "note" });
+    expect(hasChildren("canon", byId([canon, page]))).toBe(true);
+  });
+
+  it("counts only its own children, not a grandchild", () => {
+    // The empty-folder hint asks about this folder. A folder whose only
+    // descendant sits two levels down is still one you can't see anything in.
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const sub = node({ id: "sub", name: "Sub", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+    const page = node({ id: "page", name: "Page", parentId: "sub", templateKey: "note" });
+    expect(hasChildren("sub", byId([canon, sub, page]))).toBe(true);
+    expect(hasChildren("page", byId([canon, sub, page]))).toBe(false);
+  });
+
+  it("is false for a node that isn't in the map", () => {
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    expect(hasChildren("gone", byId([canon]))).toBe(false);
+  });
+
+  it("does not mistake root-level nodes for children of anything", () => {
+    // `parentId: null` must not match a lookup for a node whose id is missing.
+    const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    const aus = node({ id: "aus", name: "AUs", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+    expect(hasChildren("canon", byId([canon, aus]))).toBe(false);
   });
 });
 

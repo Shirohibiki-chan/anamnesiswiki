@@ -21,6 +21,7 @@
 
 ### Fixes
 
+- **A folder that already holds pages no longer tells you it's empty.** Opening one showed "Folders hold other pages. Add one to get started." whether it held nothing or two hundred pages. That line is now only there when the folder really is empty. The "Add a page" button stays on both — it's still the quickest way to make a page inside the folder you're looking at.
 - **The page tree no longer flickers while you scroll it.** On a big world, the strip you were scrolling into went blank for a moment before the pages appeared in it — going up and going down both, and on every frame of the scroll rather than now and then. The tree now draws about a screenful of pages beyond what you can see, so whatever you scroll into is already drawn. Measured on a 480-row tree: an empty strip on all 25 frames of an ordinary scroll before, none after.
 
 ## 2026-08-25 — spectrum meters
