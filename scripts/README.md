@@ -39,6 +39,20 @@ code signed, by choice (see `docs/releasing.md`). More info, then Run anyway.
 Builds into `%TEMP%` rather than into the project folder, because a dev server
 watching this repo makes the packaging step fail — see the note in the script.
 
+### `Test Anamnesis.bat`
+
+Checks the app still works, by building it and then opening and driving it
+several times over on a made-up world. Windows flash open and shut while it
+runs — that is the test, not a fault.
+
+**It cannot touch your worlds.** Every world it opens is generated in a
+temporary folder and deleted afterwards, and it reads its settings from a
+scratch folder rather than the real one.
+
+Takes about half a minute. Use when: something feels off and you want to know
+whether it is the app or just you, or after pulling a change you want to sanity
+check. `docs/testing.md` is the longer version.
+
 ### `Anamnesis (latest code).bat`
 
 Opens Anamnesis running straight from the source in this folder, so it always

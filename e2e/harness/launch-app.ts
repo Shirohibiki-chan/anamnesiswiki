@@ -19,6 +19,7 @@
 //     missing, because `seedSettings` writes it before the app starts.
 import { _electron, type ElectronApplication, type Page } from "playwright-core";
 import electronBinary from "electron";
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -63,6 +64,7 @@ export type LaunchOptions = TestWorldOptions & {
 };
 
 export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp> {
+  assertElectronIsInstalled();
   await assertPageIsBuiltForElectron();
 
   const world = options.openWorld === false ? null : await makeTestWorld(options);
@@ -77,7 +79,26 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
     timeout: WINDOW_TIMEOUT_MS,
   });
 
-  const window = await electron.firstWindow({ timeout: WINDOW_TIMEOUT_MS });
+  // **Kept because a launch that fails says nothing on its own.** Playwright's
+  // answer to a window that never appears is a timeout naming the wait, not the
+  // reason — so a broken install, a missing system library or a main process
+  // that threw all arrive looking identical. Electron says exactly what went
+  // wrong on its own stderr; this is only there to hand that back.
+  const startupOutput: string[] = [];
+  electron.process().stdout?.on("data", (chunk) => startupOutput.push(String(chunk)));
+  electron.process().stderr?.on("data", (chunk) => startupOutput.push(String(chunk)));
+
+  let window: Page;
+  try {
+    window = await electron.firstWindow({ timeout: WINDOW_TIMEOUT_MS });
+  } catch {
+    await quit(electron);
+    const said = startupOutput.join("").trim();
+    throw new Error(
+      `The app started but never opened a window within ${WINDOW_TIMEOUT_MS / 1000}s.\n` +
+        (said ? `Electron said:\n${said}` : "Electron printed nothing at all."),
+    );
+  }
 
   const errors: string[] = [];
   window.on("console", (message) => {
@@ -154,6 +175,26 @@ async function seedSettings(userDataDir: string, world: TestWorld | null): Promi
     path.join(userDataDir, "app-settings.json"),
     JSON.stringify(settings, null, 2),
     "utf8",
+  );
+}
+
+/**
+ * **Electron the package is not Electron the program.** The npm package is a
+ * few kilobytes of JavaScript holding the path to a binary its postinstall
+ * downloads, so a checkout where that step did not run has an `electron` import
+ * that resolves happily and points at nothing. Launching it produces a process
+ * that dies immediately and a window that never arrives — which reads as the
+ * app being broken rather than as never having been installed.
+ *
+ * Cost this suite its first CI run on 2026-08-26. See `pnpm-workspace.yaml`.
+ */
+function assertElectronIsInstalled(): void {
+  const binary = electronBinary as unknown as string;
+  if (typeof binary === "string" && existsSync(binary)) return;
+  throw new Error(
+    `Electron's binary isn't on disk (expected ${binary}).\n` +
+      "The npm package is only a pointer; its postinstall fetches the program.\n" +
+      "Run `pnpm install`, and check that `allowBuilds` in pnpm-workspace.yaml lists electron.",
   );
 }
 

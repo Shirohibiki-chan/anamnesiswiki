@@ -1,4 +1,15 @@
 allowBuilds:
+  # **Electron's postinstall is what downloads Electron.** Without this the
+  # package installs as a few kilobytes of JavaScript pointing at a binary that
+  # was never fetched, and every way of running the app — `pnpm electron:dev`,
+  # `pnpm electron:package`, `pnpm test:app` — fails on a clean checkout.
+  #
+  # It went unnoticed because a working tree that installed before this file
+  # existed keeps the binary it already had; only a fresh clone sees it. CI is
+  # a fresh clone every time, which is how it finally surfaced: the app suite's
+  # three scenarios each timed out waiting for a window that could not open
+  # (2026-08-26).
+  electron: true
   # Squirrel.Windows, which this project does not use — the Windows installer
   # is NSIS (see electron-builder.yml). electron-builder pulls the package in
   # regardless; there is no reason to let it run a postinstall for a target
