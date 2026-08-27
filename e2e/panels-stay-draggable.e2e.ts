@@ -86,6 +86,29 @@ describe("dragging the side panels", () => {
     expect(Math.abs(properties.propertiesHandle - properties.propertiesEdge)).toBeLessThan(ON_THE_EDGE);
   });
 
+  // Reported from use: dragging one panel right out left the other unable to
+  // move at all, so whichever was dragged first kept the room and the second
+  // drag did nothing. A drag has to move the thing being dragged.
+  it("lets the second panel take room back from the first", async () => {
+    await resizeWindow(app, 1258, 800);
+    await app.window.waitForTimeout(400);
+
+    await drag(".resize-handle-tree", 1200);
+    const afterFirst = await edges();
+    const treeWide = afterFirst.treeEdge;
+
+    await drag(".resize-handle-properties", 20);
+    const afterSecond = await edges();
+
+    // The properties panel actually grew...
+    expect(afterSecond.propertiesEdge).toBeLessThan(afterFirst.propertiesEdge - 40);
+    // ...and it came out of the tree rather than out of the page.
+    expect(afterSecond.treeEdge).toBeLessThan(treeWide - 40);
+    expect(afterSecond.centre).toBeGreaterThanOrEqual(420);
+    expect(Math.abs(afterSecond.treeHandle - afterSecond.treeEdge)).toBeLessThan(ON_THE_EDGE);
+    expect(Math.abs(afterSecond.propertiesHandle - afterSecond.propertiesEdge)).toBeLessThan(ON_THE_EDGE);
+  });
+
   it("says nothing to the console while doing it", () => {
     expect(app.errors).toEqual([]);
   });

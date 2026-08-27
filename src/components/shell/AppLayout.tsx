@@ -15,7 +15,7 @@ import {
   TREE_MAX_WIDTH,
   TREE_MIN_WIDTH,
 } from "../../constants/layout";
-import { fitPanelWidths, maxDraggableWidth } from "../../services/layout-service";
+import { fitPanelWidths, planPanelDrag } from "../../services/layout-service";
 import { useElementSize } from "../../hooks/use-element-size";
 import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
@@ -59,10 +59,13 @@ export function AppLayout() {
   const [layoutRef, layoutSize] = useElementSize<HTMLDivElement>();
   // What to draw, which is not always what was chosen — see fitPanelWidths.
   const fitted = fitPanelWidths(layoutSize.width, widths, isRightPanelOpen);
-  // How far each handle may be dragged in this window, with the page's own
-  // minimum and the opposite panel already accounted for.
-  const treeMax = maxDraggableWidth(layoutSize.width, fitted.properties, TREE_MIN_WIDTH, TREE_MAX_WIDTH);
-  const propertiesMax = maxDraggableWidth(layoutSize.width, fitted.tree, PROPERTIES_MIN_WIDTH, PROPERTIES_MAX_WIDTH);
+  // A drag moves what is being dragged and pushes the other panel out of the
+  // way rather than being refused — see planPanelDrag.
+  const dragTo = (edge: "tree" | "properties") => (requested: number) => {
+    const next = planPanelDrag(layoutSize.width, widths, edge, requested, isRightPanelOpen);
+    if (next.tree !== widths.tree) setTreeWidth(next.tree);
+    if (next.properties !== widths.properties) setPropertiesWidth(next.properties);
+  };
 
   // Stable so the shortcut listener is attached once, not rebuilt on every
   // re-render of the shell — see use-global-shortcuts.ts.
@@ -178,11 +181,8 @@ export function AppLayout() {
         label="Sidebar width"
         width={widths.tree}
         min={TREE_MIN_WIDTH}
-        max={treeMax}
-        // Clamped here rather than in the store: the store's own clamp is about
-        // what a panel may ever be, and this is about what it may be in the
-        // window it is in at this moment.
-        onResize={(width) => setTreeWidth(Math.min(width, treeMax))}
+        max={TREE_MAX_WIDTH}
+        onResize={dragTo("tree")}
         onReset={resetPanelWidths}
         onDragChange={setIsResizing}
       />
@@ -192,8 +192,8 @@ export function AppLayout() {
           label="Properties panel width"
           width={widths.properties}
           min={PROPERTIES_MIN_WIDTH}
-          max={propertiesMax}
-          onResize={(width) => setPropertiesWidth(Math.min(width, propertiesMax))}
+          max={PROPERTIES_MAX_WIDTH}
+          onResize={dragTo("properties")}
           onReset={resetPanelWidths}
           onDragChange={setIsResizing}
         />

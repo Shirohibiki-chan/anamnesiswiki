@@ -2048,12 +2048,14 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   in the middle of the page, where dragging it appears to do nothing. That
   shipped for about ten minutes and was reported immediately.
 
-- **A drag is capped by the window as well as by the constant.**
-  `maxDraggableWidth` is the room left after the page's minimum and the
-  opposite panel, so a drag stops where the layout stops rather than storing a
-  number the layout will not honour. Without it a panel that has hit the wall
-  keeps recording wider values, which then apply the next time the window grows
-  — a panel that jumps somewhere nobody dragged it.
+- **A drag moves what is being dragged, and the other panel gives way.**
+  `planPanelDrag` returns both widths. The version before it capped the drag at
+  whatever room was spare, which meant the panel dragged *first* kept it and
+  the second drag did nothing at all — reported within minutes, and rightly:
+  a drag that is silently refused reads as a broken control, not as a full
+  window. The opposite panel is pushed no further than its own minimum and the
+  page keeps its own, so the two cannot both be at their maximum on a window
+  with no room for both. The last thing asked for is the one that gets it.
 
 - **At the app's smallest window there is no slack, and that is arithmetic
   rather than a bug.** 900 wide is 420 for the page and 480 for two panels

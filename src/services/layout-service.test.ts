@@ -18,7 +18,7 @@ import {
   clampWidth,
   DEFAULT_PANEL_WIDTHS,
   fitPanelWidths,
-  maxDraggableWidth,
+  planPanelDrag,
   parsePanelWidths,
 } from "./layout-service";
 
@@ -110,30 +110,59 @@ describe("parsePanelWidths", () => {
 // both be dragged to their fixed maximums on a small window — and the drag has
 // to stop where the layout stops, or the handle walks away from the edge it is
 // dragging. That happened, and it is what these cover.
-describe("maxDraggableWidth", () => {
+describe("planPanelDrag", () => {
   const roomy = 1600;
-  const smallest = 900;
+  const tight = 1258; // The window this was reported on.
 
-  it("gives the fixed maximum when there is room for it", () => {
-    expect(maxDraggableWidth(roomy, PROPERTIES_DEFAULT_WIDTH, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MAX_WIDTH);
+  it("gives the panel what was asked for when there is room", () => {
+    expect(planPanelDrag(roomy, { tree: 260, properties: 300 }, "tree", 400, true)).toEqual({
+      tree: 400,
+      properties: 300,
+    });
   });
 
-  it("stops where the page's own minimum starts", () => {
-    // 900 - 420 - 300 = 180 left for the tree.
-    expect(maxDraggableWidth(smallest, PROPERTIES_DEFAULT_WIDTH, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(
-      smallest - CENTER_MIN_WIDTH - PROPERTIES_DEFAULT_WIDTH,
-    );
+  // The bug: the panel dragged first took everything, and the second one could
+  // not move at all. Dragging has to move what is being dragged.
+  it("pushes the other panel out of the way rather than refusing the drag", () => {
+    const afterFirst = planPanelDrag(tight, { tree: 260, properties: 300 }, "tree", 900, true);
+    expect(afterFirst.tree).toBe(TREE_MAX_WIDTH);
+
+    const afterSecond = planPanelDrag(tight, afterFirst, "properties", 900, true);
+    expect(afterSecond.properties).toBe(PROPERTIES_MAX_WIDTH);
+    expect(afterSecond.tree).toBeLessThan(TREE_MAX_WIDTH);
+    expect(afterSecond.tree + afterSecond.properties).toBe(tight - CENTER_MIN_WIDTH);
   });
 
-  it("never answers below the panel's own minimum", () => {
-    expect(maxDraggableWidth(600, 500, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MIN_WIDTH);
+  it("never pushes the other panel below its own minimum", () => {
+    const next = planPanelDrag(900, { tree: 400, properties: 300 }, "properties", 900, true);
+    expect(next.tree).toBe(TREE_MIN_WIDTH);
+    expect(next.properties).toBe(900 - CENTER_MIN_WIDTH - TREE_MIN_WIDTH);
   });
 
-  // The first frame, before anything has been measured. Answering zero here
-  // would pin both panels shut while the layout works out how big it is.
-  it("answers the fixed maximum when the container has not been measured", () => {
-    expect(maxDraggableWidth(0, 300, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MAX_WIDTH);
-    expect(maxDraggableWidth(Number.NaN, 300, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MAX_WIDTH);
+  it("leaves the other panel alone when the drag does not need its room", () => {
+    expect(planPanelDrag(tight, { tree: 500, properties: 300 }, "tree", 200, true)).toEqual({
+      tree: 200,
+      properties: 300,
+    });
+  });
+
+  it("keeps the page's minimum whatever is dragged", () => {
+    const next = planPanelDrag(tight, { tree: 260, properties: 300 }, "tree", 5000, true);
+    expect(next.tree + next.properties).toBeLessThanOrEqual(tight - CENTER_MIN_WIDTH);
+  });
+
+  it("gives the tree the closed panel's room when the properties panel is shut", () => {
+    // 1000 - 420 leaves 580 for the tree, so its own maximum is what stops it
+    // rather than the page — which is the point: with nothing on the right,
+    // the room is the tree's to take.
+    const next = planPanelDrag(1000, { tree: 260, properties: 300 }, "tree", 900, false);
+    expect(next.tree).toBe(TREE_MAX_WIDTH);
+    // The closed panel's stored width is not touched by a drag it isn't in.
+    expect(next.properties).toBe(300);
+  });
+
+  it("clamps to the fixed maximum before the container has been measured", () => {
+    expect(planPanelDrag(0, { tree: 260, properties: 300 }, "tree", 5000, true).tree).toBe(TREE_MAX_WIDTH);
   });
 });
 

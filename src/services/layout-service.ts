@@ -57,27 +57,52 @@ export function clampPropertiesWidth(width: number): number {
 }
 
 /**
- * How wide one panel may be dragged *right now*, given the window it is in and
- * what the other panel is taking.
+ * What both panels should be after one of them is dragged.
  *
- * **The fixed maximums are about taste; this is about arithmetic.** The page
- * between the two panels holds `CENTER_MIN_WIDTH`, so the room a panel can
- * take is whatever is left after the page and its opposite number have had
- * theirs. Without this a drag past that point sets a width the layout cannot
- * honour: the panel stops moving while the number behind it keeps growing, and
- * the handle — which sits at that number — walks away from the edge it is
- * supposed to be. That is exactly what happened the first time this was built.
+ * **The panel being dragged gets what was asked for, and the other one gives
+ * way.** The first version of this capped the drag at whatever room was going
+ * spare, which meant the panel dragged *first* took everything and the second
+ * one could not move at all — drag the sidebar out, then try the properties
+ * panel, and nothing happens. A drag that is silently ignored is worse than a
+ * drag that moves something.
  *
- * An unmeasured container (the first frame, before the observer has reported)
- * answers with the fixed maximum rather than with zero, so nothing is pinned
- * shut while the layout is still working out how big it is.
+ * The opposite panel is pushed no further than its own minimum, and the page
+ * keeps `CENTER_MIN_WIDTH` throughout: those two are the walls, and between
+ * them the pointer decides. So the two panels cannot both be at their maximum
+ * on a window with no room for both — the last thing asked for is the one that
+ * gets it, which is what direct manipulation means.
+ *
+ * An unmeasured container leaves the other panel alone and clamps only against
+ * the fixed maximum, because nothing is known yet about what the window can
+ * afford.
  */
-export function maxDraggableWidth(containerWidth: number, otherWidth: number, ownMin: number, ownMax: number): number {
-  if (!Number.isFinite(containerWidth) || containerWidth <= 0) return ownMax;
-  const room = containerWidth - CENTER_MIN_WIDTH - otherWidth;
-  // Never below the panel's own minimum: at a window too small for all three
-  // the answer is a panel at its floor, not a panel that cannot exist.
-  return Math.max(ownMin, Math.min(ownMax, Math.round(room)));
+export function planPanelDrag(
+  containerWidth: number,
+  widths: { tree: number; properties: number },
+  edge: "tree" | "properties",
+  requested: number,
+  isPropertiesOpen: boolean,
+): { tree: number; properties: number } {
+  const ownMin = edge === "tree" ? TREE_MIN_WIDTH : PROPERTIES_MIN_WIDTH;
+  const ownMax = edge === "tree" ? TREE_MAX_WIDTH : PROPERTIES_MAX_WIDTH;
+  const otherMin = edge === "tree" ? PROPERTIES_MIN_WIDTH : TREE_MIN_WIDTH;
+  const other = edge === "tree" ? (isPropertiesOpen ? widths.properties : 0) : widths.tree;
+  const otherFloor = edge === "tree" && !isPropertiesOpen ? 0 : otherMin;
+
+  const measured = Number.isFinite(containerWidth) && containerWidth > 0;
+  const ceiling = measured
+    ? Math.max(ownMin, Math.min(ownMax, Math.round(containerWidth - CENTER_MIN_WIDTH - otherFloor)))
+    : ownMax;
+  const own = Math.max(ownMin, Math.min(ceiling, Math.round(requested)));
+
+  // Only as much as the drag actually needs: a panel that was already narrow
+  // enough is left exactly where its owner put it.
+  const room = measured ? containerWidth - CENTER_MIN_WIDTH - own : Infinity;
+  const nextOther = Math.max(otherFloor, Math.min(other, Math.round(room)));
+
+  return edge === "tree"
+    ? { tree: own, properties: isPropertiesOpen ? nextOther : widths.properties }
+    : { tree: nextOther, properties: own };
 }
 
 /**
