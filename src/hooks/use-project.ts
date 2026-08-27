@@ -24,6 +24,7 @@ export function useProjectActions() {
   return useProjectStore(
     useShallow((state) => ({
       dismissSkippedFiles: state.dismissSkippedFiles,
+      acknowledgeSkippedFiles: state.acknowledgeSkippedFiles,
       dismissSaveErrors: state.dismissSaveErrors,
       addNode: state.addNode,
       updateNode: state.updateNode,

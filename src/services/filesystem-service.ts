@@ -1037,6 +1037,34 @@ export async function supportsLongPaths(rootPath: string): Promise<boolean> {
   return asking;
 }
 
+/**
+ * A short description of what state each of these files is in.
+ *
+ * `size:modified`, which is enough to notice a file has changed without
+ * reading it — and reading it is exactly what failed for every file this is
+ * asked about. Used by the "I know about this one" acknowledgements, so that
+ * waving a broken file through silences *that* file rather than its name.
+ *
+ * A path the disk will not describe is left out of the answer entirely. The
+ * caller treats a missing mark as "still worth showing", which is the safe
+ * direction: an unreadable file that also cannot be stat'd is not a thing to
+ * go quiet about.
+ */
+export async function fileMarks(paths: readonly string[]): Promise<Record<string, string>> {
+  const marks: Record<string, string> = {};
+  await Promise.all(
+    paths.map(async (path) => {
+      try {
+        const info = await fileInfo(path);
+        marks[path] = `${info.size}:${info.modifiedAt ? info.modifiedAt.getTime() : 0}`;
+      } catch {
+        // Left out. See the note above.
+      }
+    }),
+  );
+  return marks;
+}
+
 // ------------------------------------------------------- old copies of a page
 
 /**

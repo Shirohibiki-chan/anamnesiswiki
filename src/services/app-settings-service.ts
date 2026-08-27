@@ -324,6 +324,29 @@ export async function setPanelWidths(widths: { tree: number; properties: number;
  * whether a stored value still means anything belongs with the code that knows
  * what the values are, in `preferences-service`'s `parsePreferences`.
  */
+/**
+ * The warnings somebody has said they already know about (2026-08-27).
+ *
+ * App-level rather than in the project folder, her call: acknowledging a file
+ * is a fact about this install rather than about the world, and a world copied
+ * to another machine arriving with its warnings intact is the more useful
+ * default there. The cost is that the acknowledgements do not travel with a
+ * world, and a fresh install asks again.
+ *
+ * Returned unvalidated, like the widths and the preferences above — see
+ * `parseAcknowledgements`.
+ */
+export async function getAcknowledgedWarnings(): Promise<unknown> {
+  const store = await getStore();
+  return (await store.get("acknowledgedWarnings")) ?? {};
+}
+
+export async function setAcknowledgedWarnings(acknowledged: Record<string, string>): Promise<void> {
+  const store = await getStore();
+  await store.set("acknowledgedWarnings", acknowledged);
+  await store.save();
+}
+
 export async function getPreferences(): Promise<unknown> {
   const store = await getStore();
   return (await store.get("preferences")) ?? {};

@@ -1330,6 +1330,20 @@ ol.release-notes-list {
   color: var(--color-text-primary);
 }
 
+/* The two answers sit together at the end of the row: "I know" is a button
+   with words on it because it is the one with consequences, and the × keeps
+   the shape it has everywhere else in the app. */
+.load-warning-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  flex: none;
+}
+
+.load-warning-quiet {
+  white-space: nowrap;
+}
+
 .load-warning-files {
   margin: var(--space-sm) 0 0;
   padding-left: var(--space-xl);
