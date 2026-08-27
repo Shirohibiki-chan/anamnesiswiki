@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-21 — the X really does close the app now
+
+### Fixes
+
+- **The window closes from every screen, not just from inside a project.** The app takes over closing the window so it can finish writing your last edit first — but it only did that while a project was open. Leave a project for the start screen, or refresh the page, and nothing was left holding the door: the X did nothing at all and the app had to be killed from the terminal. It's handled everywhere now.
+
 ## 2026-08-21 — deleting a property you added works again
 
 ### Fixes

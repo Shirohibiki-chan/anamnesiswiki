@@ -14,6 +14,7 @@ import { documentText } from "../../services/search-service";
 import { listStepForKey, stepIndex } from "../../services/list-keys";
 import { timeAgo } from "../../services/relative-time";
 import { usePageHistory } from "../../hooks/use-page-history";
+import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { useProject } from "../../hooks/use-project";
 import type { Tab } from "../../constants/schema";
 
@@ -22,6 +23,10 @@ export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () =
   const node = nodes[nodeId];
   const { snapshots, listedAt, selected, select, restore, isRestoring } = usePageHistory(nodeId);
   const [highlighted, setHighlighted] = useState(0);
+  // Read rather than written down: undo moved off Ctrl+Z on 2026-08-27 and
+  // this sentence would have gone on naming the old key. It is also rebindable,
+  // so a hardcoded label is wrong for anyone who has changed it.
+  const undoKey = useShortcutLabel("undo");
   const listRef = useRef<HTMLUListElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -132,7 +137,7 @@ export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () =
         <footer className="page-history-footer">
           <p className="page-history-note">
             Restoring puts this version's writing, properties and tags back. It leaves the page where it is in the
-            tree. What's on the page now is kept as a version first, and Ctrl+Z undoes a restore.
+            tree. What's on the page now is kept as a version first, and <kbd>{undoKey}</kbd> undoes a restore.
           </p>
           <div className="page-history-actions">
             <button ref={closeRef} type="button" className="ui-btn ui-btn-secondary" onClick={onClose}>

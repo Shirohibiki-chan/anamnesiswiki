@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-27 — Ctrl+Z belongs to what you're writing
+
+### Changes
+
+- **Ctrl+Z now only ever undoes your writing.** It used to do double duty: the editor's undo while your cursor was in a page, and Anamnesis's own undo — the one that takes back a rename, a delete, a move — everywhere else. Same key, two meanings, depending on where you'd last clicked.
+- **The sidebar's undo moved to Ctrl+Shift+Z**, and its redo to **Ctrl+Shift+Y**. They work wherever your cursor is now, including mid-sentence, since they no longer have to get out of the editor's way.
+- Both are still rebindable in Settings → Keyboard. **If you'd already changed either of them to Ctrl+Z or Ctrl+Y, that change is dropped** and you'll get the new keys — those two now belong to the editor and the app won't take them.
 ## 2026-08-27 — a warning you can tell to stop
 
 ### Additions
@@ -250,9 +257,3 @@
 - **A dial's number is printed once.** It was in the middle of the dial *and* under the name. It's in the middle, and clicking it there is how you set it — the field opens in place rather than dropping a pair of boxes underneath.
 - **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
 - **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.
-
-## 2026-08-21 — the X really does close the app now
-
-### Fixes
-
-- **The window closes from every screen, not just from inside a project.** The app takes over closing the window so it can finish writing your last edit first — but it only did that while a project was open. Leave a project for the start screen, or refresh the page, and nothing was left holding the door: the X did nothing at all and the app had to be killed from the terminal. It's handled everywhere now.

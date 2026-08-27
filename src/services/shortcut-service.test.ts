@@ -182,7 +182,13 @@ describe("checkBinding", () => {
   it("refuses the editor's own history keys", () => {
     expect(checkBinding({ key: "z", mod: true }, "search", current)?.reason).toBe("reservedByEditor");
     expect(checkBinding({ key: "y", mod: true }, "search", current)?.reason).toBe("reservedByEditor");
-    expect(checkBinding({ key: "z", mod: true, shift: true }, "search", current)?.reason).toBe("reservedByEditor");
+  });
+
+  // Ctrl+Shift+Z stopped being reserved when the app's own undo moved onto it
+  // (2026-08-27): the installed BlockNote does not bind it, and this app's redo
+  // is Ctrl+Shift+Y rather than the Mac convention it was being held for.
+  it("allows the shifted undo, which is the app's own now", () => {
+    expect(checkBinding({ key: "z", mod: true, shift: true }, "undo", current)).toBeNull();
   });
 
   it("refuses copy and paste", () => {
@@ -204,10 +210,13 @@ describe("checkBinding", () => {
   // editor can hold the same combination without either losing it. That
   // exemption is the only reason app undo can live on Ctrl+Z, and it must not
   // leak to actions that don't yield.
-  it("lets the editor-scoped actions sit on the editor's own keys", () => {
-    expect(checkBinding({ key: "z", mod: true }, "undo", current)).toBeNull();
-    expect(checkBinding({ key: "y", mod: true }, "redo", current)).toBeNull();
-    expect(checkBinding({ key: "q", mod: true, alt: true }, "undo", current)).toBeNull();
+  // Nothing is editor-scoped any more, so undo gets no exemption either: the
+  // keys the editor owns are refused for every action, which is what makes
+  // Ctrl+Z reliably the writing's.
+  it("refuses the editor's keys for undo too, now it is not sharing them", () => {
+    expect(checkBinding({ key: "z", mod: true }, "undo", current)?.reason).toBe("reservedByEditor");
+    expect(checkBinding({ key: "y", mod: true }, "redo", current)?.reason).toBe("reservedByEditor");
+    expect(checkBinding({ key: "q", mod: true, alt: true }, "undo", current)?.reason).toBe("reservedByEditor");
   });
 
   it("still refuses system keys for them", () => {
@@ -220,7 +229,7 @@ describe("checkBinding", () => {
   });
 
   it("names undo when something else reaches for its key", () => {
-    const problem = checkBinding({ key: "z", mod: true }, "undo", { ...current, save: { key: "z", mod: true } });
+    const problem = checkBinding({ key: "u", mod: true }, "undo", { ...current, save: { key: "u", mod: true } });
     expect(problem?.reason).toBe("alreadyTaken");
     expect(problem?.message).toContain("Save now");
   });
