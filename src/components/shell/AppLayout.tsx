@@ -8,14 +8,8 @@ import { useHistoryActions } from "../../hooks/use-history";
 import { useNavigationActions } from "../../hooks/use-navigation";
 import { useOpenTemplate } from "../../hooks/use-template-editing";
 import { usePanelWidthActions, usePanelWidths } from "../../hooks/use-panel-widths";
-import {
-  CENTER_MIN_WIDTH,
-  PROPERTIES_MAX_WIDTH,
-  PROPERTIES_MIN_WIDTH,
-  TREE_MAX_WIDTH,
-  TREE_MIN_WIDTH,
-} from "../../constants/layout";
-import { fitPanelWidths, planPanelDrag } from "../../services/layout-service";
+import { CENTER_MIN_WIDTH, PROPERTIES_MIN_WIDTH, TREE_MIN_WIDTH } from "../../constants/layout";
+import { fitPanelWidths, maxPanelWidth, planPanelDrag } from "../../services/layout-service";
 import { useElementSize } from "../../hooks/use-element-size";
 import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
@@ -181,7 +175,7 @@ export function AppLayout() {
         label="Sidebar width"
         width={widths.tree}
         min={TREE_MIN_WIDTH}
-        max={TREE_MAX_WIDTH}
+        max={maxPanelWidth(layoutSize.width, TREE_MIN_WIDTH)}
         onResize={dragTo("tree")}
         onReset={resetPanelWidths}
         onDragChange={setIsResizing}
@@ -192,7 +186,7 @@ export function AppLayout() {
           label="Properties panel width"
           width={widths.properties}
           min={PROPERTIES_MIN_WIDTH}
-          max={PROPERTIES_MAX_WIDTH}
+          max={maxPanelWidth(layoutSize.width, PROPERTIES_MIN_WIDTH)}
           onResize={dragTo("properties")}
           onReset={resetPanelWidths}
           onDragChange={setIsResizing}

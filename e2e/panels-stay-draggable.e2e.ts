@@ -86,27 +86,30 @@ describe("dragging the side panels", () => {
     expect(Math.abs(properties.propertiesHandle - properties.propertiesEdge)).toBeLessThan(ON_THE_EDGE);
   });
 
-  // Reported from use: dragging one panel right out left the other unable to
-  // move at all, so whichever was dragged first kept the room and the second
-  // drag did nothing. A drag has to move the thing being dragged.
-  it("lets the second panel take room back from the first", async () => {
+  // Asked for in these words: dragged all the way out, neither panel should be
+  // longer than the other. It used to depend on which one was dragged first —
+  // that one took everything and the second would not move at all.
+  it("comes to rest with both panels the same width when both are dragged out", async () => {
     await resizeWindow(app, 1258, 800);
     await app.window.waitForTimeout(400);
 
     await drag(".resize-handle-tree", 1200);
-    const afterFirst = await edges();
-    const treeWide = afterFirst.treeEdge;
-
     await drag(".resize-handle-properties", 20);
-    const afterSecond = await edges();
+    const both = await app.window.evaluate(() => {
+      const width = (selector: string) => Math.round(document.querySelector(selector)?.getBoundingClientRect().width ?? -1);
+      return {
+        tree: width(".app-layout-tree"),
+        centre: width(".app-layout-center"),
+        properties: width(".app-layout-properties"),
+      };
+    });
 
-    // The properties panel actually grew...
-    expect(afterSecond.propertiesEdge).toBeLessThan(afterFirst.propertiesEdge - 40);
-    // ...and it came out of the tree rather than out of the page.
-    expect(afterSecond.treeEdge).toBeLessThan(treeWide - 40);
-    expect(afterSecond.centre).toBeGreaterThanOrEqual(420);
-    expect(Math.abs(afterSecond.treeHandle - afterSecond.treeEdge)).toBeLessThan(ON_THE_EDGE);
-    expect(Math.abs(afterSecond.propertiesHandle - afterSecond.propertiesEdge)).toBeLessThan(ON_THE_EDGE);
+    expect(Math.abs(both.tree - both.properties)).toBeLessThanOrEqual(2);
+    expect(both.centre).toBeGreaterThanOrEqual(420);
+
+    const state = await edges();
+    expect(Math.abs(state.treeHandle - state.treeEdge)).toBeLessThan(ON_THE_EDGE);
+    expect(Math.abs(state.propertiesHandle - state.propertiesEdge)).toBeLessThan(ON_THE_EDGE);
   });
 
   it("says nothing to the console while doing it", () => {

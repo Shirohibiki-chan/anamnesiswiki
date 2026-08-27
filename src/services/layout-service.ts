@@ -5,14 +5,13 @@
 // show and leaving no edge to drag it back by.
 import {
   CENTER_MIN_WIDTH,
+  PANEL_MAX_WIDTH,
   PROPERTIES_DEFAULT_WIDTH,
-  PROPERTIES_MAX_WIDTH,
   PROPERTIES_MIN_WIDTH,
   RAIL_DEFAULT_WIDTH,
   RAIL_MAX_WIDTH,
   RAIL_MIN_WIDTH,
   TREE_DEFAULT_WIDTH,
-  TREE_MAX_WIDTH,
   TREE_MIN_WIDTH,
 } from "../constants/layout";
 
@@ -49,32 +48,47 @@ export function clampWidth(width: number, min: number, max: number, fallback: nu
 }
 
 export function clampTreeWidth(width: number): number {
-  return clampWidth(width, TREE_MIN_WIDTH, TREE_MAX_WIDTH, TREE_DEFAULT_WIDTH);
+  return clampWidth(width, TREE_MIN_WIDTH, PANEL_MAX_WIDTH, TREE_DEFAULT_WIDTH);
 }
 
 export function clampPropertiesWidth(width: number): number {
-  return clampWidth(width, PROPERTIES_MIN_WIDTH, PROPERTIES_MAX_WIDTH, PROPERTIES_DEFAULT_WIDTH);
+  return clampWidth(width, PROPERTIES_MIN_WIDTH, PANEL_MAX_WIDTH, PROPERTIES_DEFAULT_WIDTH);
+}
+
+/**
+ * How wide either panel may be dragged in this window.
+ *
+ * **Half the room the two of them have between them, and never more than
+ * `PANEL_MAX_WIDTH`.** Both parts matter. The constant is what stops a panel
+ * eating a large monitor; the half is what makes "drag them both out" come to
+ * rest with the two panels the same width instead of with whichever was
+ * dragged first keeping everything — which is what it did, and what was
+ * reported.
+ *
+ * A panel can still be *narrower* than its opposite number, and usually is:
+ * this is where a drag stops, not a rule that keeps the two in step.
+ *
+ * The cost, stated because it is a real one: a very wide tree beside a slim
+ * properties panel is no longer possible — the tree stops at half the room
+ * even when nothing is using the other half.
+ */
+export function maxPanelWidth(containerWidth: number, ownMin: number): number {
+  if (!Number.isFinite(containerWidth) || containerWidth <= 0) return PANEL_MAX_WIDTH;
+  const share = Math.floor((containerWidth - CENTER_MIN_WIDTH) / 2);
+  return Math.max(ownMin, Math.min(PANEL_MAX_WIDTH, share));
 }
 
 /**
  * What both panels should be after one of them is dragged.
  *
  * **The panel being dragged gets what was asked for, and the other one gives
- * way.** The first version of this capped the drag at whatever room was going
- * spare, which meant the panel dragged *first* took everything and the second
- * one could not move at all — drag the sidebar out, then try the properties
- * panel, and nothing happens. A drag that is silently ignored is worse than a
- * drag that moves something.
+ * way if it has to.** With the shared half-the-room ceiling above, it rarely
+ * has to: both panels can sit at their maximum at the same time by
+ * construction. It still can, because a width stored by an older version — or
+ * a hand-edited settings file — is not bound by anything this function did.
  *
  * The opposite panel is pushed no further than its own minimum, and the page
- * keeps `CENTER_MIN_WIDTH` throughout: those two are the walls, and between
- * them the pointer decides. So the two panels cannot both be at their maximum
- * on a window with no room for both — the last thing asked for is the one that
- * gets it, which is what direct manipulation means.
- *
- * An unmeasured container leaves the other panel alone and clamps only against
- * the fixed maximum, because nothing is known yet about what the window can
- * afford.
+ * keeps `CENTER_MIN_WIDTH` throughout.
  */
 export function planPanelDrag(
   containerWidth: number,
@@ -84,15 +98,17 @@ export function planPanelDrag(
   isPropertiesOpen: boolean,
 ): { tree: number; properties: number } {
   const ownMin = edge === "tree" ? TREE_MIN_WIDTH : PROPERTIES_MIN_WIDTH;
-  const ownMax = edge === "tree" ? TREE_MAX_WIDTH : PROPERTIES_MAX_WIDTH;
   const otherMin = edge === "tree" ? PROPERTIES_MIN_WIDTH : TREE_MIN_WIDTH;
   const other = edge === "tree" ? (isPropertiesOpen ? widths.properties : 0) : widths.tree;
   const otherFloor = edge === "tree" && !isPropertiesOpen ? 0 : otherMin;
 
   const measured = Number.isFinite(containerWidth) && containerWidth > 0;
-  const ceiling = measured
-    ? Math.max(ownMin, Math.min(ownMax, Math.round(containerWidth - CENTER_MIN_WIDTH - otherFloor)))
-    : ownMax;
+  // With the properties panel shut there is no half to share, so the tree may
+  // take everything the page does not need.
+  const ceiling =
+    measured && edge === "tree" && !isPropertiesOpen
+      ? Math.max(ownMin, Math.min(PANEL_MAX_WIDTH, Math.round(containerWidth - CENTER_MIN_WIDTH)))
+      : maxPanelWidth(containerWidth, ownMin);
   const own = Math.max(ownMin, Math.min(ceiling, Math.round(requested)));
 
   // Only as much as the drag actually needs: a panel that was already narrow

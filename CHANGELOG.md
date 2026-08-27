@@ -7,7 +7,8 @@
 - **Dragging both side panels wide can no longer squeeze the page down to nothing.** The two panels could be dragged to 520 and 560 pixels, which is wider than the app's smallest window — so at that size, dragging both out left the page between them with no room at all and nothing to read.
 - The page now holds a minimum width, and the panels give the room back instead. **Your panel widths aren't changed by this**: they render narrower only while the window is too small for all three, and they're back exactly where you put them the moment it isn't.
 - **The edge you drag stays on the edge of the panel**, including when the window has had to make a panel narrower than you set it.
-- **Dragging one sidebar out now takes the room from the other one**, instead of the first one you dragged keeping it all and the second refusing to move. Neither can be pushed below its own width, and the page keeps its minimum throughout — so on a window without room for both at full width, whichever you dragged last is the one that got what you asked for.
+- **Dragged all the way out, the two sidebars now come to rest at the same width.** Before, whichever one you dragged first took all the room and the second one wouldn't move at all. Each can go up to half of what the two of them have between them, so it no longer matters which you drag first — and the page keeps its own minimum throughout.
+- The trade, worth knowing: **a very wide sidebar beside a slim properties panel isn't possible any more.** Each stops at half the room even if the other one isn't using its share. Say the word if you'd rather have the old freedom back.
 
 ## 2026-08-27 — a template no longer takes your fields with it
 

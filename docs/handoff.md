@@ -2035,9 +2035,14 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   against a 900px minimum window meant both dragged full left the centre column
   at exactly zero, measured.
 
-- **The panel maximums are now a taste question, not a safety one.** They stop
-  a panel eating a big monitor; they are no longer what keeps the page
-  renderable, so changing them cannot reintroduce the bug above.
+- **The two panels share one maximum, and it is half the room they have between
+  them.** `maxPanelWidth` is `min(PANEL_MAX_WIDTH, (container − CENTER_MIN) / 2)`.
+  Asked for in as many words: dragged all the way out, neither panel should be
+  longer than the other. Before it, the ceiling was whatever room was spare, so
+  the answer depended on which one was dragged first — 520 and 318 rather than
+  419 and 419. **The cost is real and was accepted knowingly:** a very wide tree
+  beside a slim properties panel is no longer possible, because the tree stops
+  at half the room even when nothing is using the other half.
 
 - **The grid and the drag handles must be given the same widths, and they are
   not always the stored ones.** `fitPanelWidths` is what both read: on a window

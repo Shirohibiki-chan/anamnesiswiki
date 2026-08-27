@@ -44,20 +44,33 @@ export const TREE_OVERSCAN_ROWS = 24;
  * different action with a different control, and a panel dragged to nothing is
  * a panel the user can't find the edge of to drag back.
  *
- * The maximums are a taste question rather than a safety one — how wide a
- * panel should be *allowed* to get on a big monitor. They used to be the only
- * thing stopping the centre column being squeezed to nothing, and they were
- * not up to it: 520 and 560 add up to 1080, and the window itself does not go
- * below 900. Both dragged full left the page with no room at all. See
- * CENTER_MIN_WIDTH, which is what actually holds that line now.
+ * **The two panels share one maximum**, and that is deliberate: dragged all the
+ * way out they should come to rest at the same width, not at 520 and 560 by an
+ * accident of which number was written down first. Asked for 2026-08-27, in
+ * those words. Below it, the widths are whatever anyone drags them to — this
+ * is about where they *stop*, not about keeping them in step.
+ *
+ * The cap used to be the only thing stopping the page being squeezed to
+ * nothing, and it was not up to it: 520 and 560 add up to 1080, and the window
+ * does not go below 900. See CENTER_MIN_WIDTH, which holds that line now, and
+ * `maxPanelWidth`, which is this number and the window's own arithmetic
+ * together.
  */
 export const TREE_MIN_WIDTH = 180;
-export const TREE_MAX_WIDTH = 520;
 export const TREE_DEFAULT_WIDTH = 260;
 
 export const PROPERTIES_MIN_WIDTH = 220;
-export const PROPERTIES_MAX_WIDTH = 560;
 export const PROPERTIES_DEFAULT_WIDTH = 300;
+
+/**
+ * How wide either panel may be dragged, before the window has its say.
+ *
+ * 560, the wider of the two numbers this replaced — where there is room to
+ * give, give it. On a window with less than `2 × 560 + CENTER_MIN_WIDTH` the
+ * real limit is half the room the panels have between them, which is what
+ * keeps "both dragged out" symmetrical at every size. See `maxPanelWidth`.
+ */
+export const PANEL_MAX_WIDTH = 560;
 
 /**
  * The narrowest the page in the middle is allowed to get, whatever the panels
