@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-27 — a template no longer takes your fields with it
+
+### Fixes
+
+- **Applying one of your own templates to a page keeps what you'd already written in that page's fields.** Before, the template's fields replaced the page's outright: anything the template had no equivalent of lost its value, and the block that had been showing it turned into a **MISSING PROPERTY** note — which was the only sign anything had gone. The text was still in the file with no way back to it.
+- Those fields are now kept as properties of that page, with their names, their types and what was in them, listed after the template's own. The block that was showing one keeps working.
+- **Empty fields the new template doesn't have are dropped** rather than carried, so a page doesn't slowly collect the blank fields of every template it has ever been. Nothing with anything in it is ever dropped.
+- If you have a **MISSING PROPERTY** block sitting on a page from before this, it's still just a block — its `⋯` menu removes it, and removing it doesn't delete anything else.
 ## 2026-08-27 — text boxes the size of the text
 
 ### Fixes
@@ -243,10 +251,3 @@
 ### Fixes
 
 - **Closing the window works again, and keeps working.** The app holds the window open for a moment while it finishes writing whatever you last typed, then closes it itself. If that last step ever failed, the app quietly decided a close was already underway and refused every attempt after it — so the X did nothing, for the rest of the session, with nothing on screen to say why. A close that doesn't succeed can now simply be tried again, and there's a second way out if the first is refused.
-
-
-## 2026-08-21 — open it anyway
-
-### Additions
-
-- **When Anamnesis says a project is open in another window, you can now overrule it.** An **Open it anyway** link sits next to the message. The check is a guess — a project says it's open by keeping a note fresh, so a crash, a power cut or a sync client holding the folder all look exactly like a second window from the outside, and the app has no way to tell them apart. It still says what it thinks, and now you get the last word. Renaming a project another window holds is still refused outright, because renaming a folder something else has open is a different kind of risk.

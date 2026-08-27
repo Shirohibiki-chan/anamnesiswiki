@@ -68,6 +68,7 @@ import {
   duplicateBlock as duplicateBlockIn,
   moveBlock,
   newBlock,
+  planTemplateSwap,
   seedBlocks,
   withField,
 } from "../services/block-service";
@@ -1420,15 +1421,23 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // stays empty and choosing a template appears to do nothing below the
       // fold. A page that already has blocks keeps them: the user arranged
       // that panel, and a template change is not permission to rearrange it.
-      const seededBlocks =
-        existing.blocks && existing.blocks.length > 0
-          ? existing.blocks
-          : seedBlocks(templateKey, getPropertySchema(templateKey));
+      const hadBlocks = Boolean(existing.blocks && existing.blocks.length > 0);
+      // The new template's fields are not the old one's, so a field the page
+      // was carrying can be left with no home. `planTemplateSwap` turns those
+      // into custom properties rather than letting the value go quiet — see
+      // its own note, and `docs/handoff.md` §Template swaps.
+      const swap = planTemplateSwap(
+        existing,
+        getPropertySchema(existing.templateKey),
+        getPropertySchema(templateKey),
+      );
       const updated: Node = {
         ...existing,
         templateKey,
         tabs: [...existing.tabs, ...newTabs],
-        blocks: seededBlocks,
+        blocks: hadBlocks ? swap.blocks : seedBlocks(templateKey, getPropertySchema(templateKey)),
+        properties: swap.properties,
+        customProperties: swap.customProperties,
         updatedAt: Date.now(),
       };
       const nextNodes = { ...nodesAfter, [nodeId]: updated };
@@ -2700,12 +2709,29 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
       // Deep-copied out of the library rather than shared with it: writing on
       // the page afterwards must not quietly edit the template it came from.
+      // **The template's fields replace the page's, and anything the page was
+      // carrying that they have no home for is kept as a custom property.**
+      // Without this the value went out of the file with the field, and the
+      // block that was showing it turned into "Missing property" — which was
+      // the only sign anything had happened. Reported from use 2026-08-27; see
+      // `planTemplateSwap`.
+      const swap = planTemplateSwap(
+        target,
+        getPropertySchema(target.templateKey),
+        getPropertySchema(source.templateKey),
+        {
+          properties: structuredClone(source.properties),
+          customProperties: source.customProperties ? structuredClone(source.customProperties) : [],
+        },
+      );
+
       const patch: Partial<Omit<Node, "id">> = {
         templateKey: source.templateKey,
         tabs: structuredClone(source.tabs),
-        properties: structuredClone(source.properties),
-        customProperties: source.customProperties ? structuredClone(source.customProperties) : undefined,
+        properties: swap.properties,
+        customProperties: swap.customProperties,
         propertyOrder: source.propertyOrder ? [...source.propertyOrder] : undefined,
+        blocks: swap.blocks,
         tags: [...source.tags],
         color: source.color,
         image: rootImage,
@@ -2721,6 +2747,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         properties: target.properties,
         customProperties: target.customProperties,
         propertyOrder: target.propertyOrder,
+        blocks: target.blocks,
         tags: target.tags,
         color: target.color,
         image: target.image,
