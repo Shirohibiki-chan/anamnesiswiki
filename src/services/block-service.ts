@@ -167,6 +167,100 @@ export function seedBlocks(templateKey: string, schema: RenderableProperty[], cu
 }
 
 /** Moves the block at `fromIndex` to `toIndex`, leaving the rest in order. */
+/**
+ * What a page keeps when its template is swapped underneath it.
+ *
+ * **A template change must not take a page's writing with it, and it used to.**
+ * Applying one of the project's own templates replaces the page's whole
+ * property set with the template's — so a field the incoming template has no
+ * equivalent of lost its value, and the block that showed it was left pointing
+ * at a key nothing could resolve. The panel drew that as *Missing property*,
+ * which was the only visible sign, and the text was still in the file with no
+ * way back to it. Reported from use 2026-08-27.
+ *
+ * So anything the page had, that the incoming set has no home for, **becomes a
+ * custom property of that page**: the value survives, it is visible, it is
+ * editable, and the block that was already showing it keeps working. A field
+ * from a template and a field somebody typed in are the same thing once they
+ * are on a page — which is what makes converting one to the other honest
+ * rather than a trick.
+ *
+ * **Only fields with something in them are carried.** An empty field the new
+ * template does not have is not a loss, and carrying it would leave every page
+ * accumulating the blank fields of every template it has ever been. Blocks
+ * pointing at those are dropped, since after this there is nothing left for
+ * them to point at.
+ *
+ * Order is deliberate: the incoming template's own fields first, then what was
+ * rescued, so a page swapped to a template reads as that template with the
+ * leftovers after it rather than the other way round.
+ */
+export function planTemplateSwap(
+  node: Node,
+  previousSchema: RenderableProperty[],
+  nextSchema: RenderableProperty[],
+  incoming: { properties?: Record<string, unknown>; customProperties?: CustomPropertySpec[] } = {},
+): {
+  properties: Record<string, unknown>;
+  customProperties: CustomPropertySpec[] | undefined;
+  blocks: Block[];
+  /** The fields that were rescued, for whatever wants to say so. */
+  carried: CustomPropertySpec[];
+} {
+  const incomingValues = incoming.properties ?? node.properties;
+  const incomingCustom = incoming.customProperties ?? node.customProperties ?? [];
+
+  const nextKeys = new Set([...nextSchema.map((prop) => prop.key), ...incomingCustom.map((spec) => spec.key)]);
+  const previousCustom = node.customProperties ?? [];
+  const previousByKey = new Map<string, CustomPropertySpec>([
+    ...previousSchema.map((prop): [string, CustomPropertySpec] => [
+      prop.key,
+      { key: prop.key, label: prop.label, type: prop.type, ...(prop.options ? { options: prop.options } : {}) },
+    ]),
+    ...previousCustom.map((spec): [string, CustomPropertySpec] => [spec.key, spec]),
+  ]);
+
+  const carried: CustomPropertySpec[] = [];
+  const properties: Record<string, unknown> = { ...incomingValues };
+  for (const [key, spec] of previousByKey) {
+    if (nextKeys.has(key)) continue;
+    if (!isFilledIn(node.properties[key])) continue;
+    carried.push(spec);
+    properties[key] = node.properties[key];
+  }
+
+  const resolvable = new Set([...nextKeys, ...carried.map((spec) => spec.key)]);
+  const blocks = blocksFor(node, previousSchema).filter(
+    (block) => block.kind !== "property" || (block.propertyKey !== undefined && resolvable.has(block.propertyKey)),
+  );
+
+  // Everything left over is a key nothing can resolve *and* nothing was in —
+  // anything with something in it was carried above, which is what makes
+  // dropping these safe rather than the bug this function exists to fix. It
+  // stops a page collecting the empty fields of every template it has been.
+  for (const key of Object.keys(properties)) {
+    if (!resolvable.has(key)) delete properties[key];
+  }
+
+  const customProperties = [...incomingCustom, ...carried];
+  return {
+    properties,
+    // Absent rather than empty, matching what a page that never had one looks
+    // like — see `customProperties` in schema.ts.
+    customProperties: customProperties.length > 0 ? customProperties : undefined,
+    blocks,
+    carried,
+  };
+}
+
+/** Is there anything in this value worth keeping? */
+function isFilledIn(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === "string") return value.trim() !== "";
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+}
+
 export function moveBlock(blocks: Block[], fromIndex: number, toIndex: number): Block[] {
   if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return blocks;
   if (fromIndex >= blocks.length || toIndex >= blocks.length) return blocks;

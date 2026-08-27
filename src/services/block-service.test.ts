@@ -7,6 +7,7 @@ import {
   migrateBlocks,
   moveBlock,
   newBlock,
+  planTemplateSwap,
   seedBlocks,
   unshownPropertyKeys,
   withField,
@@ -211,3 +212,105 @@ describe("migrateBlocks and meters", () => {
     expect(migrateBlocks(blocks)).toBe(blocks);
   });
 });
+
+// Phase 19-adjacent, 2026-08-27: what a page keeps when its template is
+// swapped underneath it. The bug this fixes was silent — a value dropped out
+// of the file and its block turned into "Missing property", which is the only
+// thing anybody saw.
+describe("planTemplateSwap", () => {
+  const locationSchema: RenderableProperty[] = [
+    { key: "region", label: "Region", type: "text" },
+    { key: "ruler", label: "Ruler", type: "text" },
+  ];
+
+  // The sidebar written out rather than derived, so what the page had is what
+  // the test says it had — `createNode` seeds a real template's blocks, which
+  // are not the three fields this file's `schema` describes.
+  const arranged: Block[] = [
+    { id: "b-image", kind: "image" },
+    { id: "b-age", kind: "property", propertyKey: "age" },
+    { id: "b-friends", kind: "property", propertyKey: "friends" },
+    { id: "b-summary", kind: "property", propertyKey: "summary" },
+    { id: "b-tags", kind: "tags" },
+  ];
+
+  function swapped(patch: Partial<Node> = {}) {
+    const node = page({
+      properties: { age: "41", summary: "A long story.", friends: [] },
+      blocks: arranged,
+      ...patch,
+    });
+    return { node, plan: planTemplateSwap(node, schema, locationSchema) };
+  }
+
+  it("keeps a field the new template has no home for, with what was in it", () => {
+    const { plan } = swapped();
+    expect(plan.carried.map((spec) => spec.key).sort()).toEqual(["age", "summary"]);
+    expect(plan.properties.age).toBe("41");
+    expect(plan.properties.summary).toBe("A long story.");
+  });
+
+  it("keeps it as a real field, labelled and typed the way it was", () => {
+    const { plan } = swapped();
+    const carriedSummary = plan.customProperties?.find((spec) => spec.key === "summary");
+    expect(carriedSummary).toEqual({ key: "summary", label: "Summary", type: "longtext" });
+  });
+
+  // Otherwise every page accumulates the blank fields of every template it has
+  // ever been, which is its own kind of mess. Safe precisely because anything
+  // with something in it was carried instead.
+  it("drops an empty field rather than carrying it", () => {
+    const { plan } = swapped();
+    expect(plan.carried.some((spec) => spec.key === "friends")).toBe(false);
+    expect("friends" in plan.properties).toBe(false);
+  });
+
+  it("never drops a value, whatever the templates say", () => {
+    const node = page({ properties: { age: "41", summary: "A long story.", friends: ["someone"] } });
+    const plan = planTemplateSwap(node, schema, locationSchema, { properties: {}, customProperties: [] });
+    expect(plan.properties).toEqual({ age: "41", summary: "A long story.", friends: ["someone"] });
+    expect(plan.carried.map((spec) => spec.key).sort()).toEqual(["age", "friends", "summary"]);
+  });
+
+  it("leaves the blocks that still point at something, and only those", () => {
+    const { plan } = swapped();
+    const keys = plan.blocks.filter((block) => block.kind === "property").map((block) => block.propertyKey);
+    expect(keys).toContain("age");
+    expect(keys).toContain("summary");
+    // Its field was empty, so nothing was carried and nothing can draw it.
+    expect(keys).not.toContain("friends");
+    // The blocks that are not properties are untouched.
+    expect(plan.blocks.some((block) => block.kind === "image")).toBe(true);
+    expect(plan.blocks.some((block) => block.kind === "tags")).toBe(true);
+  });
+
+  it("puts the incoming template's own fields first and the rescued ones after", () => {
+    const node = page({ properties: { age: "41" } });
+    const plan = planTemplateSwap(node, schema, locationSchema, {
+      properties: { region: "The North" },
+      customProperties: [{ key: "notes", label: "Notes", type: "text" }],
+    });
+    expect(plan.customProperties?.map((spec) => spec.key)).toEqual(["notes", "age"]);
+    expect(plan.properties.region).toBe("The North");
+    expect(plan.properties.age).toBe("41");
+  });
+
+  it("carries a custom property the incoming template does not have", () => {
+    const node = page({
+      customProperties: [{ key: "sword", label: "Sword", type: "text" }],
+      properties: { sword: "Her mother's" },
+    });
+    const plan = planTemplateSwap(node, schema, locationSchema, { properties: {}, customProperties: [] });
+    expect(plan.carried).toEqual([{ key: "sword", label: "Sword", type: "text" }]);
+    expect(plan.properties.sword).toBe("Her mother's");
+  });
+
+  it("changes nothing when the new template has the same fields", () => {
+    const node = page({ properties: { age: "41" } });
+    const plan = planTemplateSwap(node, schema, schema);
+    expect(plan.carried).toEqual([]);
+    expect(plan.customProperties).toBeUndefined();
+    expect(plan.properties.age).toBe("41");
+  });
+});
+

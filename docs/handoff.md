@@ -1629,6 +1629,31 @@ is below.
   these to the content width would look more correct and would quietly make the
   last strip of a zoomed picture unreachable.
 
+## Template swaps
+
+- **A template change must never drop a value, and it did until 2026-08-27.**
+  `applyCustomTemplate` replaced a page's `properties` and `customProperties`
+  with the template's outright, so a field the template had no equivalent of
+  went out of the file — and the block still pointing at it rendered as
+  *Missing property*, which was the only visible sign. Reported from use.
+
+- **`planTemplateSwap` in `block-service.ts` is the rule, and both apply paths
+  go through it.** Anything the page had that the incoming set has no home for
+  becomes a custom property of that page: the value survives, it is visible,
+  and its block keeps resolving. Empty fields are dropped instead, and their
+  blocks with them — otherwise a page collects the blank fields of every
+  template it has ever been, and that is safe precisely because anything with
+  something in it was carried.
+
+- **The two paths differ in what they hand it.** `applyTemplate` (a built-in
+  kind) changes only the template, so the page's own values are the incoming
+  set. `applyCustomTemplate` pours a saved template in, so the template's
+  values and specs are the incoming set and the page's are what needs rescuing.
+
+- **`blocks` is in the undo patch for `applyCustomTemplate` now**, because the
+  swap edits them. A patch that changes blocks without recording them leaves
+  undo restoring the properties and not the panel that shows them.
+
 ## Search
 
 - **A search feature reachable only by typing a character is a feature nobody
