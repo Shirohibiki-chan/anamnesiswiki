@@ -1,0 +1,64 @@
+# The form the app's "Open a bug report" button links to.
+#
+# The field ids below are also query parameters: `src/constants/links.ts` names
+# `build`, and Anamnesis fills it in when it opens this page. Renaming a field
+# here does not break the link, it just silently stops prefilling it — so if
+# you rename one, rename it there too.
+#
+# Written for somebody who is not a programmer and is already annoyed. Nothing
+# is required except what happened, nothing asks for a log file they would have
+# to go and find, and no field asks them to guess at a cause.
+name: Something's broken
+description: Tell us what Anamnesis did wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Fill in as much as you can — the first box
+        on its own is enough, and everything else is a bonus.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did the app do, and what did you expect it to do instead? Plain language is perfect.
+      placeholder: I clicked a page in the sidebar and nothing opened. The page name stayed grey.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What were you doing just before?
+      description: Anything you remember. "I'd just renamed a folder" is often the whole answer.
+      placeholder: |
+        1. Opened the Valeraverse project
+        2. Renamed the Characters folder
+        3. Clicked Valera Jiang
+    validations:
+      required: false
+
+  - type: dropdown
+    id: how-often
+    attributes:
+      label: Does it happen every time?
+      options:
+        - Every time
+        - Sometimes
+        - It happened once
+        - Haven't tried again
+    validations:
+      required: false
+
+  - type: textarea
+    id: build
+    attributes:
+      label: Which build
+      description: >
+        Anamnesis fills this in when it opens this form. If you got here another
+        way, Settings → Report a bug has the same text to paste, and it's fine
+        to leave it empty.
+      render: text
+    validations:
+      required: false

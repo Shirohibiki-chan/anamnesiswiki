@@ -3049,6 +3049,36 @@ is below.
   boolean version meant one failed close killed the X for the rest of the
   session.
 
+## Reporting a bug
+
+Added 2026-08-27. `services/bug-report-service.ts` builds the text, the panel is
+Settings → Report a bug, and the crash screen's *Report this* is the same path
+from the other end.
+
+- **The app fills the form in and never submits it, and the report is public.**
+  That is why the whole text is on screen before either button is pressed: a
+  crash carries file paths, and a path carries a world's name and a page's
+  title. Anything that turns this into a send button is the collection
+  `CLAUDE.md` → Two Promises rules out, no matter how small the payload.
+
+- **The field ids in `.github/ISSUE_TEMPLATE/bug_report.yml` are the query
+  parameters that prefill it.** `constants/links.ts` names `build`; renaming
+  the field in the yml without renaming it there does not fail anything, it
+  just quietly stops prefilling, and the first sign is a report that arrives
+  with no version in it.
+
+- **The clipboard is loaded before the browser opens, in both entry points.**
+  A `new issue` URL stops working somewhere past 8KB and percent-encoding a
+  stack trace roughly triples it, so `trimForUrl` cuts the prefill to
+  `MAX_PREFILL` — the part that doesn't fit only exists on the clipboard.
+  Reversing those two steps, or dropping the copy from `report()`, throws away
+  the tail of every trace.
+
+- **`shellName()` is in the host contract because a version number cannot
+  answer it.** Both shells have shipped as 0.5.0 (`docs/plan.md` → Known Bugs),
+  so a report saying only "0.5.0" names neither build. It is synchronous like
+  `pathSeparator` — the answer is decided when the build is made.
+
 ## The app test suite
 
 Added 2026-08-26. `pnpm test:app` starts the real Electron app and drives it;
