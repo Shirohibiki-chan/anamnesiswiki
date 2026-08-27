@@ -427,6 +427,27 @@ What is genuinely left is the part that can only be settled by running it:
   history — it is a write-only ingest key rather than a secret, but the app it
   points at should be deleted rather than left listening.
 
+- **Settings → Privacy says nothing about collection or the network, and that
+  is deliberate.** Same day, hours after the page was written.
+
+  It briefly held two more sections: one declaring that the app collects
+  nothing, one listing the two times it reaches the network. Both were
+  accurate. Both were also promises, and neither subject is settled — usage
+  reporting is a thing she may want again if the app finds an audience worth
+  measuring, and what it fetches will grow as features land. A page that has to
+  be walked back later costs more than a page that never made the claim, so the
+  claims came out rather than being hedged.
+
+  **Do not re-add them as a selling point.** Collecting nothing is a good
+  property and a bad advertisement: the moment it is written on a screen it
+  becomes a thing to retract. The constraint itself is unchanged and lives in
+  `CLAUDE.md` → Two Promises, where it governs what gets built rather than what
+  gets said.
+
+  What stays is the crash log section, because it describes rather than
+  promises: where the file is and what goes in it, which is what somebody needs
+  in order to find it and pass it on.
+
 - **Crash reporting, and it never leaves the machine.** Her call 2026-08-27,
   the one piece of the above she did want, and now built.
 

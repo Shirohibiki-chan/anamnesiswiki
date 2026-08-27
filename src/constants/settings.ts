@@ -76,7 +76,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     id: "privacy",
     group: "app",
     label: "Privacy",
-    blurb: "What the app collects, the two times it uses the internet, and the crash log it keeps on your computer.",
+    blurb: "What Anamnesis writes down when it runs into a problem, and how to send it on.",
   },
   {
     id: "patch-notes",
@@ -110,20 +110,6 @@ export const DECLARED_SETTINGS: readonly {
   hint: string;
   keywords: string[];
 }[] = [
-  {
-    id: "privacy-collected",
-    tabId: "privacy",
-    label: "What Anamnesis collects",
-    hint: "nothing — no account, no usage reporting, no switch to find",
-    keywords: ["privacy", "analytics", "telemetry", "tracking", "usage", "data", "collect", "phone home", "opt out", "account"],
-  },
-  {
-    id: "privacy-network",
-    tabId: "privacy",
-    label: "When it uses the internet",
-    hint: "the two things that go out, both only when you press them",
-    keywords: ["privacy", "network", "internet", "offline", "online", "requests", "import", "updates"],
-  },
   {
     id: "privacy-crash-log",
     tabId: "privacy",
