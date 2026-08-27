@@ -8,6 +8,7 @@
 // screen rather than three.
 import { useCallback, useState } from "react";
 import { extensionForPath } from "../services/asset-urls";
+import { closeWindow, focusWindowWithProject } from "../services/host-service";
 import { pickImageFile, pickTemplateSavePath, revealItem, showFolder } from "../services/dialog-service";
 import * as fsService from "../services/filesystem-service";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
@@ -129,6 +130,21 @@ export function useStartActions(): StartActions {
   // folder a live process has open is a different and worse problem than
   // reading one. Only opening offers the override.
   const refuseIfHeldElsewhere = useCallback(async (path: string, name: string, force?: () => Promise<void>) => {
+    // **A window of this app already has it: go there.** Asked before the
+    // marker rather than after it, because this answer is certain and the
+    // marker's is a guess — the host can see its own windows, while the marker
+    // can only say when somebody last wrote to a file. Whichever window this
+    // is then has nothing left to show, so it closes behind itself, which is
+    // what every app with a picker and a window per project does.
+    //
+    // False on a shell that cannot manage two windows, and false when the
+    // other copy is on another machine behind a synced folder — the one case
+    // the marker still exists for, and the one where a warning is honest.
+    if (await focusWindowWithProject(path).catch(() => false)) {
+      await closeWindow().catch(() => {});
+      return true;
+    }
+
     const claim = await findBlockingClaim(path);
     if (!claim) return false;
     setError(`"${name}" is open in another window — it was last active there ${describeClaimAge(claim, Date.now())}.`);

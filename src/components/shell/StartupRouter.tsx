@@ -36,6 +36,17 @@ export function StartupRouter() {
       // unexpected rejection — left `isChecking` true forever, and the app
       // sat on "Loading..." with no error and no way forward.
       try {
+        // **A second launch starts here rather than back where it left off.**
+        // The host puts this on the URL when it opens a window for a launch
+        // that arrived while the app was already running (electron/main.js).
+        // Reopening the last project in that window is what put two autosaving
+        // copies on one project, which is the whole reason the open-marker
+        // exists — and from the picker, a project another window already has
+        // is now a window to be brought forward rather than a refusal.
+        if (window.location.hash === "#picker") {
+          if (!cancelled) setIsChecking(false);
+          return;
+        }
         const lastPath = await getLastOpenedProject();
         // The whole reason the marker exists. Launching the app twice would
         // otherwise put two autosaving copies on the same files by the most

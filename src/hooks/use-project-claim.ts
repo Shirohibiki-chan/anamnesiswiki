@@ -5,10 +5,12 @@
 // marker half of `filesystem-service` — see CLAUDE.md's layer order.
 import { useEffect } from "react";
 import * as fsService from "../services/filesystem-service";
+import { announceOpenProject } from "../services/host-service";
 import {
   isHeldElsewhere,
   newProjectClaim,
   parseProjectClaim,
+  setClaimRelease,
   startClaimHeartbeat,
   stopClaimHeartbeat,
   type ProjectClaim,
@@ -44,10 +46,27 @@ export function useHoldProjectClaim(rootPath: string | null): void {
     refresh();
     startClaimHeartbeat(refresh);
 
-    return () => {
+    // **The in-process half of the same statement.** The marker is a file, so
+    // it is the only way to say "open" to a copy of the app that is a separate
+    // process or on another machine. This says it to the windows of *this*
+    // process, which is what lets the picker bring an already-open project to
+    // the front instead of reporting it as a problem. Best-effort in the same
+    // way: a shell that cannot manage two windows ignores it.
+    void announceOpenProject(rootPath).catch(() => {});
+
+    // Removing the marker on unmount covers leaving a project; this covers
+    // closing the window, which never unmounts anything. See `releaseClaimNow`.
+    const release = async () => {
       held = false;
       stopClaimHeartbeat();
-      void fsService.clearProjectClaim(rootPath);
+      await fsService.clearProjectClaim(rootPath);
+    };
+    setClaimRelease(release);
+
+    return () => {
+      setClaimRelease(null);
+      void announceOpenProject(null).catch(() => {});
+      void release();
     };
   }, [rootPath]);
 }

@@ -105,6 +105,17 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
+- **An Electron build and the released Tauri build are both 0.5.0.** v0.5.0 is
+  published and is the Tauri app; the Electron work has been running under the
+  same version the whole time, so the two are indistinguishable by filename, by
+  the version the app reports, and by the settings they share. Found 2026-08-26
+  while handing a Linux test build to somebody who already had 0.5.0 installed —
+  the two AppImages differ by 60MB and by nothing a person can see.
+
+  **Bump the version before Phase 29 ships anything.** `latest-linux.yml` in an
+  Electron build already describes itself as 0.5.0, so publishing one puts a
+  second, different 0.5.0 into the update feed of a release that exists.
+
 - **The two panel width caps do not add up to a window.** `TREE_MAX_WIDTH` is
   520 and `PROPERTIES_MAX_WIDTH` is 560, which is 1080 — wider than the 900 the
   window itself will not go below. The comment above them in
