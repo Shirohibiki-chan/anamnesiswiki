@@ -15,6 +15,8 @@ import {
   TREE_MAX_WIDTH,
   TREE_MIN_WIDTH,
 } from "../../constants/layout";
+import { fitPanelWidths, maxDraggableWidth } from "../../services/layout-service";
+import { useElementSize } from "../../hooks/use-element-size";
 import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
@@ -52,6 +54,15 @@ export function AppLayout() {
   const { goBack, goForward, goHome } = useNavigationActions();
   const widths = usePanelWidths();
   const { setTreeWidth, setPropertiesWidth, resetPanelWidths } = usePanelWidthActions();
+  // The grid's own width, watched rather than read once: the window is
+  // resizable and how much room the two panels can have is a fact about it.
+  const [layoutRef, layoutSize] = useElementSize<HTMLDivElement>();
+  // What to draw, which is not always what was chosen — see fitPanelWidths.
+  const fitted = fitPanelWidths(layoutSize.width, widths, isRightPanelOpen);
+  // How far each handle may be dragged in this window, with the page's own
+  // minimum and the opposite panel already accounted for.
+  const treeMax = maxDraggableWidth(layoutSize.width, fitted.properties, TREE_MIN_WIDTH, TREE_MAX_WIDTH);
+  const propertiesMax = maxDraggableWidth(layoutSize.width, fitted.tree, PROPERTIES_MIN_WIDTH, PROPERTIES_MAX_WIDTH);
 
   // Stable so the shortcut listener is attached once, not rebuilt on every
   // re-render of the shell — see use-global-shortcuts.ts.
@@ -96,6 +107,7 @@ export function AppLayout() {
     // mid-drag — 150ms of easing on every pointer move is a panel edge that
     // trails the pointer and never catches up.
     <div
+      ref={layoutRef}
       className={[
         "app-layout",
         isRightPanelOpen ? "" : "app-layout-properties-collapsed",
@@ -105,8 +117,13 @@ export function AppLayout() {
         .join(" ")}
       style={
         {
-          "--tree-w": `${widths.tree}px`,
-          "--props-w": `${widths.properties}px`,
+          // The *fitted* widths, not the stored ones: the grid and the two drag
+          // handles have to agree about where a panel's edge is, and on a
+          // window too narrow for all three that edge is not where the stored
+          // number says. Feeding the handles the stored width is what left them
+          // floating in the middle of the page the first time this was built.
+          "--tree-w": `${fitted.tree}px`,
+          "--props-w": `${fitted.properties}px`,
           // The floor the page holds whatever the panels are dragged to. Fed
           // from the constant rather than written into the stylesheet so the
           // number lives with the widths it is in tension with.
@@ -161,8 +178,11 @@ export function AppLayout() {
         label="Sidebar width"
         width={widths.tree}
         min={TREE_MIN_WIDTH}
-        max={TREE_MAX_WIDTH}
-        onResize={setTreeWidth}
+        max={treeMax}
+        // Clamped here rather than in the store: the store's own clamp is about
+        // what a panel may ever be, and this is about what it may be in the
+        // window it is in at this moment.
+        onResize={(width) => setTreeWidth(Math.min(width, treeMax))}
         onReset={resetPanelWidths}
         onDragChange={setIsResizing}
       />
@@ -172,8 +192,8 @@ export function AppLayout() {
           label="Properties panel width"
           width={widths.properties}
           min={PROPERTIES_MIN_WIDTH}
-          max={PROPERTIES_MAX_WIDTH}
-          onResize={setPropertiesWidth}
+          max={propertiesMax}
+          onResize={(width) => setPropertiesWidth(Math.min(width, propertiesMax))}
           onReset={resetPanelWidths}
           onDragChange={setIsResizing}
         />

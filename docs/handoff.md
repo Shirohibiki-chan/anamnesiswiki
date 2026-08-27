@@ -2039,6 +2039,28 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   a panel eating a big monitor; they are no longer what keeps the page
   renderable, so changing them cannot reintroduce the bug above.
 
+- **The grid and the drag handles must be given the same widths, and they are
+  not always the stored ones.** `fitPanelWidths` is what both read: on a window
+  too narrow for all three it shrinks the panels in proportion, never below
+  their own minimums, without touching what is in the store. Feeding the
+  handles the stored width instead is not a cosmetic mistake — the handle is
+  positioned at that number, so it detaches from the edge it resizes and lands
+  in the middle of the page, where dragging it appears to do nothing. That
+  shipped for about ten minutes and was reported immediately.
+
+- **A drag is capped by the window as well as by the constant.**
+  `maxDraggableWidth` is the room left after the page's minimum and the
+  opposite panel, so a drag stops where the layout stops rather than storing a
+  number the layout will not honour. Without it a panel that has hit the wall
+  keeps recording wider values, which then apply the next time the window grows
+  — a panel that jumps somewhere nobody dragged it.
+
+- **At the app's smallest window there is no slack, and that is arithmetic
+  rather than a bug.** 900 wide is 420 for the page and 480 for two panels
+  whose own minimums are 180 and 220, so both sit near their floors and neither
+  can grow without the other giving way. The answer there is the properties
+  panel's own hide button.
+
 ## Navigation
 
 - **Tree focus is session-only and lives in `focusedId` on the project store.**

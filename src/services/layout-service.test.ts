@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CENTER_MIN_WIDTH,
   PROPERTIES_DEFAULT_WIDTH,
   PROPERTIES_MAX_WIDTH,
   PROPERTIES_MIN_WIDTH,
@@ -16,6 +17,8 @@ import {
   clampTreeWidth,
   clampWidth,
   DEFAULT_PANEL_WIDTHS,
+  fitPanelWidths,
+  maxDraggableWidth,
   parsePanelWidths,
 } from "./layout-service";
 
@@ -102,3 +105,65 @@ describe("parsePanelWidths", () => {
     });
   });
 });
+
+// 2026-08-27. The page in the middle holds a minimum, so the two panels cannot
+// both be dragged to their fixed maximums on a small window — and the drag has
+// to stop where the layout stops, or the handle walks away from the edge it is
+// dragging. That happened, and it is what these cover.
+describe("maxDraggableWidth", () => {
+  const roomy = 1600;
+  const smallest = 900;
+
+  it("gives the fixed maximum when there is room for it", () => {
+    expect(maxDraggableWidth(roomy, PROPERTIES_DEFAULT_WIDTH, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MAX_WIDTH);
+  });
+
+  it("stops where the page's own minimum starts", () => {
+    // 900 - 420 - 300 = 180 left for the tree.
+    expect(maxDraggableWidth(smallest, PROPERTIES_DEFAULT_WIDTH, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(
+      smallest - CENTER_MIN_WIDTH - PROPERTIES_DEFAULT_WIDTH,
+    );
+  });
+
+  it("never answers below the panel's own minimum", () => {
+    expect(maxDraggableWidth(600, 500, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MIN_WIDTH);
+  });
+
+  // The first frame, before anything has been measured. Answering zero here
+  // would pin both panels shut while the layout works out how big it is.
+  it("answers the fixed maximum when the container has not been measured", () => {
+    expect(maxDraggableWidth(0, 300, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MAX_WIDTH);
+    expect(maxDraggableWidth(Number.NaN, 300, TREE_MIN_WIDTH, TREE_MAX_WIDTH)).toBe(TREE_MAX_WIDTH);
+  });
+});
+
+describe("fitPanelWidths", () => {
+  it("leaves both alone when they fit", () => {
+    expect(fitPanelWidths(1600, { tree: 400, properties: 400 }, true)).toEqual({ tree: 400, properties: 400 });
+  });
+
+  it("shrinks both in proportion rather than picking one", () => {
+    // 900 wide, 420 for the page, 480 to share between two panels that want 1080.
+    const fitted = fitPanelWidths(900, { tree: TREE_MAX_WIDTH, properties: PROPERTIES_MAX_WIDTH }, true);
+    expect(fitted.tree + fitted.properties).toBeLessThanOrEqual(900 - CENTER_MIN_WIDTH);
+    expect(fitted.tree).toBeLessThan(TREE_MAX_WIDTH);
+    expect(fitted.properties).toBeLessThan(PROPERTIES_MAX_WIDTH);
+    // In proportion: the wider one stays the wider one.
+    expect(fitted.properties).toBeGreaterThan(fitted.tree);
+  });
+
+  it("holds each panel at its own minimum however small the window", () => {
+    const fitted = fitPanelWidths(500, { tree: TREE_MAX_WIDTH, properties: PROPERTIES_MAX_WIDTH }, true);
+    expect(fitted.tree).toBe(TREE_MIN_WIDTH);
+    expect(fitted.properties).toBe(PROPERTIES_MIN_WIDTH);
+  });
+
+  it("gives the tree the whole width when the properties panel is closed", () => {
+    expect(fitPanelWidths(900, { tree: 400, properties: 560 }, false)).toEqual({ tree: 400, properties: 0 });
+  });
+
+  it("changes nothing before the container has been measured", () => {
+    expect(fitPanelWidths(0, { tree: 520, properties: 560 }, true)).toEqual({ tree: 520, properties: 560 });
+  });
+});
+

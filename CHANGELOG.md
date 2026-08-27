@@ -6,6 +6,7 @@
 
 - **Dragging both side panels wide can no longer squeeze the page down to nothing.** The two panels could be dragged to 520 and 560 pixels, which is wider than the app's smallest window — so at that size, dragging both out left the page between them with no room at all and nothing to read.
 - The page now holds a minimum width, and the panels give the room back instead. **Your panel widths aren't changed by this**: they render narrower only while the window is too small for all three, and they're back exactly where you put them the moment it isn't.
+- **The edge you drag stays on the edge of the panel**, including when the window has had to make a panel narrower than you set it. Dragging also stops where the page's own minimum starts, rather than carrying on recording a width the window can't show.
 
 ## 2026-08-27 — a template no longer takes your fields with it
 
