@@ -8,6 +8,44 @@
 - Those fields are now kept as properties of that page, with their names, their types and what was in them, listed after the template's own. The block that was showing one keeps working.
 - **Empty fields the new template doesn't have are dropped** rather than carried, so a page doesn't slowly collect the blank fields of every template it has ever been. Nothing with anything in it is ever dropped.
 - If you have a **MISSING PROPERTY** block sitting on a page from before this, it's still just a block — its `⋯` menu removes it, and removing it doesn't delete anything else.
+## 2026-08-27 — text boxes the size of the text
+
+### Fixes
+
+- **A sidebar note longer than three lines is no longer clipped behind a scrollbar.** Every multi-line field in the properties panel — text blocks, and the longer template fields — is now exactly as tall as what you've written in it, however long that is. It was a fixed three lines, which was wrong in both directions: a one-line note reserved space it wasn't using, and a four-line one hid its fourth behind a scrollbar inside a panel that already scrolls.
+- The field's box still only appears when you hover or click into it. With the scrollbar gone there's nothing drawn around a note you're not editing.
+## 2026-08-27 — a way back to what a page used to say
+
+### Additions
+
+- **Anamnesis keeps earlier versions of your pages, on your own disk.** Before it saves over a page it puts a copy of what was there aside — at most one every five minutes, and always before a page is deleted. Right-click any page in the sidebar and choose **Earlier versions** to see what's kept, read each one, and put one back.
+- **You can read a version before you restore it.** The panel shows what that copy said, tab by tab, so you're choosing between versions rather than between timestamps. Arrow keys walk the list.
+- **Restoring is safe to get wrong.** What's on the page right now is kept as a version first, and **Ctrl+Z** undoes a restore in one press. A restore puts the writing, properties, tags and title back, and leaves the page exactly where it is in your tree.
+- **The copies are ordinary files you can use without the app**, in a `.history` folder inside your project, with a note in it explaining what they are. They travel with the project when you copy or back it up, and deleting the folder loses the history and nothing else.
+- Old copies are cleared out on their own: anything past 30 days, and more than 50 of any one page. **The most recent copy of a page is never deleted**, however old it is.
+## 2026-08-27 — every shortcut on one screen
+
+### Additions
+
+- **Press `?` to see every keyboard shortcut you have.** It opens a list of all of them with the keys each one is currently on — including anything you've changed, since it reads the same settings the keys themselves do rather than a list written down somewhere. Press `?` again to close it, or Escape. **While you're writing, `F1` does the same thing**, because a question mark in the middle of a sentence should stay a question mark.
+- **The four keys you can't change are on that list too**, named as fixed rather than left out: Ctrl+R to reload, F11 for fullscreen, F12 for the developer tools, and `?` itself.
+- It works on the front page as well as inside a world.
+
+### Adjustments
+
+- **Settings → Keyboard now mentions `?` and `F1`** in its note about the keys that can't be rebound, which had three on it and now has four.
+## 2026-08-27 — somewhere to send it
+
+### Additions
+
+- **You can report a bug from inside the app.** Settings has a new **Report a bug** section: press *Open a bug report* and it opens a form in your browser with a box for what happened, plus the version you're running, which build it is and what system it's on already filled in. Nothing is sent until you press Submit on that page, and the exact text it carries is on screen first so you can read it, trim it, or decide against it. A report filed there is public — worth knowing before you paste a crash into it, since the details include file paths and a path carries the name of a world and of a page.
+- **If you haven't got a GitHub account, *Copy the details* does the same job.** It puts the whole thing on your clipboard to send to somebody who has one — which is how the Linux build has been getting tested.
+- **The crash screen has a *Report this* button.** It copies the details and opens the same form with them filled in, so a crash goes from blank window to written-down in one press. The clipboard is loaded first, because a web link can only carry so much text and the rest is worth keeping.
+- **A report says which of the two builds it came from.** The Windows/Tauri build and the newer Electron one have been shipping under the same version number, so the number alone couldn't tell them apart; every report now names the shell as well.
+
+### Renames
+
+- **Settings → Privacy is now Settings → Report a bug.** It held one thing — the crash log — and the crash log exists so you can send it to somebody. It's still there, underneath the report section, saying where the file lives and copying the last crash on its own.
 
 ## 2026-08-27 — the keys the window didn't answer
 
@@ -213,30 +251,3 @@
 ### Fixes
 
 - **Closing the window works again, and keeps working.** The app holds the window open for a moment while it finishes writing whatever you last typed, then closes it itself. If that last step ever failed, the app quietly decided a close was already underway and refused every attempt after it — so the X did nothing, for the rest of the session, with nothing on screen to say why. A close that doesn't succeed can now simply be tried again, and there's a second way out if the first is refused.
-
-
-## 2026-08-21 — open it anyway
-
-### Additions
-
-- **When Anamnesis says a project is open in another window, you can now overrule it.** An **Open it anyway** link sits next to the message. The check is a guess — a project says it's open by keeping a note fresh, so a crash, a power cut or a sync client holding the folder all look exactly like a second window from the outside, and the app has no way to tell them apart. It still says what it thinks, and now you get the last word. Renaming a project another window holds is still refused outright, because renaming a folder something else has open is a different kind of risk.
-
-## 2026-08-21 — reloading no longer locks you out of your own project
-
-### Fixes
-
-- **Refreshing the app stopped shutting you out of the project you had open.** A project records that it's open so a second copy of Anamnesis can't save over the first — but the app worked out who it was fresh on every load, so after a refresh it found the note it had written seconds earlier, didn't recognise its own handwriting, and refused to let you back in until the note went stale a couple of minutes later. A window now remembers who it is across a refresh and takes its own project straight back. Two genuinely separate copies are still kept apart, exactly as before.
-
-## 2026-08-21 — Tab picks what the [[ menu is showing
-
-### Fixes
-
-- **Tab in the `[[` menu takes the highlighted page**, the way finishing with `]]` already does and the way Tab works in any autocomplete. Before, nothing in the app claimed the key while that menu was open, so it fell through into the editor and rearranged the block you were writing in instead — which is the "it turns into a quote" you kept hitting. The same goes for the `/` menu and `@` mentions, which are the same menu underneath.
-- **Tab can no longer reach the editor at all while one of those menus is open.** If the list has nothing in it, Tab now does nothing rather than doing something to your writing.
-
-
-## 2026-08-21 — Tab stays inside dialogs too
-
-### Fixes
-
-- **Tab no longer walks out of a dialog into the page behind it.** Settings, Import, Export, All properties & tags, the picture picker, Save as template, Manage pins, the template picker and both confirm boxes all keep the cursor inside now, wrapping around at either end — and Tab from outside one steps into it rather than past it. The menus were fixed earlier the same day; dialogs are built separately and were missed, which is why it looked half-fixed.

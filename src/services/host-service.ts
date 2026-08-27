@@ -220,6 +220,11 @@ export function appVersion(): Promise<string> {
   return getVersion();
 }
 
+/** Which shell this build is — see the contract. This file is the Tauri one. */
+export function shellName(): string {
+  return "Tauri";
+}
+
 /** Quits and starts the app again — used after an update installs. */
 export async function restart(): Promise<void> {
   await relaunch();
@@ -354,6 +359,7 @@ const conformance = {
   announceOpenProject,
   focusWindowWithProject,
   appVersion,
+  shellName,
   restart,
   chooseDirectory,
   chooseFile,

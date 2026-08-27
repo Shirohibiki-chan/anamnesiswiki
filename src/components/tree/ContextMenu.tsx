@@ -1,5 +1,5 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Move to /
-// Set color /
+// Set color / Earlier versions /
 // Save as template / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
@@ -19,6 +19,7 @@ import {
   EyeOff,
   FolderInput,
   FolderOpen,
+  History,
   Home,
   Palette,
   Smile,
@@ -73,6 +74,8 @@ type ContextMenuProps = {
   onToggleProjectHome: () => void;
   onTogglePinned: () => void;
   onToggleHidden: () => void;
+  /** Earlier versions of this page (Phase 19). Single selection only. */
+  onShowHistory: () => void;
   onReveal: () => void;
   onExport: () => void;
   onDelete: () => void;
@@ -101,6 +104,7 @@ export function ContextMenu({
   onToggleProjectHome,
   onTogglePinned,
   onToggleHidden,
+  onShowHistory,
   onReveal,
   onExport,
   onDelete,
@@ -223,6 +227,14 @@ export function ContextMenu({
         <button type="button" onClick={() => run(onTogglePinned)}>
           {isPinned ? <PinOff size={13} /> : <Pin size={13} />}{" "}
           {isPinned ? "Remove shortcut" : "Set as shortcut"}
+        </button>
+      )}
+      {/* Single selection only, for the same reason Reveal is: the panel is
+          about one page's past, and there is no sensible thing for it to show
+          about six of them at once. */}
+      {!isMultiple && (
+        <button type="button" onClick={() => run(onShowHistory)}>
+          <History size={13} /> Earlier versions
         </button>
       )}
       {/* Single selection only: revealing several rows at once means several

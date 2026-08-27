@@ -295,6 +295,19 @@ export type ProjectStoreState = {
    * marking a page edited for closing a box in it is a lie she can read.
    */
   updateNode: (id: string, patch: Partial<Omit<Node, "id">>, options?: { touch?: boolean }) => void;
+  /**
+   * How many times each node's writing has been replaced from outside the
+   * editor (Phase 19: restoring an earlier version).
+   *
+   * **The editor reads its content once, when it mounts.** It is keyed by tab,
+   * so a rewrite underneath it leaves the old words on screen — and the next
+   * keystroke saves those old words back, quietly undoing the restore. This
+   * number goes in that key, so an external rewrite remounts the editor and
+   * nothing else does: `updatedAt` changes on every keystroke and would remount
+   * it on every one.
+   */
+  contentRevisions: Record<string, number>;
+  bumpContentRevision: (id: string) => void;
   updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
   toggleTabHidden: (nodeId: string, tabId: string) => void;
   addTab: (nodeId: string, label: string) => Tab;
@@ -901,6 +914,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     rootPath: null,
     project: null,
     nodes: {},
+    contentRevisions: {},
     templates: createTemplateLibrary(),
     openTemplateId: null,
     isLoaded: false,
@@ -1022,6 +1036,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         rootPath,
         project,
         nodes: {},
+        contentRevisions: {},
         templates: createTemplateLibrary(),
         openTemplateId: null,
         isLoaded: true,
@@ -1106,7 +1121,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       useHistoryStore.getState().clear();
       const project = createProject({ name: trimmed, rootOrder });
       const nodesRecord = Object.fromEntries(nodes.map((node) => [node.id, node]));
-      set({ rootPath, project, nodes: nodesRecord, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
+      set({ rootPath, project, nodes: nodesRecord, contentRevisions: {}, isLoaded: true, navHistory: EMPTY_NAV_HISTORY });
 
       await fsService.saveProject(rootPath, project);
       // One shared path index for the whole write, the way the LK import does
@@ -1189,7 +1204,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       useHistoryStore.getState().clear();
       const project = { ...createProject({ name: trimmed, rootOrder }), homeNodeId };
       const nodesRecord = Object.fromEntries(nodes.map((n) => [n.id, n]));
-      set({ rootPath, project, nodes: nodesRecord, isLoaded: true, assetSources, navHistory: EMPTY_NAV_HISTORY });
+      set({
+        rootPath,
+        project,
+        nodes: nodesRecord,
+        contentRevisions: {},
+        isLoaded: true,
+        assetSources,
+        navHistory: EMPTY_NAV_HISTORY,
+      });
 
       await fsService.saveProject(rootPath, project);
       // One shared path index for the whole import rather than one per node —
@@ -1206,10 +1229,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     closeProject() {
       useHistoryStore.getState().clear();
       releaseAssetUrls();
+      // Node ids are unique, so a stale entry could only ever cost one missed
+      // safety copy rather than a wrong one — but the cache is per session and
+      // a session can open several worlds, and there is no reason to carry a
+      // closed world's answers into the next one.
+      fsService.forgetSnapshotTimes();
       set({
         rootPath: null,
         project: null,
         nodes: {},
+        contentRevisions: {},
         templates: createTemplateLibrary(),
         openTemplateId: null,
         isLoaded: false,
@@ -1275,6 +1304,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         () => restoreNodes([node], [], orderingAfter),
       );
       return node;
+    },
+
+    bumpContentRevision(id) {
+      const { contentRevisions } = get();
+      set({ contentRevisions: { ...contentRevisions, [id]: (contentRevisions[id] ?? 0) + 1 } });
     },
 
     updateNode(id, patch, options) {

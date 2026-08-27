@@ -186,6 +186,24 @@ export async function goForward(window: Page): Promise<void> {
   await window.getByRole("button", { name: "Forward", exact: true }).click();
 }
 
+/**
+ * Opens the settings dialog and waits for it.
+ *
+ * By role and label rather than by class, unlike everything above it: the cog
+ * and the rail are already labelled for screen readers, and a test hook that
+ * is the accessibility name cannot rot without the accessibility rotting with
+ * it.
+ */
+export async function openSettings(window: Page): Promise<void> {
+  await window.getByLabel("Settings", { exact: true }).first().click();
+  await window.getByRole("dialog").waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Switches to one of the sections down the left of the settings dialog. */
+export async function openSettingsSection(window: Page, name: string): Promise<void> {
+  await window.getByRole("tab", { name, exact: true }).click();
+}
+
 /** Collapses runs of whitespace, the way the browser already has by render time. */
 function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim();

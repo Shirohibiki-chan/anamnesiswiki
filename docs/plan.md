@@ -116,6 +116,12 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   Electron build already describes itself as 0.5.0, so publishing one puts a
   second, different 0.5.0 into the update feed of a release that exists.
 
+  **A bug report now names the shell, which is not a fix.** `shellName()` went
+  into the host contract on 2026-08-27 so a report says *Electron build* rather
+  than only *0.5.0* — that makes an arriving report readable, and does nothing
+  about two files on a disk, two entries in a settings store, or an update feed
+  with two 0.5.0s in it.
+
 - **The two panel width caps do not add up to a window.** `TREE_MAX_WIDTH` is
   520 and `PROPERTIES_MAX_WIDTH` is 560, which is 1080 — wider than the 900 the
   window itself will not go below. The comment above them in
@@ -427,8 +433,8 @@ What is genuinely left is the part that can only be settled by running it:
   history — it is a write-only ingest key rather than a secret, but the app it
   points at should be deleted rather than left listening.
 
-- **Settings → Privacy says nothing about collection or the network, and that
-  is deliberate.** Same day, hours after the page was written.
+- **Settings → Report a bug (the Privacy tab, renamed 2026-08-27) says nothing
+  about collection or the network, and that is deliberate.** Same day, hours after the page was written.
 
   It briefly held two more sections: one declaring that the app collects
   nothing, one listing the two times it reaches the network. Both were
@@ -469,8 +475,8 @@ What is genuinely left is the part that can only be settled by running it:
     use — no new shell capability, so it works the same under both shells.
   - **The two global handlers record and do nothing else.** A rejected promise
     usually leaves the app perfectly usable, and blanking the window over one
-    would be a worse bug than the one being reported. Settings → Privacy is
-    where those become findable, and it can copy the last one.
+    would be a worse bug than the one being reported. Settings → Report a bug
+    is where those become findable, and it can copy the last one.
 
   **Why not the automatic kind.** A stack trace carries error messages, and
   this app's error messages carry file paths — which carry world names and page
@@ -530,13 +536,35 @@ Kept because the answers are the useful part:
 
 ## Phase 19 — Safety Net
 
-**Runs after Phase 29** — see that phase for why: this is the most
-filesystem-heavy work left, and the shell swap rewrites the filesystem layer.
+**Version history shipped 2026-08-27** — see `docs/shipped.md`. Copies of a page
+are kept in `.history/` inside the project, browsed and restored from a tree
+row's *Earlier versions*. What is left of the phase is below.
+
+**The ordering note that used to head this phase — "runs after Phase 29,
+because the shell swap rewrites the filesystem layer" — was spent by the time
+the work started.** Steps 1–3 of Phase 29 have shipped; what remains of it is a
+release, a Fedora tester and deleting two workflows, none of which touches
+`filesystem-service.ts`. It is recorded here rather than deleted because the
+reasoning was right when it was written.
 
 Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
 
-- **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else. **Obsidian's "File Recovery" is the shape to copy**, rather than designing one: automatic periodic snapshots kept on disk, a per-file list of past versions you can browse and restore, and arrow-key navigation through that list (the keyboard part is new in 1.13). Copying a known-good model matters more here than anywhere else in this document, because this is the feature that exists to catch the failure that already happened once (`docs/handoff.md` §Storage) and a half-designed version of it is worse than none — it would be trusted.
 - **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
+
+- **What version history does not cover yet**, decided by scope rather than by
+  argument, so any of them can be picked up on its own:
+  - **`project.json` has no history** — the tree's order, the home page, the
+    expanded folders. Page contents were the loss that happened; this is the
+    other file that could hurt.
+  - **Retention is not configurable.** Obsidian's is, and the model this copied
+    puts an interval and a keep-for in its settings. The numbers live in
+    `constants/limits.ts` (five minutes, thirty days, fifty per page).
+  - **Nothing shows a page has history except the menu item.** No count, no
+    marker on the row.
+  - **A restored version does not carry the page's template or its place in the
+    tree**, on purpose — both are structural rather than content, and
+    `templateKey` decides file-vs-directory storage. If restoring across a
+    template change is ever wanted, it is a relocation and wants the planner.
 
 ---
 
