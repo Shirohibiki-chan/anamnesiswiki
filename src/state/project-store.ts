@@ -24,6 +24,8 @@ import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import { TEMPLATES_FILE } from "../constants/paths";
 import type { ProjectTemplateFile } from "../constants/project-template";
 import * as fsService from "../services/filesystem-service";
+import { acknowledge, parseAcknowledgements, unacknowledged } from "../services/acknowledgements";
+import { getAcknowledgedWarnings, setAcknowledgedWarnings } from "../services/app-settings-service";
 import { isReservedWorldName } from "../services/world-scan";
 import { assetRef, releaseAssetUrls } from "../services/asset-urls";
 import { isAssetInUse } from "../services/asset-usage";
@@ -198,7 +200,12 @@ export type ProjectStoreState = {
   isLoaded: boolean;
   lastSavedAt: number | null;
   // Node files that couldn't be read on the last load (corrupt JSON, wrong
-  // shape). Surfaced once by the shell, then dismissed — see LoadWarning.tsx.
+  // shape). Surfaced by the shell, then dismissed — see LoadWarning.tsx.
+  //
+  // **Already filtered by what has been acknowledged.** A file waved through
+  // as known-broken is left out of this list at load time rather than hidden
+  // in the component, so nothing downstream has to remember the distinction.
+  // `loadWasIncomplete` below is deliberately *not* filtered.
   skippedFiles: string[];
   // Whether the last load failed to read at least one page file. Deliberately
   // *not* the same thing as `skippedFiles.length > 0`: that list is emptied
@@ -265,6 +272,14 @@ export type ProjectStoreState = {
   navHistory: NavHistory;
   loadProject: (rootPath: string) => Promise<{ name: string } | null>;
   dismissSkippedFiles: () => void;
+  /**
+   * "I know about these, stop telling me" (2026-08-27).
+   *
+   * Records what state each file is in as well as its name, so acknowledging
+   * one problem does not silence the next one in the same file — see
+   * services/acknowledgements.ts.
+   */
+  acknowledgeSkippedFiles: () => Promise<void>;
   dismissSaveErrors: () => void;
   initializeProject: (rootPath: string, name: string) => Promise<void>;
   createProjectAt: (parentDir: string, name: string) => Promise<CreateProjectResult>;
@@ -809,6 +824,23 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
    * lets history-store keep the entry and say it couldn't undo, so the next
    * press retries the whole thing.
    */
+/**
+ * The skipped files that have not already been acknowledged.
+ *
+ * **Fails towards showing them.** Every path out of here that cannot answer
+ * properly returns the whole list: a warning about unreadable pages is not
+ * something to swallow because a settings read went wrong.
+ */
+async function stillWorthShowing(skipped: string[]): Promise<string[]> {
+  if (skipped.length === 0) return skipped;
+  try {
+    const [marks, stored] = await Promise.all([fsService.fileMarks(skipped), getAcknowledgedWarnings()]);
+    return unacknowledged(skipped, marks, parseAcknowledgements(stored));
+  } catch {
+    return skipped;
+  }
+}
+
   const restoreNodes = async (restored: Node[], assets: CapturedAsset[], ordering: OrderingSnapshot): Promise<void> => {
     const { rootPath, project } = get();
     if (!rootPath || !project) return;
@@ -970,6 +1002,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       // file here at all, which reads as "nothing is named yet" — the state
       // every picture starts in regardless.
       const assetNames = parseAssetNames(await fsService.loadAssetNames(rootPath));
+      // Before the state is set rather than after, so a file that was waved
+      // through as known-broken never flashes on screen on the way to being
+      // filtered out. Costs two reads on a world that has skipped files, and
+      // nothing at all on one that hasn't.
+      const visibleSkipped = await stillWorthShowing(result.skipped);
       // And the fourth: pictures she took out of the library that a page still
       // needs. Absent for almost every project, which reads as "nothing is
       // hidden" — the state everything starts in.
@@ -991,7 +1028,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
         isLoaded: true,
-        skippedFiles: result.skipped,
+        skippedFiles: visibleSkipped,
         loadWasIncomplete: result.skipped.length > 0,
         recoveredCount: result.recoveredCount,
         reunitedNames: result.reunited,
@@ -1017,6 +1054,22 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
     dismissSkippedFiles() {
       set({ skippedFiles: [] });
+    },
+
+    async acknowledgeSkippedFiles() {
+      const { skippedFiles } = get();
+      if (skippedFiles.length === 0) return;
+      // Cleared first: the acknowledgement is a settings write that can fail on
+      // a read-only disk, and leaving the notice up because the bookkeeping
+      // failed would be answering "I know" with "no you don't".
+      set({ skippedFiles: [] });
+      try {
+        const [marks, stored] = await Promise.all([fsService.fileMarks(skippedFiles), getAcknowledgedWarnings()]);
+        await setAcknowledgedWarnings(acknowledge(parseAcknowledgements(stored), skippedFiles, marks));
+      } catch {
+        // The notice is gone for this session either way; next launch asks
+        // again, which is the right way round for a failure nobody saw.
+      }
     },
 
     // One dismissal for both, because they're one notice on screen.

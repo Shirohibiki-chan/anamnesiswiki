@@ -531,6 +531,36 @@ writes, `PageHistory.tsx` shows, `use-page-history.ts` restores.
   the window mid-write. `useSaveOnExit` tracks the flush itself so close can
   wait on it directly.
 
+## Warnings somebody has acknowledged
+
+Added 2026-08-27. `services/acknowledgements.ts` is the rule,
+`fileMarks` is what it compares against, and the record lives in app settings
+under `acknowledgedWarnings`.
+
+- **Only warnings that repeat get this, and the save-failure warning never
+  does.** A failed write means the writing may not be on disk; a permanent mute
+  on it is a button for losing work. The load warning qualifies because it is
+  recomputed on every open, so a file that will never parse is on screen every
+  launch — and a warning that cannot be turned off is one people learn to
+  ignore, including the time it means something new.
+
+- **An acknowledgement is a path *and* a mark**, the mark being size and
+  modified time. Keying on the path alone would silence the next problem in the
+  same file, which is the failure that makes this feature worse than not having
+  it.
+
+- **Every uncertain answer fails towards showing the warning.** A file the disk
+  will not stat gets no mark and is shown; a settings read that throws shows
+  the unfiltered list. `acknowledge` refuses to record a file it has no mark
+  for, because an empty mark would never match again — a permanent mute by
+  accident.
+
+- **The filtering happens at load, not in the component**, so `skippedFiles` in
+  the store is already what should be seen. `loadWasIncomplete` is deliberately
+  computed from the *unfiltered* list: it gates the "nothing is using this
+  picture" claim, and that is about whether the graph is complete, not about
+  what anybody wants to be told.
+
 ## Loading
 
 - **One damaged file must never cost the user the rest of the project.**
