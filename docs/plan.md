@@ -600,6 +600,175 @@ layout could never show. **It is resizable there**, by dragging either side.
   the app's panels; this puts one block inside the document. They meet only in
   that both make the middle of the window less fixed than it is today.
 
+### The insert menu, checked item by item against what we have
+
+**Added 2026-08-27 from the user's list of the reference's `/` commands.** It
+belongs in this phase because it is the same question from the other end: this
+phase asks how a block gets into the page, and the list below is *which* blocks
+she expects to find there. Most of it already exists and needs routing, not
+building — which is the argument for the pointer model above, not against it.
+
+**Already in the slash menu, nothing to do.** BlockNote's own defaults cover
+more of her list than it looks: all six headings, bullet / numbered / to-do
+lists, table, divider, image, code block, page break, emoji, and — this is the
+one that is easy to miss — **expand, which is BlockNote's toggle headings and
+toggle list**. Our three callouts (Info, Quote, Secret) sit beside them, which
+covers callout, quote and secret. Mention is there too, on `@` rather than `/`.
+Before building any of these, check `use-editor.ts` — it hands the menu the
+full default list minus the duplicate Quote, so the defaults are live.
+
+**Exists as a sidebar block, and is exactly what this phase is for.** Text box,
+properties, tags, alias, image, link block, and the three indexes — subpage
+index, tag index, backlinks — are all built and all in the sidebar today. The
+three indexes are one `collection` block with a switchable source
+(`collection-sources.ts`), so they are three menu entries over one block, not
+three blocks.
+
+**Meters are the same shape of problem, one size up.** One `meter` block draws
+eight ways (`MeterStyle`), so "all meters" is eight entries pointing at one
+block with its style preset — worth doing that way rather than one entry called
+Meter that lands on a bar and makes her go find the setting.
+
+**Not built anywhere yet, and each one is its own small piece of work:**
+
+- **Bulk auto-link, and the hints toggle.** The two she named first, and the
+  only two on the list that are not blocks at all — they are commands that act
+  on prose already typed. `link-index.ts` already knows every page's name and
+  already distinguishes a prose mention from a property one, so the matching
+  half is largely there; the risky half is that a bulk pass **rewrites the
+  document**, which nothing else in the app does. It needs to be undoable in one
+  step and it needs a preview of what it is about to link before it does it —
+  a page where forty names silently turn blue is worse than no feature. The
+  hints toggle is the cheap half and can ship first: a marker on text that
+  *could* be linked, no rewrite involved.
+- **Table of contents.** Derived from the headings already in the document, so
+  it stores nothing and cannot go stale — the one item here with no data model
+  question attached.
+- **Layout / columns, and it is the one item here with a licence problem.**
+  BlockNote ships this as `@blocknote/xl-multi-column`, an official package
+  rather than a fork, so it satisfies `CLAUDE.md` on that count. But **core is
+  MPL-2.0 and the `xl-` packages are `GPL-3.0 OR PROPRIETARY`** (checked against
+  npm 2026-08-27), and Anamnesis is MIT. Taking the GPL branch means the whole
+  app ships under GPL-3.0 — a licence change to the released app, which is the
+  user's decision and nobody else's; the other branch is paid.
+
+  **Both branches are refused, settled 2026-08-27, and this is not to be raised
+  again.** She will not pay for a dependency and the app stays MIT — a licence
+  fee, or relicensing the entire app, to obtain one editor block is out of all
+  proportion to what is being bought. **So `@blocknote/xl-multi-column` is not
+  to be installed**, and neither is anything else in BlockNote's `xl-` family,
+  which is all on the same terms. Columns get **a custom block written against
+  BlockNote's own block API** — the same route as the Info, Quote and Secret
+  callouts in `src/services/editor-blocks/`. Real work, no licence attached, and
+  it should be estimated as build time rather than reopened as a choice.
+
+  Separately: it overlaps this phase's per-block width and Phase 21's splittable
+  panels; three different things called columns, and the naming needs settling
+  before any of them ship.
+- **Callout colours, and it is the smallest useful thing on this page.** She
+  asked for the full set 2026-08-27 with examples she had written elsewhere —
+  amber and red warnings, a green confirmation, a neutral grey note. **Give the
+  callout a colour rather than adding a type per colour**, drawn from
+  `COLOR_PALETTE` like every other colour in the app, so the set is hers to pick
+  from and not a queue of requests to me.
+
+  **But colour and type are not the same axis, and collapsing them breaks
+  something.** Secret is not "the purple one" — it is the block the publisher is
+  required to strip, and Quote is what a `.lk` blockquote imports as. Those two
+  carry behaviour. So: keep the three types, add a colour prop that defaults to
+  what each type looks like today, and let the icon follow the colour (her
+  examples pair a tick with green and an exclamation with amber, which is the
+  convention readers already know). A red Secret must still be secret.
+- **Block anchors — the `#` that appears on hover and links to that block.**
+  Asked for 2026-08-27 off the same screenshots. Not on the original command
+  list because it is not something you insert; it is a handle on a block that is
+  already there. Worth knowing it is two features wearing one control: a
+  *stable id per block* to point at, and *a link that scrolls to it*. The second
+  is easy and the first is the one to think about — an id derived from the
+  heading text moves when the text is edited, and any link she pasted elsewhere
+  dies quietly. Prefer an id that is stored, not derived.
+- **Linked events.** Phase 25's territory — there are no events to link until
+  storylines exist. Listed here so it is not mistaken for a gap in this phase.
+
+**Infobox is a container, and the word means two different things.** Settled
+2026-08-27, and worth stating plainly because the confusion cost a round trip:
+**the thing she has been calling an infobox is a callout** — a coloured box with
+an icon and text, which the app has had since Phase 1 and which only wants the
+colours above. **The thing the reference calls an infobox is a block panel
+sitting in the page body**: a bordered frame with its own Add Block button,
+offering the same blocks the sidebar offers — Text Box, Properties, Image.
+
+**An infobox is a third place a block can live, not a replacement for the second
+one.** A first draft of this entry claimed it collapsed the phase into a single
+feature; the user corrected that the same day, and the correction is the
+important part: **blocks can be dragged out of an infobox into the page body and
+back in**, so a block standing on its own in the document has to work anyway.
+The infobox groups blocks; it does not host them exclusively. Everything the
+phase above says about a lone block in the page still stands.
+
+What it does change is the count of *editor* blocks. There are **two** to build,
+not ten and not one: one that is a single block, and one that is a container of
+them. Both draw through the same renderer, so a block kind added later appears in
+all three places without being ported to any of them. It also very likely
+explains the eleven-dial screenshot that started this phase — that was probably a
+meter block inside an infobox rather than a gauge block sitting in the page.
+
+- **Three homes and dragging between all of them is the real shape of this
+  phase**, and it is more work than either half suggested on its own: sidebar,
+  page body, and infobox, with a block movable between any two. **This is what
+  settles the pointer-versus-copy question above, and settles it toward the
+  pointer** — under the copy model, every one of those six directions is a
+  conversion that can lose fields, and a block dragged sidebar → infobox → page
+  is a block rewritten twice. Under the pointer model each is a move.
+- **The refactor to do first** is splitting `BlockPanel.tsx`, which is hardwired
+  to "the sidebar, showing this node's blocks" — `useBlocks` takes a `Node` and
+  derives the list from it. The list-drawing half has to accept any block list.
+  Both new editor blocks need that split, so nothing else should start before
+  it.
+- **The pointer-versus-copy question above survives unchanged** and is still the
+  expensive decision: whether an infobox's blocks live in `node.blocks` with the
+  document holding a reference, or in the document outright. Prefer the pointer,
+  for the reasons already given.
+- **Their Media section — YouTube, Spotify, SoundCloud, Map — is out of scope**
+  until asked for. It was never on her list; it is listed here only so that
+  seeing it in a screenshot later does not read as something we missed.
+- **Still open: whether text wraps around it.** Her screenshots show it
+  full-width, and BlockNote does not float blocks. **Build the full-width
+  version**; if wrapping is wanted later it is a much larger job and deserves to
+  be asked for on purpose rather than assumed into this one.
+
+**Element, which is a page that does not exist yet.** Settled 2026-08-27 from
+her screenshots of the reference. It is not a block at all — it is a small
+dialog that **makes a new page and links to it in one action**, without leaving
+the editor or going to the tree first. Four fields: the page's name, optional
+link text if the link should read differently from the name, a location picker
+defaulting to the page you are on, and a Hidden checkbox.
+
+**Every part of this exists except the dialog.** Creating a page under a parent
+is what the tree's own add already does; `Node.hidden` shipped 2026-08-10; the
+chip it leaves behind is the mention chip; and the hover preview in her second
+screenshot is `HoverPreviewCard.tsx`, which we built and which already shows a
+page's opening on hover. **So this is a form over existing services, and it is
+the cheapest genuinely-new item on the whole list** — likely the one to do
+first, since it needs no decision from this phase's pointer question.
+
+Two things to get right rather than assume:
+
+- **A location picker that defaults to the current page but is changeable**,
+  and can be cleared — her screenshot shows an × on the field. Clearing it means
+  a top-level page, and that reading should be checked against the reference
+  rather than guessed.
+- **`[[Name]]` for a page that does not exist should reach this dialog.**
+  `wikilink.ts` deliberately leaves an unmatched `[[Name]]` as plain text today,
+  which was the right call when there was nothing to offer instead. With this
+  built there is: the natural gesture is to type the name of a page you have not
+  written yet, and the dialog is the answer to it, pre-filled. Treat that as part
+  of this item, not a follow-up — without it the feature is a menu entry people
+  have to remember, and with it it is the thing that happens when you write.
+
+**Icon is the emoji picker** — confirmed by the user 2026-08-27, already in
+BlockNote's defaults, nothing to build.
+
 **Why it is worth doing:** the sidebar is a column, and a panel of stats is a
 grid. Everything Phase 18c built is squeezed by that column — four gauges go
 two-across and a fifth pushes the page's fields off the bottom. This is the
