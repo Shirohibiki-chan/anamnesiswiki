@@ -9,8 +9,9 @@
 // Nothing about a crash is sent anywhere, so there is nothing to disclose and
 // no reason to be coy — and somebody who can see the text can decide for
 // themselves whether to pass it on.
-import { AlertTriangle, Check, Copy, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bug, Check, Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { factsFromCrash, openBugReport, reportDetails } from "../../services/bug-report-service";
 import { describeCrash, type CrashRecord } from "../../services/crash-log-service";
 
 export function CrashScreen({ record, onRestart }: { record: CrashRecord; onRestart: () => void }) {
@@ -25,6 +26,20 @@ export function CrashScreen({ record, onRestart }: { record: CrashRecord; onRest
     } catch {
       // Denied or unavailable. The text is on screen and selectable, which is
       // why it is on screen — the button is the convenience, not the only way.
+    }
+  }
+
+  // Copies before it opens: what a URL can carry is capped, and the clipboard
+  // is where the part that does not fit ends up. If the browser never opens —
+  // a shell with no opener, a machine with no default browser — the text is on
+  // the clipboard anyway, which is the half that matters.
+  async function report() {
+    await copy();
+    try {
+      await openBugReport(reportDetails(factsFromCrash(record), record));
+    } catch {
+      // The app is already in its failure screen; a browser that will not open
+      // is not something to put a second error on top of it about.
     }
   }
 
@@ -49,6 +64,11 @@ export function CrashScreen({ record, onRestart }: { record: CrashRecord; onRest
             <RefreshCw size={14} />
             Restart Anamnesis
           </button>
+          <button type="button" className="ui-btn" onClick={() => void report()}>
+            <Bug size={14} />
+            Report this
+            <ExternalLink size={12} />
+          </button>
           <button type="button" className="ui-btn" onClick={() => void copy()}>
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? "Copied" : "Copy the details"}
@@ -61,8 +81,11 @@ export function CrashScreen({ record, onRestart }: { record: CrashRecord; onRest
         </details>
 
         <p className="crash-screen-footnote">
-          This is written to a file on your computer and sent nowhere. If you'd like it looked at, the button above
-          copies the same text you can read here, ready to paste. Settings → Privacy says where the file lives.
+          This is written to a file on your computer and sent nowhere on its own. <em>Report this</em> opens a bug
+          report form in your browser with the details filled in — you read it and press Submit, or close the tab and
+          nothing happens. A report filed there is public, and what it carries is the text under{" "}
+          <em>What went wrong</em> above, so it's worth a look first. <em>Copy the details</em> puts the same thing on
+          your clipboard instead. Settings → Report a bug says where the file lives.
         </p>
       </div>
     </div>
