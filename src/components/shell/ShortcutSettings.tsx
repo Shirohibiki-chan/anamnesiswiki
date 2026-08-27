@@ -124,6 +124,15 @@ export function ShortcutSettings() {
         while you're writing can't be taken.
       </p>
 
+      {/* Named rather than listed above, because they aren't rebindable and a
+          row with no button on it reads as one that's broken. They're here at
+          all so this screen isn't quietly leaving two working keys out. */}
+      <p className="shortcut-hint">
+        Three more are fixed and can't be changed: <strong>{modifierName}+R</strong> reloads the window,{" "}
+        <strong>F11</strong>{" "}
+        goes fullscreen, and <strong>F12</strong> opens the developer tools.
+      </p>
+
       {hasAnyOverride && (
         <button type="button" className="ui-link shortcut-reset-all" onClick={() => resetAll().catch(() => setProblem(SAVE_FAILED_MESSAGE))}>
           Reset all to defaults

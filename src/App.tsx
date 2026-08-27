@@ -6,6 +6,7 @@ import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
 import { useSaveOnExit } from "./hooks/use-save-on-exit";
+import { useShellKeys } from "./hooks/use-shell-keys";
 import { useThemeBootstrap } from "./hooks/use-theme";
 
 function App() {
@@ -28,6 +29,10 @@ function App() {
   // close is always matched by something that can complete it. It needs no
   // project: the flush it guards is autosave's, which is a plain service.
   useSaveOnExit();
+  // Above the router for the same reason: reload and fullscreen are keys the
+  // window answers, not keys a project answers, and the start screen is one
+  // of the places somebody reaches for a reload.
+  useShellKeys();
   return (
     <>
       <StartupRouter />
