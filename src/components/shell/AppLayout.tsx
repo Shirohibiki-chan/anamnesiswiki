@@ -9,6 +9,7 @@ import { useNavigationActions } from "../../hooks/use-navigation";
 import { useOpenTemplate } from "../../hooks/use-template-editing";
 import { usePanelWidthActions, usePanelWidths } from "../../hooks/use-panel-widths";
 import {
+  CENTER_MIN_WIDTH,
   PROPERTIES_MAX_WIDTH,
   PROPERTIES_MIN_WIDTH,
   TREE_MAX_WIDTH,
@@ -102,7 +103,16 @@ export function AppLayout() {
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ "--tree-w": `${widths.tree}px`, "--props-w": `${widths.properties}px` } as React.CSSProperties}
+      style={
+        {
+          "--tree-w": `${widths.tree}px`,
+          "--props-w": `${widths.properties}px`,
+          // The floor the page holds whatever the panels are dragged to. Fed
+          // from the constant rather than written into the stylesheet so the
+          // number lives with the widths it is in tension with.
+          "--center-min": `${CENTER_MIN_WIDTH}px`,
+        } as React.CSSProperties
+      }
     >
       <aside className="app-layout-tree">
         <TreeSidebar />

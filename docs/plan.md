@@ -122,21 +122,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   about two files on a disk, two entries in a settings store, or an update feed
   with two 0.5.0s in it.
 
-- **The two panel width caps do not add up to a window.** `TREE_MAX_WIDTH` is
-  520 and `PROPERTIES_MAX_WIDTH` is 560, which is 1080 — wider than the 900 the
-  window itself will not go below. The comment above them in
-  `constants/layout.ts` says the caps exist so that "two panels dragged wide on
-  a small window" cannot leave the centre column with no room to render in, and
-  at the minimum window size they do not achieve that: both dragged full leaves
-  the centre column at nothing. Found 2026-08-26 while fixing the top bar, which
-  is the first thing that breaks when it happens — the container query there
-  buys the bar 95px, and 95px is no help against a column of zero.
-
-  **Not fixed because the fix is a choice**: capping each panel as a share of
-  the window changes what dragging does at every size, and clamping only at the
-  bottom end makes a panel move on its own when the window shrinks. Either is
-  reasonable and neither is invisible.
-
 - **A project that refuses to open can say nothing at all.** Reported from use
   2026-08-21: clicking Valeraverse on the start screen did nothing visible, and
   the world stayed shut. The likely trigger was a stale open-claim — a

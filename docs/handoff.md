@@ -2024,6 +2024,21 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ---
 
+## The three columns
+
+- **The page in the middle holds a minimum width and the panels give way to
+  it**, rather than the panels being capped small enough to be safe. Both are
+  `minmax(0, <dragged width>)` in the grid and the centre is
+  `minmax(CENTER_MIN_WIDTH, 1fr)`, so at a window too narrow for all three the
+  browser shrinks the panels — and the stored widths are untouched, so they
+  come back the moment there is room. Fixed 2026-08-27; before it, 520 + 560
+  against a 900px minimum window meant both dragged full left the centre column
+  at exactly zero, measured.
+
+- **The panel maximums are now a taste question, not a safety one.** They stop
+  a panel eating a big monitor; they are no longer what keeps the page
+  renderable, so changing them cannot reintroduce the bug above.
+
 ## Navigation
 
 - **Tree focus is session-only and lives in `focusedId` on the project store.**
