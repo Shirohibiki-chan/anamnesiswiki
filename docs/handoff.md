@@ -715,8 +715,15 @@ under `acknowledgedWarnings`.
   laptop in the first outside install, 2026-08-09, and the workaround needed
   knowledge no ordinary installer has. **If the AppImage is ever changed, the
   test is a machine that reproduces the failure — CI runs the same Ubuntu that
-  produces the bad bundle, so a green build proves nothing here.** Detail and
-  the reported symptom are in `docs/plan.md` §Known Bugs.
+  produces the bad bundle, so a green build proves nothing here.**
+
+  **The Electron build does not have the problem, confirmed 2026-08-27 on the
+  machine that had it.** electron-builder assembles its own AppImage rather
+  than walking a webkit2gtk dependency tree, and the first one handed to that
+  Fedora laptop started with no `LD_PRELOAD` and no workaround. The rule above
+  survives the fix: it is a rule about what an AppImage may contain, not about
+  which bundler was getting it wrong, and anything that ever assembles one by
+  hand has to keep it.
 
 - **`sep()` is synchronous; `join()` is an IPC round trip into Rust per call.**
   That difference is why path building is done locally. Neither exists under
