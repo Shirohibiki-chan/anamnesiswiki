@@ -9,6 +9,7 @@ import {
   matchesBinding,
   mergeBindings,
   normalizeKey,
+  opensShortcutSheet,
   parseOverrides,
 } from "./shortcut-service";
 import { DEFAULT_BINDINGS } from "../constants/shortcuts";
@@ -296,5 +297,35 @@ describe("mergeBindings", () => {
 
   it("returns every action even with no overrides at all", () => {
     expect(mergeBindings({})).toEqual(DEFAULT_BINDINGS);
+  });
+});
+
+describe("opensShortcutSheet", () => {
+  it("opens on ? when nothing is being typed into", () => {
+    expect(opensShortcutSheet(keyEvent("?", { shiftKey: true }), false)).toBe(true);
+  });
+
+  // The whole reason a bare character key is allowed to be a shortcut at all.
+  // A question mark in a sentence has to stay a question mark.
+  it("leaves ? alone while the caret is in text", () => {
+    expect(opensShortcutSheet(keyEvent("?", { shiftKey: true }), true)).toBe(false);
+  });
+
+  it("opens on F1 whether or not something is being typed into", () => {
+    expect(opensShortcutSheet(keyEvent("F1"), false)).toBe(true);
+    expect(opensShortcutSheet(keyEvent("F1"), true)).toBe(true);
+  });
+
+  // A near miss should fall through to whatever else wants the keypress rather
+  // than being read as this.
+  it("refuses either key with a modifier held", () => {
+    expect(opensShortcutSheet(keyEvent("?", { ctrlKey: true }), false)).toBe(false);
+    expect(opensShortcutSheet(keyEvent("F1", { altKey: true }), false)).toBe(false);
+    expect(opensShortcutSheet(keyEvent("F1", { metaKey: true }), true)).toBe(false);
+  });
+
+  it("ignores every other key", () => {
+    expect(opensShortcutSheet(keyEvent("/"), false)).toBe(false);
+    expect(opensShortcutSheet(keyEvent("F2"), false)).toBe(false);
   });
 });

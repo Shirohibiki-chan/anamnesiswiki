@@ -26,6 +26,8 @@ import {
   ASSETS_DIR,
   BACKUPS_DIR,
   FOLDER_META_FILE as FOLDER_FILE,
+  HISTORY_DIR,
+  HISTORY_README_FILE,
   MOVE_TEMP_PREFIX,
   OPEN_MARKER_FILE,
   PAGE_META_FILE,
@@ -35,6 +37,15 @@ import {
   TEMPLATES_FILE,
 } from "../constants/paths";
 import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
+import {
+  historyReadme,
+  isSnapshotDue,
+  nextSnapshotAt,
+  readSnapshots,
+  snapshotName,
+  snapshotsToPrune,
+  type Snapshot,
+} from "./snapshot-service";
 import { decideAmongNestedWorlds, isAppOwnedDir, WORLD_SCAN_DEPTH, type OpenFolderOutcome, type WorldFile } from "./world-scan";
 
 // eslint-disable-next-line no-control-regex -- control chars are genuinely illegal in Windows filenames
@@ -248,6 +259,7 @@ export type PathIndex = {
 const RESERVED_ROOT_KEYS = new Set(
   [
     { name: ASSETS_DIR, isDirectory: true },
+    { name: HISTORY_DIR, isDirectory: true },
     { name: PROJECT_FILE, isDirectory: false },
     { name: TEMPLATES_FILE, isDirectory: false },
     { name: OPEN_MARKER_FILE, isDirectory: false },
@@ -639,7 +651,12 @@ async function walkEntries(
       // listed. Every other marker-less directory *is* walked (see below), and
       // a world's worth of images is the one place where that would cost
       // something for nothing.
-      if (!entry.isDirectory || (parentId === null && entry.name === ASSETS_DIR)) return;
+      // `.history/` is skipped for a harder reason than `assets/` is: every
+      // file in it *is* a page's JSON, so walking it would read every old copy
+      // of every page back into the tree as a second page. Root only, like
+      // assets — a folder somebody named ".history" inside their world is
+      // theirs.
+      if (!entry.isDirectory || (parentId === null && (entry.name === ASSETS_DIR || entry.name === HISTORY_DIR))) return;
       listings.set(entry.name, await ctx.limited(() => readDir(joinPath(dirPath, entry.name))));
     }),
   );
@@ -1020,10 +1037,139 @@ export async function supportsLongPaths(rootPath: string): Promise<boolean> {
   return asking;
 }
 
+// ------------------------------------------------------- old copies of a page
+
+/**
+ * When each node was last copied aside, this session.
+ *
+ * **A cache, not a record.** The directory listing is the truth; this exists
+ * because `saveNode` runs a third of a second after every burst of typing, and
+ * asking the disk "is a copy due" that often would put a `readDir` in the path
+ * of every keystroke. Seeded from disk the first time a node is saved, and
+ * dropped when a project closes — a wrong entry costs one missed copy, never a
+ * lost one, because the next save after the interval takes one anyway.
+ */
+const lastSnapshotAt = new Map<string, number>();
+
+/** Called when a project closes, so a second world doesn't inherit the first's. */
+export function forgetSnapshotTimes(): void {
+  lastSnapshotAt.clear();
+}
+
+function historyDirFor(rootPath: string, nodeId: string): string {
+  return joinPath(rootPath, HISTORY_DIR, nodeId);
+}
+
+/** The copies kept for one node, newest first. No history reads as none. */
+export async function listSnapshots(rootPath: string, nodeId: string): Promise<Snapshot[]> {
+  try {
+    const entries = await readDir(historyDirFor(rootPath, nodeId));
+    return readSnapshots(entries.filter((entry) => !entry.isDirectory).map((entry) => entry.name));
+  } catch {
+    // No directory yet, or one that can't be listed. Both mean "nothing to
+    // offer", and neither is worth failing whatever asked.
+    return [];
+  }
+}
+
+/** One copy, parsed back into a node. Null if it is gone or unreadable. */
+export async function readSnapshot(rootPath: string, nodeId: string, name: string): Promise<Node | null> {
+  try {
+    const raw = await readTextFile(joinPath(historyDirFor(rootPath, nodeId), name));
+    const parsed = JSON.parse(raw) as Node;
+    return parsed && typeof parsed === "object" && typeof parsed.id === "string" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Copies a page's *current* contents aside before something overwrites them.
+ *
+ * **The copy is what is on disk now, not what is about to be written.** That
+ * is the difference between "here is what this page looked like before you
+ * started editing" and "here is a copy of the edit you regret" — the second is
+ * no use to anybody, and it is the shape a naive version of this takes.
+ *
+ * Everything here is best-effort and silent. A save must never fail because
+ * its safety copy could not be taken: the write that follows is the user's
+ * actual work, and refusing it to protect a convenience would be the worst
+ * trade in the app.
+ */
+async function snapshotBeforeWrite(rootPath: string, nodeId: string, filePath: string, force: boolean): Promise<void> {
+  try {
+    const now = Date.now();
+    let last = lastSnapshotAt.get(nodeId) ?? null;
+    if (last === null) {
+      // First save of this node this session — ask the disk once, then cache.
+      const existing = await listSnapshots(rootPath, nodeId);
+      last = existing[0]?.at ?? null;
+      if (last !== null) lastSnapshotAt.set(nodeId, last);
+    }
+    if (!force && !isSnapshotDue(last, now)) return;
+    if (!(await exists(filePath))) return; // A page being created has no past.
+
+    const contents = await readTextFile(filePath);
+    const dir = historyDirFor(rootPath, nodeId);
+    // Stamped strictly after the last one: a save and the delete that follows
+    // it land in the same millisecond, and two copies with one name are one
+    // copy. See `nextSnapshotAt`.
+    const at = nextSnapshotAt(last, now);
+    await mkdir(dir, { recursive: true });
+    await writeTextFile(joinPath(dir, snapshotName(at)), contents);
+    lastSnapshotAt.set(nodeId, at);
+
+    await writeHistoryReadme(rootPath);
+    await pruneSnapshots(rootPath, nodeId, at);
+  } catch {
+    // Nothing to say and nowhere to say it. See the note above: the save this
+    // is protecting matters more than the protection.
+  }
+}
+
+/** The note for whoever finds the folder without the app. Written once. */
+async function writeHistoryReadme(rootPath: string): Promise<void> {
+  const path = joinPath(rootPath, HISTORY_DIR, HISTORY_README_FILE);
+  try {
+    if (await exists(path)) return;
+    await writeTextFile(path, historyReadme());
+  } catch {
+    // A folder full of dated JSON is still legible without it.
+  }
+}
+
+/** Applies the retention rules to one node's directory. */
+async function pruneSnapshots(rootPath: string, nodeId: string, now: number): Promise<void> {
+  const dir = historyDirFor(rootPath, nodeId);
+  for (const snapshot of snapshotsToPrune(await listSnapshots(rootPath, nodeId), now)) {
+    try {
+      await remove(joinPath(dir, snapshot.name));
+    } catch {
+      // Left where it is. A copy that outstays its welcome costs disk; one
+      // deleted by a loop that ignored an error costs the thing this is for.
+    }
+  }
+}
+
+/**
+ * Copies a node aside right now, whatever the interval says.
+ *
+ * For the paths where the current contents are about to stop existing — a
+ * delete — rather than merely change. Undo can already bring a deleted page
+ * back within a session; this is what is left when the session is not.
+ */
+export async function snapshotNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
+  const { dirSegments, fileName } = resolveNodePath(node, graph);
+  await snapshotBeforeWrite(rootPath, node.id, joinPath(rootPath, ...dirSegments, fileName), true);
+}
+
 export async function saveNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
   const { dirSegments, fileName } = resolveNodePath(node, graph);
   const dirPath = joinPath(rootPath, ...dirSegments);
   const filePath = joinPath(dirPath, fileName);
+
+  // Before the write, so what is kept is the state this save is replacing.
+  await snapshotBeforeWrite(rootPath, node.id, filePath, false);
 
   try {
     await mkdir(dirPath, { recursive: true });
@@ -1160,6 +1306,11 @@ export async function deleteNodes(
   for (const node of nodes) {
     const { dirSegments, fileName } = resolveNodePath(node, indexBefore);
     const dirPath = joinPath(rootPath, ...dirSegments);
+    // Whatever the interval says. Undo brings a deleted page back while the
+    // app is open; this is what is left the next morning. It is also the one
+    // path where the file is about to stop existing rather than change, so
+    // there is no later save to catch what this one misses.
+    await snapshotBeforeWrite(rootPath, node.id, joinPath(dirPath, fileName), true);
     if (usesDirectoryStorage(node, indexBefore.parentIds)) {
       await remove(dirPath, { recursive: true });
     } else {

@@ -222,3 +222,36 @@ export const MOVE_TEMP_PREFIX = ".anamnesis-move-";
 // an app that was killed mid-probe is inert, not a page waiting to be found.
 export const PROBE_TEMP_PREFIX = ".anamnesis-probe-";
 
+/**
+ * Where old copies of a page are kept (Phase 19).
+ *
+ * **Inside the project, not in the app's own data folder.** A world is a
+ * folder she owns, and everything that belongs to it travels with it — copy
+ * the folder to another machine, restore it from a backup, hand it to somebody,
+ * and its history comes too. History kept in `%APPDATA%` would be history that
+ * survives exactly the failure nobody has (the app's settings being lost) and
+ * not the ones people do (a folder copied without it).
+ *
+ * Dotted so it sorts out of the way and so the load walk skips it — the walk
+ * reads `.json` files as pages, and every file in here is a page's JSON.
+ * Skipping it is not optional: without that, restoring nothing would still
+ * double every page in the tree.
+ *
+ * Inside, one directory per node id, holding timestamped copies:
+ *
+ *     .history/
+ *       README.txt
+ *       9f3c…/2026-08-27T05-12-03-123Z.json
+ *
+ * **By node id rather than by name**, so a page keeps its history through a
+ * rename and a move — the two operations most likely to be what somebody wants
+ * undone. The name is inside each file, which is what the browser shows.
+ */
+export const HISTORY_DIR = ".history";
+
+/**
+ * The note left beside the copies, for whoever finds the folder without the
+ * app — which is the point of keeping her writing as plain files.
+ */
+export const HISTORY_README_FILE = "README.txt";
+

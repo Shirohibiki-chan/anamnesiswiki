@@ -140,3 +140,31 @@ export const MAX_GROUP_NAME_CHARS = 40;
 // to sit through and long enough to survive a machine that froze for a moment.
 export const PROJECT_CLAIM_REFRESH_MS = 30_000;
 export const PROJECT_CLAIM_STALE_MS = 120_000;
+
+/**
+ * How often a page's previous contents are copied aside (Phase 19).
+ *
+ * Five minutes, which is what Obsidian's File Recovery uses and the model
+ * `docs/plan.md` says to copy rather than redesign. A save happens a third of a
+ * second after you stop typing, so per-save copies would be thousands of files
+ * a day; five minutes is the granularity of "what did this look like before
+ * lunch", which is the question this feature exists to answer.
+ *
+ * **The first save of a page in a session always copies**, whatever this says,
+ * because there is nothing to compare against yet — so the state before today's
+ * first edit is always kept.
+ */
+export const SNAPSHOT_INTERVAL_MS = 5 * 60_000;
+
+/**
+ * How long copies are kept, and how many of any one page.
+ *
+ * Thirty days rather than Obsidian's seven: this is a worldbuilding project
+ * that can go a fortnight without being opened, and a week of history on a
+ * project touched monthly is no history at all. The count cap is what stops a
+ * page being written all day from filling the folder — at five-minute
+ * granularity, fifty copies is about four hours of continuous work.
+ */
+export const SNAPSHOT_MAX_AGE_MS = 30 * 24 * 60 * 60_000;
+export const SNAPSHOT_MAX_PER_NODE = 50;
+

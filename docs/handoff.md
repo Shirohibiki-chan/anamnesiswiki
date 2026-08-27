@@ -402,6 +402,57 @@ is below.
   NUL delimiter was tried and is worse: it makes the source file read as binary to
   `grep`.
 
+## Earlier versions
+
+Phase 19, added 2026-08-27. `snapshot-service.ts` decides, `filesystem-service.ts`
+writes, `PageHistory.tsx` shows, `use-page-history.ts` restores.
+
+- **`.history/` must stay out of the load walk, and this is not a tidiness
+  rule.** Every file in there *is* a page's JSON, so a walk that reads it puts
+  every old copy of every page into the tree as a second page. It is skipped by
+  name at the root, the way `assets/` is, in `walkEntries` — and it is in
+  `RESERVED_ROOT_KEYS` so a page called ".history" gets a suffix rather than a
+  collision.
+
+- **A copy is what is on disk *before* a save, not what the save is about to
+  write.** The difference is the whole feature: the second is a copy of the edit
+  somebody regrets. `snapshotBeforeWrite` runs at the top of `saveNode`, and
+  again with `force` from `deleteNodes` — a delete is the one path where the
+  current contents stop existing rather than change.
+
+- **The name is the identity; there is no index file.** `snapshotName` writes a
+  sortable ISO stamp, so a directory listing *is* the index and a missing or
+  hand-deleted file costs nothing. Two consequences: `nextSnapshotAt` must keep
+  stamps strictly increasing (a save and the delete after it land in the same
+  millisecond, and two copies with one name are one copy), and anything the
+  parser does not recognise is dropped from the list rather than deleted —
+  this folder is inside her project.
+
+- **`lastSnapshotAt` is a cache, and `saveNode` runs on every debounce.** The
+  interval question cannot cost a `readDir` per keystroke, so it is seeded from
+  disk once per node per session and cleared by `closeProject`. A stale entry
+  can only ever cost one missed copy, never a wrong one.
+
+- **The newest copy of a page is never pruned**, whatever the age says.
+  `snapshotsToPrune` holds one back before either rule runs: a page untouched
+  for a year is exactly the one somebody comes back to.
+
+- **Restoring is composed from `updateNode` and `renameNode`, folded into one
+  undo entry.** A name is a filename, and renaming one is a relocation with its
+  own planner; a restore that patched `name` through `updateNode` would write
+  at the new path and leave the old file behind. `restorePatch` therefore
+  excludes `name`, and also `parentId` and `templateKey` — where a page lives
+  and what kind it is are not content, and `templateKey` decides file-vs-
+  directory storage, which is a move rather than an edit.
+
+- **`contentRevisions` exists because the editor reads its content once.**
+  BlockNote is created with `initialContent` and keyed by tab, so replacing a
+  page's writing underneath an open editor leaves the old words on screen —
+  and the next keystroke saves them back over the restore. The revision is in
+  the editor's key and is bumped only by an external rewrite; `updatedAt` would
+  remount the editor on every keystroke. **Anything else that rewrites a node's
+  content from outside the editor has to bump it too.**
+
 ## Saving
 
 - **`autosave.ts` is a plain service and must stay one** — its debounce timers
@@ -1787,6 +1838,36 @@ is below.
   height where it does not, which is the older WebKitGTK one of this app's
   Linux machines runs. It came out of MeterBlock, where it was written for the
   same reason.
+## The shortcut sheet
+
+Added 2026-08-27. `?` opens the list of every shortcut; `ShortcutSheet.tsx`
+draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
+
+- **`?` and `F1` are not in the rebindable table, and cannot be.** A binding
+  set from the settings screen has to carry Ctrl or be a function key
+  (`checkBindingShape`), because a bare letter fires while you type. `?` gets
+  to be a shortcut only because its listener stands down whenever the caret is
+  in text — a property of this one hook, not something a user-chosen binding
+  could be trusted to have. Anything that "tidies this up" by adding a
+  `shortcuts` action to `SHORTCUT_ACTIONS` has to answer that first.
+
+- **It is a second window-level listener, beside `useShellKeys`, and that is
+  deliberate.** The one-listener rule in `use-global-shortcuts.ts` is about the
+  nine rebindable actions, where two features silently claiming one combination
+  is a real risk. These keys are the window's rather than a project's: they
+  work on the start screen, and what they open is mostly a list of what the
+  other listener answers.
+
+- **The rows are read from the store, never written down.** That is the whole
+  feature — every shortcut is rebindable, so a list typed into a component
+  would be wrong for anybody who changed one. `e2e/shows-its-shortcuts.e2e.ts`
+  rebinds a key through the settings screen and asserts the sheet shows the new
+  one, which is the assertion that would catch a hardcoded list.
+
+- **`FIXED_KEYS` in `constants/shortcuts.ts` is named in two places** — the
+  sheet renders it, and Settings → Keyboard says the same thing in prose,
+  because that is the screen somebody lands on wanting to change one. Adding a
+  fixed key means editing both.
 
 ## Layout
 
@@ -3060,6 +3141,36 @@ is below.
   cleared when the attempt settles rather than a flag that latches — an earlier
   boolean version meant one failed close killed the X for the rest of the
   session.
+
+## Reporting a bug
+
+Added 2026-08-27. `services/bug-report-service.ts` builds the text, the panel is
+Settings → Report a bug, and the crash screen's *Report this* is the same path
+from the other end.
+
+- **The app fills the form in and never submits it, and the report is public.**
+  That is why the whole text is on screen before either button is pressed: a
+  crash carries file paths, and a path carries a world's name and a page's
+  title. Anything that turns this into a send button is the collection
+  `CLAUDE.md` → Two Promises rules out, no matter how small the payload.
+
+- **The field ids in `.github/ISSUE_TEMPLATE/bug_report.yml` are the query
+  parameters that prefill it.** `constants/links.ts` names `build`; renaming
+  the field in the yml without renaming it there does not fail anything, it
+  just quietly stops prefilling, and the first sign is a report that arrives
+  with no version in it.
+
+- **The clipboard is loaded before the browser opens, in both entry points.**
+  A `new issue` URL stops working somewhere past 8KB and percent-encoding a
+  stack trace roughly triples it, so `trimForUrl` cuts the prefill to
+  `MAX_PREFILL` — the part that doesn't fit only exists on the clipboard.
+  Reversing those two steps, or dropping the copy from `report()`, throws away
+  the tail of every trace.
+
+- **`shellName()` is in the host contract because a version number cannot
+  answer it.** Both shells have shipped as 0.5.0 (`docs/plan.md` → Known Bugs),
+  so a report saying only "0.5.0" names neither build. It is synchronous like
+  `pathSeparator` — the answer is decided when the build is made.
 
 ## The app test suite
 

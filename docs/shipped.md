@@ -3928,3 +3928,147 @@ static page carrying a component's exact markup out of `public/` and
 screenshotting it. That existed because components had no test setup and
 `pnpm dev` cannot open a project in a browser. A replica of the markup can
 always be wrong in the way the real thing is broken; this opens the real app.
+
+---
+
+## Phase 19 — Safety Net (version history) ✅ Shipped 2026-08-27
+
+The half of Phase 19 that is version history. Obsidian's File Recovery is the
+model `docs/plan.md` says to copy rather than redesign, and this copies it:
+periodic copies kept on disk, a per-page list of them, arrow keys through that
+list, and a restore.
+
+**Built ahead of the rest of Phase 29 deliberately.** The ordering note on the
+phase — "runs after Phase 29, because a shell swap rewrites the filesystem
+layer" — was written when the swap had not happened. Steps 1–3 have shipped;
+what is left of 29 is a release, a Fedora tester and deleting two workflows,
+none of which touches `filesystem-service.ts`. The reason for the ordering is
+spent, so the work is not being done twice.
+
+### What it is
+
+- **`services/snapshot-service.ts`** — pure rules: naming, parsing, when a copy
+  is due, what to prune, the patch a restore applies, and the README text. 21
+  unit tests.
+- **`filesystem-service.ts`** — `snapshotBeforeWrite` at the top of `saveNode`
+  and forced from `deleteNodes`, plus `listSnapshots`, `readSnapshot`,
+  `snapshotNode` and the pruning. `.history/` skipped in `walkEntries` and
+  reserved in `RESERVED_ROOT_KEYS`. Six new tests against the fake disk.
+- **`components/shell/PageHistory.tsx`** — the panel, opened from a tree row's
+  right-click menu. Versions down the left, what that version *said* on the
+  right, arrow keys through the list, one Restore.
+- **`contentRevisions` in the project store**, in the editor's key.
+
+### Verification
+
+`pnpm lint` clean, `pnpm test` 1427 across 60 files, `pnpm test:app` 31 across
+7 files including the new `e2e/keeps-earlier-versions.e2e.ts`, which types into
+a page in the packaged app, checks the copy holds what was there *before* the
+typing, restores it, and checks the typed sentence became a version of its own.
+
+### What the scenario caught, and unit tests could not
+
+**Restoring a page while looking at it did nothing visible, and would have been
+silently reverted.** BlockNote is created with `initialContent` and keyed by
+tab, so the editor kept showing the pre-restore words — and the next keystroke
+would have saved those back over the restored version. Found by the scenario on
+its first run; fixed with `contentRevisions`. This is the failure mode the
+phase's own note in `plan.md` warns about: a half-built safety net is worse
+than none, because it gets trusted.
+
+**Two copies stamped in the same millisecond were one copy.** A save followed
+immediately by a delete overwrote the save's copy; caught by the full unit run
+after passing in isolation, fixed with `nextSnapshotAt`.
+
+### Not done
+
+- **Undo for the right-hand panel**, the phase's other bullet, carried over from
+  Phase 10. Untouched here.
+- **Nothing snapshots `project.json`** — the tree's own order and the project's
+  settings have no history. Page contents were the loss that happened.
+- **Retention is not configurable.** Obsidian's is. The numbers are in
+  `constants/limits.ts` and nothing reads them from settings.
+## Every shortcut on one screen ✅ Shipped 2026-08-27
+
+Nothing in the app could show somebody their own keys. Every shortcut is
+rebindable — the accessibility feature it was built as — and the cost is that
+no fixed list exists to memorise: Settings → Keyboard changes them one at a
+time, which is a screen for editing rather than for looking one up mid-sentence.
+
+### What it is
+
+- **`?` opens the list, `?` closes it, Escape closes it**, and `F1` does the
+  same while the caret is in text, where a question mark has to stay a question
+  mark. Neither key is rebindable; both are now named in Settings → Keyboard's
+  note about fixed keys, which had three on it and has four.
+- **`ShortcutSheet.tsx`** renders two groups: the nine rebindable actions with
+  their *current* bindings, read from the shortcut store, and `FIXED_KEYS` —
+  reload, fullscreen, devtools and `?` — under a heading that says they can't
+  be changed, so a row with no button on it doesn't read as broken.
+- **`use-shortcut-sheet.ts`** is a window-level listener beside `useShellKeys`,
+  so the sheet works on the start screen too. It stands down while Settings is
+  recording a key, and refuses to stack itself on top of an open dialog.
+- **`opensShortcutSheet` in `shortcut-service.ts`** is the pure part: five unit
+  tests covering the in-text rule and the modifier near-misses.
+
+### Verification
+
+`pnpm lint` clean, `pnpm test` 1406 across 60 files, `pnpm test:app` with a new
+`e2e/shows-its-shortcuts.e2e.ts` — five scenarios in the packaged app, one of
+which rebinds Save to Ctrl+F2 through the settings screen and then asserts the
+sheet shows Ctrl+F2. That is the test that would fail on a hardcoded list, which
+is the mistake this feature exists to make impossible.
+
+Screenshotted at 1280 and 900, then again at 2.5× zoom to settle whether the
+arrow keys were rendering: `Alt+←` and `Alt+→` are correct, and only looked
+wrong at 1×.
+## A way to report a bug ✅ Shipped 2026-08-27
+
+The app had nowhere to send a fault. The crash panel that shipped hours earlier
+could copy its details, the repository had no issue templates at all, and a
+tester on Fedora who found something had one route: tell her, so she could tell
+me. Everything else on the polish list gets cheaper once there is somewhere to
+write things down that is not a phone call, which is why this went first.
+
+### What it is
+
+- **`services/bug-report-service.ts`** — pure text work plus one call out:
+  `describeSystem` off the user agent, `describeBuild`, `reportDetails`,
+  `trimForUrl`, `reportUrl`, and `openBugReport`, which hands the system
+  browser a prefilled `issues/new` link. 14 unit tests.
+- **Settings → Report a bug**, which is the old Privacy tab renamed and given
+  the section it was missing. The crash log stays underneath it. Two buttons,
+  because the browser route needs a GitHub account and the person most likely
+  to be holding a broken build has never had a reason to make one — *Copy the
+  details* is that path, not a fallback.
+- **`Report this` on the crash screen**, which copies and then opens, in that
+  order.
+- **`.github/ISSUE_TEMPLATE/bug_report.yml`** — an issue form written for
+  somebody who is not a programmer: what happened (required), what you were
+  doing, does it happen every time, and a build box the app fills in. Blank
+  issues stay enabled for everything that is not a bug.
+- **`shellName()` added to the host contract**, both shells, both `satisfies`
+  blocks. The two builds have shipped under one version number, so a report
+  quoting only the version named neither.
+
+### Verification
+
+`pnpm lint` clean, `pnpm test` 1415 across 60 files, `pnpm test:app` 32 across
+7 files. Two of those are new: `e2e/reports-a-bug.e2e.ts` opens the panel in the
+packaged Electron app and reads the details block, which is the only thing that
+can prove the shell resolution produced the right `host-service` — a unit test
+mocks exactly the part in question.
+
+Screenshotted both surfaces rather than reasoning about them. The settings panel
+at 1280 and at 900. The crash screen by temporarily throwing from `App()`,
+building, shooting, and reverting — which caught two things reading could not:
+a section heading identical to the panel heading directly above it, and a JSX
+newline that ate the space before an `<em>`, rendering `carries.Copy`.
+
+### The keyword that cost a search
+
+`bug-report`'s hint read *"…the version and system filled in"*, and "filled"
+lands two edits from "files", which put the row into the results for *"where are
+my files saved"* and failed `settings-search.test.ts`. The same trap the
+crash-log row above it documents in a comment. Reworded to "already on it".
+

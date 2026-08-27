@@ -72,6 +72,51 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   navigateHome: { key: "Home", alt: true },
 };
 
+/**
+ * The keys that are not rebindable, and what each one does.
+ *
+ * Fixed because each belongs to something other than the app's own shortcut
+ * table: three are the window's (`use-shell-keys.ts`, plus the shell's own
+ * devtools binding) and the fourth opens the list of all the others, which is
+ * the one key somebody has to be able to find without already knowing where
+ * the keys are written down.
+ *
+ * `mod` means the row renders with Ctrl or Cmd in front of it, the same way a
+ * binding does. **Settings → Keyboard names these in prose as well** — it is
+ * the screen somebody lands on wanting to change one, and "you can't" has to
+ * be said there rather than only here. Keep the two in step.
+ */
+export type FixedKey = {
+  /** As typed, without the modifier — "R", "F11", "?". */
+  key: string;
+  /** Whether Ctrl/Cmd is held with it. */
+  mod?: boolean;
+  what: string;
+};
+
+export const FIXED_KEYS: readonly FixedKey[] = [
+  { key: "R", mod: true, what: "Reload the window" },
+  { key: "F11", what: "Fullscreen" },
+  { key: "F12", what: "Developer tools" },
+  { key: "?", what: "This list of shortcuts" },
+];
+
+/**
+ * What opens the list. Two keys rather than one, and neither is rebindable.
+ *
+ * `?` is the convention every app with a cheat sheet uses, and it is the one
+ * this was asked for by name. It cannot be a rebindable binding: those must
+ * carry Ctrl or be a function key (`checkBindingShape`), because a bare letter
+ * fires while you type — `?` gets to break that rule only because the listener
+ * stands down whenever the caret is in text, which a rebindable key set from a
+ * settings screen could not be trusted to do.
+ *
+ * `F1` is the same idea from the other direction: it is what a Windows user
+ * presses for help without being told, and it works while typing, which is
+ * exactly when somebody is most likely to want it.
+ */
+export const SHEET_KEYS = { question: "?", function: "F1" } as const;
+
 // Actions that stand down while the caret is in text — the editor, a rename
 // box, any input. They are allowed to sit on combinations the editor owns,
 // because the two never both want the keypress: Ctrl+Z inside a page is the
