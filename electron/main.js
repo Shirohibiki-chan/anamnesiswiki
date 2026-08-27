@@ -59,26 +59,66 @@ async function readAppVersion() {
 /** Where the page comes from: the dev server if one was named, else the build. */
 const DEV_URL = process.env.ANAMNESIS_DEV_URL ?? null;
 
-/** @type {BrowserWindow | null} */
-let mainWindow = null;
+/**
+ * What this process knows about each of its windows.
+ *
+ * **A second window is an ordinary thing now, so nothing about a window may
+ * live in a module-level variable.** These three were `mainWindow`,
+ * `rendererWantsCloseSay` and `closeApproved` — one set of each, shared by
+ * whatever window happened to be open. With two windows that is not a tidiness
+ * problem but a correctness one: approving the close of one window approved the
+ * close of the other, and a dialog opened from either was parented to whichever
+ * was created last.
+ *
+ * Keyed by the window itself and deleted when it closes, so a window's state
+ * lives exactly as long as the window does.
+ *
+ * `projectPath` is what makes "focus the window that already has this project"
+ * answerable — see `window:focusProject`. Null while a window is sitting on the
+ * picker, which is every window's starting state.
+ *
+ * @type {Map<BrowserWindow, { wantsCloseSay: boolean, closeApproved: boolean, projectPath: string | null }>}
+ */
+const windows = new Map();
+
+/** This window's state, created on first ask. */
+function stateOf(window) {
+  let state = windows.get(window);
+  if (!state) {
+    state = { wantsCloseSay: false, closeApproved: false, projectPath: null };
+    windows.set(window, state);
+  }
+  return state;
+}
 
 /**
- * Whether the renderer has asked to be consulted before the window closes, and
- * whether it has since said yes.
+ * The window a renderer message came from.
  *
- * **Without the first flag a window with no listener would never close.** The
- * renderer registers its handler after the page loads, and between launch and
- * that moment the close button has to work on its own.
+ * Every window-shaped handler below asks this rather than reaching for one
+ * remembered window: a message is always about the window that sent it, and
+ * with two open the remembered one is a coin flip.
  */
-let rendererWantsCloseSay = false;
-let closeApproved = false;
+function windowFrom(event) {
+  return BrowserWindow.fromWebContents(event.sender);
+}
 
-function createWindow() {
+/**
+ * Opens a window.
+ *
+ * `startAtPicker` is how a second launch says "do not reopen the last project"
+ * — the app's normal startup does reopen it, which is the behaviour that put
+ * two autosaving copies on one project and is the whole reason the open-marker
+ * exists. It travels as a fragment on the page's URL rather than as another
+ * question the renderer has to ask: the host already knows the answer at the
+ * moment it creates the window, and a window that has to ask cannot render
+ * until the answer comes back.
+ */
+function createWindow({ startAtPicker = false } = {}) {
   // The same window the Tauri build opened, down to the background colour: it
   // is painted before the page is, and the wrong one is a white flash on a dark
   // app. Hidden until the renderer says it has drawn something — see
   // `showWindow` in the contract and `revealWindow` in main.tsx.
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     title: "Anamnesis",
     width: 1280,
     height: 800,
@@ -104,26 +144,30 @@ function createWindow() {
 
   // What that menu was also carrying: the developer tools. Kept on the usual
   // keys, because losing them was never the point of removing the menu.
-  mainWindow.webContents.on("before-input-event", (_event, input) => {
+  window.webContents.on("before-input-event", (_event, input) => {
     const devtools =
       input.key === "F12" || (input.control && input.shift && input.key.toLowerCase() === "i");
-    if (input.type === "keyDown" && devtools) mainWindow?.webContents.toggleDevTools();
+    if (input.type === "keyDown" && devtools) window.webContents.toggleDevTools();
   });
 
-  mainWindow.on("close", (event) => {
-    if (closeApproved || !rendererWantsCloseSay) return;
+  window.on("close", (event) => {
+    const state = stateOf(window);
+    if (state.closeApproved || !state.wantsCloseSay) return;
     // Held, not cancelled. The renderer flushes whatever it is still writing
     // and then either approves the close or takes the window away itself.
     event.preventDefault();
-    mainWindow?.webContents.send("window:close-requested");
+    window.webContents.send("window:close-requested");
   });
 
-  mainWindow.on("closed", () => {
-    mainWindow = null;
+  window.on("closed", () => {
+    windows.delete(window);
   });
 
-  if (DEV_URL) void mainWindow.loadURL(DEV_URL);
-  else void mainWindow.loadFile(path.join(here, "..", "dist", "index.html"));
+  stateOf(window);
+  const hash = startAtPicker ? "picker" : "";
+  if (DEV_URL) void window.loadURL(hash ? `${DEV_URL}#${hash}` : DEV_URL);
+  else void window.loadFile(path.join(here, "..", "dist", "index.html"), hash ? { hash } : undefined);
+  return window;
 }
 
 /**
@@ -263,22 +307,65 @@ handle("fs:unwatch", (_event, id) => {
 
 // ------------------------------------------------------------------ window
 
-handle("window:show", () => {
-  mainWindow?.show();
+handle("window:show", (event) => {
+  windowFrom(event)?.show();
 });
 
-handle("window:close", () => {
-  closeApproved = true;
-  mainWindow?.close();
+handle("window:close", (event) => {
+  const window = windowFrom(event);
+  if (!window) return;
+  stateOf(window).closeApproved = true;
+  window.close();
 });
 
-handle("window:destroy", () => {
-  closeApproved = true;
-  mainWindow?.destroy();
+handle("window:destroy", (event) => {
+  const window = windowFrom(event);
+  if (!window) return;
+  stateOf(window).closeApproved = true;
+  window.destroy();
 });
 
-handle("window:watchClose", (_event, wanted) => {
-  rendererWantsCloseSay = !!wanted;
+handle("window:watchClose", (event, wanted) => {
+  const window = windowFrom(event);
+  if (window) stateOf(window).wantsCloseSay = !!wanted;
+});
+
+/**
+ * Which project this window has open, or null when it is on the picker.
+ *
+ * Told rather than asked: only the renderer knows when a project has finished
+ * opening, and only this process can see every window at once.
+ */
+handle("window:announceProject", (event, projectPath) => {
+  const window = windowFrom(event);
+  if (window) stateOf(window).projectPath = projectPath ?? null;
+});
+
+/**
+ * Brings the window that already has this project to the front, and says
+ * whether there was one.
+ *
+ * **This is what replaces refusing to open it.** A project open in another
+ * window of this app is not a problem to be reported — it is a window the
+ * person is trying to get back to, which is what every other app with more
+ * than one window does. The caller closes itself when this answers true.
+ *
+ * Only ever finds windows of *this* process, which is the point: a copy on
+ * another machine, reached through a synced folder, cannot be focused from
+ * here and is the one case the open-marker still exists for.
+ */
+handle("window:focusProject", (event, projectPath) => {
+  if (!projectPath) return false;
+  const asking = windowFrom(event);
+  for (const [window, state] of windows) {
+    if (window === asking || window.isDestroyed()) continue;
+    if (state.projectPath !== projectPath) continue;
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+    return true;
+  }
+  return false;
 });
 
 // -------------------------------------------------------------- app itself
@@ -300,8 +387,10 @@ handle("app:restart", () => {
 
 // ----------------------------------------------------------------- dialogs
 
-handle("dialog:chooseDirectory", async (_event, options) => {
-  const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
+// Parented to the window that asked, so the dialog is modal to that one
+// rather than to whichever window happened to be created last.
+handle("dialog:chooseDirectory", async (event, options) => {
+  const result = await dialog.showOpenDialog(windowFrom(event) ?? undefined, {
     title: options?.title,
     defaultPath: options?.defaultPath,
     properties: ["openDirectory"],
@@ -309,8 +398,8 @@ handle("dialog:chooseDirectory", async (_event, options) => {
   return result.canceled ? null : (result.filePaths[0] ?? null);
 });
 
-handle("dialog:chooseFile", async (_event, options) => {
-  const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
+handle("dialog:chooseFile", async (event, options) => {
+  const result = await dialog.showOpenDialog(windowFrom(event) ?? undefined, {
     title: options?.title,
     defaultPath: options?.defaultPath,
     filters: options?.filters,
@@ -319,8 +408,8 @@ handle("dialog:chooseFile", async (_event, options) => {
   return result.canceled ? null : (result.filePaths[0] ?? null);
 });
 
-handle("dialog:chooseSavePath", async (_event, options) => {
-  const result = await dialog.showSaveDialog(mainWindow ?? undefined, {
+handle("dialog:chooseSavePath", async (event, options) => {
+  const result = await dialog.showSaveDialog(windowFrom(event) ?? undefined, {
     title: options?.title,
     defaultPath: options?.defaultPath,
     filters: options?.filters,
@@ -550,12 +639,35 @@ handle("updates:download", async (event) => {
 
 // -------------------------------------------------------------- lifecycle
 
-app.whenReady().then(() => {
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+/**
+ * **Launching Anamnesis again talks to the copy already running.**
+ *
+ * Without this, a second launch is a second process, and two processes cannot
+ * see each other's windows — which is why a project open in one of them could
+ * only ever be reported as a refusal rather than brought to the front. The lock
+ * is the operating system's, so it is released however this process ends,
+ * including badly.
+ *
+ * The second launch opens a window on the picker rather than reopening the last
+ * project, because reopening it is exactly what put two autosaving copies on
+ * one project (verified 2026-08-14). From the picker, choosing a project
+ * already open in another window focuses that window instead of opening it
+ * twice — see `window:focusProject`.
+ */
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    createWindow({ startAtPicker: true });
   });
-});
+
+  app.whenReady().then(() => {
+    createWindow();
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  });
+}
 
 app.on("window-all-closed", () => {
   // macOS convention is to keep the app running with no windows; everywhere

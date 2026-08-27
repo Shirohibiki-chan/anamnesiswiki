@@ -150,6 +150,47 @@ export function describeClaimAge(claim: ProjectClaim, now: number): string {
  */
 let beat: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * How the marker gets removed when the *window* closes rather than when the
+ * project does.
+ *
+ * **React's cleanup does not run when a window is destroyed.** The claim is
+ * held by an effect in `AppLayout`, so navigating out of a project releases it
+ * properly — but quitting the app tears the renderer down without unmounting
+ * anything, and the marker is left behind looking freshly written. The next
+ * launch then finds it, does not recognise it (a new window is a new id), and
+ * reports the project as open in another window. Reported from use twice:
+ * 2026-08-21 and again 2026-08-26, where it was hit by simply closing the app
+ * and reopening it inside the two-minute staleness window.
+ *
+ * A module-level slot rather than a hook for the same reason `autosave.ts` is a
+ * plain service: the thing that needs to call it is the close handler, which is
+ * registered once and must not depend on any component still being mounted.
+ */
+let releaseHeldClaim: (() => Promise<void>) | null = null;
+
+/** Registered by whatever currently holds the marker; null when nothing does. */
+export function setClaimRelease(release: (() => Promise<void>) | null): void {
+  releaseHeldClaim = release;
+}
+
+/**
+ * Removes the marker now, if this window holds one.
+ *
+ * Called on the way out of the window. Best-effort like every other write to
+ * it: a project on read-only media never had a marker to remove, and the
+ * staleness window still covers a crash, a power cut, and a kill.
+ */
+export async function releaseClaimNow(): Promise<void> {
+  const release = releaseHeldClaim;
+  releaseHeldClaim = null;
+  try {
+    await release?.();
+  } catch {
+    // Nothing to do — the staleness window is the fallback it always was.
+  }
+}
+
 export function startClaimHeartbeat(refresh: () => void): void {
   stopClaimHeartbeat();
   beat = setInterval(refresh, PROJECT_CLAIM_REFRESH_MS);

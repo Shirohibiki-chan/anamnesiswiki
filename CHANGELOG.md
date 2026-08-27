@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-27 — a project open in another window
+
+### Fixes
+
+- **Anamnesis no longer says a project is open somewhere else when it isn't.** A project carries a small file saying somebody has it open, so two copies of the app can't quietly write over each other. That file was never cleared when you closed the app — only when you left a project from inside it — so closing Anamnesis and opening it again within two minutes met its own leftovers and refused, with "Open it anyway" as the only way past. It's cleared on the way out now, so the ordinary case never comes up.
+
+### Adjustments
+
+- **Opening a project that's already open takes you to it.** Pick it from the front page and the window that has it comes to the front, and the front page closes behind you — the way any app with more than one window behaves. It used to be a refusal you had to click through.
+- **Opening Anamnesis while it's already running gives you the front page**, rather than a second copy of the app reopening the same project underneath the first. That was the situation the "open in another window" message existed to catch; now it can't happen in the first place.
+- **The warning that's left is the one that's real.** If your projects live in OneDrive or Dropbox and a copy is genuinely open **on another computer**, Anamnesis still can't see that window and still can't be sure — so it says so, and "Open it anyway" is still there. That's now the only time you'll see it.
+
 ## 2026-08-26 — names you can finish reading
 
 ### Fixes
@@ -243,18 +255,3 @@
 
 - **Your existing pages look exactly as they did.** Every page written before today works out its own layout the first time you open it — picture on top, your properties in the order you'd already dragged them into, tags at the bottom. Nothing is rewritten until you actually change something, so opening a world doesn't touch a single file.
 - **Dragging properties into order is now dragging blocks into order.** Same gesture, except it can move the picture and the tags too, which it never could before.
-
-## 2026-08-21
-
-### Fixes
-
-- **Your pinned projects are back to four across.** Making the whole start screen scroll put a scrollbar on the column, which took 8 pixels off the row above it — and at a 1280-wide window that row fitted *exactly* four cards with nothing to spare, so it dropped to three fat ones. The row now lets a card come in a shade under its ideal width rather than losing a whole card, and the space for the scrollbar is reserved whether or not it's showing, so the count can't change as you filter.
-
-
-### Additions
-
-- **Rename a project from inside the app.** It's on the `⋯` menu on any project, and it changes the name *and* the folder together, so the two can't drift apart. The box opens with the current name in it, selected, since most renames are a fix to part of a name rather than a whole new one. Nothing inside the project changes, and its pins, groups and archive state all follow it. If the folder can't be renamed — something else has it open, or your sync client is mid-copy — the name still changes and it tells you where the folder still is.
-
-### Adjustments
-
-- **The top bar and the page arrows stay put while you scroll.** Making the whole start screen scroll took New Project and the filter box off the screen as soon as you moved, and left the page arrows at the end of a list that can be a screen and a half long — so turning a page meant scrolling down to find them, and then doing it again, because turning a page puts you back at the top. Both are pinned now: the bar to the top, the arrows to the bottom. Nothing moved at rest; they only hold position once there's something to scroll.
