@@ -9,6 +9,17 @@
 - **Restoring is safe to get wrong.** What's on the page right now is kept as a version first, and **Ctrl+Z** undoes a restore in one press. A restore puts the writing, properties, tags and title back, and leaves the page exactly where it is in your tree.
 - **The copies are ordinary files you can use without the app**, in a `.history` folder inside your project, with a note in it explaining what they are. They travel with the project when you copy or back it up, and deleting the folder loses the history and nothing else.
 - Old copies are cleared out on their own: anything past 30 days, and more than 50 of any one page. **The most recent copy of a page is never deleted**, however old it is.
+## 2026-08-27 — every shortcut on one screen
+
+### Additions
+
+- **Press `?` to see every keyboard shortcut you have.** It opens a list of all of them with the keys each one is currently on — including anything you've changed, since it reads the same settings the keys themselves do rather than a list written down somewhere. Press `?` again to close it, or Escape. **While you're writing, `F1` does the same thing**, because a question mark in the middle of a sentence should stay a question mark.
+- **The four keys you can't change are on that list too**, named as fixed rather than left out: Ctrl+R to reload, F11 for fullscreen, F12 for the developer tools, and `?` itself.
+- It works on the front page as well as inside a world.
+
+### Adjustments
+
+- **Settings → Keyboard now mentions `?` and `F1`** in its note about the keys that can't be rebound, which had three on it and now has four.
 ## 2026-08-27 — somewhere to send it
 
 ### Additions
@@ -239,10 +250,3 @@
 ### Fixes
 
 - **Refreshing the app stopped shutting you out of the project you had open.** A project records that it's open so a second copy of Anamnesis can't save over the first — but the app worked out who it was fresh on every load, so after a refresh it found the note it had written seconds earlier, didn't recognise its own handwriting, and refused to let you back in until the note went stale a couple of minutes later. A window now remembers who it is across a refresh and takes its own project straight back. Two genuinely separate copies are still kept apart, exactly as before.
-
-## 2026-08-21 — Tab picks what the [[ menu is showing
-
-### Fixes
-
-- **Tab in the `[[` menu takes the highlighted page**, the way finishing with `]]` already does and the way Tab works in any autocomplete. Before, nothing in the app claimed the key while that menu was open, so it fell through into the editor and rearranged the block you were writing in instead — which is the "it turns into a quote" you kept hitting. The same goes for the `/` menu and `@` mentions, which are the same menu underneath.
-- **Tab can no longer reach the editor at all while one of those menus is open.** If the list has nothing in it, Tab now does nothing rather than doing something to your writing.

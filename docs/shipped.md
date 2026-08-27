@@ -3988,6 +3988,40 @@ after passing in isolation, fixed with `nextSnapshotAt`.
   settings have no history. Page contents were the loss that happened.
 - **Retention is not configurable.** Obsidian's is. The numbers are in
   `constants/limits.ts` and nothing reads them from settings.
+## Every shortcut on one screen ✅ Shipped 2026-08-27
+
+Nothing in the app could show somebody their own keys. Every shortcut is
+rebindable — the accessibility feature it was built as — and the cost is that
+no fixed list exists to memorise: Settings → Keyboard changes them one at a
+time, which is a screen for editing rather than for looking one up mid-sentence.
+
+### What it is
+
+- **`?` opens the list, `?` closes it, Escape closes it**, and `F1` does the
+  same while the caret is in text, where a question mark has to stay a question
+  mark. Neither key is rebindable; both are now named in Settings → Keyboard's
+  note about fixed keys, which had three on it and has four.
+- **`ShortcutSheet.tsx`** renders two groups: the nine rebindable actions with
+  their *current* bindings, read from the shortcut store, and `FIXED_KEYS` —
+  reload, fullscreen, devtools and `?` — under a heading that says they can't
+  be changed, so a row with no button on it doesn't read as broken.
+- **`use-shortcut-sheet.ts`** is a window-level listener beside `useShellKeys`,
+  so the sheet works on the start screen too. It stands down while Settings is
+  recording a key, and refuses to stack itself on top of an open dialog.
+- **`opensShortcutSheet` in `shortcut-service.ts`** is the pure part: five unit
+  tests covering the in-text rule and the modifier near-misses.
+
+### Verification
+
+`pnpm lint` clean, `pnpm test` 1406 across 60 files, `pnpm test:app` with a new
+`e2e/shows-its-shortcuts.e2e.ts` — five scenarios in the packaged app, one of
+which rebinds Save to Ctrl+F2 through the settings screen and then asserts the
+sheet shows Ctrl+F2. That is the test that would fail on a hardcoded list, which
+is the mistake this feature exists to make impossible.
+
+Screenshotted at 1280 and 900, then again at 2.5× zoom to settle whether the
+arrow keys were rendering: `Alt+←` and `Alt+→` are correct, and only looked
+wrong at 1×.
 ## A way to report a bug ✅ Shipped 2026-08-27
 
 The app had nowhere to send a fault. The crash panel that shipped hours earlier

@@ -879,6 +879,97 @@
   gap: var(--space-md);
 }
 
+/* The `?` sheet — see components/shell/ShortcutSheet.tsx. Read-only, so none
+   of the settings screen's controls apply: no recording state, no reset
+   buttons, and the keys are `kbd` rather than buttons that look like one. */
+.shortcut-sheet {
+  gap: var(--space-lg);
+}
+
+.shortcut-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.shortcut-sheet-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--color-text-primary);
+}
+
+/* Scrolls inside the dialog rather than growing it: the list grows every time
+   a shortcut is added, and a dialog taller than the window is one whose close
+   button walks off the bottom. */
+.shortcut-sheet-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.shortcut-sheet-group {
+  margin: var(--space-md) 0 0;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.shortcut-sheet-group:first-child {
+  margin-top: 0;
+}
+
+.shortcut-sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* Two columns rather than a dotted leader: the label wraps when the dialog is
+   narrow, and the keys keep their own column instead of being pushed onto a
+   line of their own. */
+.shortcut-sheet-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border-subtle, var(--color-border));
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.shortcut-sheet-row:last-child {
+  border-bottom: none;
+}
+
+/* Mono for the same reason the settings screen uses it: a keystroke written in
+   a proportional face stops reading as a keystroke. */
+.shortcut-sheet-keys,
+.shortcut-sheet-footnote kbd {
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.shortcut-sheet-footnote {
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
 /* Keyboard section — see components/shell/ShortcutSettings.tsx. */
 .shortcut-list {
   list-style: none;
