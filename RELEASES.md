@@ -13,6 +13,63 @@ that.
 
 ---
 
+## v0.6.0 — 2026-08-27
+
+Anamnesis carries its own browser engine now instead of borrowing whichever one your computer happens to have. That's why this one has to be installed by hand — the copy you're running can't update itself across to it — and it's the last time that'll be true. Alongside it: every page keeps its earlier versions, every shortcut fits on one screen, there's somewhere to report a bug from inside the app, and a crash tells you what happened instead of leaving you a blank window.
+
+### Installing this one by hand
+
+- **Download it from the releases page rather than pressing the update button.** The copy you have looks for a file this release doesn't publish, so its update button will find nothing and say there's nothing new. That's not a fault and there's nothing to fix — it's the shell underneath changing, which is a thing an app can't do to itself. Once you're on this version the update button works exactly as it did.
+- **Your worlds aren't touched.** Same folders, same files, same layout on disk, and both versions read them. Nothing to import, nothing to convert.
+- **Your settings come with you.** The first time the new one starts it reads the old one's recent projects, the world you had open last and your projects folder. It copies rather than moves, so the old copy keeps working — which also means that from that moment the two remember separately, and a pin or a setting you change in one won't show up in the other. Themes and snippets live in `Documents\Anamnesis` and are shared by both, as they always were.
+- **The old Anamnesis stays installed until you remove it**, and removing it doesn't touch your worlds.
+- **It's a much bigger download — around 150 MB where it used to be 8.** That's the engine, and it's the trade being made on purpose: one app that behaves the same everywhere instead of three that quietly disagree.
+- **Linux is the reason for all of this.** The Linux download used to die on startup on one machine — no window, no message — because of the graphics libraries the old build sealed inside it. This one brings its own and starts on that same machine with nothing special done to it.
+- **Windows** shows "Windows protected your PC" the first time. More info → Run anyway. Nothing here is code signed, on purpose: a certificate is a few hundred a year and all it buys is the absence of that warning.
+- **macOS won't open it from a double-click.** Right-click the app → Open → Open, once, and it opens normally after that. Mac updates have to be done by hand for the same reason.
+
+### A way back to what a page used to say
+
+- **Anamnesis keeps earlier versions of your pages, on your own disk.** Before it saves over a page it puts a copy of what was there aside — at most one every five minutes, and always before a page is deleted. Right-click any page in the sidebar and choose **Earlier versions** to see what's kept, read each one, and put one back.
+- **You can read a version before you restore it.** The panel shows what that copy said, tab by tab, so you're choosing between versions rather than between timestamps. Arrow keys walk the list.
+- **Restoring is safe to get wrong.** What's on the page right now is kept as a version first, and **Ctrl+Z** undoes a restore in one press. A restore puts the writing, properties, tags and title back, and leaves the page where it is in your tree.
+- **The copies are ordinary files you can use without the app**, in a `.history` folder inside your project, with a note in it explaining what they are. They travel with the project when you copy or back it up, and deleting the folder loses the history and nothing else.
+- Old copies clear out on their own — anything past 30 days, and more than 50 of any one page. **The most recent copy of a page is never deleted**, however old it is.
+
+### Every shortcut on one screen
+
+- **Press `?` to see every keyboard shortcut you have**, with the keys each one is currently on — including anything you've changed, since it reads the same settings the keys themselves do. Press `?` again to close it, or Escape. **While you're writing, `F1` does the same thing**, because a question mark in the middle of a sentence should stay a question mark.
+- **The keys you can't change are on that list too**, named as fixed rather than left off it: Ctrl+R to reload, F11 for fullscreen, F12 for the developer tools, and `?` itself.
+- It works on the front page as well as inside a world.
+
+### Keys that now do what they say
+
+- **Ctrl+R reloads the window, and F11 goes fullscreen.** Neither key did anything before. Reloading is safe to press mid-sentence: anything not yet saved is written to disk first, and the app lets go of the world properly on the way out, so it opens straight back into it.
+- **Ctrl+Z now only ever undoes your writing.** It used to mean two different things depending on where you'd last clicked — the editor's undo inside a page, and the app's own undo everywhere else.
+- **The sidebar's undo moved to Ctrl+Shift+Z, and its redo to Ctrl+Shift+Y.** They work wherever your cursor is now, including mid-sentence, since they no longer have to get out of the editor's way. Both are still rebindable in Settings → Keyboard — but **if you'd already changed either of them to Ctrl+Z or Ctrl+Y, that change is dropped**, because those two now belong to the editor.
+
+### When something goes wrong
+
+- **A crash no longer leaves you looking at a blank window.** Anamnesis says what went wrong on screen, says that your worlds on disk weren't touched by it, and gives you a button to start the app up again. The details are there to read rather than hidden, with a button that copies them.
+- **You can report a bug from inside the app.** Settings has a **Report a bug** section: press *Open a bug report* and a form opens in your browser with the version, the build and your system already filled in. Nothing is sent until you press Submit on that page, and the exact text it carries is on screen first so you can read it, trim it, or decide against it. A report filed there is public — worth knowing before pasting a crash into one, since the details include file paths and a path carries the name of a world and of a page.
+- **If you haven't got a GitHub account, *Copy the details* does the same job** and puts the whole thing on your clipboard to send to somebody who has one.
+- **The crash screen has a *Report this* button** that copies the details and opens the same form with them filled in.
+- **The last few crashes are written down on your own computer**, in a file kept beside your settings, five at a time. Nothing about them is sent anywhere, and Settings → Report a bug says where the file is and can copy the most recent one.
+- **A warning can be told you already know about it.** The "couldn't be opened" notice — the one for a file that's never going to open, like a sync conflict copy you're keeping on purpose — has an **I know about this one** button instead of greeting you at every launch. It's per file and it remembers what that file looked like, so if the file changes the notice comes back. The "couldn't be saved" warning deliberately has no such button: that one means your writing might not be on disk.
+
+### Fixes worth knowing about
+
+- **Applying one of your own templates to a page keeps what you'd already written in its fields.** The template's fields used to replace the page's outright — anything the template had no equivalent of lost its value and left a **MISSING PROPERTY** note behind, with the text still in the file and no way back to it. Those fields are now kept, with their names, their types and their contents. Empty fields the new template doesn't have are dropped, so a page doesn't slowly collect the blank fields of every template it has ever been.
+- **A sidebar note longer than three lines is no longer clipped behind a scrollbar.** Every multi-line field in the properties panel is now exactly as tall as what you've written in it.
+- **A block's name no longer trails off where you can't finish reading it.** Long names run onto as many lines as they need and the block grows to fit, instead of ending in a "…" with no way to see the rest.
+- **The button that shows and hides the properties panel can be clicked on a narrow window again.** It used to slide underneath the panel itself when the top row ran out of room — the button that would have given you the room back was the one you couldn't reach. Dragging the side panels wide did the same thing.
+- **Dragging both side panels wide can no longer squeeze the page down to nothing.** The page holds a minimum width and the panels give the room back instead, then go back exactly where you put them the moment the window is wide enough again. Dragged all the way out, the two sidebars now come to rest at the same width rather than whichever you dragged first taking everything. The trade, worth knowing: a very wide sidebar beside a slim properties panel isn't possible any more.
+- **Anamnesis no longer says a project is open somewhere else when it isn't.** The marker saying somebody has a world open was never cleared when you closed the app, so closing it and opening it again within two minutes met its own leftovers and refused. Opening a project that really is open in another window now takes you to that window, and launching Anamnesis while it's already running gives you the front page rather than a second copy of the same world. The warning that's left is the real one: a copy open on another computer, over OneDrive or Dropbox, which the app genuinely can't see.
+- **A folder that already holds pages no longer tells you it's empty.**
+- **The page tree no longer flickers while you scroll it.** On a big world the strip you were scrolling into went blank for a moment before the pages appeared in it; the tree now draws about a screenful beyond what you can see, so whatever you scroll into is already there.
+
+---
+
 ## v0.5.0 — 2026-08-25
 
 The right-hand panel stopped being a fixed list of fields and became something you arrange yourself. Everything in it is a block now — the picture, your tags, every property — and there are new kinds to add: backlinks and lists of pages, and meters, which draw a number as a picture. Plus aliases, and a long run of fixes to keys that weren't doing what they said.
