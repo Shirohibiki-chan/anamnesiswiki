@@ -44,17 +44,54 @@ export const TREE_OVERSCAN_ROWS = 24;
  * different action with a different control, and a panel dragged to nothing is
  * a panel the user can't find the edge of to drag back.
  *
- * The maximums exist because `.app-layout-center` is the `1fr` between them:
- * without a cap, two panels dragged wide on a small window leave the page they
- * describe with no room to render in.
+ * **The two panels share one maximum**, and that is deliberate: dragged all the
+ * way out they should come to rest at the same width, not at 520 and 560 by an
+ * accident of which number was written down first. Asked for 2026-08-27, in
+ * those words. Below it, the widths are whatever anyone drags them to — this
+ * is about where they *stop*, not about keeping them in step.
+ *
+ * The cap used to be the only thing stopping the page being squeezed to
+ * nothing, and it was not up to it: 520 and 560 add up to 1080, and the window
+ * does not go below 900. See CENTER_MIN_WIDTH, which holds that line now, and
+ * `maxPanelWidth`, which is this number and the window's own arithmetic
+ * together.
  */
 export const TREE_MIN_WIDTH = 180;
-export const TREE_MAX_WIDTH = 520;
 export const TREE_DEFAULT_WIDTH = 260;
 
 export const PROPERTIES_MIN_WIDTH = 220;
-export const PROPERTIES_MAX_WIDTH = 560;
 export const PROPERTIES_DEFAULT_WIDTH = 300;
+
+/**
+ * How wide either panel may be dragged, before the window has its say.
+ *
+ * 560, the wider of the two numbers this replaced — where there is room to
+ * give, give it. On a window with less than `2 × 560 + CENTER_MIN_WIDTH` the
+ * real limit is half the room the panels have between them, which is what
+ * keeps "both dragged out" symmetrical at every size. See `maxPanelWidth`.
+ */
+export const PANEL_MAX_WIDTH = 560;
+
+/**
+ * The narrowest the page in the middle is allowed to get, whatever the panels
+ * either side of it have been dragged to.
+ *
+ * **The panels give way, and their stored widths do not change.** Both are
+ * declared as `minmax(0, <width>)` in the grid, so when the window cannot
+ * afford all three the browser shrinks the panels rather than the page — and
+ * the moment the window is wide enough again, they are back at exactly the
+ * width they were dragged to. A version of this that clamped the *stored*
+ * widths would move somebody's panel on its own and never put it back, which
+ * is a worse trade than a panel that is temporarily narrower than it says.
+ *
+ * 420 because the top bar needs 391 to lay out (see the container query in
+ * `shell.css`, which is what buys it the last 95 of those) and the rest is the
+ * page's own gutters. At the 900px minimum window this leaves 480 for the two
+ * panels together, which is both of them at about their own minimums — the
+ * point at which the window is simply too small for three columns, and the
+ * properties panel's own hide button is the answer rather than a smaller page.
+ */
+export const CENTER_MIN_WIDTH = 420;
 
 /**
  * How wide a page's text column actually is, in pixels — `--reading-width`

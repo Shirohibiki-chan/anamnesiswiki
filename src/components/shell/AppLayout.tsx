@@ -8,12 +8,9 @@ import { useHistoryActions } from "../../hooks/use-history";
 import { useNavigationActions } from "../../hooks/use-navigation";
 import { useOpenTemplate } from "../../hooks/use-template-editing";
 import { usePanelWidthActions, usePanelWidths } from "../../hooks/use-panel-widths";
-import {
-  PROPERTIES_MAX_WIDTH,
-  PROPERTIES_MIN_WIDTH,
-  TREE_MAX_WIDTH,
-  TREE_MIN_WIDTH,
-} from "../../constants/layout";
+import { CENTER_MIN_WIDTH, PROPERTIES_MIN_WIDTH, TREE_MIN_WIDTH } from "../../constants/layout";
+import { fitPanelWidths, maxPanelWidth, planPanelDrag } from "../../services/layout-service";
+import { useElementSize } from "../../hooks/use-element-size";
 import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
@@ -51,6 +48,18 @@ export function AppLayout() {
   const { goBack, goForward, goHome } = useNavigationActions();
   const widths = usePanelWidths();
   const { setTreeWidth, setPropertiesWidth, resetPanelWidths } = usePanelWidthActions();
+  // The grid's own width, watched rather than read once: the window is
+  // resizable and how much room the two panels can have is a fact about it.
+  const [layoutRef, layoutSize] = useElementSize<HTMLDivElement>();
+  // What to draw, which is not always what was chosen — see fitPanelWidths.
+  const fitted = fitPanelWidths(layoutSize.width, widths, isRightPanelOpen);
+  // A drag moves what is being dragged and pushes the other panel out of the
+  // way rather than being refused — see planPanelDrag.
+  const dragTo = (edge: "tree" | "properties") => (requested: number) => {
+    const next = planPanelDrag(layoutSize.width, widths, edge, requested, isRightPanelOpen);
+    if (next.tree !== widths.tree) setTreeWidth(next.tree);
+    if (next.properties !== widths.properties) setPropertiesWidth(next.properties);
+  };
 
   // Stable so the shortcut listener is attached once, not rebuilt on every
   // re-render of the shell — see use-global-shortcuts.ts.
@@ -95,6 +104,7 @@ export function AppLayout() {
     // mid-drag — 150ms of easing on every pointer move is a panel edge that
     // trails the pointer and never catches up.
     <div
+      ref={layoutRef}
       className={[
         "app-layout",
         isRightPanelOpen ? "" : "app-layout-properties-collapsed",
@@ -102,7 +112,21 @@ export function AppLayout() {
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ "--tree-w": `${widths.tree}px`, "--props-w": `${widths.properties}px` } as React.CSSProperties}
+      style={
+        {
+          // The *fitted* widths, not the stored ones: the grid and the two drag
+          // handles have to agree about where a panel's edge is, and on a
+          // window too narrow for all three that edge is not where the stored
+          // number says. Feeding the handles the stored width is what left them
+          // floating in the middle of the page the first time this was built.
+          "--tree-w": `${fitted.tree}px`,
+          "--props-w": `${fitted.properties}px`,
+          // The floor the page holds whatever the panels are dragged to. Fed
+          // from the constant rather than written into the stylesheet so the
+          // number lives with the widths it is in tension with.
+          "--center-min": `${CENTER_MIN_WIDTH}px`,
+        } as React.CSSProperties
+      }
     >
       <aside className="app-layout-tree">
         <TreeSidebar />
@@ -151,8 +175,8 @@ export function AppLayout() {
         label="Sidebar width"
         width={widths.tree}
         min={TREE_MIN_WIDTH}
-        max={TREE_MAX_WIDTH}
-        onResize={setTreeWidth}
+        max={maxPanelWidth(layoutSize.width, TREE_MIN_WIDTH)}
+        onResize={dragTo("tree")}
         onReset={resetPanelWidths}
         onDragChange={setIsResizing}
       />
@@ -162,8 +186,8 @@ export function AppLayout() {
           label="Properties panel width"
           width={widths.properties}
           min={PROPERTIES_MIN_WIDTH}
-          max={PROPERTIES_MAX_WIDTH}
-          onResize={setPropertiesWidth}
+          max={maxPanelWidth(layoutSize.width, PROPERTIES_MIN_WIDTH)}
+          onResize={dragTo("properties")}
           onReset={resetPanelWidths}
           onDragChange={setIsResizing}
         />

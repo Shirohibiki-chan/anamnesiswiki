@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  CENTER_MIN_WIDTH,
   PROPERTIES_DEFAULT_WIDTH,
-  PROPERTIES_MAX_WIDTH,
+  PANEL_MAX_WIDTH,
   PROPERTIES_MIN_WIDTH,
   RAIL_DEFAULT_WIDTH,
   RAIL_MAX_WIDTH,
   RAIL_MIN_WIDTH,
   TREE_DEFAULT_WIDTH,
-  TREE_MAX_WIDTH,
   TREE_MIN_WIDTH,
 } from "../constants/layout";
 import {
@@ -16,6 +16,9 @@ import {
   clampTreeWidth,
   clampWidth,
   DEFAULT_PANEL_WIDTHS,
+  fitPanelWidths,
+  maxPanelWidth,
+  planPanelDrag,
   parsePanelWidths,
 } from "./layout-service";
 
@@ -46,9 +49,9 @@ describe("clampWidth", () => {
 describe("clampTreeWidth / clampPropertiesWidth / clampRailWidth", () => {
   it("applies each panel's own limits", () => {
     expect(clampTreeWidth(0)).toBe(TREE_MIN_WIDTH);
-    expect(clampTreeWidth(9000)).toBe(TREE_MAX_WIDTH);
+    expect(clampTreeWidth(9000)).toBe(PANEL_MAX_WIDTH);
     expect(clampPropertiesWidth(0)).toBe(PROPERTIES_MIN_WIDTH);
-    expect(clampPropertiesWidth(9000)).toBe(PROPERTIES_MAX_WIDTH);
+    expect(clampPropertiesWidth(9000)).toBe(PANEL_MAX_WIDTH);
     expect(clampRailWidth(0)).toBe(RAIL_MIN_WIDTH);
     expect(clampRailWidth(9000)).toBe(RAIL_MAX_WIDTH);
   });
@@ -97,8 +100,118 @@ describe("parsePanelWidths", () => {
   it("pulls a width written by an older version back inside today's limits", () => {
     expect(parsePanelWidths({ tree: 40, properties: 4000, rail: 4000 })).toEqual({
       tree: TREE_MIN_WIDTH,
-      properties: PROPERTIES_MAX_WIDTH,
+      properties: PANEL_MAX_WIDTH,
       rail: RAIL_MAX_WIDTH,
     });
   });
 });
+
+// 2026-08-27. The page in the middle holds a minimum, so the two panels cannot
+// both be dragged to their fixed maximums on a small window — and the drag has
+// to stop where the layout stops, or the handle walks away from the edge it is
+// dragging. That happened, and it is what these cover.
+describe("planPanelDrag", () => {
+  const roomy = 1600;
+  const tight = 1258; // The window this was reported on.
+
+  it("gives the panel what was asked for when there is room", () => {
+    expect(planPanelDrag(roomy, { tree: 260, properties: 300 }, "tree", 400, true)).toEqual({
+      tree: 400,
+      properties: 300,
+    });
+  });
+
+  // What was asked for, in those words: dragged all the way out, neither panel
+  // should be longer than the other. It used to depend on which one you
+  // dragged first — that one took everything and the second would not move.
+  it("comes to rest with both panels equal when both are dragged out", () => {
+    const first = planPanelDrag(tight, { tree: 260, properties: 300 }, "tree", 9999, true);
+    const second = planPanelDrag(tight, first, "properties", 9999, true);
+    expect(second.tree).toBe(second.properties);
+    expect(second.tree + second.properties).toBeLessThanOrEqual(tight - CENTER_MIN_WIDTH);
+  });
+
+  it("does not care which one was dragged first", () => {
+    const treeFirst = planPanelDrag(tight, planPanelDrag(tight, { tree: 260, properties: 300 }, "tree", 9999, true), "properties", 9999, true);
+    const propertiesFirst = planPanelDrag(tight, planPanelDrag(tight, { tree: 260, properties: 300 }, "properties", 9999, true), "tree", 9999, true);
+    expect(treeFirst).toEqual(propertiesFirst);
+  });
+
+  it("stops at the shared maximum where the window is roomy enough", () => {
+    const next = planPanelDrag(roomy, { tree: 260, properties: 300 }, "tree", 9999, true);
+    expect(next.tree).toBe(PANEL_MAX_WIDTH);
+  });
+
+  // A width from an older version, or a hand-edited settings file, is bound by
+  // nothing this function did — so the giving-way still has to work.
+  it("pushes an oversized neighbour down, and only as far as it has to", () => {
+    // A stored 700 against a 900px window. The drag takes its half, and the
+    // neighbour gives up exactly the rest — not everything down to its floor.
+    const next = planPanelDrag(900, { tree: 700, properties: 300 }, "properties", 9999, true);
+    expect(next.properties).toBe(maxPanelWidth(900, PROPERTIES_MIN_WIDTH));
+    expect(next.tree).toBe(900 - CENTER_MIN_WIDTH - next.properties);
+    expect(next.tree).toBeGreaterThanOrEqual(TREE_MIN_WIDTH);
+  });
+
+  it("never pushes the neighbour below its own minimum", () => {
+    const next = planPanelDrag(760, { tree: 400, properties: 300 }, "properties", 9999, true);
+    expect(next.tree).toBeGreaterThanOrEqual(TREE_MIN_WIDTH);
+  });
+
+  it("leaves the other panel alone when the drag does not need its room", () => {
+    expect(planPanelDrag(tight, { tree: 500, properties: 300 }, "tree", 200, true)).toEqual({
+      tree: 200,
+      properties: 300,
+    });
+  });
+
+  it("keeps the page's minimum whatever is dragged", () => {
+    const next = planPanelDrag(tight, { tree: 260, properties: 300 }, "tree", 5000, true);
+    expect(next.tree + next.properties).toBeLessThanOrEqual(tight - CENTER_MIN_WIDTH);
+  });
+
+  it("gives the tree the closed panel's room when the properties panel is shut", () => {
+    // 1000 - 420 leaves 580 for the tree, so its own maximum is what stops it
+    // rather than the page — which is the point: with nothing on the right,
+    // the room is the tree's to take.
+    const next = planPanelDrag(1000, { tree: 260, properties: 300 }, "tree", 900, false);
+    expect(next.tree).toBe(PANEL_MAX_WIDTH);
+    // The closed panel's stored width is not touched by a drag it isn't in.
+    expect(next.properties).toBe(300);
+  });
+
+  it("clamps to the fixed maximum before the container has been measured", () => {
+    expect(planPanelDrag(0, { tree: 260, properties: 300 }, "tree", 5000, true).tree).toBe(PANEL_MAX_WIDTH);
+  });
+});
+
+describe("fitPanelWidths", () => {
+  it("leaves both alone when they fit", () => {
+    expect(fitPanelWidths(1600, { tree: 400, properties: 400 }, true)).toEqual({ tree: 400, properties: 400 });
+  });
+
+  it("shrinks both in proportion rather than picking one", () => {
+    // 900 wide, 420 for the page, 480 to share between two panels that want 800.
+    const fitted = fitPanelWidths(900, { tree: 300, properties: 500 }, true);
+    expect(fitted.tree + fitted.properties).toBeLessThanOrEqual(900 - CENTER_MIN_WIDTH);
+    expect(fitted.tree).toBeLessThan(300);
+    expect(fitted.properties).toBeLessThan(500);
+    // In proportion: the wider one stays the wider one.
+    expect(fitted.properties).toBeGreaterThan(fitted.tree);
+  });
+
+  it("holds each panel at its own minimum however small the window", () => {
+    const fitted = fitPanelWidths(500, { tree: PANEL_MAX_WIDTH, properties: PANEL_MAX_WIDTH }, true);
+    expect(fitted.tree).toBe(TREE_MIN_WIDTH);
+    expect(fitted.properties).toBe(PROPERTIES_MIN_WIDTH);
+  });
+
+  it("gives the tree the whole width when the properties panel is closed", () => {
+    expect(fitPanelWidths(900, { tree: 400, properties: 560 }, false)).toEqual({ tree: 400, properties: 0 });
+  });
+
+  it("changes nothing before the container has been measured", () => {
+    expect(fitPanelWidths(0, { tree: 520, properties: 560 }, true)).toEqual({ tree: 520, properties: 560 });
+  });
+});
+

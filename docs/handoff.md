@@ -2024,6 +2024,50 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ---
 
+## The three columns
+
+- **The page in the middle holds a minimum width and the panels give way to
+  it**, rather than the panels being capped small enough to be safe. Both are
+  `minmax(0, <dragged width>)` in the grid and the centre is
+  `minmax(CENTER_MIN_WIDTH, 1fr)`, so at a window too narrow for all three the
+  browser shrinks the panels — and the stored widths are untouched, so they
+  come back the moment there is room. Fixed 2026-08-27; before it, 520 + 560
+  against a 900px minimum window meant both dragged full left the centre column
+  at exactly zero, measured.
+
+- **The two panels share one maximum, and it is half the room they have between
+  them.** `maxPanelWidth` is `min(PANEL_MAX_WIDTH, (container − CENTER_MIN) / 2)`.
+  Asked for in as many words: dragged all the way out, neither panel should be
+  longer than the other. Before it, the ceiling was whatever room was spare, so
+  the answer depended on which one was dragged first — 520 and 318 rather than
+  419 and 419. **The cost is real and was accepted knowingly:** a very wide tree
+  beside a slim properties panel is no longer possible, because the tree stops
+  at half the room even when nothing is using the other half.
+
+- **The grid and the drag handles must be given the same widths, and they are
+  not always the stored ones.** `fitPanelWidths` is what both read: on a window
+  too narrow for all three it shrinks the panels in proportion, never below
+  their own minimums, without touching what is in the store. Feeding the
+  handles the stored width instead is not a cosmetic mistake — the handle is
+  positioned at that number, so it detaches from the edge it resizes and lands
+  in the middle of the page, where dragging it appears to do nothing. That
+  shipped for about ten minutes and was reported immediately.
+
+- **A drag moves what is being dragged, and the other panel gives way.**
+  `planPanelDrag` returns both widths. The version before it capped the drag at
+  whatever room was spare, which meant the panel dragged *first* kept it and
+  the second drag did nothing at all — reported within minutes, and rightly:
+  a drag that is silently refused reads as a broken control, not as a full
+  window. The opposite panel is pushed no further than its own minimum and the
+  page keeps its own, so the two cannot both be at their maximum on a window
+  with no room for both. The last thing asked for is the one that gets it.
+
+- **At the app's smallest window there is no slack, and that is arithmetic
+  rather than a bug.** 900 wide is 420 for the page and 480 for two panels
+  whose own minimums are 180 and 220, so both sit near their floors and neither
+  can grow without the other giving way. The answer there is the properties
+  panel's own hide button.
+
 ## Navigation
 
 - **Tree focus is session-only and lives in `focusedId` on the project store.**

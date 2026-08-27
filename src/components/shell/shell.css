@@ -71,7 +71,15 @@
      fallbacks are the widths they were fixed at before that, which is what
      renders for the frame before the stored widths come back off disk. See
      constants/layout.ts for the limits and why they're where they are. */
-  grid-template-columns: var(--tree-w, 260px) 1fr var(--props-w, 300px);
+  /* **`minmax(0, …)` on the panels is what stops the page being squeezed to
+     nothing**, and the centre's own minimum is what it gives way to. Both
+     panels take the width they were dragged to whenever the window can afford
+     it, and give it back — temporarily, without their stored widths changing —
+     when it cannot. See CENTER_MIN_WIDTH in constants/layout.ts. */
+  grid-template-columns:
+    minmax(0, var(--tree-w, 260px))
+    minmax(var(--center-min, 420px), 1fr)
+    minmax(0, var(--props-w, 300px));
   grid-template-rows: minmax(0, 1fr);
   /* The containing block for the two resize handles, which sit outside both
      panels — see the .resize-handle block below. */
@@ -86,7 +94,7 @@
 }
 
 .app-layout-properties-collapsed {
-  grid-template-columns: var(--tree-w, 260px) 1fr;
+  grid-template-columns: minmax(0, var(--tree-w, 260px)) minmax(var(--center-min, 420px), 1fr);
 }
 
 /* Held only for the duration of a drag. 150ms of easing applied to every
