@@ -2311,3 +2311,105 @@ ol.release-notes-list {
 .asset-picker-file {
   display: none;
 }
+
+/* ------------------------------------------------------- crash screen */
+
+/* Takes the whole window, because by the time this renders there is nothing
+   else left to share it with — the tree, the page and the panels are all gone
+   with the React tree that threw. Scrolls rather than clips: a stack trace is
+   as long as it is, and a trace cut off at the bottom of the screen is a
+   report nobody can finish reading. */
+.crash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--space-3xl) var(--space-xl);
+  background: var(--color-background);
+}
+
+.crash-screen-card {
+  width: 100%;
+  max-width: 46rem;
+}
+
+.crash-screen-icon {
+  color: var(--color-destructive);
+}
+
+.crash-screen-title {
+  margin: var(--space-md) 0 var(--space-lg);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.crash-screen-message {
+  margin: 0 0 var(--space-md);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.crash-screen-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin: var(--space-xl) 0;
+}
+
+.crash-screen-details {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-edge);
+}
+
+.crash-screen-summary {
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+/* Selectable and wrapped rather than scrolled sideways. Somebody without a
+   working clipboard has to be able to get this text out by hand, and a
+   horizontal scrollbar inside a crash report is where that attempt ends. */
+.crash-screen-trace {
+  margin: 0;
+  padding: 0 var(--space-lg) var(--space-lg);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+  user-select: text;
+}
+
+.crash-screen-footnote {
+  margin: var(--space-lg) 0 0;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* Used by Settings -> Privacy, and by nothing else until something needs a
+   short list inside a settings panel. It existed as a class name before it
+   existed as a rule, which showed as bullets sitting a browser default indent
+   away from the paragraphs above them. */
+.sidebar-setting-list {
+  margin: 0 0 var(--space-sm);
+  padding-left: var(--space-xl);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.sidebar-setting-list li {
+  margin-bottom: var(--space-2xs);
+}

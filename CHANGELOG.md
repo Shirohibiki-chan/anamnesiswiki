@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-27 — a window that tells you what happened
+
+### Additions
+
+- **A crash no longer leaves you looking at a blank window.** If Anamnesis hits a problem it can't carry on from, it now says so on screen: what went wrong, that your worlds on disk weren't touched by it, and a button to start the app up again. The details are there to read rather than hidden, with a button that copies them if you want to send them on to someone.
+- **The last few crashes are written down, on your own computer.** They go in a file kept beside your settings, five at a time, and nothing about them is sent anywhere. Settings → Privacy says where the file is and can copy the most recent one — useful for the kind of fault that doesn't take the window down but still goes wrong quietly in the background.
+
 ## 2026-08-27 — it doesn't report on you
 
 ### Changes

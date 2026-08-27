@@ -76,7 +76,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     id: "privacy",
     group: "app",
     label: "Privacy",
-    blurb: "What the app collects, and the two times it uses the internet.",
+    blurb: "What the app collects, the two times it uses the internet, and the crash log it keeps on your computer.",
   },
   {
     id: "patch-notes",
@@ -123,6 +123,19 @@ export const DECLARED_SETTINGS: readonly {
     label: "When it uses the internet",
     hint: "the two things that go out, both only when you press them",
     keywords: ["privacy", "network", "internet", "offline", "online", "requests", "import", "updates"],
+  },
+  {
+    id: "privacy-crash-log",
+    tabId: "privacy",
+    label: "If something goes wrong",
+    hint: "the crash log kept on your own computer, and how to copy the last one",
+    // No "white screen" and no "crashed", though both are what somebody would
+    // actually type. The search is fuzzy and ignores position, so a five-letter
+    // word matches anything two edits away from it: "white" catches "where" and
+    // "crashed" catches "saved", which put this row into the results for "where
+    // are my files saved". A near-miss keyword costs an unrelated query its
+    // precision, so the list stays with the words that only mean this.
+    keywords: ["crash", "error", "bug", "log", "report", "froze", "blank window", "privacy"],
   },
   {
     id: "theme-pick",

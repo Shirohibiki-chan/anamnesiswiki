@@ -2,7 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { showWindow } from "./services/host-service";
 import App from "./App";
+import { ErrorBoundary } from "./components/shell/ErrorBoundary";
 import { FONT_SLOTS } from "./constants/themes";
+import { installCrashHandlers } from "./services/crash-log-service";
 import { applyCachedAppearance } from "./services/theme-service";
 import "./index.css";
 
@@ -14,9 +16,15 @@ import "./index.css";
 // synchronous. useThemeBootstrap corrects it a moment later if it's stale.
 applyCachedAppearance(FONT_SLOTS);
 
+// Before React, so that a throw during the very first render is already being
+// written down. Nothing it records leaves the machine — see crash-log-service.
+installCrashHandlers();
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 );
 
