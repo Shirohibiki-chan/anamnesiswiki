@@ -530,13 +530,35 @@ Kept because the answers are the useful part:
 
 ## Phase 19 — Safety Net
 
-**Runs after Phase 29** — see that phase for why: this is the most
-filesystem-heavy work left, and the shell swap rewrites the filesystem layer.
+**Version history shipped 2026-08-27** — see `docs/shipped.md`. Copies of a page
+are kept in `.history/` inside the project, browsed and restored from a tree
+row's *Earlier versions*. What is left of the phase is below.
+
+**The ordering note that used to head this phase — "runs after Phase 29,
+because the shell swap rewrites the filesystem layer" — was spent by the time
+the work started.** Steps 1–3 of Phase 29 have shipped; what remains of it is a
+release, a Fedora tester and deleting two workflows, none of which touches
+`filesystem-service.ts`. It is recorded here rather than deleted because the
+reasoning was right when it was written.
 
 Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
 
-- **Version history / snapshots / file recovery.** Local, on disk, in keeping with everything else. **Obsidian's "File Recovery" is the shape to copy**, rather than designing one: automatic periodic snapshots kept on disk, a per-file list of past versions you can browse and restore, and arrow-key navigation through that list (the keyboard part is new in 1.13). Copying a known-good model matters more here than anywhere else in this document, because this is the feature that exists to catch the failure that already happened once (`docs/handoff.md` §Storage) and a half-designed version of it is worse than none — it would be trusted.
 - **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
+
+- **What version history does not cover yet**, decided by scope rather than by
+  argument, so any of them can be picked up on its own:
+  - **`project.json` has no history** — the tree's order, the home page, the
+    expanded folders. Page contents were the loss that happened; this is the
+    other file that could hurt.
+  - **Retention is not configurable.** Obsidian's is, and the model this copied
+    puts an interval and a keep-for in its settings. The numbers live in
+    `constants/limits.ts` (five minutes, thirty days, fifty per page).
+  - **Nothing shows a page has history except the menu item.** No count, no
+    marker on the row.
+  - **A restored version does not carry the page's template or its place in the
+    tree**, on purpose — both are structural rather than content, and
+    `templateKey` decides file-vs-directory storage. If restoring across a
+    template change is ever wanted, it is a relocation and wants the planner.
 
 ---
 

@@ -21,6 +21,7 @@ import "./page.css";
 // can't open the wrong tab on the next page opened.
 export function PageView() {
   const {
+    contentRevisions,
     project,
     nodes,
     pendingFocus,
@@ -102,7 +103,14 @@ export function PageView() {
             />
             {activeTab && (
               <Editor
-                key={activeTab.id}
+                // The revision is in the key so that replacing this page's
+                // writing from outside the editor — restoring an earlier
+                // version — remounts it with the restored words. Without it
+                // the editor keeps showing what it read when it mounted, and
+                // the next keystroke saves that back over the restore. It is
+                // deliberately not `updatedAt`, which changes on every
+                // keystroke and would remount the editor on each one.
+                key={`${activeTab.id}:${contentRevisions[node.id] ?? 0}`}
                 nodeId={node.id}
                 content={activeTab.content}
                 onContentChange={(content) => updateTabContent(node.id, activeTab.id, content)}

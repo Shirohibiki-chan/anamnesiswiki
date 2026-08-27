@@ -714,6 +714,170 @@
   }
 }
 
+/* Earlier versions — see components/shell/PageHistory.tsx. Two columns: the
+   list of copies, and what the highlighted one says. `xl` because it is a
+   thing you browse rather than a question you answer, which is the same bar
+   Settings and All properties cleared. */
+.page-history {
+  gap: var(--space-lg);
+  /* Its own container, so the two-column body reacts to the dialog's width
+     rather than the window's — the dialog is capped at `100vw - space`, so on
+     a narrow window they are close but not the same, and the column that
+     matters is this one. */
+  container-type: inline-size;
+}
+
+.page-history-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.page-history-icon {
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+.page-history-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.page-history-empty {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* The list keeps its width and the preview takes the rest. Below 46rem they
+   stack, so the dialog stays usable at the app's minimum window size — the
+   preview is the half that can afford to go second. */
+.page-history-body {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  gap: var(--space-xl);
+  min-height: 18rem;
+  max-height: 55vh;
+}
+
+@container (max-width: 46rem) {
+  .page-history-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.page-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.page-history-list:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.page-history-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-history-row:hover {
+  background: var(--color-panel-alt);
+}
+
+.page-history-row-active {
+  background: var(--color-panel-alt);
+  border-color: var(--color-accent-faint-border);
+}
+
+.page-history-when {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.page-history-exact {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.page-history-preview {
+  overflow-y: auto;
+  padding-right: var(--space-sm);
+}
+
+.page-history-preview-name {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  color: var(--color-text-primary);
+}
+
+.page-history-tab {
+  margin-bottom: var(--space-lg);
+}
+
+.page-history-tab-name {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* Clamped rather than scrolled per tab: this is for telling versions apart,
+   and a page with six tabs should show the top of all six rather than the
+   whole of the first. */
+.page-history-tab-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.page-history-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.page-history-note {
+  margin: 0;
+  flex: 1 1 20rem;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.page-history-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
 /* Keyboard section — see components/shell/ShortcutSettings.tsx. */
 .shortcut-list {
   list-style: none;

@@ -3,8 +3,10 @@ import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
+import { PageHistory } from "./components/shell/PageHistory";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
+import { useDialogs } from "./hooks/use-dialogs";
 import { useSaveOnExit } from "./hooks/use-save-on-exit";
 import { useShellKeys } from "./hooks/use-shell-keys";
 import { useThemeBootstrap } from "./hooks/use-theme";
@@ -33,6 +35,7 @@ function App() {
   // window answers, not keys a project answers, and the start screen is one
   // of the places somebody reaches for a reload.
   useShellKeys();
+  const { historyNodeId, closeHistory } = useDialogs();
   return (
     <>
       <StartupRouter />
@@ -62,6 +65,11 @@ function App() {
           cover so far, and the list will grow — which is the reason it sits up
           here with the others rather than beside either one of them. */}
       <AssetPickerDialog />
+      {/* Raised from a tree row's menu, which react-arborist renders itself —
+          the same routing reason as the export request and SaveAsTemplate
+          above. Keyed by the page, so pointing it at another one starts its
+          list again rather than showing the last page's versions. */}
+      {historyNodeId && <PageHistory key={historyNodeId} nodeId={historyNodeId} onClose={closeHistory} />}
     </>
   );
 }
