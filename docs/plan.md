@@ -116,6 +116,12 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   Electron build already describes itself as 0.5.0, so publishing one puts a
   second, different 0.5.0 into the update feed of a release that exists.
 
+  **A bug report now names the shell, which is not a fix.** `shellName()` went
+  into the host contract on 2026-08-27 so a report says *Electron build* rather
+  than only *0.5.0* — that makes an arriving report readable, and does nothing
+  about two files on a disk, two entries in a settings store, or an update feed
+  with two 0.5.0s in it.
+
 - **The two panel width caps do not add up to a window.** `TREE_MAX_WIDTH` is
   520 and `PROPERTIES_MAX_WIDTH` is 560, which is 1080 — wider than the 900 the
   window itself will not go below. The comment above them in
@@ -427,8 +433,8 @@ What is genuinely left is the part that can only be settled by running it:
   history — it is a write-only ingest key rather than a secret, but the app it
   points at should be deleted rather than left listening.
 
-- **Settings → Privacy says nothing about collection or the network, and that
-  is deliberate.** Same day, hours after the page was written.
+- **Settings → Report a bug (the Privacy tab, renamed 2026-08-27) says nothing
+  about collection or the network, and that is deliberate.** Same day, hours after the page was written.
 
   It briefly held two more sections: one declaring that the app collects
   nothing, one listing the two times it reaches the network. Both were
@@ -469,8 +475,8 @@ What is genuinely left is the part that can only be settled by running it:
     use — no new shell capability, so it works the same under both shells.
   - **The two global handlers record and do nothing else.** A rejected promise
     usually leaves the app perfectly usable, and blanking the window over one
-    would be a worse bug than the one being reported. Settings → Privacy is
-    where those become findable, and it can copy the last one.
+    would be a worse bug than the one being reported. Settings → Report a bug
+    is where those become findable, and it can copy the last one.
 
   **Why not the automatic kind.** A stack trace carries error messages, and
   this app's error messages carry file paths — which carry world names and page

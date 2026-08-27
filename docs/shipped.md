@@ -3988,4 +3988,53 @@ after passing in isolation, fixed with `nextSnapshotAt`.
   settings have no history. Page contents were the loss that happened.
 - **Retention is not configurable.** Obsidian's is. The numbers are in
   `constants/limits.ts` and nothing reads them from settings.
+## A way to report a bug ✅ Shipped 2026-08-27
+
+The app had nowhere to send a fault. The crash panel that shipped hours earlier
+could copy its details, the repository had no issue templates at all, and a
+tester on Fedora who found something had one route: tell her, so she could tell
+me. Everything else on the polish list gets cheaper once there is somewhere to
+write things down that is not a phone call, which is why this went first.
+
+### What it is
+
+- **`services/bug-report-service.ts`** — pure text work plus one call out:
+  `describeSystem` off the user agent, `describeBuild`, `reportDetails`,
+  `trimForUrl`, `reportUrl`, and `openBugReport`, which hands the system
+  browser a prefilled `issues/new` link. 14 unit tests.
+- **Settings → Report a bug**, which is the old Privacy tab renamed and given
+  the section it was missing. The crash log stays underneath it. Two buttons,
+  because the browser route needs a GitHub account and the person most likely
+  to be holding a broken build has never had a reason to make one — *Copy the
+  details* is that path, not a fallback.
+- **`Report this` on the crash screen**, which copies and then opens, in that
+  order.
+- **`.github/ISSUE_TEMPLATE/bug_report.yml`** — an issue form written for
+  somebody who is not a programmer: what happened (required), what you were
+  doing, does it happen every time, and a build box the app fills in. Blank
+  issues stay enabled for everything that is not a bug.
+- **`shellName()` added to the host contract**, both shells, both `satisfies`
+  blocks. The two builds have shipped under one version number, so a report
+  quoting only the version named neither.
+
+### Verification
+
+`pnpm lint` clean, `pnpm test` 1415 across 60 files, `pnpm test:app` 32 across
+7 files. Two of those are new: `e2e/reports-a-bug.e2e.ts` opens the panel in the
+packaged Electron app and reads the details block, which is the only thing that
+can prove the shell resolution produced the right `host-service` — a unit test
+mocks exactly the part in question.
+
+Screenshotted both surfaces rather than reasoning about them. The settings panel
+at 1280 and at 900. The crash screen by temporarily throwing from `App()`,
+building, shooting, and reverting — which caught two things reading could not:
+a section heading identical to the panel heading directly above it, and a JSX
+newline that ate the space before an `<em>`, rendering `carries.Copy`.
+
+### The keyword that cost a search
+
+`bug-report`'s hint read *"…the version and system filled in"*, and "filled"
+lands two edits from "files", which put the row into the results for *"where are
+my files saved"* and failed `settings-search.test.ts`. The same trap the
+crash-log row above it documents in a comment. Reworded to "already on it".
 

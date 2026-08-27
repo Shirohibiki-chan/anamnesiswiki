@@ -2555,6 +2555,28 @@ ol.release-notes-list {
   user-select: text;
 }
 
+/* What the report will carry, shown in full under the buttons. Wrapped rather
+   than scrolled for the same reason the crash trace is: this is text somebody
+   may have to read, or copy out by hand, and a sideways scrollbar is where
+   that stops. Boxed and dimmed so it reads as an attachment rather than as
+   more of the paragraph above it. */
+.bug-report-details {
+  margin: var(--space-md) 0 0;
+  padding: var(--space-md);
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+  user-select: text;
+}
+
 .crash-screen-footnote {
   margin: var(--space-lg) 0 0;
   font-size: var(--fs-xs);
