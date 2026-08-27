@@ -391,22 +391,55 @@ What is genuinely left is the part that can only be settled by running it:
   gone. Nobody has run one on the older Fedora box to find out.
 - **`release.yml` and `appimage-test.yml` are still there**, kept as a way back.
   They go once an Electron release has shipped and settled.
-- **Analytics**, folded in here by her decision 2026-08-26 rather than run as
-  its own phase: it lands in the same main process and rides the same release
-  plumbing, so doing both together means touching each once.
+- **Usage reporting: built 2026-08-26, removed 2026-08-27.** Kept here as a
+  settled decision rather than deleted, so it does not get proposed a third
+  time.
 
-  **Asked for, not imposed** — she wants to see how the app is used, and the
-  Two Promises in `CLAUDE.md` rule out *unrequested* collection rather than
-  network access. Three things decided with it, and they are the design:
+  It worked, and it was honest — a closed list of eight event names that could
+  not carry her writing, a one-time notice with two real buttons, a visible
+  switch. It went anyway, and the reasons are the part worth keeping:
 
-  - **A visible on/off switch in Settings**, from the first version. Cheap now,
-    and it is what keeps this a feature rather than something done to people.
-  - **Events name features, never content.** "Opened a meter block" is data;
-    the title of a page, the name of a world, or anything typed into one is
-    not, and no event may carry a string that came from her writing.
-  - **A desktop tool, not a web one.** Page-view analytics has nothing to
-    measure here — nobody loads a page. Aptabase is the candidate: open
-    source, free tier, self-hostable, and it has an Electron SDK.
+  - **The numbers would not have said much.** A handful of users, one of whom
+    she talks to daily. Asking them answers more, and sooner, than a dashboard
+    of counts drawn from a sample that size.
+  - **"It sends nothing" is worth more than the counts were.** People arrive at
+    this app from Notion and from Obsidian, and the second one wins them partly
+    by collecting nothing at all. A data modal on first launch is a strange
+    thing to hand somebody in the middle of that trade.
+  - **Checking the neighbours cut the other way from how it looked.** Notion
+    and LegendKeeper collect plenty and have no switch, because they are
+    websites and there is nothing to opt out of short of leaving. Obsidian has
+    no switch because it collects nothing. Nowhere in that does a desktop tool
+    come out ahead by having a toggle.
+
+  The Aptabase account goes with it. `.env` was committed, so the key is in the
+  history — it is a write-only ingest key rather than a secret, but the app it
+  points at should be deleted rather than left listening.
+
+- **Crash reporting, and it never leaves the machine.** Her call 2026-08-27,
+  and the one piece of the above she did want.
+
+  **Nothing catches a crash today.** No error boundary, no `window.onerror`, no
+  handler for a rejected promise anywhere in `src/` or `electron/` — a crash in
+  the tree is a white window and no explanation. That is the real gap here, and
+  closing it is worth doing whether or not anything is ever sent anywhere.
+
+  - **A panel where the white window was**, saying the app hit a problem, what
+    the problem was, and that the work on disk is untouched.
+  - **A log file beside the settings**, so the last crash outlives the panel
+    and can still be found after a restart.
+  - **One button that copies the details**, for pasting into an issue or a
+    message.
+  - **Nothing is sent, and there is nothing to configure.** No service, no
+    endpoint, no key, no switch. Whoever hit the crash decides what happens to
+    it, having read it first.
+
+  **Why not the automatic kind.** A stack trace carries error messages, and
+  this app's error messages carry file paths — which carry world names and page
+  titles. The usage events could be *proven* content-free by reading a list of
+  eight strings; a crash report can only be scrubbed and hoped over. Showing
+  somebody the text and letting them press the button is the version with no
+  hoping in it.
 
 ### The work, in three steps
 

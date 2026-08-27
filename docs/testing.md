@@ -71,9 +71,9 @@ Each scenario file starts its own copy of the app and throws it away afterwards.
 2. Generates a world into the system temp folder, via
    `scripts/make-test-world.mjs` — the same generator that writes the
    `Test World (generated)` folder you can open by hand.
-3. Makes a scratch settings folder, writes the world into it as the last-opened
-   project, and marks the one-time analytics notice as already seen so it is not
-   sitting over the window.
+3. Makes a scratch settings folder and writes the world into it as the
+   last-opened project, so a scenario opens on the world rather than on the
+   start screen.
 4. Launches Electron with `--user-data-dir` pointed at that scratch folder.
 5. Collects everything the page logs as an error, for the scenario to assert on.
 
