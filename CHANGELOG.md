@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-27 — the keys the window didn't answer
+
+### Additions
+
+- **Ctrl+R reloads the window, and F11 goes fullscreen.** Neither key did anything before — Anamnesis draws its own top bar and switches off the plain File/Edit/View menu that comes with the window, and that menu turned out to be what those two keys were attached to. They work now, wherever you are in the app, including the front page.
+- **Reloading is safe to press while you're writing.** Anything not yet saved is written to disk before the window goes, and the app lets go of the world properly on the way out — so it opens straight back into it rather than deciding somebody else has it open.
+- **Settings → Keyboard now mentions all three keys it can't rebind**, those two plus F12 for the developer tools, instead of leaving them off the list entirely.
+
 ## 2026-08-27 — a window that tells you what happened
 
 ### Additions
@@ -231,10 +239,3 @@
 
 - **Menus can be used from the keyboard now.** Opening one — a right-click menu, a block's `⋯`, Add Block, the colour swatches, a template or page picker — puts the cursor on its first item instead of leaving it behind on the page. **Up and Down** walk the list and wrap around at either end, **Tab** stays inside the menu rather than escaping into whatever is behind it, **Enter** picks, and **Escape** closes. Menus are drawn outside the page they belong to, which is why Tab used to sail straight past them into the rest of the window.
 - **Closing a menu puts you back where you were.** Escape, or choosing something, returns the cursor to the button that opened it — so you can add three blocks in a row without reaching for the mouse between them. Clicking somewhere else instead leaves the cursor where you clicked, rather than snatching it back.
-
-## 2026-08-21 — two pages with one name
-
-### Fixes
-
-- **Typing `[[name]]` no longer picks silently between two pages called the same thing.** Finishing a wikilink with `]]` confirms the top suggestion, which is the point of it — but when two pages share the exact name you typed, that was a coin flip, and the link landed on whichever one happened to sort first with nothing on screen saying a choice had been made. Now it holds the menu open with both of them on it and waits for you to pick. Everything else is unchanged: partial names, half-remembered spellings and one clear match all still confirm the moment you type the brackets.
-- **A page whose name you typed exactly now wins over a longer one listed above it.** Typing `[[Val]]` reaches a page called Val, not Valera, even when Valera sorted first.
