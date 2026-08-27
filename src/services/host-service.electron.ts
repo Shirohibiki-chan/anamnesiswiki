@@ -209,6 +209,11 @@ export function appVersion(): Promise<string> {
   return bridge().appVersion();
 }
 
+/** Which shell this build is — see the contract. This file is the Electron one. */
+export function shellName(): string {
+  return "Electron";
+}
+
 export function restart(): Promise<void> {
   return bridge().restart();
 }
@@ -330,6 +335,7 @@ const conformance = {
   announceOpenProject,
   focusWindowWithProject,
   appVersion,
+  shellName,
   restart,
   chooseDirectory,
   chooseFile,

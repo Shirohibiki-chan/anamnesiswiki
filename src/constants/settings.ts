@@ -73,10 +73,10 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     blurb: "Check for a new version. Only ever when you press the button.",
   },
   {
-    id: "privacy",
+    id: "report",
     group: "app",
-    label: "Privacy",
-    blurb: "What Anamnesis writes down when it runs into a problem, and how to send it on.",
+    label: "Report a bug",
+    blurb: "Send a bug report, and the crash log that goes with it.",
   },
   {
     id: "patch-notes",
@@ -111,8 +111,18 @@ export const DECLARED_SETTINGS: readonly {
   keywords: string[];
 }[] = [
   {
-    id: "privacy-crash-log",
-    tabId: "privacy",
+    id: "bug-report",
+    tabId: "report",
+    label: "Report a bug",
+    // No "filled in": the search is fuzzy, and "filled" lands two edits from
+    // "files", which put this row into the results for "where are my files
+    // saved" — the exact trap the crash-log row below documents.
+    hint: "opens a form in your browser with the version and system already on it",
+    keywords: ["bug", "report", "issue", "broken", "problem", "wrong", "feedback", "github", "tell", "complain"],
+  },
+  {
+    id: "crash-log",
+    tabId: "report",
     label: "If something goes wrong",
     hint: "the crash log kept on your own computer, and how to copy the last one",
     // No "white screen" and no "crashed", though both are what somebody would
@@ -121,7 +131,7 @@ export const DECLARED_SETTINGS: readonly {
     // "crashed" catches "saved", which put this row into the results for "where
     // are my files saved". A near-miss keyword costs an unrelated query its
     // precision, so the list stays with the words that only mean this.
-    keywords: ["crash", "error", "bug", "log", "report", "froze", "blank window", "privacy"],
+    keywords: ["crash", "error", "bug", "log", "report", "froze", "blank window"],
   },
   {
     id: "theme-pick",

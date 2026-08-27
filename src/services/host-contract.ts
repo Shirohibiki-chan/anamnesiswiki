@@ -119,6 +119,17 @@ export type HostContract = {
 
   // ---- the app itself
   appVersion(): Promise<string>;
+  /**
+   * Which shell this is, as a word a person can read: `Tauri` or `Electron`.
+   *
+   * **Only the host can answer it, and a version number cannot.** Both shells
+   * ship the same version string out of the same four files, so a bug report
+   * carrying `0.5.0` says nothing about which of the two builds produced it —
+   * which is exactly the confusion that reached a tester's machine (see
+   * `docs/plan.md` → Known Bugs). Synchronous like `pathSeparator`, because
+   * the answer is decided when the build is made, not when it is asked.
+   */
+  shellName(): string;
   restart(): Promise<void>;
 
   // ---- dialogs
