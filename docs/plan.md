@@ -94,6 +94,54 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   - Both are two attempts in without landing, which is the signal to design
     it with her before building a third.
 
+- **Loose ends from 2026-08-27, written down because they were only ever in
+  pull request descriptions.** A merged PR's body is not a tracking document —
+  nobody reads it again. None of these is urgent and none needs a decision
+  except where it says so.
+
+  - **Nothing points at the bug report path except Settings → Report a bug.**
+    Somebody who has just watched the app do something wrong is not in
+    Settings, and the crash panel's own button only exists for the crashes that
+    take the window down. A way in from where a person actually is when
+    something goes wrong is the missing half.
+  - **The bug report form has never been submitted.** The link is built, the
+    YAML parses, and GitHub's rendering of it is unproven until one real report
+    goes through. The `build` box prefills by matching a field id; if that ever
+    silently stops working, the only sign is reports arriving with an empty
+    box.
+  - **The `?` sheet lists nothing the editor owns.** Ctrl+B, the heading keys,
+    the callout keys are BlockNote's and would have to be typed out by hand —
+    which is the drift the sheet exists to avoid. Worth deciding rather than
+    leaving: a cheat sheet that omits the keys used while writing is half a
+    cheat sheet.
+  - **Named checkpoints, with pinning, were on her list and are not built.**
+    Phase 19 shipped the automatic kind: copies taken on a timer, listed by
+    when. "Mark this state, name it, come back to it" is a different feature
+    and is nowhere in this document. It is the last unbuilt item from the six
+    raised on 2026-08-27.
+  - **The stylesheet notice cannot be acknowledged.** Item 5 shipped for the
+    load warning only; the "this `.css` asked to load something from the
+    internet" line in Settings is the other repeating one. Same idea, different
+    plumbing, and the less annoying of the two since it only appears when that
+    panel is open.
+  - **The acknowledgement record is never pruned, and a moved world asks
+    again.** Entries are keyed by absolute path and nothing removes one whose
+    file is gone. A few dozen bytes each and nothing reads a stale one, but it
+    only grows — and renaming or moving a world means its acknowledged files
+    speak up once more.
+  - **Two layout rules exist as one-off measurements rather than checks.** That
+    a text field never clips its own text, and that the centre column never
+    goes below `CENTER_MIN_WIDTH`, were both verified by hand at the time and
+    nothing stops either regressing. Both belong with the counts in
+    `layout-rules.e2e.ts`.
+  - **Settings has still never been swept by the layout checks**, and it is the
+    densest screen in the app. Everything else is swept at 1280 and 900.
+  - **A property value orphaned before the template fix is still invisible.**
+    New ones cannot happen, but a page that already went through a template
+    swap may have a value in its file with nothing able to draw it. She judged
+    the leftover *blocks* a non-issue (two users, both known); the values are
+    the part worth a second look if it ever turns out to matter.
+
 - **Valeraverse needs re-importing once, and hasn't been.** Two import changes
   landed after her copy was brought in: the project home arriving as a real page,
   and each picture remembering the LK address it came from (without which export
