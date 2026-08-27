@@ -194,6 +194,22 @@ number, commit, delete the tag (`git tag -d v0.3.0` and
 succeeded. Re-run just the failed job from the Actions page; it adds its
 installer to the same draft.
 
+**"The command line is too long", on Windows only.** Happened on v0.6.0 and
+fixed the same evening. The release notes used to be handed to electron-builder
+as a command-line argument, and Windows caps a command line at 8,191 characters:
+that version's notes were 9,914, so the Windows job died in about a second while
+macOS and Linux published normally, leaving a draft with two thirds of a release
+in it. The notes go through a file now, which has no ceiling — but if anyone
+ever puts them back on the command line, this is what it looks like.
+
+**A failure inside the workflow itself cannot be fixed by re-running the job.**
+Worth knowing before reaching for the re-run button, because the advice above is
+for a build that failed, not for a workflow that was wrong. A re-run checks the
+tag out again, so it runs the same broken file. The repair is: fix it on `main`,
+delete the half-built draft from the Releases tab, delete the tag
+(`git tag -d v0.6.0` and `git push --delete origin v0.6.0`), and tag the fix.
+Reusing the version number is right here — nothing was ever published under it.
+
 **The build worked but nobody's update button finds it.** Almost always the
 signing secret: without it the installers ship unsigned and every existing copy
 of Anamnesis refuses them. Check `TAURI_SIGNING_PRIVATE_KEY` is set, then re-run.
