@@ -252,13 +252,8 @@ function linuxCiArgs(): string[] {
 /**
  * The settings file the app finds on its first read.
  *
- * **Three of these four keys exist to stop a first launch getting in the way**
- * rather than to set anything up. A fresh settings folder means a fresh set of
- * preferences, which means the one-time analytics notice would be sitting over
- * the window of every scenario; `analyticsNoticeSeen` puts the app in the state
- * every subsequent launch is in. `analytics: false` is belt and braces on top
- * of that — development runs do not report anyway, but a test run is not a
- * person and has no business appearing in a dashboard either way.
+ * **The two keys here exist to stop a first launch getting in the way**
+ * rather than to set anything up.
  *
  * `projectsDir` is pointed somewhere temporary for the same reason as the world
  * is: anything the app decides to create on its own lands there instead of in
@@ -267,7 +262,6 @@ function linuxCiArgs(): string[] {
 async function seedSettings(userDataDir: string, world: TestWorld | null): Promise<void> {
   const settings: Record<string, unknown> = {
     projectsDir: path.join(userDataDir, "Projects"),
-    preferences: { analytics: false, analyticsNoticeSeen: true },
   };
   if (world) {
     settings.lastOpenedProject = world.path;

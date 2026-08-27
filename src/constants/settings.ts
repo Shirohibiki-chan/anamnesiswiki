@@ -76,7 +76,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     id: "privacy",
     group: "app",
     label: "Privacy",
-    blurb: "Whether the app reports which features get used, and exactly what that covers.",
+    blurb: "What the app collects, and the two times it uses the internet.",
   },
   {
     id: "patch-notes",
@@ -111,18 +111,18 @@ export const DECLARED_SETTINGS: readonly {
   keywords: string[];
 }[] = [
   {
-    id: "analytics-toggle",
+    id: "privacy-collected",
     tabId: "privacy",
-    label: "Report which features I use",
-    hint: "turn usage reporting on or off",
-    keywords: ["analytics", "telemetry", "tracking", "usage", "stats", "data", "privacy", "opt out", "collect", "phone home", "aptabase"],
+    label: "What Anamnesis collects",
+    hint: "nothing — no account, no usage reporting, no switch to find",
+    keywords: ["privacy", "analytics", "telemetry", "tracking", "usage", "data", "collect", "phone home", "opt out", "account"],
   },
   {
-    id: "analytics-what",
+    id: "privacy-network",
     tabId: "privacy",
-    label: "What gets sent",
-    hint: "the full list of what usage reporting covers",
-    keywords: ["analytics", "telemetry", "privacy", "what is sent", "collected", "data", "personal", "worlds"],
+    label: "When it uses the internet",
+    hint: "the two things that go out, both only when you press them",
+    keywords: ["privacy", "network", "internet", "offline", "online", "requests", "import", "updates"],
   },
   {
     id: "theme-pick",

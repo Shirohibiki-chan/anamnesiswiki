@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-27 — it doesn't report on you
+
+### Changes
+
+- **Anamnesis no longer reports which features get used, and the switch for it is gone.** It was built so you could turn it off and so it could never carry anything you'd written — but a worldbuilding app you keep your own notes in is a better thing when the answer to "what does it send" is simply nothing, so it's out rather than switched off. Nothing was ever sent from a released build: no version of Anamnesis you could have installed had anywhere to send it to.
+- **Settings → Privacy now just tells you where things stand.** What the app collects, which is nothing, and the only two times it uses the internet — fetching pictures during an import, and checking for a new version when you press the button. Both still only happen when you ask for them.
+
 ## 2026-08-27 — a project open in another window
 
 ### Fixes
@@ -11,6 +18,7 @@
 - **Opening a project that's already open takes you to it.** Pick it from the front page and the window that has it comes to the front, and the front page closes behind you — the way any app with more than one window behaves. It used to be a refusal you had to click through.
 - **Opening Anamnesis while it's already running gives you the front page**, rather than a second copy of the app reopening the same project underneath the first. That was the situation the "open in another window" message existed to catch; now it can't happen in the first place.
 - **The warning that's left is the one that's real.** If your projects live in OneDrive or Dropbox and a copy is genuinely open **on another computer**, Anamnesis still can't see that window and still can't be sure — so it says so, and "Open it anyway" is still there. That's now the only time you'll see it.
+
 
 ## 2026-08-26 — names you can finish reading
 

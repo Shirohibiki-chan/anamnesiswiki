@@ -1,55 +1,45 @@
-// Settings → Privacy. One switch, and a plain account of what it does.
+// Settings → Privacy. Nothing to switch, which is the point.
 //
-// A section of its own rather than a line inside Updates, because this is
-// where someone goes looking when they want to turn it off, and a switch
-// filed under something else reads as one that was meant to be hard to find.
-import { APTABASE_APP_KEY } from "../../constants/analytics";
-import { apiUrlFor } from "../../services/analytics-service";
-import { useAnalyticsEnabled, usePreferenceActions } from "../../hooks/use-preferences";
+// A tab of its own rather than a line in a README nobody opens. "It collects
+// nothing" is only worth saying where somebody would go looking to turn
+// something off — anyone who arrives here suspicious should be able to read
+// the page and leave satisfied.
+//
+// **Usage reporting was built and then removed, 2026-08-27.** It was hers to
+// ask for and hers to drop: with a handful of users the numbers would have
+// said less than asking them would, and the app is easier to hand to somebody
+// when the answer to "what does it send" is nothing at all. See
+// `docs/plan.md` → Phase 29.
+//
+// **If anything in the app ever sends something, it gets said here**, in this
+// file, before it ships. That is what makes this page worth having.
 
 export function PrivacySettings() {
-  const analytics = useAnalyticsEnabled();
-  const { setAnalytics } = usePreferenceActions();
-  // A build with no key cannot send anything whatever this switch says, and
-  // the panel says so rather than showing a control that does nothing.
-  const configured = apiUrlFor(APTABASE_APP_KEY) !== null;
-
   return (
     <div className="appearance-settings">
-      <fieldset className="sidebar-setting" data-setting="analytics">
-        <legend className="sidebar-setting-label">Usage reporting</legend>
+      <section className="sidebar-setting" data-setting="privacy-collected">
+        <h3 className="sidebar-setting-label">What Anamnesis collects</h3>
         <p className="sidebar-setting-blurb">
-          Anamnesis can report which of its features get used, so the time spent on it goes to the parts people
-          actually open. It's off in a second if you'd rather it didn't.
+          Nothing. There's no account and no sign-in, and nothing reports back on how you use the app — not which
+          features you open, not how often, not from where. There's no switch on this page because there's nothing
+          running to turn off.
         </p>
-        <label className="sidebar-setting-option">
-          <input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} />
-          <span className="sidebar-setting-option-text">
-            <span className="sidebar-setting-option-label">Report which features I use</span>
-            <span className="sidebar-setting-option-hint">
-              {configured
-                ? "Takes effect immediately. Nothing is stored up to be sent later, so turning it off stops it there and then."
-                : "This build isn't set up to report anything, so nothing is being sent whatever this says. The switch is here so it's already where you left it if that changes."}
-            </span>
-          </span>
-        </label>
-      </fieldset>
+        <p className="sidebar-setting-blurb">
+          Your worlds are ordinary folders of files on your own disk. You can open them, copy them, back them up or
+          walk away with them, and none of that needs Anamnesis's permission.
+        </p>
+      </section>
 
-      <section className="sidebar-setting" data-setting="analytics-what">
-        <h3 className="sidebar-setting-label">What gets sent</h3>
-        <p className="sidebar-setting-blurb">
-          Which kind of thing happened, and nothing about what it was about.
-        </p>
+      <section className="sidebar-setting" data-setting="privacy-network">
+        <h3 className="sidebar-setting-label">When it uses the internet</h3>
+        <p className="sidebar-setting-blurb">Twice, and both times because you pressed something:</p>
         <ul className="sidebar-setting-list">
-          <li>That the app started, which version it is, and which operating system.</li>
-          <li>That a world was opened — never which one, and never its name.</li>
-          <li>That a page was made, and which template it used.</li>
-          <li>That a block, an import, an export or an update was used.</li>
+          <li>Fetching the pictures in a world you're importing from a <code>.lk</code> file.</li>
+          <li>Checking whether a newer version exists, when you press Check for updates.</li>
         </ul>
         <p className="sidebar-setting-blurb">
-          <strong>Nothing you write ever goes in one.</strong> No page titles, no world names, no tags, no text from
-          the editor, no file paths. Your worlds stay on your own disk exactly as they always have — this reports on
-          the app, not on what you keep in it.
+          That's the whole list. Nothing happens on a timer, nothing happens in the background, and the app works
+          the same with the internet switched off.
         </p>
       </section>
     </div>
