@@ -153,23 +153,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
-- **An Electron build and the released Tauri build are both 0.5.0.** v0.5.0 is
-  published and is the Tauri app; the Electron work has been running under the
-  same version the whole time, so the two are indistinguishable by filename, by
-  the version the app reports, and by the settings they share. Found 2026-08-26
-  while handing a Linux test build to somebody who already had 0.5.0 installed —
-  the two AppImages differ by 60MB and by nothing a person can see.
-
-  **Bump the version before Phase 29 ships anything.** `latest-linux.yml` in an
-  Electron build already describes itself as 0.5.0, so publishing one puts a
-  second, different 0.5.0 into the update feed of a release that exists.
-
-  **A bug report now names the shell, which is not a fix.** `shellName()` went
-  into the host contract on 2026-08-27 so a report says *Electron build* rather
-  than only *0.5.0* — that makes an arriving report readable, and does nothing
-  about two files on a disk, two entries in a settings store, or an update feed
-  with two 0.5.0s in it.
-
 - **A project that refuses to open can say nothing at all.** Reported from use
   2026-08-21: clicking Valeraverse on the start screen did nothing visible, and
   the world stayed shut. The likely trigger was a stale open-claim — a
@@ -369,10 +352,19 @@ on `electron-updater`, and `docs/releasing.md` rewritten around all of it.
 
 What is genuinely left is the part that can only be settled by running it:
 
-- **No Electron release has actually shipped.** The pipeline can be exercised
-  without spending a version number — Actions → Release (Electron) → Run
-  workflow attaches installers to the run instead of publishing — and that has
-  not been done.
+- **v0.6.0 is the first Electron release.** The version was bumped and its
+  `RELEASES.md` section written on 2026-08-27, which is what closed the known
+  bug about two different builds both calling themselves 0.5.0.
+- **Every existing installation reinstalls by hand once.** A Tauri build reads
+  `latest.json` and this pipeline publishes electron-updater's feed instead, so
+  every 0.5.0 out there reports no update available. This was always the accepted
+  cost of the swap; what is new is that it had to be said out loud, and the
+  v0.6.0 notes lead with it rather than leaving it to be discovered.
+- **The last unproven link is an Electron build updating itself.** The pipeline
+  is dry run — all three platforms built without spending a version number, and
+  the AppImage the Fedora machine ran came out of it — and the tagged path is
+  proven the moment v0.6.0 goes out. What nothing can test until there are two
+  published Electron releases is one of them finding and installing the next.
 - **The Linux AppImage works on the machine that had the problem — confirmed
   2026-08-27.** Tauri's bundler sealing the host's graphics libraries into the
   AppImage was the original crash; electron-builder builds its own, and the
@@ -517,7 +509,7 @@ row's *Earlier versions*. What is left of the phase is below.
 **The ordering note that used to head this phase — "runs after Phase 29,
 because the shell swap rewrites the filesystem layer" — was spent by the time
 the work started.** Steps 1–3 of Phase 29 have shipped; what remains of it is a
-release, a Fedora tester and deleting two workflows, none of which touches
+release and deleting two workflows, neither of which touches
 `filesystem-service.ts`. It is recorded here rather than deleted because the
 reasoning was right when it was written.
 
