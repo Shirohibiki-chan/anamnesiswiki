@@ -7,6 +7,7 @@ import {
   DEFAULT_BINDINGS,
   EDITOR_RESERVED_BINDINGS,
   EDITOR_SCOPED_ACTIONS,
+  SHEET_KEYS,
   SHORTCUT_ACTIONS,
   SHORTCUT_LABELS,
   SYSTEM_RESERVED_BINDINGS,
@@ -120,6 +121,24 @@ export function isTextEntryTarget(target: EventTarget | null): boolean {
   if (element.closest(EDITOR_CONTAINER_SELECTOR)) return true;
   if (element.closest("input, textarea")) return true;
   return Boolean(element.closest('[contenteditable="true"], [contenteditable=""]'));
+}
+
+/**
+ * Does this keypress ask for the list of shortcuts?
+ *
+ * **`?` only counts when nothing is being typed into**, which is what lets a
+ * bare character key be a shortcut at all — a question mark in a sentence is a
+ * question mark. `F1` counts either way: it cannot be typed, and the moment
+ * somebody is midway through writing is a moment they may well want to look a
+ * key up.
+ *
+ * Modifiers are refused on both, so Ctrl+F1 or Alt+? falls through to whatever
+ * else wants it rather than being read as a near miss.
+ */
+export function opensShortcutSheet(event: KeyboardEvent, inText: boolean): boolean {
+  if (event.ctrlKey || event.metaKey || event.altKey) return false;
+  if (event.key === SHEET_KEYS.function) return true;
+  return event.key === SHEET_KEYS.question && !inText;
 }
 
 // ─── Recording ──────────────────────────────────────────────────────────────

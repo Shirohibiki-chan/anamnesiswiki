@@ -128,9 +128,10 @@ export function ShortcutSettings() {
           row with no button on it reads as one that's broken. They're here at
           all so this screen isn't quietly leaving two working keys out. */}
       <p className="shortcut-hint">
-        Three more are fixed and can't be changed: <strong>{modifierName}+R</strong> reloads the window,{" "}
-        <strong>F11</strong>{" "}
-        goes fullscreen, and <strong>F12</strong> opens the developer tools.
+        Four more are fixed and can't be changed: <strong>{modifierName}+R</strong> reloads the window,{" "}
+        <strong>F11</strong> goes fullscreen, <strong>F12</strong> opens the developer tools, and{" "}
+        <strong>?</strong> shows every shortcut on one screen — <strong>F1</strong> does the same while you're
+        writing.
       </p>
 
       {hasAnyOverride && (
