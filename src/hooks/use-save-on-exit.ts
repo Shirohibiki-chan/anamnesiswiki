@@ -22,6 +22,7 @@
 // only auto-destroys when the handler resolves *without* throwing).
 import { useEffect } from "react";
 import { closeWindow, destroyWindow, onWindowCloseRequested } from "../services/host-service";
+import { releaseClaimNow } from "../services/project-claim";
 import { flushAllSaves, hasPendingSaves } from "../services/autosave";
 
 // If a write wedges, the window must still close — losing the tail of one
@@ -106,6 +107,13 @@ export function useSaveOnExit(): void {
     // browser, per CLAUDE.md's Commands section), where there's no window to
     // hook and the listeners above are all there is.
     void onWindowCloseRequested(async () => {
+      // **Before anything else, and on every path out.** The open-marker is
+      // held by an effect, and closing a window unmounts nothing — so without
+      // this the marker outlives the app that wrote it and the next launch
+      // reports the project as open somewhere else. This is the one moment the
+      // app is reliably told it is going away.
+      await releaseClaimNow();
+
       // Nothing to save and nothing already closing: say yes, and the host
       // closes the window itself.
       if (!hasPendingSaves() && !inFlight && !closeRun) return true;

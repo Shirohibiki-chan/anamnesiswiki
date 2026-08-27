@@ -43,6 +43,8 @@ type HostBridge = {
   closeWindow(): Promise<void>;
   destroyWindow(): Promise<void>;
   watchClose(wanted: boolean): Promise<void>;
+  announceOpenProject(projectPath: string | null): Promise<void>;
+  focusWindowWithProject(projectPath: string): Promise<boolean>;
   onCloseRequested(handler: () => void): () => void;
   appVersion(): Promise<string>;
   restart(): Promise<void>;
@@ -191,6 +193,16 @@ export async function onWindowCloseRequested(
   };
 }
 
+/** Told after a project finishes opening, and again with null when it closes. */
+export function announceOpenProject(projectPath: string | null): Promise<void> {
+  return bridge().announceOpenProject(projectPath);
+}
+
+/** True when another window had it and has been brought to the front. */
+export function focusWindowWithProject(projectPath: string): Promise<boolean> {
+  return bridge().focusWindowWithProject(projectPath);
+}
+
 // ------------------------------------------------------------ app itself
 
 export function appVersion(): Promise<string> {
@@ -315,6 +327,8 @@ const conformance = {
   closeWindow,
   destroyWindow,
   onWindowCloseRequested,
+  announceOpenProject,
+  focusWindowWithProject,
   appVersion,
   restart,
   chooseDirectory,

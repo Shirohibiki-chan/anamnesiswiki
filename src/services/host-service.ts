@@ -194,6 +194,25 @@ export async function onWindowCloseRequested(
   });
 }
 
+/**
+ * Both are no-ops on this shell, and deliberately so rather than by oversight.
+ *
+ * This build opens one window per process and has no way to reach another
+ * process's window, which is the constraint the open-marker was designed around
+ * in the first place. Answering false here keeps exactly the behaviour this
+ * shell has always had: the marker's warning, with "open it anyway" behind it.
+ * The Electron shell is where the better answer lives (Phase 29).
+ */
+export function announceOpenProject(projectPath: string | null): Promise<void> {
+  void projectPath;
+  return Promise.resolve();
+}
+
+export function focusWindowWithProject(projectPath: string): Promise<boolean> {
+  void projectPath;
+  return Promise.resolve(false);
+}
+
 // ------------------------------------------------------------ app itself
 
 /** The running app's version, as the installer stamped it. */
@@ -332,6 +351,8 @@ const conformance = {
   closeWindow,
   destroyWindow,
   onWindowCloseRequested,
+  announceOpenProject,
+  focusWindowWithProject,
   appVersion,
   restart,
   chooseDirectory,

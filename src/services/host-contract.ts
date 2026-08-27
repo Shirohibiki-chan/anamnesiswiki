@@ -97,6 +97,25 @@ export type HostContract = {
   closeWindow(): Promise<void>;
   destroyWindow(): Promise<void>;
   onWindowCloseRequested(handler: () => boolean | Promise<boolean>): Promise<() => void>;
+  /**
+   * Says which project this window has open, or null while it is on the picker.
+   *
+   * Only the host can see more than one window at a time, so it is the only
+   * thing that can answer the question below — and it can only answer it if it
+   * is told this.
+   */
+  announceOpenProject(projectPath: string | null): Promise<void>;
+  /**
+   * Brings the window that already has this project to the front, answering
+   * whether there was one.
+   *
+   * **A project open in another window is somewhere to go, not an error.** A
+   * shell that cannot manage more than one window answers false, and the caller
+   * falls back to the open-marker's warning — which is also what happens when
+   * the other copy is on another machine behind a synced folder, where no
+   * amount of window management can reach it.
+   */
+  focusWindowWithProject(projectPath: string): Promise<boolean>;
 
   // ---- the app itself
   appVersion(): Promise<string>;

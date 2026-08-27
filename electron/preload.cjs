@@ -74,6 +74,11 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
   closeWindow: () => invoke("window:close"),
   destroyWindow: () => invoke("window:destroy"),
   watchClose: (wanted) => invoke("window:watchClose", wanted),
+  // Which project this window has open, and asking for the window that already
+  // has one. Both exist so a project open in a second window can be brought to
+  // the front rather than refused — see `window:focusProject` in main.js.
+  announceOpenProject: (projectPath) => invoke("window:announceProject", projectPath),
+  focusWindowWithProject: (projectPath) => invoke("window:focusProject", projectPath),
   onCloseRequested: (handler) => {
     const listener = () => handler();
     ipcRenderer.on("window:close-requested", listener);

@@ -3099,6 +3099,15 @@ means an ordinary refactor breaks each one separately and mysteriously.
 
 Deferred on purpose, not forgotten:
 
+- **The Electron shell can have more than one window, so nothing in
+  `electron/main.js` may remember "the window".** It used to hold one
+  `mainWindow` plus one pair of close flags, and with two windows that is a
+  correctness problem rather than an untidy one: approving one window's close
+  approved the other's, and a dialog opened from either was parented to
+  whichever was created last. Window state lives in the `windows` map, keyed by
+  the window; a handler finds its own with `windowFrom(event)`. Added 2026-08-27
+  so the picker can bring an already-open project's window to the front instead
+  of refusing to open it.
 - **The top bar has to fit inside the centre column, and the column is not the
   window.** It is a child of `.app-layout-center`, between two panels a person
   can drag, so its width is the window's less whatever those two are taking.
