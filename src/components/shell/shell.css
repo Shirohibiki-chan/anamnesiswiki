@@ -746,6 +746,7 @@
   overflow-wrap: anywhere;
 }
 
+.page-history-loading,
 .page-history-empty {
   margin: 0;
   font-size: var(--fs-sm);

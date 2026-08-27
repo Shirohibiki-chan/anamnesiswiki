@@ -84,7 +84,11 @@ export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () =
           </h2>
         </header>
 
-        {snapshots === null && <p className="page-history-empty">Looking…</p>}
+        {/* A class of its own rather than sharing the empty-state one: "still
+            reading the folder" and "there is nothing here" are different
+            answers, and anything waiting on the second — a person or a test —
+            must not be satisfied by the first. */}
+        {snapshots === null && <p className="page-history-loading">Looking…</p>}
 
         {snapshots !== null && snapshots.length === 0 && (
           <p className="page-history-empty">
