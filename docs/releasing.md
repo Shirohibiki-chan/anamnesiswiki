@@ -20,9 +20,10 @@ The commands below are the same. What is different underneath:
   leave it until the old workflow is deleted.
 - **The AppImage repack job is gone**, along with the problem it existed for.
   That was Tauri's bundler sealing the host's graphics libraries into the
-  AppImage; electron-builder builds its own. **Whether the underlying crash is
-  gone is unproven** — nobody has run an Electron AppImage on the Fedora machine
-  that hit it.
+  AppImage; electron-builder builds its own. **Confirmed 2026-08-27**: an
+  Electron AppImage from a dry run started on the same Fedora machine that used
+  to die with `EGL_BAD_PARAMETER` before a window appeared, with no
+  `LD_PRELOAD` and no workaround.
 - **You can test the pipeline without spending a version number.** Actions tab →
   Release (Electron) → Run workflow. It builds all three platforms and attaches
   the installers to the run instead of creating a release.

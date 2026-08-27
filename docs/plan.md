@@ -156,68 +156,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   Phase 19 territory; it is the same argument as version history, which is that
   this app's failures should be survivable rather than merely rare.
 
-- **The AppImage won't start on some older Linux systems.** Reported 2026-08-09
-  from the first install by someone who isn't the user: it ran on his new
-  laptop and failed on an older Fedora one. His diagnosis, verbatim — *"the GTK
-  libraries the ones bundled in the appimage were failing to talk to EGL and I
-  had to use the system's own libwayland-client myself."* He got it running; a
-  person installing the app could not have.
-
-  **This is the standard AppImage bundling mistake and it has a known shape.**
-  Graphics and display libraries — `libwayland-client`, `libEGL`, `libGL`,
-  `libgbm`, `libdrm`, driver shims — are bound to the host's kernel and GPU
-  stack and must come *from the host*, never from the bundle. AppImage's own
-  project publishes an excludelist saying exactly this, and `linuxdeploy`
-  honours it; Tauri's bundler copies webkit2gtk's dependency tree without
-  consulting it, which is how the wrong `libwayland-client` ends up inside.
-  The build is on `ubuntu-22.04` (`.github/workflows/release.yml`), so the
-  bundled copies are Ubuntu 22.04's — newer than what an older Fedora carries,
-  which is why the new laptop was fine and the old one wasn't.
-
-  **Confirmed 2026-08-21, and the diagnosis above is right.** He ran it again
-  and reported three things that settle it:
-
-  - The bare AppImage dies with `Could not create default EGL display:
-    EGL_BAD_PARAMETER. Aborting...` before a window ever appears.
-  - `LD_PRELOAD=/lib64/libwayland-client.so.0 ./Anamnesis_0.3.0_amd64.AppImage`
-    **runs**. Forcing the host's own copy of that one library is the whole fix,
-    which pins the failure to the bundled `libwayland-client` and nothing else.
-  - **The `.rpm` works** on the same machine. So this is our bundle, not his
-    system, not his GPU, and not webkit.
-
-  **He is the verification.** This repo still has no machine that reproduces it
-  and CI runs the Ubuntu that produces the bad bundle, so the rule above stands
-  — but the "ask him first" half is now done, and a fix can be built and handed
-  to him to run.
-
-  **The fix has a complication worth knowing before starting.** Removing the
-  offending libraries has to happen *before* Tauri packages the AppImage, or
-  the update signature no longer matches the file: `.sig` is generated over the
-  bundled artifact, so unpacking, deleting and repacking afterwards produces an
-  AppImage every existing install refuses to update to. Tauri's bundler exposes
-  no hook between building the AppDir and sealing it, so the options are
-  really:
-
-  1. **Repack and re-sign in CI**, using `tauri signer sign` after the fact.
-     Correct, and it puts a second signing step in the workflow.
-  2. **Build the AppImage ourselves** rather than through `tauri-action`, with
-     `linuxdeploy` and its excludelist. Most correct, most work.
-  3. **Stop shipping an AppImage** and offer `.deb` and `.rpm`, which both
-     work. Cheapest and least satisfying; it drops the one Linux artifact that
-     runs anywhere.
-
-  Whichever way, ship it to him as a draft-release artifact and let him run it
-  before it is published.
-
-  **Don't fix this blind.** The fix is to stop bundling those libraries, and
-  the way to know it worked is a machine that reproduces the failure — this
-  repo has none, and CI runs the same Ubuntu that produces the bad bundle. Ask
-  him to confirm the exact library and error before changing the workflow;
-  guessing produces an AppImage that's differently broken on a machine nobody
-  here can boot. The `.deb` is unaffected, since it resolves against the
-  system's own packages, and is the better thing to point Fedora/RPM users at
-  in the meantime (or `.rpm`, which `targets: "all"` already builds).
-
 ---
 
 ## Shipped
@@ -387,10 +325,13 @@ What is genuinely left is the part that can only be settled by running it:
   without spending a version number — Actions → Release (Electron) → Run
   workflow attaches installers to the run instead of publishing — and that has
   not been done.
-- **The Linux AppImage is unproven on the machine that had the problem.**
-  Tauri's bundler sealing the host's graphics libraries into the AppImage was
-  the original crash; electron-builder builds its own, so the cause should be
-  gone. Nobody has run one on the older Fedora box to find out.
+- **The Linux AppImage works on the machine that had the problem — confirmed
+  2026-08-27.** Tauri's bundler sealing the host's graphics libraries into the
+  AppImage was the original crash; electron-builder builds its own, and the
+  first Electron AppImage handed to him started on the same Fedora machine that
+  used to die with `EGL_BAD_PARAMETER` before a window appeared. No
+  `LD_PRELOAD`, no workaround. That closes the Known Bug this phase inherited,
+  and it removes the argument for dropping the AppImage target.
 - **`release.yml` and `appimage-test.yml` are still there**, kept as a way back.
   They go once an Electron release has shipped and settled.
 - **Usage reporting: built 2026-08-26, removed 2026-08-27.** Kept here as a

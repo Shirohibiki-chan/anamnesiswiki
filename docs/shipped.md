@@ -4072,3 +4072,44 @@ lands two edits from "files", which put the row into the results for *"where are
 my files saved"* and failed `settings-search.test.ts`. The same trap the
 crash-log row above it documents in a comment. Reworded to "already on it".
 
+---
+
+## The AppImage starts on the machine it used to crash on ✅ Confirmed 2026-08-27
+
+Not a change — a result, and the one this repo could not produce for itself.
+
+**The bug, since 2026-08-09.** The first install by somebody who is not the user
+died on his Fedora laptop with `EGL_BAD_PARAMETER` before a window appeared.
+Tauri's bundler copies webkit2gtk's dependency tree into the AppImage without
+consulting AppImage's own excludelist, so the host's graphics libraries were
+sealed inside it — built on `ubuntu-22.04`, newer than what that machine
+carries, and the two could not talk. He got it running by forcing the system's
+own `libwayland-client` with `LD_PRELOAD`; an ordinary installer could not have.
+
+**Why it stayed open for eighteen days.** No machine here reproduces it, and CI
+runs the same Ubuntu that produces the bad bundle — so a green build proved
+nothing, and `docs/handoff.md` said in as many words not to fix it blind. The
+three options on the table were repack-and-re-sign in CI, building the AppImage
+with `linuxdeploy` by hand, or dropping the AppImage target.
+
+**None of them were needed.** electron-builder assembles its own AppImage, which
+was the theory; a dry run of `Release (Electron)` produced one, and it started
+on that same Fedora machine with no workaround. Phase 29 bought the fix as a
+side effect of the shell swap.
+
+### What this closes
+
+- The Known Bug in `docs/plan.md`, removed rather than reworded.
+- Phase 29's "the Linux AppImage is unproven on the machine that had the
+  problem", which was one of the three things left in that phase.
+- The argument for dropping the AppImage and shipping only `.deb` and `.rpm`.
+
+**The constraint in `docs/handoff.md` stays.** It is a rule about what an
+AppImage may contain, not about which bundler was getting it wrong.
+
+### Still unverified on Linux
+
+The single-instance behaviour from #290 — launching the app twice and having the
+second launch find the window that already has the world open. It was reported
+from that machine and has never been confirmed there.
+
