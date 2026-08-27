@@ -40,8 +40,8 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   allProperties: "All properties & tags",
   newPage: "New page",
   save: "Save now",
-  undo: "Undo (sidebar)",
-  redo: "Redo (sidebar)",
+  undo: "Undo (sidebar and panels)",
+  redo: "Redo (sidebar and panels)",
   navigateBack: "Back",
   navigateForward: "Forward",
   navigateHome: "Project home",
@@ -55,8 +55,17 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   allProperties: { key: "k", mod: true, shift: true },
   newPage: { key: "n", mod: true },
   save: { key: "s", mod: true },
-  undo: { key: "z", mod: true },
-  redo: { key: "y", mod: true },
+  // **Not Ctrl+Z, and that is the whole point** (2026-08-27, her call).
+  // Ctrl+Z belongs to whatever is being written in the middle of the window,
+  // always — that is what everyone reaches for it expecting, and an app undo
+  // that stands down "only while the caret is in text" still means the same
+  // key does two different things depending on where you last clicked.
+  //
+  // Shift is what marks the difference: same letter, one step out from the
+  // writing. Redo follows it rather than staying on Ctrl+Y, so the pair is
+  // still a pair.
+  undo: { key: "z", mod: true, shift: true },
+  redo: { key: "y", mod: true, shift: true },
   // The convention every browser and file manager on Windows and Linux uses,
   // which is the one someone reaches for without being told. Alt with a *named*
   // key can't be typed as a character, which is why these are allowed to skip
@@ -119,14 +128,19 @@ export const SHEET_KEYS = { question: "?", function: "F1" } as const;
 
 // Actions that stand down while the caret is in text — the editor, a rename
 // box, any input. They are allowed to sit on combinations the editor owns,
-// because the two never both want the keypress: Ctrl+Z inside a page is the
-// editor's undo, and Ctrl+Z anywhere else is the app's.
+// because the two never both want the keypress.
 //
-// This is the only exception to EDITOR_RESERVED_BINDINGS below, and it is a
-// narrow one. It works because these two actions mean the *same thing* as the
-// editor's — an action that meant something different couldn't share the key
-// without the user having to know which half of the window had focus.
-export const EDITOR_SCOPED_ACTIONS: ReadonlySet<ShortcutAction> = new Set<ShortcutAction>(["undo", "redo"]);
+// **Empty since 2026-08-27, and worth leaving here rather than deleting.** Undo
+// and redo used to be in it: they sat on Ctrl+Z and Ctrl+Y and stood down while
+// the caret was in text, so the same key undid a sentence in one place and a
+// tree operation in another. That was rejected — Ctrl+Z is expected to work on
+// what is being written, and sharing it means knowing which half of the window
+// had focus. They moved to Ctrl+Shift+Z and Ctrl+Shift+Y instead, where they
+// need no exception and work wherever the cursor is.
+//
+// The mechanism stays because the next action that genuinely means the same
+// thing as one of the editor's should use it rather than reinvent it.
+export const EDITOR_SCOPED_ACTIONS: ReadonlySet<ShortcutAction> = new Set<ShortcutAction>();
 
 // Combinations a custom binding may not take, because something else already
 // answers them and the app would be stealing the keypress.
@@ -139,9 +153,6 @@ export const EDITOR_SCOPED_ACTIONS: ReadonlySet<ShortcutAction> = new Set<Shortc
 export const EDITOR_RESERVED_BINDINGS: Binding[] = [
   { key: "z", mod: true }, // undo
   { key: "y", mod: true }, // redo
-  // Not bound by the installed version, but it's the Mac redo convention, so
-  // an app action landing here would surprise anyone who reaches for it.
-  { key: "z", mod: true, shift: true },
   { key: "6", mod: true, shift: true },
   { key: "7", mod: true, shift: true },
   { key: "8", mod: true, shift: true },

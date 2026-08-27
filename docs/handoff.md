@@ -1774,6 +1774,31 @@ writes, `PageHistory.tsx` shows, `use-page-history.ts` restores.
   wrong tab on the next page visited. It's deliberately not part of `Project`:
   a single navigation isn't state worth writing to disk.
 
+## Ctrl+Z
+
+- **It is the writing's key, and the app may not take it back.** Until
+  2026-08-27 the app's own undo sat on Ctrl+Z and stood down while the caret was
+  in text, so one key undid a sentence in one place and a tree operation in
+  another. Rejected on the grounds that people expect Ctrl+Z to work on what
+  they are writing — which is also why the properties panel's undo, when it
+  lands, does **not** go there.
+
+- **The app's undo is Ctrl+Shift+Z and its redo Ctrl+Shift+Y**, and neither is
+  editor-scoped any more: nothing in BlockNote binds them, so they work
+  mid-sentence too. `EDITOR_SCOPED_ACTIONS` is empty as a result and is kept
+  for the next action that genuinely means the same thing as one of the
+  editor's.
+
+- **Ctrl+Shift+Z came off the reserved list to make this possible.** It was
+  held back as the Mac redo convention; this app's redo has always been Ctrl+Y
+  and is now Ctrl+Shift+Y, and the installed BlockNote binds neither. A Mac
+  user with the habit can rebind.
+
+- **A stored override pointing at Ctrl+Z is dropped on load** rather than
+  honoured, because `parseOverrides` re-checks every binding against today's
+  rules — which is the mechanism that stops an old settings file quietly
+  reintroducing the thing this change removed.
+
 ## Shortcuts
 
 - **What BlockNote actually owns is `EDITOR_RESERVED_BINDINGS`** in
