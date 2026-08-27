@@ -428,29 +428,39 @@ What is genuinely left is the part that can only be settled by running it:
   points at should be deleted rather than left listening.
 
 - **Crash reporting, and it never leaves the machine.** Her call 2026-08-27,
-  and the one piece of the above she did want.
+  the one piece of the above she did want, and now built.
 
-  **Nothing catches a crash today.** No error boundary, no `window.onerror`, no
-  handler for a rejected promise anywhere in `src/` or `electron/` — a crash in
-  the tree is a white window and no explanation. That is the real gap here, and
-  closing it is worth doing whether or not anything is ever sent anywhere.
+  **Nothing caught a crash before this.** No error boundary, no
+  `window.onerror`, no handler for a rejected promise anywhere in `src/` or
+  `electron/` — a crash in the tree was a white window and no explanation. That
+  was the real gap, and closing it was worth doing whether or not anything is
+  ever sent anywhere.
 
-  - **A panel where the white window was**, saying the app hit a problem, what
-    the problem was, and that the work on disk is untouched.
-  - **A log file beside the settings**, so the last crash outlives the panel
-    and can still be found after a restart.
-  - **One button that copies the details**, for pasting into an issue or a
-    message.
-  - **Nothing is sent, and there is nothing to configure.** No service, no
-    endpoint, no key, no switch. Whoever hit the crash decides what happens to
-    it, having read it first.
+  - `components/shell/ErrorBoundary.tsx` wraps `<App />` from `main.tsx` rather
+    than sitting inside App, because a boundary cannot catch a throw from the
+    component it is written in.
+  - `components/shell/CrashScreen.tsx` is what the white window became: what
+    happened, that the files on disk were not touched, a restart, and a button
+    that copies the details. The trace is shown rather than hidden, because
+    nothing is being sent and there is nothing to be coy about.
+  - `services/crash-log-service.ts` keeps the last five in `crash-log.json`
+    beside the settings, through the same `openKeyValueStore` door the settings
+    use — no new shell capability, so it works the same under both shells.
+  - **The two global handlers record and do nothing else.** A rejected promise
+    usually leaves the app perfectly usable, and blanking the window over one
+    would be a worse bug than the one being reported. Settings → Privacy is
+    where those become findable, and it can copy the last one.
 
   **Why not the automatic kind.** A stack trace carries error messages, and
   this app's error messages carry file paths — which carry world names and page
   titles. The usage events could be *proven* content-free by reading a list of
   eight strings; a crash report can only be scrubbed and hoped over. Showing
   somebody the text and letting them press the button is the version with no
-  hoping in it.
+  hoping in it — and it is why the record can afford to be complete.
+
+  **Still open**: nothing renders the panel on purpose yet, so the only proof
+  it works is a test and a hand-thrown error. A scenario in `pnpm test:app`
+  that throws inside the tree and asserts the panel is the obvious next step.
 
 ### The work, in three steps
 
