@@ -85,6 +85,20 @@
   background: var(--color-hover);
 }
 
+/* **Wraps rather than ellipsising.** This used to be one line with
+   `text-overflow: ellipsis`, which put a block called "Where They Land On
+   Almost Every Question That Actually Matters" on the panel as a name trailing
+   off into nothing — no tooltip, no wider view, no way to read the rest of it
+   at any panel width. A name you cannot finish reading reads as broken rather
+   than as tidy, and the same argument settled the spectrum's end words on
+   2026-08-25; this is the last place in the app that still did it.
+
+   `.block-shell-bar` has no height of its own beyond an 18px floor and the
+   grip sits in the gutter rather than in the row, so a heading on two lines
+   grows the row instead of colliding with anything. `overflow-wrap: anywhere`
+   for the same reason it is on the spectrum's words: a single unbroken run of
+   characters has to break somewhere, or it goes back to running off the edge
+   and takes the ellipsis's place. */
 .block-title {
   flex: 1;
   min-width: 0;
@@ -94,9 +108,8 @@
   padding: 0;
   color: var(--color-text-muted);
   cursor: text;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .block-title-input {
