@@ -7,6 +7,13 @@
 // sidebar note beside a page, not a second document, and mounting a rich
 // editor per block would put an editor instance behind every sidebar in the
 // project. If it ever needs formatting, that is a decision to raise.
+//
+// **It grows with what is written in it** (2026-08-27). It was a fixed three
+// rows, so a note of four lines was clipped behind a scrollbar inside a panel
+// that already scrolls — raised from use, and the objection was to having to
+// scroll at all rather than to where the bar sat.
+import { GrowTextarea } from "../properties/GrowTextarea";
+
 type TextBlockProps = {
   value: string;
   onChange: (value: string) => void;
@@ -14,11 +21,10 @@ type TextBlockProps = {
 
 export function TextBlock({ value, onChange }: TextBlockProps) {
   return (
-    <textarea
+    <GrowTextarea
       className="property-value-textarea"
       value={value}
       placeholder="Write something..."
-      rows={3}
       onChange={(e) => onChange(e.target.value)}
     />
   );

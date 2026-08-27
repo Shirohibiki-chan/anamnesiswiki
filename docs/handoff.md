@@ -1776,6 +1776,18 @@ is below.
   it turns out to be stolen, the fix is a different default binding, not a
   fight with the webview. `Cmd+S` is the ordinary case and behaves.
 
+## Multi-line fields
+
+- **No multi-line field in this app gets a fixed `rows`.** Three was the value
+  everywhere until 2026-08-27 and it was wrong in both directions: fewer lines
+  than that reserved empty space, more than that clipped the rest behind a
+  scrollbar *inside* a panel that already scrolls, which reads as broken rather
+  than as scrollable. `components/properties/GrowTextarea.tsx` is the one to
+  use — it is `field-sizing: content` where the engine has it and a measured
+  height where it does not, which is the older WebKitGTK one of this app's
+  Linux machines runs. It came out of MeterBlock, where it was written for the
+  same reason.
+
 ## Layout
 
 - **A bright fill and white text are mutually exclusive, and that one fact

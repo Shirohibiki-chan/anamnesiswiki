@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-27 — text boxes the size of the text
+
+### Fixes
+
+- **A sidebar note longer than three lines is no longer clipped behind a scrollbar.** Every multi-line field in the properties panel — text blocks, and the longer template fields — is now exactly as tall as what you've written in it, however long that is. It was a fixed three lines, which was wrong in both directions: a one-line note reserved space it wasn't using, and a four-line one hid its fourth behind a scrollbar inside a panel that already scrolls.
+- The field's box still only appears when you hover or click into it. With the scrollbar gone there's nothing drawn around a note you're not editing.
+
 ## 2026-08-27 — the keys the window didn't answer
 
 ### Additions
@@ -231,11 +238,3 @@
 ### Fixes
 
 - **Tab no longer walks out of a dialog into the page behind it.** Settings, Import, Export, All properties & tags, the picture picker, Save as template, Manage pins, the template picker and both confirm boxes all keep the cursor inside now, wrapping around at either end — and Tab from outside one steps into it rather than past it. The menus were fixed earlier the same day; dialogs are built separately and were missed, which is why it looked half-fixed.
-
-
-## 2026-08-21 — menus answer the keyboard
-
-### Fixes
-
-- **Menus can be used from the keyboard now.** Opening one — a right-click menu, a block's `⋯`, Add Block, the colour swatches, a template or page picker — puts the cursor on its first item instead of leaving it behind on the page. **Up and Down** walk the list and wrap around at either end, **Tab** stays inside the menu rather than escaping into whatever is behind it, **Enter** picks, and **Escape** closes. Menus are drawn outside the page they belong to, which is why Tab used to sail straight past them into the rest of the window.
-- **Closing a menu puts you back where you were.** Escape, or choosing something, returns the cursor to the button that opened it — so you can add three blocks in a row without reaching for the mouse between them. Clicking somewhere else instead leaves the cursor where you clicked, rather than snatching it back.
