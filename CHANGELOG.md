@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-27 — a warning you can tell to stop
+
+### Additions
+
+- **The "couldn't be opened" notice has an "I know about this one" button.** Some files are never going to open — a sync conflict copy you're keeping on purpose, something you dropped in the folder yourself — and until now that notice greeted you every single time you opened the world, with only a × that lasted until the next launch.
+- **It's per file, and it remembers what the file looked like.** If that file changes, the notice comes back: saying you know about one problem doesn't silence the next one in the same file.
+- It's remembered for this installation of Anamnesis rather than inside the world, so a world you copy to another machine still warns you over there.
+- **The "couldn't be saved" warning deliberately has no such button.** That one means your writing might not be on disk, and a permanent mute on it is a button for losing work.
+
 ## 2026-08-27 — the page keeps its room
 
 ### Fixes
@@ -247,11 +256,3 @@
 ### Fixes
 
 - **The window closes from every screen, not just from inside a project.** The app takes over closing the window so it can finish writing your last edit first — but it only did that while a project was open. Leave a project for the start screen, or refresh the page, and nothing was left holding the door: the X did nothing at all and the app had to be killed from the terminal. It's handled everywhere now.
-
-## 2026-08-21 — deleting a property you added works again
-
-### Fixes
-
-- **A property you added to a page can be deleted again.** When the sidebar became blocks, removal moved into each block's `⋯` menu — but that menu only had **Remove block**, which takes a field off the panel and keeps what's in it. Nothing anywhere could actually delete a field you'd added, so one made by mistake could only be hidden. There's a **Delete property** beside it now.
-- **The two are worded apart on purpose.** Remove block hides a field and keeps the value, and Add Block lists everything you've hidden so you can put it back. Delete property throws the value away and asks first if there's anything in it.
-- **Any field can be deleted, including the ones a template gave the page.** A page made from a template is a copy, so its fields are yours. The difference is only what "gone" means, and the question you're asked says which: a field you invented can't be brought back, while one from the template can be added again empty from Add Block.
