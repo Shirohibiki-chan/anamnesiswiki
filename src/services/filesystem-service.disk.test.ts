@@ -28,7 +28,27 @@ const fsMock = vi.hoisted(() => {
       files.set(path, contents);
     }),
     exists: vi.fn(async (path: string) => isDir(path) || isFile(path)),
-    readDir: vi.fn(async () => []),
+    // Reads the fake disk rather than answering "empty" to everything, which
+    // it did until Phase 19 needed a directory listing to mean something —
+    // `listSnapshots` reads a node's history folder, and a stub that always
+    // says empty makes a working feature look broken.
+    readDir: vi.fn(async (path: string) => {
+      const prefix = `${path}/`;
+      const names = new Map<string, boolean>();
+      for (const file of files.keys()) {
+        if (!file.startsWith(prefix)) continue;
+        const rest = file.slice(prefix.length);
+        const cut = rest.indexOf("/");
+        names.set(cut === -1 ? rest : rest.slice(0, cut), cut !== -1);
+      }
+      for (const dir of dirs) {
+        if (!dir.startsWith(prefix)) continue;
+        const rest = dir.slice(prefix.length);
+        const cut = rest.indexOf("/");
+        names.set(cut === -1 ? rest : rest.slice(0, cut), true);
+      }
+      return [...names].map(([name, isDirectory]) => ({ name, isDirectory, isFile: !isDirectory }));
+    }),
     readTextFile: vi.fn(async (path: string) => files.get(path) ?? ""),
     remove: vi.fn(async (path: string) => {
       if (isFile(path)) {
@@ -73,7 +93,17 @@ const fsMock = vi.hoisted(() => {
 });
 vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 
-import { addNodes, moveNodes, renameNode, renameProject, saveNode } from "./filesystem-service";
+import {
+  addNodes,
+  deleteNode,
+  forgetSnapshotTimes,
+  listSnapshots,
+  moveNodes,
+  readSnapshot,
+  renameNode,
+  renameProject,
+  saveNode,
+} from "./filesystem-service";
 import { enqueueWrite, whenWritesSettle } from "./write-queue";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
 
@@ -82,8 +112,28 @@ function node(overrides: Partial<Node> & Pick<Node, "id" | "name" | "parentId" |
   return { tabs: [], properties: {}, tags: [], createdAt: seq++, updatedAt: 0, ...overrides };
 }
 
+/**
+ * The project's own files, which is what every assertion below is about.
+ *
+ * `.history/` is filtered out rather than asserted on: a save copies the
+ * previous contents aside (Phase 19), so every scenario here would otherwise
+ * carry two or three dated files that say nothing about the layout being
+ * tested. `snapshot-service.test.ts` covers the rules for what lands there,
+ * and `keeps a copy of what it replaced` below covers that it happens at all.
+ */
 function layout(): string[] {
-  return [...disk.files.keys()].map((path) => path.replace("/root/", "")).sort();
+  return [...disk.files.keys()]
+    .map((path) => path.replace("/root/", ""))
+    .filter((path) => !path.startsWith(".history/"))
+    .sort();
+}
+
+/** Everything under `.history/`, for the one test that is about it. */
+function historyFiles(): string[] {
+  return [...disk.files.keys()]
+    .map((path) => path.replace("/root/", ""))
+    .filter((path) => path.startsWith(".history/"))
+    .sort();
 }
 
 const folder = node({ id: "f", name: "F", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
@@ -94,6 +144,10 @@ beforeEach(() => {
   disk.dirs.add("/root");
   locked.path = null;
   seq = 1;
+  // The "when did this node last get copied" cache is module-level and would
+  // otherwise carry one test's answers into the next — which is the same
+  // reason the app clears it when a project closes.
+  forgetSnapshotTimes();
 });
 
 describe("overlapping writes", () => {
@@ -347,3 +401,57 @@ describe("renaming a project", () => {
     expect(disk.dirs.has("/root/test")).toBe(true);
   });
 });
+
+// Phase 19. The rules for what is kept live in `snapshot-service.ts` and are
+// tested there; these are about the disk actually receiving them.
+describe("old copies of a page", () => {
+  const page = node({ id: "p", name: "Notes", parentId: null, templateKey: "note", tabs: [] });
+
+  it("keeps a copy of what it replaced, not of what it wrote", async () => {
+    await saveNode("/root", { ...page, name: "Notes", tags: ["first"] }, [page]);
+    expect(historyFiles()).toEqual([]); // Nothing existed to copy.
+
+    await saveNode("/root", { ...page, tags: ["second"] }, [page]);
+
+    const kept = await listSnapshots("/root", "p");
+    expect(kept).toHaveLength(1);
+    const copy = await readSnapshot("/root", "p", kept[0].name);
+    expect(copy?.tags).toEqual(["first"]);
+  });
+
+  it("does not take a second copy inside the interval", async () => {
+    await saveNode("/root", page, [page]);
+    await saveNode("/root", { ...page, tags: ["a"] }, [page]);
+    await saveNode("/root", { ...page, tags: ["b"] }, [page]);
+    await saveNode("/root", { ...page, tags: ["c"] }, [page]);
+
+    expect(await listSnapshots("/root", "p")).toHaveLength(1);
+  });
+
+  it("leaves a note in the folder for whoever finds it without the app", async () => {
+    await saveNode("/root", page, [page]);
+    await saveNode("/root", { ...page, tags: ["a"] }, [page]);
+
+    expect(historyFiles()).toContain(".history/README.txt");
+  });
+
+  // The case undo cannot help with once the app has been closed.
+  it("copies a page aside before deleting it, whatever the interval says", async () => {
+    await saveNode("/root", page, [page]);
+    await saveNode("/root", { ...page, tags: ["current"] }, [page]);
+    expect(await listSnapshots("/root", "p")).toHaveLength(1);
+
+    await deleteNode("/root", { ...page, tags: ["current"] }, [page], []);
+
+    const kept = await listSnapshots("/root", "p");
+    expect(kept).toHaveLength(2);
+    const newest = await readSnapshot("/root", "p", kept[0].name);
+    expect(newest?.tags).toEqual(["current"]);
+  });
+
+  it("says there is no history for a node that has none", async () => {
+    expect(await listSnapshots("/root", "nobody")).toEqual([]);
+    expect(await readSnapshot("/root", "nobody", "2026-08-27T05-12-03-123Z.json")).toBeNull();
+  });
+});
+

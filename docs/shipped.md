@@ -3931,6 +3931,63 @@ always be wrong in the way the real thing is broken; this opens the real app.
 
 ---
 
+## Phase 19 — Safety Net (version history) ✅ Shipped 2026-08-27
+
+The half of Phase 19 that is version history. Obsidian's File Recovery is the
+model `docs/plan.md` says to copy rather than redesign, and this copies it:
+periodic copies kept on disk, a per-page list of them, arrow keys through that
+list, and a restore.
+
+**Built ahead of the rest of Phase 29 deliberately.** The ordering note on the
+phase — "runs after Phase 29, because a shell swap rewrites the filesystem
+layer" — was written when the swap had not happened. Steps 1–3 have shipped;
+what is left of 29 is a release, a Fedora tester and deleting two workflows,
+none of which touches `filesystem-service.ts`. The reason for the ordering is
+spent, so the work is not being done twice.
+
+### What it is
+
+- **`services/snapshot-service.ts`** — pure rules: naming, parsing, when a copy
+  is due, what to prune, the patch a restore applies, and the README text. 21
+  unit tests.
+- **`filesystem-service.ts`** — `snapshotBeforeWrite` at the top of `saveNode`
+  and forced from `deleteNodes`, plus `listSnapshots`, `readSnapshot`,
+  `snapshotNode` and the pruning. `.history/` skipped in `walkEntries` and
+  reserved in `RESERVED_ROOT_KEYS`. Six new tests against the fake disk.
+- **`components/shell/PageHistory.tsx`** — the panel, opened from a tree row's
+  right-click menu. Versions down the left, what that version *said* on the
+  right, arrow keys through the list, one Restore.
+- **`contentRevisions` in the project store**, in the editor's key.
+
+### Verification
+
+`pnpm lint` clean, `pnpm test` 1427 across 60 files, `pnpm test:app` 31 across
+7 files including the new `e2e/keeps-earlier-versions.e2e.ts`, which types into
+a page in the packaged app, checks the copy holds what was there *before* the
+typing, restores it, and checks the typed sentence became a version of its own.
+
+### What the scenario caught, and unit tests could not
+
+**Restoring a page while looking at it did nothing visible, and would have been
+silently reverted.** BlockNote is created with `initialContent` and keyed by
+tab, so the editor kept showing the pre-restore words — and the next keystroke
+would have saved those back over the restored version. Found by the scenario on
+its first run; fixed with `contentRevisions`. This is the failure mode the
+phase's own note in `plan.md` warns about: a half-built safety net is worse
+than none, because it gets trusted.
+
+**Two copies stamped in the same millisecond were one copy.** A save followed
+immediately by a delete overwrote the save's copy; caught by the full unit run
+after passing in isolation, fixed with `nextSnapshotAt`.
+
+### Not done
+
+- **Undo for the right-hand panel**, the phase's other bullet, carried over from
+  Phase 10. Untouched here.
+- **Nothing snapshots `project.json`** — the tree's own order and the project's
+  settings have no history. Page contents were the loss that happened.
+- **Retention is not configurable.** Obsidian's is. The numbers are in
+  `constants/limits.ts` and nothing reads them from settings.
 ## Every shortcut on one screen ✅ Shipped 2026-08-27
 
 Nothing in the app could show somebody their own keys. Every shortcut is

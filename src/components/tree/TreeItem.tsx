@@ -51,7 +51,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
   const isPinned = useIsPinned(node.id);
-  const { confirmDestructive, requestExport, requestTemplateScope } = useDialogs();
+  const { confirmDestructive, openHistory, requestExport, requestTemplateScope } = useDialogs();
   const createPageIn = useCreatePageIn();
   const doubleClickAction = useTreeDoubleClick();
   const revealNode = useRevealNode();
@@ -443,6 +443,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onToggleProjectHome={() => setProjectHome(node.id)}
             onTogglePinned={() => togglePinned(node.id)}
             onToggleHidden={() => setNodeHidden(targetIds(), !fullNode.hidden)}
+            onShowHistory={() => openHistory(node.id)}
             onReveal={() => void revealNode(node.id)}
             onExport={() => requestExport(targetIds())}
             onDelete={handleDelete}

@@ -402,6 +402,57 @@ is below.
   NUL delimiter was tried and is worse: it makes the source file read as binary to
   `grep`.
 
+## Earlier versions
+
+Phase 19, added 2026-08-27. `snapshot-service.ts` decides, `filesystem-service.ts`
+writes, `PageHistory.tsx` shows, `use-page-history.ts` restores.
+
+- **`.history/` must stay out of the load walk, and this is not a tidiness
+  rule.** Every file in there *is* a page's JSON, so a walk that reads it puts
+  every old copy of every page into the tree as a second page. It is skipped by
+  name at the root, the way `assets/` is, in `walkEntries` — and it is in
+  `RESERVED_ROOT_KEYS` so a page called ".history" gets a suffix rather than a
+  collision.
+
+- **A copy is what is on disk *before* a save, not what the save is about to
+  write.** The difference is the whole feature: the second is a copy of the edit
+  somebody regrets. `snapshotBeforeWrite` runs at the top of `saveNode`, and
+  again with `force` from `deleteNodes` — a delete is the one path where the
+  current contents stop existing rather than change.
+
+- **The name is the identity; there is no index file.** `snapshotName` writes a
+  sortable ISO stamp, so a directory listing *is* the index and a missing or
+  hand-deleted file costs nothing. Two consequences: `nextSnapshotAt` must keep
+  stamps strictly increasing (a save and the delete after it land in the same
+  millisecond, and two copies with one name are one copy), and anything the
+  parser does not recognise is dropped from the list rather than deleted —
+  this folder is inside her project.
+
+- **`lastSnapshotAt` is a cache, and `saveNode` runs on every debounce.** The
+  interval question cannot cost a `readDir` per keystroke, so it is seeded from
+  disk once per node per session and cleared by `closeProject`. A stale entry
+  can only ever cost one missed copy, never a wrong one.
+
+- **The newest copy of a page is never pruned**, whatever the age says.
+  `snapshotsToPrune` holds one back before either rule runs: a page untouched
+  for a year is exactly the one somebody comes back to.
+
+- **Restoring is composed from `updateNode` and `renameNode`, folded into one
+  undo entry.** A name is a filename, and renaming one is a relocation with its
+  own planner; a restore that patched `name` through `updateNode` would write
+  at the new path and leave the old file behind. `restorePatch` therefore
+  excludes `name`, and also `parentId` and `templateKey` — where a page lives
+  and what kind it is are not content, and `templateKey` decides file-vs-
+  directory storage, which is a move rather than an edit.
+
+- **`contentRevisions` exists because the editor reads its content once.**
+  BlockNote is created with `initialContent` and keyed by tab, so replacing a
+  page's writing underneath an open editor leaves the old words on screen —
+  and the next keystroke saves them back over the restore. The revision is in
+  the editor's key and is bumped only by an external rewrite; `updatedAt` would
+  remount the editor on every keystroke. **Anything else that rewrites a node's
+  content from outside the editor has to bump it too.**
+
 ## Saving
 
 - **`autosave.ts` is a plain service and must stay one** — its debounce timers

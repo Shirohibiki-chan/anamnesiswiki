@@ -68,6 +68,16 @@ type DialogStoreState = {
   pendingTemplateScope: PendingTemplateScope | null;
   requestTemplateScope: (pageName: string) => Promise<TemplateScope | null>;
   resolveTemplateScope: (scope: TemplateScope | null) => void;
+  /**
+   * Which page's earlier versions are being looked at, or null (Phase 19).
+   *
+   * Here rather than passed down for the same reason the export request is:
+   * it is raised from a tree row's menu, and react-arborist renders those
+   * rows itself — there is no props path from the app root to one.
+   */
+  historyNodeId: string | null;
+  openHistory: (nodeId: string) => void;
+  closeHistory: () => void;
   pendingAssetPick: PendingAssetPick | null;
   requestAssetPick: (title: string) => Promise<string | null>;
   resolveAssetPick: (fileName: string | null) => void;
@@ -79,11 +89,20 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
   notice: null,
   pendingTemplateScope: null,
   pendingAssetPick: null,
+  historyNodeId: null,
 
   requestAssetPick(title) {
     return new Promise<string | null>((resolve) => {
       set({ pendingAssetPick: { title, resolve } });
     });
+  },
+
+  openHistory(nodeId) {
+    set({ historyNodeId: nodeId });
+  },
+
+  closeHistory() {
+    set({ historyNodeId: null });
   },
 
   resolveAssetPick(fileName) {
