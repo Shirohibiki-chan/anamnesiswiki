@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-21 — reloading no longer locks you out of your own project
+
+### Fixes
+
+- **Refreshing the app stopped shutting you out of the project you had open.** A project records that it's open so a second copy of Anamnesis can't save over the first — but the app worked out who it was fresh on every load, so after a refresh it found the note it had written seconds earlier, didn't recognise its own handwriting, and refused to let you back in until the note went stale a couple of minutes later. A window now remembers who it is across a refresh and takes its own project straight back. Two genuinely separate copies are still kept apart, exactly as before.
+
 ## 2026-08-21 — Tab picks what the [[ menu is showing
 
 ### Fixes

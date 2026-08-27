@@ -2,6 +2,7 @@
 // `onRemove` is only passed for Phase 7's per-page custom properties — a
 // template's own fields aren't removable.
 import { X } from "lucide-react";
+import { GrowTextarea } from "./GrowTextarea";
 
 type TextPropertyProps = {
   label: string;
@@ -29,11 +30,10 @@ export function TextProperty({ label, value, placeholder, multiline, onChange, o
         </div>
       )}
       {multiline ? (
-        <textarea
+        <GrowTextarea
           className="property-value-textarea"
           value={value}
           placeholder={placeholder}
-          rows={3}
           onChange={(e) => onChange(e.target.value)}
         />
       ) : (

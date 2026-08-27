@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-27 — text boxes the size of the text
+
+### Fixes
+
+- **A sidebar note longer than three lines is no longer clipped behind a scrollbar.** Every multi-line field in the properties panel — text blocks, and the longer template fields — is now exactly as tall as what you've written in it, however long that is. It was a fixed three lines, which was wrong in both directions: a one-line note reserved space it wasn't using, and a four-line one hid its fourth behind a scrollbar inside a panel that already scrolls.
+- The field's box still only appears when you hover or click into it. With the scrollbar gone there's nothing drawn around a note you're not editing.
 ## 2026-08-27 — a way back to what a page used to say
 
 ### Additions
@@ -244,9 +250,3 @@
 ### Additions
 
 - **When Anamnesis says a project is open in another window, you can now overrule it.** An **Open it anyway** link sits next to the message. The check is a guess — a project says it's open by keeping a note fresh, so a crash, a power cut or a sync client holding the folder all look exactly like a second window from the outside, and the app has no way to tell them apart. It still says what it thinks, and now you get the last word. Renaming a project another window holds is still refused outright, because renaming a folder something else has open is a different kind of risk.
-
-## 2026-08-21 — reloading no longer locks you out of your own project
-
-### Fixes
-
-- **Refreshing the app stopped shutting you out of the project you had open.** A project records that it's open so a second copy of Anamnesis can't save over the first — but the app worked out who it was fresh on every load, so after a refresh it found the note it had written seconds earlier, didn't recognise its own handwriting, and refused to let you back in until the note went stale a couple of minutes later. A window now remembers who it is across a refresh and takes its own project straight back. Two genuinely separate copies are still kept apart, exactly as before.

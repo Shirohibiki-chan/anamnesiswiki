@@ -117,8 +117,16 @@
   border-color: var(--color-accent-faint-border);
 }
 
+/* **Never a fixed number of rows.** Three was the old value and it was wrong
+   in both directions: a one-line note reserved space for two it did not have,
+   and a four-line one hid its fourth behind a scrollbar inside a panel that
+   already scrolls. `field-sizing` does it in the engine where there is one;
+   `GrowTextarea` measures it where there isn't, which is the older WebKitGTK
+   this app has a user on. Resizing by hand goes with it — there is nothing
+   left to resize when the box is already the size of its text. */
 .property-value-textarea {
   resize: none;
+  field-sizing: content;
 }
 
 /* --- Reordering (Phase 13) --- */
