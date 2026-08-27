@@ -352,20 +352,19 @@ on `electron-updater`, and `docs/releasing.md` rewritten around all of it.
 
 What is genuinely left is the part that can only be settled by running it:
 
-- **v0.6.0 is the first Electron release, and it is not out yet.** The version
-  was bumped and its `RELEASES.md` section written on 2026-08-27 (PR #307),
-  which is what closed the known bug about two different builds both calling
-  themselves 0.5.0. What is left is the part no dry run can prove: pushing the
-  tag, which builds the three platforms and drafts the release; publishing that
-  draft; and then an installed Electron copy finding and installing a later one.
+- **v0.6.0 is the first Electron release.** The version was bumped and its
+  `RELEASES.md` section written on 2026-08-27, which is what closed the known
+  bug about two different builds both calling themselves 0.5.0.
 - **Every existing installation reinstalls by hand once.** A Tauri build reads
   `latest.json` and this pipeline publishes electron-updater's feed instead, so
-  every 0.5.0 out there will report no update available. This was always the
-  accepted cost of the swap; what is new is that it now has to be said out loud,
-  and the v0.6.0 notes lead with it rather than leaving it to be discovered.
-- **The pipeline has been dry run.** Actions → Release (Electron) → Run workflow
-  built all three platforms without spending a version number, and the AppImage
-  the Fedora machine ran came out of it. The tagged path is the untested half.
+  every 0.5.0 out there reports no update available. This was always the accepted
+  cost of the swap; what is new is that it had to be said out loud, and the
+  v0.6.0 notes lead with it rather than leaving it to be discovered.
+- **The last unproven link is an Electron build updating itself.** The pipeline
+  is dry run — all three platforms built without spending a version number, and
+  the AppImage the Fedora machine ran came out of it — and the tagged path is
+  proven the moment v0.6.0 goes out. What nothing can test until there are two
+  published Electron releases is one of them finding and installing the next.
 - **The Linux AppImage works on the machine that had the problem — confirmed
   2026-08-27.** Tauri's bundler sealing the host's graphics libraries into the
   AppImage was the original crash; electron-builder builds its own, and the
