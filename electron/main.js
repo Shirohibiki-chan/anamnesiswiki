@@ -56,6 +56,54 @@ async function readAppVersion() {
   }
 }
 
+/**
+ * Whether this run should keep its window out of the way of whoever is at the
+ * keyboard.
+ *
+ * **Set by the test harness, and by nothing else.** A run of `pnpm test:app`
+ * starts and stops the app six times, and every one of those windows used to
+ * appear on top of what you were doing and take the keyboard with it — which
+ * turns a suite that is technically fine into one nobody wants to run. Offstage
+ * makes the window fully transparent, keeps it off the taskbar, lets the mouse
+ * through it and shows it without activating it. A run becomes something you
+ * hear finish rather than something you sit through.
+ *
+ * **The window is still a real, drawn window at its real size**, which is the
+ * part that has to stay true: the scenarios measure layout, wait on animations
+ * and drag the window's size around. Transparent rather than hidden, and
+ * transparent rather than parked off the side of the desk — a window moved
+ * outside every monitor is measured wrong by Windows itself. Its page reported
+ * 916 pixels across where the same window on a monitor reported the 900 it was
+ * asked for, which is a layout sweep quietly answering about a size nobody
+ * chose.
+ */
+const OFFSTAGE = process.env.ANAMNESIS_OFFSTAGE === "1";
+
+// **Chromium stops drawing a window it believes nobody can see**, and a window
+// parked past the edge of the desktop is exactly that as far as its occlusion
+// tracking is concerned: no frames, so `requestAnimationFrame` never fires and
+// anything waiting on one waits forever. These three switches are the standard
+// answer — they turn off the guesswork, not the drawing. Only ever appended for
+// a test run; a real launch keeps every one of Chromium's power savings.
+if (OFFSTAGE) {
+  app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
+  app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+  app.commandLine.appendSwitch("disable-renderer-backgrounding");
+}
+
+/**
+ * Shows a window, taking the keyboard only when there is somebody to give it
+ * to.
+ *
+ * `showInactive` is the same appearance without the activation, which is the
+ * whole of the difference between a test run you can work through and one you
+ * cannot.
+ */
+function reveal(window) {
+  if (OFFSTAGE) window.showInactive();
+  else window.show();
+}
+
 /** Where the page comes from: the dev server if one was named, else the build. */
 const DEV_URL = process.env.ANAMNESIS_DEV_URL ?? null;
 
@@ -126,6 +174,8 @@ function createWindow({ startAtPicker = false } = {}) {
     minHeight: 600,
     backgroundColor: "#0f0f14",
     show: false,
+    // Invisible and off the taskbar for a test run; untouched for a real one.
+    ...(OFFSTAGE ? { opacity: 0, skipTaskbar: true } : {}),
     // Windows and macOS take the icon from the built executable; Linux takes it
     // from here, and so does any unpackaged run on any platform.
     icon: path.join(here, "..", "src-tauri", "icons", "icon.png"),
@@ -134,6 +184,10 @@ function createWindow({ startAtPicker = false } = {}) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // A window nobody is looking at is a window Chromium would rather slow
+      // down. For a test run that is a suite that times out; everywhere else it
+      // is a laptop battery, so it stays on.
+      ...(OFFSTAGE ? { backgroundThrottling: false } : {}),
     },
   });
 
@@ -141,6 +195,13 @@ function createWindow({ startAtPicker = false } = {}) {
   // Tauri build had none and the app draws its own chrome, so a menu bar would
   // be a strip of somebody else's furniture across the top.
   Menu.setApplicationMenu(null);
+
+  // **A window you cannot see is a window you must not be able to hit.** At zero
+  // opacity it is still a rectangle sitting over somebody's desktop, and it
+  // would swallow every click that landed on it. Made click-through instead, so
+  // the mouse reaches whatever is really there. Playwright is unaffected: it
+  // puts its clicks into the page through the debugger, not through the mouse.
+  if (OFFSTAGE) window.setIgnoreMouseEvents(true);
 
   // What that menu was also carrying: the developer tools. Kept on the usual
   // keys, because losing them was never the point of removing the menu.
@@ -308,7 +369,8 @@ handle("fs:unwatch", (_event, id) => {
 // ------------------------------------------------------------------ window
 
 handle("window:show", (event) => {
-  windowFrom(event)?.show();
+  const window = windowFrom(event);
+  if (window) reveal(window);
 });
 
 handle("window:close", (event) => {
@@ -361,8 +423,8 @@ handle("window:focusProject", (event, projectPath) => {
     if (window === asking || window.isDestroyed()) continue;
     if (state.projectPath !== projectPath) continue;
     if (window.isMinimized()) window.restore();
-    window.show();
-    window.focus();
+    reveal(window);
+    if (!OFFSTAGE) window.focus();
     return true;
   }
   return false;
