@@ -2,6 +2,7 @@
 //
 //   pnpm test:app                            # build, then run everything
 //   pnpm test:app --no-build                 # reuse what is already in dist/
+//   pnpm test:app --show                     # watch it happen, on the screen
 //   pnpm test:app e2e/awkward-names.e2e.ts   # one file
 //
 // **Two steps in one command for the same reason as
@@ -21,8 +22,18 @@ import { existsSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const skipBuild = args.includes("--no-build");
-const passThrough = args.filter((argument) => argument !== "--no-build");
-const shellEnv = { ...process.env, ANAMNESIS_SHELL: "electron" };
+// **The window stays off the screen unless you ask for it.** The suite launches
+// the app once per scenario file, and windows appearing on top of your work and
+// stealing the keyboard six times is the difference between a check you run and
+// one you avoid. `--show` puts it back on the desk for the run, which is what
+// you want when a scenario is failing and the assertions are not saying why.
+const showWindow = args.includes("--show");
+const passThrough = args.filter((argument) => argument !== "--no-build" && argument !== "--show");
+const shellEnv = {
+  ...process.env,
+  ANAMNESIS_SHELL: "electron",
+  ...(showWindow ? { ANAMNESIS_SHOW_WINDOW: "1" } : {}),
+};
 
 /** Runs one command, inheriting the terminal, and resolves with its code. */
 function run(command, commandArgs, env) {

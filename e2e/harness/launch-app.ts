@@ -75,7 +75,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
     executablePath: electronBinary as unknown as string,
     args: ["electron/main.js", `--user-data-dir=${userDataDir}`, ...linuxCiArgs()],
     cwd: REPO_ROOT,
-    env: { ...process.env, ANAMNESIS_SHELL: "electron" },
+    env: { ...process.env, ANAMNESIS_SHELL: "electron", ...offstage() },
     timeout: WINDOW_TIMEOUT_MS,
   });
 
@@ -227,6 +227,28 @@ async function describeWindows(electron: ElectronApplication): Promise<string> {
   } catch (error) {
     return `it could not be asked (${String(error)}).`;
   }
+}
+
+/**
+ * Keeps the app's window off the screen and out of the keyboard's way.
+ *
+ * **A suite is only run as often as it is bearable to run.** Six scenario files
+ * means six launches, and each one used to put a window on top of whatever she
+ * was doing and take the focus with it — so a run that takes a minute
+ * interrupted her for a minute. `ANAMNESIS_OFFSTAGE` is read in
+ * `electron/main.js`: the window is parked past the edge of every monitor, kept
+ * off the taskbar and shown without being activated.
+ *
+ * **It is still a real window being really drawn**, which is what the scenarios
+ * need — they measure layout, wait on animations and drag the window's size
+ * around. Nothing here hides it; it is put somewhere nobody is looking.
+ *
+ * Set `ANAMNESIS_SHOW_WINDOW=1` (or run the suite with `--show`) to watch a run
+ * happen, which is worth it when a scenario is failing for a reason the
+ * assertions are not explaining.
+ */
+function offstage(): Record<string, string> {
+  return process.env.ANAMNESIS_SHOW_WINDOW === "1" ? {} : { ANAMNESIS_OFFSTAGE: "1" };
 }
 
 /**

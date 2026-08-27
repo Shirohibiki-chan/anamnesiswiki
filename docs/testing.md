@@ -36,6 +36,44 @@ second and subsequent runs while writing a scenario. Name a file to run one:
 pnpm test:app --no-build e2e/awkward-names.e2e.ts
 ```
 
+### It stays out of your way
+
+A run starts and stops the whole app once per scenario file — six times, at the
+time of writing. **None of those windows appear on your screen and none of them
+take the keyboard**, so a run is something you can work through rather than
+something you sit out.
+
+The window is still real and still drawn at its real size, because the scenarios
+measure layout, wait on animations and drag the window's size around. It is made
+completely transparent instead, kept off the taskbar and shown without being
+activated, and the mouse passes straight through it. `ANAMNESIS_OFFSTAGE`, read
+in `electron/main.js`, is what turns all of that on; the harness sets it and
+nothing else does.
+
+To watch a run happen — worth it when a scenario is failing for a reason the
+assertions aren't explaining:
+
+```bash
+node scripts/app-tests.mjs --show
+```
+
+Two things learned the hard way, both in `electron/main.js`:
+
+- **Parking the window past the edge of the monitors does not work.** It is the
+  obvious way to hide a window and Windows measures it wrong: a window asked for
+  900 pixels of page reported 916 to itself, so a layout sweep would answer
+  about a size nobody chose. Transparent, in its normal place, measures right.
+- **Chromium stops drawing a window it thinks nobody can see**, and then
+  `requestAnimationFrame` never fires and every wait in the harness runs out its
+  full 30 seconds. Three switches turn that guesswork off for a test run only.
+
+**A run with the window on screen is the one that varies**, not the offstage
+one. `nine levels down` counts seven small targets offstage — which is what
+`ALLOWED` records — and four with the window on screen and focused, because
+three of the tree's row buttons only exist while their row has the focus or the
+pointer. Offstage the window never takes focus and never sees your mouse, so it
+counts the same seven every time.
+
 ### Running it without pnpm
 
 **`pnpm` cannot be run from her PowerShell at all**, and it never could — the
