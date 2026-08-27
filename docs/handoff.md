@@ -1776,6 +1776,37 @@ is below.
   it turns out to be stolen, the fix is a different default binding, not a
   fight with the webview. `Cmd+S` is the ordinary case and behaves.
 
+## The shortcut sheet
+
+Added 2026-08-27. `?` opens the list of every shortcut; `ShortcutSheet.tsx`
+draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
+
+- **`?` and `F1` are not in the rebindable table, and cannot be.** A binding
+  set from the settings screen has to carry Ctrl or be a function key
+  (`checkBindingShape`), because a bare letter fires while you type. `?` gets
+  to be a shortcut only because its listener stands down whenever the caret is
+  in text — a property of this one hook, not something a user-chosen binding
+  could be trusted to have. Anything that "tidies this up" by adding a
+  `shortcuts` action to `SHORTCUT_ACTIONS` has to answer that first.
+
+- **It is a second window-level listener, beside `useShellKeys`, and that is
+  deliberate.** The one-listener rule in `use-global-shortcuts.ts` is about the
+  nine rebindable actions, where two features silently claiming one combination
+  is a real risk. These keys are the window's rather than a project's: they
+  work on the start screen, and what they open is mostly a list of what the
+  other listener answers.
+
+- **The rows are read from the store, never written down.** That is the whole
+  feature — every shortcut is rebindable, so a list typed into a component
+  would be wrong for anybody who changed one. `e2e/shows-its-shortcuts.e2e.ts`
+  rebinds a key through the settings screen and asserts the sheet shows the new
+  one, which is the assertion that would catch a hardcoded list.
+
+- **`FIXED_KEYS` in `constants/shortcuts.ts` is named in two places** — the
+  sheet renders it, and Settings → Keyboard says the same thing in prose,
+  because that is the screen somebody lands on wanting to change one. Adding a
+  fixed key means editing both.
+
 ## Layout
 
 - **A bright fill and white text are mutually exclusive, and that one fact

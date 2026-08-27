@@ -3,10 +3,12 @@ import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
+import { ShortcutSheet } from "./components/shell/ShortcutSheet";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
 import { useSaveOnExit } from "./hooks/use-save-on-exit";
 import { useShellKeys } from "./hooks/use-shell-keys";
+import { useShortcutSheet } from "./hooks/use-shortcut-sheet";
 import { useThemeBootstrap } from "./hooks/use-theme";
 
 function App() {
@@ -33,6 +35,10 @@ function App() {
   // window answers, not keys a project answers, and the start screen is one
   // of the places somebody reaches for a reload.
   useShellKeys();
+  // Beside useShellKeys for the same reason it is above the router: `?` is a
+  // key the window answers, and the start screen is a place somebody can be
+  // lost in too.
+  const shortcutSheet = useShortcutSheet();
   return (
     <>
       <StartupRouter />
@@ -62,6 +68,9 @@ function App() {
           cover so far, and the list will grow — which is the reason it sits up
           here with the others rather than beside either one of them. */}
       <AssetPickerDialog />
+      {/* Same reasoning again: it portals, and both screens have keys worth
+          looking up. */}
+      {shortcutSheet.isOpen && <ShortcutSheet onClose={shortcutSheet.close} />}
     </>
   );
 }
