@@ -31,8 +31,6 @@ jobs:
   check-version:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-22.04
-    outputs:
-      notes: ${{ steps.notes.outputs.body }}
     steps:
       - uses: actions/checkout@v7
       - name: Version files must match the tag
@@ -41,15 +39,11 @@ jobs:
       # These notes are not only what the releases page shows — they are copied
       # into the update feed, which is what Settings → Updates puts in front of
       # someone deciding whether to install.
+      #
+      # They are not carried out of this job. Each build job reads them out of
+      # RELEASES.md itself, straight into a file — see the packaging step.
       - name: Release notes must exist for this version
-        id: notes
-        run: |
-          {
-            echo 'body<<RELEASE_NOTES_EOF'
-            node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}"
-            echo
-            echo 'RELEASE_NOTES_EOF'
-          } >> "$GITHUB_OUTPUT"
+        run: node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > /dev/null
 
   build:
     # `always()` so a manual dry run, which skips the version check entirely,
@@ -96,10 +90,6 @@ jobs:
       - name: Build and publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Quoted through the environment rather than inlined into the command
-          # below, so a release note containing a quote or a backtick cannot
-          # rewrite it. Empty on a dry run, which never publishes anything.
-          RELEASE_NOTES: ${{ needs.check-version.outputs.notes }}
           # **Stops macOS looking for a signing identity it will not find.**
           # This app is deliberately unsigned (2026-08-25) — a Windows
           # certificate is a few hundred a year to remove a first-run warning
@@ -110,10 +100,18 @@ jobs:
         shell: bash
         run: |
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # **The notes go in a file and never on the command line.** Windows
+            # caps a command line at 8,191 characters; v0.6.0's notes were 9,914
+            # and the Windows job died with "The command line is too long" after
+            # macOS and Linux had already published, leaving a draft with two
+            # thirds of a release in it. A file has no such ceiling, and it also
+            # means a quote or a backtick in the notes has nothing to escape
+            # out of.
+            node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
             # Published as a draft, so the release can be read before anyone's
             # update button finds it.
             pnpm electron:package --publish always \
-              -c.releaseInfo.releaseNotes="${RELEASE_NOTES}"
+              -c.releaseInfo.releaseNotesFile=release-notes.md
           else
             pnpm electron:package --publish never
           fi

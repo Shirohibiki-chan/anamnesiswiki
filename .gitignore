@@ -33,3 +33,7 @@ scripts/.font-cache/
 
 # Electron build output (Phase 29). Hundreds of megabytes per build.
 release/
+
+# Written by the release workflow so the notes reach electron-builder as a
+# file rather than as a command-line argument Windows would refuse.
+release-notes.md
