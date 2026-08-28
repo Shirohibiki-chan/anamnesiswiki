@@ -1192,6 +1192,40 @@ under `acknowledgedWarnings`.
   engine that may not know it — the flat background declared above it is a real
   fallback, not decoration. See `docs/constants-and-theming.md` §Callout blocks.
 
+- **A suggestion menu only opens on freshly *typed* text, which is why
+  `suggestion-resume.ts` exists.** BlockNote's trigger detection runs in
+  `handleTextInput`, so a `/` or a `[[` left on a line from an earlier attempt is
+  inert — the cursor can sit right after it and nothing happens. That hook
+  watches the selection instead and reopens the menu, restoring whatever query
+  was already typed. One hook, two triggers, since the `/` case arriving proved
+  it was never about wikilinks.
+
+- **The `/` pattern is anchored and the `[[` one is not, on purpose.** A slash is
+  ordinary punctuation — `and/or`, `12/05`, a path — so `UNFINISHED_SLASH`
+  requires the start of a line or a space before it and no space after, or the
+  menu would open as she moves the caret through her own prose. **It is
+  deliberately stricter than BlockNote's own trigger**, which was measured
+  2026-08-28 to open the menu for a `/` typed straight after a full stop:
+  reopening is not typing, so the bar for interrupting is higher than the bar for
+  answering a keypress. Loosening it is how this feature becomes the thing it was
+  built to fix.
+
+- **The editor's popovers drew a near-white border because nobody set one.**
+  `@blocknote/shadcn` uses Tailwind's bare `border` utility, and in v4 that sets a
+  width and leaves the colour at `currentColor` — which in these menus is the text
+  colour. One rule in `page.css` sets `border-color` for the whole `.bn-root`
+  subtree, and it must stay that broad: the suggestion menu, the formatting
+  toolbar and the file panel are the same components with the same default.
+  `shadow-md` was resolving to a fully transparent shadow for a related reason, so
+  the menu takes `--elev-modal` explicitly like every other floating surface.
+
+- **The suggestion menu needs a height floor as well as a cap.** floating-ui's
+  `size` middleware caps it to whatever room is left below the caret, which near
+  the bottom of a page came out as a box showing one and a half rows. The rule
+  in `page.css` uses the same `max(...)` shape as `.block-menu` in `blocks.css`
+  and for the same reason; it has to out-specify an inline style, and `:has` is
+  the only way to name the wrapper BlockNote positions, since it carries no class.
+
 - **There are two quote blocks, and both have to look like a quote.** Ours is
   `calloutQuote`; BlockNote's own `quote` is a separate type the app holds for
   real — LK import maps a plain ProseMirror blockquote to it on purpose (a

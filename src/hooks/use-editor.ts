@@ -17,7 +17,11 @@ import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-sla
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
 import { linkWikilink, resolveWikilinks, unknownWikilinkAt } from "../services/editor-blocks/wikilink";
 import { useWikilinkBracketConfirm, WIKILINK_TRIGGER } from "../services/editor-blocks/wikilink-bracket-confirm";
-import { useWikilinkResume } from "../services/editor-blocks/wikilink-resume";
+import {
+  UNCLOSED_WIKILINK,
+  UNFINISHED_SLASH,
+  useSuggestionResume,
+} from "../services/editor-blocks/suggestion-resume";
 import { useDialogs } from "./use-dialogs";
 import { useProject } from "./use-project";
 
@@ -121,7 +125,12 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   }
 
   const confirmWikilinkBracket = useWikilinkBracketConfirm(editor, nodes, nodeId);
-  useWikilinkResume(editor);
+  // Both menus reopen when the cursor lands back in a trigger that was started
+  // and left. The `/` half was reported from use: clicking onto a row with a
+  // slash at the front did nothing, and the only way on was to delete it and
+  // type it again.
+  useSuggestionResume(editor, WIKILINK_TRIGGER, UNCLOSED_WIKILINK);
+  useSuggestionResume(editor, "/", UNFINISHED_SLASH);
 
   // One capture handler for the editor, because a React element takes one
   // `onKeyDownCapture`. Suggestion-list movement goes first and reports

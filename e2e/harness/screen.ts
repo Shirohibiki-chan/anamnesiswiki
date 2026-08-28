@@ -23,6 +23,7 @@ const BLOCK_SHELL = ".block-shell";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
+const SUGGESTION_MENU = "#bn-suggestion-menu";
 
 /**
  * Whatever names the thing currently in the middle of the window.
@@ -238,6 +239,17 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
   await editor.click({ position: { x: 8, y: 8 } });
   await window.keyboard.press("Control+End");
   await window.keyboard.type(text, { delay: 20 });
+}
+
+/** Whether the `/` (or `@`, or `[[`) suggestion menu is on screen right now. */
+export async function suggestionMenuOpen(window: Page): Promise<boolean> {
+  return (await window.locator(SUGGESTION_MENU).count()) > 0;
+}
+
+/** The options the suggestion menu is currently offering, top to bottom. */
+export async function suggestionMenuItems(window: Page): Promise<string[]> {
+  const items = await window.locator(`${SUGGESTION_MENU} .bn-suggestion-menu-item`).allTextContents();
+  return items.map(normalize);
 }
 
 /** Everything written in the open page's editor, as one run of text. */

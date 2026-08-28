@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-28 — the slash menu, tidied
+
+### Fixes
+
+- **Clicking back onto a line with a `/` at the front brings the menu back.** It used to sit there dead — the only way on was to delete the slash and type it again. It comes back with whatever you'd typed after the slash still in it. Same for an unfinished `[[`, which already worked.
+- **It won't do that for a slash you meant.** `and/or`, a date, a path — moving the cursor through those leaves the menu shut. It only offers to come back for a slash that starts a line or follows a space, with no space after it.
+
+### Changes
+
+- **The menu had a white outline.** Not a choice — the outline colour was never set, so it fell back to the colour of the text, which is nearly white. It's the same quiet line every other panel in the app uses now, and the menu has a proper shadow instead of none at all.
+- **The text is smaller and the rows are tighter**, matching the menus everywhere else in the app rather than being a size of their own. About nine options fit where five did, which is most of why it felt cramped.
+- **It can't be squashed to a sliver any more.** Open it near the bottom of a page and it used to collapse to a row and a half; it now keeps a usable height and scrolls.
+- **The group headings** (*Headings*, *Basic blocks*) read as headings now, in the same small caps the rest of the app uses for labels.
+
 ## 2026-08-29 — callouts can be any colour
 
 ### Additions
@@ -189,10 +203,3 @@
 ### Fixes
 
 - **A block's name no longer trails off where you can't finish reading it.** Give a block a long name and the properties panel cut it short with a "…" and no way to see the rest — not by hovering it, not by widening the panel, not anywhere. The name now runs onto as many lines as it needs and the block grows to fit, the same way a spectrum's end words already did. A name with no spaces in it breaks across lines rather than running off the side.
-
-## 2026-08-26 — a button you couldn't click
-
-### Fixes
-
-- **The button that shows and hides the properties panel couldn't be clicked on a narrow window.** Drag Anamnesis as narrow as it goes and the row of controls along the top ran out of room, so the last one slid underneath the properties panel itself and stopped responding — the button that would have given you the room back was the one you couldn't reach. The row now shortens the Search button to its icon when it's short of space, which frees more than enough; the keyboard shortcut it used to display is on the button's tooltip. Nothing changes at a comfortable window size.
-- **This also happens when you drag the panels rather than the window.** The top row is only as wide as the space between the two side panels, so widening those squeezes it exactly the same way — the fix follows the room the row actually has, not the size of the screen, so it holds either way.
