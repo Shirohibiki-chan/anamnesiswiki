@@ -470,34 +470,12 @@ meter block inside an infobox rather than a gauge block sitting in the page.
   version**; if wrapping is wanted later it is a much larger job and deserves to
   be asked for on purpose rather than assumed into this one.
 
-**Element, which is a page that does not exist yet.** Settled 2026-08-27 from
-her screenshots of the reference. It is not a block at all — it is a small
-dialog that **makes a new page and links to it in one action**, without leaving
-the editor or going to the tree first. Four fields: the page's name, optional
-link text if the link should read differently from the name, a location picker
-defaulting to the page you are on, and a Hidden checkbox.
-
-**Every part of this exists except the dialog.** Creating a page under a parent
-is what the tree's own add already does; `Node.hidden` shipped 2026-08-10; the
-chip it leaves behind is the mention chip; and the hover preview in her second
-screenshot is `HoverPreviewCard.tsx`, which we built and which already shows a
-page's opening on hover. **So this is a form over existing services, and it is
-the cheapest genuinely-new item on the whole list** — likely the one to do
-first, since it needs no decision from this phase's pointer question.
-
-Two things to get right rather than assume:
-
-- **A location picker that defaults to the current page but is changeable**,
-  and can be cleared — her screenshot shows an × on the field. Clearing it means
-  a top-level page, and that reading should be checked against the reference
-  rather than guessed.
-- **`[[Name]]` for a page that does not exist should reach this dialog.**
-  `wikilink.ts` deliberately leaves an unmatched `[[Name]]` as plain text today,
-  which was the right call when there was nothing to offer instead. With this
-  built there is: the natural gesture is to type the name of a page you have not
-  written yet, and the dialog is the answer to it, pre-filled. Treat that as part
-  of this item, not a follow-up — without it the feature is a menu entry people
-  have to remember, and with it it is the thing that happens when you write.
+**Element shipped 2026-08-29, as New page.** The `/` menu makes a page and
+links to it without leaving the sentence, and a `[[Name]]` nothing answers to
+offers the same dialog with the name already in it. Detail is in
+`docs/shipped.md`; what still binds the code is in `docs/handoff.md`. **It is
+called New page rather than Element** — this app's word for a page is "page",
+and the reference's word was only ever how the item got written down here.
 
 **Icon is the emoji picker** — confirmed by the user 2026-08-27, already in
 BlockNote's defaults, nothing to build.

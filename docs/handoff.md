@@ -1136,6 +1136,36 @@ under `acknowledgedWarnings`.
 
 ## Editor & templates
 
+- **The offer to make a missing page hangs off the change scan, not off the
+  `]]` key — and the reason is measured, not stylistic.** Phase 19.5. The
+  bracket handler in `wikilink-bracket-confirm.ts` looked like the natural home
+  (its `"none"` branch *is* "nothing answers to this name"), but BlockNote's
+  suggestion menu closes as soon as the query contains a space, so that branch
+  is only ever reached for a **single-word** name. Page names are mostly two
+  words. `unknownWikilinkAt` in `wikilink.ts` is where it lives instead, called
+  from `handleChange` beside `resolveWikilinks` — same trigger, any name.
+
+- **Two rules keep that offer from becoming a page she cannot type on.** It
+  looks only at **the block the cursor is in**: scanning the document would
+  raise a dialog about `[[brackets]]` typed as literal text last week, the
+  moment an unrelated paragraph was edited. And `use-editor` records a name in
+  its `asked` set the moment it *asks*, not when she declines — declining leaves
+  the text exactly where it was, on purpose, so the next keystroke finds it
+  again. Either one removed, and the feature is a loop.
+
+- **Nothing is taken out of the document to ask the question.** The first cut
+  wiped the `[[Name]]` text to make room for a chip and re-inserted it by hand on
+  cancel, which is a restore path that can be got wrong; the text now stays put
+  and is swapped for a chip only when a page is actually made. **The chip is
+  written by `linkWikilink` rather than left to `resolveWikilinks`** on the next
+  keystroke, because that one names a chip after the page and the dialog's link
+  text box exists to let it read as something else.
+
+- **A dialog opened from the editor has to hand the keyboard back.** It is a
+  portal, so opening it takes focus out of the editor and closing it does not
+  return it — `use-editor` calls `editor.focus()` on both the confirm and the
+  cancel path. Without it, cancelling leaves the caret nowhere and reads as
+  typing having stopped working.
 - **Colour and type are different axes on a callout, and collapsing them is how
   a warning becomes a secret.** Phase 19.5. `calloutSecret` is not "the purple
   one" — it is the block a publish is required to strip — and `calloutQuote` is
@@ -3084,6 +3114,18 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ## Sidebar blocks
 
+- **`BlockList` draws the blocks; `BlockPanel` is the sidebar around it.** Split
+  2026-08-28 as the first step of Phase 19.5, because the page body and the
+  infobox draw the same blocks and neither of them is the sidebar. The rule that
+  keeps the split honest: **nothing in `BlockList` may reach for the selected
+  node or assume the list it was handed is the page's whole list.** It takes the
+  node as a prop — an image, tags or alias block is a window onto the page it
+  sits on, so that argument is real and not a leftover — and it reports ordering
+  as *ids*, never indices. An infobox shows some of `node.blocks`, so position on
+  screen is not position in storage, and whoever owns the whole list is the only
+  one that can translate between them. `BlockPanel` does it in `handleReorder`,
+  where the two happen to agree.
+
 - **`blocks` absent and `blocks: []` are different states and the migration
   depends on it.** Absent means the page predates Phase 18a, and
   `block-service`'s `deriveBlocks` rebuilds the old fixed panel for it on read.
@@ -3128,7 +3170,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 - **The block shell owns the title; the field inside it does not.** Every
   property field takes `label` and now skips its label row when that label is
-  empty, and `BlockPanel` passes `""` to all of them. This is what makes Title
+  empty, and `BlockList` passes `""` to all of them. This is what makes Title
   / No title one behaviour instead of one per field type, and it is why adding
   a new field component means guarding its label row the same way — otherwise
   a block renders its heading twice.
@@ -3308,7 +3350,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 - **A reading's `segmented` overrides its block's, and agreeing with the block
   stores nothing.** Same shape as `meterColor`. The self-clearing rule in
-  `BlockPanel` is deliberate: pinning the same answer would quietly stop the
+  `BlockList` is deliberate: pinning the same answer would quietly stop the
   block's own toggle from reaching that reading afterwards.
 
 - **Adding a reading has to be visible in the panel, not only in the `⋯` menu.**

@@ -13,6 +13,15 @@
 - **Warnings imported from a `.lk` file were being turned into secrets.** There were only three kinds of callout and no colours, so warning and error panels were given the nearest-looking one — but Secret is the box that gets stripped out when a page is shared, so every warning in an imported world was quietly marked don't-show-anyone, with nothing on screen saying so. They now come in as a callout coloured amber or red, and a success panel comes in green. **Pages you've already imported keep whatever they were brought in as** — this changes what a new import does, not what's already on your disk.
 - **Those colours survive going back out to a `.lk` file** — an amber callout leaves as a warning, red as an error, green as a success. Other colours are ours alone and leave as a plain info panel.
 
+## 2026-08-29 — make a page without leaving the one you're writing
+
+### Additions
+
+- **You can make a page from inside the editor.** Type `/` and pick *New page*. A small window asks four things — what it's called, what the link should say if that's different, where it goes, and whether it's hidden — then makes the page and drops a link to it where your cursor was. You stay where you are; nothing opens the new page or takes you to it.
+- **Where it goes defaults to the page you're on**, and you can search for somewhere else or clear it with the × to put it at the top of the tree.
+- **Writing `[[Something]]` for a page that doesn't exist now offers to make it.** It used to sit there as plain text with brackets showing, and the only way on was to go and make the page yourself somewhere else. Now the same window opens with the name already filled in, and the brackets turn into a link once the page exists.
+- **Backing out costs nothing.** What you typed stays exactly as you typed it, brackets and all, and you're put back where you were so you can keep going. It won't ask about that name again.
+
 ## 2026-08-28 — projects can be deleted
 
 ### Additions
@@ -187,16 +196,3 @@
 
 - **The button that shows and hides the properties panel couldn't be clicked on a narrow window.** Drag Anamnesis as narrow as it goes and the row of controls along the top ran out of room, so the last one slid underneath the properties panel itself and stopped responding — the button that would have given you the room back was the one you couldn't reach. The row now shortens the Search button to its icon when it's short of space, which frees more than enough; the keyboard shortcut it used to display is on the button's tooltip. Nothing changes at a comfortable window size.
 - **This also happens when you drag the panels rather than the window.** The top row is only as wide as the space between the two side panels, so widening those squeezes it exactly the same way — the fix follows the room the row actually has, not the size of the screen, so it holds either way.
-
-## 2026-08-26 — starting up on Linux
-
-### Additions
-
-- **A Test Anamnesis shortcut, beside the other launchers.** Double-click it and the app is built, opened, and driven through a set of checks on a made-up world — pages opened by name, a world too big to see all of, and the awkward names that a filesystem can't store as typed. Windows flash open and shut while it runs; that's the checking, not a fault. **It can't touch your worlds**: every one it opens is invented in a temporary folder and deleted afterwards. Takes about half a minute.
-- **Those checks now measure the layout too.** On every screen they open, they look for text cut off with no way to read the rest, anything sticking out past the window, a control with something on top of it, and buttons too small to hit comfortably. Each screen is checked at two window sizes, including the narrowest the app can be dragged to, because that's where this kind of thing hides. What each screen has today is written down, so nothing can quietly get worse.
-
-### Fixes
-
-- **Anamnesis wouldn't start at all on Linux when run from its own source code.** The window simply never appeared, and nothing said why — nothing on screen, nothing in the black console window. The part of the app that checks for updates was being built the instant the app loaded, and on Linux it refused a version number it didn't recognise, which stopped everything before the window was ever made. It's now built at the moment something actually asks about updates, which is the only time it's needed. Windows was never affected by this.
-- **A freshly-copied project couldn't run or package the app either.** Setting one up was skipping the step that fetches Electron itself, so there was nothing for the app to run inside — which the "latest code" launchers need. Anyone starting from a clean copy hit it: a second machine, or somebody else's.
-- **The three workflows that build your downloads were running an older package manager than the rest of the project.** That version does not understand the setting which tells it to fetch Electron, so it skipped it without saying so — the same gap fixed above for the everyday checks. A full test build of Windows, macOS and Linux passes on the newer one. Whether the older one would have produced a bad download was never established, and now does not need to be.

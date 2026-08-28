@@ -66,6 +66,7 @@
 | BlockNote editor wrapper for the active tab's content — configures BlockNote with the custom Info / Quote / Secret blocks, mention extension, and wikilink parsing; debounces content changes to the autosave service | `src/components/page/Editor.tsx` |
 | The chip a mention or wikilink renders as, and the card it shows on hover after 350ms. Both link kinds are this one component — wikilinks resolve into mentions. | `src/services/editor-blocks/MentionChip.tsx`, `HoverPreviewCard.tsx` |
 | The three callouts and the colour dot in the corner of one — the palette, the icon the four conventional hues carry, and *The usual colour* to put it back | `src/services/editor-blocks/callout-wrapper.tsx`, `callout-color-button.tsx`, `src/constants/callout-colors.ts` |
+| Make a page and link to it without leaving the sentence — name, link text, where it goes, hidden. Opened from the `/` menu's *New page* and from a `[[Name]]` nothing answers to, which arrives pre-filled | `src/components/shell/NewPageLinkDialog.tsx`, `src/services/editor-blocks/new-page-slash-menu.tsx` |
 | Content-less view shown for folder nodes — folder name, color-tint background, and a button that makes a page inside this folder. The "Folders hold other pages" hint below the name appears only while the folder is empty. | `src/components/page/FolderView.tsx` |
 | What a brand-new page shows before it's anything in particular — the grid of template choices, and a "skip this" that leaves the page blank with somewhere to write. Replaces the popover that used to ask before the page existed. | `src/components/page/NewPageLanding.tsx` |
 | Placeholder rendered when no node is selected (rare — usually the app auto-selects a page on load) | `src/components/page/EmptyPageView.tsx` |
@@ -74,7 +75,8 @@
 
 | What you see | File |
 |---|---|
-| Right sidebar container — reads the current node's template, renders the image slot at top followed by one field per template property | `src/components/properties/PropertiesPanel.tsx` |
+| Right sidebar container — finds the selected page, and owns everything that is *the sidebar*: the empty states, the template prompt, Add Block, the new-property form, and the timestamps at the bottom | `src/components/blocks/BlockPanel.tsx` |
+| The block list itself — an ordered run of blocks drawn wherever it is asked to be. Knows nothing about the sidebar, so Phase 19.5's page-body block and infobox draw through the same file. Takes the node and the blocks; reports ordering as ids, since a list on screen may be only part of `node.blocks` | `src/components/blocks/BlockList.tsx` |
 | Image drop zone at the top of the properties panel — accepts drag/drop, click-to-browse; uploads copy the file into the project's `assets/` folder and store the asset id on the node | `src/components/properties/ImageSlot.tsx` |
 | Single-line text field for properties like Summary or When — autosaves on blur; grows to multi-line for longer content | `src/components/properties/TextProperty.tsx` |
 | Tag chip editor — comma-or-enter to add, X on hover to remove, autocompletes against all tags already used in the project | `src/components/properties/TagsProperty.tsx` |

@@ -3,7 +3,7 @@
 // page/Editor.tsx used to reach into six of those modules itself; everything
 // that isn't a BlockNote React component now goes through here, leaving that
 // component to do nothing but render.
-import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
@@ -13,10 +13,12 @@ import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
+import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
-import { resolveWikilinks } from "../services/editor-blocks/wikilink";
+import { linkWikilink, resolveWikilinks, unknownWikilinkAt } from "../services/editor-blocks/wikilink";
 import { useWikilinkBracketConfirm, WIKILINK_TRIGGER } from "../services/editor-blocks/wikilink-bracket-confirm";
 import { useWikilinkResume } from "../services/editor-blocks/wikilink-resume";
+import { useDialogs } from "./use-dialogs";
 import { useProject } from "./use-project";
 
 export { WIKILINK_TRIGGER };
@@ -26,6 +28,7 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   // wikilink resolution both need to see every node in the project, and this
   // component is already re-rendering as the user types regardless.
   const { nodes, rootPath, uploadAsset } = useProject();
+  const { requestNewPageLink } = useDialogs();
 
   const editor = useCreateBlockNote({
     schema: editorSchema,
@@ -60,6 +63,63 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     resolveFileUrl: (url: string) => resolveAssetUrl(rootPath, url),
   });
 
+  /**
+   * Names she has already been asked about and said no to.
+   *
+   * **Without it the offer below is a loop.** Declining leaves the `[[Name]]`
+   * exactly where it was — which is the point, it is her text — and the very
+   * next keystroke would find it again and ask again. A name goes in here the
+   * moment it is asked about rather than when it is declined, so a dialog that
+   * is already open cannot be opened a second time behind itself.
+   *
+   * A ref rather than state: nothing on screen depends on it, and re-rendering
+   * the editor mid-keystroke to record a question is a cost for nothing.
+   */
+  const asked = useRef(new Set<string>());
+
+  /**
+   * Makes a page and drops a link to it where the cursor is (Phase 19.5).
+   *
+   * `name` is what to put in the box before she sees it — empty from the `/`
+   * menu, and the name she already typed when a `[[Name]]` found nothing.
+   */
+  async function insertNewPageLink(name: string) {
+    const link = await requestNewPageLink({ name, parentId: nodeId });
+    // **Focus comes back either way, and the cancel is the case that needs
+    // saying.** The dialog is a portal and it takes the keyboard; closing it
+    // without putting the caret back leaves her mid-sentence with nowhere for
+    // the next letter to go, and nothing on screen explaining why typing has
+    // stopped working.
+    editor.focus();
+    if (!link) return;
+    editor.insertInlineContent([{ type: "mention", props: { nodeId: link.nodeId, label: link.label } }, " "]);
+  }
+
+  /**
+   * Offers to make the page when she writes `[[Something]]` and nothing in
+   * the project answers to it.
+   *
+   * **Nothing is taken out of the document to ask.** The brackets stay put
+   * while the dialog is open and are swapped for a chip only if a page actually
+   * gets made, so backing out costs her nothing and leaves her mid-sentence
+   * where she was. An earlier cut wiped the text first and put it back on
+   * cancel, which is the same thing with a way to go wrong.
+   */
+  async function offerMissingPage() {
+    const name = unknownWikilinkAt(editor, nodes);
+    if (!name || asked.current.has(name.toLowerCase())) return;
+    asked.current.add(name.toLowerCase());
+
+    const link = await requestNewPageLink({ name, parentId: nodeId });
+    editor.focus();
+    if (!link) return;
+    // Written here rather than left to `resolveWikilinks` on the next
+    // keystroke: that one names the chip after the page, and the whole point of
+    // the link-text box is that she can call it something else.
+    asked.current.delete(name.toLowerCase());
+    linkWikilink(editor, name, link.nodeId, link.label);
+  }
+
   const confirmWikilinkBracket = useWikilinkBracketConfirm(editor, nodes, nodeId);
   useWikilinkResume(editor);
 
@@ -80,6 +140,7 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
 
   function handleChange() {
     resolveWikilinks(editor, nodes);
+    void offerMissingPage();
     onContentChange(editor.document as unknown[]);
   }
 
@@ -93,7 +154,11 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
 
   async function getSlashMenuItems(query: string): Promise<DefaultReactSuggestionItem[]> {
     return filterSuggestionItems(
-      [...withoutBuiltInQuote(getDefaultReactSlashMenuItems(editor)), ...getCalloutSlashMenuItems(editor)],
+      [
+        ...withoutBuiltInQuote(getDefaultReactSlashMenuItems(editor)),
+        ...getCalloutSlashMenuItems(editor),
+        ...getNewPageSlashMenuItems(() => void insertNewPageLink("")),
+      ],
       query,
     );
   }
