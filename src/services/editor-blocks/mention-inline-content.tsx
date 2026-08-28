@@ -14,7 +14,27 @@ export const mentionConfig = {
   type: "mention",
   propSchema: {
     nodeId: { default: "" },
+    /**
+     * The target's name at the moment the chip was written.
+     *
+     * **A fallback, not what the chip shows.** The chip looks the page up live
+     * so a rename reaches every link to it; this is only what is left to show
+     * when the page is gone, and what a `.lk` export writes for a target that
+     * is not in the export.
+     */
     label: { default: "" },
+    /**
+     * What she asked this link to read as, when that is not the page's name —
+     * "the bell" pointing at *Ninefold Bell*. Phase 19.5.
+     *
+     * **Empty is the normal case and means "follow the page".** That is the
+     * whole reason this is a second prop rather than a use of `label`: `label`
+     * is written on every chip, so it cannot tell a name that was copied from
+     * one she chose, and a chip that preferred it would stop following renames
+     * for everybody. Set only when the New page dialog's Link text box has
+     * something in it.
+     */
+    text: { default: "" },
   },
   content: "none",
 } as const;

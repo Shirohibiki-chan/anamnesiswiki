@@ -1161,6 +1161,22 @@ under `acknowledgedWarnings`.
   keystroke, because that one names a chip after the page and the dialog's link
   text box exists to let it read as something else.
 
+- **A mention chip shows its target's *live* name, and `label` is not what it
+  shows.** `label` is the name as it stood when the chip was written; the chip
+  looks the node up on every render so a rename reaches every link to that page,
+  and falls back to `label` only when the page is gone. **That is why the New
+  page dialog's Link text box did nothing when it shipped** (fixed 2026-08-28):
+  it merged her wording into `label`, and the chip was ignoring `label` for any
+  page that still existed.
+
+  So there is a **second** prop, `text`, and the split is the whole point:
+  `label` is written on every chip and therefore cannot tell a copied name from
+  a chosen one, while `text` is written only when she asked this one link to
+  read differently. Empty means "follow the page". Anything that inserts a
+  mention writes `label`; only the Link text box writes `text`. Preferring
+  `label` over the live name would take renames away from every link in the
+  world to fix one.
+
 - **A dialog opened from the editor has to hand the keyboard back.** It is a
   portal, so opening it takes focus out of the editor and closing it does not
   return it — `use-editor` calls `editor.focus()` on both the confirm and the
@@ -1174,7 +1190,7 @@ under `acknowledgedWarnings`.
   colour-derived icon. This is not theoretical tidiness. `lk-import.ts` mapped
   LK's warning and error panels onto `calloutSecret` for want of anywhere better,
   and the result was that every warning in an imported world was quietly marked
-  do-not-show-anyone. Fixed 2026-08-29 by giving severity to the colour, which is
+  do-not-show-anyone. Fixed 2026-08-28 by giving severity to the colour, which is
   where it belongs.
 
 - **A callout's colour has to survive the round trip, and only three of them

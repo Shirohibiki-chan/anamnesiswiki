@@ -96,7 +96,17 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     // stopped working.
     editor.focus();
     if (!link) return;
-    editor.insertInlineContent([{ type: "mention", props: { nodeId: link.nodeId, label: link.label } }, " "]);
+    editor.insertInlineContent([
+      {
+        type: "mention",
+        // `label` is the name as it stands now, which is what a chip falls back
+        // to if the page is ever deleted; `text` is only written when she asked
+        // for different wording, because an always-written one would stop every
+        // chip in the world following renames. See mention-inline-content.
+        props: { nodeId: link.nodeId, label: link.name, text: link.linkText },
+      },
+      " ",
+    ]);
   }
 
   /**
@@ -121,7 +131,7 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     // keystroke: that one names the chip after the page, and the whole point of
     // the link-text box is that she can call it something else.
     asked.current.delete(name.toLowerCase());
-    linkWikilink(editor, name, link.nodeId, link.label);
+    linkWikilink(editor, name, link.nodeId, link.name, link.linkText || undefined);
   }
 
   const confirmWikilinkBracket = useWikilinkBracketConfirm(editor, nodes, nodeId);

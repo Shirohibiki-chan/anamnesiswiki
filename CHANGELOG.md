@@ -14,7 +14,14 @@
 - **It can't be squashed to a sliver any more.** Open it near the bottom of a page and it used to collapse to a row and a half; it now keeps a usable height and scrolls.
 - **The group headings** (*Headings*, *Basic blocks*) read as headings now, in the same small caps the rest of the app uses for labels.
 
-## 2026-08-29 — callouts can be any colour
+## 2026-08-28 — the link text box actually does something
+
+### Fixes
+
+- **Link text in the New page window did nothing.** Whatever you typed there was thrown away and the link came out reading as the page's name. The box works now: type *the bell* for a page called *Ninefold Bell* and that's what the link says, while still pointing at the right page and still showing up in the tree under its real name.
+- **A link with no wording of its own still follows a rename**, which is why this took a moment to get right. Links look their page up as you read them, so renaming a page updates every link to it — the fix keeps that, and only pins the wording when you deliberately typed some.
+
+## 2026-08-28 — callouts can be any colour
 
 ### Additions
 
@@ -27,7 +34,7 @@
 - **Warnings imported from a `.lk` file were being turned into secrets.** There were only three kinds of callout and no colours, so warning and error panels were given the nearest-looking one — but Secret is the box that gets stripped out when a page is shared, so every warning in an imported world was quietly marked don't-show-anyone, with nothing on screen saying so. They now come in as a callout coloured amber or red, and a success panel comes in green. **Pages you've already imported keep whatever they were brought in as** — this changes what a new import does, not what's already on your disk.
 - **Those colours survive going back out to a `.lk` file** — an amber callout leaves as a warning, red as an error, green as a success. Other colours are ours alone and leave as a plain info panel.
 
-## 2026-08-29 — make a page without leaving the one you're writing
+## 2026-08-28 — make a page without leaving the one you're writing
 
 ### Additions
 
@@ -196,10 +203,3 @@
 - **Opening a project that's already open takes you to it.** Pick it from the front page and the window that has it comes to the front, and the front page closes behind you — the way any app with more than one window behaves. It used to be a refusal you had to click through.
 - **Opening Anamnesis while it's already running gives you the front page**, rather than a second copy of the app reopening the same project underneath the first. That was the situation the "open in another window" message existed to catch; now it can't happen in the first place.
 - **The warning that's left is the one that's real.** If your projects live in OneDrive or Dropbox and a copy is genuinely open **on another computer**, Anamnesis still can't see that window and still can't be sure — so it says so, and "Open it anyway" is still there. That's now the only time you'll see it.
-
-
-## 2026-08-26 — names you can finish reading
-
-### Fixes
-
-- **A block's name no longer trails off where you can't finish reading it.** Give a block a long name and the properties panel cut it short with a "…" and no way to see the rest — not by hovering it, not by widening the panel, not anywhere. The name now runs onto as many lines as it needs and the block grows to fit, the same way a spectrum's end words already did. A name with no spaces in it breaks across lines rather than running off the side.

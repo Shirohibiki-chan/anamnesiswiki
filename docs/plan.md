@@ -405,7 +405,7 @@ Meter that lands on a bar and makes her go find the setting.
   Separately: it overlaps this phase's per-block width and Phase 21's splittable
   panels; three different things called columns, and the naming needs settling
   before any of them ship.
-- **Callout colours shipped 2026-08-29.** Any callout takes a colour from
+- **Callout colours shipped 2026-08-28.** Any callout takes a colour from
   `COLOR_PALETTE`; the four conventional hues carry an icon; type still decides
   behaviour, so a red Secret is still a Secret. It also fixed a `.lk` import bug
   it happened to expose — LK's warning and error panels used to arrive as
@@ -470,7 +470,7 @@ meter block inside an infobox rather than a gauge block sitting in the page.
   version**; if wrapping is wanted later it is a much larger job and deserves to
   be asked for on purpose rather than assumed into this one.
 
-**Element shipped 2026-08-29, as New page.** The `/` menu makes a page and
+**Element shipped 2026-08-28, as New page.** The `/` menu makes a page and
 links to it without leaving the sentence, and a `[[Name]]` nothing answers to
 offers the same dialog with the name already in it. Detail is in
 `docs/shipped.md`; what still binds the code is in `docs/handoff.md`. **It is
