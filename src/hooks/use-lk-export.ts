@@ -3,7 +3,8 @@
 import { dataUriFor } from "../services/asset-sources";
 import { listAssetImages, readAssetImage, writeRawFile } from "../services/filesystem-service";
 import { buildExportFile, packLkBytes, type ExportPlan } from "../services/lk-export";
-import { orderedSiblingIds, useProjectStore } from "../state/project-store";
+import { orderedSiblingIds } from "../services/node-edit-service";
+import { useProjectStore } from "../state/project-store";
 
 export function useLkExport() {
   // Read at call time rather than subscribed to: this hook's consumers only

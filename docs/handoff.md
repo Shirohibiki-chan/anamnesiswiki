@@ -58,6 +58,25 @@ is below.
 
 ## Storage
 
+- **Moving, deleting and duplicating a page decide their new tree in
+  `node-edit-service.ts`, not in the store.** `planMove`, `planDelete` and
+  `planDuplicate` take a graph and give one back: reparenting, expanding a
+  selection to the subtrees it really means, rebuilding the sibling orders, and
+  clearing `homeNodeId`, `pinnedIds` and the selection when what they point at
+  is going. The store still owns the writes, the undo entries and the picture
+  files. **Put new rules about the resulting shape in the service, where they
+  can be tested**, rather than back in the action — that is where they were for
+  a year, and it is why none of them had a unit test until 2026-08-28. See
+  `filesystem-service.ts`'s `planRelocations` for the other half: this plans the
+  graph, that plans the paths.
+
+- **A duplicated page's picture is copied on disk before the plan is built.**
+  `planDuplicate` takes the new filenames as an argument rather than inventing
+  them, because copying a file is I/O and the service does none. A clone must
+  never end up pointing at the original's asset filename — replacing the
+  picture on either side would take it out from under the other — so a picture
+  that could not be copied leaves the clone with none.
+
 - **A world's identity is `project.json`'s `id`, never its folder path.** Paths
   change — a rename, a move to another drive, the Phase 27 folder
   reorganisation — and everything keying on one breaks quietly when they do.
