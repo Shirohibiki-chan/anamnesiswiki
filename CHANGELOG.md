@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-28 — the slash menu, tidied
+
+### Fixes
+
+- **Clicking back onto a line with a `/` at the front brings the menu back.** It used to sit there dead — the only way on was to delete the slash and type it again. It comes back with whatever you'd typed after the slash still in it. Same for an unfinished `[[`, which already worked.
+- **It won't do that for a slash you meant.** `and/or`, a date, a path — moving the cursor through those leaves the menu shut. It only offers to come back for a slash that starts a line or follows a space, with no space after it.
+
+### Changes
+
+- **The menu had a white outline.** Not a choice — the outline colour was never set, so it fell back to the colour of the text, which is nearly white. It's the same quiet line every other panel in the app uses now, and the menu has a proper shadow instead of none at all.
+- **The text is smaller and the rows are tighter**, matching the menus everywhere else in the app rather than being a size of their own. About nine options fit where five did, which is most of why it felt cramped.
+- **It can't be squashed to a sliver any more.** Open it near the bottom of a page and it used to collapse to a row and a half; it now keeps a usable height and scrolls.
+- **The group headings** (*Headings*, *Basic blocks*) read as headings now, in the same small caps the rest of the app uses for labels.
+
 ## 2026-08-28 — the link text box actually does something
 
 ### Fixes
@@ -189,10 +203,3 @@
 - **Opening a project that's already open takes you to it.** Pick it from the front page and the window that has it comes to the front, and the front page closes behind you — the way any app with more than one window behaves. It used to be a refusal you had to click through.
 - **Opening Anamnesis while it's already running gives you the front page**, rather than a second copy of the app reopening the same project underneath the first. That was the situation the "open in another window" message existed to catch; now it can't happen in the first place.
 - **The warning that's left is the one that's real.** If your projects live in OneDrive or Dropbox and a copy is genuinely open **on another computer**, Anamnesis still can't see that window and still can't be sure — so it says so, and "Open it anyway" is still there. That's now the only time you'll see it.
-
-
-## 2026-08-26 — names you can finish reading
-
-### Fixes
-
-- **A block's name no longer trails off where you can't finish reading it.** Give a block a long name and the properties panel cut it short with a "…" and no way to see the rest — not by hovering it, not by widening the panel, not anywhere. The name now runs onto as many lines as it needs and the block grows to fit, the same way a spectrum's end words already did. A name with no spaces in it breaks across lines rather than running off the side.

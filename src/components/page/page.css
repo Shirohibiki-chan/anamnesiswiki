@@ -465,6 +465,86 @@
   --bn-font-family: var(--font-prose) !important;
 }
 
+/* --- The `/` menu, and the other shadcn popovers with it ---
+
+   **The white outline was Tailwind v4's default border colour, not a choice.**
+   `@blocknote/shadcn` draws its popovers with the bare `border` utility, which
+   in v4 sets a width and leaves the colour at `currentColor` — and currentColor
+   in these menus is the near-white text. So every shadcn surface in the editor
+   was drawing a 1px line in the text colour, which is why the menu looked
+   pasted on rather than part of the app. One rule fixes all of them, and it
+   only touches elements that actually draw a border. Do not narrow it to the
+   suggestion menu: the formatting toolbar and the file panel are the same
+   components with the same default.
+
+   `!important` for the reason the block above it needs one — BlockNote's own
+   dark theme sets these at a selector with equal specificity, so plain
+   declarations lose depending on stylesheet order. */
+.bn-root,
+.bn-root *,
+.bn-root *::before,
+.bn-root *::after {
+  border-color: var(--color-border) !important;
+}
+
+/* The menu is one of the app's own popovers now, not a library's. It takes the
+   modal elevation every other floating surface takes, because `shadow-md`
+   resolved to a fully transparent shadow — the utility is generated, the colour
+   behind it is not, so the box had no lift at all against the page. */
+#bn-suggestion-menu {
+  background: var(--color-panel-edge);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-modal);
+  padding: var(--space-2xs);
+}
+
+/* **Sized like the app's other menus, which is smaller than the library's.**
+   Every row was 14px over 14px with 54px of height, so eight of them filled a
+   window and the whole thing read as oversized next to the tree beside it. The
+   title drops to the app's default UI size and the line under it to the size
+   every other secondary label uses, which is what lets four more rows fit in
+   the same space — the reason the menu felt short was mostly that its rows were
+   tall.
+
+   **The two lines are matched structurally, not by class**, because BlockNote
+   renders them as two bare divs inside the row. If a future version wraps them
+   differently the rows go back to one size and nothing breaks; that is the
+   failure worth having, rather than reaching for `!important` on a guess. */
+.bn-suggestion-menu-item {
+  padding: var(--space-2xs) var(--space-sm);
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-sm);
+}
+
+.bn-suggestion-menu-item > div > div:last-child:not(:first-child) {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-secondary);
+}
+
+/* The group headings ("Headings", "Basic blocks") are labels, and the app
+   already has one look for those. */
+.bn-suggestion-menu-label {
+  padding: var(--space-sm) var(--space-sm) var(--space-2xs);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* **A floor, so the menu can never be squeezed to a sliver.** It is positioned
+   by floating-ui, whose `size` middleware caps the height to whatever room is
+   left below the caret — and with the caret low on a page that came out as a
+   box showing one and a half rows. `.block-menu` in blocks.css carries the same
+   `max(...)` for the same reason and the comment there explains the floor.
+
+   The cap is an inline style on the wrapper BlockNote positions, so this has to
+   out-specify it; `:has` is how the wrapper is named at all, since it carries no
+   class of its own. */
+.bn-root div:has(> #bn-suggestion-menu) {
+  max-height: max(260px, min(60vh, 460px)) !important;
+}
+
 /* The two lines that make the centre pane obey the Settings text sliders.
    BlockNote's stylesheet puts `font-family: Inter, …` and `font-size: 16px`
    on the contenteditable element itself (`.bn-editor.bn-default-styles`).
