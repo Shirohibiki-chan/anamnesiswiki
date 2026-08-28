@@ -14,6 +14,7 @@ import {
   openPage,
   searchTree,
   typeInEditor,
+  typeAtLineStartInEditor,
   visibleTreeRows,
   waitForWorld,
 } from "./harness/screen";
@@ -39,7 +40,8 @@ describe("making a page from inside the editor", () => {
   });
 
   it("makes one from the slash menu and links to it", async () => {
-    await typeInEditor(app.window, "/new page");
+    // At the start of a line: a slash only means a command there.
+    await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
 
     const dialog = app.window.getByRole("heading", { name: "New page" });
@@ -95,16 +97,8 @@ describe("making a page from inside the editor", () => {
 
   it("lets the link read as something other than the page's name", async () => {
     await openPage(app.window, PAGE);
-    // Started from a fresh line, so this scenario drives the state it means to
-    // rather than whatever the one before it left behind.
-    //
-    // **An earlier version of this comment claimed `/` only triggers after a
-    // space or at the start of a block. That is wrong** — measured 2026-08-28,
-    // the editor opens the menu for a `/` typed straight after a full stop. The
-    // fresh line is about isolating this scenario, nothing more. The rule that
-    // *is* real, and deliberately stricter, is the one for reopening an
-    // abandoned slash; see `suggestion-resume.ts`.
-    await typeInEditor(app.window, "\n/new page");
+    // At the start of a line: a slash only means a command there.
+    await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
     await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });
 

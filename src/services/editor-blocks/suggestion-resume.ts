@@ -27,22 +27,17 @@ import { useEffect } from "react";
 export const UNCLOSED_WIKILINK = /\[\[([^[\]]*)$/;
 
 /**
- * A `/query` that begins a line, or follows a space, with nothing after it.
+ * A `/query` that is **the whole of the line so far**.
  *
- * **The lookbehind is the whole design.** A slash is ordinary punctuation —
- * `and/or`, `12/05`, a path, the end of `at this scale.` — so a rule that
- * matched one anywhere would have the menu opening as she moved the caret
- * through her own writing. Requiring the start of a line or a space before it,
- * and no space after, leaves only a command somebody typed and abandoned. That
- * is the case reported: click back onto a row with a `/` at the front and
- * nothing happened.
+ * **Anchored at both ends, and it has to match what typing does.** A slash only
+ * opens the menu at the start of a line (see `slash-trigger.ts`, her call
+ * 2026-08-28), so reopening it anywhere else would offer a menu that could never
+ * have been typed there — and would do it while she moves the caret through her
+ * own `and/or`, dates and paths, which is the behaviour she called insane.
  *
- * **Deliberately stricter than BlockNote's own trigger**, which was measured
- * 2026-08-28 to open the menu for a `/` typed straight after a full stop.
- * Reopening is not typing: she is moving a caret, not asking for anything, so
- * the bar for interrupting her is higher than the bar for answering a keypress.
+ * These two rules are one rule in two places. Loosen either and they disagree.
  */
-export const UNFINISHED_SLASH = /(?<=^|\s)\/(\S*)$/;
+export const UNFINISHED_SLASH = /^\/(\S*)$/;
 
 /** Blocks where a trigger character is just a character. */
 const NOT_A_TRIGGER = new Set(["codeBlock"]);

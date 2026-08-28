@@ -14,6 +14,7 @@ import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/edito
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
+import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
 import { linkWikilink, resolveWikilinks, unknownWikilinkAt } from "../services/editor-blocks/wikilink";
 import { useWikilinkBracketConfirm, WIKILINK_TRIGGER } from "../services/editor-blocks/wikilink-bracket-confirm";
@@ -186,7 +187,18 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     return filterSuggestionItems(getMentionMenuItems(editor, nodes, nodeId), query);
   }
 
-  return { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems, suggestionMenuFloating };
+  return {
+    editor,
+    onKeyDownCapture,
+    handleChange,
+    focusEnd,
+    getSlashMenuItems,
+    getMentionItems,
+    // Passed through rather than imported by the component, keeping this file
+    // the only way into services/editor-blocks/ — see the header above.
+    slashShouldOpen: slashOpensCommandMenu,
+    suggestionMenuFloating,
+  };
 }
 
 /**

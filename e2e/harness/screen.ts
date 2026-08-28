@@ -242,6 +242,26 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
   await window.keyboard.type(text, { delay: 20 });
 }
 
+/**
+ * Types at the **start of a line** in the open page.
+ *
+ * **Its own helper because a `/` only means a command at the start of one** —
+ * see `slash-trigger.ts` — so a scenario about the command menu has to be sure
+ * it is really there.
+ *
+ * It gets there with `Home` rather than by making a new line, and that is worth
+ * knowing: **pressing `Enter` from here does not add a block.** Measured
+ * 2026-08-28, and not chased down, because a scenario built on a keystroke that
+ * silently does nothing passes or fails for reasons unrelated to what it is
+ * testing. `Home` moves the caret to the front of whatever line it is already
+ * on, which is the state under test, and it works.
+ */
+export async function typeAtLineStartInEditor(window: Page, text: string): Promise<void> {
+  await typeInEditor(window, "");
+  await window.keyboard.press("Home");
+  await window.keyboard.type(text, { delay: 20 });
+}
+
 /** Whether the bold/italic strip is on screen right now, floating or fixed. */
 export async function formattingBarShown(window: Page): Promise<boolean> {
   return (await window.locator(FORMATTING_BAR).count()) > 0;
