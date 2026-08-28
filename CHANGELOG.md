@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-27 — undo reaches the panel, and the tree keeps its own history
+
+### Additions
+
+- **Undo now covers the panel down the right of a page.** Every field, every tag, the other names, a picture's crop and description, and every block in it — added, removed, moved, recoloured, renamed, or a meter dragged. Until now that panel was the one part of the app where a mistake couldn't be taken back.
+- **A run of typing counts as one undo, not thirty.** Keep typing in a field and it stays one edit; stop for a couple of seconds and whatever you type next is its own. Same for dragging a meter or moving a picture's crop — one drag, one undo.
+- **A page's tabs can be undone too** — adding one, renaming it, hiding it, dragging it into a different order, and deleting one. Deleting a tab takes what's written in it with it, and until now that was gone the moment you clicked. *What's inside* a tab is still the editor's own undo on Ctrl+Z, unchanged.
+- **The undo message says what it undid** — "Undid changing Age", "Undid adding a meter" — in the same place saving reports itself.
+- **The tree itself has earlier versions now.** Right-click the project's name at the top of the sidebar and choose *Earlier versions of the tree*. It keeps the order of your pages, which one is the home page, which are pinned and which folders were open — the things that live in `project.json` rather than in any page.
+- **Restoring an arrangement leaves your pages alone.** Nothing is written, deleted or brought back; pages deleted since the copy was taken stay deleted, and the panel says how many of those there are before you press anything.
+- **Settings → History.** How often a copy is kept (every minute up to every half hour), how far back they go (a week up to a year) and how many any one page keeps.
+- **A page's right-click menu says how many earlier versions it has**, or "none yet", so you can tell without opening the list.
+
 ## 2026-08-27 — Ctrl+Z belongs to what you're writing
 
 ### Changes
@@ -198,62 +211,3 @@
 - **A Pie chart block holding a single meter is unchanged** — it still fills up against its own maximum, the way it always did, because one number can only be a share of itself. It becomes a slice the moment you add a second meter.
 - **A slice ignores its maximum**, since what matters is its size next to the others. The maximum is kept, not thrown away: switch the block to a Circle or a Gauge and every meter reads against it again.
 - **On a pie chart, Show max is called Show share** and hides the percentages in the legend.
-
-## 2026-08-21 — meters
-
-### Additions
-
-- **Meters — a number drawn as a picture instead of typed as a fact.** How loyal someone is, how far along a war is, how many rations are left. Add Block has a **Meters** group with six of them, and they sit in the sidebar alongside your properties.
-- **One block holds several meters.** A block is a panel of stats, not a single reading: **Add meter** in the block's `⋯` menu puts another one in, and each carries its own icon, name and numbers. Circles, semi-circles and gauges lay out two across; bars and tokens run full width. **Point at any meter for an × in its corner** to take just that one out — including the last one, which leaves the block waiting for a new one.
-- **Every meter has an icon, and there's now an icon picker.** Click the icon slot next to a meter's name for **every icon the app ships — about 1,900 of them** — searchable by name, plus a tab of emoji. The ones worth suggesting for a world are grouped at the top and findable by what you'd call them ("health" finds the heart), and the rest is underneath. Emoji are just characters, so anything your system can draw, you can use.
-- **A dial can show its number, its icon, or both**, and can be drawn in **segments** instead of one solid sweep. Both are in the block's menu.
-- **Name each meter whatever it measures.** Type straight into the name beside it.
-- **Show text** and **Show max** in the block's menu, so a row of dials can be just the dials, and "6/10" can be "6".
-- **Five of them measure a proportion:** **Progress bar**, **Circle**, **Semi-circle**, **Gauge** and **Pie chart**. They read against 100 unless you say otherwise, so a bar set to three-quarters says 75%. Give one a different maximum and it shows the pair instead — 3 of 8.
-- **Two of them count whole things:** a **Rating** you set a level on, and a **Token pool** you spend one at a time. Spell charges, favours owed, ammunition. They span the whole block, so five stars are five big stars — and seventy-six tokens shrink and wrap into a grid instead. **Pick what they're counted in** with **Rating symbol** in the block's menu: skulls, coins, acorns, an emoji, anything in the picker.
-- **Point at a meter and it shows you what you'd get.** The value under your cursor previews as a dimmed, pulsing fill before you commit it, so a click is never a guess — **both ways**: aim above the value and it shows what would be added, aim below and it shows what would be taken away. Click to set it, or press and drag to sweep through values. Sweeping across stars or tokens works the same way.
-- **Click a meter's number and type it.** One field, where the number already is: type **62** on a percentage meter and it's 62%, type **4/10** on a counted one and it's four out of ten. Enter to finish, Escape to back out. Dragging moves in whole units; typing is for 62.5 and for "out of 76".
-- **Clicking a rating's current level clears it**, so a star you didn't mean to click isn't permanent.
-- **They work from the keyboard.** Tab to a meter, then arrow keys to nudge it, Page Up and Page Down for ten at a time, Home and End for empty and full.
-- **The shape is a setting, not a decision you're stuck with.** Pick another from the six in the block's menu — your numbers come with it, and the block's heading follows.
-- **Pages can have their own icon.** Right-click a page → **Set icon**, and it's the same picker the meters use, glyphs and emoji both. It replaces the icon its template gave it and shows everywhere that page appears — the tree, its title, its breadcrumb. Clearing it puts the template's back. Works on a whole selection at once, like Set color.
-- **Far more colours, and any colour you like.** Six are offered in the menu itself, the other eighteen open in place behind the **+**, and under those is a **+** that mixes any colour at all. Picking one doesn't close anything — choose, look, choose again. A colour that isn't one of the six rides on the row's **+**, which stays a **+**. Pages, blocks and meters share one colour control now, so they can't disagree about what's on offer.
-- **Colours you mix are kept, and follow you everywhere.** A colour from the system picker joins a row of your own below the palette — available on any page, any block, any meter, in any project. Eight are kept, newest first, and the × on one throws it away. The block recolours live as you move around the picker and stays quick while it does — nothing is written until you close the dialog, and only the colour you settled on is kept.
-- **A single meter can have its own colour.** Right-click one for **This meter's colour**, so four dials under one heading can be four colours. Clearing it hands that meter back to the block's colour.
-- **Lowering a maximum doesn't throw the number away.** Drop a rating from ten stars to three and it shows three; put the ten back and the number you had is still there.
-
-### Adjustments
-
-- **A block's own menu scrolls** rather than running off the screen.
-- **Add Block's headings are readable, and the menu scrolls.** Media, Blocks, Meters and Properties stand out from the things under them and stay put at the top while you scroll their section — and the menu stops growing at a sensible height instead of running off the screen as more block types arrive.
-
-- **A block's colour now colours the block.** It used to be a thin line down the left edge; it washes the whole block from edge to edge of the sidebar and tints its heading, so a purple block reads as purple. Same swatches, in the same `⋯` menu.
-- **Right-clicking a block opens its menu**, which is what right-clicking anything should do. It was doing nothing before, so you got whatever menu happened to be underneath. Right-clicking a particular meter inside a block also offers to duplicate or delete that one, and right-clicking the empty space under the blocks offers Add Block.
-- **The block menu got shorter.** The colour row is a grid of swatches rather than a long strip, and the shape picker is six small tiles.
-- **Every block has one name.** They used to show a heading and then repeat themselves underneath — METER with PROGRESS BAR under it, BACKLINKS with BACKLINKS under it, IMAGE with IMAGE under it. The heading says what the block is, in the top left, and renaming it still wins.
-- **A list of pages says where it comes from in its menu**, with a tick on the one it's using, instead of on a label under its own heading. A **Tag index** is called a Tag index there — it used to call itself "Tagged", which is a different word for a different thing.
-- **Click a page's icon to change it.** The icon beside the page's name opens the picker. Right-click → Set icon still works for changing several at once.
-- **Blocks line up with each other.** The drag handle moved out of the heading's way, so every heading starts at the same edge as the block under it.
-
-### Fixes
-
-- **Tokens and stars respond to every click now.** About half of them did nothing: the pip you pressed and the pip that got told about it could disagree, so the tap was swallowed. Pressing sets the value the moment you press, the way the bars and dials already did.
-- **A lone dial is centred.** One circle in a block sat hard against the left edge, because the layout was built for two side by side.
-- **Lowering a dial no longer draws a ragged second outline over it** — the preview sits at the end of the fill instead of being painted on top of it.
-- **A meter block has room to breathe.** A progress bar block was heading, hairline, caption, done — it read as a squashed strip. The bar itself is the same thin track it always was; the block around it isn't cramped any more.
-- **A dial showing its icon doesn't repeat it beside the name**, and the icon inside a dial is the button that changes it.
-- **The three dial faces actually look different now.** Asking for the icon on a meter that hasn't got one used to quietly show the number instead, so all three choices looked identical — it shows an empty icon slot you can click.
-- **Pages in a list are readable.** They were painted in a colour that's almost the background — the same near-invisible tint that made the import progress bar disappear once before.
-- **A long meter name no longer wrecks the layout.** It used to stretch its dial's column and shove everything off-centre; it's capped and trimmed now.
-- **A dial's name and number stack under it**, both centred on the shape, instead of sitting side by side where neither could line up with it. The name box is as wide as the name rather than as wide as the column.
-- **Meters light up when you point at them**, so a panel of four reads as four things — and so it's clear which one the × in the corner belongs to.
-- **Dials sit closer together**, three across a normal-width panel, with the highlight hugging each one rather than filling the space between them.
-- **A dial's icon lives inside the dial or nowhere.** It used to also sit beside the name, which ate the width in the narrowest part of the panel. Switch a block to Icon or Both to bring it back.
-- **Stars and tokens are a fixed size.** They used to stretch to fill their row, so the last few tokens of a big pool came out enormous while the rest stayed small.
-- **A token pool is drawn in tokens, not in stars.** They were coming out at a rating's size — seventy-six of those filled the panel. They're small now: 76 tokens sit in six rows.
-- **Tokens and stars are coloured again.** A filled one was being painted in the empty colour, so a pool was grey however full it was. Filled ones take the block's colour; empty ones are a faint version of the same colour rather than grey.
-- **The tag and page pickers look like menus.** Their rows had no styling at all and rendered as oversized plain text in a box. Tags show as tags, pages show with their icon, and the box is narrower.
-- **Pages in a list look like pages.** They were bare text; now each row carries that page's icon and lights up as you point at it, the way a tree row does.
-- **A dial's number is printed once.** It was in the middle of the dial *and* under the name. It's in the middle, and clicking it there is how you set it — the field opens in place rather than dropping a pair of boxes underneath.
-- **Right-clicking a page no longer drags you onto it.** You can right-click any page in the tree to reach its menu while staying on the page you're reading. The menu still acts on the page you clicked.
-- **A meter's number boxes no longer sit on top of the meter above them.** They inherited the sidebar's field styling, which deliberately pulls its box outwards to line text up in a column — in a tight row that put the box over its neighbour.

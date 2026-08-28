@@ -502,31 +502,28 @@ Kept because the answers are the useful part:
 
 ## Phase 19 — Safety Net
 
-**Version history shipped 2026-08-27** — see `docs/shipped.md`. Copies of a page
-are kept in `.history/` inside the project, browsed and restored from a tree
-row's *Earlier versions*. What is left of the phase is below.
-
-**The ordering note that used to head this phase — "runs after Phase 29,
-because the shell swap rewrites the filesystem layer" — was spent by the time
-the work started.** Steps 1–3 of Phase 29 have shipped; what remains of it is a
-release and deleting two workflows, neither of which touches
-`filesystem-service.ts`. It is recorded here rather than deleted because the
-reasoning was right when it was written.
+**Almost all of this shipped 2026-08-27** — version history, the panel's undo,
+the tree's own history and the retention settings. The detail is in
+`docs/shipped.md`; what is below is what is left.
 
 Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
 
-- **Undo for the right-hand panel** — carried over from Phase 10, still the one part of the app a mistake can't be taken back in. A dedicated store action per operation, the way `setNodeColor` did it.
+- **Nothing on a tree row shows that a page has history.** The row's menu now
+  says how many copies a page has — "Earlier versions (12)", or "none yet" —
+  so the count exists. What is still missing is a marker on the row itself, and
+  **that one is a design question rather than a build**: the tree already has a
+  colour dot she has said is in the wrong place (see Queued Adjustments), and
+  quietly adding a second decoration to the same strip would be answering a
+  question that is hers. Ask before building it.
 
-- **What version history does not cover yet**, decided by scope rather than by
-  argument, so any of them can be picked up on its own:
-  - **`project.json` has no history** — the tree's order, the home page, the
-    expanded folders. Page contents were the loss that happened; this is the
-    other file that could hurt.
-  - **Retention is not configurable.** Obsidian's is, and the model this copied
-    puts an interval and a keep-for in its settings. The numbers live in
-    `constants/limits.ts` (five minutes, thirty days, fifty per page).
-  - **Nothing shows a page has history except the menu item.** No count, no
-    marker on the row.
+- **Two things version history still does not cover**, by scope rather than by
+  argument, so either can be picked up on its own:
+  - **A picture cleared from a page cannot be undone.** Clearing the portrait,
+    or replacing it, deletes the file from `assets/` once nothing else points
+    at it — so undo would have to put bytes back, not just a field. Everything
+    else the right-hand panel does is undoable as of 2026-08-27; this is the
+    exception, and it is the same problem `uploadAsset` describes for pictures
+    inside the page.
   - **A restored version does not carry the page's template or its place in the
     tree**, on purpose — both are structural rather than content, and
     `templateKey` decides file-vs-directory storage. If restoring across a
@@ -534,7 +531,7 @@ Unglamorous and probably the highest-value work in this document. This app has a
 
 ---
 
-## Phase 28 — Blocks in the Page
+## Phase 30 — Blocks in the Page
 
 **Scoped 2026-08-21, from her screenshots of the reference, and not built with
 the rest of Phase 18.** It is a feature rather than a fix and it wants its own
