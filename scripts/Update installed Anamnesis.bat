@@ -7,7 +7,7 @@ echo   Rebuilding Anamnesis from the newest code and installing it.
 echo   This takes a few minutes. You can leave it running.
 echo.
 
-rem Must not use pnpm -- see the long note in "Anamnesis (latest code).bat".
+rem Must not use pnpm -- see the note in "Anamnesis Electron (latest code).bat".
 rem pnpm lives under a redirected %APPDATA% that only exists inside the Claude
 rem app's container, so it is not present when you run this yourself.
 

@@ -43,11 +43,35 @@ jobs:
       # They are not carried out of this job. Each build job reads them out of
       # RELEASES.md itself, straight into a file — see the packaging step.
       - name: Release notes must exist for this version
-        run: node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > /dev/null
+        run: node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
+
+      # **The draft is opened here, once, rather than by whichever build job
+      # reaches the publish step first.** Each of the three looks for a release
+      # for this tag and creates one when it finds none, and on the first
+      # v0.6.0 rebuild two of them created one in the same second: the
+      # installers came out split across two drafts, one holding Windows and
+      # half of macOS, the other Linux and the other half. Every job reported
+      # success. Opening it up front leaves them nothing to race over — they
+      # find it and upload into it.
+      #
+      # The title is set here too, which is why earlier releases read
+      # "Anamnesis v0.5.0" and the racing drafts only read "0.6.0".
+      - name: Open the draft the builds upload into
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "A release for $GITHUB_REF_NAME already exists — leaving it alone."
+          else
+            gh release create "$GITHUB_REF_NAME" --draft \
+              --title "Anamnesis $GITHUB_REF_NAME" \
+              --notes-file release-notes.md
+          fi
 
   build:
     # `always()` so a manual dry run, which skips the version check entirely,
-    # still builds. On a tag the check must have passed.
+    # still builds. On a tag the check must have passed — and, since it is also
+    # what opens the draft, must have finished before anything tries to upload.
     needs: check-version
     if: always() && needs.check-version.result != 'failure'
     strategy:

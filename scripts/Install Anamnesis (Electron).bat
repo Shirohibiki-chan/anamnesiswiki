@@ -12,7 +12,7 @@ echo   old one -- they read the same worlds, so nothing is duplicated except
 echo   the entry itself.
 echo.
 
-rem Must not use pnpm -- see the long note in "Anamnesis (latest code).bat".
+rem Must not use pnpm -- see the note in "Anamnesis Electron (latest code).bat".
 rem No Rust needed here: the Electron build has none.
 
 set "PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.JS;.WSF;.MSC"

@@ -3388,9 +3388,9 @@ pnpm 11, and pnpm 10 ignores the field rather than failing on it. So on any
 runner pinned to 10 that file does nothing at all: Electron's install step never
 runs, and the package installs as a pointer to a program that was never fetched.
 `ci.yml` was moved to 11 on 2026-08-26 when the app suite hit exactly this.
-**`release-electron.yml`, `release.yml` and `appimage-test.yml` still pin 10**
-and carry the same defect; they were left alone because no release has ever been
-cut and changing one blind is worse than knowing about it.
+**Every workflow pins 11 as of 2026-08-26**, and the two that did not move —
+`release.yml` and `appimage-test.yml` — were deleted on 2026-08-28 with the
+Tauri release path. A new workflow that pins 10 reintroduces the defect.
 
 Scenarios are written in the vocabulary of `e2e/harness/screen.ts` and add no
 selectors of their own — the app has almost no test hooks in its markup, so

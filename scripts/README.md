@@ -7,22 +7,20 @@ it's behind whatever's in the repo.
 Shortcuts live on the Desktop. None of them needs a terminal, and none needs
 anything typed.
 
-**Two shells exist at the moment** (Phase 29 — see `docs/plan.md`). The Electron
-pair is the one the app is moving to; the Tauri pair below it is what is
-installed today. Both open the same worlds, so it is safe to go back and forth.
+**There is one shell.** Anamnesis moved to Electron in v0.6.0 and the Tauri
+launcher was deleted on 2026-08-28. The file below still has *Electron* in its
+name only because renaming it would break the Desktop shortcut pointing at it.
 
-### `Anamnesis Electron (latest code).bat`  — the Phase 29 shell
+### `Anamnesis Electron (latest code).bat`
 
-Same idea as the Tauri one below, for the app's new shell: opens Anamnesis
-running from the source in this folder, pulls first, keeps a black window open
-that *is* the app.
+Opens Anamnesis running from the source in this folder, so it always has the
+newest committed code. Pulls first, then starts.
 
-Two differences worth knowing. It needs no Rust, so there is one less thing that
-can be missing or out of date. And it runs its dev server on a different port
-from the Tauri launcher, so both can be open at once — useful while the two
-shells still exist side by side.
+Leaves a black console window open — that window *is* the app process, and
+closing it closes Anamnesis. It needs no Rust, so there is one less thing that
+can be missing or out of date.
 
-Use when: you want today's work in the new shell, right now.
+Use when: you want today's work, right now.
 
 ### `Install Anamnesis (Electron).bat`
 
@@ -52,17 +50,6 @@ scratch folder rather than the real one.
 Takes about half a minute. Use when: something feels off and you want to know
 whether it is the app or just you, or after pulling a change you want to sanity
 check. `docs/testing.md` is the longer version.
-
-### `Anamnesis (latest code).bat`
-
-Opens Anamnesis running straight from the source in this folder, so it always
-has the newest committed code. Pulls first, then starts.
-
-Leaves a black console window open — that window *is* the app process, and
-closing it closes Anamnesis. Startup is a few seconds after the first run of
-the day (Rust caches its build), longer if Rust files changed.
-
-Use when: you want today's work, right now.
 
 ### `Update installed Anamnesis.bat`
 

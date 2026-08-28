@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-08-27 — undo reaches the panel, and the tree keeps its own history
+## 2026-08-28 — undo reaches the panel, and the tree keeps its own history
 
 ### Additions
 
