@@ -881,6 +881,21 @@ under `acknowledgedWarnings`.
 
 ## React patterns
 
+- **There is no rule against a component importing a service, and there was
+  never a good one.** CLAUDE.md carried one as architecture rule 4 — "no
+  component imports services directly, always go through a hook" — from the
+  project's first commit until 2026-08-28. It came in the same setup upload as
+  the network policy retired on 2026-08-25, it was written by Claude rather
+  than asked for, and unlike the rest of that file it never had a paragraph
+  saying what it had cost to learn. Nothing followed it: 22 of 103 components
+  imported a service directly, almost all of them for pure formatting —
+  `timeAgo`, `coverFor`, `listStepForKey`. Wrapping those in hooks would have
+  been ceremony around a function call. **Rule 3 above it is the real one** and
+  stays: a component that reaches a *store* directly widens what re-renders and
+  ties the component to Zustand, which is a cost you can point at. Reaching a
+  pure function is not. Don't reinstate rule 4, and don't re-derive it from
+  rule 3.
+
 - **Remount-by-`key` instead of resetting state in an effect.** `PageView` keys on
   the selected node id, `Editor` on the active tab id, `SaveIndicator` on its
   timestamp. This project's ESLint config (`eslint-plugin-react-hooks` v7) flags
@@ -2703,7 +2718,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   builds them from `template-registry.ts` when the template is used, so a
   template written a year ago makes pages with today's prompts. Putting page
   content into the format would freeze whatever the exporter had and quietly
-  break rule 12 (template placeholder copy has one source).
+  break rule 11 (template placeholder copy has one source).
 - **Export collapses pages, per parent, and the first in her order wins.**
   Stability matters more than which one: exporting the same project twice must
   give the same file. `orderSiblings` decides, and it tie-breaks on node id when

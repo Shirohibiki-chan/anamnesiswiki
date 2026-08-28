@@ -87,7 +87,7 @@ pnpm test:app        # the scenarios in e2e/ — builds the page, then drives th
 
 ## Architecture
 
-**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job. **Nothing outside the door knows what the shell is** — see rule 5. Anything that can only be answered by the thing hosting the page belongs behind it; anything that is a decision does not.
+**All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job. **Nothing outside the door knows what the shell is** — see rule 4. Anything that can only be answered by the thing hosting the page belongs behind it; anything that is a decision does not.
 
 **There are two shells** (Phase 29). `services/host-contract.ts` is the vocabulary, `host-service.ts` speaks Tauri, `host-service.electron.ts` speaks Electron, and both end with a `satisfies HostContract` block so neither can quietly lose a capability. `ANAMNESIS_SHELL=electron` picks the second one, in `vite.config.ts`; unset means Tauri, which still runs locally but has shipped nothing since v0.5.0. `electron/main.js` and `electron/preload.cjs` are the other side of the Electron door — the preload is the security boundary and exposes a fixed list of functions, so adding a capability means adding it in both files on purpose.
 
@@ -106,16 +106,15 @@ Hooks may import from `state/` and `services/`. Services are plain TS, no React 
 1. **One file, one responsibility** — no mixed concerns.
 2. **Components render only** — all logic lives in hooks or services.
 3. **No component imports stores directly** — always go through a hook.
-4. **No component imports services directly** — always go through a hook.
-5. **`host-service.ts` is the only file that imports `@tauri-apps/*`, and `filesystem-service.ts` is the only file that decides what to do with the disk** — no exceptions to either. The first is the shell boundary (Phase 29 step 1): paths, files, dialogs, the window, the updater, the settings store and the host's fetch all go through that one door, so swapping the shell touches one file. The second is the older rule and still the important one: the tree walking, the name collisions and the relocation planning are where the bugs that cost real data live.
-6. **`lk-import.ts` and `lk-export.ts` are the only files that touch `.lk` format** — no exceptions.
-7. **`template-registry.ts` owns all template definitions** — no template metadata elsewhere.
-8. **`autosave.ts` is a plain service, not a hook** — the debounce timer must survive React re-renders.
-9. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
-10. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
-11. **No backend and no database** — the JSON files on her disk are the store. Network calls are ordinary; see Two Promises.
-12. **Template placeholder copy is not reworded without asking** — the prompts are a designed asset, deliberately shaped, and written for this project in Phase 11. Don't extract them into an editable content system either.
-13. **No `index.ts` barrel files, and no files named `utils`, `misc`, `helpers`, or `common`** — naming otherwise follows what's already on disk.
+4. **`host-service.ts` is the only file that imports `@tauri-apps/*`, and `filesystem-service.ts` is the only file that decides what to do with the disk** — no exceptions to either. The first is the shell boundary (Phase 29 step 1): paths, files, dialogs, the window, the updater, the settings store and the host's fetch all go through that one door, so swapping the shell touches one file. The second is the older rule and still the important one: the tree walking, the name collisions and the relocation planning are where the bugs that cost real data live.
+5. **`lk-import.ts` and `lk-export.ts` are the only files that touch `.lk` format** — no exceptions.
+6. **`template-registry.ts` owns all template definitions** — no template metadata elsewhere.
+7. **`autosave.ts` is a plain service, not a hook** — the debounce timer must survive React re-renders.
+8. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
+9. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
+10. **No backend and no database** — the JSON files on her disk are the store. Network calls are ordinary; see Two Promises.
+11. **Template placeholder copy is not reworded without asking** — the prompts are a designed asset, deliberately shaped, and written for this project in Phase 11. Don't extract them into an editable content system either.
+12. **No `index.ts` barrel files, and no files named `utils`, `misc`, `helpers`, or `common`** — naming otherwise follows what's already on disk.
 
 ### Data on disk
 

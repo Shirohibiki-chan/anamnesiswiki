@@ -2158,7 +2158,7 @@ export async function writeRawFile(path: string, data: Uint8Array): Promise<void
 // A theme is a `.css` file in a folder, so reading them is a directory listing
 // and some text reads. That is all this section is. Deciding what a stylesheet
 // is allowed to contain is theme-service's job, not this file's — it lives
-// here only because it touches disk, and rule 5 says that happens in one file.
+// here only because it touches disk, and rule 4 says that happens in one file.
 
 export type CssFile = { name: string; path: string; css: string };
 
