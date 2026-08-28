@@ -400,6 +400,26 @@ describe("buildExportFile", () => {
       expect(out[2]).toMatchObject({ type: "bodiedExtension", attrs: { extensionKey: "block-secret" } });
     });
 
+    it("sends a coloured Info back out as the panel severity it came in as", () => {
+      // The matching half of the import change: LK's warning, error and success
+      // panels arrive as a coloured Info, so a world imported and re-exported
+      // has to come back with those panels intact rather than flattened to
+      // plain info. Round-trip is the promise in CLAUDE.md.
+      const out = blocksOf([
+        { type: "calloutInfo", props: { color: "amber" }, content: [{ type: "text", text: "careful", styles: {} }] },
+        { type: "calloutInfo", props: { color: "red" }, content: [{ type: "text", text: "stop", styles: {} }] },
+        { type: "calloutInfo", props: { color: "emerald" }, content: [{ type: "text", text: "good", styles: {} }] },
+        // A colour LK has no panel for. It goes out as a plain info panel —
+        // the colour is ours and does not survive, which is the honest answer
+        // rather than inventing a severity she never meant.
+        { type: "calloutInfo", props: { color: "purple" }, content: [{ type: "text", text: "ours", styles: {} }] },
+        // A colour on a Quote is ours too: LK's note panel carries no severity.
+        { type: "calloutQuote", props: { color: "amber" }, content: [{ type: "text", text: "said", styles: {} }] },
+      ]);
+
+      expect(out.map((node) => node.attrs?.panelType)).toEqual(["warning", "error", "success", "info", "note"]);
+    });
+
     it("gathers consecutive list items into one list, keeping nesting", () => {
       const out = blocksOf([
         {

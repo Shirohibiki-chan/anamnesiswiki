@@ -263,6 +263,25 @@ const CALLOUT_TO_PANEL_TYPE: Record<string, string> = {
   calloutQuote: "note",
 };
 
+/**
+ * The panel type an Info callout goes back out as, by the colour it wears.
+ *
+ * **This is the matching half of the import change made 2026-08-29**, where
+ * LK's warning, error and success panels stopped becoming Secrets and started
+ * becoming a coloured Info. Without this, a world imported and re-exported
+ * would come back with every warning flattened to a plain info panel — which is
+ * the round-trip promise in CLAUDE.md broken by the fix that made import right.
+ *
+ * Only these three colours mean anything to LK. Any other one is ours alone and
+ * exports as a plain info panel, losing the colour; that is counted as lossy
+ * rather than pretended away.
+ */
+const CALLOUT_COLOR_TO_PANEL_TYPE: Record<string, string> = {
+  amber: "warning",
+  red: "error",
+  emerald: "success",
+};
+
 function paragraphOf(content: LkNode[]): LkNode {
   return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
 }
@@ -331,19 +350,21 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
       // Quote *callout*; this is the matching half of that split.
       return [{ type: "blockquote", content: [paragraphOf(inline())] }];
     case "calloutInfo":
-    case "calloutQuote":
+    case "calloutQuote": {
+      const color = typeof block.props?.color === "string" ? block.props.color : "";
+      const colored = block.type === "calloutInfo" ? CALLOUT_COLOR_TO_PANEL_TYPE[color] : undefined;
       return [
         {
           type: "panel",
-          attrs: { panelType: CALLOUT_TO_PANEL_TYPE[block.type] },
+          attrs: { panelType: colored ?? CALLOUT_TO_PANEL_TYPE[block.type] },
           content: [paragraphOf(inline()), ...childBlocks(block, idMap, lossy, pictures)],
         },
       ];
+    }
     case "calloutSecret":
-      // LK's own Secret block, which import calls a direct lossless match.
-      // (Import also folds panel warning/error into this callout, so those
-      // come back as Secrets rather than warnings — nothing distinguishes
-      // them once they're here.)
+      // LK's own Secret block, and a direct lossless match in both directions
+      // as of 2026-08-29 — import no longer folds warning and error panels in
+      // here, so a Secret on the way out is a Secret somebody meant.
       return [
         {
           type: "bodiedExtension",

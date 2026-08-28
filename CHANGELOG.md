@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-29 — callouts can be any colour
+
+### Additions
+
+- **A callout can be any colour you like.** Hover one and a small dot appears in its top right; click it for the palette. Info, Quote and Secret all take a colour, and *The usual colour* puts one back to how its kind normally looks.
+- **Four colours also get an icon, because everyone already knows what they mean** — a tick on green, a triangle on amber, an exclamation on red, an *i* on blue. Any green does it, not just one: emerald, sage, teal and pine all read as a tick. Every other colour just recolours the box, and a colour you mix yourself never gets an icon, since there's no meaning to read off it.
+- **Colouring a callout doesn't change what it is.** A red Secret is still a secret and still gets stripped when a page is shared; it keeps its 🔒 label whatever colour it's wearing.
+
+### Fixes
+
+- **Warnings imported from a `.lk` file were being turned into secrets.** There were only three kinds of callout and no colours, so warning and error panels were given the nearest-looking one — but Secret is the box that gets stripped out when a page is shared, so every warning in an imported world was quietly marked don't-show-anyone, with nothing on screen saying so. They now come in as a callout coloured amber or red, and a success panel comes in green. **Pages you've already imported keep whatever they were brought in as** — this changes what a new import does, not what's already on your disk.
+- **Those colours survive going back out to a `.lk` file** — an amber callout leaves as a warning, red as an error, green as a success. Other colours are ours alone and leave as a plain info panel.
+
 ## 2026-08-28 — projects can be deleted
 
 ### Additions
@@ -187,69 +200,3 @@
 - **Anamnesis wouldn't start at all on Linux when run from its own source code.** The window simply never appeared, and nothing said why — nothing on screen, nothing in the black console window. The part of the app that checks for updates was being built the instant the app loaded, and on Linux it refused a version number it didn't recognise, which stopped everything before the window was ever made. It's now built at the moment something actually asks about updates, which is the only time it's needed. Windows was never affected by this.
 - **A freshly-copied project couldn't run or package the app either.** Setting one up was skipping the step that fetches Electron itself, so there was nothing for the app to run inside — which the "latest code" launchers need. Anyone starting from a clean copy hit it: a second machine, or somebody else's.
 - **The three workflows that build your downloads were running an older package manager than the rest of the project.** That version does not understand the setting which tells it to fetch Electron, so it skipped it without saying so — the same gap fixed above for the everyday checks. A full test build of Windows, macOS and Linux passes on the newer one. Whether the older one would have produced a bad download was never established, and now does not need to be.
-
-## 2026-08-26 — a steadier tree
-
-### Additions
-
-- **A Privacy section in Settings, with a switch for usage reporting.** Anamnesis can report which of its features get used — that a page was made, which template it used, which version and operating system it is running on — so the time spent on the app goes to the parts that actually get opened. **Nothing you write is ever part of that**: no page titles, no world names, no tags, no text from the editor, no file paths, and your worlds stay on your own disk exactly as they always have. The section lists everything it covers in full.
-- **You get a one-time note about it before anything is ever sent**, with the choice to say no right there. That goes for an installation you have been running for months as well as a fresh one — nobody starts being counted without being told first. Turning it off in Settings stops it there and then; nothing is stored up to be sent later.
-
-### Fixes
-
-- **A folder that already holds pages no longer tells you it's empty.** Opening one showed "Folders hold other pages. Add one to get started." whether it held nothing or two hundred pages. That line is now only there when the folder really is empty. The "Add a page" button stays on both — it's still the quickest way to make a page inside the folder you're looking at.
-- **The page tree no longer flickers while you scroll it.** On a big world, the strip you were scrolling into went blank for a moment before the pages appeared in it — going up and going down both, and on every frame of the scroll rather than now and then. The tree now draws about a screenful of pages beyond what you can see, so whatever you scroll into is already drawn. Measured on a 480-row tree: an empty strip on all 25 frames of an ordinary scroll before, none after.
-
-## 2026-08-25 — spectrum meters
-
-### Additions
-
-- **A Spectrum: a meter that is a position between two words rather than a number.** `nonchalant ——●—— emotional`. Add Block → Meters has it under Progress bar, and it works the way every other meter does — drag the marker, or use the arrow keys — except that it prints no number anywhere. Type the two words straight into the ends underneath it; the reading's own name sits above, so one block can hold several axes with their own names.
-- **A new spectrum starts in the middle**, ready to be dragged, rather than jammed against the first word.
-- **Each one sits on its own card**, so a block holding three of them reads as three things rather than nine rows of words.
-
-### Fixes
-
-- **On Linux, a spectrum's wrapping words could show one line and hide the rest.** Older Linux systems ship a browser engine that can't grow a text box to fit what's in it, which is what the wrapping relies on. The app now measures and grows those boxes itself where that's missing, so they look the same on every machine.
-- **An empty spectrum's Name box was as wide as the card**, with the × for removing the meter sitting on top of it. The box is the width of what's in it now — a short box when it's empty, growing only as you type — and it stops short of the corner the × lives in.
-- **A long word at either end of a spectrum was cut short with no way to read the rest of it** — the only way to see the whole thing was to drag the sidebar wider. The end words now wrap onto as many lines as they need and the card grows to fit, so nothing is hidden at any panel width. The reading's name above them does the same. Long words with no space in them break across lines rather than running off the edge.
-
-### Worth knowing
-
-- **It's the same reading underneath as a progress bar.** Switch a spectrum to a bar and the number is there — where the marker sat, out of a hundred. Switch it back and the two end words are still there too; nothing is thrown away by changing shape.
-- **Show text still hides the reading's name**, the way it does on every other shape. The two words at the ends aren't the name, so they stay. **Show max isn't offered on a spectrum**, since there's no number for it to hide.
-- **Segmented** ticks the line into notches to sit between, if you'd rather it were a five-point scale than a smooth slide.
-
-## 2026-08-22 — pie labels, and a few things in the way
-
-### Additions
-
-- **Every slice big enough to hold one now has its percentage written on it**, in black or white depending on what it's sitting on.
-- **A line above the chart names whatever you're pointing at** — its name, its number and its share, at full size. That's the answer for the slivers too thin to hold a label of their own. With nothing under the pointer it shows what the whole chart adds up to.
-- **A visible + Add slice under the pie**, and **+ Add meter** under every other meter block. Adding another one lived only in the block's `⋯` menu, which isn't where anyone would look for it.
-- **The template prompt can be sent away.** There's an × on it now, and the page remembers — no more being asked about a page that's meant to stay blank. Dismissing it doesn't mark the page as edited.
-- **Add Block now offers Apply a template** on a page that hasn't got one, so dismissing the prompt never closes the only door.
-
-### Fixes
-
-- **The template prompt was jammed against the title bar** with no gap above it, since the sidebar's top padding moved onto its blocks. It has room now.
-- **Clicking a dial's number opened a text box very nearly as wide as the dial.** The box is the width of what's in it now, and grows only if you type something longer.
-- **Enter now finishes naming a meter.** It did nothing at all before, which looked like the name hadn't taken — it always had, since a name saves as you type it. Enter and Escape both step out of the field now, the same as they do on the number.
-- **The + on Add slice and Add meter was sitting on its own line above the words.** A bare button lays its icon and its label out as two lines of text if anything squeezes it. Both sit on one line now, centred, on every meter shape.
-
-## 2026-08-21 — pie charts
-
-### Additions
-
-- **A pie chart divides one circle between all its meters.** Put two or more meters in a Pie chart block and they stop being separate pies and become slices of the same one — which is what a pie chart is for. Each slice is sized by its share of what they add up to, and every slice gets its own colour without you picking one.
-- **Drag any edge between two slices to move it.** The two slices either side of that edge trade with each other and nothing else on the chart moves, so adjusting two figures never quietly rewrites the rest. Overshoot and the slice you're squeezing collapses to nothing rather than wrapping round.
-- **A legend under the chart**, one row per slice: its colour, its icon, its name, its number and its share. Everything is editable there — click a number to type it, exactly as on the other shapes.
-- **A pie nobody has filled in yet draws equal slices**, ready to be dragged, instead of an empty circle. The first edge you move writes those numbers down.
-- **Segmented is now per meter, not per block.** Right-click one meter and **Segmented (this meter)** ticks off just that one; from the block's own `⋯` menu it still sets all of them. A meter you toggle back into agreement with its block goes back to following it.
-- **Segmented on a pie chart** leaves a gap between the slices.
-
-### Worth knowing
-
-- **A Pie chart block holding a single meter is unchanged** — it still fills up against its own maximum, the way it always did, because one number can only be a share of itself. It becomes a slice the moment you add a second meter.
-- **A slice ignores its maximum**, since what matters is its size next to the others. The maximum is kept, not thrown away: switch the block to a Circle or a Gauge and every meter reads against it again.
-- **On a pie chart, Show max is called Show share** and hides the percentages in the legend.

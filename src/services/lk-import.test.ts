@@ -298,7 +298,11 @@ describe("buildImportPlan", () => {
       expect(para[2]).toMatchObject({ type: "link", href: "https://example.com" });
     });
 
-    it("maps panel type=info/note/warning to the info/quote/secret callouts", () => {
+    it("maps a panel to a callout, and its severity to a colour rather than to Secret", () => {
+      // **Warning and error used to come in as Secret**, which is not a look —
+      // it is the block a publish is required to strip, so every warning in an
+      // imported world was silently marked do-not-show. Phase 19.5's colours
+      // are what let severity be said without saying the wrong thing.
       const plan = buildImportPlan(
         withRoot([
           resource("a", "Page", "A", {
@@ -307,13 +311,28 @@ describe("buildImportPlan", () => {
                 { type: "panel", attrs: { panelType: "info" }, content: [paragraph([text("i")])] },
                 { type: "panel", attrs: { panelType: "note" }, content: [paragraph([text("n")])] },
                 { type: "panel", attrs: { panelType: "warning" }, content: [paragraph([text("w")])] },
+                { type: "panel", attrs: { panelType: "error" }, content: [paragraph([text("e")])] },
+                { type: "panel", attrs: { panelType: "success" }, content: [paragraph([text("s")])] },
               ]),
             ],
           }),
         ]),
       );
       const blocks = plan.nodes[0].tabs[0].content as Record<string, unknown>[];
-      expect(blocks.map((b) => b.type)).toEqual(["calloutInfo", "calloutQuote", "calloutSecret"]);
+      expect(blocks.map((b) => b.type)).toEqual([
+        "calloutInfo",
+        "calloutQuote",
+        "calloutInfo",
+        "calloutInfo",
+        "calloutInfo",
+      ]);
+      expect(blocks.map((b) => (b.props as Record<string, unknown> | undefined)?.color)).toEqual([
+        undefined,
+        undefined,
+        "amber",
+        "red",
+        "emerald",
+      ]);
     });
 
     it("maps a plain blockquote to BlockNote's native quote block", () => {

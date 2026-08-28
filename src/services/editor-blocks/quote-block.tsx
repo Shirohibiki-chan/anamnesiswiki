@@ -4,6 +4,23 @@ import { createReactBlockSpec } from "@blocknote/react";
 import { CalloutWrapper } from "./callout-wrapper";
 
 export const quoteBlockSpec = createReactBlockSpec(
-  { type: "calloutQuote", propSchema: {}, content: "inline" },
-  { render: ({ contentRef }) => <CalloutWrapper variant="quote" contentRef={contentRef} /> },
+  {
+    type: "calloutQuote",
+    // **A default of "" is what keeps every callout ever written looking the
+    // way it did.** BlockNote fills a missing prop in with this on read, so a
+    // page from before Phase 19.5 comes back as an uncoloured callout rather
+    // than as a block the schema does not recognise.
+    propSchema: { color: { default: "" } },
+    content: "inline",
+  },
+  {
+    render: ({ block, editor, contentRef }) => (
+      <CalloutWrapper
+        variant="quote"
+        color={block.props.color}
+        onColor={(color) => editor.updateBlock(block, { props: { color } })}
+        contentRef={contentRef}
+      />
+    ),
+  },
 )();

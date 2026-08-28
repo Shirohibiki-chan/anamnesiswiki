@@ -1136,6 +1136,32 @@ under `acknowledgedWarnings`.
 
 ## Editor & templates
 
+- **Colour and type are different axes on a callout, and collapsing them is how
+  a warning becomes a secret.** Phase 19.5. `calloutSecret` is not "the purple
+  one" — it is the block a publish is required to strip — and `calloutQuote` is
+  what a `.lk` blockquote imports as. So a colour never changes what a callout
+  *is*: Secret keeps its lock chip whatever colour it wears, and never takes the
+  colour-derived icon. This is not theoretical tidiness. `lk-import.ts` mapped
+  LK's warning and error panels onto `calloutSecret` for want of anywhere better,
+  and the result was that every warning in an imported world was quietly marked
+  do-not-show-anyone. Fixed 2026-08-29 by giving severity to the colour, which is
+  where it belongs.
+
+- **A callout's colour has to survive the round trip, and only three of them
+  can.** `lk-export.ts` sends an Info coloured amber, red or emerald back out as
+  `warning`, `error` and `success` — the matching half of the import fix, without
+  which fixing import would have broken the round-trip promise in `CLAUDE.md`.
+  Every other colour is ours alone and exports as a plain info panel. Change
+  either map and the other one has to move with it.
+
+- **One rule draws every coloured callout, and the stylesheet must not learn the
+  palette.** The wrapper puts the resolved hex on the element as
+  `--callout-accent` and `.editor-callout.editor-callout-colored` mixes the fill
+  out of it. Adding a colour to `COLOR_PALETTE` is therefore the whole job.
+  `color-mix` is the newest thing in that file and Linux's WebKitGTK is the
+  engine that may not know it — the flat background declared above it is a real
+  fallback, not decoration. See `docs/constants-and-theming.md` §Callout blocks.
+
 - **There are two quote blocks, and both have to look like a quote.** Ours is
   `calloutQuote`; BlockNote's own `quote` is a separate type the app holds for
   real — LK import maps a plain ProseMirror blockquote to it on purpose (a

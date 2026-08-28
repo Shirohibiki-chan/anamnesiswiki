@@ -290,6 +290,14 @@ The three custom BlockNote block types (Info, Quote, Secret) each use a 3-token 
 
 The Secret block additionally renders a label chip (`🔒 SECRET`) using `--color-callout-secret` as the label text on a slightly darker background. Hidden-tab visibility and secret-block visibility are separate concerns — a tab can be hidden while containing no secret blocks, and secret blocks can appear inside visible tabs.
 
+**A callout can also carry a colour of its own (Phase 19.5), and it works differently from the three token groups above.** The colour is a palette key stored as a prop on the block; the wrapper resolves it to a hex and puts it on the element as `--callout-accent`, and one rule — `.editor-callout.editor-callout-colored` — draws the border from it and mixes the fill out of it with `color-mix`. So the stylesheet never learns which colours exist: the palette is data, in `src/constants/palette.ts`, and adding a colour there adds it here for free.
+
+Three things about that are deliberate:
+
+- **The tint is mixed, not stored.** Every callout token comes in threes (line, fill, text), and picking three colours to colour one box is not a feature. `color-mix(in srgb, var(--callout-accent) 12%, transparent)` also lands correctly on a light theme and a dark one from one value.
+- **`color-mix` is the newest thing in the stylesheet** (Safari 16.2 / Chrome 111 / Firefox 113), and the Linux build's WebKitGTK is the engine to watch — one too old to know it drops the whole declaration. The rule sets a flat `--color-panel-alt` background first for exactly that reason; it is a fallback, not decoration.
+- **Colour and type are different axes.** Colouring a callout never changes what it *is* — `calloutSecret` is still the block a publish must strip whatever colour it wears, which is why it keeps its lock chip and never takes the colour-derived icon. The four conventional hues (green/amber/red/blue) get an icon from `src/constants/callout-colors.ts`; every other colour just recolours the box, and a hex she mixed herself never gets one because there is no name to read a meaning off.
+
 ### BlockNote editor theming (Phase 5)
 
 The editor draws itself through two *separate* custom-property namespaces, both bridged onto the app's own semantic tokens rather than left at their library defaults:

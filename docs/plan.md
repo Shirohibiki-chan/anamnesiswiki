@@ -405,20 +405,13 @@ Meter that lands on a bar and makes her go find the setting.
   Separately: it overlaps this phase's per-block width and Phase 21's splittable
   panels; three different things called columns, and the naming needs settling
   before any of them ship.
-- **Callout colours, and it is the smallest useful thing on this page.** She
-  asked for the full set 2026-08-27 with examples she had written elsewhere —
-  amber and red warnings, a green confirmation, a neutral grey note. **Give the
-  callout a colour rather than adding a type per colour**, drawn from
-  `COLOR_PALETTE` like every other colour in the app, so the set is hers to pick
-  from and not a queue of requests to me.
-
-  **But colour and type are not the same axis, and collapsing them breaks
-  something.** Secret is not "the purple one" — it is the block the publisher is
-  required to strip, and Quote is what a `.lk` blockquote imports as. Those two
-  carry behaviour. So: keep the three types, add a colour prop that defaults to
-  what each type looks like today, and let the icon follow the colour (her
-  examples pair a tick with green and an exclamation with amber, which is the
-  convention readers already know). A red Secret must still be secret.
+- **Callout colours shipped 2026-08-29.** Any callout takes a colour from
+  `COLOR_PALETTE`; the four conventional hues carry an icon; type still decides
+  behaviour, so a red Secret is still a Secret. It also fixed a `.lk` import bug
+  it happened to expose — LK's warning and error panels used to arrive as
+  Secrets, which meant every imported warning was silently marked as something
+  a publish must strip. Detail is in `docs/shipped.md`, and what binds the code
+  is in `docs/handoff.md` and `docs/constants-and-theming.md`.
 - **Block anchors — the `#` that appears on hover and links to that block.**
   Asked for 2026-08-27 off the same screenshots. Not on the original command
   list because it is not something you insert; it is a handle on a block that is
