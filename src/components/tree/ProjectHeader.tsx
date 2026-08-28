@@ -7,7 +7,7 @@
 // no home set it stays put as a plain icon rather than disappearing — the row
 // it decorates is the project itself either way.
 import { useState } from "react";
-import { Home, Plus, Upload } from "lucide-react";
+import { History, Home, Plus, Upload } from "lucide-react";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject, useProjectHomeId } from "../../hooks/use-project";
 import { useCreatePageIn } from "../../hooks/use-new-page";
@@ -15,7 +15,7 @@ import { TreePopover } from "./TreePopover";
 
 export function ProjectHeader() {
   const { project, selectNode } = useProject();
-  const { requestExport } = useDialogs();
+  const { requestExport, openProjectHistory } = useDialogs();
   const createPageIn = useCreatePageIn();
   const homeNodeId = useProjectHomeId();
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -67,6 +67,18 @@ export function ProjectHeader() {
           <div className="tree-context-menu">
             <button type="button" onClick={handleExportProject}>
               <Upload size={13} /> Export project to LegendKeeper
+            </button>
+            {/* The tree's own history, in the same place a page's is: on the
+                right-click menu of the row it belongs to. This row is the
+                project, so this is where project.json's copies live. */}
+            <button
+              type="button"
+              onClick={() => {
+                closePopover();
+                openProjectHistory();
+              }}
+            >
+              <History size={13} /> Earlier versions of the tree
             </button>
           </div>
         </TreePopover>

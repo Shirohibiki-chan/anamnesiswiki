@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Project } from "../constants/schema";
 import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_AGE_MS } from "../constants/limits";
 import {
   historyReadme,
@@ -6,6 +7,7 @@ import {
   nextSnapshotAt,
   readSnapshots,
   restorePatch,
+  restoreProjectPatch,
   snapshotName,
   snapshotsToPrune,
   snapshotTime,
@@ -186,3 +188,79 @@ describe("restoring a copy", () => {
   });
 });
 
+
+describe("restoring the tree's arrangement", () => {
+  function project(extra: Partial<Project> = {}): Project {
+    return {
+      version: 1,
+      name: "Valeraverse",
+      rootOrder: [],
+      expandedIds: [],
+      selectedId: null,
+      createdAt: 1,
+      ...extra,
+    };
+  }
+
+  const known = new Set(["a", "b"]);
+
+  it("puts the order, the home page and the pins back", () => {
+    const copy = project({ rootOrder: ["b", "a"], homeNodeId: "a", pinnedIds: ["b"], expandedIds: ["a"] });
+
+    const patch = restoreProjectPatch(project(), copy, known);
+
+    expect(patch.rootOrder).toEqual(["b", "a"]);
+    expect(patch.homeNodeId).toBe("a");
+    expect(patch.pinnedIds).toEqual(["b"]);
+    expect(patch.expandedIds).toEqual(["a"]);
+  });
+
+  // The whole reason this isn't `{ ...copy }`: a copy from last week remembers
+  // pages that have since been deleted, and putting its lists back verbatim
+  // would leave a home button pointing at nothing.
+  it("drops every id whose page no longer exists", () => {
+    const copy = project({
+      rootOrder: ["a", "gone"],
+      homeNodeId: "gone",
+      pinnedIds: ["gone", "b"],
+      expandedIds: ["gone"],
+      childOrder: { a: ["gone", "b"], gone: ["a"] },
+    });
+
+    const patch = restoreProjectPatch(project(), copy, known);
+
+    expect(patch.rootOrder).toEqual(["a"]);
+    expect(patch.homeNodeId).toBeNull();
+    expect(patch.pinnedIds).toEqual(["b"]);
+    expect(patch.expandedIds).toEqual([]);
+    expect(patch.childOrder).toEqual({ a: ["b"] });
+  });
+
+  it("leaves the world's identity, name and age alone", () => {
+    const current = project({ id: "world-1", name: "Valeraverse", createdAt: 10, coverImage: "cover.png" });
+    const copy = project({ id: "world-2", name: "Old Name", createdAt: 5, coverImage: "old.png" });
+
+    const patch = restoreProjectPatch(current, copy, known);
+
+    expect(patch).not.toHaveProperty("id");
+    expect(patch).not.toHaveProperty("name");
+    expect(patch).not.toHaveProperty("createdAt");
+    expect(patch).not.toHaveProperty("coverImage");
+  });
+
+  // Which page she had open an hour ago is a fact about that hour.
+  it("does not move the selection", () => {
+    const patch = restoreProjectPatch(project({ selectedId: "b" }), project({ selectedId: "a" }), known);
+
+    expect(patch).not.toHaveProperty("selectedId");
+  });
+
+  // Same rule restorePatch follows: a field the copy did not have is cleared,
+  // not left standing.
+  it("clears a field the copy did not have", () => {
+    const patch = restoreProjectPatch(project({ childOrder: { a: ["b"] } }), project(), known);
+
+    expect("childOrder" in patch).toBe(true);
+    expect(patch.childOrder).toBeUndefined();
+  });
+});

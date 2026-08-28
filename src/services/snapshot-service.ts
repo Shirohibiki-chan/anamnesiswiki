@@ -9,7 +9,7 @@
 // `filesystem-service.ts` does the reading and writing, as it does for
 // everything else on disk; this says what it should do.
 import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_AGE_MS, SNAPSHOT_MAX_PER_NODE } from "../constants/limits";
-import type { Node } from "../constants/schema";
+import type { Node, Project } from "../constants/schema";
 
 /** One copy on disk: the file's name, and when it was taken. */
 export type Snapshot = {
@@ -141,6 +141,9 @@ export function historyReadme(): string {
     "inside it is a copy of that page as it was at the time in its filename.",
     "They are ordinary JSON files: the page's name is inside, near the top.",
     "",
+    "The folder called 'project' is the same thing for project.json, which",
+    "holds the order of the tree, the home page and the pinned pages.",
+    "",
     "A copy is taken before a page is saved, at most once every few minutes,",
     "and before a page is deleted. Old ones are cleared out automatically.",
     "",
@@ -195,3 +198,76 @@ export function restorePatch(current: Node, copy: Node): Partial<Omit<Node, "id"
   return patch as Partial<Omit<Node, "id">>;
 }
 
+
+/**
+ * What the project keeps when an old copy of `project.json` is restored.
+ *
+ * **Only the arrangement comes back.** A world's identity (`id`,
+ * `forkedFromId`), its name, when it was made and the picture the start screen
+ * draws for it are not what this feature is for, and two of them are worse than
+ * useless here: the id is what every in-world reference is written against, and
+ * the name is the folder on disk, which is a rename rather than an edit and
+ * belongs to the code that can move a directory.
+ *
+ * `selectedId` and `selectedName` stay too. Which page she had open an hour ago
+ * is a fact about that hour, not something to be put back underneath her.
+ */
+const PROJECT_KEPT_FROM_CURRENT = new Set([
+  "version",
+  "id",
+  "forkedFromId",
+  "name",
+  "createdAt",
+  "coverImage",
+  "selectedId",
+  "selectedName",
+]);
+
+/** The ids a restored arrangement is allowed to mention. */
+export type KnownIds = { has: (id: string) => boolean };
+
+/**
+ * The patch that puts the tree's arrangement back to what a copy recorded.
+ *
+ * **Every id in the copy is checked against the pages that exist now**, which
+ * is the difference between this and `restorePatch`. A copy from last week
+ * remembers pages that have since been deleted, and putting its lists back
+ * verbatim would leave the tree ordered around pages that aren't there, a home
+ * button pointing at nothing and a rail of pins that open blank. Filtering is
+ * not a tidy-up here; it is what stops a restore breaking invariants the rest
+ * of the app relies on (see `homeNodeId` in schema.ts).
+ *
+ * Pages made *since* the copy are not mentioned by it at all, and they are not
+ * lost by that: an id missing from `rootOrder` falls back to creation order,
+ * the same way a world that has never been reordered works.
+ */
+export function restoreProjectPatch(current: Project, copy: Project, known: KnownIds): Partial<Project> {
+  const ids = (list: readonly string[] | undefined): string[] | undefined =>
+    list?.filter((id) => known.has(id));
+
+  const childOrder = copy.childOrder
+    ? Object.fromEntries(
+        Object.entries(copy.childOrder)
+          .filter(([parentId]) => known.has(parentId))
+          .map(([parentId, order]) => [parentId, order.filter((id) => known.has(id))]),
+      )
+    : undefined;
+
+  const patch: Record<string, unknown> = {
+    rootOrder: ids(copy.rootOrder) ?? [],
+    childOrder,
+    homeNodeId: copy.homeNodeId && known.has(copy.homeNodeId) ? copy.homeNodeId : null,
+    pinnedIds: ids(copy.pinnedIds),
+    expandedIds: ids(copy.expandedIds) ?? [],
+  };
+
+  // The same rule `restorePatch` follows: a field the copy did not have is
+  // cleared rather than left standing, so restoring is "make it look like it
+  // did" rather than "merge what it happened to mention".
+  for (const key of Object.keys(current) as (keyof Project)[]) {
+    if (PROJECT_KEPT_FROM_CURRENT.has(key) || key in patch) continue;
+    patch[key] = undefined;
+  }
+
+  return patch as Partial<Project>;
+}

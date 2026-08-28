@@ -78,6 +78,16 @@ type DialogStoreState = {
   historyNodeId: string | null;
   openHistory: (nodeId: string) => void;
   closeHistory: () => void;
+  /**
+   * Whether the tree's own earlier versions are being looked at (Phase 19).
+   *
+   * A flag rather than an id because there is only one `project.json`. It lives
+   * beside `historyNodeId` and not inside it so the two dialogs can never both
+   * be open, and so neither has to encode "the project" as a fake node id.
+   */
+  isProjectHistoryOpen: boolean;
+  openProjectHistory: () => void;
+  closeProjectHistory: () => void;
   pendingAssetPick: PendingAssetPick | null;
   requestAssetPick: (title: string) => Promise<string | null>;
   resolveAssetPick: (fileName: string | null) => void;
@@ -90,6 +100,7 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
   pendingTemplateScope: null,
   pendingAssetPick: null,
   historyNodeId: null,
+  isProjectHistoryOpen: false,
 
   requestAssetPick(title) {
     return new Promise<string | null>((resolve) => {
@@ -103,6 +114,14 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
 
   closeHistory() {
     set({ historyNodeId: null });
+  },
+
+  openProjectHistory() {
+    set({ isProjectHistoryOpen: true, historyNodeId: null });
+  },
+
+  closeProjectHistory() {
+    set({ isProjectHistoryOpen: false });
   },
 
   resolveAssetPick(fileName) {
