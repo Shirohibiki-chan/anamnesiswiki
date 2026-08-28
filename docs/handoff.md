@@ -1650,6 +1650,57 @@ under `acknowledgedWarnings`.
   so restoring a prompt "from the prototype" reintroduces LK's writing. There is
   no second source to sync with, and adding one is how they drift.
 
+- **The template *layouts* were LK's until 2026-08-28, long after the copy
+  stopped being.** Phase 11 fixed the words and left the furniture: the same
+  tab signatures LK ships (Overview/Backstory, Overview/Map/History,
+  Overview/Biology/Lifestyle/Beliefs/Relations), the same section headings, and
+  one identical block scaffold repeated on every tab — info callout defining
+  the page type, quote callout, three heading-plus-instructions pairs, secret
+  callout at the bottom. A rewording pass doesn't touch any of that, which is
+  exactly why it survived one. The registry now varies tab sets, section counts
+  and callout placement per template, the section sets are a different cut
+  rather than LK's list with synonyms swapped in, and nothing is called
+  "Overview". `template-registry.test.ts` guards the shape as well as the
+  wording — the LK tab signatures, the fixed info-then-quote opener, and a
+  silhouette check that fails if two templates end up stamped from the same
+  mould.
+
+- **Two rules about section headings are load-bearing, and the first attempt at
+  the redesign above broke both.** A heading must be a short label ("Appearance",
+  "Provenance", "Departures"), not a sentence or a question; and every heading
+  must be followed by a paragraph saying what goes under it. The first version
+  used question-shaped headings and left the paragraph out wherever the heading
+  "spoke for itself" — which rendered as h2 text wrapping to two lines with
+  nothing beneath it, a page of enormous floating headings over empty space. It
+  read as a half-written document rather than an example structure, which is the
+  one thing a template cannot afford to look like. Both rules are now tests.
+  Every other guard in that file passed the whole time it was broken, and so did
+  a full `pnpm test` run — the defect was only ever visible on screen.
+
+- **Race and Creature only make sense as a pair.** Splitting animals out into
+  their own template is what freed the sentient-peoples one to stop being called
+  Species — the biology word was doing the damage, because it read as "the
+  non-sentient one" and there was nothing else for a beast to be. Removing
+  Creature later would put that back. The name is `race` rather than `ethnicity`
+  or `folk` because it's the word she thinks in for her own world, chosen
+  2026-08-28 with the alternatives on the table; it's a private single-user
+  tool and no reader outside it ever sees the key.
+
+- **`species` still exists on disk and must keep being translated.** Pages made
+  before the rename carry `templateKey: "species"`, and `readNodeFile` maps it
+  through `LEGACY_TEMPLATE_KEYS` at the single read path. **Nothing rewrites her
+  files** — a page is written back as `race` only when it is next saved for some
+  other reason. Do not add a migration that walks the world rewriting keys; the
+  translation costs one lookup per file and carries no risk of touching pages
+  nobody asked to touch. Note what breaks without it: `alwaysDirectory("species")`
+  is now false, so an untranslated page would silently stop using directory
+  storage and its children would be written somewhere the loader doesn't look.
+
+- **`lk-import.ts`'s TAB_SIGNATURE_TEMPLATES is not the same list, on purpose.**
+  It has to keep matching LK's tab names to recognise their files; the registry
+  has to stop producing them. Wiring the two together would mean one of the two
+  jobs silently breaking the moment either changes.
+
 - **The Secret callout is a marker, not a mechanism.** It renders purple with a
   lock chip and does nothing else — no gating, no exclusion from export. Hidden
   tabs are the actual way material is held back. The template copy now says so

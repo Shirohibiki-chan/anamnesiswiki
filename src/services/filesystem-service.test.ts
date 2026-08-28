@@ -139,7 +139,7 @@ describe("resolveNodePath", () => {
 
   it("collides a folder and a same-named nestable page, since both are directories", () => {
     const folder = node({ id: "f", name: "Foxians", parentId: null, templateKey: FOLDER_TEMPLATE_KEY, createdAt: 1 });
-    const page = node({ id: "p", name: "Foxians", parentId: null, templateKey: "species", createdAt: 2 });
+    const page = node({ id: "p", name: "Foxians", parentId: null, templateKey: "race", createdAt: 2 });
     const all = [folder, page];
     expect(resolveNodePath(folder, all)).toEqual({ dirSegments: ["Foxians"], fileName: "_folder.json" });
     expect(resolveNodePath(page, all)).toEqual({ dirSegments: ["Foxians (2)"], fileName: "_page.json" });
@@ -294,8 +294,8 @@ describe("case-insensitive sibling collisions", () => {
   });
 
   it("suffixes a directory-storage sibling that differs only in case", () => {
-    const first = node({ id: "1", name: "Foxians", parentId: null, templateKey: "species", createdAt: 1 });
-    const second = node({ id: "2", name: "FOXIANS", parentId: null, templateKey: "species", createdAt: 2 });
+    const first = node({ id: "1", name: "Foxians", parentId: null, templateKey: "race", createdAt: 1 });
+    const second = node({ id: "2", name: "FOXIANS", parentId: null, templateKey: "race", createdAt: 2 });
     const all = [first, second];
     expect(resolveNodePath(first, all).dirSegments).toEqual(["Foxians"]);
     expect(resolveNodePath(second, all).dirSegments).toEqual(["FOXIANS (2)"]);

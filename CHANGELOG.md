@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-08-28 — five new kinds of page, and Species is now Race
+
+### Additions
+
+- **Country.** A nation isn't somewhere you can stand, so it stopped sharing a template with Location. Territory, peoples and economy on the first tab, a map tab, a *Rule* tab for government, law, what it can put in the field and who it borders, and a hidden *Past* for founding, wars and the last few years.
+- **Creature.** Animals, monsters, the thing in the woods. Appearance, behaviour and habitat, then an *Encounters* tab for the signs one is near, what it can actually do to a person, and how people deal with them.
+- **Technology.** Inventions and machinery, magical or otherwise — what it looks like, how it works, what it was for. Then who has it, what it costs, what it made obsolete, and who's building a better one.
+- **Scene.** One moment as a piece of writing rather than a piece of history: setting, who's present, and what's different by the end. A hidden *Drafting* tab holds beats, lines you don't want to lose, and what isn't working yet.
+- **Quest.** Objective, who's asking, stakes and payment, with a hidden *Running It* tab for the steps, the obstacles and the twists. Written with a table in mind, but a plot thread works the same way.
+
+### Renames
+
+- **Species is now Race.** With Creature taking the animals, the old name was pointing at the wrong half — "Species" reads as the non-sentient one, which is the opposite of what that template was for. **Pages you already made are fine and nothing on disk was rewritten**; they keep their icon, their fields and their writing, and simply show up as Race.
+
+### Changes
+
+- **Importing recognises Country and Technology pages** rather than bringing them in as plain notes. Kinds we haven't seen an example of still import as notes with all their tabs and writing intact, as before.
+
+## 2026-08-28 — the templates are laid out our way now
+
+### Changes
+
+- **Every template has been rebuilt from the shape up.** The words were rewritten a while back, but the layout under them hadn't changed at all — the same tabs in the same order, the same headings, and the same run of blocks repeated identically on every tab of every template. That's all been redesigned.
+- **The sections are named differently, and every one still explains itself.** A Character page goes Appearance, Manner, Motivations; an Item goes Appearance, Abilities, Limits; an Event goes In brief, Causes, Aftermath. Each heading has a line under it saying what belongs there, the way it always did.
+- **The tabs are named for what's in them.** No more "Overview" on everything: a Character opens on *Who They Are* with *Ties* beside it, a Location on *The Place*, an Item on *The Thing Itself*.
+- **Character has a Ties tab.** Somewhere to put who they're closest to, who they're at odds with, and who owes whom — with a reminder that @ links a page that already exists.
+- **Species is three tabs instead of five.** Five on an empty page read as homework. Beliefs and Relations are now sections inside *Living*.
+- **Faction splits into what they want, who's inside, and what everyone else thinks** — the last one hidden until you want it.
+- **Each template opens differently.** The prompt at the top asks for something now rather than telling you what a character or a location is, and the quote and secret blocks turn up where they're actually useful instead of on every single tab.
+
+**Pages you've already made are untouched.** This only changes what a *new* page starts with. If you've customised a built-in template yourself, your version still wins.
+
 ## 2026-08-28 — undo reaches the panel, and the tree keeps its own history
 
 ### Additions

@@ -52,8 +52,8 @@ export const DEFAULT_PROJECT_TEMPLATE: ProjectTemplateFile = {
     starter("canon-location", "location", "Location", "canon-locations"),
     folder("canon-factions", "Factions", "canon"),
     starter("canon-faction", "faction", "Faction", "canon-factions"),
-    folder("canon-species", "Species", "canon"),
-    starter("canon-species-page", "species", "Species", "canon-species"),
+    folder("canon-races", "Races", "canon"),
+    starter("canon-race", "race", "Race", "canon-races"),
     folder("canon-events", "Events", "canon"),
     starter("canon-event", "event", "Event", "canon-events"),
 

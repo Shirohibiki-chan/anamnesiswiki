@@ -43,11 +43,26 @@ Exactly per `CLAUDE.md`'s existing table — implemented in `inferTemplateKey`:
 | Tab signature | Template |
 |---|---|
 | `Overview, Backstory` | character |
+| `Overview, Biology, Lifestyle, Beliefs, Relations` | race |
+| `Overview, Map, Government` | country |
 | `Overview, Map, History` | location |
-| `Overview, Biology, Lifestyle, Beliefs, Relations` | species |
+| `Overview, Blueprint` | technology |
 | `Main` (has children) | folder |
 | `Main` (no children) | note |
 | anything else | note, tabs preserved as-is |
+
+**Country is listed before Location and must stay there.** Both signatures
+contain `Overview` and `Map`, matching is "every tab in the signature is
+present", and `find` takes the first hit — with Location first, every imported
+Country page would come in as a Location. The Country and Technology signatures
+were read off LK's own templates, not guessed; there is no signature for their
+Creature or Scene because we have not seen those, and pages of those kinds still
+arrive as notes with their tabs intact.
+
+`species` was renamed to `race` on 2026-08-28 (a separate Creature template now
+covers animals). Nothing in a `.lk` file carries our key, so this rename does not
+affect the format — but a page imported before that date has `species` on disk,
+and `readNodeFile` translates it on the way in.
 
 A resource inferred as **folder** never gets tabs (folders don't hold content in our model) — if it actually had non-trivial tab text anyway (shouldn't happen organically, but checked defensively), that's flagged in the import preview's lossy-notes list rather than silently dropped.
 
