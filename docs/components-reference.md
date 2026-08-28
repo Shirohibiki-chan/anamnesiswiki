@@ -73,7 +73,8 @@
 
 | What you see | File |
 |---|---|
-| Right sidebar container — reads the current node's template, renders the image slot at top followed by one field per template property | `src/components/properties/PropertiesPanel.tsx` |
+| Right sidebar container — finds the selected page, and owns everything that is *the sidebar*: the empty states, the template prompt, Add Block, the new-property form, and the timestamps at the bottom | `src/components/blocks/BlockPanel.tsx` |
+| The block list itself — an ordered run of blocks drawn wherever it is asked to be. Knows nothing about the sidebar, so Phase 19.5's page-body block and infobox draw through the same file. Takes the node and the blocks; reports ordering as ids, since a list on screen may be only part of `node.blocks` | `src/components/blocks/BlockList.tsx` |
 | Image drop zone at the top of the properties panel — accepts drag/drop, click-to-browse; uploads copy the file into the project's `assets/` folder and store the asset id on the node | `src/components/properties/ImageSlot.tsx` |
 | Single-line text field for properties like Summary or When — autosaves on blur; grows to multi-line for longer content | `src/components/properties/TextProperty.tsx` |
 | Tag chip editor — comma-or-enter to add, X on hover to remove, autocompletes against all tags already used in the project | `src/components/properties/TagsProperty.tsx` |

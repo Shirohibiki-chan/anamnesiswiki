@@ -19,6 +19,8 @@ const TREE_ROW_TOGGLE = ".tree-row-toggle";
 const TREE_SEARCH_INPUT = ".tree-search-input";
 const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
+const BLOCK_SHELL = ".block-shell";
+const BLOCK_TITLE = ".block-title";
 
 /**
  * Whatever names the thing currently in the middle of the window.
@@ -184,6 +186,34 @@ export async function goBack(window: Page): Promise<void> {
 /** The top bar's forward button. */
 export async function goForward(window: Page): Promise<void> {
   await window.getByRole("button", { name: "Forward", exact: true }).click();
+}
+
+/**
+ * The headings down the right-hand panel, top to bottom.
+ *
+ * **A block with its title turned off is not in this list**, because it has no
+ * heading on screen to read. That is the honest answer to "what does the panel
+ * say" and the reason a scenario about ordering should use blocks that keep
+ * their titles.
+ */
+export async function panelBlockTitles(window: Page): Promise<string[]> {
+  // `textContent`, not `innerText`: the heading is a `.ui-eyebrow`, which is
+  // uppercased in CSS, and `innerText` would hand back the transformed text —
+  // which no longer matches the block's own aria-label that `openBlockMenu`
+  // takes. One spelling for both, and it is the one in the markup.
+  const titles = await window.locator(`${BLOCK_SHELL} ${BLOCK_TITLE}`).allTextContents();
+  return titles.map(normalize);
+}
+
+/**
+ * Opens one block's `⋯` menu, named by the heading the block is showing.
+ *
+ * By label rather than by class, for the reason `openSettings` gives: the
+ * button is already labelled for screen readers, so this hook cannot rot
+ * without the accessibility rotting with it.
+ */
+export async function openBlockMenu(window: Page, title: string): Promise<void> {
+  await window.getByLabel(`${title} block options`, { exact: true }).first().click();
 }
 
 /**
