@@ -4528,3 +4528,76 @@ is the element's centre, the centre of a page is prose, and prose contains link
 chips, which navigate when clicked. That cost an hour: a scenario wrote a link,
 clicked to type again, landed on the chip, and spent the rest of the test typing
 into a different page's empty landing screen.
+
+---
+
+## Phase 19.5 — Callout colours ✅ Shipped 2026-08-29
+
+Asked for 2026-08-27 with examples she had already written elsewhere: amber and
+red warnings, a green confirmation, a neutral note. Scoped in `docs/plan.md` as
+"the smallest useful thing on this page", which it was — right up until it
+turned over a real import bug.
+
+**A colour, not a type per colour.** The three callout types carry behaviour —
+Secret is what a publish has to strip, Quote is what a `.lk` blockquote imports
+as — so colour is a fourth thing about a block rather than three more blocks.
+`propSchema: { color: { default: "" } }` on all three specs; the default is what
+keeps every callout written before this looking exactly as it did, since
+BlockNote fills a missing prop in with it on read.
+
+**One CSS rule for every colour.** The wrapper resolves the palette key to a hex
+and puts it on the element as `--callout-accent`;
+`.editor-callout.editor-callout-colored` draws the border from it and mixes the
+fill out of it with `color-mix`. The stylesheet never learns which colours
+exist, so adding one to `COLOR_PALETTE` adds it here for free. A flat
+`--color-panel-alt` background is declared first as a real fallback — `color-mix`
+is the newest thing in the stylesheet and WebKitGTK on Linux is the engine to
+watch.
+
+**Four colours get an icon and the rest do not.** Green is a confirmation, amber
+a caution, red a warning, blue a note — conventions read without being learned.
+Anything else is a colour she liked, and an arbitrary mark on it would be a
+small puzzle on every page. A hex she mixed herself never gets one either: there
+is no name to read a meaning off. The mapping is grouped by hue, so all four
+greens say the same thing and she picks the one she likes the look of.
+
+**The picker is a dot in the corner of the block**, hidden until the pointer is
+over the callout — every other colour in the app is picked from a dot you can
+see, and a callout was the one coloured thing with none. Its swatches are its
+own rather than `ColorSwatches`: that component reads preferences and the
+preview store through hooks, and `services/editor-blocks/` may not import
+upward. What it needed was the palette, and the palette is a constant.
+
+### The import bug it exposed
+
+`PANEL_TYPE_TO_CALLOUT` mapped LK's `warning` and `error` panels to
+`calloutSecret`, because there were three callouts, none of them a warning, and
+Secret was the nearest *look*. But Secret is not a look — it is the block a
+publish is required to strip. **Every warning and every error in an imported
+world was silently marked do-not-show-anyone**, with nothing on screen saying
+so. Colours are what let severity be said without saying the wrong thing:
+warning → Info in amber, error → Info in red, success → Info in emerald.
+
+The export side was changed to match, or the fix would have broken the
+round-trip promise in `CLAUDE.md`: a coloured Info goes back out as the panel
+severity it came in as. Colours LK has no panel for export as a plain info
+panel and are counted lossy rather than pretended away; a colour on a Quote
+never survives, since LK's `note` panel carries no severity. `docs/lk-format.md`
+has both tables.
+
+### Verification
+
+Unit: `callout-colors.test.ts` on the icon mapping (including that it never
+reads a meaning off a hex), and the two `.lk` suites updated — the import test
+had encoded the old warning→Secret behaviour, which is exactly the shape of test
+that keeps a bug alive.
+
+App: `colours-a-callout.e2e.ts` colours a real callout in the built app, checks
+the icon that goes with the colour appears, reloads the window and checks it
+came back — a colour that shows on screen and is gone after a reload is the
+failure worth catching, since the value travels through the document, the
+autosave, the file and the schema default on the way back in. Then puts it back
+to the type's own colour.
+
+Photographed: the swatch popover, an Info in emerald with its tick, and a Quote
+in wine keeping its italics.

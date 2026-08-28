@@ -524,6 +524,121 @@
   padding: var(--space-lg) var(--space-xl);
   margin: var(--space-xs) 0;
   width: 100%;
+  /* The dot in the corner is positioned against this. */
+  position: relative;
+}
+
+/* --- A callout wearing a colour of its own (Phase 19.5) ---
+
+   One rule for all three types, and it wins by coming after them. The colour
+   arrives as `--callout-accent` on the element, so this file never needs to
+   know which colours exist — the palette is data, in constants/palette.ts.
+
+   **The tint is mixed from the accent rather than stored beside it.** Every
+   callout token comes in threes (line, fill, text), and asking her to pick
+   three colours to colour one box is not what was asked for. `color-mix` makes
+   the fill out of the accent she picked, which also means it lands correctly on
+   a light theme and a dark one without a second set of values.
+
+   `color-mix` is Safari 16.2 / Chrome 111 / Firefox 113, and the Linux build's
+   WebKitGTK is the one to watch — a version too old to know it drops the whole
+   declaration, so the fallback below is a real fallback and not decoration. */
+.editor-callout.editor-callout-colored {
+  border-left-color: var(--callout-accent);
+  background: var(--color-panel-alt);
+  background: var(--gradient-callout, none), color-mix(in srgb, var(--callout-accent) 12%, transparent);
+  color: var(--color-text-primary);
+}
+
+.editor-callout-icon {
+  align-self: flex-start;
+  display: flex;
+  margin-bottom: var(--space-sm);
+  color: var(--callout-accent);
+}
+
+/* Hidden until the pointer is over the callout, so a page being read is a page
+   of callouts rather than a page of buttons. It stays put once its swatches are
+   open, or picking a colour would mean chasing the thing you clicked. */
+.editor-callout-color {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  line-height: 0;
+}
+
+.editor-callout-color-dot {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-panel-alt);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.editor-callout:hover .editor-callout-color-dot,
+.editor-callout-color-dot:focus-visible,
+.editor-callout-color:has(.editor-callout-swatches) .editor-callout-color-dot {
+  opacity: 1;
+}
+
+.editor-callout-swatches {
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-md, 0 8px 24px rgb(0 0 0 / 45%));
+}
+
+.editor-callout-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: var(--space-2xs);
+}
+
+.editor-callout-swatch-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-style: normal;
+  cursor: pointer;
+}
+
+.editor-callout-swatch-clear:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.editor-callout-swatch {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-panel-alt);
+  color: var(--color-bg);
+  cursor: pointer;
 }
 
 .editor-callout-body {

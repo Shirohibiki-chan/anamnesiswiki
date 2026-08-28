@@ -285,11 +285,15 @@ function convertBlocks(nodes: LkNode[] | undefined, ctx: ConvertCtx): BlockSeed[
 // inline-only custom callout's content; any further children flatten out as
 // plain sibling blocks right after it, same "collapse to sequential blocks"
 // approach used for layoutSection/layoutColumn and expand.
-function convertContainerAsCallout(node: LkNode, blockType: string, ctx: ConvertCtx): BlockSeed[] {
+function convertContainerAsCallout(node: LkNode, blockType: string, ctx: ConvertCtx, color?: string): BlockSeed[] {
   const children = node.content ?? [];
   const first = children.find((c) => c.type === "paragraph");
   const rest = children.filter((c) => c !== first);
-  const callout: BlockSeed = { type: blockType, content: first ? convertInline(first.content, ctx) : [] };
+  const callout: BlockSeed = {
+    type: blockType,
+    ...(color ? { props: { color } } : {}),
+    content: first ? convertInline(first.content, ctx) : [],
+  };
   return [callout, ...convertBlocks(rest, ctx)];
 }
 
@@ -433,12 +437,27 @@ export function applyBodyImage(node: Node, blockId: string, fileName: string): v
   for (const tab of node.tabs) if (walk(tab.content)) return;
 }
 
-const PANEL_TYPE_TO_CALLOUT: Record<string, string> = {
-  info: "calloutInfo",
-  note: "calloutQuote",
-  warning: "calloutSecret",
-  error: "calloutSecret",
-  success: "calloutInfo",
+/**
+ * What each of LK's panel types becomes here.
+ *
+ * **Warning and error stopped becoming Secrets on 2026-08-29, and that was a
+ * real bug rather than an approximation.** There were only three callouts and
+ * no colours, so a warning panel was given the nearest-looking one — but Secret
+ * is not a look, it is the block a publish is required to strip. Every warning
+ * and every error in an imported world was quietly marked *do not show anyone*,
+ * and nothing on screen said so.
+ *
+ * Phase 19.5's callout colours are what let this be right: an Info in amber is
+ * a caution and an Info in red is a warning, which is what those panels are and
+ * what they now come in as. Colour is the axis for how a callout reads; type is
+ * the axis for what it *does*. See `docs/lk-format.md`.
+ */
+const PANEL_TYPE_TO_CALLOUT: Record<string, { type: string; color?: string }> = {
+  info: { type: "calloutInfo" },
+  note: { type: "calloutQuote" },
+  warning: { type: "calloutInfo", color: "amber" },
+  error: { type: "calloutInfo", color: "red" },
+  success: { type: "calloutInfo", color: "emerald" },
 };
 
 function convertBlock(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
@@ -488,7 +507,8 @@ function convertBlock(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
     }
     case "panel": {
       const panelType = typeof node.attrs?.panelType === "string" ? node.attrs.panelType : "info";
-      return convertContainerAsCallout(node, PANEL_TYPE_TO_CALLOUT[panelType] ?? "calloutInfo", ctx);
+      const mapped = PANEL_TYPE_TO_CALLOUT[panelType] ?? { type: "calloutInfo" };
+      return convertContainerAsCallout(node, mapped.type, ctx, mapped.color);
     }
     case "bodiedExtension": {
       const key = typeof node.attrs?.extensionKey === "string" ? node.attrs.extensionKey : "";
