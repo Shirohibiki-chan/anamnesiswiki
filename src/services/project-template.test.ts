@@ -10,6 +10,7 @@ import {
   serializeProjectTemplate,
   summarizeTemplate,
 } from "./project-template";
+import { getDefaultTabs } from "./template-registry";
 
 // Creation times are handed out in sequence rather than left to `Date.now()`.
 // `orderSiblings` falls back to comparing ids when two nodes were made in the
@@ -252,7 +253,11 @@ describe("materializeProjectTemplate", () => {
   it("seeds pages from the registry rather than from the file", () => {
     const { nodes } = materializeProjectTemplate(file);
     const character = nodes.find((n) => n.name === "Character")!;
-    expect(character.tabs.map((tab) => tab.label)).toContain("Overview");
+    // Compared against the registry rather than a literal tab name: what this
+    // is checking is that the seed comes from there at all, and pinning a
+    // label here made a template layout change look like a bug in this file.
+    expect(character.tabs.map((tab) => tab.label)).toEqual(getDefaultTabs("character").map((tab) => tab.label));
+    expect(character.tabs.length).toBeGreaterThan(0);
     expect(nodes.find((n) => n.name === "Canon")!.tabs).toEqual([]);
   });
 

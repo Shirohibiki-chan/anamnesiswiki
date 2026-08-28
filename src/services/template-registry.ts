@@ -5,6 +5,11 @@
 // transcribed from docs/prototype/anamnesis.jsx, which had come verbatim from
 // LegendKeeper's own templates. Don't reword it without asking the user, and
 // don't reintroduce the prototype's wording — that's what this replaced.
+//
+// The *layout* those words sit in was LK's too, and stayed LK's until
+// 2026-08-28 — same tabs, same headings, same block scaffold on every tab.
+// The comment above TEMPLATE_REGISTRY says what replaced it and why. Neither
+// the wording nor the shape should drift back.
 import { createTab, TEMPLATE_KEYS, type Tab } from "../constants/schema";
 
 export type PropertySpec = {
@@ -59,6 +64,36 @@ function secret(value: string): BlockSeed {
   return { type: "calloutSecret", content: text(value) };
 }
 
+// The layouts below are ours. They were redesigned on 2026-08-28 because the
+// copy had been rewritten in Phase 11 but the *shape* underneath it hadn't:
+// the same tab names in the same order (Overview/Backstory, Overview/Map/
+// History, Overview/Biology/Lifestyle/Beliefs/Relations), the same section
+// headings, and the same block scaffold on every single tab — an info callout
+// defining the page type, a quote callout, three headings each followed by a
+// paragraph of instructions, a secret callout at the bottom. New words in
+// someone else's furniture.
+//
+// What replaces it, and why it looks the way it does:
+//
+// - **No two templates share a scaffold.** Tab counts, section counts and
+//   callout placement vary by what the page is for. The uniform rhythm was the
+//   most recognisable part of what we were copying.
+// - **Headings are prompts, not labels.** "What you notice first" rather than
+//   "Description". The guidance moves into the heading, so a heading that
+//   speaks for itself gets an empty paragraph to type in instead of a
+//   paragraph of instructions to delete first.
+// - **The opening callout asks for something.** It no longer defines the page
+//   type — nobody making a Character page needs to be told what a character is.
+// - **Quote and Secret callouts appear where they earn it**, not on every tab.
+//   Secret is explained once, on Character, since that's the page most people
+//   make first; everywhere else it's a real prompt.
+// - **Species lost two tabs.** Five tabs on an empty page reads as homework.
+//   Beliefs and Relations are sections of Living now.
+//
+// The tab-name signatures LK's own files carry are still matched on import —
+// that lives in `lk-import.ts`'s TAB_SIGNATURE_TEMPLATES and is deliberately
+// independent of this file. Reading LK's shape and writing our own are two
+// different jobs, and they must not be made to share a list.
 export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   folder: {
     key: "folder",
@@ -80,33 +115,47 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: true,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "who",
+        label: "Who They Are",
         hidden: false,
         content: [
-          info("Who this person is, in a couple of sentences — the version you'd give someone who's never met them."),
-          quote(`"A line they'd actually say. The one that gives them away."`),
-          h2("Description"),
-          p("What do they look like? Face, build, how they carry themselves, what they wear when nobody's making them. Go for the detail someone would still remember a week later."),
-          h2("Traits and Motivations"),
-          p("What do they want, and what will they do to get it? The temper, the soft spot, the bad habit, the thing they'd never admit they're afraid of."),
-          h2("Routine"),
-          p("What does an ordinary day look like — the boring one, not the plot one? Where are they at three in the afternoon on a nothing Tuesday?"),
-          secret("A Secret block is a flag for you: spoilers, twists, things a reader shouldn't hit yet. It doesn't lock anything on its own — to actually hold material back, hide the whole tab."),
+          info("Two or three sentences, then move on. The rest of this page is for later, and most of it you won't need until you're writing them."),
+          h2("What you notice first"),
+          p("Face, build, how they carry themselves, what they wear when nobody's making them. Go for the detail someone would still remember a week later."),
+          h2("What they want"),
+          p(""),
+          h2("What they're like to be around"),
+          p("The temper, the soft spot, the bad habit, the thing they'd never admit they're afraid of."),
+          quote(`"A line only they would say."`),
         ],
       },
       {
-        id: "backstory",
-        label: "Backstory",
+        id: "ties",
+        label: "Ties",
+        hidden: false,
+        content: [
+          info("Who they're bound to, and how. Type @ to link a page that already exists — names on their own are fine until then."),
+          h2("Closest to"),
+          p(""),
+          h2("At odds with"),
+          p(""),
+          h2("Owes, or is owed"),
+          p(""),
+        ],
+      },
+      {
+        id: "history",
+        label: "History",
         hidden: true,
         content: [
-          info("How they got here. Only the parts that still show."),
-          h2("Early Life"),
-          p("Where did they start, and who raised them? What did that leave them with — an accent, a debt, a fear of deep water?"),
-          h2("Formative Events"),
-          p("The handful of moments that carved the person out. Losses, wins, the day everything stopped being the same."),
-          h2("Recent Past"),
-          p("What have they been doing lately, right up to where your story picks them up?"),
+          info("Only the parts that still show."),
+          h2("Where they started"),
+          p("Who raised them, and what it left them with — an accent, a debt, a fear of deep water."),
+          h2("Turning points"),
+          p("The handful of moments that carved this person out. Two or three is usually enough."),
+          h2("Where they are when the story picks them up"),
+          p(""),
+          secret("A Secret block is a flag for you: spoilers, twists, things a reader shouldn't hit yet. It marks the passage; it doesn't lock it. To actually hold material back, hide the whole tab."),
         ],
       },
     ],
@@ -121,19 +170,17 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: true,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "place",
+        label: "The Place",
         hidden: false,
         content: [
-          info("Somewhere a scene can happen. A market street, a shut-up house on a hill, a station nobody's docked at in years."),
-          quote(`"Something said about this place — a warning, a joke, a piece of local wisdom."`),
-          h2("Description"),
-          p("What's it like to stand here? The light, the noise, the smell, who's around. Start with the first thing a stranger would notice."),
-          h2("Origin"),
-          p("Why is this place here at all? Did someone build it, or did it just happen? What's it for now, versus what it was for then?"),
-          h2("Routine"),
-          p("What does an ordinary day look like here? Who turns up, when, and what are they doing?"),
-          secret("A Secret block is a flag for you: spoilers, twists, things a reader shouldn't hit yet. It doesn't lock anything on its own — to actually hold material back, hide the whole tab."),
+          info("Stand in it for a second. What's the first thing a stranger would notice?"),
+          h2("Standing there"),
+          p("The light, the noise, the smell, who's around."),
+          h2("What it's for"),
+          p("What people come here to do — and whether that's what it was built for."),
+          h2("Who's usually here"),
+          p(""),
         ],
       },
       {
@@ -141,21 +188,21 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
         label: "Map",
         hidden: false,
         content: [
-          info("Somewhere to keep this place's map. Drop an image in below, or delete the tab if it doesn't need one."),
+          info("Drop a map in below. If this place doesn't need one, delete the tab."),
         ],
       },
       {
-        id: "history",
-        label: "History",
+        id: "before",
+        label: "Before Now",
         hidden: true,
         content: [
-          info("What's happened here before now."),
-          h2("Founding"),
-          p("How did this place come to be, and when? Who decided it should exist?"),
-          h2("Key Events"),
-          p("What happened here that people still talk about? Battles, betrayals, discoveries, and the ordinary things that turned out to matter."),
-          h2("Recent History"),
-          p("What's changed here in the last few years?"),
+          info("How it got like this."),
+          h2("How it started"),
+          p("Did someone build it, or did it just happen?"),
+          h2("What people here still talk about"),
+          p(""),
+          h2("What's changed lately"),
+          p(""),
         ],
       },
     ],
@@ -170,33 +217,45 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: true,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "want",
+        label: "What They Want",
         hidden: false,
         content: [
-          info("People organized around something they all want. A guild, a cult, a company, a household, a crew that's never called itself anything."),
-          quote(`"Something a member says, or something everyone else says about them."`),
-          h2("Purpose"),
-          p("What are they for? Put the stated goal first, then the real one, then what they actually spend their days doing."),
-          h2("Structure"),
-          p("Who's in charge, who's underneath, and how does anyone move up? Is it earned, bought, or inherited?"),
-          h2("Reputation"),
-          p("What do outsiders make of them? Who's afraid of them, who owes them, who's laughing at them?"),
+          info("A group gets easy to write once you know the gap between what it says it's for and what it actually does."),
+          h2("The stated goal"),
+          p(""),
+          h2("The real one"),
+          p(""),
+          h2("How they spend an ordinary week"),
+          p("Not the plot week. The dull one."),
           secret("What are they actually up to, under the part everyone can see?"),
         ],
       },
       {
-        id: "members",
-        label: "Members",
+        id: "inside",
+        label: "Inside",
         hidden: false,
         content: [
-          info("Who's in it. Type @ to link people who already have a page, or just list names for now."),
-          h2("Leadership"),
+          info("Who's in it, and who answers to whom. Type @ to link people who already have pages."),
+          h2("Who's in charge"),
           p(""),
-          h2("Notable Members"),
+          h2("Worth knowing"),
           p(""),
-          h2("Former Members"),
+          h2("Gone, but still relevant"),
           p(""),
+          h2("How you get in, and how you move up"),
+          p("Earned, bought, or inherited?"),
+        ],
+      },
+      {
+        id: "outside",
+        label: "From Outside",
+        hidden: true,
+        content: [
+          info("What everyone else makes of them."),
+          h2("Who's afraid of them, who owes them, who's laughing"),
+          p(""),
+          quote(`"Something a member says — or something everyone else says about them."`),
         ],
       },
     ],
@@ -212,31 +271,30 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: false,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "thing",
+        label: "The Thing Itself",
         hidden: false,
         content: [
-          info("A thing that matters. A weapon, an heirloom, a relic, a cheap trinket somebody won't let go of."),
-          quote(`"Something said about it, or by whoever's holding it."`),
-          h2("Description"),
-          p("What does it look like, and what's it made of? Weight, wear, the scratch it picked up in the fight nobody talks about."),
-          h2("Function"),
-          p("What does it do, and what does it cost to use? Rules, limits, side effects."),
-          h2("Origin"),
-          p("Where did it come from, who made it, and how did it end up where it is now?"),
-          secret("What's true about this one that nearly nobody knows?"),
+          info("Weight, wear, and the one detail that makes it this one and not another like it."),
+          h2("What it looks like"),
+          p(""),
+          h2("What it does"),
+          p(""),
+          h2("What it costs to use"),
+          p("Limits, side effects, the reason it isn't reached for more often."),
         ],
       },
       {
-        id: "history",
-        label: "History",
+        id: "hands",
+        label: "Whose Hands",
         hidden: true,
         content: [
-          info("Where it's been, and whose hands it's passed through."),
-          h2("Previous Owners"),
-          p("Who held it before? How did it change hands — sold, stolen, buried, inherited?"),
-          h2("Notable Uses"),
-          p("When has it been used, and what happened afterwards?"),
+          info("Where it's been, and how it changed hands each time — sold, stolen, buried, inherited."),
+          h2("Before now"),
+          p(""),
+          h2("The time it mattered"),
+          p("When was it used, and what happened afterwards?"),
+          secret("What's true about this one that nearly nobody knows?"),
         ],
       },
     ],
@@ -251,31 +309,32 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: false,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "happened",
+        label: "What Happened",
         hidden: false,
         content: [
-          info("Something that happened, is happening, or is about to. A battle, a wedding, a heist, the first time two people met."),
-          quote(`"Something said during it, or about it afterwards."`),
-          h2("Summary"),
-          p("What happened, in a sentence or two?"),
-          h2("Context"),
-          p("What led up to it? What made it possible, or made it inevitable?"),
-          h2("Consequences"),
-          p("What was different afterwards, and for whom?"),
-          secret("What actually happened, as opposed to the version that got around?"),
+          info("A sentence or two first. The order of events can wait until you need it."),
+          h2("In short"),
+          p(""),
+          h2("What made it possible — or inevitable"),
+          p(""),
+          h2("What was different afterwards, and for whom"),
+          p(""),
         ],
       },
       {
-        id: "details",
-        label: "Details",
+        id: "close",
+        label: "Up Close",
         hidden: true,
         content: [
-          info("The blow-by-blow. Who was there, in what order, and what's left as proof."),
-          h2("Timeline"),
-          p("Step by step — what happened when?"),
-          h2("Participants"),
-          p("Who was there, and what did each of them do?"),
+          info("The blow-by-blow, for when the scene actually gets written."),
+          h2("In order"),
+          p(""),
+          h2("Who was there, and what each of them did"),
+          p("Type @ to link people who already have pages."),
+          h2("What's left of it"),
+          p("Wreckage, a scar, a holiday, a rule nobody remembers the reason for."),
+          secret("What actually happened, as opposed to the version that got around?"),
         ],
       },
     ],
@@ -292,72 +351,46 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: true,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "short",
+        label: "The Short Version",
         hidden: false,
         content: [
-          info("A people. A species, a lineage, a whole kind of person — who they are and how they live."),
-          quote(`"Something they say about themselves, or something everyone else says about them."`),
-          h2("At a glance"),
-          p("The one-paragraph version. What are they, where are they, and what makes them not-us?"),
-          h2("Origins"),
-          p("Where did they come from? Native to somewhere, descended from something, made on purpose? How long have they been around?"),
+          info("One paragraph, before anything else. What are they, where are they, and what makes them not-us?"),
+          h2("Where they came from"),
+          p("Native to somewhere, descended from something, made on purpose? How long have they been around?"),
+          quote(`"Something they say about themselves — or something everyone else says about them."`),
         ],
       },
       {
-        id: "biology",
-        label: "Biology",
-        hidden: true,
+        id: "bodies",
+        label: "Bodies",
+        hidden: false,
         content: [
-          info("The physical facts. Bodies, lifespans, how new ones arrive."),
-          h2("Appearance"),
-          p("What do they look like? Size, coloration, the traits that read as theirs — and how much any two of them differ."),
-          h2("Lifespan & Reproduction"),
-          p("How long do they live, and how do they pair up and have young? Anything biology forces on them that culture then has to work around?"),
-          h2("Abilities & Limitations"),
-          p("What can they do that others can't, and what can't they do that everyone else takes for granted?"),
+          info("The physical facts, and what they force on everything else."),
+          h2("What they look like"),
+          p("Size, colouring, the traits that read as theirs — and how much any two of them differ."),
+          h2("How long they live, and how new ones arrive"),
+          p(""),
+          h2("What they can do that others can't"),
+          p("And what they can't do that everyone else takes for granted."),
         ],
       },
       {
-        id: "lifestyle",
-        label: "Lifestyle",
+        id: "living",
+        label: "Living",
         hidden: false,
         content: [
-          info("How they actually live. Work, food, houses, manners."),
-          h2("Daily Life"),
-          p("What does an ordinary day look like for one of them?"),
-          h2("Social Structure"),
-          p("Who lives with whom, and who has power over whom? Families, households, ranks."),
-          h2("Art & Craft"),
-          p("What do they make, and what do they think is worth making?"),
-        ],
-      },
-      {
-        id: "beliefs",
-        label: "Beliefs",
-        hidden: false,
-        content: [
-          info("What they hold true, and what they hold unforgivable."),
-          h2("Worldview"),
-          p("How do they explain the world, and their place in it?"),
-          h2("Practices"),
-          p("Rituals, holidays, and the small daily habits nobody there thinks of as religious."),
-          h2("Taboos"),
-          p("What's unthinkable? What would get someone quietly cut off?"),
-        ],
-      },
-      {
-        id: "relations",
-        label: "Relations",
-        hidden: false,
-        content: [
-          info("How they get on with everyone else. Allies, enemies, and the complicated ones."),
-          h2("Allies & Trade Partners"),
-          p("Who do they get on with, and what's actually holding the relationship together?"),
-          h2("Rivals & Enemies"),
-          p("Who do they clash with? Old grudges, live conflicts, or both?"),
-          h2("Reputation"),
-          p("What do outsiders say about them, and how much of it is fair?"),
+          info("An ordinary day, and the rules nobody there writes down."),
+          h2("A day in it"),
+          p(""),
+          h2("Who has power over whom"),
+          p("Families, households, ranks — and whether any of it can be changed."),
+          h2("What they hold true"),
+          p("How they explain the world and their place in it. Rituals and holidays go here too, including the ones nobody there thinks of as religious."),
+          h2("What's unthinkable"),
+          p("The thing that would get someone quietly cut off."),
+          h2("Everyone else"),
+          p("Who they get on with, who they don't, and how fair any of it is."),
         ],
       },
     ],
@@ -372,12 +405,11 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     alwaysDirectory: false,
     tabs: [
       {
-        id: "overview",
-        label: "Overview",
+        id: "notes",
+        label: "Notes",
         hidden: false,
         content: [
           info("For anything that doesn't fit a template. Magic systems, languages, timelines, half-formed ideas you want out of your head."),
-          h2("Notes"),
           p("Start writing."),
         ],
       },

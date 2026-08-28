@@ -151,7 +151,9 @@ Valeraverse/
 
 ## Templates
 
-Templates live in `src/services/template-registry.ts` as a plain data object — default tabs (with placeholder content) plus the sidebar property schema. Not user-editable in Phase 1; that's a Phase 2+ consideration and not scoped. **That file is the only source of template placeholder copy.** `docs/prototype/anamnesis.jsx` demonstrates layout and tree behaviour for all 8 templates (Folder, Character, Location, Faction, Item, Event, Species, Note), but its tab content is generic filler on purpose — Phase 11 removed the LK-transcribed prose it used to hold. Don't restore prompts from it.
+Templates live in `src/services/template-registry.ts` as a plain data object — default tabs (with placeholder content) plus the sidebar property schema. Not user-editable in Phase 1; that's a Phase 2+ consideration and not scoped. **That file is the only source of template placeholder copy.** `docs/prototype/anamnesis.jsx` demonstrates tree behaviour, but its tab content is generic filler on purpose — Phase 11 removed the LK-transcribed prose it used to hold. Don't restore prompts from it, and don't treat its tab structure as the spec either.
+
+**The layouts are ours as of 2026-08-28, not just the words.** Phase 11 rewrote the copy but left LK's structure in place — the same tab signatures, the same section headings, and one identical block scaffold on every tab. The registry now varies tab sets, section counts and callout placement per template, and no tab is called "Overview". `template-registry.test.ts` guards the shape as well as the wording; the comment above `TEMPLATE_REGISTRY` explains each rule. The LK tab signatures still matched on import live in `lk-import.ts` and are deliberately a separate list — reading their shape and writing ours are different jobs.
 
 ## LegendKeeper Import/Export
 

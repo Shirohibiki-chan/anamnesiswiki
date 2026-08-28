@@ -1650,6 +1650,25 @@ under `acknowledgedWarnings`.
   so restoring a prompt "from the prototype" reintroduces LK's writing. There is
   no second source to sync with, and adding one is how they drift.
 
+- **The template *layouts* were LK's until 2026-08-28, long after the copy
+  stopped being.** Phase 11 fixed the words and left the furniture: the same
+  tab signatures LK ships (Overview/Backstory, Overview/Map/History,
+  Overview/Biology/Lifestyle/Beliefs/Relations), the same section headings, and
+  one identical block scaffold repeated on every tab — info callout defining
+  the page type, quote callout, three heading-plus-instructions pairs, secret
+  callout at the bottom. A rewording pass doesn't touch any of that, which is
+  exactly why it survived one. The registry now varies tab sets, section counts
+  and callout placement per template, headings read as prompts rather than
+  one-word labels, and nothing is called "Overview".
+  `template-registry.test.ts` guards the shape as well as the wording — the LK
+  tab signatures, the fixed info-then-quote opener, and a silhouette check that
+  fails if two templates end up stamped from the same mould.
+
+- **`lk-import.ts`'s TAB_SIGNATURE_TEMPLATES is not the same list, on purpose.**
+  It has to keep matching LK's tab names to recognise their files; the registry
+  has to stop producing them. Wiring the two together would mean one of the two
+  jobs silently breaking the moment either changes.
+
 - **The Secret callout is a marker, not a mechanism.** It renders purple with a
   lock chip and does nothing else — no gating, no exclusion from export. Hidden
   tabs are the actual way material is held back. The template copy now says so

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-28 — the templates are laid out our way now
+
+### Changes
+
+- **Every template has been rebuilt from the shape up.** The words were rewritten a while back, but the layout under them hadn't changed at all — the same tabs in the same order, the same headings, and the same run of blocks repeated identically on every tab of every template. That's all been redesigned.
+- **Headings ask you something instead of labelling a box.** "What you notice first" rather than "Description", "What it costs to use" rather than "Function". Where a heading already says everything, there's just an empty line to start typing on rather than a paragraph of instructions to delete first.
+- **The tabs are named for what's in them.** No more "Overview" on everything: a Character opens on *Who They Are* with *Ties* beside it, a Location on *The Place*, an Item on *The Thing Itself*.
+- **Character has a Ties tab.** Somewhere to put who they're closest to, who they're at odds with, and who owes whom — with a reminder that @ links a page that already exists.
+- **Species is three tabs instead of five.** Five on an empty page read as homework. Beliefs and Relations are now sections inside *Living*.
+- **Faction splits into what they want, who's inside, and what everyone else thinks** — the last one hidden until you want it.
+- **Each template opens differently.** The prompt at the top asks for something now rather than telling you what a character or a location is, and the quote and secret blocks turn up where they're actually useful instead of on every single tab.
+
+**Pages you've already made are untouched.** This only changes what a *new* page starts with. If you've customised a built-in template yourself, your version still wins.
+
 ## 2026-08-28 — undo reaches the panel, and the tree keeps its own history
 
 ### Additions
