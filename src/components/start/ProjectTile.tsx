@@ -16,9 +16,9 @@
 // whole reason the frame exists.
 import { GitFork, ImagePlus, MonitorDot, X } from "lucide-react";
 import { useProjectCoverUrl } from "../../hooks/use-project-cover";
-import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import { locationOf, type ListedWorld } from "../../services/world-scan";
+import { ProjectCoverArt } from "./ProjectCoverArt";
 import { ProjectTileMenu, type ProjectLibraryActions } from "./ProjectTileMenu";
 
 type ProjectTileProps = {
@@ -72,10 +72,7 @@ export function ProjectTile({
   return (
     <div className="project-tile" title={project.path}>
       <button type="button" className="project-tile-open" onClick={onOpen} disabled={disabled}>
-        <span
-          className="project-tile-cover"
-          style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : coverGradient(coverFor(project)) }}
-        />
+        <ProjectCoverArt project={project} className="project-tile-cover" />
         <span className="project-tile-cap">
           <b>{project.name}</b>
           {/* The flag and the path are the same fact, so they share a line. It

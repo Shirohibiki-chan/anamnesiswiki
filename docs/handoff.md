@@ -58,6 +58,25 @@ is below.
 
 ## Storage
 
+- **Moving, deleting and duplicating a page decide their new tree in
+  `node-edit-service.ts`, not in the store.** `planMove`, `planDelete` and
+  `planDuplicate` take a graph and give one back: reparenting, expanding a
+  selection to the subtrees it really means, rebuilding the sibling orders, and
+  clearing `homeNodeId`, `pinnedIds` and the selection when what they point at
+  is going. The store still owns the writes, the undo entries and the picture
+  files. **Put new rules about the resulting shape in the service, where they
+  can be tested**, rather than back in the action — that is where they were for
+  a year, and it is why none of them had a unit test until 2026-08-28. See
+  `filesystem-service.ts`'s `planRelocations` for the other half: this plans the
+  graph, that plans the paths.
+
+- **A duplicated page's picture is copied on disk before the plan is built.**
+  `planDuplicate` takes the new filenames as an argument rather than inventing
+  them, because copying a file is I/O and the service does none. A clone must
+  never end up pointing at the original's asset filename — replacing the
+  picture on either side would take it out from under the other — so a picture
+  that could not be copied leaves the clone with none.
+
 - **A world's identity is `project.json`'s `id`, never its folder path.** Paths
   change — a rename, a move to another drive, the Phase 27 folder
   reorganisation — and everything keying on one breaks quietly when they do.
@@ -881,6 +900,21 @@ under `acknowledgedWarnings`.
 
 ## React patterns
 
+- **There is no rule against a component importing a service, and there was
+  never a good one.** CLAUDE.md carried one as architecture rule 4 — "no
+  component imports services directly, always go through a hook" — from the
+  project's first commit until 2026-08-28. It came in the same setup upload as
+  the network policy retired on 2026-08-25, it was written by Claude rather
+  than asked for, and unlike the rest of that file it never had a paragraph
+  saying what it had cost to learn. Nothing followed it: 22 of 103 components
+  imported a service directly, almost all of them for pure formatting —
+  `timeAgo`, `coverFor`, `listStepForKey`. Wrapping those in hooks would have
+  been ceremony around a function call. **Rule 3 above it is the real one** and
+  stays: a component that reaches a *store* directly widens what re-renders and
+  ties the component to Zustand, which is a cost you can point at. Reaching a
+  pure function is not. Don't reinstate rule 4, and don't re-derive it from
+  rule 3.
+
 - **Remount-by-`key` instead of resetting state in an effect.** `PageView` keys on
   the selected node id, `Editor` on the active tab id, `SaveIndicator` on its
   timestamp. This project's ESLint config (`eslint-plugin-react-hooks` v7) flags
@@ -1233,14 +1267,11 @@ under `acknowledgedWarnings`.
   all.
 
 - **The `/` pattern is anchored and the `[[` one is not, on purpose.** A slash is
-  ordinary punctuation — `and/or`, `12/05`, a path — so `UNFINISHED_SLASH`
-  requires the start of a line or a space before it and no space after, or the
-  menu would open as she moves the caret through her own prose. **It is
-  deliberately stricter than BlockNote's own trigger**, which was measured
-  2026-08-28 to open the menu for a `/` typed straight after a full stop:
-  reopening is not typing, so the bar for interrupting is higher than the bar for
-  answering a keypress. Loosening it is how this feature becomes the thing it was
-  built to fix.
+  ordinary punctuation — `and/or`, `12/05`, a path — so `UNFINISHED_SLASH` demands
+  the start of a line, or the menu would open as she moves the caret through her
+  own prose. `[[` needs no such guard: it means nothing else in writing, and one
+  in the middle of a sentence is exactly how a link gets written. Loosening the
+  slash one is how this feature becomes the thing it was built to fix.
 
 - **The editor's popovers drew a near-white border because nobody set one.**
   `@blocknote/shadcn` uses Tailwind's bare `border` utility, and in v4 that sets a
@@ -2719,7 +2750,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   builds them from `template-registry.ts` when the template is used, so a
   template written a year ago makes pages with today's prompts. Putting page
   content into the format would freeze whatever the exporter had and quietly
-  break rule 12 (template placeholder copy has one source).
+  break rule 11 (template placeholder copy has one source).
 - **Export collapses pages, per parent, and the first in her order wins.**
   Stability matters more than which one: exporting the same project twice must
   give the same file. `orderSiblings` decides, and it tie-breaks on node id when

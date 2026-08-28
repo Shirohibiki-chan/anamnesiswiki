@@ -97,6 +97,7 @@ describe("making a page from inside the editor", () => {
 
   it("lets the link read as something other than the page's name", async () => {
     await openPage(app.window, PAGE);
+    // At the start of a line: a slash only means a command there.
     await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
     await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });

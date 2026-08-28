@@ -17,13 +17,12 @@
 // this reuses the plain `start-line` row rather than the accent-bordered
 // `start-item` treatment, the same distinction Recently Opened already draws.
 import { FolderOpen } from "lucide-react";
-import { useProjectCoverUrl } from "../../hooks/use-project-cover";
 import { describeFolderLocation } from "../../services/app-settings-service";
-import { coverFor, coverGradient } from "../../services/project-covers";
 import { timeAgo } from "../../services/relative-time";
 import type { ShownRelease } from "../../hooks/use-release-history";
 import type { ListedWorld } from "../../services/world-scan";
 import { SettingsButton } from "../shell/SettingsButton";
+import { ProjectCoverArt } from "./ProjectCoverArt";
 
 /**
  * One row. Its own component rather than the inline JSX `.map` used to
@@ -42,13 +41,9 @@ function RecentRow({
   disabled: boolean;
   onOpen: () => void;
 }) {
-  const coverUrl = useProjectCoverUrl(project.path, project.coverImage);
   return (
     <button type="button" className="start-line" onClick={onOpen} disabled={disabled} title={project.path}>
-      <span
-        className="start-chip"
-        style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : coverGradient(coverFor(project)) }}
-      />
+      <ProjectCoverArt project={project} className="start-chip" />
       <span className="start-line-text">
         <b>{project.name}</b>
         {project.selectedName && <span className="start-line-page">{project.selectedName}</span>}
