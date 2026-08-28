@@ -3342,7 +3342,7 @@ embarrassing next to the reference's, and the specifics were all fair.
   `node.select()`, and selecting is navigating. Removed; nothing needed it.
 
 **Not built, and scoped instead:** blocks that can be dragged into the middle
-of the page and resized there, which is `docs/plan.md` Phase 30. It is a
+of the page and resized there, which is `docs/plan.md` Phase 19.5. It is a
 feature with a data-model decision in it rather than a fix, and folding it into
 this change would have made an already large one unreviewable.
 
@@ -3993,7 +3993,7 @@ All three were closed later the same day — see the section below.
 
 ---
 
-## Phase 19 — Safety Net (the rest of it) ✅ Shipped 2026-08-27
+## Phase 19 — Safety Net (the rest of it) ✅ Shipped 2026-08-28
 
 The three things the section above left, plus the count on a row's menu.
 
@@ -4085,12 +4085,19 @@ reversing as **one** press and the message naming the field ("Undid changing
 Summary"), redo putting it back, the tree's dialog listing a copy after the home
 page is changed, and the three retention controls in Settings.
 
-### Not done
+### The marker on a tree row, decided against
 
-- **Nothing marks a row in the tree as having history.** The count in the menu
-  closes half of that bullet; a marker on the row is a design question about a
-  strip she has already said is wrong (the colour dot), so it is in `plan.md`
-  waiting on an answer rather than guessed at.
+The phase's last bullet asked for something on the row itself showing a page has
+history. Put to her rather than guessed at, because it would land in the same
+strip as the colour dot she has already said is in the wrong place — and **her
+answer, 2026-08-28, was no**: a dot on every page she has ever touched is a
+notification badge on the whole tree, which is a thing to be got away from
+rather than a thing to add.
+
+**So the count in the row's ⋯ menu is the whole of it, and this is settled.**
+Do not propose a row marker again. The question it answers — is there anything
+to go back to — is asked at the moment somebody opens that menu, and answering
+it before they ask costs the tree its quiet.
 
 ## Every shortcut on one screen ✅ Shipped 2026-08-27
 

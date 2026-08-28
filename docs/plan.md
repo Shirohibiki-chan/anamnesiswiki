@@ -8,7 +8,9 @@ Anamnesis is a Tauri v2 desktop app for local-first worldbuilding. React 19 + Ty
 
 Work phases top-down. Do not start a phase until the previous one is complete and usable. Each phase should end with the app in a coherent, working state — not mid-refactor. Phases are sized to be reviewable as user-facing changes.
 
-**Position is the running order; the number is only a name.** A phase gets its number when it's written down, so a phase that gets pulled forward keeps its number and moves up the file — Phase 27 sat above Phase 18 for exactly that reason until it shipped. Read the order off the page, not off the digits, and when something moves, move the section rather than renumbering everything below it.
+**The numbers ascend as you read down, and that is a rule now.** It used to be the opposite — position was the running order and the number was only a name — which meant 29 sat above 19 sat above 28, and the file read as chaos to the person who works from it. Her call, 2026-08-28. Two things follow. **A phase pulled forward gets a fractional number** (19.5, the way 1.5 already worked) rather than keeping a number that would put it out of order. **A number is never reused**: two different phases were both called 28 for a week, which made every reference to "Phase 28" in the other docs ambiguous, so check `grep '^## Phase' docs/plan.md` before writing a new section.
+
+Gaps in the sequence are phases that have shipped and moved to `docs/shipped.md` — 27 and 29 are gone from here for that reason, not lost. Phase 2 sits at the bottom out of order on purpose: it is deferred rather than queued, and its heading says so.
 
 See `docs/spec.md` for the full spec, `CLAUDE.md` for architecture rules, and `docs/prototype/anamnesis.jsx` for a reference React prototype that demonstrates layout and tree behavior (its template content is filler — the real copy lives in `src/services/template-registry.ts`).
 
@@ -187,18 +189,22 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   turns out to be, that pairing turns a transient refusal into something that
   looks permanent.
 
-- **There is no error boundary anywhere in the app**, so anything that throws
-  while rendering unmounts the whole tree and the window goes blank with no
-  message. Confirmed by search 2026-08-21 — no `componentDidCatch`, no
-  `getDerivedStateFromError`, nothing. This has always been true and has become
-  more expensive since Phase 18a: a sidebar is now an arbitrary list of blocks,
-  so one bad block on one page can take the entire app down rather than
-  spoiling one field. **The fix is a boundary around the parts that can be
-  re-entered** — the block panel and the page view — rather than one at the
-  root, since a boundary at the root can only offer a reload, while one around
-  the panel can say which block failed and leave the rest of the app usable.
-  Phase 19 territory; it is the same argument as version history, which is that
-  this app's failures should be survivable rather than merely rare.
+- **The error boundary at the root exists; the ones that would save the session
+  do not.** `ErrorBoundary.tsx` went in 2026-08-27 and turned a blank window
+  into a screen that says what happened — but it wraps the whole app, so all it
+  can offer is a restart. **What is still missing is a boundary around the parts
+  that can be re-entered**, the block panel and the page view: one bad block on
+  one page still takes the whole app down with it, where a boundary there could
+  name the block that failed and leave the rest of the app usable. More
+  expensive since Phase 18a, because a sidebar is now an arbitrary list of
+  blocks rather than a fixed set of fields.
+
+- **Clearing or replacing a page's picture cannot be undone.** Everything else
+  the right-hand panel does became undoable with Phase 19; this one did not,
+  because clearing a picture deletes the file from `assets/` once nothing else
+  points at it, so undo would have to put the bytes back rather than a field.
+  `deleteNodes` already does exactly that with `captureAssets` — the way in is
+  to do the same here, not to invent a second mechanism.
 
 ---
 
@@ -237,7 +243,8 @@ Project home — the last Queued Adjustment standing before Phase 9 — shipped
 Actions secrets, which was the one step nothing in the repo was allowed to do.
 Search, keyboard shortcuts, rebinding, tabbed Settings, sidebar undo/redo and
 automated four-platform releases all landed that day. Two things it deliberately
-left behind: undo for the right-hand panel, now **Phase 19**, and the
+left behind: undo for the right-hand panel, which shipped with **Phase 19** on
+2026-08-28, and the
 duplicate-on-multi-selection fix, folded into **Phase 15** where that menu gets
 reworked anyway. Neither blocks anything.
 
@@ -291,51 +298,17 @@ everything in it is a block, pages written before it derive their layout on
 read, one collection block answers what-points-at-what four ways, and a meter
 block draws one number six ways. Detail is in `docs/shipped.md`; what still
 binds the code is in `docs/handoff.md`.
-**Phase 19 is next**, and it is the next one in this file.
+**Phase 19 (Safety Net) shipped 2026-08-28** — version history for pages, undo
+across the whole right-hand panel and a page's tabs, the tree's own history, and
+retention she can set. Detail is in `docs/shipped.md`.
+**Phase 19.5 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
 
 ---
 
-## Phase 19 — Safety Net
-
-**Almost all of this shipped 2026-08-27** — version history, the panel's undo,
-the tree's own history and the retention settings. The detail is in
-`docs/shipped.md`; what is below is what is left.
-
-**The ordering note that used to head this phase — "runs after Phase 29,
-because the shell swap rewrites the filesystem layer" — was spent before the
-work started, and Phase 29 shipped in full on 2026-08-28.** Kept as a line
-rather than deleted because the reasoning was right when it was written: it
-just stopped applying earlier than expected.
-
-Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
-
-- **Nothing on a tree row shows that a page has history.** The row's menu now
-  says how many copies a page has — "Earlier versions (12)", or "none yet" —
-  so the count exists. What is still missing is a marker on the row itself, and
-  **that one is a design question rather than a build**: the tree already has a
-  colour dot she has said is in the wrong place (see Queued Adjustments), and
-  quietly adding a second decoration to the same strip would be answering a
-  question that is hers. Ask before building it.
-
-- **Two things version history still does not cover**, by scope rather than by
-  argument, so either can be picked up on its own:
-  - **A picture cleared from a page cannot be undone.** Clearing the portrait,
-    or replacing it, deletes the file from `assets/` once nothing else points
-    at it — so undo would have to put bytes back, not just a field. Everything
-    else the right-hand panel does is undoable as of 2026-08-27; this is the
-    exception, and it is the same problem `uploadAsset` describes for pictures
-    inside the page.
-  - **A restored version does not carry the page's template or its place in the
-    tree**, on purpose — both are structural rather than content, and
-    `templateKey` decides file-vs-directory storage. If restoring across a
-    template change is ever wanted, it is a relocation and wants the planner.
-
----
-
-## Phase 30 — Blocks in the Page
+## Phase 19.5 — Blocks in the Page
 
 **Scoped 2026-08-21, from her screenshots of the reference, and not built with
 the rest of Phase 18.** It is a feature rather than a fix and it wants its own
