@@ -79,11 +79,17 @@ function hitsIn(block: { id: string; content?: unknown }): WikilinkHit[] {
 }
 
 /** Swaps one hit for a mention chip pointing at `nodeId` and reading `label`. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
-function replaceWithMention(editor: BlockNoteEditor<any, any, any>, hit: WikilinkHit, nodeId: string, label: string): void {
+function replaceWithMention(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
+  editor: BlockNoteEditor<any, any, any>,
+  hit: WikilinkHit,
+  nodeId: string,
+  label: string,
+  text?: string,
+): void {
   const replacement = [
     ...(hit.before ? [{ type: "text", text: hit.before, styles: hit.item.styles }] : []),
-    { type: "mention", props: { nodeId, label } },
+    { type: "mention", props: { nodeId, label, text: text ?? "" } },
     ...(hit.after
       ? [{ type: "text", text: hit.after, styles: hit.item.styles }]
       : [{ type: "text", text: " ", styles: hit.item.styles }]),
@@ -142,13 +148,19 @@ export function unknownWikilinkAt(editor: BlockNoteEditor<any, any, any>, nodes:
  * is. Doing nothing when the text has gone is the right answer: she deleted it,
  * and putting a chip back would be arguing with her.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
-export function linkWikilink(editor: BlockNoteEditor<any, any, any>, name: string, nodeId: string, label: string): void {
+export function linkWikilink(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
+  editor: BlockNoteEditor<any, any, any>,
+  name: string,
+  nodeId: string,
+  label: string,
+  text?: string,
+): void {
   const wanted = name.trim().toLowerCase();
   for (const block of editor.document) {
     for (const hit of hitsIn(block)) {
       if (hit.name.trim().toLowerCase() !== wanted) continue;
-      replaceWithMention(editor, hit, nodeId, label);
+      replaceWithMention(editor, hit, nodeId, label, text);
       return;
     }
   }

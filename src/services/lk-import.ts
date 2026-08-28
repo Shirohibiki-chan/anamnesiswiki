@@ -440,7 +440,7 @@ export function applyBodyImage(node: Node, blockId: string, fileName: string): v
 /**
  * What each of LK's panel types becomes here.
  *
- * **Warning and error stopped becoming Secrets on 2026-08-29, and that was a
+ * **Warning and error stopped becoming Secrets on 2026-08-28, and that was a
  * real bug rather than an approximation.** There were only three callouts and
  * no colours, so a warning panel was given the nearest-looking one — but Secret
  * is not a look, it is the block a publish is required to strip. Every warning

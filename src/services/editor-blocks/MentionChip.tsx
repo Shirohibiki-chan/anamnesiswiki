@@ -13,7 +13,7 @@ import type { MentionConfig } from "./mention-inline-content";
 type MentionChipProps = ReactCustomInlineContentRenderProps<MentionConfig, DefaultStyleSchema>;
 
 export function MentionChip({ inlineContent, contentRef }: MentionChipProps) {
-  const { nodeId, label } = inlineContent.props;
+  const { nodeId, label, text } = inlineContent.props;
   // Narrow subscriptions on purpose: a document can hold dozens of these, and
   // a full-store subscription re-rendered every one of them on every keystroke.
   const target = useNode(nodeId);
@@ -43,7 +43,11 @@ export function MentionChip({ inlineContent, contentRef }: MentionChipProps) {
       >
         {/* eslint-disable-next-line react-hooks/static-components -- getTemplateIcon returns a stable component reference for a given templateKey */}
         <Icon size={12} />
-        {target?.name ?? label}
+        {/* **Her wording wins, then the page's live name, then the name as it
+            was.** The live lookup is what makes a rename reach every link to a
+            page, and it must stay the default — `text` is only set when she
+            deliberately asked this one link to read differently. */}
+        {text || target?.name || label}
       </span>
       {preview && anchorRect && <HoverPreviewCard anchorRect={anchorRect} preview={preview} />}
     </>

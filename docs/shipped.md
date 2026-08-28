@@ -4467,7 +4467,7 @@ the two and so was the one a shortcut would land on.
 
 ---
 
-## Phase 19.5 — New page, from inside the editor ✅ Shipped 2026-08-29
+## Phase 19.5 — New page, from inside the editor ✅ Shipped 2026-08-28
 
 The first *feature* of Phase 19.5, and the cheapest one on its list — everything
 it needed existed except the asking. Scoped in `docs/plan.md` on 2026-08-27 as
@@ -4531,7 +4531,7 @@ into a different page's empty landing screen.
 
 ---
 
-## Phase 19.5 — Callout colours ✅ Shipped 2026-08-29
+## Phase 19.5 — Callout colours ✅ Shipped 2026-08-28
 
 Asked for 2026-08-27 with examples she had already written elsewhere: amber and
 red warnings, a green confirmation, a neutral note. Scoped in `docs/plan.md` as

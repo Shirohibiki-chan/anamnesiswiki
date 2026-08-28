@@ -22,6 +22,8 @@ const PAGE = "Deep Nesting Test";
 const MADE = "The Salt Road";
 const BRACKETED = "Ninefold Bell";
 const DECLINED = "Never Written";
+const NAMED = "Ninefold Bell Tower";
+const READS_AS = "the tower";
 
 describe("making a page from inside the editor", () => {
   let app: RunningApp;
@@ -89,5 +91,29 @@ describe("making a page from inside the editor", () => {
     await app.window.waitForTimeout(800);
     expect(await app.window.getByRole("heading", { name: "New page" }).count()).toBe(0);
     expect(await editorText(app.window)).toContain("and on she goes");
+  });
+
+  it("lets the link read as something other than the page's name", async () => {
+    await openPage(app.window, PAGE);
+    // On a fresh line. `/` only opens the menu after a space or at the start of
+    // a block, and by this point earlier scenarios have left the last paragraph
+    // ending in a word — which is a fact about the editor worth knowing rather
+    // than a wrinkle of the test.
+    await typeInEditor(app.window, "\n/new page");
+    await app.window.getByText("Make a page and link to it from here").click();
+    await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });
+
+    await app.window.keyboard.type(NAMED);
+    await app.window.getByLabel("Link text").fill(READS_AS);
+    await app.window.getByRole("button", { name: "Make the page" }).click();
+    await app.window.waitForTimeout(800);
+
+    // The chip says what she asked for...
+    expect(await editorMentions(app.window)).toContain(READS_AS);
+    expect(await editorMentions(app.window)).not.toContain(NAMED);
+    // ...and the page is filed under its own name, not under the wording.
+    await searchTree(app.window, NAMED);
+    expect(await visibleTreeRows(app.window)).toContain(NAMED);
+    await openPage(app.window, PAGE);
   });
 });
