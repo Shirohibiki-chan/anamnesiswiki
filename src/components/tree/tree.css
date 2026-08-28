@@ -620,6 +620,19 @@ button.tree-path-crumb:hover {
   color: var(--color-text-primary);
 }
 
+/* How many earlier versions this page has, on the right of its row (Phase 19).
+   Pushed over with `margin-left: auto` rather than given a column, because the
+   menu's rows are a flex line of icon-then-label and this is the only one of
+   them that carries a second thing. Quieter than the label: it answers a
+   question you did not ask, and it must not read as the item's name. */
+.tree-context-menu-count {
+  margin-left: auto;
+  padding-left: var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
 .tree-context-menu-danger {
   color: var(--color-palette-rose) !important;
 }

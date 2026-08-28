@@ -16,6 +16,7 @@ import {
   type MoveDestination,
 } from "../../hooks/use-tree-data";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useSnapshotCount } from "../../hooks/use-page-history";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useTreeDoubleClick } from "../../hooks/use-preferences";
 import { useFileManagerName, useRevealNode } from "../../hooks/use-reveal";
@@ -58,6 +59,9 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const fileManagerName = useFileManagerName();
   const getMoveDestinations = useMoveDestinations();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
+  // Only while this row's menu is open — see useSnapshotCount on why every row
+  // asking would be a directory listing per visible page.
+  const historyCount = useSnapshotCount(openPopover === "menu" ? node.id : null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   // Computed when the submenu opens rather than on every render: it walks the
   // whole graph, and this component renders once per visible row. A menu shows
@@ -444,6 +448,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onTogglePinned={() => togglePinned(node.id)}
             onToggleHidden={() => setNodeHidden(targetIds(), !fullNode.hidden)}
             onShowHistory={() => openHistory(node.id)}
+            historyCount={historyCount}
             onReveal={() => void revealNode(node.id)}
             onExport={() => requestExport(targetIds())}
             onDelete={handleDelete}

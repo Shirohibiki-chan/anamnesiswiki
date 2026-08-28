@@ -8,7 +8,7 @@
 // whole feature, and the app has already lost her pages once.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { openPage, treeRow, waitForWorld } from "./harness/screen";
+import { openPage, openSettings, openSettingsSection, treeRow, waitForWorld } from "./harness/screen";
 
 const PANEL = ".page-history";
 // A page the generator always writes, so the scenario is not at the mercy of
@@ -94,6 +94,26 @@ describe("keeping earlier versions of a page", () => {
     // wrong one survivable.
     expect(await app.window.locator(".page-history-row").count()).toBeGreaterThanOrEqual(2);
     expect(await app.window.locator(PANEL).innerText()).toContain("A sentence that was not there before.");
+  });
+
+  // The retention rules are hers to set (Phase 19). Driven here rather than
+  // left to the unit tests because the panel is the only thing that can be
+  // wrong in a way `parsePreferences` cannot see — a control wired to the
+  // wrong setter, or a section registered under a tab that isn't there.
+  it("lets the rules be changed from Settings", async () => {
+    await openSettings(app.window);
+    await openSettingsSection(app.window, "History");
+
+    const interval = app.window.getByLabel("How often a copy is kept");
+    await interval.waitFor({ state: "visible", timeout: 20_000 });
+    await interval.selectOption("15");
+    expect(await interval.inputValue()).toBe("15");
+
+    await app.window.getByLabel("How far back they go").selectOption("365");
+    await app.window.getByLabel("How many copies per page").selectOption("100");
+
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForTimeout(500);
   });
 
   it("says nothing to the console while doing it", () => {

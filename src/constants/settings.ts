@@ -55,6 +55,12 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     blurb: "How a long list of things is broken up — your projects, your pictures.",
   },
   {
+    id: "history",
+    group: "app",
+    label: "History",
+    blurb: "How long earlier versions of your pages are kept, and how many.",
+  },
+  {
     id: "projects",
     group: "app",
     label: "Projects",
@@ -216,6 +222,27 @@ export const DECLARED_SETTINGS: readonly {
       "projects",
       "pictures",
     ],
+  },
+  {
+    id: "history-interval",
+    tabId: "history",
+    label: "How often a copy is kept",
+    hint: "every minute, 5, 15 or 30 minutes",
+    keywords: ["history", "version", "versions", "earlier versions", "snapshot", "copy", "interval"],
+  },
+  {
+    id: "history-keep",
+    tabId: "history",
+    label: "How far back earlier versions go",
+    hint: "a week, a month, three months or a year",
+    keywords: ["history", "version", "versions", "earlier versions", "retention", "how long", "snapshot"],
+  },
+  {
+    id: "history-per-page",
+    tabId: "history",
+    label: "How many copies per page",
+    hint: "10, 25, 50 or 100 copies",
+    keywords: ["history", "version", "versions", "earlier versions", "how many", "copies", "snapshot"],
   },
   {
     id: "list-paging",

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PREFERENCES, LIST_PAGE_SIZES, MAX_SAVED_COLORS, parsePreferences, withSavedColor } from "./preferences-service";
+import {
+  DEFAULT_PREFERENCES,
+  HISTORY_INTERVAL_MINUTES,
+  HISTORY_KEEP_DAYS,
+  HISTORY_PER_PAGE,
+  LIST_PAGE_SIZES,
+  MAX_SAVED_COLORS,
+  parsePreferences,
+  withSavedColor,
+} from "./preferences-service";
 
 describe("parsePreferences", () => {
   it("defaults an empty or absent settings file", () => {
@@ -106,3 +115,37 @@ describe("parsePreferences and saved colours", () => {
   });
 });
 
+describe("how long earlier versions are kept", () => {
+  it("takes the three numbers when they are ones a control can show", () => {
+    const parsed = parsePreferences({ historyIntervalMinutes: 15, historyKeepDays: 365, historyPerPage: 100 });
+
+    expect(parsed.historyIntervalMinutes).toBe(15);
+    expect(parsed.historyKeepDays).toBe(365);
+    expect(parsed.historyPerPage).toBe(100);
+  });
+
+  // Same rule as listPageSize: a hand-edited number no control can show would
+  // sit in the file being obeyed by a panel displaying something else.
+  it("falls back on anything that isn't offered", () => {
+    const parsed = parsePreferences({ historyIntervalMinutes: 3, historyKeepDays: 0, historyPerPage: -5 });
+
+    expect(parsed.historyIntervalMinutes).toBe(DEFAULT_PREFERENCES.historyIntervalMinutes);
+    expect(parsed.historyKeepDays).toBe(DEFAULT_PREFERENCES.historyKeepDays);
+    expect(parsed.historyPerPage).toBe(DEFAULT_PREFERENCES.historyPerPage);
+  });
+
+  // The defaults are derived from limits.ts rather than written twice, and this
+  // is what would catch them drifting apart.
+  it("ships defaults that are themselves offered", () => {
+    expect(HISTORY_INTERVAL_MINUTES).toContain(DEFAULT_PREFERENCES.historyIntervalMinutes);
+    expect(HISTORY_KEEP_DAYS).toContain(DEFAULT_PREFERENCES.historyKeepDays);
+    expect(HISTORY_PER_PAGE).toContain(DEFAULT_PREFERENCES.historyPerPage);
+  });
+
+  // Nothing may turn keeping copies off — see HistorySettings on why.
+  it("offers no option that keeps nothing", () => {
+    for (const minutes of HISTORY_INTERVAL_MINUTES) expect(minutes).toBeGreaterThan(0);
+    for (const days of HISTORY_KEEP_DAYS) expect(days).toBeGreaterThan(0);
+    for (const count of HISTORY_PER_PAGE) expect(count).toBeGreaterThan(0);
+  });
+});
