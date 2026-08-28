@@ -14,6 +14,7 @@ import {
   openPage,
   searchTree,
   typeInEditor,
+  typeAtLineStartInEditor,
   visibleTreeRows,
   waitForWorld,
 } from "./harness/screen";
@@ -39,7 +40,8 @@ describe("making a page from inside the editor", () => {
   });
 
   it("makes one from the slash menu and links to it", async () => {
-    await typeInEditor(app.window, "/new page");
+    // At the start of a line: a slash only means a command there.
+    await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
 
     const dialog = app.window.getByRole("heading", { name: "New page" });
@@ -95,11 +97,7 @@ describe("making a page from inside the editor", () => {
 
   it("lets the link read as something other than the page's name", async () => {
     await openPage(app.window, PAGE);
-    // On a fresh line. `/` only opens the menu after a space or at the start of
-    // a block, and by this point earlier scenarios have left the last paragraph
-    // ending in a word — which is a fact about the editor worth knowing rather
-    // than a wrinkle of the test.
-    await typeInEditor(app.window, "\n/new page");
+    await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
     await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });
 

@@ -11,7 +11,7 @@
 // several times a paragraph. That is a worse app than the one that did nothing.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { openPage, suggestionMenuOpen, typeInEditor, waitForWorld } from "./harness/screen";
+import { openPage, suggestionMenuOpen, typeInEditor, typeAtLineStartInEditor, waitForWorld } from "./harness/screen";
 
 const PAGE = "Deep Nesting Test";
 // Another page the generator always writes — see scripts/make-test-world.mjs.
@@ -39,7 +39,7 @@ describe("the slash menu coming back", () => {
   }
 
   it("opens again when the cursor returns to an abandoned slash", async () => {
-    await typeInEditor(app.window, " /");
+    await typeAtLineStartInEditor(app.window, "/");
     await app.window.waitForTimeout(700);
     expect(await suggestionMenuOpen(app.window)).toBe(true);
 
@@ -60,12 +60,8 @@ describe("the slash menu coming back", () => {
     await typeInEditor(app.window, " and/or");
     await app.window.waitForTimeout(700);
 
-    // **Typing any slash opens the menu, and always has** — that is the
-    // editor's own trigger and not what this scenario is about. Dismiss it, and
-    // then check the part that is new: coming back to that slash must *not*
-    // revive it, because a slash inside a word is punctuation.
-    await app.window.keyboard.press("Escape");
-    await app.window.waitForTimeout(400);
+    // It does not even open while typing now — a slash only means a command at
+    // the start of a line, as of 2026-08-28.
     expect(await suggestionMenuOpen(app.window)).toBe(false);
 
     await leaveAndReturn();

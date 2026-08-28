@@ -5,7 +5,8 @@
 ### Fixes
 
 - **Clicking back onto a line with a `/` at the front brings the menu back.** It used to sit there dead — the only way on was to delete the slash and type it again. It comes back with whatever you'd typed after the slash still in it. Same for an unfinished `[[`, which already worked.
-- **It won't do that for a slash you meant.** `and/or`, a date, a path — moving the cursor through those leaves the menu shut. It only offers to come back for a slash that starts a line or follows a space, with no space after it.
+- **A `/` only opens the menu at the start of a line now.** It used to open for *any* slash you typed — mid-word in `and/or`, straight after a full stop — which put the command list over your writing several times a paragraph. Everywhere else a slash is just a slash.
+- **It won't wrongly come back either.** Clicking onto a line that starts with `/` brings the menu back; moving the cursor through `and/or`, a date or a path leaves it shut. The rule for coming back is the same as the rule for typing, so the two can't disagree.
 
 ### Changes
 

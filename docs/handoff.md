@@ -1216,6 +1216,22 @@ under `acknowledgedWarnings`.
   was already typed. One hook, two triggers, since the `/` case arriving proved
   it was never about wikilinks.
 
+- **A `/` only opens the command menu at the start of a line, and that is ours,
+  not the library's.** BlockNote opens it for any typed slash — measured
+  2026-08-28, mid-word in `and/or` and straight after a full stop — which put the
+  command list over her writing several times a paragraph. Her call the same day.
+  It is done through `shouldOpen` on the suggestion menu's own options
+  (`slash-trigger.ts`, passed in from `Editor.tsx` via `use-editor`), so nothing
+  is forked or patched. **`@` and `[[` deliberately keep opening wherever they
+  are typed**: those characters mean nothing else in prose, and a `[[` in the
+  middle of a sentence is exactly how a link gets written.
+
+- **The typing rule and the reopening rule are one rule in two places.**
+  `slashOpensCommandMenu` and `UNFINISHED_SLASH` both mean "start of a line";
+  loosen either alone and the app offers a menu where it could never have been
+  typed, or refuses to bring back one that was. Change them together or not at
+  all.
+
 - **The `/` pattern is anchored and the `[[` one is not, on purpose.** A slash is
   ordinary punctuation — `and/or`, `12/05`, a path — so `UNFINISHED_SLASH`
   requires the start of a line or a space before it and no space after, or the
