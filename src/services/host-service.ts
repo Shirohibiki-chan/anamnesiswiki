@@ -7,7 +7,7 @@
 // four layers. Now it touches one, and the rest of the app is ordinary React
 // and TypeScript that could run anywhere.
 //
-// **This is architecture rule 5 finally kept.** That rule says
+// **This is architecture rule 4 finally kept.** That rule says
 // `filesystem-service.ts` is the only file that touches disk, and nine other
 // files quietly broke it. The rule now reads properly in two parts: this file
 // is the only one that talks to the shell, and `filesystem-service.ts` is the

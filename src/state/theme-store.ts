@@ -236,7 +236,7 @@ const isBuiltIn = (id: string) => BUILT_IN_THEMES.some((theme) => theme.id === i
  * saved.
  *
  * Module-level rather than store state for the same reason autosave.ts is a
- * plain service (CLAUDE.md rule 8): the timer has to survive re-renders, and a
+ * plain service (CLAUDE.md rule 7): the timer has to survive re-renders, and a
  * colour picker dragged across a gradient fires dozens of changes a second.
  *
  * It used to be only the *disk* write that waited here, and everything else ran

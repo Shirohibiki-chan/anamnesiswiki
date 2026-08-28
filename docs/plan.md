@@ -470,11 +470,6 @@ meter block inside an infobox rather than a gauge block sitting in the page.
   pointer** — under the copy model, every one of those six directions is a
   conversion that can lose fields, and a block dragged sidebar → infobox → page
   is a block rewritten twice. Under the pointer model each is a move.
-- **The refactor to do first** is splitting `BlockPanel.tsx`, which is hardwired
-  to "the sidebar, showing this node's blocks" — `useBlocks` takes a `Node` and
-  derives the list from it. The list-drawing half has to accept any block list.
-  Both new editor blocks need that split, so nothing else should start before
-  it.
 - **The pointer-versus-copy question above survives unchanged** and is still the
   expensive decision: whether an infobox's blocks live in `node.blocks` with the
   document holding a reference, or in the document outright. Prefer the pointer,
