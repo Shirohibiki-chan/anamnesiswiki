@@ -3,12 +3,17 @@
 // docs/constants-and-theming.md §Key Constants.
 import {
   Calendar,
+  Clapperboard,
+  Cog,
   File,
   FileText,
+  Flag,
   Folder as FolderIcon,
   MapPin,
   Package,
-  Sparkles,
+  PawPrint,
+  PersonStanding,
+  Scroll,
   User,
   Users,
   type LucideIcon,
@@ -17,13 +22,21 @@ import {
 export const TEMPLATE_ICONS: Record<string, LucideIcon> = {
   folder: FolderIcon,
   character: User,
+  race: PersonStanding,
+  creature: PawPrint,
   location: MapPin,
+  country: Flag,
   faction: Users,
   item: Package,
+  technology: Cog,
   event: Calendar,
-  species: Sparkles,
+  scene: Clapperboard,
+  quest: Scroll,
   note: FileText,
   blank: File,
+  // Pre-rename pages still arriving as `species` are translated to `race` on
+  // load; this entry is only for anything that reads a raw stored key.
+  species: PersonStanding,
 };
 
 export function getTemplateIcon(templateKey: string): LucideIcon {

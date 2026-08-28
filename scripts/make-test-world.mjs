@@ -51,7 +51,7 @@ const MARKER_FILE = ".generated-test-world";
 const MAX_SEGMENT_CHARS = 96;
 const ILLEGAL_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
 // folder/character/location/faction/species are a directory even while empty.
-const ALWAYS_DIRECTORY = new Set(["folder", "character", "location", "faction", "species"]);
+const ALWAYS_DIRECTORY = new Set(["folder", "character", "location", "country", "faction", "race"]);
 const PALETTE = [
   "teal", "sky", "indigo", "purple", "rose", "red", "orange", "amber",
   "emerald", "cyan", "blue", "violet", "fuchsia", "pink", "coral", "sage",
@@ -306,7 +306,7 @@ function buildGraph(pageCount) {
     { name: "Characters", templateKey: "character", share: 0.34 },
     { name: "Locations", templateKey: "location", share: 0.22 },
     { name: "Factions", templateKey: "faction", share: 0.1 },
-    { name: "Species", templateKey: "species", share: 0.06 },
+    { name: "Races", templateKey: "race", share: 0.06 },
     { name: "Items", templateKey: "item", share: 0.1 },
     { name: "Events", templateKey: "event", share: 0.1 },
     { name: "Notes", templateKey: "note", share: 0.08 },
@@ -319,7 +319,7 @@ function buildGraph(pageCount) {
     if (templateKey === "character") return pick(FIRST) + " " + pick(LAST);
     if (templateKey === "location") return pick(PLACE_HEAD) + pick(PLACE_TAIL);
     if (templateKey === "faction") return pick(FACTION_HEAD) + " " + pick(FACTION_TAIL);
-    if (templateKey === "species") return pick(SPECIES);
+    if (templateKey === "race") return pick(SPECIES);
     if (templateKey === "item") return pick(ITEMS);
     if (templateKey === "event") return pick(EVENTS);
     return pick(["On", "Regarding", "Concerning", "About"]) + " " + pick(PLACE_HEAD) + pick(PLACE_TAIL);

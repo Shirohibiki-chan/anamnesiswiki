@@ -146,7 +146,7 @@ describe("buildImportPlan", () => {
       expect(plan.nodes[0].templateKey).toBe("location");
     });
 
-    it("infers species from [Overview, Biology, Lifestyle, Beliefs, Relations]", () => {
+    it("infers race from [Overview, Biology, Lifestyle, Beliefs, Relations]", () => {
       const plan = buildImportPlan(
         withRoot([
           resource("a", "Foxians", "A", {
@@ -160,7 +160,7 @@ describe("buildImportPlan", () => {
           }),
         ]),
       );
-      expect(plan.nodes[0].templateKey).toBe("species");
+      expect(plan.nodes[0].templateKey).toBe("race");
     });
 
     it("infers folder for a [Main]-only resource with children", () => {
@@ -219,7 +219,7 @@ describe("buildImportPlan", () => {
           }),
         ]),
       );
-      expect(plan.nodes[0].templateKey).toBe("species");
+      expect(plan.nodes[0].templateKey).toBe("race");
     });
   });
 

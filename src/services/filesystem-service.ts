@@ -16,7 +16,7 @@ import {
   writeTextFile,
   type DirEntry,
 } from "./host-service";
-import { FOLDER_TEMPLATE_KEY, type Node, type Project, type TemplateLibrary } from "../constants/schema";
+import { FOLDER_TEMPLATE_KEY, LEGACY_TEMPLATE_KEYS, type Node, type Project, type TemplateLibrary } from "../constants/schema";
 import { alwaysDirectory } from "./template-registry";
 import {
   ASSET_FOLDERS_FILE,
@@ -569,6 +569,8 @@ async function readNodeFile(path: string, ctx: WalkContext): Promise<Node | null
       ctx.skipped.push(path);
       return null;
     }
+    const renamed = LEGACY_TEMPLATE_KEYS[parsed.templateKey];
+    if (renamed) parsed.templateKey = renamed;
     ctx.sources.set(parsed, path);
     return parsed;
   } catch {

@@ -18,7 +18,7 @@ import { orderProperties, type RenderableProperty } from "./property-service";
 // event are deliberately out — a crest or a battle illustration reads as more
 // optional than a character portrait, and a block nobody wanted is worse than
 // one they add themselves.
-export const TEMPLATES_STARTING_WITH_IMAGE = new Set(["character", "species", "location", "item"]);
+export const TEMPLATES_STARTING_WITH_IMAGE = new Set(["character", "race", "creature", "location", "item"]);
 
 export function newBlock(kind: BlockKind, extra: Partial<Block> = {}): Block {
   return { id: crypto.randomUUID(), kind, ...extra };

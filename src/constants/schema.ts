@@ -21,14 +21,31 @@ export const UNTITLED_PAGE_NAME = "Untitled";
 export const TEMPLATE_KEYS = [
   "folder",
   "character",
+  "race",
+  "creature",
   "location",
+  "country",
   "faction",
   "item",
+  "technology",
   "event",
-  "species",
+  "scene",
+  "quest",
   "note",
   "blank",
 ] as const;
+
+/**
+ * `species` was renamed to `race` on 2026-08-28. The word had to move: a
+ * separate Creature template now covers animals and monsters, and "Species"
+ * read as the animal one — which is the opposite of what it was for.
+ *
+ * Pages written before the rename still say `species` on disk. `readNodeFile`
+ * translates on the way in rather than rewriting anyone's files, so a page
+ * keeps its icon and its property schema and is written back as `race` the
+ * next time it is saved. Nothing else in the app should know this word.
+ */
+export const LEGACY_TEMPLATE_KEYS: Record<string, string> = { species: "race" };
 
 export type Tab = {
   id: string;

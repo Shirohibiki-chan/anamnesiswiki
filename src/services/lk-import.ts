@@ -102,7 +102,13 @@ export function extensionFromUrl(url: string): string {
 // fell through to `note` instead, which silently orphaned its children (see
 // the nestability net below).
 const TAB_SIGNATURE_TEMPLATES: { tabs: string[]; templateKey: TemplateKey }[] = [
-  { tabs: ["Overview", "Biology", "Lifestyle", "Beliefs", "Relations"], templateKey: "species" },
+  { tabs: ["Overview", "Biology", "Lifestyle", "Beliefs", "Relations"], templateKey: "race" },
+  // Country must be tried before Location: both carry Overview and Map, and
+  // Location's signature would match a Country page if it got there first.
+  // Both signatures below are read off LK's own Country and Technology
+  // templates rather than guessed.
+  { tabs: ["Overview", "Map", "Government"], templateKey: "country" },
+  { tabs: ["Overview", "Blueprint"], templateKey: "technology" },
   { tabs: ["Overview", "Map", "History"], templateKey: "location" },
   { tabs: ["Overview", "Backstory"], templateKey: "character" },
 ];

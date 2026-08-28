@@ -1677,6 +1677,25 @@ under `acknowledgedWarnings`.
   Every other guard in that file passed the whole time it was broken, and so did
   a full `pnpm test` run — the defect was only ever visible on screen.
 
+- **Race and Creature only make sense as a pair.** Splitting animals out into
+  their own template is what freed the sentient-peoples one to stop being called
+  Species — the biology word was doing the damage, because it read as "the
+  non-sentient one" and there was nothing else for a beast to be. Removing
+  Creature later would put that back. The name is `race` rather than `ethnicity`
+  or `folk` because it's the word she thinks in for her own world, chosen
+  2026-08-28 with the alternatives on the table; it's a private single-user
+  tool and no reader outside it ever sees the key.
+
+- **`species` still exists on disk and must keep being translated.** Pages made
+  before the rename carry `templateKey: "species"`, and `readNodeFile` maps it
+  through `LEGACY_TEMPLATE_KEYS` at the single read path. **Nothing rewrites her
+  files** — a page is written back as `race` only when it is next saved for some
+  other reason. Do not add a migration that walks the world rewriting keys; the
+  translation costs one lookup per file and carries no risk of touching pages
+  nobody asked to touch. Note what breaks without it: `alwaysDirectory("species")`
+  is now false, so an untranslated page would silently stop using directory
+  storage and its children would be written somewhere the loader doesn't look.
+
 - **`lk-import.ts`'s TAB_SIGNATURE_TEMPLATES is not the same list, on purpose.**
   It has to keep matching LK's tab names to recognise their files; the registry
   has to stop producing them. Wiring the two together would mean one of the two
