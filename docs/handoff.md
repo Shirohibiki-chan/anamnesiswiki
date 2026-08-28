@@ -1242,6 +1242,21 @@ under `acknowledgedWarnings`.
   engine that may not know it — the flat background declared above it is a real
   fallback, not decoration. See `docs/constants-and-theming.md` §Callout blocks.
 
+- **The fixed formatting bar is portalled, and it has to be.** Anything rendered
+  as a child of `BlockNoteView` lands *after* the editor element in the DOM, so
+  the first cut of Settings -> Writing -> "stays at the top" put the bar a page's
+  worth of writing below the fold — present, correct and invisible, and a unit
+  test would have been happy with it. The portal moves the DOM above the editor
+  while leaving the component inside BlockNote's React tree, which is where it
+  must stay: every button in that strip reads the editor out of context. The slot
+  is held as state rather than a ref, or the portal has nothing to mount into on
+  the first render.
+
+  Both modes render the same component, and the same buttons — checked against
+  each other on the same selection. What differs is only whether anything is on
+  screen with nothing selected, which is why the scenario asserts the bar sits
+  *above* the editor rather than merely existing.
+
 - **A suggestion menu only opens on freshly *typed* text, which is why
   `suggestion-resume.ts` exists.** BlockNote's trigger detection runs in
   `handleTextInput`, so a `/` or a `[[` left on a line from an earlier attempt is

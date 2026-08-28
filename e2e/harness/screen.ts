@@ -24,6 +24,7 @@ const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 const SUGGESTION_MENU = "#bn-suggestion-menu";
+const FORMATTING_BAR = ".bn-formatting-toolbar";
 
 /**
  * Whatever names the thing currently in the middle of the window.
@@ -239,6 +240,11 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
   await editor.click({ position: { x: 8, y: 8 } });
   await window.keyboard.press("Control+End");
   await window.keyboard.type(text, { delay: 20 });
+}
+
+/** Whether the bold/italic strip is on screen right now, floating or fixed. */
+export async function formattingBarShown(window: Page): Promise<boolean> {
+  return (await window.locator(FORMATTING_BAR).count()) > 0;
 }
 
 /** Whether the `/` (or `@`, or `[[`) suggestion menu is on screen right now. */

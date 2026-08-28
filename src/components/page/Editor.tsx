@@ -16,10 +16,12 @@ import {
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
-import { Fragment, useCallback } from "react";
+import { Fragment, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
 import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
+import { useFormattingBar } from "../../hooks/use-preferences";
 import { ExpandImageButton } from "./ExpandImageButton";
 import { PageFilePanel } from "./PageFilePanel";
 import { SaveImageButton } from "./SaveImageButton";
@@ -77,6 +79,11 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
   // rather than on anything BlockNote renders, so it covers every picture in
   // the tab without a custom image block — see hooks/use-lightbox.ts.
   const imageLightboxRef = useEditorImageLightbox();
+  const formattingBar = useFormattingBar();
+  // **Where the fixed bar's DOM goes, kept as state rather than a ref** so the
+  // portal below re-renders once the node exists — a ref alone is null on the
+  // first pass and nothing would ever mount into it.
+  const [fixedBarSlot, setFixedBarSlot] = useState<HTMLDivElement | null>(null);
 
   // Dragged out of the sidebar's Assets tab. The picture is already in the
   // project, so this points at the file rather than uploading a second copy of
@@ -120,6 +127,10 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         focusEnd();
       }}
     >
+      {/* The slot the fixed bar portals into, above the writing rather than
+          after it. Rendered only in that mode so the floating one is not
+          sitting on an empty strip of page. */}
+      {formattingBar === "fixed" && <div ref={setFixedBarSlot} className="editor-toolbar-fixed" />}
       <BlockNoteView
         editor={editor}
         theme="dark"
@@ -132,7 +143,23 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         filePanel={false}
         onChange={handleChange}
       >
-        <FormattingToolbarController formattingToolbar={PageFormattingToolbar} />
+        {/* **Kept on screen, or brought up by a selection — her call, 2026-08-28.**
+            The floating one is the default and the right answer while writing
+            prose; a bar that is always there is the right answer while
+            *formatting*, because one that appears and disappears cannot be
+            looked at to find out what a button does, and it moves under the
+            pointer as you reach for it.
+
+            **Portalled, and it has to be.** Anything rendered as a child of
+            `BlockNoteView` lands *after* the editor element in the DOM — the
+            first cut put the bar below a page's worth of writing, off the
+            bottom of the window, where it was present and correct and invisible.
+            A portal moves the DOM up above the editor while leaving the
+            component inside BlockNote's React tree, which is where it has to
+            stay: every button in it reads the editor out of context. */}
+        {formattingBar === "fixed"
+          ? fixedBarSlot && createPortal(<PageFormattingToolbar />, fixedBarSlot)
+          : <FormattingToolbarController formattingToolbar={PageFormattingToolbar} />}
         <FilePanelController filePanel={PageFilePanel} />
         {/* All three take the same floating options — see use-editor.ts. Without
             them a menu opened near the bottom of the window is positioned while

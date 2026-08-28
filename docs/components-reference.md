@@ -37,6 +37,7 @@
 | Settings → Fonts and text — the every-theme switch, four typeface pickers with live specimens (writing into the theme file, or into the override), plus the Writing and Interface size sliders | `src/components/shell/FontSettings.tsx` |
 | Settings → Snippets — the on/off list of snippet stylesheets and the snippets-folder button | `src/components/shell/SnippetSettings.tsx` |
 | The two notices Settings shows about her own `.css` files — "we stripped some URLs" and "couldn't open that folder, here's the path" — shared by the Theme and Snippets panels | `src/components/shell/StylesheetNotices.tsx` |
+| Settings → Writing — how the editor behaves as you write. One setting so far: whether the formatting bar appears on a selection or stays at the top of the page | `src/components/shell/WritingSettings.tsx` |
 | Settings → Sidebar / Projects / Keyboard / Updates | `src/components/shell/SidebarSettings.tsx`, `ProjectsSettings.tsx`, `ShortcutSettings.tsx`, `UpdateCheck.tsx` |
 | The release notes shown inside the Updates panel, rendered from the GitHub release body | `src/components/shell/ReleaseNotes.tsx` |
 | Settings → Patch Notes — a strip of the last few versions over the notes for whichever is selected, read from the bundled `RELEASES.md` rather than fetched | `src/components/shell/PatchNotes.tsx` |

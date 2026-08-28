@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-27 — it doesn't report on you
+
+### Changes
+
+- **Anamnesis no longer reports which features get used, and the switch for it is gone.** It was built so you could turn it off and so it could never carry anything you'd written — but a worldbuilding app you keep your own notes in is a better thing when the answer to "what does it send" is simply nothing, so it's out rather than switched off. Nothing was ever sent from a released build: no version of Anamnesis you could have installed had anywhere to send it to.
+
 ## 2026-08-27 — a project open in another window
 
 ### Fixes

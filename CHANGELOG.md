@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-28 — the formatting bar can stay put
+
+### Additions
+
+- **Settings → Writing, a new section**, for how the editor behaves while you're writing in it rather than what it looks like.
+- **The formatting bar can stay at the top of the page.** The strip with bold, italic and the rest normally appears over your text when you select some and goes away again; now you can have it always there instead, above what you're writing. The buttons do exactly the same thing either way — this is only about where the strip lives.
+- **It appears-on-selection by default**, the way it always has, so nothing changes unless you go and change it.
+
 ## 2026-08-28 — a tidy-up under the floor
 
 ### Changes
@@ -198,9 +206,3 @@
 
 - **A crash no longer leaves you looking at a blank window.** If Anamnesis hits a problem it can't carry on from, it now says so on screen: what went wrong, that your worlds on disk weren't touched by it, and a button to start the app up again. The details are there to read rather than hidden, with a button that copies them if you want to send them on to someone.
 - **The last few crashes are written down, on your own computer.** They go in a file kept beside your settings, five at a time, and nothing about them is sent anywhere. Settings → Privacy says where the file is and can copy the most recent one — useful for the kind of fault that doesn't take the window down but still goes wrong quietly in the background.
-
-## 2026-08-27 — it doesn't report on you
-
-### Changes
-
-- **Anamnesis no longer reports which features get used, and the switch for it is gone.** It was built so you could turn it off and so it could never carry anything you'd written — but a worldbuilding app you keep your own notes in is a better thing when the answer to "what does it send" is simply nothing, so it's out rather than switched off. Nothing was ever sent from a released build: no version of Anamnesis you could have installed had anywhere to send it to.

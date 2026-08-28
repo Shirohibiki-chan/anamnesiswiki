@@ -49,6 +49,12 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     blurb: "How the page tree behaves.",
   },
   {
+    id: "writing",
+    group: "app",
+    label: "Writing",
+    blurb: "How the editor behaves while you're writing in it.",
+  },
+  {
     id: "lists",
     group: "app",
     label: "Lists",
@@ -116,6 +122,23 @@ export const DECLARED_SETTINGS: readonly {
   hint: string;
   keywords: string[];
 }[] = [
+  {
+    id: "formatting-bar",
+    tabId: "writing",
+    label: "The formatting bar",
+    hint: "whether the bold/italic strip appears over the text when you select some, or stays at the top of the page",
+    // "toolbar" is the word most people have for it and appears nowhere in the
+    // label; "bold" and "italic" are what somebody is actually looking at when
+    // they go looking for it.
+    //
+    // **No "bar", no "stays", no "fixed"** — all three are near-misses on the
+    // words in "where are my files saved", the query this file's other comments
+    // keep coming back to: "bar" is one transposition from "are", "stays" and
+    // "fixed" are two edits from "saved" and "files". A keyword that costs an
+    // unrelated query its precision is not worth the one it helps, and
+    // "toolbar" already catches anybody typing "bar".
+    keywords: ["toolbar", "formatting", "bold", "italic", "floating", "pinned", "sticky"],
+  },
   {
     id: "bug-report",
     tabId: "report",
