@@ -24,6 +24,23 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
+- **The shortcut sheet shows keys and nothing else.** Noticed 2026-08-28 when
+  the user asked whether we had the reference's Shortcuts window and sent a
+  screenshot of it. We have a sheet — `ShortcutSheet.tsx`, on `?` — and in one
+  way it is better than theirs: every shortcut here is rebindable, so it reads
+  the same store the key listener does and shows *her* keys rather than a fixed
+  list nobody can trust. What theirs has and ours does not is two tabs' worth of
+  the rest: a **Slash Commands** list, and the **markdown shortcuts** (`**bold**`,
+  `# heading`, `* item`, `[] item`) which are real behaviour in our editor and
+  written down nowhere.
+
+  **The slash list should be generated, not typed out.** `getSlashMenuItems` in
+  `use-editor.ts` already assembles the whole menu with titles and subtexts; a
+  hand-written second copy would be wrong within a month, and it is the same
+  mistake the rebindable-keys design was built to avoid. The markdown list is the
+  opposite case — those are BlockNote's input rules, not ours, so that half is a
+  written list and should say where it came from.
+
 - **Watch the update button on the release after v0.6.0.** One link in the
   chain has never run: an installed Electron build finding a newer one and
   installing it. Everything up to it is proven — the pipeline, the three
@@ -477,8 +494,50 @@ offers the same dialog with the name already in it. Detail is in
 called New page rather than Element** — this app's word for a page is "page",
 and the reference's word was only ever how the item got written down here.
 
-**Icon is the emoji picker** — confirmed by the user 2026-08-27, already in
-BlockNote's defaults, nothing to build.
+**Icon is not the emoji picker, and "nothing to build" was wrong.** Corrected by
+the user 2026-08-28 with a screenshot of the reference. What she confirmed on
+2026-08-27 was the *word*; what the reference actually does is different in
+shape. Its Icon command inserts **a small icon into the line — a heart by
+default — and clicking that icon opens a picker** with two tabs, Glyphs and
+Emoji, a search box, and a Recent row. BlockNote's own emoji command is the
+other shape: it asks first and inserts a character, and there is nothing to
+click afterwards.
+
+So this is real work, and the pieces are:
+
+- **An inline icon, not a character.** It has to be clickable after the fact,
+  which a pasted emoji is not — that is the whole difference. It is the same
+  kind of thing as the mention chip: a custom inline content type with a prop,
+  rendered by a component. `mention-inline-content.tsx` is the shape to copy.
+- **A default that is deliberately arbitrary.** The reference inserts a heart
+  and lets you change it, which is better than an empty slot or a picker that
+  blocks the sentence — you keep typing and fix the icon later.
+- **Glyphs are the half we do not have.** The emoji list is BlockNote's; a
+  searchable icon set is not, and `constants/icons.ts` is a hand-written map of
+  about a dozen lucide icons for templates, nowhere near a browsable set.
+  **Decide before building** whether Glyphs means all of lucide (~1500 icons,
+  already a dependency, needs a search index) or a curated set. Do not answer
+  this by shipping the emoji tab alone and calling it done.
+- **It shares a picker with the callout icons below**, and neither should be
+  built without the other in mind — the reference uses one picker for both, and
+  two pickers that look alike and behave differently is worse than either.
+
+**Callouts want a chosen icon, and a way to take it off.** Asked for 2026-08-28
+off the same screenshots, and it is a change to something that shipped that
+morning rather than a new feature: a coloured callout currently derives its icon
+from its colour (green → tick, amber → caution, red → warning, blue → note), and
+she wants to pick one instead — the reference's callout carries an icon you click
+to change, from the same picker as the Icon item above.
+
+**The derived icon should stay as the default, and this needs her answer before
+it is built.** The convention is why it was worth doing: a tick on green is read
+without being learned, and if every callout starts blank then every callout
+needs decorating by hand before it says anything. So the shape to build is
+*derived unless overridden*, with a Remove that means "no icon" rather than
+"back to the default" — those are two different answers and a single control
+cannot give both. That distinction is the part to get right; see
+`docs/handoff.md` on colour and type being separate axes, which this adds a
+third to.
 
 **Why it is worth doing:** the sidebar is a column, and a panel of stats is a
 grid. Everything Phase 18c built is squeezed by that column — four gauges go
