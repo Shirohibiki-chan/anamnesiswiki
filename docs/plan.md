@@ -541,10 +541,11 @@ from its colour (green → tick, amber → caution, red → warning, blue → no
 she wants to pick one instead — the reference's callout carries an icon you click
 to change, from the same picker as the Icon item above.
 
-**The derived icon should stay as the default, and this needs her answer before
-it is built.** The convention is why it was worth doing: a tick on green is read
-without being learned, and if every callout starts blank then every callout
-needs decorating by hand before it says anything. So the shape to build is
+**The derived icon stays as the default, and she confirmed that 2026-08-28:**
+keep the colour-derived icon, and let it be changed by anyone who wants to. The
+convention is why it was worth doing — a tick on green is read without being
+learned, and if every callout starts blank then every callout needs decorating
+by hand before it says anything. So the shape to build is
 *derived unless overridden*, with a Remove that means "no icon" rather than
 "back to the default" — those are two different answers and a single control
 cannot give both. That distinction is the part to get right; see
