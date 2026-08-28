@@ -14,6 +14,15 @@ export type HistoryEntry = {
   label: string;
   undo: () => Promise<void> | void;
   redo: () => Promise<void> | void;
+  /**
+   * Names the one thing being edited — a field on a page, a meter in a block.
+   * Consecutive entries carrying the same key fold into one; see mergeRepeat.
+   * Absent means every call is its own entry, which is right for anything that
+   * happens once per click.
+   */
+  mergeKey?: string;
+  /** When it was recorded. Stamped by the store, and only read by the fold. */
+  at?: number;
 };
 
 /**
@@ -72,4 +81,49 @@ export function collapseSince(stack: readonly HistoryEntry[], depth: number, lab
 /** "3 pages" / "1 page" — used to build labels, and easy to get wrong inline. */
 export function countLabel(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/**
+ * How long a run of edits to the same field keeps folding into one entry.
+ *
+ * The right-hand panel writes as the user moves rather than when they stop —
+ * every keystroke in a text field, every pointer move on a meter — so without
+ * this a sentence typed into Age is thirty entries and undo becomes a key you
+ * hold down rather than a thing you press. Two seconds is a pause rather than
+ * a hesitation: keep going and it stays one edit, stop to think and whatever
+ * comes next is its own.
+ *
+ * **This is the panel's answer to a problem the tree never had.** Making a
+ * page or dragging one is a discrete act that ends; typing does not, and an
+ * undo stack that records the difference between two keystrokes is recording
+ * something the user never did.
+ */
+export const HISTORY_MERGE_MS = 2000;
+
+/**
+ * The stack with `entry` folded into the one on top of it, or null if it does
+ * not belong there.
+ *
+ * Two conditions and both are required: the same `mergeKey`, which names one
+ * field on one page rather than a kind of edit, and inside the window. Anything
+ * else — a different field, a different page, a gap — is a new entry.
+ *
+ * **The fold keeps the older undo and the newer redo**, which is the whole
+ * point: a run of writes reverses to where the run started, not to the state
+ * one keystroke ago. It keeps the newer label too, since a field renamed
+ * mid-run should not be undone under its old name.
+ */
+export function mergeRepeat(
+  stack: readonly HistoryEntry[],
+  entry: HistoryEntry,
+  now: number,
+  window = HISTORY_MERGE_MS,
+): HistoryEntry[] | null {
+  if (entry.mergeKey === undefined) return null;
+
+  const top = stack[stack.length - 1];
+  if (!top || top.mergeKey !== entry.mergeKey || top.at === undefined) return null;
+  if (now < top.at || now - top.at > window) return null;
+
+  return [...stack.slice(0, -1), { ...entry, undo: top.undo, at: now }];
 }

@@ -3342,7 +3342,7 @@ embarrassing next to the reference's, and the specifics were all fair.
   `node.select()`, and selecting is navigating. Removed; nothing needed it.
 
 **Not built, and scoped instead:** blocks that can be dragged into the middle
-of the page and resized there, which is `docs/plan.md` Phase 28. It is a
+of the page and resized there, which is `docs/plan.md` Phase 19.5. It is a
 feature with a data-model decision in it rather than a fix, and folding it into
 this change would have made an already large one unreviewable.
 
@@ -3980,7 +3980,9 @@ than none, because it gets trusted.
 immediately by a delete overwrote the save's copy; caught by the full unit run
 after passing in isolation, fixed with `nextSnapshotAt`.
 
-### Not done
+### Not done at the time
+
+All three were closed later the same day — see the section below.
 
 - **Undo for the right-hand panel**, the phase's other bullet, carried over from
   Phase 10. Untouched here.
@@ -3988,6 +3990,115 @@ after passing in isolation, fixed with `nextSnapshotAt`.
   settings have no history. Page contents were the loss that happened.
 - **Retention is not configurable.** Obsidian's is. The numbers are in
   `constants/limits.ts` and nothing reads them from settings.
+
+---
+
+## Phase 19 — Safety Net (the rest of it) ✅ Shipped 2026-08-28
+
+The three things the section above left, plus the count on a row's menu.
+
+### Undo, in the panel down the right of a page — and in a page's tabs
+
+Carried since Phase 10, and the last part of the app where a mistake could not
+be taken back. About thirty actions became undoable, through two funnels rather
+than thirty pairs of closures:
+
+- **`patchNode`** in `project-store.ts` — the single-page twin of `applyBulk`.
+  It reads the fields a patch is about to overwrite and records that as the
+  reversal, so every property, tag, alias, custom field and picture crop is one
+  routing change rather than a hand-written undo.
+- **`editBlocks`** grew a label and passes through `patchNode`, which covered
+  all twenty-three block and meter actions at once. That funnel already existed
+  — Phase 18a built it so the migration would live in one place — and this is
+  the second thing it paid for.
+
+**The design problem was typing, not routing.** A property field writes on every
+keystroke, so a sentence typed into Age was thirty entries and undo became a key
+you hold down. `mergeRepeat` folds consecutive entries carrying the same
+`mergeKey` inside two seconds, keeping the *older* undo and the *newer* redo, so
+a run reverses to where the run started. The key names one field on one page,
+never a kind of edit. Anything continuous carries one — text fields, a dragged
+meter, a picture's crop; anything that fires once per click deliberately does
+not.
+
+**A page's tabs came with it**, which Phase 10 had also carried here: adding,
+renaming, hiding, reordering and deleting one all record now, through the same
+funnel. `updateTabContent` deliberately does not — what is *inside* a tab is
+writing, and writing has BlockNote's undo on Ctrl+Z. What a tab *is* is
+structure, and deleting one took its contents with it with no way back.
+
+**One panel action is still not undoable, on purpose:** clearing or replacing a
+page's picture deletes the file from `assets/` once nothing points at it, so
+undo would have to restore bytes rather than a field. Recorded in `plan.md`
+rather than left implicit.
+
+### The tree's own history
+
+`project.json` — the order, the home page, the pins, the expanded folders — now
+gets the same treatment, in `.history/project/`. A word rather than a node id,
+which is safe because every other folder in there is a UUID.
+
+The copy is taken inside `saveProject`, the one door every write to that file
+goes through, so the dozen actions that reorder a tree needed no changes at all.
+`ProjectHistory.tsx` is `PageHistory.tsx`'s sibling and shares its stylesheet;
+it hangs off the project header's own right-click menu, which is where a page's
+version list already lives on a page's row.
+
+**What a restore may bring back is the part with the thinking in it.**
+`restoreProjectPatch` filters every id against the pages that exist *now* — a
+copy from last week mentions pages since deleted, and putting its lists back
+verbatim leaves a home button pointing at nothing. It keeps the world's `id`,
+`forkedFromId`, `name`, `createdAt` and cover from the current project: the id
+is what in-world references are written against, and the name is a folder on
+disk. The dialog says how many of the pages a copy mentions have since gone
+before anything is pressed.
+
+### Retention, as a setting
+
+Settings → History: how often a copy is kept (1–30 minutes), how far back they
+go (a week to a year), how many any one page keeps (10–100). Defaults are
+*derived* from `constants/limits.ts` rather than written a second time, and a
+test asserts each default is one of the offered values.
+
+**Pushed rather than read.** Pruning runs on a disk write, not a render, so
+`filesystem-service` cannot read a store; `preferences-store` calls
+`setSnapshotRetention` on load and on change, and the module starts at the
+shipped defaults so a copy taken before settings load is kept under the same
+rules it always was.
+
+**Nothing offered turns it off.** No "never", no zero. This app has lost pages
+once, and a switch marked *keep my work safe* is a switch somebody turns off on
+a tidying-up day and regrets six weeks later.
+
+### The count on the menu
+
+A page's right-click menu now says how many earlier versions it has, or "none
+yet". Read on demand while that one menu is open — `useSnapshotCount` is passed
+`null` from every other row, because a version that counted for its own row on
+mount would be one directory listing per visible page on every scroll.
+
+### Verification
+
+`pnpm test` 1503 unit tests. `pnpm test:app`: two new scenarios and one grown
+one, all against the real Electron app — a run of typing in a panel field
+reversing as **one** press and the message naming the field ("Undid changing
+Summary"), redo putting it back, the tree's dialog listing a copy after the home
+page is changed, and the three retention controls in Settings.
+
+### The marker on a tree row, decided against
+
+The phase's last bullet asked for something on the row itself showing a page has
+history. Put to her rather than guessed at, because it would land in the same
+strip as the colour dot she has already said is in the wrong place — and **her
+answer, 2026-08-28, was no**: a dot on every page she has ever touched is a
+notification badge on the whole tree, which is a thing to be got away from
+rather than a thing to add.
+
+**So the count in the row's ⋯ menu is the whole of it, and this is settled.**
+Do not propose a row marker again. The question it answers — is there anything
+to go back to — is asked at the moment somebody opens that menu, and answering
+it before they ask costs the tree its quiet.
+
 ## Every shortcut on one screen ✅ Shipped 2026-08-27
 
 Nothing in the app could show somebody their own keys. Every shortcut is

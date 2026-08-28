@@ -120,3 +120,45 @@ describe("history-store", () => {
     expect(useHistoryStore.getState().lastAction).toBeNull();
   });
 });
+
+// Phase 19's panel undo. The store is what stamps an entry with the time, so
+// the folding rule can only be exercised end to end from here.
+describe("history-store folding", () => {
+  beforeEach(reset);
+
+  function keyed(label: string, mergeKey: string, log: string[]) {
+    return { ...trackingEntry(label, log), mergeKey };
+  }
+
+  it("records a run of edits to one field as one entry", async () => {
+    const log: string[] = [];
+    const { record } = useHistoryStore.getState();
+    record(keyed("typing a", "property:1:age", log));
+    record(keyed("typing b", "property:1:age", log));
+    record(keyed("typing c", "property:1:age", log));
+
+    expect(useHistoryStore.getState().past).toHaveLength(1);
+
+    await useHistoryStore.getState().undo();
+    expect(log).toEqual(["undo:typing a"]);
+    expect(useHistoryStore.getState().past).toHaveLength(0);
+  });
+
+  it("keeps edits to different fields apart", () => {
+    const log: string[] = [];
+    const { record } = useHistoryStore.getState();
+    record(keyed("age", "property:1:age", log));
+    record(keyed("height", "property:1:height", log));
+
+    expect(useHistoryStore.getState().past).toHaveLength(2);
+  });
+
+  it("still ignores everything recorded underneath an undo", async () => {
+    const log: string[] = [];
+    useHistoryStore.getState().record(keyed("a", "property:1:age", log));
+    await useHistoryStore.getState().undo();
+
+    expect(useHistoryStore.getState().past).toHaveLength(0);
+    expect(useHistoryStore.getState().future).toHaveLength(1);
+  });
+});

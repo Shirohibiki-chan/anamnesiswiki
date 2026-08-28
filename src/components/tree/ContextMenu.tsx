@@ -76,6 +76,12 @@ type ContextMenuProps = {
   onToggleHidden: () => void;
   /** Earlier versions of this page (Phase 19). Single selection only. */
   onShowHistory: () => void;
+  /**
+   * How many copies this page has, or null while the folder is still being
+   * read. Shown beside the item so the menu answers "is there anything to go
+   * back to" without opening the dialog to find out.
+   */
+  historyCount: number | null;
   onReveal: () => void;
   onExport: () => void;
   onDelete: () => void;
@@ -105,6 +111,7 @@ export function ContextMenu({
   onTogglePinned,
   onToggleHidden,
   onShowHistory,
+  historyCount,
   onReveal,
   onExport,
   onDelete,
@@ -235,6 +242,9 @@ export function ContextMenu({
       {!isMultiple && (
         <button type="button" onClick={() => run(onShowHistory)}>
           <History size={13} /> Earlier versions
+          {historyCount !== null && (
+            <span className="tree-context-menu-count">{historyCount === 0 ? "none yet" : historyCount}</span>
+          )}
         </button>
       )}
       {/* Single selection only: revealing several rows at once means several

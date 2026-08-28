@@ -3,10 +3,14 @@
 // is a tree row several components away that must react the moment it changes.
 import { create } from "zustand";
 import * as appSettings from "../services/app-settings-service";
+import { setSnapshotRetention } from "../services/filesystem-service";
 import {
   DEFAULT_PREFERENCES,
   parsePreferences,
   withSavedColor,
+  type HistoryIntervalMinutes,
+  type HistoryKeepDays,
+  type HistoryPerPage,
   type ListPageSize,
   type ListPagingMode,
   type Preferences,
@@ -24,6 +28,9 @@ export type PreferencesStoreState = {
   setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
   setProjectSort: (sort: ProjectSort) => void;
+  setHistoryInterval: (minutes: HistoryIntervalMinutes) => void;
+  setHistoryKeepDays: (days: HistoryKeepDays) => void;
+  setHistoryPerPage: (count: HistoryPerPage) => void;
   /** Keeps a colour mixed in the system picker, for use anywhere else. */
   saveColor: (color: string) => void;
   forgetColor: (color: string) => void;
@@ -36,7 +43,20 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
   // widths, minus the debounce: nobody flips a checkbox sixty times a second.
   const apply = (preferences: Preferences) => {
     set({ preferences });
+    pushRetention(preferences);
     void appSettings.setPreferences(preferences).catch(() => {});
+  };
+
+  // The one preference that something outside React has to be told about: the
+  // code that prunes old copies runs on a disk write, not on a render, so it
+  // cannot read a store. Pushed on every change and once on load — the second
+  // matters more, since most sessions never open Settings at all.
+  const pushRetention = (preferences: Preferences) => {
+    setSnapshotRetention({
+      intervalMs: preferences.historyIntervalMinutes * 60_000,
+      maxAgeMs: preferences.historyKeepDays * 24 * 60 * 60_000,
+      maxPerNode: preferences.historyPerPage,
+    });
   };
 
   return {
@@ -47,9 +67,12 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
     // a first run looks like. Same shape as loadPanelWidths and loadBindings.
     async loadPreferences() {
       try {
-        set({ preferences: parsePreferences(await appSettings.getPreferences()) });
+        const preferences = parsePreferences(await appSettings.getPreferences());
+        set({ preferences });
+        pushRetention(preferences);
       } catch {
         set({ preferences: DEFAULT_PREFERENCES });
+        pushRetention(DEFAULT_PREFERENCES);
       }
     },
 
@@ -71,6 +94,18 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setProjectSort(sort) {
       apply({ ...get().preferences, projectSort: sort });
+    },
+
+    setHistoryInterval(minutes) {
+      apply({ ...get().preferences, historyIntervalMinutes: minutes });
+    },
+
+    setHistoryKeepDays(days) {
+      apply({ ...get().preferences, historyKeepDays: days });
+    },
+
+    setHistoryPerPage(count) {
+      apply({ ...get().preferences, historyPerPage: count });
     },
 
     saveColor(color) {

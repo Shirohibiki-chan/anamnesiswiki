@@ -40,6 +40,7 @@ import { SETTINGS_TABS } from "../../constants/settings";
 import { listStepForKey, stepIndex } from "../../services/list-keys";
 import { useSettingsSearch } from "../../hooks/use-settings-search";
 import { FontSettings } from "./FontSettings";
+import { HistorySettings } from "./HistorySettings";
 import { ListSettings } from "./ListSettings";
 import { ProjectsSettings } from "./ProjectsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
@@ -62,6 +63,7 @@ const PANELS: Record<string, () => React.JSX.Element> = {
   snippets: SnippetSettings,
   sidebar: SidebarSettings,
   lists: ListSettings,
+  history: HistorySettings,
   projects: ProjectsSettings,
   keyboard: ShortcutSettings,
   updates: UpdateCheck,

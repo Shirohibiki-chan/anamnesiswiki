@@ -10,6 +10,7 @@ import {
   planOptionDelete,
   planOptionRecolour,
   planOptionRename,
+  propertyLabel,
   planPropertyDelete,
   planPropertyRename,
   planTagDelete,
@@ -466,5 +467,25 @@ describe("planOptionDelete", () => {
     expect(plan.patches[0].patch.customProperties?.[0].options?.map((o) => o.label)).toEqual(["Done"]);
     expect(plan.patches[0].patch.properties).toEqual({});
     expect(plan.patches[1].patch.properties).toEqual({ k2: ["o-done"] });
+  });
+});
+
+describe("propertyLabel", () => {
+  const schema = [{ key: "age", label: "Age", type: "text" as const }];
+  const custom = [{ key: "7f3a", label: "Allegiance", type: "text" as const }];
+
+  it("names a template's field", () => {
+    expect(propertyLabel(schema, custom, "age")).toBe("Age");
+  });
+
+  it("names one she added, which is the case the undo message needs", () => {
+    expect(propertyLabel(schema, custom, "7f3a")).toBe("Allegiance");
+  });
+
+  // A key with no spec anywhere is a value left behind by a template swap. It
+  // still has to read as something in "Undid changing ...".
+  it("falls back to a phrase rather than to a UUID", () => {
+    expect(propertyLabel(schema, custom, "b12c")).toBe("a field");
+    expect(propertyLabel(schema, undefined, "b12c")).toBe("a field");
   });
 });

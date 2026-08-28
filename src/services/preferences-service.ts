@@ -6,6 +6,7 @@
 // App-level, not per-project, for the reason every other preference is: one
 // person, one screen, several worlds. A habit about double-clicking doesn't
 // change because a different project is open.
+import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_AGE_MS, SNAPSHOT_MAX_PER_NODE } from "../constants/limits";
 
 /**
  * What a double-click on a tree row does.
@@ -111,6 +112,51 @@ export const PROJECT_SORT_LABELS: Record<ProjectSort, string> = {
  */
 export const MAX_SAVED_COLORS = 8;
 
+/**
+ * How often a page's previous contents are copied aside, in minutes.
+ *
+ * The default is `limits.ts`'s five, and the reasoning for it is there. What
+ * this adds is the reason it is a *setting*: the interval is a trade between
+ * how fine-grained the history is and how much of the folder one page can take
+ * up, and where that lands depends on how somebody writes. A page rewritten in
+ * long sittings wants a coarse one; an afternoon of small corrections wants a
+ * fine one, and either answer is wrong for the other person.
+ *
+ * One minute is the floor rather than "every save": a save happens a third of a
+ * second after you stop typing, so per-save copies would be thousands of files
+ * a day — a number that is not a preference, it is a bug.
+ */
+export const HISTORY_INTERVAL_MINUTES = [1, 5, 15, 30] as const;
+export type HistoryIntervalMinutes = (typeof HISTORY_INTERVAL_MINUTES)[number];
+
+/**
+ * How long a copy is kept, in days.
+ *
+ * Thirty by default — see `limits.ts` for why that rather than Obsidian's
+ * seven. A year is offered because this is a worldbuilding project rather than
+ * a notes app: a world can go a season without being opened, and the copy
+ * somebody wants is as likely to be from the last time they worked on it as
+ * from last week.
+ *
+ * **There is no "forever".** The folder is inside her project and it is pruned
+ * by an app that must never surprise her with its size; a cap that can be
+ * turned off is a folder that grows without a ceiling on a machine nobody is
+ * watching. The per-page cap below is the other half of that promise.
+ */
+export const HISTORY_KEEP_DAYS = [7, 30, 90, 365] as const;
+export type HistoryKeepDays = (typeof HISTORY_KEEP_DAYS)[number];
+
+/**
+ * How many copies of any one page are kept.
+ *
+ * Fifty by default, which is about four hours of continuous work at the
+ * default interval. The newest is never pruned whatever this says — see
+ * `snapshotsToPrune` — so the smallest of these still leaves a page with
+ * something to go back to.
+ */
+export const HISTORY_PER_PAGE = [10, 25, 50, 100] as const;
+export type HistoryPerPage = (typeof HISTORY_PER_PAGE)[number];
+
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
   listPaging: ListPagingMode;
@@ -126,6 +172,17 @@ export type Preferences = {
    * since a mixed colour has no palette name to be looked up by.
    */
   savedColors: string[];
+  /**
+   * The retention rules for earlier versions (Phase 19).
+   *
+   * App-level rather than per-project, like every other preference here: this
+   * is a fact about how much history she wants to be able to reach, not about
+   * one world. The numbers reach the code that prunes through
+   * `setSnapshotRetention` in filesystem-service — see preferences-store.
+   */
+  historyIntervalMinutes: HistoryIntervalMinutes;
+  historyKeepDays: HistoryKeepDays;
+  historyPerPage: HistoryPerPage;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -135,6 +192,11 @@ export const DEFAULT_PREFERENCES: Preferences = {
   projectView: "grid",
   projectSort: "active",
   savedColors: [],
+  // Derived from the shipped limits rather than written again, so the setting
+  // and the constants it overrides cannot disagree about what "default" means.
+  historyIntervalMinutes: (SNAPSHOT_INTERVAL_MS / 60_000) as HistoryIntervalMinutes,
+  historyKeepDays: (SNAPSHOT_MAX_AGE_MS / (24 * 60 * 60_000)) as HistoryKeepDays,
+  historyPerPage: SNAPSHOT_MAX_PER_NODE as HistoryPerPage,
 };
 
 /**
@@ -170,6 +232,9 @@ export function parsePreferences(raw: unknown): Preferences {
   const projectView = source.projectView;
   const projectSort = source.projectSort;
   const savedColors = source.savedColors;
+  const historyIntervalMinutes = source.historyIntervalMinutes;
+  const historyKeepDays = source.historyKeepDays;
+  const historyPerPage = source.historyPerPage;
   return {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
@@ -199,5 +264,17 @@ export function parsePreferences(raw: unknown): Preferences {
           .map((entry) => entry.toLowerCase())
           .slice(0, MAX_SAVED_COLORS)
       : DEFAULT_PREFERENCES.savedColors,
+    // Membership rather than a range, for the same reason `listPageSize` is:
+    // a hand-edited number that no control can show would be obeyed by a panel
+    // displaying something else.
+    historyIntervalMinutes: HISTORY_INTERVAL_MINUTES.includes(historyIntervalMinutes as HistoryIntervalMinutes)
+      ? (historyIntervalMinutes as HistoryIntervalMinutes)
+      : DEFAULT_PREFERENCES.historyIntervalMinutes,
+    historyKeepDays: HISTORY_KEEP_DAYS.includes(historyKeepDays as HistoryKeepDays)
+      ? (historyKeepDays as HistoryKeepDays)
+      : DEFAULT_PREFERENCES.historyKeepDays,
+    historyPerPage: HISTORY_PER_PAGE.includes(historyPerPage as HistoryPerPage)
+      ? (historyPerPage as HistoryPerPage)
+      : DEFAULT_PREFERENCES.historyPerPage,
   };
 }

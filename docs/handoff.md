@@ -445,6 +445,29 @@ writes, `PageHistory.tsx` shows, `use-page-history.ts` restores.
   and what kind it is are not content, and `templateKey` decides file-vs-
   directory storage, which is a move rather than an edit.
 
+- **`project.json` has its own history, in `.history/project/`** (2026-08-27).
+  The folder is a word rather than a node id, which is safe precisely because
+  every other folder in there is a UUID. The copy is taken inside `saveProject`
+  — the one door every write to that file goes through — so the dozen actions
+  that reorder a tree or set a home page need to know nothing about it.
+
+- **Restoring an arrangement filters every id against the pages that exist
+  now.** `restoreProjectPatch` is not `{ ...copy }`: a copy from last week
+  mentions pages since deleted, and putting its lists back verbatim leaves the
+  tree ordered around pages that are not there and a home button pointing at
+  nothing. It also keeps the world's `id`, `forkedFromId`, `name`, `createdAt`
+  and cover from the current project — the id is what in-world references are
+  written against, and the name is a folder on disk, which is a rename rather
+  than an edit.
+
+- **The retention numbers are pushed into `filesystem-service`, not read
+  there.** Pruning runs on a disk write rather than a render, so it cannot read
+  a store; `preferences-store` calls `setSnapshotRetention` on load and on every
+  change, and the module starts at the shipped defaults so a copy taken before
+  the settings file has loaded is kept under the same rules it always was.
+  **Nothing in the offered options can turn keeping copies off** — see
+  `HistorySettings.tsx` on why that is deliberate rather than an omission.
+
 - **`contentRevisions` exists because the editor reads its content once.**
   BlockNote is created with `initialContent` and keyed by tab, so replacing a
   page's writing underneath an open editor leaves the old words on screen —
@@ -2261,11 +2284,36 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   Anything else that becomes undoable across a multi-selection needs the same
   treatment.
 
-- **Text you type is not on this stack and shouldn't be.** BlockNote has its
-  own history for that, and the two are kept apart by the editor scoping above.
-  Property edits, tags and tab changes aren't recorded either — that's a real
-  gap rather than a decision, and the way in is a dedicated action per
-  operation, the way `setNodeColor` did it.
+- **Text you type in a page is not on this stack and shouldn't be.** BlockNote
+  has its own history for that, and Ctrl+Z belongs to it (see §Ctrl+Z).
+
+- **The right-hand panel goes through `patchNode`, and blocks through
+  `editBlocks`** (2026-08-27, Phase 19). Both read the fields a patch is about
+  to overwrite and record that as the reversal, which is why adding an undoable
+  panel action is a matter of routing it through one of the two rather than
+  writing a pair of closures. `editBlocks` records against the node's *stored*
+  `blocks`, so undoing the first edit to a pre-Phase-18a page un-materialises
+  it — the page goes back to having no block list, which is what it had.
+
+- **A field that writes while the user is still moving needs a merge key, and
+  one that fires per click must not have one.** `mergeRepeat` folds consecutive
+  entries carrying the same key inside `HISTORY_MERGE_MS`, keeping the older
+  undo and the newer redo, so a sentence typed into a property is one press
+  rather than thirty. The key names one field on one page (`property:<node>:<key>`),
+  never a kind of edit — a shared key would fold two unrelated edits into one.
+  Anything continuous wants one: text fields, a dragged meter, a picture's crop.
+
+- **A tab's existence is undoable; its contents are not.** `addTab`,
+  `renameTab`, `deleteTab`, `reorderTabs` and `toggleTabHidden` go through
+  `patchNode`; `updateTabContent` must not, because it fires per keystroke and
+  what is inside a tab belongs to the editor's own history. The line is
+  structure versus writing, and it is the same line §Ctrl+Z draws.
+
+- **Clearing or replacing a page's picture is the one panel action still not
+  undoable**, and it is not an oversight: `releaseAsset` deletes the file from
+  `assets/` once nothing else points at it, so undo would have to put bytes
+  back the way `deleteNodes` does with `captureAssets`. Everything else the
+  panel does is a patch to the page's own JSON.
 
 ## Project home
 

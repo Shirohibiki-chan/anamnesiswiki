@@ -2,7 +2,16 @@
 // CLAUDE.md's layer order — components never import stores directly.
 import { useShallow } from "zustand/react/shallow";
 import { usePreferencesStore } from "../state/preferences-store";
-import type { ListPageSize, ListPagingMode, ProjectSort, ProjectView, TreeDoubleClickAction } from "../services/preferences-service";
+import type {
+  HistoryIntervalMinutes,
+  HistoryKeepDays,
+  HistoryPerPage,
+  ListPageSize,
+  ListPagingMode,
+  ProjectSort,
+  ProjectView,
+  TreeDoubleClickAction,
+} from "../services/preferences-service";
 
 /**
  * Selected down to the one field rather than the whole preferences object,
@@ -57,6 +66,26 @@ export function useColorActions() {
   );
 }
 
+/**
+ * The retention rules for earlier versions, read by the settings panel that
+ * sets them. Nothing else reads them from here: the code that actually prunes
+ * runs on a disk write and is told the numbers directly — see
+ * preferences-store's pushRetention.
+ */
+export function useHistoryRetention(): {
+  intervalMinutes: HistoryIntervalMinutes;
+  keepDays: HistoryKeepDays;
+  perPage: HistoryPerPage;
+} {
+  return usePreferencesStore(
+    useShallow((state) => ({
+      intervalMinutes: state.preferences.historyIntervalMinutes,
+      keepDays: state.preferences.historyKeepDays,
+      perPage: state.preferences.historyPerPage,
+    })),
+  );
+}
+
 export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({
@@ -65,6 +94,9 @@ export function usePreferenceActions() {
       setListPageSize: state.setListPageSize,
       setProjectView: state.setProjectView,
       setProjectSort: state.setProjectSort,
+      setHistoryInterval: state.setHistoryInterval,
+      setHistoryKeepDays: state.setHistoryKeepDays,
+      setHistoryPerPage: state.setHistoryPerPage,
     })),
   );
 }

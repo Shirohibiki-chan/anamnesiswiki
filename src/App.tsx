@@ -3,6 +3,7 @@ import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { PageHistory } from "./components/shell/PageHistory";
+import { ProjectHistory } from "./components/shell/ProjectHistory";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { ShortcutSheet } from "./components/shell/ShortcutSheet";
 import { StartupRouter } from "./components/shell/StartupRouter";
@@ -41,7 +42,7 @@ function App() {
   // key the window answers, and the start screen is a place somebody can be
   // lost in too.
   const shortcutSheet = useShortcutSheet();
-  const { historyNodeId, closeHistory } = useDialogs();
+  const { historyNodeId, closeHistory, isProjectHistoryOpen, closeProjectHistory } = useDialogs();
   return (
     <>
       <StartupRouter />
@@ -76,6 +77,10 @@ function App() {
           above. Keyed by the page, so pointing it at another one starts its
           list again rather than showing the last page's versions. */}
       {historyNodeId && <PageHistory key={historyNodeId} nodeId={historyNodeId} onClose={closeHistory} />}
+      {/* The same dialog pointed at `project.json` — raised from the project
+          header's own right-click menu, and here beside its sibling rather
+          than inside the tree so both are found in one place. */}
+      {isProjectHistoryOpen && <ProjectHistory onClose={closeProjectHistory} />}
       {/* Same reasoning again: it portals, and both screens have keys worth
           looking up. */}
       {shortcutSheet.isOpen && <ShortcutSheet onClose={shortcutSheet.close} />}

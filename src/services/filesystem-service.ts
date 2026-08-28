@@ -34,9 +34,16 @@ import {
   PROBE_TEMP_PREFIX,
   PROJECTS_SUBDIR,
   PROJECT_FILE,
+  PROJECT_HISTORY_ID,
   TEMPLATES_FILE,
 } from "../constants/paths";
-import { LONG_PATH_ADVICE_CHARS, MAX_SEGMENT_CHARS } from "../constants/limits";
+import {
+  LONG_PATH_ADVICE_CHARS,
+  MAX_SEGMENT_CHARS,
+  SNAPSHOT_INTERVAL_MS,
+  SNAPSHOT_MAX_AGE_MS,
+  SNAPSHOT_MAX_PER_NODE,
+} from "../constants/limits";
 import {
   historyReadme,
   isSnapshotDue,
@@ -931,7 +938,13 @@ export async function collectWorldFiles(projectsDir: string, rememberedPaths: st
 
 export async function saveProject(rootPath: string, project: Project): Promise<void> {
   await mkdir(rootPath, { recursive: true });
-  await writeTextFile(joinPath(rootPath, PROJECT_FILE), JSON.stringify(project, null, 2));
+  const projectPath = joinPath(rootPath, PROJECT_FILE);
+  // The one door every write to project.json goes through, which is why the
+  // copy is taken here rather than at the dozen call sites that reorder a
+  // tree, set a home page or pin something. Before the write, so what is kept
+  // is the arrangement this save is replacing.
+  await snapshotBeforeWrite(rootPath, PROJECT_HISTORY_ID, projectPath, false);
+  await writeTextFile(projectPath, JSON.stringify(project, null, 2));
 }
 
 /**
@@ -1079,6 +1092,30 @@ export async function fileMarks(paths: readonly string[]): Promise<Record<string
  */
 const lastSnapshotAt = new Map<string, number>();
 
+/**
+ * The retention rules in force, which the user can change (Phase 19).
+ *
+ * A module-level value set from outside rather than a settings read in here,
+ * because this file may not know what a preference is — it is handed the
+ * numbers the same way it is handed a path. Starts at the shipped defaults, so
+ * a copy taken before the settings file has finished loading is kept under the
+ * same rules it always was rather than under none.
+ */
+let retention = {
+  intervalMs: SNAPSHOT_INTERVAL_MS,
+  maxAgeMs: SNAPSHOT_MAX_AGE_MS,
+  maxPerNode: SNAPSHOT_MAX_PER_NODE,
+};
+
+/** Called on startup and whenever the setting changes. See preferences-store. */
+export function setSnapshotRetention(next: {
+  intervalMs: number;
+  maxAgeMs: number;
+  maxPerNode: number;
+}): void {
+  retention = next;
+}
+
 /** Called when a project closes, so a second world doesn't inherit the first's. */
 export function forgetSnapshotTimes(): void {
   lastSnapshotAt.clear();
@@ -1134,7 +1171,7 @@ async function snapshotBeforeWrite(rootPath: string, nodeId: string, filePath: s
       last = existing[0]?.at ?? null;
       if (last !== null) lastSnapshotAt.set(nodeId, last);
     }
-    if (!force && !isSnapshotDue(last, now)) return;
+    if (!force && !isSnapshotDue(last, now, retention.intervalMs)) return;
     if (!(await exists(filePath))) return; // A page being created has no past.
 
     const contents = await readTextFile(filePath);
@@ -1169,7 +1206,8 @@ async function writeHistoryReadme(rootPath: string): Promise<void> {
 /** Applies the retention rules to one node's directory. */
 async function pruneSnapshots(rootPath: string, nodeId: string, now: number): Promise<void> {
   const dir = historyDirFor(rootPath, nodeId);
-  for (const snapshot of snapshotsToPrune(await listSnapshots(rootPath, nodeId), now)) {
+  const rules = { maxAge: retention.maxAgeMs, maxPerNode: retention.maxPerNode };
+  for (const snapshot of snapshotsToPrune(await listSnapshots(rootPath, nodeId), now, rules)) {
     try {
       await remove(joinPath(dir, snapshot.name));
     } catch {
@@ -1189,6 +1227,40 @@ async function pruneSnapshots(rootPath: string, nodeId: string, now: number): Pr
 export async function snapshotNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
   const { dirSegments, fileName } = resolveNodePath(node, graph);
   await snapshotBeforeWrite(rootPath, node.id, joinPath(rootPath, ...dirSegments, fileName), true);
+}
+
+/** The copies kept of `project.json`, newest first. */
+export async function listProjectSnapshots(rootPath: string): Promise<Snapshot[]> {
+  return listSnapshots(rootPath, PROJECT_HISTORY_ID);
+}
+
+/**
+ * One copy of `project.json`, parsed back.
+ *
+ * Checked for a `rootOrder` rather than only for being an object: this file is
+ * the tree's order, and something in this folder that parses but has no order
+ * in it cannot restore anything. Null either way, and the panel says nothing
+ * was readable rather than restoring an empty arrangement over a real one.
+ */
+export async function readProjectSnapshot(rootPath: string, name: string): Promise<Project | null> {
+  try {
+    const raw = await readTextFile(joinPath(historyDirFor(rootPath, PROJECT_HISTORY_ID), name));
+    const parsed = JSON.parse(raw) as Project;
+    return parsed && typeof parsed === "object" && Array.isArray(parsed.rootOrder) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Copies `project.json` aside right now, whatever the interval says.
+ *
+ * The counterpart of `snapshotNode` for the same reason: what is about to be
+ * replaced by a restore has to become a version first, or choosing the wrong
+ * one is a one-way door.
+ */
+export async function snapshotProjectFile(rootPath: string): Promise<void> {
+  await snapshotBeforeWrite(rootPath, PROJECT_HISTORY_ID, joinPath(rootPath, PROJECT_FILE), true);
 }
 
 export async function saveNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {

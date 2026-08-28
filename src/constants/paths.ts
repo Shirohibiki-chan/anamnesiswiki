@@ -255,3 +255,14 @@ export const HISTORY_DIR = ".history";
  */
 export const HISTORY_README_FILE = "README.txt";
 
+/**
+ * The directory `project.json`'s own copies go in, beside the pages'.
+ *
+ * A word rather than an id, and safe next to them because every other folder in
+ * here is named after a node id — a UUID, which this is not and cannot collide
+ * with. `project.json` holds the tree's order, the home page, the pins and the
+ * expanded folders: not writing, but the other file in a world whose loss would
+ * hurt, and the one thing in it that no page's history can put back.
+ */
+export const PROJECT_HISTORY_ID = "project";
+

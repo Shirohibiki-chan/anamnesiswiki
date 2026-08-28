@@ -20,6 +20,9 @@ export function useDialogs() {
   const historyNodeId = useDialogStore((s) => s.historyNodeId);
   const openHistory = useDialogStore((s) => s.openHistory);
   const closeHistory = useDialogStore((s) => s.closeHistory);
+  const isProjectHistoryOpen = useDialogStore((s) => s.isProjectHistoryOpen);
+  const openProjectHistory = useDialogStore((s) => s.openProjectHistory);
+  const closeProjectHistory = useDialogStore((s) => s.closeProjectHistory);
   const pendingAssetPick = useDialogStore((s) => s.pendingAssetPick);
   const requestAssetPick = useDialogStore((s) => s.requestAssetPick);
   const resolveAssetPick = useDialogStore((s) => s.resolveAssetPick);
@@ -27,6 +30,9 @@ export function useDialogs() {
     historyNodeId,
     openHistory,
     closeHistory,
+    isProjectHistoryOpen,
+    openProjectHistory,
+    closeProjectHistory,
     pendingAssetPick,
     requestAssetPick,
     resolveAssetPick,

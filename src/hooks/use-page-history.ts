@@ -106,3 +106,37 @@ export function usePageHistory(nodeId: string | null): PageHistory {
 
   return { snapshots, listedAt: loaded?.at ?? 0, selected, select, restore, isRestoring };
 }
+
+/**
+ * How many copies one page has, or null while nobody is asking.
+ *
+ * Pass the id only while the thing that needs the number is on screen — the
+ * tree's row menu passes `null` until it opens. Every row in the tree renders
+ * this hook, so a version that read the disk for its own row on mount would be
+ * one directory listing per visible page, repeated on every scroll.
+ *
+ * Read fresh each time rather than cached anywhere: the menu opens on one page
+ * at a time, a listing is cheap, and a count that is quietly out of date is
+ * worse than a count that takes a moment to arrive.
+ */
+export function useSnapshotCount(nodeId: string | null): number | null {
+  const rootPath = useProjectStore((state) => state.rootPath);
+  // Carries the id it was counted for, the same shape `usePageHistory` uses
+  // above and for the same two reasons: a listing that arrives after the menu
+  // has moved to another row belongs to neither, and clearing on the way into
+  // the effect would be a cascading render for an answer already known.
+  const [loaded, setLoaded] = useState<{ forNodeId: string; count: number } | null>(null);
+
+  useEffect(() => {
+    if (!rootPath || !nodeId) return;
+    let live = true;
+    void listSnapshots(rootPath, nodeId).then((found) => {
+      if (live) setLoaded({ forNodeId: nodeId, count: found.length });
+    });
+    return () => {
+      live = false;
+    };
+  }, [nodeId, rootPath]);
+
+  return loaded && loaded.forNodeId === nodeId ? loaded.count : null;
+}
