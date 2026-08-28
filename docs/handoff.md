@@ -1658,11 +1658,24 @@ under `acknowledgedWarnings`.
   the page type, quote callout, three heading-plus-instructions pairs, secret
   callout at the bottom. A rewording pass doesn't touch any of that, which is
   exactly why it survived one. The registry now varies tab sets, section counts
-  and callout placement per template, headings read as prompts rather than
-  one-word labels, and nothing is called "Overview".
-  `template-registry.test.ts` guards the shape as well as the wording — the LK
-  tab signatures, the fixed info-then-quote opener, and a silhouette check that
-  fails if two templates end up stamped from the same mould.
+  and callout placement per template, the section sets are a different cut
+  rather than LK's list with synonyms swapped in, and nothing is called
+  "Overview". `template-registry.test.ts` guards the shape as well as the
+  wording — the LK tab signatures, the fixed info-then-quote opener, and a
+  silhouette check that fails if two templates end up stamped from the same
+  mould.
+
+- **Two rules about section headings are load-bearing, and the first attempt at
+  the redesign above broke both.** A heading must be a short label ("Appearance",
+  "Provenance", "Departures"), not a sentence or a question; and every heading
+  must be followed by a paragraph saying what goes under it. The first version
+  used question-shaped headings and left the paragraph out wherever the heading
+  "spoke for itself" — which rendered as h2 text wrapping to two lines with
+  nothing beneath it, a page of enormous floating headings over empty space. It
+  read as a half-written document rather than an example structure, which is the
+  one thing a template cannot afford to look like. Both rules are now tests.
+  Every other guard in that file passed the whole time it was broken, and so did
+  a full `pnpm test` run — the defect was only ever visible on screen.
 
 - **`lk-import.ts`'s TAB_SIGNATURE_TEMPLATES is not the same list, on purpose.**
   It has to keep matching LK's tab names to recognise their files; the registry

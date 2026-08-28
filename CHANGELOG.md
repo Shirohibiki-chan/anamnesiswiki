@@ -5,7 +5,7 @@
 ### Changes
 
 - **Every template has been rebuilt from the shape up.** The words were rewritten a while back, but the layout under them hadn't changed at all — the same tabs in the same order, the same headings, and the same run of blocks repeated identically on every tab of every template. That's all been redesigned.
-- **Headings ask you something instead of labelling a box.** "What you notice first" rather than "Description", "What it costs to use" rather than "Function". Where a heading already says everything, there's just an empty line to start typing on rather than a paragraph of instructions to delete first.
+- **The sections are named differently, and every one still explains itself.** A Character page goes Appearance, Manner, Motivations; an Item goes Appearance, Abilities, Limits; an Event goes In brief, Causes, Aftermath. Each heading has a line under it saying what belongs there, the way it always did.
 - **The tabs are named for what's in them.** No more "Overview" on everything: a Character opens on *Who They Are* with *Ties* beside it, a Location on *The Place*, an Item on *The Thing Itself*.
 - **Character has a Ties tab.** Somewhere to put who they're closest to, who they're at odds with, and who owes whom — with a reminder that @ links a page that already exists.
 - **Species is three tabs instead of five.** Five on an empty page read as homework. Beliefs and Relations are now sections inside *Living*.

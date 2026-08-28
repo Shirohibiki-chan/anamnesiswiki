@@ -26,6 +26,13 @@ const LK_TRANSCRIBED = [
 // template by accident, describing a feature that has never existed.
 const PROTOTYPE_LEAKS = ["in the real build", "Leaflet", "placeholder —"];
 
+function blockText(block: unknown): string {
+  const content = (block as { content?: { text?: string }[] } | undefined)?.content ?? [];
+  return content.map((run) => run.text ?? "").join("").trim();
+}
+
+const headingText = blockText;
+
 function seedText(key: string): string {
   return getDefaultTabs(key)
     .flatMap((tab) => tab.content)
@@ -125,6 +132,37 @@ describe("template layout is ours", () => {
       for (const tab of getDefaultTabs(key)) {
         const opener = tab.content.slice(0, 2).map((block) => (block as { type: string }).type);
         expect(opener, `${key}/${tab.id}`).not.toEqual(["calloutInfo", "calloutQuote"]);
+      }
+    }
+  });
+
+  // These two are the ones that matter. The first pass of the redesign shipped
+  // sentence-length headings with nothing under half of them, which rendered as
+  // giant headings floating over empty space — a template that looks
+  // half-written rather than one that shows you a structure. Every other guard
+  // in this file passed while that was true.
+  it("keeps every section heading short enough to read as a label", () => {
+    for (const key of TEMPLATE_KEYS) {
+      for (const tab of getDefaultTabs(key)) {
+        for (const block of tab.content) {
+          if ((block as { type: string }).type !== "heading") continue;
+          const words = headingText(block).split(/\s+/).filter(Boolean);
+          expect(words.length, `${key}/${tab.id}: "${headingText(block)}"`).toBeLessThanOrEqual(5);
+        }
+      }
+    }
+  });
+
+  it("follows every section heading with a line saying what goes under it", () => {
+    for (const key of TEMPLATE_KEYS) {
+      for (const tab of getDefaultTabs(key)) {
+        tab.content.forEach((block, index) => {
+          if ((block as { type: string }).type !== "heading") return;
+          const next = tab.content[index + 1] as { type?: string } | undefined;
+          const where = `${key}/${tab.id}: "${headingText(block)}"`;
+          expect(next?.type, `${where} is the last block in its tab`).toBe("paragraph");
+          expect(blockText(next), `${where} is followed by an empty paragraph`).not.toBe("");
+        });
       }
     }
   });
