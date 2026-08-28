@@ -202,6 +202,14 @@ macOS and Linux published normally, leaving a draft with two thirds of a release
 in it. The notes go through a file now, which has no ceiling — but if anyone
 ever puts them back on the command line, this is what it looks like.
 
+**Two drafts for one tag, and every job green.** Happened on v0.6.0 and fixed
+by opening the draft in the version-check job before any build runs. The three
+build jobs used to each create the release if they could not find one, so two of
+them creating it in the same second split the installers across two drafts —
+neither complete, both looking fine from the Actions tab. **The check is the
+releases page, not the run: one draft, and eleven files on it.** A second draft
+under the same version is the tell.
+
 **A failure inside the workflow itself cannot be fixed by re-running the job.**
 Worth knowing before reaching for the re-run button, because the advice above is
 for a build that failed, not for a workflow that was wrong. A re-run checks the
