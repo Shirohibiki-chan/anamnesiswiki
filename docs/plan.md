@@ -22,6 +22,19 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
+- **Watch the update button on the release after v0.6.0.** One link in the
+  chain has never run: an installed Electron build finding a newer one and
+  installing it. Everything up to it is proven — the pipeline, the three
+  installers, the feeds, and an install opening a real world — but this cannot
+  be tested with one release in existence, only with two. If it is going to
+  fail, it fails silently, by the button saying there is nothing new.
+  `docs/releasing.md` has the shape of the feed and where to look.
+
+- **He may still be on the Tauri 0.5.0 build.** The reinstall v0.6.0 needs is
+  one each, by hand, and hers is done. Until his is, his copy is the old shell
+  and reports the old version, which is worth remembering before reading a bug
+  report from that machine.
+
 - **The colour dot on every tree row is in the wrong place, and the folder
   colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
   a screenshot; she said plainly she'd deal with the overhaul later, so this is
@@ -285,219 +298,6 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ---
 
-## Phase 29 — The Shell
-
-**Scoped 2026-08-25. Replace Tauri with Electron.** The app keeps its own
-Chromium instead of borrowing whatever browser engine the operating system
-happens to have.
-
-### Why, in the order the reasons actually matter
-
-- **Linux is a real platform for this app, and it has the worst engine.** Her
-  partner runs it on two Fedora machines — one current, one old — having moved
-  off Obsidian because she suggested this instead. **She intends to move to
-  Linux herself.** So Linux is not a build target nobody runs; it is where this
-  app is heading.
-- **Tauri borrows the OS webview**, which means Chromium on Windows, WebKit on
-  macOS and WebKitGTK on Linux. Three engines, one of which lags badly and none
-  of which she can update on a user's behalf.
-- **This is already biting, today.** The spectrum meter's wrapping word fields
-  need CSS `field-sizing`, which WebKitGTK only shipped in 2.52 (March 2026).
-  On the older Fedora box those fields draw one line and clip the rest — worse
-  than the truncation they replaced, and invisible from Windows. A fallback
-  ships separately and immediately; it is a patch over the real problem.
-- **Phase 19 is the reason to do this now rather than later.** Snapshots and
-  file recovery are the most filesystem-heavy work left in this document, and
-  the filesystem layer is exactly what a shell swap rewrites. Building 19 on
-  Tauri and then moving it is doing it twice.
-- **The switch does not get cheaper by waiting, and barely gets dearer.**
-  Measured 2026-08-25: 235 source files, ~41,600 lines, of which **ten files
-  touch Tauri at all**, across about seventeen call sites, plus 22 lines of
-  hand-written Rust. Feature work lands in the other 225 files. What grows the
-  coupled surface is new *kinds* of OS access — which is precisely what Phase 19
-  would add.
-
-### What is accepted, deliberately
-
-- **More memory, and a bigger installer** — roughly 8 MB → ~150 MB, and a
-  heavier process tree. **Her answer, 2026-08-25: anyone who wants a light
-  version can use the eventual browser edition.** That is the trade being made
-  on purpose, and it raises the browser edition from "someday" to "the other
-  half of this decision" (`docs/ideas.md` → Browser version).
-- **One manual reinstall each.** A Tauri installation cannot auto-update into an
-  Electron one — different updater, different signing. Both existing users
-  install once by hand; updates resume normally after that.
-- **Losing Tauri's capability scoping.** It enforced the network policy that was
-  retired the same day, so there is nothing left for it to enforce.
-
-### What is explicitly not in scope
-
-**The data format does not change.** Same JSON, same folder-per-node layout,
-same `assets/`. A world written by the Tauri build opens in the Electron build
-untouched — if that ever looks like it needs to bend, stop and raise it.
-No feature work rides along. No visual changes.
-
-### Where it has got to
-
-**Steps 1 and 2 have shipped.** Every Tauri call is behind
-`services/host-service.ts` (PR #272), and `host-service.electron.ts` plus
-`electron/` implement the same contract over Electron and Node — verified
-running: the real window opens, reads her projects off disk, round-trips text
-and binary files, watches a directory, and closes through the save-on-exit
-handshake.
-
-**Most of step 3 has shipped too**, later the same day and after this section
-was last written: `electron-builder.yml`, `release-electron.yml`, the updater
-on `electron-updater`, and `docs/releasing.md` rewritten around all of it.
-
-What is genuinely left is the part that can only be settled by running it:
-
-- **v0.6.0 is the first Electron release.** The version was bumped and its
-  `RELEASES.md` section written on 2026-08-27, which is what closed the known
-  bug about two different builds both calling themselves 0.5.0.
-- **Every existing installation reinstalls by hand once.** A Tauri build reads
-  `latest.json` and this pipeline publishes electron-updater's feed instead, so
-  every 0.5.0 out there reports no update available. This was always the accepted
-  cost of the swap; what is new is that it had to be said out loud, and the
-  v0.6.0 notes lead with it rather than leaving it to be discovered.
-- **The last unproven link is an Electron build updating itself.** The pipeline
-  is dry run — all three platforms built without spending a version number, and
-  the AppImage the Fedora machine ran came out of it — and the tagged path is
-  proven the moment v0.6.0 goes out. What nothing can test until there are two
-  published Electron releases is one of them finding and installing the next.
-- **The Linux AppImage works on the machine that had the problem — confirmed
-  2026-08-27.** Tauri's bundler sealing the host's graphics libraries into the
-  AppImage was the original crash; electron-builder builds its own, and the
-  first Electron AppImage handed to him started on the same Fedora machine that
-  used to die with `EGL_BAD_PARAMETER` before a window appeared. No
-  `LD_PRELOAD`, no workaround. That closes the Known Bug this phase inherited,
-  and it removes the argument for dropping the AppImage target.
-- **Usage reporting: built 2026-08-26, removed 2026-08-27.** Kept here as a
-  settled decision rather than deleted, so it does not get proposed a third
-  time.
-
-  It worked, and it was honest — a closed list of eight event names that could
-  not carry her writing, a one-time notice with two real buttons, a visible
-  switch. It went anyway, and the reasons are the part worth keeping:
-
-  - **The numbers would not have said much.** A handful of users, one of whom
-    she talks to daily. Asking them answers more, and sooner, than a dashboard
-    of counts drawn from a sample that size.
-  - **"It sends nothing" is worth more than the counts were.** People arrive at
-    this app from Notion and from Obsidian, and the second one wins them partly
-    by collecting nothing at all. A data modal on first launch is a strange
-    thing to hand somebody in the middle of that trade.
-  - **Checking the neighbours cut the other way from how it looked.** Notion
-    and LegendKeeper collect plenty and have no switch, because they are
-    websites and there is nothing to opt out of short of leaving. Obsidian has
-    no switch because it collects nothing. Nowhere in that does a desktop tool
-    come out ahead by having a toggle.
-
-  The Aptabase account goes with it. `.env` was committed, so the key is in the
-  history — it is a write-only ingest key rather than a secret, but the app it
-  points at should be deleted rather than left listening.
-
-- **Settings → Report a bug (the Privacy tab, renamed 2026-08-27) says nothing
-  about collection or the network, and that is deliberate.** Same day, hours after the page was written.
-
-  It briefly held two more sections: one declaring that the app collects
-  nothing, one listing the two times it reaches the network. Both were
-  accurate. Both were also promises, and neither subject is settled — usage
-  reporting is a thing she may want again if the app finds an audience worth
-  measuring, and what it fetches will grow as features land. A page that has to
-  be walked back later costs more than a page that never made the claim, so the
-  claims came out rather than being hedged.
-
-  **Do not re-add them as a selling point.** Collecting nothing is a good
-  property and a bad advertisement: the moment it is written on a screen it
-  becomes a thing to retract. The constraint itself is unchanged and lives in
-  `CLAUDE.md` → Two Promises, where it governs what gets built rather than what
-  gets said.
-
-  What stays is the crash log section, because it describes rather than
-  promises: where the file is and what goes in it, which is what somebody needs
-  in order to find it and pass it on.
-
-- **Crash reporting, and it never leaves the machine.** Her call 2026-08-27,
-  the one piece of the above she did want, and now built.
-
-  **Nothing caught a crash before this.** No error boundary, no
-  `window.onerror`, no handler for a rejected promise anywhere in `src/` or
-  `electron/` — a crash in the tree was a white window and no explanation. That
-  was the real gap, and closing it was worth doing whether or not anything is
-  ever sent anywhere.
-
-  - `components/shell/ErrorBoundary.tsx` wraps `<App />` from `main.tsx` rather
-    than sitting inside App, because a boundary cannot catch a throw from the
-    component it is written in.
-  - `components/shell/CrashScreen.tsx` is what the white window became: what
-    happened, that the files on disk were not touched, a restart, and a button
-    that copies the details. The trace is shown rather than hidden, because
-    nothing is being sent and there is nothing to be coy about.
-  - `services/crash-log-service.ts` keeps the last five in `crash-log.json`
-    beside the settings, through the same `openKeyValueStore` door the settings
-    use — no new shell capability, so it works the same under both shells.
-  - **The two global handlers record and do nothing else.** A rejected promise
-    usually leaves the app perfectly usable, and blanking the window over one
-    would be a worse bug than the one being reported. Settings → Report a bug
-    is where those become findable, and it can copy the last one.
-
-  **Why not the automatic kind.** A stack trace carries error messages, and
-  this app's error messages carry file paths — which carry world names and page
-  titles. The usage events could be *proven* content-free by reading a list of
-  eight strings; a crash report can only be scrubbed and hoped over. Showing
-  somebody the text and letting them press the button is the version with no
-  hoping in it — and it is why the record can afford to be complete.
-
-  **Still open**: nothing renders the panel on purpose yet, so the only proof
-  it works is a test and a hand-thrown error. A scenario in `pnpm test:app`
-  that throws inside the tree and asserts the panel is the obvious next step.
-
-### The work, in three steps
-
-1. **One door.** Pull those seventeen call sites behind a single module, so that
-   nothing outside it knows which shell is underneath. This is architecture rule
-   5 (`filesystem-service.ts` is the only file that touches disk) finally
-   enforced — nine other files quietly break it today: `constants/paths.ts`,
-   `hooks/use-save-on-exit.ts`, `hooks/use-updates.ts`, `main.tsx`,
-   `services/app-settings-service.ts`, `services/dialog-service.ts`,
-   `services/lk-import.ts`, `services/update-service.ts`, `state/project-store.ts`.
-   **Worth doing on its own merits even if the rest is never built**, and it is
-   day one of the swap either way. Ships as its own PR, no behaviour change.
-2. **The Electron side of the door.** A main process implementing the same
-   contract over Node: file reads and writes, the native dialogs, settings, the
-   window. Node's `fs` is richer than the plugin, so this is mostly narrowing,
-   not inventing.
-3. **The pipeline, which is the real work.** `electron-builder` for Windows,
-   macOS and Linux; the updater and its feed; rebuilding `.github/workflows`
-   and `docs/releasing.md`. This is the part that took the longest last time
-   (see the AppImage saga) and it should be estimated as the bulk of the phase,
-   not the tail of it.
-
-   **Nothing is code signed, and that is a decision rather than a gap** — see
-   `docs/releasing.md` § *Nothing is code signed, on purpose*. The Tauri builds
-   were never signed either, so this is the same position written down, not a
-   change. Don't re-add signing to this list.
-
-### Unknowns, all since settled
-
-Kept because the answers are the useful part:
-
-- **The updater moved to `electron-updater`'s own feed.** It verifies the
-  SHA-512 published in the release feed, fetched from GitHub over HTTPS, rather
-  than a key she holds. Tauri's minisign key is unused and nothing reads the
-  secret any more; it can be deleted from the repository's settings.
-- **macOS notarisation does not apply**, because nothing is signed. The cost is
-  that a Mac will not open the app from a double-click and its updates have to
-  be installed by hand — both written up in `docs/releasing.md`, and both
-  things to say in the release notes when there is a Mac build.
-- **`pnpm tauri:inspect` did not disappear; it grew a twin.**
-  `pnpm electron:inspect` opens the same kind of debug port on the Electron
-  window (PR #277), which is what made the tree-scroll bug measurable rather
-  than a matter of opinion.
-
----
-
 ## Phase 19 — Safety Net
 
 **Version history shipped 2026-08-27** — see `docs/shipped.md`. Copies of a page
@@ -505,11 +305,10 @@ are kept in `.history/` inside the project, browsed and restored from a tree
 row's *Earlier versions*. What is left of the phase is below.
 
 **The ordering note that used to head this phase — "runs after Phase 29,
-because the shell swap rewrites the filesystem layer" — was spent by the time
-the work started.** Steps 1–3 of Phase 29 have shipped; what remains of it is a
-release and deleting two workflows, neither of which touches
-`filesystem-service.ts`. It is recorded here rather than deleted because the
-reasoning was right when it was written.
+because the shell swap rewrites the filesystem layer" — was spent before the
+work started, and Phase 29 shipped in full on 2026-08-28.** Kept as a line
+rather than deleted because the reasoning was right when it was written: it
+just stopped applying earlier than expected.
 
 Unglamorous and probably the highest-value work in this document. This app has already lost user data once (`docs/handoff.md` §Storage).
 
