@@ -4601,3 +4601,52 @@ to the type's own colour.
 
 Photographed: the swatch popover, an Info in emerald with its tick, and a Quote
 in wine keeping its italics.
+
+---
+
+## The move/delete/duplicate slice comes out of the store ✅ Shipped 2026-08-28
+
+An engineering pass, not a phase. Came out of a read-through of the whole
+codebase asking whether it wanted refactoring; the honest answer was mostly no —
+49 of 56 services had their own tests, the layering held, and there were almost
+no type escapes — but `project-store.ts` was 3,226 lines and roughly 140 actions
+in a single `create()` call, and it was the only large file in the project with
+no unit tests of its own.
+
+Rather than split the file for its own sake, one slice moved: the three
+operations that can destroy her writing rather than merely add to it.
+`node-edit-service.ts` now holds `planMove`, `planDelete`, `planDuplicate`,
+`duplicateScope`, and the two helpers the store used to keep privately
+(`orderedSiblingIds`, `descendantIds`). Each takes a graph and gives one back,
+with no React, no store and no disk in it. The store kept the writes, the undo
+entries and the picture files.
+
+`planDuplicate` takes the copied asset filenames as an argument rather than
+minting them, which is the seam that made the whole thing testable: copying a
+file is I/O, deciding which clone wears it is not.
+
+**One behaviour changed, deliberately.** `moveNodes` guarded against a
+destination that isn't in the graph, but did so *before* awaiting the pending
+saves — so a parent deleted during that window was never re-checked. The guard
+now runs inside `planMove`, on the state read after the await, which closes the
+hole rather than widening it: the drop is refused instead of filing a subtree
+under an id that has gone.
+
+Store: 3,226 → 3,103 lines.
+
+### Verification
+
+Unit: 43 new tests in `node-edit-service.test.ts`, covering the cases that would
+be silent if they broke — an order left mentioning a page that is gone, a home
+button or a shortcut aimed at nothing, a copy landing one place too far along
+when several are made at once, and a clone wearing the original's picture file.
+
+App: moving and deleting a page had *no* scenario at all — `deletes-a-project`
+deletes a whole project, not a page, and nothing dragged a row. Duplicating was
+already covered by `undo-keys`. `moves-and-deletes-a-page.e2e.ts` fills the gap:
+it files a page into a folder, deletes one, and pins one and deletes it, each
+assertion re-checked after a window reload, because a move or delete that only
+happened in memory looks exactly like one that worked until the app is opened
+again.
+
+Suites after: 1,574 unit tests (from 1,531), 81 app scenarios (from 77).

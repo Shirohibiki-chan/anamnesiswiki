@@ -24,6 +24,23 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
+- **Keep peeling logic out of `project-store.ts`, a slice at a time.** A
+  read-through on 2026-08-28 found it at 3,226 lines and around 140 actions in
+  one `create()` call — the largest file in the project and, at the time, the
+  only large one with no unit tests of its own. The move/delete/duplicate slice
+  came out that day into `node-edit-service.ts`; the rest has not.
+
+  **The pattern is the one the store already uses in places** — an action that
+  is a line or two calling a planner in a service, the way
+  `renameTagEverywhere` calls `planTagRename`. The next slices worth taking, in
+  rough order of what would hurt most if it broke: applying a template
+  (`applyTemplate`, `applyCustomTemplate`), the asset lifecycle
+  (`setNodeImage`, `clearNodeImage`, the banner pair), and the tab actions.
+
+  **Not as its own phase.** Take a slice when a feature is already touching it,
+  so the tests arrive with a reason to trust them. A rewrite of the whole file
+  in one go trades a working 3,000-line file for an untested one.
+
 - **The shortcut sheet shows keys and nothing else.** Noticed 2026-08-28 when
   the user asked whether we had the reference's Shortcuts window and sent a
   screenshot of it. We have a sheet — `ShortcutSheet.tsx`, on `?` — and in one

@@ -84,7 +84,16 @@ import {
   withMeters,
   withoutMeter,
 } from "../services/meter-service";
-import { isDescendantOf, orderSiblings, selectionRoots, sortSiblingIds, type SiblingSort } from "../services/tree-service";
+import {
+  descendantIds,
+  duplicateScope,
+  orderedSiblingIds,
+  planDelete,
+  planDuplicate,
+  planMove,
+  type ClonedAssetNames,
+} from "../services/node-edit-service";
+import { isDescendantOf, sortSiblingIds, type SiblingSort } from "../services/tree-service";
 import {
   addOverride,
   addTemplate,
@@ -599,44 +608,6 @@ export type ProjectStoreState = {
 // Debounce key for project.json metadata writes (selection, expanded state)
 // that aren't node edits but shouldn't hammer disk on every click either.
 const PROJECT_META_SAVE_KEY = "__project_meta__";
-
-// The sibling order as the tree is actually showing it right now — the stored
-// manual order where there is one, creation order for everything else. Used as
-// the base list a drop inserts into, so a never-reordered folder doesn't have
-// to be seeded separately. Exported for LK export, which needs the same "order
-// as shown" answer to write sibling positions the user will recognise.
-export function orderedSiblingIds(
-  nodes: Record<string, Node>,
-  project: Project,
-  parentId: string | null,
-): string[] {
-  const siblings = Object.values(nodes).filter((n) => n.parentId === parentId);
-  const stored = parentId === null ? project.rootOrder : project.childOrder?.[parentId];
-  return orderSiblings(siblings, stored).map((n) => n.id);
-}
-
-// Every descendant of `id`, breadth-first. Groups children by parent in one
-// pass and then walks that grouping, rather than re-scanning the whole node
-// record once per level — the recursive-filter shape this replaces re-read
-// every node in the project for every node in the subtree.
-function descendantIds(id: string, nodes: Record<string, Node>): string[] {
-  const childIdsByParent = new Map<string | null, string[]>();
-  for (const node of Object.values(nodes)) {
-    const siblings = childIdsByParent.get(node.parentId);
-    if (siblings) siblings.push(node.id);
-    else childIdsByParent.set(node.parentId, [node.id]);
-  }
-
-  const collected: string[] = [];
-  const queue: string[] = [id];
-  for (let cursor = 0; cursor < queue.length; cursor++) {
-    for (const childId of childIdsByParent.get(queue[cursor]) ?? []) {
-      collected.push(childId);
-      queue.push(childId);
-    }
-  }
-  return collected;
-}
 
 export const useProjectStore = create<ProjectStoreState>((set, get) => {
   const markSaved = () => set({ lastSavedAt: Date.now() });
@@ -2409,44 +2380,13 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (present.length === 0) return;
 
       const allNodesBefore = Object.values(nodesAfter);
-      const movingSet = new Set(present);
-      const now = Date.now();
-      const nextNodes = { ...nodesAfter };
-      for (const id of present) nextNodes[id] = { ...nodesAfter[id], parentId: newParentId, updatedAt: now };
-
-      // Every drop is "put these nodes at this position under this parent",
-      // whether that's the root or a folder, whether the parent changed or
-      // not. The destination list is rebuilt from the sibling order actually
-      // on screen (not from whatever partial list is stored) so a folder that
-      // has never been reordered still gets a complete, correct list the
-      // first time something is dropped into it. Dragged nodes keep their own
-      // relative order, which is the order react-arborist hands them over in.
-      const destinationIds = orderedSiblingIds(nextNodes, projectAfter, newParentId).filter((n) => !movingSet.has(n));
-      const insertAt = index === undefined ? destinationIds.length : Math.min(Math.max(index, 0), destinationIds.length);
-      const destinationOrder = [...destinationIds.slice(0, insertAt), ...present, ...destinationIds.slice(insertAt)];
-
-      let nextProject: Project =
-        newParentId === null
-          ? { ...projectAfter, rootOrder: destinationOrder }
-          : { ...projectAfter, childOrder: { ...projectAfter.childOrder, [newParentId]: destinationOrder } };
-
-      // Drop them out of wherever they used to live, so a stale entry can't
-      // pull one back to an old position if it's ever moved home again. A
-      // multi-selection can span several old parents.
-      const oldParentIds = new Set(present.map((id) => nodesAfter[id].parentId).filter((p) => p !== newParentId));
-      for (const oldParentId of oldParentIds) {
-        if (oldParentId === null) {
-          nextProject = { ...nextProject, rootOrder: nextProject.rootOrder.filter((n) => !movingSet.has(n)) };
-        } else if (nextProject.childOrder?.[oldParentId]) {
-          nextProject = {
-            ...nextProject,
-            childOrder: {
-              ...nextProject.childOrder,
-              [oldParentId]: nextProject.childOrder[oldParentId].filter((n) => !movingSet.has(n)),
-            },
-          };
-        }
-      }
+      // The graph half of the drop — reparenting, the destination order, and
+      // pruning every old parent that mentioned one of these — is
+      // node-edit-service's, and tested there. What is left here is the part
+      // that needs the store: the writes and the undo entry.
+      const plan = planMove(nodesAfter, projectAfter, present, newParentId, index, Date.now());
+      if (!plan) return;
+      const { nodes: nextNodes, project: nextProject, previousParents } = plan;
 
       set({ nodes: nextNodes, project: nextProject });
       track(() => fsService.moveNodes(rootPathAfter, allNodesBefore, Object.values(nextNodes), present));
@@ -2455,7 +2395,6 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // Where each one came from. A multi-selection can be dragged out of
       // several different folders at once, so putting them back is one move
       // per old parent, not one move.
-      const previousParents = new Map(present.map((id) => [id, nodesAfter[id].parentId]));
       const orderingBefore = captureOrdering(projectAfter);
       const orderingAfter = captureOrdering(nextProject);
       const groupsByOldParent = new Map<string | null, string[]>();
@@ -2507,57 +2446,21 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) return;
 
-      const existing = ids.filter((id) => nodes[id]);
-      if (existing.length === 0) return;
+      // The graph half — expanding to subtrees, working out which roots the
+      // disk should be asked for, pruning the orders, and clearing home, pins
+      // and the selection when what they point at is going — is
+      // node-edit-service's, and tested there.
+      const plan = planDelete(nodes, project, ids);
+      if (!plan) return;
+      const { nodes: nextNodes, project: nextProject, deleted: existing, removedIds: toRemove, removalRoots } = plan;
 
       const allNodesBefore = Object.values(nodes);
-      const toRemove = new Set(existing.flatMap((id) => [id, ...descendantIds(id, nodes)]));
-      // Only the roots of the removal go to disk. A selection can easily hold
-      // both a folder and something inside it, and a directory-storage node
-      // takes its whole subtree with it — asking for the child as well would
-      // try to remove a path its parent already took.
-      const removalRoots = existing.filter((id) => {
-        const parentId = nodes[id].parentId;
-        return !parentId || !toRemove.has(parentId);
-      });
       // Cancel (not flush) any pending debounced writes for everything being
       // deleted — a stale write firing after deletion would silently
       // resurrect the file/directory that was just removed.
       for (const removedId of toRemove) cancelSave(removedId);
-      const nextNodes = Object.fromEntries(Object.entries(nodes).filter(([nodeId]) => !toRemove.has(nodeId)));
-      // Prune the manual sibling order too — both the entries *for* deleted
-      // parents and any mention *of* a deleted node inside a surviving
-      // parent's list. Stale ids sort harmlessly, but left alone they'd
-      // accumulate in project.json forever.
-      const nextChildOrder: Record<string, string[]> = {};
-      for (const [parentId, order] of Object.entries(project.childOrder ?? {})) {
-        if (toRemove.has(parentId)) continue;
-        nextChildOrder[parentId] = order.filter((nodeId) => !toRemove.has(nodeId));
-      }
-      const nextProject: Project = {
-        ...project,
-        rootOrder: project.rootOrder.filter((n) => !toRemove.has(n)),
-        childOrder: nextChildOrder,
-        // Home is an ordinary page, so it can be deleted like any other — but
-        // a dangling homeNodeId would leave the house button pointing at
-        // nothing. Cleared here, including when home was merely *inside* the
-        // subtree being deleted rather than its root.
-        homeNodeId: project.homeNodeId && toRemove.has(project.homeNodeId) ? null : project.homeNodeId,
-        // Same again for the shortcut rail: a pinned page is an ordinary page
-        // and can be deleted like one, and a tile pointing at nothing is worse
-        // than no tile.
-        pinnedIds: (project.pinnedIds ?? []).filter((pinnedId) => !toRemove.has(pinnedId)),
-        // Selection survives a delete only if what was selected is still
-        // there — a stale selectedId leaves the page view rendering nothing
-        // with no way back to a real page.
-        selectedId: project.selectedId && toRemove.has(project.selectedId) ? null : project.selectedId,
-        // Same call as selectedId immediately above — selectedName is a copy
-        // of the same node's name and goes stale for the same reason.
-        selectedName:
-          project.selectedId && toRemove.has(project.selectedId) ? null : project.selectedName,
-      };
 
-      // Same reasoning as the two fields above, one level further out: a
+      // Same reasoning as the cleared pointers in the plan, one level further out: a
       // deleted page left in the back stack sends Back to a blank page view
       // with nothing to explain it. Whole subtrees go, not just the rows that
       // were selected, and the cursor is re-pointed at wherever the selection
@@ -2609,77 +2512,51 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) return;
 
-      const existing = ids.filter((id) => nodes[id]);
-      if (existing.length === 0) return;
+      // Which pages a copy has to be made of, worked out before anything is
+      // read: the picture files belonging to them are copied next, and their
+      // new names are an input to the plan rather than something it invents.
+      const scope = duplicateScope(nodes, ids);
+      if (!scope) return;
+      const { roots, subtreeIds } = scope;
 
-      // Only the roots of the selection get copied — see selectionRoots for
-      // why selecting a folder and something inside it can't mean copying both.
-      const roots = selectionRoots(existing, nodes);
-
-      const subtreeIds = roots.flatMap((rootId) => [rootId, ...descendantIds(rootId, nodes)]);
-      const idMap = new Map(subtreeIds.map((subId) => [subId, crypto.randomUUID()]));
-      const rootIds = new Set(roots);
-      const now = Date.now();
-
-      const clones: Node[] = await Promise.all(
-        subtreeIds.map(async (subId) => {
-          const source = nodes[subId];
-          const isRootOfDuplicate = rootIds.has(subId);
-          // A clone must get its own copy of the image/banner file — sharing
-          // the original's filename would mean deleting/replacing it on
-          // either the original or the copy later deletes it out from under
-          // the other (fsService has no dedicated "copy" — read + rewrite
-          // under a fresh name does the same thing).
-          const projectRootPath: string = rootPath;
-          async function cloneAsset(fileName: string | undefined): Promise<string | undefined> {
-            if (!fileName) return fileName;
-            const extension = fileName.slice(fileName.lastIndexOf(".") + 1);
-            const clonedFileName = `${crypto.randomUUID()}.${extension}`;
-            const bytes = await fsService.readAssetImage(projectRootPath, fileName);
-            await fsService.saveAssetImage(projectRootPath, clonedFileName, bytes);
-            return clonedFileName;
-          }
-          const [image, banner] = await Promise.all([cloneAsset(source.image), cloneAsset(source.banner)]);
-          return {
-            ...source,
-            id: idMap.get(subId)!,
-            parentId: isRootOfDuplicate ? source.parentId : (idMap.get(source.parentId!) ?? null),
-            name: isRootOfDuplicate ? `${source.name} (Copy)` : source.name,
-            image,
-            banner,
-            createdAt: now,
-            updatedAt: now,
-          };
-        }),
+      // A clone must get its own copy of the image/banner file — sharing the
+      // original's filename would mean deleting or replacing it on either the
+      // original or the copy later deletes it out from under the other
+      // (fsService has no dedicated "copy" — read + rewrite under a fresh name
+      // does the same thing). This is the I/O half, and the only reason
+      // duplicating is async at all.
+      const projectRootPath: string = rootPath;
+      async function cloneAsset(fileName: string | undefined): Promise<string | undefined> {
+        if (!fileName) return fileName;
+        const extension = fileName.slice(fileName.lastIndexOf(".") + 1);
+        const clonedFileName = `${crypto.randomUUID()}.${extension}`;
+        const bytes = await fsService.readAssetImage(projectRootPath, fileName);
+        await fsService.saveAssetImage(projectRootPath, clonedFileName, bytes);
+        return clonedFileName;
+      }
+      const clonedAssetNames = new Map<string, ClonedAssetNames>(
+        await Promise.all(
+          subtreeIds.map(async (subId): Promise<[string, ClonedAssetNames]> => {
+            const source = nodes[subId];
+            const [image, banner] = await Promise.all([cloneAsset(source.image), cloneAsset(source.banner)]);
+            return [subId, { image, banner }];
+          }),
+        ),
       );
 
-      const nextNodes = { ...nodes };
-      for (const clone of clones) nextNodes[clone.id] = clone;
-
-      // A copy belongs directly after what it was copied from, wherever that
-      // is — at the root or inside a folder. Without the folder half, a
-      // duplicate made inside a folder jumped to the bottom of the list.
-      //
-      // Rebuilt by walking each parent's existing order rather than splicing
-      // one copy in at a time: duplicating several pages from the same folder
-      // at once shifts every position after the first insertion, so the second
-      // copy would land one place further along than it should.
-      const cloneByOriginal = new Map<string, string>(roots.map((rootId) => [rootId, idMap.get(rootId)!]));
-      const cloneRootIds = new Set(cloneByOriginal.values());
-      const affectedParents = new Set(roots.map((rootId) => nodes[rootId].parentId));
-
-      let nextProject: Project = project;
-      for (const parentId of affectedParents) {
-        const siblingIds = orderedSiblingIds(nextNodes, nextProject, parentId).filter((n) => !cloneRootIds.has(n));
-        const withClones = siblingIds.flatMap((n) => {
-          const cloneId = cloneByOriginal.get(n);
-          return cloneId ? [n, cloneId] : [n];
-        });
-        nextProject =
-          parentId === null
-            ? { ...nextProject, rootOrder: withClones }
-            : { ...nextProject, childOrder: { ...nextProject.childOrder, [parentId]: withClones } };
-      }
+      // Everything else — the fresh ids, the rewired parents, the "(Copy)"
+      // suffix and landing each copy directly after its original — is
+      // node-edit-service's, and tested there.
+      const {
+        nodes: nextNodes,
+        project: nextProject,
+        clones,
+        cloneRootIds,
+      } = planDuplicate(nodes, project, scope, {
+        mintId: () => crypto.randomUUID(),
+        now: Date.now(),
+        assets: clonedAssetNames,
+      });
 
       set({ nodes: nextNodes, project: nextProject });
       // Duplicating a folder writes its whole subtree, so the clones share one
