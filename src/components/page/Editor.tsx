@@ -70,8 +70,16 @@ type EditorProps = {
 };
 
 export function Editor({ nodeId, content, onContentChange }: EditorProps) {
-  const { editor, onKeyDownCapture, handleChange, focusEnd, getSlashMenuItems, getMentionItems, suggestionMenuFloating } =
-    useEditor(nodeId, content, onContentChange);
+  const {
+    editor,
+    onKeyDownCapture,
+    handleChange,
+    focusEnd,
+    getSlashMenuItems,
+    getMentionItems,
+    slashShouldOpen,
+    suggestionMenuFloating,
+  } = useEditor(nodeId, content, onContentChange);
   // Double-clicking a picture opens it full size; a single click still selects
   // it, which is what raises the toolbar. The listener lives on this wrapper
   // rather than on anything BlockNote renders, so it covers every picture in
@@ -137,7 +145,17 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         {/* All three take the same floating options — see use-editor.ts. Without
             them a menu opened near the bottom of the window is positioned while
             it's still an empty loading strip and then grows off the screen. */}
-        <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} floatingUIOptions={suggestionMenuFloating} />
+        {/* `shouldOpen` is the editor's own hook for this, so a slash in the
+            middle of a sentence stays a slash — see slash-trigger.ts. The `@`
+            and `[[` menus below keep opening wherever they are typed: those
+            characters mean nothing else in prose, and a `[[` mid-sentence is
+            exactly how a link gets written. */}
+        <SuggestionMenuController
+          triggerCharacter="/"
+          getItems={getSlashMenuItems}
+          shouldOpen={slashShouldOpen}
+          floatingUIOptions={suggestionMenuFloating}
+        />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} floatingUIOptions={suggestionMenuFloating} />
         <SuggestionMenuController
           triggerCharacter={WIKILINK_TRIGGER}
