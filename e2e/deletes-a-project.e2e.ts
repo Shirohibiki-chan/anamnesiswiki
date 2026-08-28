@@ -62,6 +62,48 @@ describe("deleting a project", () => {
     expect(names.map((name) => name.trim())).not.toContain(projectName);
   });
 
+  it("says where the folder went", async () => {
+    // The tile vanishing proves something happened; it can't say *where the
+    // folder went*, which is the one fact worth having at the moment somebody
+    // deletes the wrong project.
+    const notice = await app.window.locator(".start-notice").innerText();
+    expect(notice).toContain(projectName);
+    expect(notice.toLowerCase()).toContain("recycle bin");
+  });
+
+  it("puts that toast where it cannot be missed", async () => {
+    // **The assertions this file kept failing to make.** The message shipped
+    // twice as a line of text in the column: first below the grid, then above
+    // it. Read back off the real app, the second version rendered at full
+    // opacity mid-screen and still went unnoticed — at `--fs-sm` in
+    // `--color-text-muted` it was pixel-identical to the project count beside
+    // the heading. It was on screen and it was invisible, which no assertion
+    // about position could ever have caught.
+    //
+    // So these check the two things that make it a notification rather than
+    // another line of page furniture: it is pinned to the window, so nothing
+    // the list does can move it, and it has a surface of its own.
+    const notice = app.window.locator(".start-notice");
+    const style = await notice.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { position: s.position, background: s.backgroundColor, color: s.color };
+    });
+    expect(style.position).toBe("fixed");
+    expect(style.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(style.color).not.toBe(
+      await app.window.locator(".start-count").first().evaluate((el) => getComputedStyle(el).color),
+    );
+
+    // `viewportSize()` is null on an Electron window — an earlier version of
+    // this guarded on it and so never ran at all. The page's own innerHeight is
+    // the number that exists here.
+    const box = (await notice.boundingBox())!;
+    const viewportHeight = await app.window.evaluate(() => window.innerHeight);
+    expect(box).not.toBeNull();
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewportHeight);
+  });
+
   it("says nothing to the console while doing it", () => {
     expect(app.errors).toEqual([]);
   });

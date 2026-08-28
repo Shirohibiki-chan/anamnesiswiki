@@ -15,6 +15,7 @@
 // The rail drags on the shell's own handle rather than a second mechanism
 // written for this screen. It is the same gesture on the same kind of edge, and
 // the width is stored beside the shell's two — see `layout-service`.
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
@@ -153,6 +154,17 @@ export function StartScreen() {
     if (ok) library.deleteGroup(id);
   }
 
+  // Said once, briefly, after a project has gone. The tile vanishing is the
+  // proof that something happened; what it can't say is *where the folder
+  // went*, and that is the only thing she'd need to know at the one moment
+  // this matters — the time she deletes the wrong one.
+  //
+  // A fading line rather than a toast, following SaveIndicator and
+  // HistoryIndicator: a `key` remount driving a CSS fade, no timer in state and
+  // nothing to dismiss. Deleting twice in a row re-runs the animation because
+  // the key changes, which is the whole reason the timestamp is in there.
+  const [deleted, setDeleted] = useState<{ message: string; at: number } | null>(null);
+
   // The only thing on this screen that destroys her writing, so it says three
   // things and no more: what goes, that the *whole folder* goes, and that the
   // recycle bin means she can change her mind.
@@ -169,6 +181,7 @@ export function StartScreen() {
     if (!(await actions.deleteProject(project))) return;
     library.forget(project);
     unpin(project);
+    setDeleted({ message: `Deleted "${project.name}". The folder is in your recycle bin.`, at: Date.now() });
     void refreshWorlds();
   }
 
@@ -250,6 +263,40 @@ export function StartScreen() {
           />
         )}
 
+        {/* Above the grid, not below it. Both of these used to sit after
+            ProjectGrid, which put them under every tile — off the bottom of the
+            screen on any library with more than a handful of projects, and the
+            delete line fades on a timer, so it was gone before you could scroll
+            to it. It read as the app saying nothing at all.
+
+            They stay together, and in this order: a delete that worked and a
+            delete that didn't must appear in the same place, or the absence of
+            one is not evidence of the other. */}
+        {deleted && (
+          <p key={deleted.at} className="start-notice" role="status" aria-live="polite">
+            <Trash2 className="start-notice-icon" size={15} aria-hidden="true" />
+            {deleted.message}
+          </p>
+        )}
+
+        {actions.error && (
+          <p className="start-error">
+            {actions.error}
+            {/* Only offered when the refusal was a claim, which is the one the
+                app routinely gets wrong — a crash, a power cut or a sync client
+                looks exactly like a second window from here. Every other
+                failure has nothing useful behind a second try. */}
+            {actions.openAnyway && (
+              <>
+                {" "}
+                <button type="button" className="ui-link" onClick={() => void actions.openAnyway?.()}>
+                  Open it anyway
+                </button>
+              </>
+            )}
+          </p>
+        )}
+
         <ProjectGrid
           projects={shown}
           heading={headingFor(library.scope, activeGroup?.name)}
@@ -327,24 +374,6 @@ export function StartScreen() {
               Never mind
             </button>
           </div>
-        )}
-
-        {actions.error && (
-          <p className="start-error">
-            {actions.error}
-            {/* Only offered when the refusal was a claim, which is the one the
-                app routinely gets wrong — a crash, a power cut or a sync client
-                looks exactly like a second window from here. Every other
-                failure has nothing useful behind a second try. */}
-            {actions.openAnyway && (
-              <>
-                {" "}
-                <button type="button" className="ui-link" onClick={() => void actions.openAnyway?.()}>
-                  Open it anyway
-                </button>
-              </>
-            )}
-          </p>
         )}
       </div>
 

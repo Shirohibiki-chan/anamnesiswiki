@@ -1167,6 +1167,75 @@
   font-size: var(--fs-sm);
 }
 
+/* Said after a project has gone, then gone itself.
+   **This started as a line of muted text in the column and that did not work.**
+   Read back off the running app: it rendered at full opacity, mid-screen, for
+   four seconds — and went unnoticed twice, because at `--fs-sm` in
+   `--color-text-muted` it was pixel-identical to the project count beside the
+   heading and half the other furniture on the screen. A message that looks
+   like the page it interrupts is not a message.
+   So: its own surface, full-contrast text, and fixed to the window rather than
+   placed in a column that scrolls, holds fourteen tiles, and reflows the
+   instant a project leaves it. Bottom centre, above everything, out of the way
+   of the tiles and the rail. */
+.start-notice {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-xl);
+  z-index: 50;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: min(46ch, calc(100vw - 2 * var(--space-xl)));
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-panel-edge);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+  box-shadow: 0 8px 24px var(--color-shadow, rgba(0, 0, 0, 0.4));
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+  opacity: 0;
+  /* Its own keyframes, not `save-indicator-fade`: this one slides up as it
+     arrives, which is most of what makes it register as an arrival rather than
+     as something that was always there. `translateX(-50%)` is carried through
+     every frame — a transform in an animation replaces the one on the rule. */
+  animation: start-notice-in 6000ms ease forwards;
+}
+
+.start-notice-icon {
+  flex: none;
+  color: var(--color-accent-foreground, var(--color-text));
+}
+
+@keyframes start-notice-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  6% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Someone who has asked not to be moved by the interface still needs to be
+   told the project has gone — so the slide goes and the message stays. */
+@media (prefers-reduced-motion: reduce) {
+  .start-notice {
+    animation: save-indicator-fade 6000ms ease forwards;
+    transform: translateX(-50%);
+  }
+}
+
 /* --- The pinned row --- */
 
 /* The one uncontained thing on this screen. Everything else sits in a box; a
