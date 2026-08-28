@@ -372,8 +372,6 @@ What is genuinely left is the part that can only be settled by running it:
   used to die with `EGL_BAD_PARAMETER` before a window appeared. No
   `LD_PRELOAD`, no workaround. That closes the Known Bug this phase inherited,
   and it removes the argument for dropping the AppImage target.
-- **`release.yml` and `appimage-test.yml` are still there**, kept as a way back.
-  They go once an Electron release has shipped and settled.
 - **Usage reporting: built 2026-08-26, removed 2026-08-27.** Kept here as a
   settled decision rather than deleted, so it does not get proposed a third
   time.
@@ -487,8 +485,8 @@ Kept because the answers are the useful part:
 
 - **The updater moved to `electron-updater`'s own feed.** It verifies the
   SHA-512 published in the release feed, fetched from GitHub over HTTPS, rather
-  than a key she holds. Tauri's minisign key is unused; the secret is harmless
-  where it is until `release.yml` goes.
+  than a key she holds. Tauri's minisign key is unused and nothing reads the
+  secret any more; it can be deleted from the repository's settings.
 - **macOS notarisation does not apply**, because nothing is signed. The cost is
   that a Mac will not open the app from a double-click and its updates have to
   be installed by hand — both written up in `docs/releasing.md`, and both

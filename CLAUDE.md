@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repo. **This file is loaded every sessi
 
 A personal local-first worldbuilding wiki for the user, styled as an offline alternative to LegendKeeper. She builds worlds — characters, locations, factions, species — as a tree of pages with template-driven structure, stored as JSON files in a folder she controls.
 
-Tauri v2 desktop app: React 19 + TypeScript + Vite renderer, Rust shell left as thin as Tauri ships it. Local-first, single-user, offline. LegendKeeper-import compatible on day one — she has an existing 75-page world to migrate.
+Electron desktop app as of v0.6.0 (Phase 29): React 19 + TypeScript + Vite renderer, with the shell in `electron/`. Tauri built every release up to v0.5.0 and `src-tauri/` is still present — the icons and the version files are read from it — but nothing ships from it. Local-first, single-user, offline. LegendKeeper-import compatible on day one — she has an existing 75-page world to migrate.
 
 **What it is not:** not a cloud service, not a LegendKeeper client, not an AI writing tool, not multi-user yet. A browser edition is wanted and unscheduled, not ruled out. Read-only publish for sharing comes in Phase 1.5.
 
@@ -89,7 +89,7 @@ pnpm test:app        # the scenarios in e2e/ — builds the page, then drives th
 
 **All app logic lives in the renderer.** No custom Rust commands unless the fs plugin genuinely can't do the job. **Nothing outside the door knows what the shell is** — see rule 5. Anything that can only be answered by the thing hosting the page belongs behind it; anything that is a decision does not.
 
-**There are two shells** (Phase 29). `services/host-contract.ts` is the vocabulary, `host-service.ts` speaks Tauri, `host-service.electron.ts` speaks Electron, and both end with a `satisfies HostContract` block so neither can quietly lose a capability. `ANAMNESIS_SHELL=electron` picks the second one, in `vite.config.ts`; unset means Tauri, which is still what ships. `electron/main.js` and `electron/preload.cjs` are the other side of the Electron door — the preload is the security boundary and exposes a fixed list of functions, so adding a capability means adding it in both files on purpose.
+**There are two shells** (Phase 29). `services/host-contract.ts` is the vocabulary, `host-service.ts` speaks Tauri, `host-service.electron.ts` speaks Electron, and both end with a `satisfies HostContract` block so neither can quietly lose a capability. `ANAMNESIS_SHELL=electron` picks the second one, in `vite.config.ts`; unset means Tauri, which still runs locally but has shipped nothing since v0.5.0. `electron/main.js` and `electron/preload.cjs` are the other side of the Electron door — the preload is the security boundary and exposes a fixed list of functions, so adding a capability means adding it in both files on purpose.
 
 State is **Zustand** in `src/state/`. Editor is **BlockNote** — custom Info/Quote/Secret callout blocks live in `src/services/editor-blocks/`; extend it via its documented API, never fork it. Tree is **react-arborist**.
 
