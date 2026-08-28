@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
   readDir: (target) => invoke("fs:readDir", target),
   makeDir: (target, options) => invoke("fs:makeDir", target, options),
   removePath: (target, options) => invoke("fs:remove", target, options),
+  trashPath: (target) => invoke("os:trashPath", target),
   renamePath: (from, to) => invoke("fs:rename", from, to),
   copyFile: (from, to) => invoke("fs:copyFile", from, to),
   fileInfo: (target) => invoke("fs:fileInfo", target),

@@ -33,6 +33,7 @@ type HostBridge = {
   readDir(path: string): Promise<DirEntry[]>;
   makeDir(path: string, options?: { recursive?: boolean }): Promise<void>;
   removePath(path: string, options?: { recursive?: boolean }): Promise<void>;
+  trashPath(path: string): Promise<void>;
   renamePath(from: string, to: string): Promise<void>;
   copyFile(from: string, to: string): Promise<void>;
   fileInfo(path: string): Promise<{ size: number; modifiedAt: Date | string | null }>;
@@ -123,6 +124,10 @@ export function makeDir(path: string, options?: { recursive?: boolean }): Promis
 
 export function removePath(path: string, options?: { recursive?: boolean }): Promise<void> {
   return bridge().removePath(path, options);
+}
+
+export function trashPath(path: string): Promise<void> {
+  return bridge().trashPath(path);
 }
 
 export function renamePath(from: string, to: string): Promise<void> {
@@ -324,6 +329,7 @@ const conformance = {
   readDir,
   makeDir,
   removePath,
+  trashPath,
   renamePath,
   copyFile,
   fileInfo,

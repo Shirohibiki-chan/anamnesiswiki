@@ -559,6 +559,20 @@
   color: var(--color-text);
 }
 
+.project-tile-menu-rule {
+  margin: var(--space-2xs) 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Delete. Coloured at rest rather than only on hover: this is the one item on
+   the menu that can't be undone from inside the app, and an item that looks
+   ordinary until the pointer is already on it warns nobody. */
+.project-tile-menu-item-danger,
+.project-tile-menu-item-danger:hover {
+  color: var(--color-destructive);
+}
+
 /* Groups, above the ones a project is filed under. A heading rather than a
    dividing line: the items above and below it are actions and these are a
    list of names, and a rule between them says they are separated without

@@ -83,6 +83,17 @@ export type HostContract = {
   readDir(path: string): Promise<DirEntry[]>;
   makeDir(path: string, options?: { recursive?: boolean }): Promise<void>;
   removePath(path: string, options?: { recursive?: boolean }): Promise<void>;
+  /**
+   * Moves a file or folder to the OS recycle bin, recoverable by the user.
+   *
+   * **Deliberately not the same call as `removePath`.** That one is how the app
+   * tidies up after itself — a temp file, a directory it just made — and it is
+   * gone for good. This one is only ever reached by a person choosing to delete
+   * something of their own, and the difference between the two is whether they
+   * can change their mind. A host that cannot offer the recycle bin must reject
+   * rather than fall back to `removePath`.
+   */
+  trashPath(path: string): Promise<void>;
   renamePath(from: string, to: string): Promise<void>;
   copyFile(from: string, to: string): Promise<void>;
   fileInfo(path: string): Promise<FileInfo>;
