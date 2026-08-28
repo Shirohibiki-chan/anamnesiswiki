@@ -94,9 +94,10 @@ function NewPageLinkForm({
       onResolve(null);
       return;
     }
-    // The link reads as the name unless she said otherwise. An empty box means
-    // "same as the page", not an empty chip.
-    onResolve({ nodeId, label: linkText.trim() || trimmed });
+    // Handed over as two things rather than one. An empty Link text box means
+    // "read as the page does" — see NewPageLink — and flattening it here into
+    // the name is what stopped the box having any effect at all.
+    onResolve({ nodeId, name: trimmed, linkText: linkText.trim() });
   }
 
   return createPortal(

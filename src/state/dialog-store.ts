@@ -71,7 +71,18 @@ type PendingAssetPick = { title: string; resolve: (fileName: string | null) => v
  * says otherwise — the page she is writing on, and null for the top level.
  */
 export type NewPageLinkPrefill = { name: string; parentId: string | null };
-export type NewPageLink = { nodeId: string; label: string };
+/**
+ * What the dialog hands back: the page it made, its name, and what she asked
+ * the link to read as.
+ *
+ * **`linkText` is empty in the normal case and that is a real answer**, not a
+ * missing one — it means "call it whatever the page is called", which is what
+ * lets the chip keep following renames. Merging the two here into one display
+ * string was the first cut and it is why the Link text box did nothing: the
+ * chip looks its target up live, so a label that merely repeated the name was
+ * indistinguishable from one she chose and had to be ignored.
+ */
+export type NewPageLink = { nodeId: string; name: string; linkText: string };
 type PendingNewPageLink = NewPageLinkPrefill & { resolve: (link: NewPageLink | null) => void };
 
 type DialogStoreState = {

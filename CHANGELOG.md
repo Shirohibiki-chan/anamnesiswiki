@@ -1,6 +1,13 @@
 # Changelog
 
-## 2026-08-29 — callouts can be any colour
+## 2026-08-28 — the link text box actually does something
+
+### Fixes
+
+- **Link text in the New page window did nothing.** Whatever you typed there was thrown away and the link came out reading as the page's name. The box works now: type *the bell* for a page called *Ninefold Bell* and that's what the link says, while still pointing at the right page and still showing up in the tree under its real name.
+- **A link with no wording of its own still follows a rename**, which is why this took a moment to get right. Links look their page up as you read them, so renaming a page updates every link to it — the fix keeps that, and only pins the wording when you deliberately typed some.
+
+## 2026-08-28 — callouts can be any colour
 
 ### Additions
 
@@ -13,7 +20,7 @@
 - **Warnings imported from a `.lk` file were being turned into secrets.** There were only three kinds of callout and no colours, so warning and error panels were given the nearest-looking one — but Secret is the box that gets stripped out when a page is shared, so every warning in an imported world was quietly marked don't-show-anyone, with nothing on screen saying so. They now come in as a callout coloured amber or red, and a success panel comes in green. **Pages you've already imported keep whatever they were brought in as** — this changes what a new import does, not what's already on your disk.
 - **Those colours survive going back out to a `.lk` file** — an amber callout leaves as a warning, red as an error, green as a success. Other colours are ours alone and leave as a plain info panel.
 
-## 2026-08-29 — make a page without leaving the one you're writing
+## 2026-08-28 — make a page without leaving the one you're writing
 
 ### Additions
 
@@ -189,10 +196,3 @@
 ### Fixes
 
 - **A block's name no longer trails off where you can't finish reading it.** Give a block a long name and the properties panel cut it short with a "…" and no way to see the rest — not by hovering it, not by widening the panel, not anywhere. The name now runs onto as many lines as it needs and the block grows to fit, the same way a spectrum's end words already did. A name with no spaces in it breaks across lines rather than running off the side.
-
-## 2026-08-26 — a button you couldn't click
-
-### Fixes
-
-- **The button that shows and hides the properties panel couldn't be clicked on a narrow window.** Drag Anamnesis as narrow as it goes and the row of controls along the top ran out of room, so the last one slid underneath the properties panel itself and stopped responding — the button that would have given you the room back was the one you couldn't reach. The row now shortens the Search button to its icon when it's short of space, which frees more than enough; the keyboard shortcut it used to display is on the button's tooltip. Nothing changes at a comfortable window size.
-- **This also happens when you drag the panels rather than the window.** The top row is only as wide as the space between the two side panels, so widening those squeezes it exactly the same way — the fix follows the room the row actually has, not the size of the screen, so it holds either way.

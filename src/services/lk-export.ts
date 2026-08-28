@@ -237,7 +237,11 @@ function convertInline(content: unknown, idMap: Map<string, string>): LkNode[] {
       // LK, so it degrades to its own label — the same fallback import makes
       // in the opposite direction.
       const nodeId = typeof raw.props?.nodeId === "string" ? raw.props.nodeId : undefined;
-      const label = typeof raw.props?.label === "string" ? raw.props.label : "";
+      // Her wording first, for the same reason the chip shows it first: it is
+      // what this link reads as. `label` is the name as it stood when the chip
+      // was written, and the fallback for both halves below.
+      const chosen = typeof raw.props?.text === "string" ? raw.props.text : "";
+      const label = chosen || (typeof raw.props?.label === "string" ? raw.props.label : "");
       const lkId = nodeId ? idMap.get(nodeId) : undefined;
       if (lkId) out.push({ type: "mention", attrs: { id: lkId, text: label } });
       else if (label) pushTextRun(out, label, undefined);
@@ -266,7 +270,7 @@ const CALLOUT_TO_PANEL_TYPE: Record<string, string> = {
 /**
  * The panel type an Info callout goes back out as, by the colour it wears.
  *
- * **This is the matching half of the import change made 2026-08-29**, where
+ * **This is the matching half of the import change made 2026-08-28**, where
  * LK's warning, error and success panels stopped becoming Secrets and started
  * becoming a coloured Info. Without this, a world imported and re-exported
  * would come back with every warning flattened to a plain info panel — which is
@@ -363,7 +367,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
     }
     case "calloutSecret":
       // LK's own Secret block, and a direct lossless match in both directions
-      // as of 2026-08-29 — import no longer folds warning and error panels in
+      // as of 2026-08-28 — import no longer folds warning and error panels in
       // here, so a Secret on the way out is a Secret somebody meant.
       return [
         {
