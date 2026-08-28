@@ -360,16 +360,55 @@ layout could never show. **It is resizable there**, by dragging either side.
   which is a custom block — `src/services/editor-blocks/` already has three
   (Info, Quote, Secret) and `CLAUDE.md` says to extend BlockNote through its
   documented API and never fork it.
-- **Decide where such a block's data lives before writing any of it.** A block
-  in the page could keep its record in `node.blocks` and let the document hold
-  a pointer, or move into the document outright. The pointer version keeps one
-  answer to "what blocks does this page have" and makes dragging between the
-  two places a move rather than a conversion; the document version is simpler
-  to write and forks the model. **Prefer the pointer**, and be sure before
-  committing — this is the decision that is expensive to change later.
+- **Settled 2026-08-28: the pointer, and where a block is drawn is derived
+  rather than stored.** `node.blocks` stays the one list of a page's blocks —
+  every block is a record in it wherever it appears — and the document holds a
+  custom BlockNote block carrying that block's id and nothing else of substance.
+  **Which of the three homes a block is in is then read off the documents, not
+  written down anywhere:** a block some tab's document points at is drawn there,
+  and the sidebar shows what is left. This is the decision the phase said was
+  expensive to change later, so the reasoning is below rather than in a commit.
+
+  - **It is what makes all six directions moves.** Sidebar → page → infobox →
+    sidebar changes which document holds a pointer and never touches the record,
+    so nothing is converted, no field can be dropped on the way, and a block
+    that goes somewhere and comes back is the same block rather than a copy of
+    one. Under the copy model every one of those hops rewrites the block.
+  - **The alternative worth naming and rejecting is a `home` field on the
+    block.** It is easier to write, and it is a second answer to a question the
+    documents already answer — two records that can disagree, with no way to
+    tell which is right when they do. A block claiming to be in the page while
+    no document points at it is a bug we would have to invent a repair for.
+  - **Deleting the pointer is not deleting the block.** Taking the block out of
+    the page in the editor drops the pointer, so the block reappears in the
+    sidebar; deleting it for real is the block's own Remove, which takes the
+    record out of `node.blocks`. **A pointer with no record behind it renders
+    nothing and is swept on the next read** — the two halves are edited through
+    different paths and cannot be made to commit together, so the dangling
+    pointer has to be an ordinary state rather than an error.
+  - **A hidden tab still claims its blocks**, and that is deliberate: hiding a
+    tab hides what is written in it, and a block sitting in that writing is part
+    of it. The alternative — the block popping back into the sidebar when the
+    tab is hidden — makes hiding a tab quietly rearrange the sidebar.
+  - **Two pointers at one block is the state to think about**, and it arrives by
+    copying the block in the editor and pasting it. Left alone it is two live
+    views of one record, which is defensible but is not what a paste means
+    anywhere else in the app. **Clone the record on paste** so a pasted block is
+    a new block, and treat that as part of this work rather than after it.
+  - **The cost is that the sidebar has to read the documents.** Working out what
+    is left means walking every tab's document, children included, for pointers.
+    It is derived per page and memoised there; nothing about it is per-keystroke.
 - **Width is per-block and belongs on the block**, not on the page. It is the
   one piece of presentation the sidebar has no use for, so it needs a sensible
   reading when the same block is shown in a 340px panel: ignore it there.
+  **One consequence of the decision above, worth knowing before it is
+  discovered:** the record lives in `node.blocks`, so dragging a block wider is
+  a panel edit and comes back under the panel's undo, not the editor's. That is
+  the right side to have it on — width is a property of the block, and a block
+  dragged from the page to the sidebar and back should still be as wide as it
+  was — but it does mean Ctrl+Z in the middle of the page will not undo a
+  resize, and the two undo stacks meeting here needs checking in use rather
+  than assuming.
 - **Not to be confused with Phase 21's splittable columns.** That rearranges
   the app's panels; this puts one block inside the document. They meet only in
   that both make the middle of the window less fixed than it is today.
@@ -527,9 +566,14 @@ So this is real work, and the pieces are:
 - **Glyphs are the half we do not have.** The emoji list is BlockNote's; a
   searchable icon set is not, and `constants/icons.ts` is a hand-written map of
   about a dozen lucide icons for templates, nowhere near a browsable set.
-  **Decide before building** whether Glyphs means all of lucide (~1500 icons,
-  already a dependency, needs a search index) or a curated set. Do not answer
-  this by shipping the emoji tab alone and calling it done.
+  **Answered 2026-08-28: Glyphs means all of lucide**, around 1500 icons, which
+  is already a dependency and needs a search index rather than a curated list.
+  Her reasoning is the one that settles it — a curated set is the option that
+  eventually fails to contain the thing she wants, and there is no good answer
+  to that when it happens. So the work is the search, not the choosing: a
+  browsable grid of 1500 is not browsable, and the tab is only as good as
+  typing into it. Do not answer this by shipping the emoji tab alone and
+  calling it done.
 - **It shares a picker with the callout icons below**, and neither should be
   built without the other in mind — the reference uses one picker for both, and
   two pickers that look alike and behave differently is worse than either.
