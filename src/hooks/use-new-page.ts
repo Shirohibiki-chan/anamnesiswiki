@@ -62,6 +62,43 @@ export function useCreatePage(): () => void {
   }, [createPageIn]);
 }
 
+/**
+ * Adds a named page and **leaves you where you are** — for the dialog that
+ * makes a page and links to it from the middle of a sentence (Phase 19.5).
+ *
+ * **The one route to a new page that must not open it.** Every other one is
+ * "go and write this now", so they select the page and ask for its name. This
+ * one is the opposite: the page is a link in something she is in the middle of
+ * writing, and being thrown onto a blank page mid-sentence is the feature
+ * taking her work away rather than saving her a trip. It is named already, too
+ * — she typed the name into the dialog — so there is nothing to ask.
+ *
+ * Blank, like every other new page: a template is picked on the page itself
+ * once she goes there (see `NewPageLanding`).
+ *
+ * Hiding folds into the same undo entry as the creation, because they are one
+ * action from the outside. Two presses of undo to take back one dialog would
+ * leave a hidden page nobody asked for sitting in the tree after the first.
+ */
+export function useCreateLinkedPage(): (input: {
+  name: string;
+  parentId: string | null;
+  hidden: boolean;
+}) => string | null {
+  return useCallback(({ name, parentId, hidden }) => {
+    const { project, addNode, setNodeHidden } = useProjectStore.getState();
+    if (!project) return null;
+
+    const depth = useHistoryStore.getState().past.length;
+    const node = addNode({ parentId, templateKey: BLANK_TEMPLATE_KEY, name: name.trim() || UNTITLED_PAGE_NAME });
+    if (hidden) {
+      setNodeHidden([node.id], true);
+      useHistoryStore.getState().collapse(depth, `making the page ${node.name}`);
+    }
+    return node.id;
+  }, []);
+}
+
 /** What a page is being made from: one of the built-in kinds, or one of this
  *  world's own templates. */
 export type NewPageTemplate = { builtInKey: string } | { templateRootId: string };

@@ -53,6 +53,113 @@
   gap: var(--space-md);
 }
 
+/* --- NewPageLinkDialog ---
+   Four fields in a column, and the only reason it has styles of its own is
+   that nothing else in the app is a short form in a modal. The input rule is a
+   copy of `.property-field-input` rather than a use of it: that class belongs
+   to the sidebar's fields, and a dialog reaching across for it would make a
+   sidebar tweak able to reshape this. */
+
+.new-page-field {
+  display: block;
+  margin-bottom: var(--space-lg);
+}
+
+.new-page-label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: var(--color-text-secondary);
+}
+
+.new-page-input {
+  width: 100%;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+  font-family: inherit;
+}
+
+.new-page-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.new-page-input:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+/* The chosen page reads as a chip rather than as text in a box, so that it is
+   obvious it can be taken off again — the × is the whole point of the row. */
+.new-page-parent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.new-page-parent-icon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.new-page-parent-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-page-candidates {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.new-page-candidate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.new-page-candidate:hover {
+  background: var(--color-panel-alt);
+}
+
+.new-page-candidate-kind {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.new-page-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
 /* --- AppLayout --- */
 
 /* `grid-template-rows` is doing real work: without it the single implicit row

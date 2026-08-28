@@ -55,6 +55,25 @@ type PendingTemplateScope = { pageName: string; resolve: (scope: TemplateScope |
  */
 type PendingAssetPick = { title: string; resolve: (fileName: string | null) => void };
 
+/**
+ * Making a page and linking to it without leaving the editor (Phase 19.5).
+ *
+ * **The dialog makes the page itself and hands back what to link to**, rather
+ * than reporting four field values for the caller to act on. There are two
+ * callers already — the `/` menu and a `[[Name]]` that matches nothing — and
+ * every one of them wants the same thing afterwards: a chip pointing at a page
+ * that now exists. Splitting that in two would mean each caller repeating the
+ * create, and the second one getting it slightly different.
+ *
+ * `name` pre-fills the box, which is what makes the `[[Name]]` route worth
+ * having: she has already typed the name, and being asked for it again is the
+ * feature failing to notice. `parentId` is where the page will go unless she
+ * says otherwise — the page she is writing on, and null for the top level.
+ */
+export type NewPageLinkPrefill = { name: string; parentId: string | null };
+export type NewPageLink = { nodeId: string; label: string };
+type PendingNewPageLink = NewPageLinkPrefill & { resolve: (link: NewPageLink | null) => void };
+
 type DialogStoreState = {
   pendingConfirm: PendingConfirm | null;
   requestConfirm: (message: string) => Promise<boolean>;
@@ -91,6 +110,9 @@ type DialogStoreState = {
   pendingAssetPick: PendingAssetPick | null;
   requestAssetPick: (title: string) => Promise<string | null>;
   resolveAssetPick: (fileName: string | null) => void;
+  pendingNewPageLink: PendingNewPageLink | null;
+  requestNewPageLink: (prefill: NewPageLinkPrefill) => Promise<NewPageLink | null>;
+  resolveNewPageLink: (link: NewPageLink | null) => void;
 };
 
 export const useDialogStore = create<DialogStoreState>((set, get) => ({
@@ -99,6 +121,7 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
   notice: null,
   pendingTemplateScope: null,
   pendingAssetPick: null,
+  pendingNewPageLink: null,
   historyNodeId: null,
   isProjectHistoryOpen: false,
 
@@ -129,6 +152,19 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
     if (!pending) return;
     set({ pendingAssetPick: null });
     pending.resolve(fileName);
+  },
+
+  requestNewPageLink(prefill) {
+    return new Promise<NewPageLink | null>((resolve) => {
+      set({ pendingNewPageLink: { ...prefill, resolve } });
+    });
+  },
+
+  resolveNewPageLink(link) {
+    const pending = get().pendingNewPageLink;
+    if (!pending) return;
+    set({ pendingNewPageLink: null });
+    pending.resolve(link);
   },
 
   requestTemplateScope(pageName) {

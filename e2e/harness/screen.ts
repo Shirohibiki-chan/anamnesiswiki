@@ -21,6 +21,8 @@ const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
 const BLOCK_SHELL = ".block-shell";
 const BLOCK_TITLE = ".block-title";
+const EDITOR = ".editor-shell .bn-editor";
+const EDITOR_MENTION = ".editor-mention";
 
 /**
  * Whatever names the thing currently in the middle of the window.
@@ -214,6 +216,39 @@ export async function panelBlockTitles(window: Page): Promise<string[]> {
  */
 export async function openBlockMenu(window: Page, title: string): Promise<void> {
   await window.getByLabel(`${title} block options`, { exact: true }).first().click();
+}
+
+/**
+ * Clicks into the open page's writing area and types, one key at a time.
+ *
+ * **Typed rather than filled, always.** Everything interesting about the editor
+ * is keystroke-driven — the `/` menu, `@` mentions, the `[[` link trigger — and
+ * setting the text in one go produces the same characters with none of the
+ * behaviour, which is a scenario that passes while the feature is dead.
+ */
+export async function typeInEditor(window: Page, text: string): Promise<void> {
+  const editor = window.locator(EDITOR).first();
+  await editor.waitFor({ state: "visible", timeout: WAIT_MS });
+  // **Never click the middle of the editor.** Playwright's default is the
+  // centre of the element, and the centre of a page is prose — including any
+  // link chips in it, which navigate when clicked. A scenario that wrote a link
+  // and then typed again would silently be typing on a different page. The top
+  // corner is text or padding whatever the page holds; Ctrl+End then puts the
+  // cursor after everything, which is where someone adding a line would be.
+  await editor.click({ position: { x: 8, y: 8 } });
+  await window.keyboard.press("Control+End");
+  await window.keyboard.type(text, { delay: 20 });
+}
+
+/** Everything written in the open page's editor, as one run of text. */
+export async function editorText(window: Page): Promise<string> {
+  return normalize((await window.locator(EDITOR).first().textContent()) ?? "");
+}
+
+/** The page links written into the open page, in the order they appear in it. */
+export async function editorMentions(window: Page): Promise<string[]> {
+  const chips = await window.locator(EDITOR_MENTION).allTextContents();
+  return chips.map(normalize);
 }
 
 /**

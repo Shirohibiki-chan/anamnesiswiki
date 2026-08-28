@@ -26,7 +26,13 @@ export function useDialogs() {
   const pendingAssetPick = useDialogStore((s) => s.pendingAssetPick);
   const requestAssetPick = useDialogStore((s) => s.requestAssetPick);
   const resolveAssetPick = useDialogStore((s) => s.resolveAssetPick);
+  const pendingNewPageLink = useDialogStore((s) => s.pendingNewPageLink);
+  const requestNewPageLink = useDialogStore((s) => s.requestNewPageLink);
+  const resolveNewPageLink = useDialogStore((s) => s.resolveNewPageLink);
   return {
+    pendingNewPageLink,
+    requestNewPageLink,
+    resolveNewPageLink,
     historyNodeId,
     openHistory,
     closeHistory,

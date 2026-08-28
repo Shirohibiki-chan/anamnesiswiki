@@ -4464,3 +4464,67 @@ Actions tab.
 2026-08-28. The way back — `release.yml` and `appimage-test.yml` — was deleted
 the same evening, along with the Tauri launcher, which had the plainer name of
 the two and so was the one a shortcut would land on.
+
+---
+
+## Phase 19.5 — New page, from inside the editor ✅ Shipped 2026-08-29
+
+The first *feature* of Phase 19.5, and the cheapest one on its list — everything
+it needed existed except the asking. Scoped in `docs/plan.md` on 2026-08-27 as
+"Element", which is what the reference calls it.
+
+**Called New page, not Element.** The app's word for a page is "page" — the
+tree, the templates and her own vocabulary all say so — and a menu entry that
+introduces a second word for a thing already named is one she has to translate.
+"element" is in the slash item's aliases so somebody typing the other app's word
+still finds it.
+
+**What it does.** `/` → New page opens a dialog with four fields: the name, the
+link text if the link should read differently, where the page goes (defaulting
+to the page being written on, clearable to the top level), and Hidden. It makes
+the page, leaves a mention chip where the cursor was, and does *not* open the
+new page — the whole point is not leaving the sentence.
+
+**The `[[Name]]` route is the one that matters**, and it took two attempts.
+
+The first cut hung it off `wikilink-bracket-confirm.ts`, which already watches
+for the closing `]]` — its `"none"` branch was exactly "nothing answers to this
+name". Measured in the built app: **that branch only ever fires for a
+single-word name.** BlockNote's suggestion menu closes on a space, so `[[Two
+Words]]` never reaches the handler at all, and page names are mostly two words.
+It also had to wipe the typed text to make room for a chip, and put it back by
+hand on cancel.
+
+So it moved to the change scan instead. `wikilink.ts` was already looking at
+every completed `[[Name]]` on every edit and *skipping* the ones it could not
+resolve; it now reports the first such name **in the block the cursor is in**,
+and `use-editor` offers to make it. Nothing is taken out of the document to ask,
+so cancelling costs nothing and there is no restore path to get wrong. It works
+for any name, spaces included.
+
+**Two things that are load-bearing rather than incidental** (both in
+`handoff.md`): the offer is scoped to the cursor's block, or a page with literal
+`[[brackets]]` typed in it would raise a dialog about last week's text the moment
+anything else on the page was edited; and a name is remembered the moment it is
+*asked* about rather than when it is declined, because the text stays in the
+document and the next keystroke would otherwise find it again — a page she
+cannot type on.
+
+**Focus comes back either way.** The dialog is a portal and it takes the
+keyboard; the first version left the caret nowhere on cancel, which reads as
+typing having stopped working. Caught by the scenario, not by reading.
+
+### Verification
+
+`makes-a-page-from-the-editor.e2e.ts` — three scenarios in the built app: the
+slash route makes a page that is really in the tree and leaves a chip; a
+`[[Name]]` nothing answers to opens the same dialog pre-filled and swaps the
+brackets for the chip; and backing out leaves the typed text alone, puts the
+caret back, and does not ask a second time.
+
+The harness gained `typeInEditor`, `editorText` and `editorMentions`, and
+`typeInEditor` **never clicks the middle of the editor** — Playwright's default
+is the element's centre, the centre of a page is prose, and prose contains link
+chips, which navigate when clicked. That cost an hour: a scenario wrote a link,
+clicked to type again, landed on the chip, and spent the rest of the test typing
+into a different page's empty landing screen.
