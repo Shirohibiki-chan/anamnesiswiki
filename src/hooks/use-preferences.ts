@@ -10,6 +10,7 @@ import type {
   ListPagingMode,
   ProjectSort,
   ProjectView,
+  FormattingBarMode,
   TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -21,6 +22,10 @@ import type {
  */
 export function useTreeDoubleClick(): TreeDoubleClickAction {
   return usePreferencesStore((state) => state.preferences.treeDoubleClick);
+}
+
+export function useFormattingBar(): FormattingBarMode {
+  return usePreferencesStore((state) => state.preferences.formattingBar);
 }
 
 /**
@@ -90,6 +95,7 @@ export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({
       setTreeDoubleClick: state.setTreeDoubleClick,
+      setFormattingBar: state.setFormattingBar,
       setListPaging: state.setListPaging,
       setListPageSize: state.setListPageSize,
       setProjectView: state.setProjectView,

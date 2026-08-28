@@ -157,8 +157,25 @@ export type HistoryKeepDays = (typeof HISTORY_KEEP_DAYS)[number];
 export const HISTORY_PER_PAGE = [10, 25, 50, 100] as const;
 export type HistoryPerPage = (typeof HISTORY_PER_PAGE)[number];
 
+/**
+ * Where the formatting bar lives.
+ *
+ * **`floating` is what it has always done and stays the default**: the strip
+ * appears over the text when something is selected and goes away when it is
+ * not. That is the right answer for someone writing prose, because the bar is
+ * only ever in the way otherwise.
+ *
+ * `fixed` puts it at the top of the page instead, always there. Asked for
+ * 2026-08-28: a bar that appears and disappears is a bar you cannot go and
+ * *look* at to find out what a button does, and it moves under the pointer
+ * while you reach for it.
+ */
+export const FORMATTING_BAR_MODES = ["floating", "fixed"] as const;
+export type FormattingBarMode = (typeof FORMATTING_BAR_MODES)[number];
+
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
+  formattingBar: FormattingBarMode;
   listPaging: ListPagingMode;
   listPageSize: ListPageSize;
   projectView: ProjectView;
@@ -187,6 +204,7 @@ export type Preferences = {
 
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
+  formattingBar: "floating",
   listPaging: "pages",
   listPageSize: 20,
   projectView: "grid",
@@ -227,6 +245,7 @@ export function parsePreferences(raw: unknown): Preferences {
   if (typeof raw !== "object" || raw === null) return DEFAULT_PREFERENCES;
   const source = raw as Record<string, unknown>;
   const treeDoubleClick = source.treeDoubleClick;
+  const formattingBar = source.formattingBar;
   const listPaging = source.listPaging;
   const listPageSize = source.listPageSize;
   const projectView = source.projectView;
@@ -239,6 +258,9 @@ export function parsePreferences(raw: unknown): Preferences {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
       : DEFAULT_PREFERENCES.treeDoubleClick,
+    formattingBar: FORMATTING_BAR_MODES.includes(formattingBar as FormattingBarMode)
+      ? (formattingBar as FormattingBarMode)
+      : DEFAULT_PREFERENCES.formattingBar,
     listPaging: LIST_PAGING_MODES.includes(listPaging as ListPagingMode)
       ? (listPaging as ListPagingMode)
       : DEFAULT_PREFERENCES.listPaging,

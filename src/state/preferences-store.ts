@@ -16,6 +16,7 @@ import {
   type Preferences,
   type ProjectSort,
   type ProjectView,
+  type FormattingBarMode,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -24,6 +25,7 @@ export type PreferencesStoreState = {
   /** Called once at startup. See StartupRouter. */
   loadPreferences: () => Promise<void>;
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
+  setFormattingBar: (mode: FormattingBarMode) => void;
   setListPaging: (mode: ListPagingMode) => void;
   setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
@@ -74,6 +76,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
         set({ preferences: DEFAULT_PREFERENCES });
         pushRetention(DEFAULT_PREFERENCES);
       }
+    },
+
+    setFormattingBar(mode) {
+      apply({ ...get().preferences, formattingBar: mode });
     },
 
     setTreeDoubleClick(action) {

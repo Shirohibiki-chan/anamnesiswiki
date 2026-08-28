@@ -465,6 +465,34 @@
   --bn-font-family: var(--font-prose) !important;
 }
 
+/* --- The formatting bar, kept on screen (Settings -> Writing) ---
+
+   Sticky rather than fixed, so it stays with the page column as it scrolls
+   instead of being positioned against the window — the centre pane is what
+   scrolls here, not the document.
+
+   **It draws its own background, and has to.** The floating version sits on a
+   popover surface the library gives it; rendered in the flow it would have the
+   page showing through, and prose scrolling underneath a row of buttons is
+   unreadable. The border underneath is what separates it from the writing, in
+   the same colour every other divider uses. */
+.editor-toolbar-fixed {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin-bottom: var(--space-md);
+  padding: var(--space-xs) 0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* Left-aligned with the writing rather than centred on the strip's own width,
+   which is what the floating one does — a fixed bar is part of the page's
+   layout and should line up with the text under it. */
+.editor-toolbar-fixed .bn-toolbar {
+  justify-content: flex-start;
+}
+
 /* --- The `/` menu, and the other shadcn popovers with it ---
 
    **The white outline was Tailwind v4's default border colour, not a choice.**

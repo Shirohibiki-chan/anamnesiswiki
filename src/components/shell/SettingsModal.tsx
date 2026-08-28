@@ -45,6 +45,7 @@ import { ListSettings } from "./ListSettings";
 import { ProjectsSettings } from "./ProjectsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { SidebarSettings } from "./SidebarSettings";
+import { WritingSettings } from "./WritingSettings";
 import { SnippetSettings } from "./SnippetSettings";
 import { ThemeEditor } from "./ThemeEditor";
 import { PatchNotes } from "./PatchNotes";
@@ -62,6 +63,7 @@ const PANELS: Record<string, () => React.JSX.Element> = {
   fonts: FontSettings,
   snippets: SnippetSettings,
   sidebar: SidebarSettings,
+  writing: WritingSettings,
   lists: ListSettings,
   history: HistorySettings,
   projects: ProjectsSettings,
