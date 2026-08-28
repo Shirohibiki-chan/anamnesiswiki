@@ -1167,6 +1167,19 @@
   font-size: var(--fs-sm);
 }
 
+/* Said after a project has gone, then gone itself. Borrows the top bar's
+   `save-indicator-fade` rather than defining a second one — the app has one
+   way of saying "that worked" and this screen shouldn't invent another. Longer
+   than the top bar's use of it because this sentence has a fact in it worth
+   reading, not just the word Saved. */
+.start-notice {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  opacity: 0;
+  animation: save-indicator-fade 6000ms ease forwards;
+}
+
 /* --- The pinned row --- */
 
 /* The one uncontained thing on this screen. Everything else sits in a box; a

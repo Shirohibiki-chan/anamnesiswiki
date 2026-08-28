@@ -62,6 +62,15 @@ describe("deleting a project", () => {
     expect(names.map((name) => name.trim())).not.toContain(projectName);
   });
 
+  it("says where the folder went", async () => {
+    // The tile vanishing proves something happened; it can't say *where the
+    // folder went*, which is the one fact worth having at the moment somebody
+    // deletes the wrong project.
+    const notice = await app.window.locator(".start-notice").innerText();
+    expect(notice).toContain(projectName);
+    expect(notice.toLowerCase()).toContain("recycle bin");
+  });
+
   it("says nothing to the console while doing it", () => {
     expect(app.errors).toEqual([]);
   });

@@ -153,6 +153,17 @@ export function StartScreen() {
     if (ok) library.deleteGroup(id);
   }
 
+  // Said once, briefly, after a project has gone. The tile vanishing is the
+  // proof that something happened; what it can't say is *where the folder
+  // went*, and that is the only thing she'd need to know at the one moment
+  // this matters — the time she deletes the wrong one.
+  //
+  // A fading line rather than a toast, following SaveIndicator and
+  // HistoryIndicator: a `key` remount driving a CSS fade, no timer in state and
+  // nothing to dismiss. Deleting twice in a row re-runs the animation because
+  // the key changes, which is the whole reason the timestamp is in there.
+  const [deleted, setDeleted] = useState<{ message: string; at: number } | null>(null);
+
   // The only thing on this screen that destroys her writing, so it says three
   // things and no more: what goes, that the *whole folder* goes, and that the
   // recycle bin means she can change her mind.
@@ -169,6 +180,7 @@ export function StartScreen() {
     if (!(await actions.deleteProject(project))) return;
     library.forget(project);
     unpin(project);
+    setDeleted({ message: `Deleted "${project.name}". The folder is in your recycle bin.`, at: Date.now() });
     void refreshWorlds();
   }
 
@@ -327,6 +339,12 @@ export function StartScreen() {
               Never mind
             </button>
           </div>
+        )}
+
+        {deleted && (
+          <p key={deleted.at} className="start-notice" aria-live="polite">
+            {deleted.message}
+          </p>
         )}
 
         {actions.error && (
