@@ -262,6 +262,39 @@ export function StartScreen() {
           />
         )}
 
+        {/* Above the grid, not below it. Both of these used to sit after
+            ProjectGrid, which put them under every tile — off the bottom of the
+            screen on any library with more than a handful of projects, and the
+            delete line fades on a timer, so it was gone before you could scroll
+            to it. It read as the app saying nothing at all.
+
+            They stay together, and in this order: a delete that worked and a
+            delete that didn't must appear in the same place, or the absence of
+            one is not evidence of the other. */}
+        {deleted && (
+          <p key={deleted.at} className="start-notice" aria-live="polite">
+            {deleted.message}
+          </p>
+        )}
+
+        {actions.error && (
+          <p className="start-error">
+            {actions.error}
+            {/* Only offered when the refusal was a claim, which is the one the
+                app routinely gets wrong — a crash, a power cut or a sync client
+                looks exactly like a second window from here. Every other
+                failure has nothing useful behind a second try. */}
+            {actions.openAnyway && (
+              <>
+                {" "}
+                <button type="button" className="ui-link" onClick={() => void actions.openAnyway?.()}>
+                  Open it anyway
+                </button>
+              </>
+            )}
+          </p>
+        )}
+
         <ProjectGrid
           projects={shown}
           heading={headingFor(library.scope, activeGroup?.name)}
@@ -339,30 +372,6 @@ export function StartScreen() {
               Never mind
             </button>
           </div>
-        )}
-
-        {deleted && (
-          <p key={deleted.at} className="start-notice" aria-live="polite">
-            {deleted.message}
-          </p>
-        )}
-
-        {actions.error && (
-          <p className="start-error">
-            {actions.error}
-            {/* Only offered when the refusal was a claim, which is the one the
-                app routinely gets wrong — a crash, a power cut or a sync client
-                looks exactly like a second window from here. Every other
-                failure has nothing useful behind a second try. */}
-            {actions.openAnyway && (
-              <>
-                {" "}
-                <button type="button" className="ui-link" onClick={() => void actions.openAnyway?.()}>
-                  Open it anyway
-                </button>
-              </>
-            )}
-          </p>
         )}
       </div>
 

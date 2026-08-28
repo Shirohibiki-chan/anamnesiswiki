@@ -71,6 +71,25 @@ describe("deleting a project", () => {
     expect(notice.toLowerCase()).toContain("recycle bin");
   });
 
+  it("puts that line where it can actually be read", async () => {
+    // **The assertion this file was missing.** The line first shipped *below*
+    // ProjectGrid, which on any real library puts it under every tile and off
+    // the bottom of the screen — and it fades on a timer, so it was gone before
+    // you could scroll to it. It looked fine in a test that deleted the only
+    // project there was, because an empty grid is no grid at all.
+    //
+    // Checked against the grid rather than against a pixel count: what matters
+    // is that no number of projects can push it out of sight.
+    const notice = await app.window.locator(".start-notice").boundingBox();
+    const grid = await app.window.locator(".start-all").first().boundingBox();
+    expect(notice, "the delete line should be on screen").not.toBeNull();
+    expect(grid, "the project grid should be on screen").not.toBeNull();
+    expect(notice!.y).toBeLessThan(grid!.y);
+
+    const viewport = app.window.viewportSize();
+    if (viewport) expect(notice!.y + notice!.height).toBeLessThanOrEqual(viewport.height);
+  });
+
   it("says nothing to the console while doing it", () => {
     expect(app.errors).toEqual([]);
   });
