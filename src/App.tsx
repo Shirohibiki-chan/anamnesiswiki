@@ -1,4 +1,5 @@
 import { AssetPickerDialog } from "./components/shell/AssetPickerDialog";
+import { NewPageLinkDialog } from "./components/shell/NewPageLinkDialog";
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
@@ -72,6 +73,12 @@ function App() {
           cover so far, and the list will grow — which is the reason it sits up
           here with the others rather than beside either one of them. */}
       <AssetPickerDialog />
+      {/* Make a page and link to it, asked for from inside the editor — which
+          is nowhere near the app root, and portals like the rest of these. It
+          is opened from two places already (the `/` menu and a `[[Name]]` that
+          matches nothing), which is the same reason the picture library sits
+          up here. */}
+      <NewPageLinkDialog />
       {/* Raised from a tree row's menu, which react-arborist renders itself —
           the same routing reason as the export request and SaveAsTemplate
           above. Keyed by the page, so pointing it at another one starts its

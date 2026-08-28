@@ -1136,6 +1136,37 @@ under `acknowledgedWarnings`.
 
 ## Editor & templates
 
+- **The offer to make a missing page hangs off the change scan, not off the
+  `]]` key — and the reason is measured, not stylistic.** Phase 19.5. The
+  bracket handler in `wikilink-bracket-confirm.ts` looked like the natural home
+  (its `"none"` branch *is* "nothing answers to this name"), but BlockNote's
+  suggestion menu closes as soon as the query contains a space, so that branch
+  is only ever reached for a **single-word** name. Page names are mostly two
+  words. `unknownWikilinkAt` in `wikilink.ts` is where it lives instead, called
+  from `handleChange` beside `resolveWikilinks` — same trigger, any name.
+
+- **Two rules keep that offer from becoming a page she cannot type on.** It
+  looks only at **the block the cursor is in**: scanning the document would
+  raise a dialog about `[[brackets]]` typed as literal text last week, the
+  moment an unrelated paragraph was edited. And `use-editor` records a name in
+  its `asked` set the moment it *asks*, not when she declines — declining leaves
+  the text exactly where it was, on purpose, so the next keystroke finds it
+  again. Either one removed, and the feature is a loop.
+
+- **Nothing is taken out of the document to ask the question.** The first cut
+  wiped the `[[Name]]` text to make room for a chip and re-inserted it by hand on
+  cancel, which is a restore path that can be got wrong; the text now stays put
+  and is swapped for a chip only when a page is actually made. **The chip is
+  written by `linkWikilink` rather than left to `resolveWikilinks`** on the next
+  keystroke, because that one names a chip after the page and the dialog's link
+  text box exists to let it read as something else.
+
+- **A dialog opened from the editor has to hand the keyboard back.** It is a
+  portal, so opening it takes focus out of the editor and closing it does not
+  return it — `use-editor` calls `editor.focus()` on both the confirm and the
+  cancel path. Without it, cancelling leaves the caret nowhere and reads as
+  typing having stopped working.
+
 - **There are two quote blocks, and both have to look like a quote.** Ours is
   `calloutQuote`; BlockNote's own `quote` is a separate type the app holds for
   real — LK import maps a plain ProseMirror blockquote to it on purpose (a
