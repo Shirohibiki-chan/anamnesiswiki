@@ -1799,3 +1799,74 @@
   justify-content: center;
   margin-top: 2px;
 }
+
+/* ── A block in the page body ─────────────────────────────────────────────
+   Phase 19.5. The same block the sidebar draws, in the middle of the writing.
+
+   **The frame is here and nothing is restyled inside it.** Everything within
+   is `.block-shell` and its children, exactly as in the panel, which is the
+   property the phase is built on — a block kind added later appears in both
+   places without either stylesheet being touched. So this rule set is a box
+   around the renderer and no more.
+
+   **A border, because the panel's separator does not survive the move.** In
+   the sidebar a block is told apart from the one under it by a rule between
+   them and by the panel's own edge. On a page there is neither: a bare block
+   sits on the same surface as the prose, and the first cut read as writing
+   that had suddenly changed font. The lone block has to close its own box.
+
+   `contentEditable={false}` is on the element itself (see block-ref.tsx); the
+   cursor rule here is only so the box does not advertise a text caret it will
+   not accept. */
+.page-block {
+  margin: var(--space-lg) 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  overflow: hidden;
+  cursor: default;
+  /* **`flex: 1` because BlockNote's own wrapper is a flex row**, measured in
+     the built app rather than assumed: `.bn-block-content` is `display: flex`,
+     so a block in it is a flex item with `flex: 0 1 auto` and shrink-wraps to
+     whatever it holds. The first cut looked right in every test and drew a
+     148px box in a 728px column — a block *narrower* in the page than in the
+     sidebar, which is the opposite of the entire feature.
+
+     `min-width: 0` is the other half: without it a flex item refuses to shrink
+     below its content, so a block holding a wide grid would push the writing
+     out of the window instead of reflowing inside it. */
+  flex: 1;
+  min-width: 0;
+}
+
+/* The last block in a panel keeps its bottom rule, because the panel continues
+   below it. A block on its own has nothing below it, and the rule reads as a
+   line the box drew for no reason. */
+.page-block .block-shell {
+  border-bottom: none;
+}
+
+/* **The page is wider than the panel and the block should use it.** This is
+   the whole reason the phase exists: four gauges go two-across in a 340px
+   column and a fifth pushes the page's fields off the bottom. Whatever grid a
+   block draws is free to reflow here, because nothing caps the width.
+
+   Padding drops a step, though. The panel's generous inset is what stops a
+   block touching a narrow column's edges; at full width it reads as a box with
+   a hole in it. */
+.page-block .block-shell {
+  padding: var(--space-lg) var(--space-xl);
+}
+
+/* **A pointer with nothing behind it takes up no room.** Removing a block from
+   its own ⋯ menu deletes the record while the document still names it, and for
+   the rest of that session the block draws nothing — see PageBlock.tsx. Without
+   this the frame above would still be there: an empty bordered box in the
+   middle of her writing, with no way to tell what it was. The pointer itself is
+   swept the next time the page is opened (block-service.ts).
+
+   `:empty` is exact here rather than approximate — React renders no child at
+   all, not a blank one. */
+.page-block:empty {
+  display: none;
+}
