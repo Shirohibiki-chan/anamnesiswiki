@@ -87,6 +87,14 @@ export type StartActions = {
    */
   renameProject: (project: ListedWorld, name: string) => Promise<boolean>;
   /**
+   * Deletes a project outright, by sending its folder to the OS recycle bin.
+   *
+   * Resolves true when the folder actually went, which is the caller's signal
+   * to rescan and to unfile it from the archive, its groups and the pins. False
+   * means it is still there and `error` says why.
+   */
+  deleteProject: (project: ListedWorld) => Promise<boolean>;
+  /**
    * A project's shape written out as a `.antpl` she can send to someone
    * (Phase 27). Nothing on disk changes here and nothing is re-scanned, so
    * this resolves nothing — success is the file existing where she put it, and
@@ -111,7 +119,14 @@ function templateNameFromPath(path: string): string {
 
 export function useStartActions(): StartActions {
   const { loadProject, createProjectAt } = useProject();
-  const { recordProjectOpened, forgetProject, renameRememberedProject, prepareNewProjectsDir } = useAppSettings();
+  const {
+    recordProjectOpened,
+    forgetProject,
+    getLastOpenedProject,
+    clearLastOpenedProject,
+    renameRememberedProject,
+    prepareNewProjectsDir,
+  } = useAppSettings();
   const { pickFolder } = useDialogs();
   const resolveChosenFolder = useOpenFolder();
 
@@ -438,6 +453,48 @@ export function useStartActions(): StartActions {
     [refuseIfHeldElsewhere, renameRememberedProject],
   );
 
+  /**
+   * Deletes a project, folder and all, by sending it to the recycle bin.
+   *
+   * **Held-elsewhere is checked first and refuses**, exactly as rename does. A
+   * folder pulled out from under an open window is the one way this could cost
+   * writing that was never saved, and it is the only case where the recycle
+   * bin doesn't help.
+   *
+   * The app's own pointers at it are cleared here — the recents list, and
+   * `lastOpenedProject` if it was this one. That last matters more than it
+   * reads: without it the next launch tries to open a folder that isn't there
+   * any more. What this deliberately does *not* touch is the archive, the
+   * groups and the pins, which live on the start screen and are cleaned up by
+   * the caller — `healRefs` keeps a ref whose project it can't currently see,
+   * on purpose, because a project on an unplugged drive must not be quietly
+   * unfiled.
+   */
+  const deleteProject = useCallback(
+    async (project: ListedWorld) => {
+      if (await refuseIfHeldElsewhere(project.path, project.name)) return false;
+
+      setIsBusy(true);
+      try {
+        await fsService.deleteProject(project.path);
+        await forgetProject(project.path);
+        if ((await getLastOpenedProject()) === project.path) await clearLastOpenedProject();
+        setError(null);
+        return true;
+      } catch (e) {
+        setError(
+          e instanceof Error && e.message
+            ? `Couldn't delete "${project.name}": ${e.message}`
+            : `Couldn't delete "${project.name}".`,
+        );
+        return false;
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [clearLastOpenedProject, forgetProject, getLastOpenedProject, refuseIfHeldElsewhere],
+  );
+
   // The other half of "start from a template": making one out of a project she
   // already has. Nothing about *her* project changes — this only reads it.
   //
@@ -507,6 +564,7 @@ export function useStartActions(): StartActions {
     showProjectInFolder,
     duplicateProject,
     renameProject,
+    deleteProject,
     exportProjectTemplate,
   };
 }

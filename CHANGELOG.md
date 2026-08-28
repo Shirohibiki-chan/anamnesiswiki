@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-28 — projects can be deleted
+
+### Additions
+
+- **A project can be deleted.** It's on the tile's ••• menu, under Archive. Until now Archive was the only way to get a project out of the list, and all that does is hide the tile — the folder stayed on your disk with no way to get rid of it except doing it yourself in File Explorer.
+- **It goes to the recycle bin, not into thin air.** The whole project folder is moved there, so if you delete the wrong one you can put it back. You're asked first, and the warning names the project and says the whole folder is what goes.
+- **It tidies up after itself.** A deleted project leaves the archive, any groups you'd filed it under, your pins and the recently-opened list, so nothing is left pointing at a folder that isn't there. If it happened to be the last project you had open, the app won't try to reopen it next time it starts.
+- **A project another window has open won't be deleted**, the same as renaming one — you're told to go to that window instead.
+
 ## 2026-08-28 — five new kinds of page, and Species is now Race
 
 ### Additions

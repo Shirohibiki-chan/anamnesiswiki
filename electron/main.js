@@ -485,6 +485,11 @@ handle("os:openPath", (_event, target) => shell.openPath(target));
 
 handle("os:openExternal", (_event, url) => shell.openExternal(url));
 
+// The OS recycle bin, not a delete. `shell.trashItem` is the only reason the
+// delete-a-project action can exist at all: an `fs.rm` on a folder of her
+// writing has no undo anywhere in the system, and this one does.
+handle("os:trashPath", (_event, target) => shell.trashItem(target));
+
 handle("os:revealItem", (_event, target) => {
   shell.showItemInFolder(target);
 });

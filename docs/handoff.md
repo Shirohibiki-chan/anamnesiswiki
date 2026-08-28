@@ -1637,6 +1637,26 @@ under `acknowledgedWarnings`.
   thing on it. A new bulk action should use it rather than looping `updateNode`,
   or the user presses undo forty times to reverse one click.
 
+- **Deleting a project goes to the recycle bin, and that is the whole design.**
+  `trashPath` is a separate contract call from `removePath` on purpose:
+  `removePath` is how the app tidies up after itself and is gone for good, and
+  this one is only ever reached by a person choosing to delete their own
+  writing. **A host that cannot offer the recycle bin must reject rather than
+  fall back to `removePath`** — the Tauri implementation does exactly that, and
+  turning it into a permanent delete would mean the app quietly did something
+  worse than what the button offered. There is no type-the-name confirmation
+  because the recycle bin already is the undo; adding one would be ceremony over
+  a reversible action.
+
+- **A deleted project must be unfiled explicitly.** `healRefs` and `healGroups`
+  deliberately *keep* a ref whose project they cannot currently see — a project
+  on an unplugged drive or a not-yet-synced folder has to come back to the same
+  chips it left — so nothing self-cleans. `confirmProjectDelete` clears the
+  archive, the groups and the pins itself, and only **after** the folder has
+  actually gone; unfiling first would lose her filing on a delete that failed.
+  `lastOpenedProject` is cleared in the action for the same reason: without it
+  the next launch opens a folder that isn't there.
+
 - **Wikilinks never guess between two same-named pages.** `[[Name]]` converts only
   when the name is unique; otherwise it stays plain text. Ambiguity should never
   resolve silently (same principle as Obsidian). Use `@`, which lists every match.

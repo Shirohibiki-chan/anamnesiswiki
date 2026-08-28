@@ -17,7 +17,20 @@
 // which is the same problem the template picker hit near the bottom of a tall
 // tree.
 import { useRef, useState } from "react";
-import { Archive, ArchiveRestore, Check, Copy, FolderOpen, ImagePlus, MoreHorizontal, Pencil, Plus, Share2, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Check,
+  Copy,
+  FolderOpen,
+  ImagePlus,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Share2,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { ProjectGroup } from "../../services/project-groups";
 import type { ListedWorld } from "../../services/world-scan";
 import { TreePopover } from "../tree/TreePopover";
@@ -37,6 +50,7 @@ export type ProjectLibraryActions = {
   onCreateGroup: (project: ListedWorld, name: string) => void;
   onArchive: (project: ListedWorld) => void;
   onUnarchive: (project: ListedWorld) => void;
+  onDelete: (project: ListedWorld) => void;
 };
 
 type ProjectTileMenuProps = {
@@ -271,6 +285,13 @@ export function ProjectTileMenu({
               </button>
             )}
 
+            {/* A rule, where the rest of this menu uses headings. The Groups
+                heading above covers the ticks and New group; without something
+                closing that section, Archive and Delete read as two more group
+                names — and "Delete…" filed under Groups reads as deleting a
+                group, which is a different and much smaller thing. */}
+            <hr className="project-tile-menu-rule" />
+
             <button
               type="button"
               role="menuitem"
@@ -287,6 +308,23 @@ export function ProjectTileMenu({
             >
               {isArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
               {isArchived ? "Bring back" : "Archive"}
+            </button>
+
+            {/* Last, and the only item on this menu that destroys anything, so
+                it sits below Archive rather than beside it — Archive is what
+                most people reaching for "get rid of this" actually want. */}
+            <button
+              type="button"
+              role="menuitem"
+              className="project-tile-menu-item project-tile-menu-item-danger"
+              title="Sends the project's whole folder to the recycle bin."
+              onClick={() => {
+                close();
+                library.onDelete(project);
+              }}
+            >
+              <Trash2 size={13} />
+              Delete&hellip;
             </button>
           </div>
         </TreePopover>

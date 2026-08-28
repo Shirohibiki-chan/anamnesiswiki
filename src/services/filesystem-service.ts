@@ -11,6 +11,7 @@ import {
   readTextFile,
   removePath as remove,
   renamePath as rename,
+  trashPath,
   watchPath,
   writeFile,
   writeTextFile,
@@ -1935,6 +1936,20 @@ async function copyDirectory(from: string, to: string): Promise<void> {
  * exactly the one key and leaves everything else on the object untouched,
  * whatever it turns out to hold.
  */
+/**
+ * Sends a whole project folder to the recycle bin.
+ *
+ * **The only call in the app that disposes of a project**, and it goes through
+ * `trashPath` rather than `remove` for the reason the contract gives: this is
+ * her writing, and the recycle bin is the difference between a mistake and a
+ * loss. Nothing here re-checks that the folder looks like a project — the
+ * caller has one from the scan, and a second opinion about what is safe to
+ * delete would only be a second place to get it wrong.
+ */
+export async function deleteProject(rootPath: string): Promise<void> {
+  await trashPath(rootPath);
+}
+
 /**
  * A project's name, and the folder it lives in, changed together.
  *

@@ -97,6 +97,30 @@ export function useProjectLibrary(worlds: readonly ListedWorld[]) {
       (world: ListedWorld) => applyArchived(removeRef(healedArchived, world)),
       [applyArchived, healedArchived],
     ),
+    /**
+     * Strips a project out of the archive and every group it was filed in.
+     *
+     * Only for a project that has actually gone. `healRefs` and `healGroups`
+     * deliberately keep a ref they can't currently match — a project on an
+     * unplugged drive or a not-yet-synced folder must come back to the same
+     * chips it left — so nothing else ever removes one, and a deleted project
+     * would otherwise sit in the archive count for good.
+     */
+    forget: useCallback(
+      (world: ListedWorld) => {
+        applyArchived(removeRef(healedArchived, world));
+        applyGroups(
+          healedGroups.reduce(
+            (groupsSoFar, group) =>
+              projectGroups.groupsOf(groupsSoFar, world).some((candidate) => candidate.id === group.id)
+                ? projectGroups.toggleGroupMember(groupsSoFar, group.id, world)
+                : groupsSoFar,
+            healedGroups,
+          ),
+        );
+      },
+      [applyArchived, applyGroups, healedArchived, healedGroups],
+    ),
     createGroup: useCallback(
       (name: string, first?: ListedWorld) => applyGroups(projectGroups.createGroup(healedGroups, name, first)),
       [applyGroups, healedGroups],

@@ -29,7 +29,7 @@ import { useStartActions } from "../../hooks/use-start-actions";
 import { useWorldLibrary } from "../../hooks/use-world-library";
 import { scopeProjects, SCOPE_ALL, SCOPE_ARCHIVED, type LibraryScope } from "../../services/library-scope";
 import { resolvePins, unpinned as unpinnedOf } from "../../services/pins";
-import { filterWorlds } from "../../services/world-scan";
+import { filterWorlds, type ListedWorld } from "../../services/world-scan";
 import { RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from "../../constants/layout";
 import { ImportModal } from "../import/ImportModal";
 import { ResizeHandle } from "../shell/ResizeHandle";
@@ -153,6 +153,25 @@ export function StartScreen() {
     if (ok) library.deleteGroup(id);
   }
 
+  // The only thing on this screen that destroys her writing, so it says three
+  // things and no more: what goes, that the *whole folder* goes, and that the
+  // recycle bin means she can change her mind.
+  //
+  // The archive, the groups and the pins are cleared only after the folder has
+  // actually gone. `healRefs` keeps a ref it can't match on purpose — a project
+  // on an unplugged drive comes back to the same chips it left — so a failed
+  // delete that had already unfiled it would quietly lose her filing.
+  async function confirmProjectDelete(project: ListedWorld) {
+    const ok = await confirmDestructive(
+      `Delete "${project.name}" and everything in it? The whole folder goes to your recycle bin, so you can still get it back from there.`,
+    );
+    if (!ok) return;
+    if (!(await actions.deleteProject(project))) return;
+    library.forget(project);
+    unpin(project);
+    void refreshWorlds();
+  }
+
   return (
     <main className="start" style={{ "--rail-w": `${widths.rail}px` } as React.CSSProperties}>
       <div className="start-main">
@@ -254,6 +273,7 @@ export function StartScreen() {
             onCreateGroup: (project, name) => library.createGroup(name, project),
             onArchive: library.archive,
             onUnarchive: library.unarchive,
+            onDelete: (project) => void confirmProjectDelete(project),
           }}
           isScanning={isScanning}
           now={scannedAt}

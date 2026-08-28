@@ -123,6 +123,19 @@ export function removePath(path: string, options?: { recursive?: boolean }): Pro
   return options ? fsRemove(path, options) : fsRemove(path);
 }
 
+/**
+ * **Rejects, on purpose.** Tauri's fs plugin has no recycle-bin call, and the
+ * available alternative — `fsRemove` with `recursive` — deletes her writing
+ * with no way back. Failing here means the delete-a-project action reports that
+ * it could not do it, which is the correct outcome; falling through to a
+ * permanent delete would mean the app quietly did something worse than what it
+ * offered. Nothing has shipped from this shell since v0.5.0, so in practice
+ * this is a guard rather than a gap.
+ */
+export function trashPath(path: string): Promise<void> {
+  return Promise.reject(new Error(`This build can't move ${path} to the recycle bin.`));
+}
+
 export function renamePath(from: string, to: string): Promise<void> {
   return fsRename(from, to);
 }
@@ -348,6 +361,7 @@ const conformance = {
   readDir,
   makeDir,
   removePath,
+  trashPath,
   renamePath,
   copyFile,
   fileInfo,
