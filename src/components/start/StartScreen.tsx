@@ -15,6 +15,7 @@
 // The rail drags on the shell's own handle rather than a second mechanism
 // written for this screen. It is the same gesture on the same kind of edge, and
 // the width is stored beside the shell's two — see `layout-service`.
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
@@ -272,7 +273,8 @@ export function StartScreen() {
             delete that didn't must appear in the same place, or the absence of
             one is not evidence of the other. */}
         {deleted && (
-          <p key={deleted.at} className="start-notice" aria-live="polite">
+          <p key={deleted.at} className="start-notice" role="status" aria-live="polite">
+            <Trash2 className="start-notice-icon" size={15} aria-hidden="true" />
             {deleted.message}
           </p>
         )}

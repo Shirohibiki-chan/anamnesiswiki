@@ -71,23 +71,37 @@ describe("deleting a project", () => {
     expect(notice.toLowerCase()).toContain("recycle bin");
   });
 
-  it("puts that line where it can actually be read", async () => {
-    // **The assertion this file was missing.** The line first shipped *below*
-    // ProjectGrid, which on any real library puts it under every tile and off
-    // the bottom of the screen — and it fades on a timer, so it was gone before
-    // you could scroll to it. It looked fine in a test that deleted the only
-    // project there was, because an empty grid is no grid at all.
+  it("puts that toast where it cannot be missed", async () => {
+    // **The assertions this file kept failing to make.** The message shipped
+    // twice as a line of text in the column: first below the grid, then above
+    // it. Read back off the real app, the second version rendered at full
+    // opacity mid-screen and still went unnoticed — at `--fs-sm` in
+    // `--color-text-muted` it was pixel-identical to the project count beside
+    // the heading. It was on screen and it was invisible, which no assertion
+    // about position could ever have caught.
     //
-    // Checked against the grid rather than against a pixel count: what matters
-    // is that no number of projects can push it out of sight.
-    const notice = await app.window.locator(".start-notice").boundingBox();
-    const grid = await app.window.locator(".start-all").first().boundingBox();
-    expect(notice, "the delete line should be on screen").not.toBeNull();
-    expect(grid, "the project grid should be on screen").not.toBeNull();
-    expect(notice!.y).toBeLessThan(grid!.y);
+    // So these check the two things that make it a notification rather than
+    // another line of page furniture: it is pinned to the window, so nothing
+    // the list does can move it, and it has a surface of its own.
+    const notice = app.window.locator(".start-notice");
+    const style = await notice.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { position: s.position, background: s.backgroundColor, color: s.color };
+    });
+    expect(style.position).toBe("fixed");
+    expect(style.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(style.color).not.toBe(
+      await app.window.locator(".start-count").first().evaluate((el) => getComputedStyle(el).color),
+    );
 
-    const viewport = app.window.viewportSize();
-    if (viewport) expect(notice!.y + notice!.height).toBeLessThanOrEqual(viewport.height);
+    // `viewportSize()` is null on an Electron window — an earlier version of
+    // this guarded on it and so never ran at all. The page's own innerHeight is
+    // the number that exists here.
+    const box = (await notice.boundingBox())!;
+    const viewportHeight = await app.window.evaluate(() => window.innerHeight);
+    expect(box).not.toBeNull();
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewportHeight);
   });
 
   it("says nothing to the console while doing it", () => {
