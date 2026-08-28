@@ -3058,6 +3058,18 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ## Sidebar blocks
 
+- **`BlockList` draws the blocks; `BlockPanel` is the sidebar around it.** Split
+  2026-08-28 as the first step of Phase 19.5, because the page body and the
+  infobox draw the same blocks and neither of them is the sidebar. The rule that
+  keeps the split honest: **nothing in `BlockList` may reach for the selected
+  node or assume the list it was handed is the page's whole list.** It takes the
+  node as a prop — an image, tags or alias block is a window onto the page it
+  sits on, so that argument is real and not a leftover — and it reports ordering
+  as *ids*, never indices. An infobox shows some of `node.blocks`, so position on
+  screen is not position in storage, and whoever owns the whole list is the only
+  one that can translate between them. `BlockPanel` does it in `handleReorder`,
+  where the two happen to agree.
+
 - **`blocks` absent and `blocks: []` are different states and the migration
   depends on it.** Absent means the page predates Phase 18a, and
   `block-service`'s `deriveBlocks` rebuilds the old fixed panel for it on read.
@@ -3102,7 +3114,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 - **The block shell owns the title; the field inside it does not.** Every
   property field takes `label` and now skips its label row when that label is
-  empty, and `BlockPanel` passes `""` to all of them. This is what makes Title
+  empty, and `BlockList` passes `""` to all of them. This is what makes Title
   / No title one behaviour instead of one per field type, and it is why adding
   a new field component means guarding its label row the same way — otherwise
   a block renders its heading twice.
@@ -3282,7 +3294,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 - **A reading's `segmented` overrides its block's, and agreeing with the block
   stores nothing.** Same shape as `meterColor`. The self-clearing rule in
-  `BlockPanel` is deliberate: pinning the same answer would quietly stop the
+  `BlockList` is deliberate: pinning the same answer would quietly stop the
   block's own toggle from reaching that reading afterwards.
 
 - **Adding a reading has to be visible in the panel, not only in the `⋯` menu.**
