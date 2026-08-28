@@ -8,12 +8,9 @@ echo.
 echo   KEEP THIS BLACK WINDOW OPEN. Closing it closes the app.
 echo   The app window takes a few seconds to appear.
 echo.
-echo   This is the Phase 29 shell. It runs on its own port, so the old
-echo   "Anamnesis (latest code)" launcher can be open at the same time.
-echo.
 
 rem ---------------------------------------------------------------------
-rem Same rule as the Tauri launcher beside this one: no pnpm. pnpm lives
+rem This script must not use pnpm, and that is not a style preference. pnpm lives
 rem under a redirected %APPDATA% that only exists inside the Claude desktop
 rem app's container, so a shortcut you double-click cannot see it. Node is
 rem in Program Files and everything else is in this repo's node_modules.

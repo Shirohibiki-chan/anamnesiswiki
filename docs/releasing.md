@@ -10,9 +10,11 @@ gets it.
 The app moved from Tauri to Electron, and the release pipeline moved with it.
 The commands below are the same. What is different underneath:
 
-- **`release-electron.yml` is what a version tag builds now.** The old
-  `release.yml` still exists, set to manual-only, as a way back if the new one
-  ever fails badly. Delete it once an Electron release has shipped and settled.
+- **`release-electron.yml` is what a version tag builds.** The old
+  `release.yml` was kept on manual dispatch as a way back, and was deleted on
+  2026-08-28 once v0.6.0 had shipped and been installed. `appimage-test.yml`
+  went with it — it existed for a crash in Tauri's AppImage that this shell
+  does not have.
 - **The updater's signing key is no longer used.** Tauri verified each update
   against a key you hold; electron-updater verifies the SHA-512 published in the
   release feed and fetched from GitHub over HTTPS. The
@@ -59,10 +61,10 @@ verified every update against a key she holds. Electron does not work that way:
 `electron-updater` checks the SHA-512 published in the release feed and fetched
 from GitHub over HTTPS, and no key of ours is involved.
 
-So `TAURI_SIGNING_PRIVATE_KEY` and its password secret do nothing. They are
-harmless where they are and should be left until `release.yml` is deleted,
-which is what still reads them. **Nothing needs to be set up before an Electron
-release can be cut.**
+So `TAURI_SIGNING_PRIVATE_KEY` and its password secret do nothing at all now:
+`release.yml` was the last thing reading them and it is gone. They can be
+deleted from the repository's Settings → Secrets whenever you feel like it, and
+nothing will notice. **Nothing needs to be set up before a release can be cut.**
 
 This is unrelated to code signing, which is a separate thing the project
 deliberately does not do — see the section above. The key was free and local;
