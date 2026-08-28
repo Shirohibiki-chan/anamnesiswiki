@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createNode, type Block, type Node } from "../constants/schema";
+import { createNode, type Block, type BlockKind, type Node } from "../constants/schema";
 import {
+  blockKindLabel,
   blocksFor,
   deriveBlocks,
   duplicateBlock,
@@ -314,3 +315,14 @@ describe("planTemplateSwap", () => {
   });
 });
 
+
+describe("blockKindLabel", () => {
+  it("gives every kind a name a person would use", () => {
+    const kinds: BlockKind[] = ["property", "image", "tags", "text", "link", "collection", "alias", "meter"];
+    for (const kind of kinds) {
+      const label = blockKindLabel(kind);
+      expect(label).not.toBe("");
+      expect(label).not.toBe(kind);
+    }
+  });
+});

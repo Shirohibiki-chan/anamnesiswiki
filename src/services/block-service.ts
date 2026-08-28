@@ -316,3 +316,31 @@ export function withField<K extends keyof Block>(block: Block, field: K, value: 
   else next[field] = value;
   return next;
 }
+
+/**
+ * What one kind of block is called in an undo entry — "Undid adding a meter".
+ *
+ * Deliberately the words the panel's own Add menu uses rather than the stored
+ * kind: `alias` and `collection` are names for the code, and an undo message
+ * is the one place the user reads back what they just did.
+ */
+export function blockKindLabel(kind: BlockKind): string {
+  switch (kind) {
+    case "property":
+      return "a field";
+    case "image":
+      return "a picture";
+    case "tags":
+      return "the tags";
+    case "text":
+      return "a note";
+    case "link":
+      return "a link";
+    case "collection":
+      return "a collection";
+    case "alias":
+      return "the other names";
+    case "meter":
+      return "a meter";
+  }
+}

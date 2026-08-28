@@ -613,3 +613,25 @@ export function planOptionDelete(nodes: Record<string, Node>, propertyLabel: str
     };
   });
 }
+
+/**
+ * What to call a property key in front of the user.
+ *
+ * The panel's undo entries read "Undid changing Age", which means the store
+ * needs the label for a key it is only ever handed by id. A page's own spec
+ * wins over the template's: a field she added and a template field can't share
+ * a key, but looking at hers first keeps the answer right if one ever does.
+ *
+ * **Falls back to a generic phrase rather than to the key**, because the key
+ * is a UUID for anything she made herself, and "Undid changing
+ * 7f3a…" is worse than not naming it at all.
+ */
+export function propertyLabel(
+  schema: readonly RenderableProperty[],
+  custom: readonly CustomPropertySpec[] | undefined,
+  key: string,
+): string {
+  const own = custom?.find((spec) => spec.key === key);
+  if (own) return own.label;
+  return schema.find((spec) => spec.key === key)?.label ?? "a field";
+}

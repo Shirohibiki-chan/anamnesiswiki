@@ -66,6 +66,7 @@ import {
 } from "../services/tab-service";
 import { getDefaultTabs, getPropertySchema, getTemplate } from "../services/template-registry";
 import {
+  blockKindLabel,
   blocksFor,
   duplicateBlock as duplicateBlockIn,
   moveBlock,
@@ -115,6 +116,7 @@ import {
   planPropertyRename,
   planTagDelete,
   planTagRename,
+  propertyLabel,
 } from "../services/property-service";
 import * as lkImportService from "../services/lk-import";
 import { materializeProjectTemplate } from "../services/project-template";
@@ -582,6 +584,15 @@ export type ProjectStoreState = {
   saveNow: () => Promise<void>;
   setProjectHome: (id: string | null) => void;
   togglePinned: (id: string) => void;
+  /**
+   * Puts the tree's arrangement back to an earlier copy of `project.json`
+   * (Phase 19) — the order, the home page, the pins, the expanded folders.
+   *
+   * Takes a patch rather than a whole project because deciding *what* of a copy
+   * may come back, and checking its ids against the pages that exist now, is
+   * `restoreProjectPatch`'s job and is testable without a disk.
+   */
+  restoreProjectArrangement: (patch: Partial<Project>) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
 };
 
@@ -745,8 +756,51 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // Hands an undoable operation to the history stack. A no-op while an undo or
   // redo is running, so reversing something doesn't get recorded as a new
   // thing to reverse — history-store owns that guard.
-  const record = (label: string, undo: () => Promise<void> | void, redo: () => Promise<void> | void): void => {
-    useHistoryStore.getState().record({ label, undo, redo });
+  const record = (
+    label: string,
+    undo: () => Promise<void> | void,
+    redo: () => Promise<void> | void,
+    mergeKey?: string,
+  ): void => {
+    useHistoryStore.getState().record({ label, undo, redo, mergeKey });
+  };
+
+  /**
+   * Applies one patch to one page and records it as a single undo entry.
+   *
+   * The single-page twin of `applyBulk`, and the whole of Phase 19's panel
+   * undo: everything the right-hand panel changes is a patch to the page it is
+   * showing, so recording it is a matter of reading the fields the patch is
+   * about to overwrite before it lands. Every key in the patch is captured,
+   * including the ones the page does not have yet — `undefined` restores a
+   * field to absent, which is what putting a page back means when the edit
+   * being undone is the one that created it.
+   *
+   * `mergeKey` names one field on one page. Pass it for anything that writes
+   * while the user is still moving — a text field, a dragged meter — so a run
+   * of writes reverses as the one edit it looked like; see mergeRepeat. Leave
+   * it off for anything that happens once per click.
+   */
+  const patchNode = (
+    label: string,
+    nodeId: string,
+    patch: Partial<Omit<Node, "id">>,
+    mergeKey?: string,
+  ): void => {
+    const node = get().nodes[nodeId];
+    if (!node) return;
+
+    const before: Record<string, unknown> = {};
+    for (const key of Object.keys(patch)) before[key] = node[key as keyof Node];
+    const after = { ...patch };
+
+    get().updateNode(nodeId, patch);
+    record(
+      label,
+      () => get().updateNode(nodeId, before as Partial<Omit<Node, "id">>),
+      () => get().updateNode(nodeId, after),
+      mergeKey,
+    );
   };
 
   /**
@@ -766,13 +820,22 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
    * that has none — would write a one-block sidebar and drop every field the
    * page was showing.
    */
-  const editBlocks = (nodeId: string, edit: (blocks: Block[]) => Block[]): void => {
+  const editBlocks = (
+    nodeId: string,
+    edit: (blocks: Block[]) => Block[],
+    label: string,
+    mergeKey?: string,
+  ): void => {
     const node = get().nodes[nodeId];
     if (!node) return;
     const current = blocksFor(node, getPropertySchema(node.templateKey));
     const next = edit(current);
     if (next === current) return;
-    get().updateNode(nodeId, { blocks: next });
+    // Recorded against the node's *stored* blocks rather than the derived list
+    // above, so undoing the first edit to a page written before Phase 18a
+    // un-materialises it — the page goes back to having no block list at all,
+    // which is what it had. patchNode reads that field for itself.
+    patchNode(label, nodeId, { blocks: next }, mergeKey);
   };
 
   /**
@@ -927,6 +990,16 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     const { rootPath, project } = get();
     if (!rootPath || !project) return;
     const nextProject: Project = { ...project, homeNodeId };
+    set({ project: nextProject });
+    track(() => fsService.saveProject(rootPath, nextProject));
+  };
+
+  // The same split again, for a patch of any shape — the restore below is the
+  // only thing that changes several of these fields at once.
+  const applyProjectPatch = (patch: Partial<Project>): void => {
+    const { rootPath, project } = get();
+    if (!rootPath || !project) return;
+    const nextProject: Project = { ...project, ...patch };
     set({ project: nextProject });
     track(() => fsService.saveProject(rootPath, nextProject));
   };
@@ -1403,30 +1476,47 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       get().updateNode(nodeId, { tabs: withTabContent(existing.tabs, tabId, content) });
     },
 
+    // The five below record; `updateTabContent` above deliberately does not.
+    // What is inside a tab is writing, and writing has BlockNote's own undo on
+    // Ctrl+Z (see docs/handoff.md §Ctrl+Z). What a tab *is* — that it exists,
+    // what it is called, where it sits — is structure, and losing a tab to a
+    // misclick was the one thing left in this file that a press could not take
+    // back. Deleting one takes its contents with it, which is why this is here
+    // rather than queued.
     toggleTabHidden(nodeId, tabId) {
       const existing = get().nodes[nodeId];
       if (!existing) return;
-      get().updateNode(nodeId, { tabs: withTabHiddenToggled(existing.tabs, tabId) });
+      patchNode("hiding a tab", nodeId, { tabs: withTabHiddenToggled(existing.tabs, tabId) });
     },
 
     addTab(nodeId, label) {
       const existing = get().nodes[nodeId];
       if (!existing) throw new Error("addTab: node not found");
       const { tabs, tab } = withTabAdded(existing.tabs, crypto.randomUUID(), label);
-      get().updateNode(nodeId, { tabs });
+      patchNode(`adding the ${label} tab`, nodeId, { tabs });
       return tab;
     },
 
     renameTab(nodeId, tabId, label) {
       const existing = get().nodes[nodeId];
       if (!existing) return;
-      get().updateNode(nodeId, { tabs: withTabRenamed(existing.tabs, tabId, label) });
+      // Typed into, so the whole rename folds into one entry — same reasoning
+      // as a property field.
+      patchNode(
+        "renaming a tab",
+        nodeId,
+        { tabs: withTabRenamed(existing.tabs, tabId, label) },
+        `tab-name:${nodeId}:${tabId}`,
+      );
     },
 
     deleteTab(nodeId, tabId) {
       const existing = get().nodes[nodeId];
       if (!existing) return;
-      get().updateNode(nodeId, { tabs: withTabDeleted(existing.tabs, tabId) });
+      const going = existing.tabs.find((tab) => tab.id === tabId);
+      patchNode(`deleting the ${going?.label ?? "tab"} tab`, nodeId, {
+        tabs: withTabDeleted(existing.tabs, tabId),
+      });
     },
 
     reorderTabs(nodeId, orderedTabIds) {
@@ -1435,7 +1525,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // Null means the order didn't describe these exact tabs. Writing it would
       // drop one and everything in it, so the drag is abandoned instead.
       const tabs = withTabsReordered(existing.tabs, orderedTabIds);
-      if (tabs) get().updateNode(nodeId, { tabs });
+      if (tabs) patchNode("moving a tab", nodeId, { tabs });
     },
 
     // Sets a page's template and adds that template's default tabs — but
@@ -1506,15 +1596,24 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       track(() => fsService.relocateNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), nodeId));
     },
 
+    // Typing into a field writes on every keystroke, so this is one of the two
+    // actions in the store that hand `patchNode` a merge key — a sentence typed
+    // into Age reverses as a sentence rather than as thirty presses.
     updateNodeProperty(nodeId, key, value) {
       const { nodes } = get();
       const existing = nodes[nodeId];
       if (!existing) return;
-      get().updateNode(nodeId, { properties: { ...existing.properties, [key]: value } });
+      const label = propertyLabel(getPropertySchema(existing.templateKey), existing.customProperties, key);
+      patchNode(
+        `changing ${label}`,
+        nodeId,
+        { properties: { ...existing.properties, [key]: value } },
+        `property:${nodeId}:${key}`,
+      );
     },
 
     updateNodeTags(nodeId, tags) {
-      get().updateNode(nodeId, { tags });
+      patchNode("changing the tags", nodeId, { tags });
     },
 
     addCustomProperty(nodeId, label, type) {
@@ -1550,7 +1649,10 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         ...blocksFor(existing, getPropertySchema(existing.templateKey)),
         newBlock("property", { propertyKey: spec.key }),
       ];
-      get().updateNode(nodeId, { customProperties: [...(existing.customProperties ?? []), spec], blocks });
+      patchNode(`adding ${label}`, nodeId, {
+        customProperties: [...(existing.customProperties ?? []), spec],
+        blocks,
+      });
     },
 
     updateCustomProperty(nodeId, key, patch) {
@@ -1560,7 +1662,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const customProperties = (existing.customProperties ?? []).map((spec) =>
         spec.key === key ? { ...spec, ...patch } : spec,
       );
-      get().updateNode(nodeId, { customProperties });
+      // A field being renamed is typed into, the same as a value is, so the
+      // whole rename is one entry — see the merge key on updateNodeProperty.
+      patchNode(
+        `editing ${propertyLabel(getPropertySchema(existing.templateKey), existing.customProperties, key)}`,
+        nodeId,
+        { customProperties },
+        `property-spec:${nodeId}:${key}`,
+      );
     },
 
     // Dropping an option has to drop the pages' use of it in the same step,
@@ -1584,7 +1693,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         delete properties[key];
       }
 
-      get().updateNode(nodeId, { customProperties, properties });
+      patchNode("removing an option", nodeId, { customProperties, properties });
     },
 
     deletePageProperty(nodeId, key) {
@@ -1607,7 +1716,11 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const blocks = blocksFor(existing, getPropertySchema(existing.templateKey)).filter(
         (block) => !(block.kind === "property" && block.propertyKey === key),
       );
-      get().updateNode(nodeId, { customProperties, properties, propertyOrder, blocks });
+      patchNode(
+        `deleting ${propertyLabel(getPropertySchema(existing.templateKey), existing.customProperties, key)}`,
+        nodeId,
+        { customProperties, properties, propertyOrder, blocks },
+      );
     },
 
 
@@ -1628,7 +1741,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // not a rule about empty ones. See newMeterFor.
       const seeded =
         kind === "meter" ? { meters: [newMeterFor(extra?.meter ?? "bar")], ...extra } : extra;
-      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, seeded)]);
+      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, seeded)], `adding ${blockKindLabel(kind)}`);
     },
 
     // Removing a block removes the block, and nothing else. A property block
@@ -1638,15 +1751,15 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // property itself is `deletePageProperty`, which is a different action
     // with a different name for a reason.
     removeBlock(nodeId, blockId) {
-      editBlocks(nodeId, (blocks) => blocks.filter((block) => block.id !== blockId));
+      editBlocks(nodeId, (blocks) => blocks.filter((block) => block.id !== blockId), "removing a block");
     },
 
     reorderBlocks(nodeId, fromIndex, toIndex) {
-      editBlocks(nodeId, (blocks) => moveBlock(blocks, fromIndex, toIndex));
+      editBlocks(nodeId, (blocks) => moveBlock(blocks, fromIndex, toIndex), "moving a block");
     },
 
     duplicateBlock(nodeId, blockId) {
-      editBlocks(nodeId, (blocks) => duplicateBlockIn(blocks, blockId));
+      editBlocks(nodeId, (blocks) => duplicateBlockIn(blocks, blockId), "duplicating a block");
     },
 
     // An empty title is not a title: it is stored as absent so the block falls
@@ -1656,6 +1769,8 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const trimmed = title?.trim();
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "title", trimmed || undefined) : block)),
+        "renaming a block",
+        `block-title:${nodeId}:${blockId}`,
       );
     },
 
@@ -1664,24 +1779,29 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     setBlockTitleShown(nodeId, blockId, shown) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "showTitle", shown ? undefined : false) : block)),
+        `${shown ? "showing" : "hiding"} a block's title`,
       );
     },
 
     setBlockColor(nodeId, blockId, color) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "color", color) : block)),
+        "recolouring a block",
       );
     },
 
     setBlockText(nodeId, blockId, text) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "text", text || undefined) : block)),
+        "editing a note",
+        `block-text:${nodeId}:${blockId}`,
       );
     },
 
     setBlockLink(nodeId, blockId, targetId) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "targetId", targetId) : block)),
+        "changing a link",
       );
     },
 
@@ -1711,6 +1831,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
             }),
           );
         }),
+        "changing a meter's shape",
       );
     },
 
@@ -1718,18 +1839,21 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     setBlockMeterText(nodeId, blockId, shown) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "showText", shown ? undefined : false) : block)),
+        "changing what a meter shows",
       );
     },
 
     setBlockMeterMax(nodeId, blockId, shown) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "showMax", shown ? undefined : false) : block)),
+        "changing what a meter shows",
       );
     },
 
     setBlockMeterFace(nodeId, blockId, face) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "face", face) : block)),
+        "changing a meter's face",
       );
     },
 
@@ -1737,12 +1861,15 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     setBlockMeterSegmented(nodeId, blockId, segmented) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "segmented", segmented || undefined) : block)),
+        "changing a meter's shape",
       );
     },
 
     setBlockMeterPip(nodeId, blockId, pip) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "pip", pip) : block)),
+        "changing a meter's pip",
+        `meter-pip:${nodeId}:${blockId}`,
       );
     },
 
@@ -1753,6 +1880,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
             ? withField(block, "meters", [...metersOf(block), newMeterFor(meterStyleOf(block))])
             : block,
         ),
+        "adding a reading",
       );
     },
 
@@ -1769,6 +1897,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
           const copy = { ...entries[index], id: crypto.randomUUID() };
           return withField(block, "meters", [...entries.slice(0, index + 1), copy, ...entries.slice(index + 1)]);
         }),
+        "duplicating a reading",
       );
     },
 
@@ -1780,6 +1909,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         blocks.map((block) =>
           block.id === blockId ? withField(block, "meters", withoutMeter(metersOf(block), meterId)) : block,
         ),
+        "removing a reading",
       );
     },
 
@@ -1793,6 +1923,8 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         blocks.map((block) =>
           block.id === blockId ? withField(block, "meters", withMeter(metersOf(block), meterId, patch)) : block,
         ),
+        "editing a meter",
+        `meter:${nodeId}:${blockId}:${meterId}`,
       );
     },
 
@@ -1805,6 +1937,8 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         blocks.map((block) =>
           block.id === blockId ? withField(block, "meters", withMeters(metersOf(block), patches)) : block,
         ),
+        "editing a meter",
+        `meters:${nodeId}:${blockId}`,
       );
     },
 
@@ -1819,18 +1953,21 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
             ? withField(withField(withField(block, "source", source), "tags", undefined), "targetIds", undefined)
             : block,
         ),
+        "changing what a collection lists",
       );
     },
 
     setBlockTargets(nodeId, blockId, targetIds) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "targetIds", targetIds) : block)),
+        "changing a collection",
       );
     },
 
     setBlockTags(nodeId, blockId, tags) {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "tags", tags) : block)),
+        "changing a block's tags",
       );
     },
 
@@ -1838,7 +1975,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // an empty search and pull every page into the results.
     setNodeAliases(nodeId, aliases) {
       const cleaned = aliases.map((alias) => alias.trim()).filter(Boolean);
-      get().updateNode(nodeId, { aliases: cleaned.length > 0 ? cleaned : undefined });
+      patchNode("changing the other names", nodeId, { aliases: cleaned.length > 0 ? cleaned : undefined });
     },
 
 
@@ -1931,18 +2068,30 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
 
     setImageAlt(nodeId, alt) {
       const trimmed = alt.trim();
-      get().updateNode(nodeId, { imageAlt: trimmed === "" ? undefined : trimmed });
+      patchNode(
+        "describing a picture",
+        nodeId,
+        { imageAlt: trimmed === "" ? undefined : trimmed },
+        `image-alt:${nodeId}`,
+      );
     },
 
+    // Dragged rather than typed, so it writes continuously for as long as the
+    // pointer is down — the merge key is what makes one drag one entry.
     setImageFocus(nodeId, focusY) {
-      get().updateNode(nodeId, { imageFocusY: Math.min(100, Math.max(0, focusY)) });
+      patchNode(
+        "moving a picture",
+        nodeId,
+        { imageFocusY: Math.min(100, Math.max(0, focusY)) },
+        `image-focus:${nodeId}`,
+      );
     },
 
     // Back to the whole photo at its own shape. Absent is the uncropped state
     // rather than a stored 50, so this clears rather than resets — see
     // schema.ts on why the field is its own flag.
     clearImageFocus(nodeId) {
-      get().updateNode(nodeId, { imageFocusY: undefined });
+      patchNode("recentring a picture", nodeId, { imageFocusY: undefined });
     },
 
     // A picture dropped, pasted or picked inside the editor. Deliberately not
@@ -2983,6 +3132,24 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         "the home page change",
         () => applyHome(previousHomeNodeId),
         () => applyHome(homeNodeId),
+      );
+    },
+
+    restoreProjectArrangement(patch) {
+      const { project } = get();
+      if (!project) return;
+
+      // Read before the write, the same way patchNode does it: the fields this
+      // patch is about to overwrite are exactly what undoing it puts back.
+      const before: Record<string, unknown> = {};
+      for (const key of Object.keys(patch)) before[key] = project[key as keyof Project];
+      const after = { ...patch };
+
+      applyProjectPatch(after);
+      record(
+        "restoring the tree",
+        () => applyProjectPatch(before as Partial<Project>),
+        () => applyProjectPatch(after),
       );
     },
 

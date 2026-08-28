@@ -2,7 +2,7 @@
 // filesystem — project-store hands it closures and it runs them in order.
 // Never imported directly by components; use hooks/use-history.ts.
 import { create } from "zustand";
-import { collapseSince, pushEntry, type HistoryEntry } from "../services/history-service";
+import { collapseSince, mergeRepeat, pushEntry, type HistoryEntry } from "../services/history-service";
 
 export type HistoryStoreState = {
   past: HistoryEntry[];
@@ -73,10 +73,18 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => {
 
     record(entry) {
       if (get().isReplaying) return;
+      // Stamped here rather than by the caller so there is one clock: the fold
+      // below compares two entries' times, and a store action that read its
+      // own would be comparing against whenever it happened to be written.
+      const now = Date.now();
+      const stamped = { ...entry, at: now };
+      // A run of writes to the same field is one edit as far as the user is
+      // concerned — see mergeRepeat. Everything else stacks.
+      const folded = mergeRepeat(get().past, stamped, now);
       // A new action after an undo abandons the redo branch. Keeping it would
       // mean offering to redo something that no longer fits the tree it was
       // recorded against.
-      set({ past: pushEntry(get().past, entry), future: [] });
+      set({ past: folded ?? pushEntry(get().past, stamped), future: [] });
     },
 
     collapse(depth, label) {
