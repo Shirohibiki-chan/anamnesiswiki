@@ -24,8 +24,29 @@ import { createContext, type ComponentType } from "react";
 export type BlockRefRenderer = ComponentType<{ blockId: string }>;
 
 /**
+ * Draws an infobox: the frame, the blocks it is holding, and its Add Block.
+ *
+ * **It takes the block's own id as well as its contents** because the frame is
+ * editable — adding a block to it, reordering it, taking one out — and every
+ * one of those writes back to the prop on this block in the document. The
+ * renderer is handed the id so it can say *which* infobox changed.
+ */
+export type InfoboxRenderer = ComponentType<{ editorBlockId: string; blockIds: string[] }>;
+
+/** Both renderers, which arrive together and are never useful apart. */
+export type PageBlockRenderers = {
+  Block: BlockRefRenderer;
+  Infobox: InfoboxRenderer;
+};
+
+/**
  * **Null is a real state, not a missing provider.** BlockNote renders these
  * blocks anywhere it renders a document, and not every one of those places has
  * the app's panel around it. Drawing nothing is the right answer there.
+ *
+ * **Whatever is provided must be a module-level constant**, object included.
+ * A `{ Block, Infobox }` built inside `Editor` would be a new value every
+ * keystroke, and every block in every infobox on the page would re-render for
+ * it — the same class of bug as a component built during render, one level up.
  */
-export const BlockRefRenderContext = createContext<BlockRefRenderer | null>(null);
+export const BlockRefRenderContext = createContext<PageBlockRenderers | null>(null);

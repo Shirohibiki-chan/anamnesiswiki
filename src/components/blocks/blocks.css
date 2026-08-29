@@ -1870,3 +1870,57 @@
 .page-block:empty {
   display: none;
 }
+
+/* ── The infobox ──────────────────────────────────────────────────────────
+   Phase 19.5. A framed group of the page's own blocks, sitting in the writing.
+
+   **The frame is the feature.** A lone block in the page draws its own box
+   (`.page-block` above); this draws one box around several, which is the only
+   thing that tells a reader those blocks belong together. So the border here is
+   a touch stronger than a lone block's — it has to hold a group, against page
+   text on both sides. */
+.page-infobox {
+  /* Same flex reasoning as `.page-block`: BlockNote's `.bn-block-content` is a
+     flex row, so without this the frame shrink-wraps to its contents and comes
+     out narrower in the page than the sidebar it replaced. */
+  flex: 1;
+  min-width: 0;
+  cursor: default;
+}
+
+.infobox {
+  margin: var(--space-lg) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+/* The blocks inside keep the panel's separators, because here there *is*
+   something below each one — that is what makes it a group rather than a stack
+   of loose boxes. The last one drops its rule: below it is the frame's own
+   Add Block, which brings its own edge. */
+.infobox .block-shell {
+  padding: var(--space-lg) var(--space-xl);
+}
+
+.infobox .block-shell:last-of-type {
+  border-bottom: none;
+}
+
+/* **An empty frame has to say what it is.** A bordered box with a button in it
+   and nothing else reads as something that failed to load, and every infobox
+   starts empty — this is the first thing she sees of the feature, every time. */
+.infobox-empty {
+  margin: 0;
+  padding: var(--space-xl) var(--space-xl) var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* Add Block sits inside the frame rather than under it: it belongs to this
+   infobox, and one floating below the border would read as belonging to the
+   page. */
+.infobox-add {
+  margin: 0 var(--space-sm) var(--space-sm);
+}

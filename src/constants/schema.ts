@@ -69,6 +69,32 @@ export type Tab = {
  */
 export const BLOCK_REF_TYPE = "blockRef";
 
+/**
+ * The BlockNote block that holds several of the page's blocks together in a
+ * bordered frame (Phase 19.5).
+ *
+ * **The third place a block can live, not a replacement for the second.** A
+ * block inside one is the same record in `node.blocks` that a sidebar block is,
+ * and it can be taken out into the page body on its own — the infobox groups
+ * blocks, it does not own them. See `docs/plan.md` Phase 19.5.
+ *
+ * **Its order is its own.** The sidebar draws `node.blocks` in storage order;
+ * an infobox draws the ids it was given, in the order it was given them, which
+ * is why the list lives on the block in the document rather than being derived
+ * from storage. A block's position on screen here is not its position on disk.
+ */
+export const INFOBOX_TYPE = "infobox";
+
+/**
+ * How an infobox writes down which blocks it holds.
+ *
+ * **A joined string because BlockNote props are flat.** Its prop schema takes
+ * strings, numbers and booleans, not arrays, so the list is encoded on the way
+ * in and parsed on the way out — see `parseBlockIds` in `block-service.ts`,
+ * which is the only thing that should know this character.
+ */
+export const BLOCK_ID_SEPARATOR = ",";
+
 // One of the allowed values on a select / multi-select / status property.
 // `color` is a key from constants/palette.ts's COLOR_PALETTE, not a hex —
 // the same list node colours come from, so a chip recolours with the theme

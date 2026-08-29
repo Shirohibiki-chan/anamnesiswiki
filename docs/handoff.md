@@ -3249,6 +3249,32 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   that can disagree, and there is no way to tell which one is right when it
   does. Reasoning in `docs/plan.md` Phase 19.5.
 
+- **An infobox claims its contents the same way a lone pointer claims one, and
+  both have to be read in the same place.** Phase 19.5. `claimedBy` in
+  `block-service.ts` answers for both kinds, and `blockIdsInPage` and the sweep
+  each go through it — a third kind taught to only one of them would draw a
+  block in the sidebar and the page at once. **The frame stores an ordered list
+  of ids as a joined string**, because BlockNote's prop schema takes strings,
+  numbers and booleans and not arrays; `parseBlockIds` / `serialiseBlockIds` are
+  the only things that know the separator.
+
+- **An infobox's order is its own, and reordering writes to the document.** The
+  sidebar draws `node.blocks` in storage order; an infobox draws the ids it
+  holds, in the order it holds them. So dragging inside a frame updates the prop
+  on that BlockNote block, never `node.blocks` — this is the case the `BlockList`
+  split was written for, where position on screen genuinely is not position in
+  storage.
+
+- **Deleting an infobox must never delete its contents, and the sweep is where
+  that is easy to get wrong.** The frame is not the blocks: dropping it drops
+  the list of ids, every block in it becomes unclaimed, and the sidebar draws
+  them again. That is also the only way to get a block back out of a frame until
+  dragging exists, so it is load-bearing rather than incidental. For the same
+  reason `withoutDanglingBlockRefs` *prunes* a dead id out of an infobox and
+  leaves the frame standing, while it removes a lone `blockRef` outright — an
+  empty infobox is ordinary, and deleting one because a single block was removed
+  would take its survivors out of the page too.
+
 - **A pointer with no block behind it is an ordinary state, not corruption.**
   The record and the pointer are saved through different paths — the panel
   writes `node.blocks`, the editor writes the document — so they cannot be

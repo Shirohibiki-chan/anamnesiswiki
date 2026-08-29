@@ -4,7 +4,10 @@ import {
   blockIdsInPage,
   blockKindLabel,
   blocksFor,
+  parseBlockIds,
+  serialiseBlockIds,
   sidebarBlocks,
+  withoutDanglingBlockRefs,
   deriveBlocks,
   duplicateBlock,
   migrateBlocks,
@@ -415,5 +418,106 @@ describe("sidebarBlocks", () => {
     // The dangling pointer — the block was deleted from its own menu and the
     // document still names it. An ordinary state, not an error.
     expect(sidebarBlocks(blocks, new Set(["gone"])).map((block) => block.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
+// Phase 19.5, the infobox: a frame in the page holding several of the page's
+// blocks. It claims its contents the same way a lone pointer claims one, so
+// everything the sidebar does about not drawing a block twice has to know
+// about both — these are the cases where knowing about only one shows.
+describe("an infobox's claim on the page's blocks", () => {
+  function tab(content: unknown[]) {
+    return { id: "t1", label: "Overview", hidden: false, content };
+  }
+
+  it("claims everything it is holding", () => {
+    const doc = [{ type: "infobox", props: { blockIds: "a,b,c" } }];
+    expect([...blockIdsInPage([tab(doc)])]).toEqual(["a", "b", "c"]);
+  });
+
+  it("claims nothing when it is empty", () => {
+    // How every infobox starts, and the state the sidebar must be unchanged by.
+    expect(blockIdsInPage([tab([{ type: "infobox", props: { blockIds: "" } }])]).size).toBe(0);
+  });
+
+  it("counts a lone pointer and an infobox together", () => {
+    const doc = [
+      { type: "blockRef", props: { blockId: "alone" } },
+      { type: "infobox", props: { blockIds: "grouped" } },
+    ];
+    expect([...blockIdsInPage([tab(doc)])].sort()).toEqual(["alone", "grouped"]);
+  });
+
+  it("is found inside another block, like a lone pointer is", () => {
+    const doc = [{ type: "heading", children: [{ type: "infobox", props: { blockIds: "deep" } }] }];
+    expect([...blockIdsInPage([tab(doc)])]).toEqual(["deep"]);
+  });
+
+  it("survives a prop that is not what it should be", () => {
+    // It parses a file on somebody's disk. A broken prop costs the blocks in
+    // one infobox, never the page.
+    const doc = [
+      { type: "infobox" },
+      { type: "infobox", props: { blockIds: null } },
+      { type: "infobox", props: { blockIds: 7 } },
+      { type: "infobox", props: { blockIds: ",,," } },
+    ];
+    expect(blockIdsInPage([tab(doc)]).size).toBe(0);
+  });
+});
+
+describe("parseBlockIds / serialiseBlockIds", () => {
+  it("round-trips a list", () => {
+    expect(parseBlockIds(serialiseBlockIds(["a", "b", "c"]))).toEqual(["a", "b", "c"]);
+  });
+
+  it("keeps the order, because the order is what the frame stores", () => {
+    expect(parseBlockIds("c,a,b")).toEqual(["c", "a", "b"]);
+  });
+
+  it("reads an empty list from an empty string, not one empty id", () => {
+    expect(parseBlockIds("")).toEqual([]);
+    expect(serialiseBlockIds([])).toBe("");
+  });
+
+  it("drops blanks rather than writing an id that names nothing", () => {
+    expect(serialiseBlockIds(["a", "", "b"])).toBe("a,b");
+    expect(parseBlockIds("a,,b")).toEqual(["a", "b"]);
+  });
+});
+
+describe("sweeping an infobox", () => {
+  const alive = new Set(["keep"]);
+
+  it("prunes a dead id but leaves the frame standing", () => {
+    // **The difference that matters.** A lone pointer *is* its block, so a dead
+    // one goes. An infobox is a frame she put there and may still be holding
+    // things — removing it would take the survivors out of the page with it.
+    const doc = [{ type: "infobox", props: { blockIds: "keep,gone" } }];
+    expect(withoutDanglingBlockRefs(doc, alive)).toEqual([
+      { type: "infobox", props: { blockIds: "keep" } },
+    ]);
+  });
+
+  it("leaves an infobox emptied of everything, rather than deleting it", () => {
+    const doc = [{ type: "infobox", props: { blockIds: "gone" } }];
+    expect(withoutDanglingBlockRefs(doc, alive)).toEqual([{ type: "infobox", props: { blockIds: "" } }]);
+  });
+
+  it("still removes a lone pointer outright", () => {
+    const doc = [{ type: "blockRef", props: { blockId: "gone" } }];
+    expect(withoutDanglingBlockRefs(doc, alive)).toEqual([]);
+  });
+
+  it("touches nothing when every id is alive", () => {
+    const doc = [{ type: "infobox", props: { blockIds: "keep" } }];
+    expect(withoutDanglingBlockRefs(doc, alive)).toBe(doc);
+  });
+
+  it("prunes one nested inside another block", () => {
+    const doc = [{ type: "heading", children: [{ type: "infobox", props: { blockIds: "keep,gone" } }] }];
+    expect(withoutDanglingBlockRefs(doc, alive)).toEqual([
+      { type: "heading", children: [{ type: "infobox", props: { blockIds: "keep" } }] },
+    ]);
   });
 });
