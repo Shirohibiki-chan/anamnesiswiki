@@ -7,6 +7,18 @@
 - **The `/` menu no longer runs off the edge of the window.** Depending on where your cursor was on the page, the command list could hang off the bottom — or, when it opened upwards instead, off the top, with its first rows above the window entirely. It now fits the room it actually has, wherever the cursor is.
 - **It still won't be enormous.** On a tall window it stops at about eight rows rather than filling the screen, which is what the old rule was reaching for; the difference is that the limit can no longer make the menu *bigger* than the space it has to fit in.
 
+## 2026-08-28 — blocks can live in the page
+
+### Additions
+
+- **A block can now sit in the middle of a page instead of in the sidebar.** Type `/` and you'll find a new **Page blocks** group — text block, picture, tags, alias, the three indexes and backlinks — plus all eight meters. Pick one and it's placed where you're writing, at the full width of the page rather than squeezed into a 340px column. This is what the sidebar could never do: a row of gauges has room to spread out.
+- **It's the same block, not a copy.** A block you put in the page leaves the sidebar, because there is only ever one of it. Everything works exactly as it did — the `⋯` menu, the title, the colour, the fields — since the page and the sidebar draw blocks through the same code.
+- **Take it out and it goes back to the sidebar.** Hover the block, click the handle beside it, and Delete. Nothing is lost: the block returns to the panel it came from. Deleting it for good is still **Remove** in the block's own `⋯` menu.
+
+### Fixes
+
+- **A block deleted from its `⋯` menu no longer leaves a gap in the page.** It draws nothing straight away, and the leftover reference is tidied out of the page the next time you open it.
+
 ## 2026-08-28 — the formatting bar can stay put
 
 ### Additions

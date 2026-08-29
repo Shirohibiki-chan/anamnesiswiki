@@ -9,11 +9,14 @@ import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/re
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
+import { withoutDanglingBlockRefs } from "../services/block-service";
+import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
+import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
 import { linkWikilink, resolveWikilinks, unknownWikilinkAt } from "../services/editor-blocks/wikilink";
@@ -27,17 +30,40 @@ import { useDialogs } from "./use-dialogs";
 import { useProject } from "./use-project";
 
 export { WIKILINK_TRIGGER };
+// Re-exported rather than imported straight from the service, for the same
+// reason everything else here is: this file is the only door components have
+// into services/editor-blocks/. Editor.tsx fills the slot with the component
+// that actually draws a block — see PageBlock.tsx.
+export { BlockRefRenderContext };
 
 export function useEditor(nodeId: string, content: unknown[], onContentChange: (content: unknown[]) => void) {
   // The full-store subscription is deliberate here: the mention menu and
   // wikilink resolution both need to see every node in the project, and this
   // component is already re-rendering as the user types regardless.
-  const { nodes, rootPath, uploadAsset } = useProject();
+  const { nodes, rootPath, uploadAsset, addBlock } = useProject();
   const { requestNewPageLink } = useDialogs();
+
+  /**
+   * The saved document with pointers to deleted blocks taken out (Phase 19.5).
+   *
+   * **Read once, at the only moment that is guaranteed to happen.** The editor
+   * is built fresh for every page and every tab, so this runs exactly when a
+   * document is opened and never while she types. Nothing is written here; the
+   * swept version reaches disk on her next keystroke like any other edit.
+   *
+   * **Skipped outright on a page from before Phase 18a**, which has no block
+   * list at all. `blocksFor` would derive one with fresh ids, and sweeping
+   * against ids invented a moment ago would delete every pointer in the
+   * document. Such a page cannot have one — the feature did not exist — so the
+   * safe answer and the correct one are the same.
+   */
+  const openedContent = nodes[nodeId]?.blocks
+    ? withoutDanglingBlockRefs(content, new Set(nodes[nodeId].blocks.map((block) => block.id)))
+    : content;
 
   const editor = useCreateBlockNote({
     schema: editorSchema,
-    initialContent: content.length > 0 ? (content as never) : undefined,
+    initialContent: openedContent.length > 0 ? (openedContent as never) : undefined,
     // Phase 16. These two are what make a picture inside a page possible at
     // all: BlockNote's image block holds a single string, so `uploadFile`
     // decides what gets written there and `resolveFileUrl` turns it back into
@@ -178,6 +204,10 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
         ...withoutBuiltInQuote(getDefaultReactSlashMenuItems(editor)),
         ...getCalloutSlashMenuItems(editor),
         ...getNewPageSlashMenuItems(() => void insertNewPageLink("")),
+        // The sidebar's blocks, offered in the page. `addBlock` makes the
+        // record and hands back its id; the menu item points the document at
+        // it. See page-block-slash-menu.tsx.
+        ...getPageBlockSlashMenuItems(editor, (kind, extra) => addBlock(nodeId, kind, extra)),
       ],
       query,
     );

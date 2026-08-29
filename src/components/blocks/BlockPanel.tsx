@@ -41,7 +41,7 @@ export function BlockPanel() {
     useProject();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
-  const { blocks, properties, unshown } = useBlocks(node);
+  const { blocks, inSidebar, properties, unshown } = useBlocks(node);
 
   const [templateRect, setTemplateRect] = useState<DOMRect | null>(null);
   const [addRect, setAddRect] = useState<DOMRect | null>(null);
@@ -98,10 +98,14 @@ export function BlockPanel() {
     newPropertyInput.current?.select();
   }
 
-  // BlockList reports which block moved onto which; the sidebar is showing the
-  // page's whole list, so the position on screen is the position in storage.
-  // A list that is only part of one — an infobox — is where those two come
-  // apart, which is why the translation lives with whoever owns the list.
+  // BlockList reports which block moved onto which, as ids, and the panel turns
+  // that into positions in `node.blocks`.
+  //
+  // **Since Phase 19.5 those two lists really are different**, which is what the
+  // split was for: a block dragged into the page body is still in `node.blocks`
+  // and no longer on screen here, so the third row in the sidebar may be the
+  // fifth record on disk. Looking the ids up in `blocks` rather than `inSidebar`
+  // is the whole translation — everything on screen is in both.
   function handleReorder(activeId: string, overId: string) {
     const from = blocks.findIndex((block) => block.id === activeId);
     const to = blocks.findIndex((block) => block.id === overId);
@@ -109,10 +113,15 @@ export function BlockPanel() {
     reorderBlocks(node!.id, from, to);
   }
 
+  // **Up and down mean the next one *in the sidebar*, not the next record.**
+  // Stepping one index through `node.blocks` can land on a block that is in the
+  // page body, which looks from here like a menu item that did nothing. So the
+  // neighbour is found on screen and then translated back.
   function handleMove(blockId: string, direction: -1 | 1) {
-    const index = blocks.findIndex((block) => block.id === blockId);
-    if (index === -1) return;
-    reorderBlocks(node!.id, index, index + direction);
+    const onScreen = inSidebar.findIndex((block) => block.id === blockId);
+    const neighbour = inSidebar[onScreen + direction];
+    if (onScreen === -1 || !neighbour) return;
+    handleReorder(blockId, neighbour.id);
   }
 
   return (
@@ -160,7 +169,7 @@ export function BlockPanel() {
 
       <BlockList
         node={node}
-        blocks={blocks}
+        blocks={inSidebar}
         properties={properties}
         onReorder={handleReorder}
         onMove={handleMove}

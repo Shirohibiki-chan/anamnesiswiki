@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createNode, type Block, type BlockKind, type Node } from "../constants/schema";
 import {
+  blockIdsInPage,
   blockKindLabel,
   blocksFor,
+  sidebarBlocks,
   deriveBlocks,
   duplicateBlock,
   migrateBlocks,
@@ -324,5 +326,94 @@ describe("blockKindLabel", () => {
       expect(label).not.toBe("");
       expect(label).not.toBe(kind);
     }
+  });
+});
+
+// Phase 19.5: where a block lives is read off the page's writing, never stored.
+// These cover the reading, which is the half that can silently lose a block —
+// a pointer that goes unseen shows the same block in the sidebar and the page
+// at once, and one seen where there is none hides a block from both.
+describe("blockIdsInPage", () => {
+  /** A tab holding whatever document blocks it is given. */
+  function tab(content: unknown[]) {
+    return { id: "t1", label: "Overview", hidden: false, content };
+  }
+
+  function pointerTo(blockId: string, children?: unknown[]) {
+    return { type: "blockRef", props: { blockId }, children };
+  }
+
+  it("finds a pointer at the top level", () => {
+    expect([...blockIdsInPage([tab([{ type: "paragraph" }, pointerTo("b1")])])]).toEqual(["b1"]);
+  });
+
+  it("finds one nested inside another block", () => {
+    // BlockNote nests: a toggle heading or a list item holds children. A
+    // pointer in there is as real as one at the root, and missing it would
+    // draw the block in the sidebar as well.
+    const doc = [{ type: "heading", children: [{ type: "bulletListItem", children: [pointerTo("deep")] }] }];
+    expect([...blockIdsInPage([tab(doc)])]).toEqual(["deep"]);
+  });
+
+  it("reads every tab, hidden ones included", () => {
+    // Hiding a tab hides what is written in it. A block in that writing is part
+    // of it — the alternative has hiding a tab quietly refill the sidebar.
+    const tabs = [
+      { id: "t1", label: "Overview", hidden: false, content: [pointerTo("shown")] },
+      { id: "t2", label: "Secrets", hidden: true, content: [pointerTo("hidden")] },
+    ];
+    expect([...blockIdsInPage(tabs)].sort()).toEqual(["hidden", "shown"]);
+  });
+
+  it("ignores anything that is not a pointer with a real id", () => {
+    // Documents are `unknown[]` because they are BlockNote's shape and they come
+    // off a disk that can hold anything. Every one of these has been a plausible
+    // way for a file to arrive.
+    const doc = [
+      null,
+      "a string",
+      { type: "blockRef" },
+      { type: "blockRef", props: null },
+      { type: "blockRef", props: { blockId: "" } },
+      { type: "blockRef", props: { blockId: 7 } },
+      { type: "paragraph", props: { blockId: "not-a-pointer" } },
+    ];
+    expect([...blockIdsInPage([tab(doc)])]).toEqual([]);
+  });
+
+  it("counts a block pointed at twice only once", () => {
+    expect([...blockIdsInPage([tab([pointerTo("b1"), pointerTo("b1")])])]).toEqual(["b1"]);
+  });
+
+  it("copes with a page that has no tabs at all", () => {
+    expect(blockIdsInPage([]).size).toBe(0);
+  });
+});
+
+describe("sidebarBlocks", () => {
+  const blocks: Block[] = [
+    { id: "a", kind: "text" },
+    { id: "b", kind: "tags" },
+    { id: "c", kind: "image" },
+  ];
+
+  it("leaves out what the page has claimed", () => {
+    expect(sidebarBlocks(blocks, new Set(["b"])).map((block) => block.id)).toEqual(["a", "c"]);
+  });
+
+  it("keeps the order of what is left", () => {
+    expect(sidebarBlocks(blocks, new Set(["a"])).map((block) => block.id)).toEqual(["b", "c"]);
+  });
+
+  it("hands back the same list when nothing is claimed", () => {
+    // Identity, not just equality: this is the state every page is in until she
+    // uses the feature, and it should cost nothing.
+    expect(sidebarBlocks(blocks, new Set())).toBe(blocks);
+  });
+
+  it("ignores a claim on a block that no longer exists", () => {
+    // The dangling pointer — the block was deleted from its own menu and the
+    // document still names it. An ordinary state, not an error.
+    expect(sidebarBlocks(blocks, new Set(["gone"])).map((block) => block.id)).toEqual(["a", "b", "c"]);
   });
 });

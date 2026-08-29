@@ -19,9 +19,10 @@ import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
-import { useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import { BlockRefRenderContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
+import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
 import { PageFilePanel } from "./PageFilePanel";
 import { SaveImageButton } from "./SaveImageButton";
@@ -123,6 +124,13 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
   useAssetDropTarget(imageLightboxRef, insertImage);
 
   return (
+    // **What draws a block sitting in the writing, handed down rather than
+    // imported by the block itself.** The BlockNote spec lives in
+    // services/editor-blocks/ and CLAUDE.md's imports only flow downward, so
+    // the block cannot reach a component — the component layer fills the slot
+    // instead. `PageBlock` is a module-level component and must stay one: a
+    // value built here would be a new type on every keystroke.
+    <BlockRefRenderContext.Provider value={PageBlock}>
     <div
       ref={imageLightboxRef}
       className="editor-shell-wrapper"
@@ -191,5 +199,6 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         />
       </BlockNoteView>
     </div>
+    </BlockRefRenderContext.Provider>
   );
 }

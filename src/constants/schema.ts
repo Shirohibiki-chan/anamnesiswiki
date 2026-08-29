@@ -54,6 +54,21 @@ export type Tab = {
   content: BlockNoteDocument;
 };
 
+/**
+ * The BlockNote block that stands for one of the page's own blocks (Phase 19.5).
+ *
+ * **It is a pointer and it holds nothing else.** A block drawn in the page body
+ * keeps its record in `node.blocks` exactly as a sidebar one does; the document
+ * only says which one goes here, and *that* is what makes a block moved between
+ * the sidebar, the page and an infobox a move rather than a conversion. See
+ * `docs/plan.md` Phase 19.5 for why the alternative was rejected.
+ *
+ * **A name written into every document that ever holds one**, so it is here
+ * rather than beside the BlockNote spec: `block-service.ts` is plain TypeScript
+ * and has to read it out of saved documents without importing anything React.
+ */
+export const BLOCK_REF_TYPE = "blockRef";
+
 // One of the allowed values on a select / multi-select / status property.
 // `color` is a key from constants/palette.ts's COLOR_PALETTE, not a hex —
 // the same list node colours come from, so a chip recolours with the theme

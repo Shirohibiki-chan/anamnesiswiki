@@ -19,7 +19,12 @@ const TREE_ROW_TOGGLE = ".tree-row-toggle";
 const TREE_SEARCH_INPUT = ".tree-search-input";
 const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
+const BLOCK_PANEL = ".block-panel";
 const BLOCK_SHELL = ".block-shell";
+// Phase 19.5: a block drawn in the middle of the writing rather than in the
+// sidebar. It is the same markup inside — same `.block-shell`, same title — so
+// every selector below has to say which of the two it means.
+const PAGE_BLOCK = ".page-block";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
@@ -205,8 +210,25 @@ export async function panelBlockTitles(window: Page): Promise<string[]> {
   // uppercased in CSS, and `innerText` would hand back the transformed text —
   // which no longer matches the block's own aria-label that `openBlockMenu`
   // takes. One spelling for both, and it is the one in the markup.
-  const titles = await window.locator(`${BLOCK_SHELL} ${BLOCK_TITLE}`).allTextContents();
+  //
+  // **Rooted at the panel as of Phase 19.5, and that is not tidying.** A block
+  // in the page body draws the same `.block-shell`, so the unrooted selector
+  // started counting blocks that had been moved *out* of the sidebar as though
+  // they were still in it — which is the exact thing every scenario using this
+  // helper is asking about.
+  const titles = await window.locator(`${BLOCK_PANEL} ${BLOCK_SHELL} ${BLOCK_TITLE}`).allTextContents();
   return titles.map(normalize);
+}
+
+/** The blocks drawn in the page's writing, top to bottom. Phase 19.5. */
+export async function pageBlockTitles(window: Page): Promise<string[]> {
+  const titles = await window.locator(`${PAGE_BLOCK} ${BLOCK_TITLE}`).allTextContents();
+  return titles.map(normalize);
+}
+
+/** How many blocks the page's writing is holding, titled or not. */
+export async function pageBlockCount(window: Page): Promise<number> {
+  return window.locator(PAGE_BLOCK).count();
 }
 
 /**
