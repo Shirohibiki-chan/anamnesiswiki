@@ -1896,6 +1896,51 @@
   overflow: hidden;
 }
 
+/* **`!important`, and it is not a shortcut.** `page.css` forces a border colour
+   onto everything inside `.bn-root` with `!important`, to stop shadcn's
+   popovers drawing a white outline in `currentColor`. Our blocks live in there
+   now, so the colours they ask for were being overwritten by it — quietly,
+   because what they were overwritten with is a plausible colour. A lone block
+   in the page asks for `--color-border-subtle` and had been drawing
+   `--color-border` since the day it shipped; nothing looked broken, it was just
+   never the line that was written. A plain declaration of any specificity loses
+   to an `!important` one, so this is the weight that rule set rather than one
+   chosen here. See the note beside it in page.css. */
+.bn-root .page-block {
+  border-color: var(--color-border-subtle) !important;
+}
+
+.bn-root .infobox {
+  border-color: var(--color-border) !important;
+}
+
+.bn-root .infobox .block-shell {
+  border-bottom-color: var(--color-border-subtle) !important;
+}
+
+/* **BlockNote rings a selected block in 4px of #64a0ff**, hardcoded in its own
+   stylesheet for pictures and file blocks. Clicking one of ours selects it —
+   they hold no text, so a click is a node selection — and a four-pixel bright
+   blue band around a panel of stats is the thing she reported, not the frame
+   underneath it.
+
+   Replaced with the ring the app already uses for a selected control, and
+   offset so it sits *outside* the frame rather than on top of its border: two
+   lines a pixel apart is what made the original read as a mistake. The rounding
+   is restated because BlockNote's rule sets its own 4px, which cuts the corners
+   off a frame that is rounder than that.
+
+   Out-specifies BlockNote's `.ProseMirror-selectednode>*` rather than fighting
+   it with `!important` — neither of its two rules carries one. */
+.ProseMirror-selectednode > .page-block,
+.ProseMirror-selectednode > .page-infobox,
+.ProseMirror-selectednode > .bn-block-content > .page-block,
+.ProseMirror-selectednode > .bn-block-content > .page-infobox {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
 /* The blocks inside keep the panel's separators, because here there *is*
    something below each one — that is what makes it a group rather than a stack
    of loose boxes. The last one drops its rule: below it is the frame's own

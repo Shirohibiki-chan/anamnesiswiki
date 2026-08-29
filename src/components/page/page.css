@@ -515,6 +515,21 @@
   border-color: var(--color-border) !important;
 }
 
+/* **It reaches into our own blocks too, and that is why theirs win with
+   `!important` in blocks.css.** Phase 19.5 put the page's blocks inside the
+   editor, so a lone block's frame and an infobox's outline are both `.bn-root
+   *` — and every border colour they asked for was being overwritten here. It
+   went unnoticed because `--color-border` is a plausible answer: the frames
+   drew a heavier line than they were written to, and no computed style matched
+   the stylesheet.
+
+   Two things that do not work, both tried: a plain declaration of any
+   specificity loses to an `!important` one, and `revert` reverts to the user
+   agent rather than to our own rule — which hands the border back to
+   `currentColor` and restores the white outline this rule exists to kill. So
+   the blocks state their colours with `!important` and a `.bn-root` prefix, and
+   the colours stay with the components rather than moving here. */
+
 /* The menu is one of the app's own popovers now, not a library's. It takes the
    modal elevation every other floating surface takes, because `shadow-md`
    resolved to a fully transparent shadow — the utility is generated, the colour
