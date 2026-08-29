@@ -15,9 +15,9 @@
 // appears here without being added here.
 import { insertOrUpdateBlockForSlashMenu, type BlockNoteEditor } from "@blocknote/core";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
-import { AtSign, FileText, Image as ImageIcon, Link2, ListTree, Sparkles, Tags } from "lucide-react";
+import { AtSign, FileText, Image as ImageIcon, Link2, ListTree, PanelsTopLeft, Sparkles, Tags } from "lucide-react";
 import { METER_STYLES } from "../../constants/meter-styles";
-import { BLOCK_REF_TYPE, type Block, type BlockKind } from "../../constants/schema";
+import { BLOCK_REF_TYPE, INFOBOX_TYPE, type Block, type BlockKind } from "../../constants/schema";
 
 /** Makes the block record and hands back its id — the store's `addBlock`. */
 export type AddPageBlock = (kind: BlockKind, extra?: Partial<Block>) => string;
@@ -55,6 +55,19 @@ export function getPageBlockSlashMenuItems(
   }
 
   return [
+    {
+      // **First, and it makes nothing.** Every other entry here creates a block
+      // record; an infobox starts empty and is filled from its own Add Block,
+      // so there is nothing to make until she picks something. That is also why
+      // it is the one entry that cannot leave a stray block behind if she
+      // changes her mind.
+      title: "Infobox",
+      subtext: "A framed group of blocks, with its own Add Block",
+      aliases: ["infobox", "panel", "group", "box"],
+      group: "Page blocks",
+      icon: <PanelsTopLeft size={16} />,
+      onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, { type: INFOBOX_TYPE }),
+    },
     {
       title: "Text block",
       subtext: "A titled box of writing, in the page",

@@ -22,6 +22,7 @@ import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
 import { BlockRefRenderContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
+import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
 import { PageFilePanel } from "./PageFilePanel";
@@ -65,6 +66,19 @@ function PageFormattingToolbar() {
     </FormattingToolbar>
   );
 }
+
+/**
+ * The two components that draw the page's own blocks inside the editor.
+ *
+ * **A module constant, and every part of that matters.** Both are rendered as
+ * component *types* and React discards a subtree whose type changed, so a
+ * component built during a render would reset every field in every block on
+ * each keystroke — the bug the formatting toolbar had, one level down. The
+ * object holding them has to be a constant for the same reason a rung up: one
+ * built in `Editor` would be a new context value every keystroke, and every
+ * block on the page would re-render for it.
+ */
+const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox };
 
 type EditorProps = {
   nodeId: string;
@@ -124,13 +138,13 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
   useAssetDropTarget(imageLightboxRef, insertImage);
 
   return (
-    // **What draws a block sitting in the writing, handed down rather than
-    // imported by the block itself.** The BlockNote spec lives in
+    // **What draws the blocks sitting in the writing, handed down rather than
+    // imported by the blocks themselves.** The BlockNote specs live in
     // services/editor-blocks/ and CLAUDE.md's imports only flow downward, so
-    // the block cannot reach a component — the component layer fills the slot
-    // instead. `PageBlock` is a module-level component and must stay one: a
-    // value built here would be a new type on every keystroke.
-    <BlockRefRenderContext.Provider value={PageBlock}>
+    // they cannot reach a component — the component layer fills the slot
+    // instead. See PAGE_BLOCK_RENDERERS below for why that value is a module
+    // constant.
+    <BlockRefRenderContext.Provider value={PAGE_BLOCK_RENDERERS}>
     <div
       ref={imageLightboxRef}
       className="editor-shell-wrapper"

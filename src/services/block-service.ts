@@ -10,8 +10,10 @@ import {
   type CustomPropertySpec,
   type Node,
   type Tab,
+  BLOCK_ID_SEPARATOR,
   BLOCK_REF_TYPE,
   FOLDER_TEMPLATE_KEY,
+  INFOBOX_TYPE,
 } from "../constants/schema";
 import { orderProperties, type RenderableProperty } from "./property-service";
 
@@ -145,19 +147,59 @@ export function blockIdsInPage(tabs: Tab[]): Set<string> {
       // checked rather than asserted.
       if (!entry || typeof entry !== "object") continue;
       const candidate = entry as { type?: unknown; props?: unknown; children?: unknown };
-      if (candidate.type === BLOCK_REF_TYPE) {
-        const props = candidate.props;
-        if (props && typeof props === "object") {
-          const blockId = (props as { blockId?: unknown }).blockId;
-          if (typeof blockId === "string" && blockId) found.add(blockId);
-        }
-      }
+      for (const blockId of claimedBy(candidate)) found.add(blockId);
       walk(candidate.children);
     }
   }
 
   for (const tab of tabs) walk(tab.content);
   return found;
+}
+
+/**
+ * The page blocks one entry in a document lays claim to.
+ *
+ * **Two kinds of claim, and both have to be read here or the sidebar draws a
+ * block twice.** A `blockRef` names one block; an infobox names however many it
+ * is holding. Anything else names none. Keeping the two in one function is what
+ * stops a third kind being added later and only being taught to one of the two
+ * places that need it — the sweep below reads the same answer.
+ */
+function claimedBy(entry: { type?: unknown; props?: unknown }): string[] {
+  const props = entry.props;
+  if (!props || typeof props !== "object") return [];
+
+  if (entry.type === BLOCK_REF_TYPE) {
+    const blockId = (props as { blockId?: unknown }).blockId;
+    return typeof blockId === "string" && blockId ? [blockId] : [];
+  }
+
+  if (entry.type === INFOBOX_TYPE) return parseBlockIds((props as { blockIds?: unknown }).blockIds);
+
+  return [];
+}
+
+/**
+ * The ids an infobox is holding, read out of the flat string it stores them in.
+ *
+ * **The only place that knows how that string is put together**, along with
+ * `serialiseBlockIds` below. BlockNote's prop schema takes strings, numbers and
+ * booleans and not arrays, so the list has to be encoded — and an encoding that
+ * more than one file knows is an encoding that will eventually be read one way
+ * and written another.
+ *
+ * Anything unexpected reads as an empty list rather than throwing: this parses
+ * a file on somebody's disk, and a corrupt prop should cost the blocks in one
+ * infobox, not the page.
+ */
+export function parseBlockIds(value: unknown): string[] {
+  if (typeof value !== "string" || !value) return [];
+  return value.split(BLOCK_ID_SEPARATOR).filter(Boolean);
+}
+
+/** The inverse of `parseBlockIds` — see there for why this is not inlined. */
+export function serialiseBlockIds(ids: string[]): string {
+  return ids.filter(Boolean).join(BLOCK_ID_SEPARATOR);
 }
 
 /**
@@ -206,6 +248,32 @@ export function withoutDanglingBlockRefs(content: unknown[], existing: Set<strin
     return typeof blockId !== "string" || !existing.has(blockId);
   }
 
+  /**
+   * An infobox with a dead id in it, pruned rather than removed.
+   *
+   * **The frame is not the pointer, and this is the difference that matters.**
+   * A lone `blockRef` *is* its block, so losing the block means losing the
+   * block in the page. An infobox is a container she put there on purpose and
+   * may still be holding four other blocks — deleting it because one of its
+   * contents was removed would take the other four out of the page with it. An
+   * empty infobox is a perfectly ordinary thing to leave behind: it carries its
+   * own Add Block.
+   */
+  function pruned(entry: unknown): unknown {
+    if (!entry || typeof entry !== "object") return entry;
+    const candidate = entry as { type?: unknown; props?: unknown };
+    if (candidate.type !== INFOBOX_TYPE) return entry;
+    const props = candidate.props;
+    if (!props || typeof props !== "object") return entry;
+
+    const ids = parseBlockIds((props as { blockIds?: unknown }).blockIds);
+    const alive = ids.filter((id) => existing.has(id));
+    if (alive.length === ids.length) return entry;
+
+    changed = true;
+    return { ...candidate, props: { ...props, blockIds: serialiseBlockIds(alive) } };
+  }
+
   function sweep(documentBlocks: unknown[]): unknown[] {
     const kept: unknown[] = [];
     for (const entry of documentBlocks) {
@@ -213,13 +281,13 @@ export function withoutDanglingBlockRefs(content: unknown[], existing: Set<strin
         changed = true;
         continue;
       }
-      const candidate = entry as { children?: unknown } | null;
+      const candidate = pruned(entry) as { children?: unknown } | null;
       if (candidate && typeof candidate === "object" && Array.isArray(candidate.children)) {
         const children = sweep(candidate.children);
-        kept.push(children === candidate.children ? entry : { ...candidate, children });
+        kept.push(children === candidate.children ? candidate : { ...candidate, children });
         continue;
       }
-      kept.push(entry);
+      kept.push(candidate);
     }
     return changed ? kept : documentBlocks;
   }

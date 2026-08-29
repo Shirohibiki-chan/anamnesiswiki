@@ -40,7 +40,12 @@ type AddBlockMenuProps = {
   onAddCollection: (source: CollectionSource) => void;
   onAddMeter: (style: MeterStyle) => void;
   onAddProperty: (key: string) => void;
-  onNewProperty: () => void;
+  /**
+   * Absent inside an infobox, where there is nowhere to put the form it opens.
+   * **The button is hidden rather than made inert** — a menu item that does
+   * nothing reads as broken, and the sidebar still has the full route.
+   */
+  onNewProperty?: () => void;
 };
 
 // The meters are one block kind with a shape setting, but they are offered as
@@ -110,9 +115,11 @@ export function AddBlockMenu({
       ))}
 
       <div className="tree-context-menu-heading">Properties</div>
-      <button type="button" onClick={onNewProperty}>
-        + New property
-      </button>
+      {onNewProperty && (
+        <button type="button" onClick={onNewProperty}>
+          + New property
+        </button>
+      )}
       {unshown.map((prop) => (
         <button key={prop.key} type="button" onClick={() => onAddProperty(prop.key)}>
           {prop.label}

@@ -25,6 +25,9 @@ const BLOCK_SHELL = ".block-shell";
 // sidebar. It is the same markup inside — same `.block-shell`, same title — so
 // every selector below has to say which of the two it means.
 const PAGE_BLOCK = ".page-block";
+// Phase 19.5: a framed group of the page's blocks. `.page-infobox` is the
+// BlockNote block; `.infobox` is the frame the app draws inside it.
+const INFOBOX = ".infobox";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
@@ -229,6 +232,23 @@ export async function pageBlockTitles(window: Page): Promise<string[]> {
 /** How many blocks the page's writing is holding, titled or not. */
 export async function pageBlockCount(window: Page): Promise<number> {
   return window.locator(PAGE_BLOCK).count();
+}
+
+/** How many infoboxes the open page is showing. Phase 19.5. */
+export async function infoboxCount(window: Page): Promise<number> {
+  return window.locator(INFOBOX).count();
+}
+
+/** The blocks grouped inside the page's first infobox, top to bottom. */
+export async function infoboxBlockTitles(window: Page): Promise<string[]> {
+  const titles = await window.locator(`${INFOBOX} ${BLOCK_TITLE}`).allTextContents();
+  return titles.map(normalize);
+}
+
+/** Adds a block to the page's first infobox, by the name on its menu item. */
+export async function addBlockToInfobox(window: Page, label: string): Promise<void> {
+  await window.locator(".infobox-add").first().click();
+  await window.getByRole("button", { name: label, exact: true }).first().click();
 }
 
 /**
