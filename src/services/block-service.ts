@@ -9,6 +9,8 @@ import {
   type MeterEntry,
   type CustomPropertySpec,
   type Node,
+  type Tab,
+  BLOCK_REF_TYPE,
   FOLDER_TEMPLATE_KEY,
 } from "../constants/schema";
 import { orderProperties, type RenderableProperty } from "./property-service";
@@ -114,6 +116,118 @@ export function blocksFor(node: Node, schema: RenderableProperty[]): Block[] {
  * fresh array each time would make every sidebar re-render on every keystroke
  * anywhere in the app, and would break identity checks callers rely on.
  */
+/**
+ * The ids of the blocks this page's writing has claimed (Phase 19.5).
+ *
+ * **This is the whole of "where does a block live".** Nothing records that a
+ * block is in the page body; the document that holds a pointer to it is the
+ * record, and everything else is read off that. So the sidebar is
+ * `blocksFor(node)` minus this, and a block that appears in neither has been
+ * deleted rather than moved.
+ *
+ * **Hidden tabs count.** Hiding a tab hides what is written in it, and a block
+ * sitting in that writing is part of it — the alternative has hiding a tab
+ * quietly push blocks back into the sidebar, which is a rearrangement nobody
+ * asked for. Settled in `docs/plan.md` Phase 19.5.
+ *
+ * **It walks children as well as the top level**, because BlockNote nests: a
+ * pointer inside a toggle heading or a list item is as real as one at the root,
+ * and missing it would show the same block in two places at once.
+ */
+export function blockIdsInPage(tabs: Tab[]): Set<string> {
+  const found = new Set<string>();
+
+  function walk(documentBlocks: unknown): void {
+    if (!Array.isArray(documentBlocks)) return;
+    for (const entry of documentBlocks) {
+      // Saved documents are `unknown[]` on purpose — they are BlockNote's shape,
+      // not ours, and a file on disk can hold anything. Every step down is
+      // checked rather than asserted.
+      if (!entry || typeof entry !== "object") continue;
+      const candidate = entry as { type?: unknown; props?: unknown; children?: unknown };
+      if (candidate.type === BLOCK_REF_TYPE) {
+        const props = candidate.props;
+        if (props && typeof props === "object") {
+          const blockId = (props as { blockId?: unknown }).blockId;
+          if (typeof blockId === "string" && blockId) found.add(blockId);
+        }
+      }
+      walk(candidate.children);
+    }
+  }
+
+  for (const tab of tabs) walk(tab.content);
+  return found;
+}
+
+/**
+ * The blocks the sidebar draws: the page's blocks, less the ones its writing
+ * has taken (Phase 19.5).
+ *
+ * Separate from `blocksFor` rather than folded into it because the page body
+ * needs the unfiltered list to find the block a pointer names — the two callers
+ * want opposite halves of the same answer.
+ */
+export function sidebarBlocks(blocks: Block[], claimed: Set<string>): Block[] {
+  if (claimed.size === 0) return blocks;
+  return blocks.filter((block) => !claimed.has(block.id));
+}
+
+/**
+ * The same document with pointers to blocks that no longer exist taken out
+ * (Phase 19.5).
+ *
+ * **A dangling pointer is an ordinary state, not corruption.** The record and
+ * the pointer are written through different paths — the panel saves
+ * `node.blocks`, the editor saves the document — so they cannot be committed
+ * together, and removing a block from its own menu leaves the document naming
+ * something that has gone. It draws nothing, which is right; what is wrong is
+ * leaving an invisible block in the writing for her to find with the backspace
+ * key.
+ *
+ * **So it is swept on read rather than repaired on delete.** The editor is
+ * built fresh for every page and every tab, which makes reading the one moment
+ * that is guaranteed to happen and cheap to hook. Nothing is written here — the
+ * cleaned document reaches disk the next time she types, through the same save
+ * as any other edit.
+ *
+ * Returns the original array when there is nothing to sweep, so the ordinary
+ * case allocates nothing.
+ */
+export function withoutDanglingBlockRefs(content: unknown[], existing: Set<string>): unknown[] {
+  let changed = false;
+
+  function danglingPointer(entry: unknown): boolean {
+    if (!entry || typeof entry !== "object") return false;
+    const candidate = entry as { type?: unknown; props?: unknown };
+    if (candidate.type !== BLOCK_REF_TYPE) return false;
+    const props = candidate.props;
+    const blockId = props && typeof props === "object" ? (props as { blockId?: unknown }).blockId : undefined;
+    return typeof blockId !== "string" || !existing.has(blockId);
+  }
+
+  function sweep(documentBlocks: unknown[]): unknown[] {
+    const kept: unknown[] = [];
+    for (const entry of documentBlocks) {
+      if (danglingPointer(entry)) {
+        changed = true;
+        continue;
+      }
+      const candidate = entry as { children?: unknown } | null;
+      if (candidate && typeof candidate === "object" && Array.isArray(candidate.children)) {
+        const children = sweep(candidate.children);
+        kept.push(children === candidate.children ? entry : { ...candidate, children });
+        continue;
+      }
+      kept.push(entry);
+    }
+    return changed ? kept : documentBlocks;
+  }
+
+  const swept = sweep(content);
+  return changed ? swept : content;
+}
+
 export function migrateBlocks(blocks: Block[]): Block[] {
   const stale = (block: Block) =>
     block.kind === "link" || (block.kind === "meter" && !block.meters);

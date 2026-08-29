@@ -360,7 +360,14 @@ export type ProjectStoreState = {
   // Phase 18a's sidebar. Each edit is its own action rather than one
   // "write the blocks array", because Phase 19's panel undo hooks these and a
   // generic setter leaves it unable to say what it is undoing.
-  addBlock: (nodeId: string, kind: BlockKind, extra?: Partial<Block>) => void;
+  /**
+   * Adds a block to the page and hands back its id.
+   *
+   * **The id is returned for the page body's sake** (Phase 19.5): a block drawn
+   * in the writing is a pointer to a record in `node.blocks`, so whoever makes
+   * the record has to be able to say which one it made. The sidebar ignores it.
+   */
+  addBlock: (nodeId: string, kind: BlockKind, extra?: Partial<Block>) => string;
   removeBlock: (nodeId: string, blockId: string) => void;
   reorderBlocks: (nodeId: string, fromIndex: number, toIndex: number) => void;
   duplicateBlock: (nodeId: string, blockId: string) => void;
@@ -1712,7 +1719,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // not a rule about empty ones. See newMeterFor.
       const seeded =
         kind === "meter" ? { meters: [newMeterFor(extra?.meter ?? "bar")], ...extra } : extra;
-      editBlocks(nodeId, (blocks) => [...blocks, newBlock(kind, seeded)], `adding ${blockKindLabel(kind)}`);
+      // Built before the edit rather than inside it, so its id can be returned.
+      // `editBlocks` runs its mapper against whatever the page has now, and a
+      // block made in there would have an id nobody outside could learn.
+      const block = newBlock(kind, seeded);
+      editBlocks(nodeId, (blocks) => [...blocks, block], `adding ${blockKindLabel(kind)}`);
+      return block.id;
     },
 
     // Removing a block removes the block, and nothing else. A property block

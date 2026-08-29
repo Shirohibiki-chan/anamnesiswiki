@@ -3238,6 +3238,45 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   one that can translate between them. `BlockPanel` does it in `handleReorder`,
   where the two happen to agree.
 
+- **Where a block lives is derived from the page's writing, and is never
+  stored.** Phase 19.5. `node.blocks` is the one list; a `blockRef` block in a
+  tab's document holds an id and nothing else, and `blockIdsInPage` reads those
+  back out. The sidebar is `blocksFor(node)` minus that set — which is why
+  moving a block between the sidebar and the page is a pointer moving rather
+  than a block being rewritten, and why no field can be lost on the way. **The
+  rule that keeps it honest: never add a field saying where a block is.** A
+  second answer to a question the documents already answer is a second answer
+  that can disagree, and there is no way to tell which one is right when it
+  does. Reasoning in `docs/plan.md` Phase 19.5.
+
+- **A pointer with no block behind it is an ordinary state, not corruption.**
+  The record and the pointer are saved through different paths — the panel
+  writes `node.blocks`, the editor writes the document — so they cannot be
+  committed together, and Remove on a block that is in the page leaves the
+  document naming something gone. It draws nothing (`.page-block:empty`), and
+  `withoutDanglingBlockRefs` sweeps it when the page is next opened.
+  **The sweep is skipped entirely on a page from before Phase 18a**, and that
+  guard is load-bearing: such a page has no `blocks` field, `blocksFor` would
+  derive one with fresh ids, and sweeping against ids invented a moment ago
+  would delete every pointer in the document.
+
+- **`BlockList` is drawn in three places now and only one of them may ask which
+  page is open.** `PageBlock` is that one — a block sitting in the editor has to
+  get its node from somewhere, and the editor only ever shows the selected page.
+  Everything else takes the node as a prop, per the rule above.
+
+- **`PageBlock` must stay a module-level component.** It is handed to BlockNote
+  through a context and rendered as a component *type*; React discards a subtree
+  whose type changed, so one built inside another component would reset every
+  field in the block on each keystroke — the bug the formatting toolbar had. The
+  lint rule that would catch this cannot see through a context, which is why
+  `BlockRefSlot` carries an explicit disable and a reason.
+
+- **A block in the page fills its column because of `flex: 1`, not by default.**
+  BlockNote's `.bn-block-content` is a flex row, so a block inside it shrinks to
+  its content: the first cut drew a 148px box in a 728px column, narrower in the
+  page than in the sidebar. Measured in the built app; no unit test can see it.
+
 - **`blocks` absent and `blocks: []` are different states and the migration
   depends on it.** Absent means the page predates Phase 18a, and
   `block-service`'s `deriveBlocks` rebuilds the old fixed panel for it on read.
