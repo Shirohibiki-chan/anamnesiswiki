@@ -560,17 +560,35 @@
   color: var(--color-text-muted);
 }
 
-/* **A floor, so the menu can never be squeezed to a sliver.** It is positioned
-   by floating-ui, whose `size` middleware caps the height to whatever room is
-   left below the caret — and with the caret low on a page that came out as a
-   box showing one and a half rows. `.block-menu` in blocks.css carries the same
-   `max(...)` for the same reason and the comment there explains the floor.
+/* **A ceiling, and deliberately not a floor.** The menu is long — a hundred
+   entries and growing — so it wants an upper bound that has nothing to do with
+   the window: 460px is about eight rows, which is a menu rather than a wall.
 
-   The cap is an inline style on the wrapper BlockNote positions, so this has to
-   out-specify it; `:has` is how the wrapper is named at all, since it carries no
-   class of its own. */
-.bn-root div:has(> #bn-suggestion-menu) {
-  max-height: max(260px, min(60vh, 460px)) !important;
+   **What was here before forced a minimum height as well, and that was a bug
+   that put the menu off the screen.** floating-ui's `size` middleware measures
+   the room actually left beside the caret and writes a `max-height` inline on
+   the wrapper; the old rule out-specified that with `!important` and a 260px
+   floor, so whenever the measured room was less than the forced height the box
+   simply overflowed the window. Measured in the built app on 2026-08-28 at a
+   window of 1293x850: with the caret at y=439 the menu flipped above it,
+   floating-ui sized it to 418px to fit, the rule forced 460px, and the top of
+   the menu landed at y=-31 — a browser scrolled off the top of itself. The
+   same thing happens downward with the caret higher up the page, which is how
+   it was reported.
+
+   So the cap goes on the menu itself rather than on the wrapper floating-ui
+   owns, and the two compose: the wrapper keeps whatever height the measurement
+   says fits, and this keeps the box from being enormous when there is room for
+   it to be. Nothing here may use `!important` — that is what defeated the
+   measurement in the first place.
+
+   The floor is gone and is not to be reinstated. If the menu is ever genuinely
+   squeezed, the answer is where it is *placed* — flipping to the other side of
+   the caret, which floating-ui already does — never a height that ignores the
+   space available. `.block-menu` in blocks.css carries its own `max(...)`, and
+   that one is fine: it is not positioned against a caret. */
+#bn-suggestion-menu {
+  max-height: min(60vh, 460px);
 }
 
 /* The two lines that make the centre pane obey the Settings text sliders.
