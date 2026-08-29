@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-28 — the fourth pinned project is back
+
+### Fixes
+
+- **The pinned row shows four projects again instead of three.** The width a card aims for was measured against a row that has since given space to the panel beside it and to a scrollbar, so the fourth card needed a wider window than the one you use — and it quietly dropped to three rather than saying anything. It now fits four down to a much narrower window, with room to spare.
+- **On a very wide window you may now see five across** where you saw four. Same rule, just reaching the next step sooner.
+
 ## 2026-08-28 — the formatting bar can stay put
 
 ### Additions

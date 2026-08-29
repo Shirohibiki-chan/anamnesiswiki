@@ -130,14 +130,31 @@ export const MAX_PAGE_DOTS = 8;
  * wide. Neither is a shape anybody chose. So the count is picked to land the
  * cards near this width and the row shares out the remainder.
  *
- * 245 because that is what a card measures at four across on a 1280 window —
- * the size the row was drawn at, now kept at every other window size instead of
- * only that one. Two is the floor: two cards beside each other still read as a
- * row, one doesn't.
+ * **230, lowered from 245 on 2026-08-28, because 245 was measured against a
+ * row that no longer exists.** It came from what a card measured at four across
+ * on a 1280 window — but that was before the rail beside it and the column's
+ * own scrollbar gutter took their share, and the carousel at 1280 is 992px
+ * today, not the ~1000 that number assumed. So the fourth card fell off again,
+ * reported the same way it was the first time.
+ *
+ * **The point of the new number is headroom, not accuracy.** Measured in the
+ * built app: the carousel is 981px wide on a 1269 window and 992px on a 1280
+ * one. At 245 the fourth card needed 996px, which is *above* both — the row was
+ * three across on the window sizes it was designed for. At 230 it needs 938px,
+ * so four survives down to about a 1226 window. A card lands at 236px there,
+ * which is within a few pixels of what 245 was ever actually delivering.
+ *
+ * **Do not tune this to just clear the current window again.** That is what
+ * produced two rounds of this bug: a threshold sitting a handful of pixels
+ * under the size it has to work at is one padding change away from failing, and
+ * it fails silently, by drawing a row that simply has fewer things in it.
+ *
+ * Two is the floor: two cards beside each other still read as a row, one
+ * doesn't.
  *
  * The gap is `--space-lg`, and `start.css` is the real one — change both.
  */
-export const PIN_TARGET_WIDTH = 245;
+export const PIN_TARGET_WIDTH = 230;
 export const PIN_GAP = 12;
 export const PIN_MIN_ACROSS = 2;
 

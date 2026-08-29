@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PIN_GAP, PIN_MIN_ACROSS, PIN_TARGET_WIDTH } from "../constants/layout";
 import { clampPage, fitAcross, pageContaining, pageCount, pageOf } from "./pagination";
 
 const ITEMS = ["a", "b", "c", "d", "e", "f", "g"];
@@ -177,5 +178,40 @@ describe("fitAcross", () => {
     expect(across(-40)).toBe(MIN);
     expect(across(Number.NaN)).toBe(MIN);
     expect(fitAcross(1016, 0, GAP, MIN)).toBe(MIN);
+  });
+});
+
+// **The pinned row against the widths it is actually drawn at**, rather than
+// against a target chosen in the abstract. Everything above tests the maths;
+// this tests the number, which is the half that has now broken twice — both
+// times reported as "we're back to three pins" and both times because the
+// threshold for the fourth card sat a few pixels above the window she uses.
+//
+// The widths are measured, not derived: the carousel is 981px wide inside a
+// 1269 window and 992px inside a 1280 one, taken from the built app on
+// 2026-08-28. If a padding or a scrollbar ever eats into that again, this fails
+// here rather than silently drawing a row with less in it.
+describe("the pinned row's fourth card", () => {
+  const pinsAcross = (carouselWidth: number) =>
+    fitAcross(carouselWidth, PIN_TARGET_WIDTH, PIN_GAP, PIN_MIN_ACROSS);
+
+  it("fits four in the window she uses", () => {
+    expect(pinsAcross(981)).toBe(4);
+  });
+
+  it("fits four at the width the row was designed against", () => {
+    expect(pinsAcross(992)).toBe(4);
+  });
+
+  it("keeps four with room to spare, so one padding change cannot cost a card", () => {
+    // The threshold is around 938px; this is the headroom that was missing
+    // before, not a restatement of the two cases above.
+    expect(pinsAcross(950)).toBe(4);
+  });
+
+  it("still drops to three when the window really is too narrow", () => {
+    // Not a rule that four always fit — a card would be 220px at 900 and the
+    // row is supposed to give up rather than shrink indefinitely.
+    expect(pinsAcross(880)).toBe(3);
   });
 });
