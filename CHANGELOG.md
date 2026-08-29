@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-28 — the slash menu stays on the screen
+
+### Fixes
+
+- **The `/` menu no longer runs off the edge of the window.** Depending on where your cursor was on the page, the command list could hang off the bottom — or, when it opened upwards instead, off the top, with its first rows above the window entirely. It now fits the room it actually has, wherever the cursor is.
+- **It still won't be enormous.** On a tall window it stops at about eight rows rather than filling the screen, which is what the old rule was reaching for; the difference is that the limit can no longer make the menu *bigger* than the space it has to fit in.
+
 ## 2026-08-28 — the formatting bar can stay put
 
 ### Additions

@@ -272,6 +272,31 @@ export async function suggestionMenuOpen(window: Page): Promise<boolean> {
   return (await window.locator(SUGGESTION_MENU).count()) > 0;
 }
 
+/**
+ * Where the suggestion menu is, against the window it has to fit in.
+ *
+ * **The reason this exists is that "the menu is open" was the only thing any
+ * scenario could say about it**, and a menu hanging off the bottom of the
+ * window is open, correct and unusable. Everything here is in window
+ * coordinates so a scenario can assert the box is really on screen.
+ */
+export async function suggestionMenuBox(
+  window: Page,
+): Promise<{ top: number; bottom: number; height: number; windowHeight: number } | null> {
+  return window.evaluate((selector) => {
+    const menu = document.querySelector(selector);
+    if (!menu) return null;
+    // The wrapper is what floating-ui positions and sizes; the menu fills it.
+    const box = (menu.parentElement ?? menu).getBoundingClientRect();
+    return {
+      top: Math.round(box.top),
+      bottom: Math.round(box.bottom),
+      height: Math.round(box.height),
+      windowHeight: globalThis.innerHeight,
+    };
+  }, SUGGESTION_MENU);
+}
+
 /** The options the suggestion menu is currently offering, top to bottom. */
 export async function suggestionMenuItems(window: Page): Promise<string[]> {
   const items = await window.locator(`${SUGGESTION_MENU} .bn-suggestion-menu-item`).allTextContents();
