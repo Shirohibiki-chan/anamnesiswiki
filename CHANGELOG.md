@@ -7,6 +7,18 @@
 - **The pinned row shows four projects again instead of three.** The width a card aims for was measured against a row that has since given space to the panel beside it and to a scrollbar, so the fourth card needed a wider window than the one you use — and it quietly dropped to three rather than saying anything. It now fits four down to a much narrower window, with room to spare.
 - **On a very wide window you may now see five across** where you saw four. Same rule, just reaching the next step sooner.
 
+## 2026-08-28 — blocks can live in the page
+
+### Additions
+
+- **A block can now sit in the middle of a page instead of in the sidebar.** Type `/` and you'll find a new **Page blocks** group — text block, picture, tags, alias, the three indexes and backlinks — plus all eight meters. Pick one and it's placed where you're writing, at the full width of the page rather than squeezed into a 340px column. This is what the sidebar could never do: a row of gauges has room to spread out.
+- **It's the same block, not a copy.** A block you put in the page leaves the sidebar, because there is only ever one of it. Everything works exactly as it did — the `⋯` menu, the title, the colour, the fields — since the page and the sidebar draw blocks through the same code.
+- **Take it out and it goes back to the sidebar.** Hover the block, click the handle beside it, and Delete. Nothing is lost: the block returns to the panel it came from. Deleting it for good is still **Remove** in the block's own `⋯` menu.
+
+### Fixes
+
+- **A block deleted from its `⋯` menu no longer leaves a gap in the page.** It draws nothing straight away, and the leftover reference is tidied out of the page the next time you open it.
+
 ## 2026-08-28 — the formatting bar can stay put
 
 ### Additions
