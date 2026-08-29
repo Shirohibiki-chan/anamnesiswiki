@@ -533,10 +533,50 @@ meter block inside an infobox rather than a gauge block sitting in the page.
 - **Their Media section — YouTube, Spotify, SoundCloud, Map — is out of scope**
   until asked for. It was never on her list; it is listed here only so that
   seeing it in a screenshot later does not read as something we missed.
-- **Still open: whether text wraps around it.** Her screenshots show it
-  full-width, and BlockNote does not float blocks. **Build the full-width
-  version**; if wrapping is wanted later it is a much larger job and deserves to
-  be asked for on purpose rather than assumed into this one.
+- **Not open any more: the reference wraps text around it.** Corrected
+  2026-08-29 by a screenshot of its own menu, which carries a Layout submenu
+  offering **Full width, Align center, Wrap left, Wrap right**. What this entry
+  said before — that her screenshots showed it full-width, so wrapping was an
+  open question — was reasoning from the pictures we happened to have. The
+  decision it reached still stands and for the same reason: **build the
+  full-width version first**, because BlockNote does not float blocks and
+  wrapping is a much larger job. It is now a known gap rather than an unknown.
+
+### The infobox's own menu, from her screenshots
+
+**Written down 2026-08-29, after she asked whether any of it was noted. It was
+not.** None of the below is built; the shipped infobox has Add Block, and
+BlockNote's own handle gives it Delete. The list is here so that seeing it in a
+screenshot later does not read as something we missed, and so the order it gets
+built in is a decision rather than an accident.
+
+- **Infobox settings: Auto-adapt width, Fixed width, Pin to top.** The two width
+  entries are the interesting pair and she called them out by name as handy.
+  They are the same question as this phase's per-block width from the other end:
+  auto-adapt is "be as wide as what you hold", fixed is "be the width I set".
+  **They belong with the resize work, not before it** — a Fixed width setting
+  with no way to drag the width is a menu item that opens nothing. Pin to top is
+  its own small feature and unrelated to either.
+- **Layout: Full width, Align center, Wrap left, Wrap right.** See above: two of
+  these four are the wrapping we are not building yet, and Align center is cheap
+  and could ship with the width work.
+- **A colour row along the top of the menu**, with the same swatches the
+  callouts got in Phase 19.5 and a clear button beside them. **This one is
+  nearly free** — `COLOR_PALETTE` and the callout colour control already exist
+  and an infobox is a container with a border, which is exactly what a colour
+  would land on. It is the cheapest item on this list.
+- **Duplicate.** Worth thinking about before building rather than after: an
+  infobox holds *pointers*, so duplicating one has to decide whether the copy
+  points at the same blocks or at copies of them. Pointing at the same ones puts
+  a block in two places, which the phase has ruled out everywhere else, so it
+  means cloning every block it holds — the same question the copy-and-paste gap
+  already has open.
+- **Remove infobox**, which we have as BlockNote's Delete on the block handle.
+  Worth putting in the app's own words at some point: "Delete" on a hover handle
+  is not obviously "and the blocks inside go back to the sidebar".
+- **Their empty infobox says what to put in it** — "Add a portrait, stats, or
+  quick facts" — rather than only naming itself. Ours names itself and says to
+  add blocks. Theirs is better and the fix is one string.
 
 **Element shipped 2026-08-28, as New page.** The `/` menu makes a page and
 links to it without leaving the sentence, and a `[[Name]]` nothing answers to
