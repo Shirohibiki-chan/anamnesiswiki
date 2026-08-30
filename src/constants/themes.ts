@@ -114,11 +114,18 @@ export const DEFAULT_TEXT_SCALE = 1;
 /**
  * The writing gets its own multiplier and a wider floor. The UI's 0.85 floor
  * exists because the app has 11px labels in it and 9px is a smudge; the page
- * body starts at 16px, so it can come down further before it stops being
+ * body is bigger than that, so it can come down further before it stops being
  * readable — and coming down is the direction she wanted (*"the contents are
- * generally too large"*). Same ceiling: past 1.4 the reading column starts
+ * generally too large"*). The ceiling is where the reading column starts
  * holding six words a line.
+ *
+ * **Both bounds moved on 2026-08-30 because the base did.** The page body went
+ * from 16px to 15 (`--fs-content` in index.css), and leaving 0.7 and 1.4 alone
+ * would have silently shortened the slider at both ends — the smallest
+ * available would have gone from 11.2px to 10.5, and the largest from 22.4 to
+ * 21. 0.75 and 1.5 on a 15px base land on the same 11.25 and 22.5. Changing
+ * what 100% means is a decision about the default, not about the range.
  */
-export const CONTENT_SCALE_MIN = 0.7;
-export const CONTENT_SCALE_MAX = 1.4;
+export const CONTENT_SCALE_MIN = 0.75;
+export const CONTENT_SCALE_MAX = 1.5;
 export const DEFAULT_CONTENT_SCALE = 1;

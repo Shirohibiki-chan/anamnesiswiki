@@ -477,9 +477,20 @@
      meaning the page body and the slider stops being predictable. Page titles,
      tab strips and callout labels are UI and stay on `--fs-scale`.
 
-     1rem, i.e. the 16px the editor has always been, so scale 1 is unchanged. */
+     **0.9375rem — 15px — as of 2026-08-30, down from 16.** Reported the same
+     way the sizes above were: too big at 100%, and small enough windows could
+     barely hold anything. One pixel sounds like nothing and isn't, because the
+     headings are sized in `em` off this and follow: on a 1150x780 window a
+     four-line callout comes down to three and a paragraph that ran off the
+     bottom of the pane fits. It is still two steps above `--fs-sm`, the app's
+     own 13px, which is the gap that keeps a page from reading like a settings
+     screen. 14 was tried and closes that gap for very little more room.
+
+     The slider's bounds moved with it, in `constants/themes.ts`, so that the
+     smallest and largest the writing can actually be are the same as before —
+     changing what 100% means should not quietly take away either end. */
   --fs-scale-content: 1;
-  --fs-content: calc(1rem * var(--fs-scale-content));
+  --fs-content: calc(0.9375rem * var(--fs-scale-content));
 
   /* Line height. `--lh-normal` is set on body below; before it, everything
      inherited the browser's ~1.2 and dense screens (Settings, properties, the

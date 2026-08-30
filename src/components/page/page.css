@@ -619,8 +619,9 @@
    label in the app except the page body, and the "Writing" font picker
    changed nothing at all. Two classes deep, so no `!important` is needed.
 
-   `--fs-content` is 1rem, i.e. the same 16px it has always been at scale 1;
-   the headings inside are sized in `em` off this, so they follow for free.
+   `--fs-content` is 0.9375rem — 15px at scale 1, down from 16 on 2026-08-30;
+   the headings inside are sized in `em` off this, so they follow for free,
+   which is most of why one pixel off the body is worth as much room as it is.
 
    This is the *only* rule allowed to use `--fs-content` — that token is the
    "Writing" slider and this element is what "writing" means. Everything else
