@@ -103,25 +103,44 @@
      five-file change nobody was going to make. */
   --color-scrim: rgba(0, 0, 0, 0.5);
 
-  /* Four steps, and the bottom two carry a floor: **`--color-text-muted` must
-     clear 4.5:1 against both `--color-panel` and `--color-bg`** in every theme,
-     because it is not decoration. It writes the theme notes in the picker, the
-     hint under every field, dates, counts and the tree's own metadata — real
-     information at 11–13px, which is WCAG AA small-text territory. All six
-     themes were under it (3.14 to 3.94) until they were measured; the values
-     had been picked by eye, and by eye is how a whole palette ends up failing
-     the same check.
+  /* Four steps, and the bottom three carry a floor: **8:1 for `secondary`,
+     6.5:1 for `muted` and 4.5:1 for `placeholder`, against all four surfaces
+     — `--color-bg`, `--color-panel`, `--color-panel-alt` and
+     `--color-panel-edge` — in every theme.**
 
-     `--color-text-placeholder` is held at 3:1 rather than 4.5:1, deliberately:
-     it labels a field you're about to type over, so it has to be readable and
-     then get out of the way. Legible, not equal.
+     Two things about that are new as of 2026-08-30, and both came out of the
+     same report: the quiet type was hard to read in every theme, by someone
+     who does not otherwise reach for accessibility settings.
 
-     If you retune a theme, re-measure. `docs/constants-and-theming.md` has the
-     numbers and the two backdrops to check against. */
+     The first is the *number*. The old floor was 4.5 on `muted`, which is the
+     WCAG AA minimum for small text — a pass mark, not a target, and this app
+     spends it on 11–13px type: theme notes in the picker, the hint under every
+     field, dates, counts, the tree's own metadata. Sitting exactly on the
+     minimum is how everything quiet ends up at the edge of legible at once.
+     The steps are also spread now rather than piled at the bottom; primary sat
+     at 14 and the other three between 6.9 and 3.1, so three of the four steps
+     were crowded into the dim end and the ramp did most of its work in one
+     jump.
+
+     The second is the *backdrops*. The floor was measured against the window
+     and the panel only, and the app draws quiet text on four surfaces: menus,
+     dropdowns, popovers and chips are all `--color-panel-edge`, the lightest
+     of them. Every theme cleared 4.5 on the two that were checked and no theme
+     cleared it on the one that wasn't — `muted` came to 3.45–4.10 there. The
+     rule now names all four, which is why Abyssal's `--color-panel-edge` moved
+     as well: it was so much lighter than its panel that no text step could
+     clear the floor on it without colliding with `--color-text-primary`.
+
+     `--color-text-placeholder` still sits below the other two on purpose: it
+     labels a field you're about to type over, so it has to be readable and
+     then get out of the way. Legible, not equal — 4.5 rather than 3.
+
+     If you retune a theme, re-measure. `services/palette-import.test.ts`
+     enforces this and `docs/constants-and-theming.md` has the numbers. */
   --color-text-primary: #e8e8ee;
-  --color-text-secondary: #9a9aaa;
-  --color-text-muted: #84848f;
-  --color-text-placeholder: #686871;
+  --color-text-secondary: #bcbcc7;
+  --color-text-muted: #a9a9b3;
+  --color-text-placeholder: #8c8c94;
 
   /* Also doubles as shadcn/ui's "accent" role (the shadcn component library
      bundled with BlockNote's menus uses --color-accent for hover/selected
@@ -621,9 +640,9 @@
      3.14:1 against this panel — the worst of the six, on the default theme.
      Navy-tinted and re-measured; see the floor documented at :root. */
   --color-text-primary: #e9edf6;
-  --color-text-secondary: #a3adc2;
-  --color-text-muted: #838ea6;
-  --color-text-placeholder: #616c82;
+  --color-text-secondary: #c0c8d8;
+  --color-text-muted: #acb5c6;
+  --color-text-placeholder: #8d96a7;
 
   /* The third time this theme has been caught inheriting the near-black
      theme's tokens — borders, then the text ramp, now the callouts. The note
@@ -669,9 +688,9 @@
   --color-border-subtle: #2a221a;
 
   --color-text-primary: #f2e9dd;
-  --color-text-secondary: #b5a390;
-  --color-text-muted: #93816f;
-  --color-text-placeholder: #726459;
+  --color-text-secondary: #c9baa9;
+  --color-text-muted: #b6a898;
+  --color-text-placeholder: #968a7e;
 
   --color-accent-light: #f0a868;
   --color-accent-dark: #b9651f;
@@ -706,9 +725,9 @@
   --color-border-subtle: #1b271f;
 
   --color-text-primary: #e6ede8;
-  --color-text-secondary: #9aaea2;
-  --color-text-muted: #78897e;
-  --color-text-placeholder: #5f6b63;
+  --color-text-secondary: #b3c3b9;
+  --color-text-muted: #a2b0a7;
+  --color-text-placeholder: #869189;
 
   --color-accent-light: #e3c26d;
   --color-accent-dark: #a8801f;
@@ -742,9 +761,9 @@
   --color-border-subtle: #291f33;
 
   --color-text-primary: #f0e8f5;
-  --color-text-secondary: #ac9db8;
-  --color-text-muted: #8b7d96;
-  --color-text-placeholder: #6d6275;
+  --color-text-secondary: #c2b6cc;
+  --color-text-muted: #afa4b8;
+  --color-text-placeholder: #918798;
 
   --color-accent-light: #e9a8f0;
   --color-accent-dark: #a021b0;
@@ -796,21 +815,29 @@
    The gradient is the palette's own — a `circularsStart`/`circularsEnd` pair
    the importer found sitting next to each other in the file. Violet first, cyan
    second, because a primary button's label is --color-bg and the violet end is
-   the darker of the two (3.71:1 against the label, above Nightbloom's 3.05). */
+   the darker of the two (3.71:1 against the label, above Nightbloom's 3.05).
+
+   `--color-panel-edge` was #024459 and is now a step darker. The importer had
+   put it 1.34x the panel's luminance where the other five darks sit at
+   1.14-1.24, and on a theme whose surfaces are already the lightest in the app
+   that left `--color-text-primary` itself at 9.1:1 there — less headroom than
+   any other theme's *secondary* step. Nothing could clear the text floor on it
+   without landing on top of primary. Menus and chips are a little deeper here
+   now; the ramp above them is the same one every other theme gets. */
 [data-theme="abyssal"] {
   --color-bg: #00253d;
   --color-panel: #002b54;
   --color-panel-alt: #002746;
-  --color-panel-edge: #024459;
+  --color-panel-edge: #013857;
 
   --color-border-strong: #2d5d74;
   --color-border: #1c475e;
   --color-border-subtle: #123a52;
 
   --color-text-primary: #b5f9ff;
-  --color-text-secondary: #84c0ca;
-  --color-text-muted: #649ba9;
-  --color-text-placeholder: #497b8c;
+  --color-text-secondary: #9cdbe3;
+  --color-text-muted: #89c7d1;
+  --color-text-placeholder: #6da5b2;
 
   --color-accent-light: #66d2ff;
   --color-accent-dark: #045c8c;
@@ -852,7 +879,13 @@
    12% blue that reads as a tinted panel on #0f0f14 and as a smear on white, so
    each one drops to ~7% and its text colour goes several steps darker than its
    border. The accent also moves — #5eead4 is a mint that vanishes on white, so
-   light gets the darker teal for anything that has to be legible as text. */
+   light gets the darker teal for anything that has to be legible as text.
+
+   That last part was half-done. The accent pair was teal-600 over teal-700,
+   and teal-600 on white is 3.74:1 — under AA, on the colour that draws every
+   link and the selected page. Both moved down a step (teal-700 over teal-800):
+   links now measure 4.97-5.47 and the primary button's white label sits on a
+   fill that gives it 7.58. The faint tints follow the new light teal. */
 [data-theme="daylight"] {
   --color-bg: #fafaf9;
   --color-panel: #ffffff;
@@ -865,14 +898,14 @@
   --color-border-subtle: #eeeeea;
 
   --color-text-primary: #1c1c1f;
-  --color-text-secondary: #57575e;
-  --color-text-muted: #717179;
-  --color-text-placeholder: #8e8e95;
+  --color-text-secondary: #494950;
+  --color-text-muted: #57575e;
+  --color-text-placeholder: #6f6f75;
 
-  --color-accent-light: #0d9488;
-  --color-accent-dark: #0f766e;
-  --color-accent-faint: rgba(13, 148, 136, 0.1);
-  --color-accent-faint-border: rgba(13, 148, 136, 0.28);
+  --color-accent-light: #0f766e;
+  --color-accent-dark: #115e59;
+  --color-accent-faint: rgba(15, 118, 110, 0.12);
+  --color-accent-faint-border: rgba(15, 118, 110, 0.3);
 
   --color-callout-info: #2563eb;
   --color-callout-info-bg: rgba(37, 99, 235, 0.07);

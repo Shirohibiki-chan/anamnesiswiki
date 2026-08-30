@@ -489,10 +489,14 @@ button.tree-path-crumb:hover {
    one idea at two levels rather than two features. Deliberately still fully
    legible and fully usable: hidden is about who else sees this, never about
    getting it out of her way. Applies to pages inside a hidden one too — see
-   TreeItem's looksHidden. */
+   TreeItem's looksHidden. **The italic is what says hidden; the dimming only
+   seconds it.** At 0.55 a hidden page's name came out around 5:1 on the panel
+   — below the floor the quiet text steps hold, on a full-size page name — so
+   "fully legible" was a claim this rule wasn't keeping. 0.72 lands it near
+   `--color-text-muted`, and the slant still reads at a glance. */
 .tree-row-hidden .tree-row-name,
 .tree-row-hidden .tree-row-icon {
-  opacity: 0.55;
+  opacity: 0.72;
   font-style: italic;
 }
 
