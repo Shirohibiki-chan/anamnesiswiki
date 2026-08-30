@@ -221,12 +221,37 @@ export function SettingsModal({ onClose, initialTab, initialVersion }: SettingsM
   const active = SETTINGS_TABS.find((tab) => tab.id === activeTab) ?? SETTINGS_TABS[0];
   const ActivePanel = PANELS[active.id];
 
+  /**
+   * The four appearance sections put the dialog against the right edge and
+   * take the dim off the app, so the thing being changed is visible while it's
+   * being changed.
+   *
+   * Reported from use: picking colours through a dialog covering 75% of the
+   * window, over an app dimmed 50% black, means never seeing the colour you
+   * picked — even the strip you *could* see was showing it at half brightness.
+   *
+   * Keyed off the group rather than a list of ids, so a fifth `look` section
+   * gets this without anyone remembering to add it. The CSS ignores the class
+   * below 72rem of window: under that there is no room to expose anything
+   * worth looking at, and a narrow dialog jammed against the edge of a small
+   * screen is worse than a centred one.
+   */
+  const aside = active.group === "look";
+
   return createPortal(
-    <div className="ui-backdrop" onClick={onClose}>
+    /* The click-to-close handler stays on the backdrop in both modes. In aside
+       mode the CSS makes the backdrop transparent *and* click-through, so this
+       never fires there — clicking the app behind does what it normally does
+       and leaves the dialog open, which is the point: you can walk to another
+       page to see the theme on it. Escape and the × still close. */
+    <div className={`ui-backdrop${aside ? " ui-backdrop-aside" : ""}`} onClick={onClose}>
       <div
-        className="ui-modal ui-modal-xl settings-modal"
+        className={`ui-modal ui-modal-xl settings-modal${aside ? " settings-modal-aside" : ""}`}
         role="dialog"
-        aria-modal="true"
+        /* Not modal when the app behind it is genuinely usable. Claiming
+           otherwise tells a screen reader the rest of the window is inert
+           while a mouse can reach all of it. */
+        aria-modal={!aside}
         aria-labelledby="settings-title"
         onClick={(e) => e.stopPropagation()}
       >

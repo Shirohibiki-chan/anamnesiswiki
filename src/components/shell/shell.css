@@ -499,6 +499,60 @@
    jump out from under the pointer. A floor used to paper over this; a real
    height removes it. */
 
+/* --- Out of the way, on the appearance sections ---
+   The four `look` sections dock the dialog against the right edge and take the
+   dim off the app. Reported from use: choosing colours meant looking at a
+   960x704 dialog on a 1280x830 window — 75% of the width, 85% of the height —
+   with everything outside it under `--color-scrim`, a flat 50% black. So the
+   strip of app you could see wasn't the colour you had just picked; it was
+   that colour at half brightness. A colour editor you cannot see the result
+   through is a text field.
+
+   **The dialog slides rather than shrinking to fit.** Narrowing it to 44rem is
+   the whole change to its geometry — the rail stays a vertical rail, every
+   panel keeps its layout, and nothing inside reflows. That matters because the
+   dialog moves whenever you cross between an appearance section and an app
+   one, and a slide is a movement you can follow; a slide plus a rail folding
+   into a strip plus a two-column grid becoming one is not.
+
+   **Only above 72rem of window.** At 1152px this exposes about 424px, which is
+   the whole tree sidebar and a slice of the page — the densest colour surface
+   the app has, and enough to judge a change by. Below that it would expose
+   less than the sidebar's own width, so the class does nothing and Settings
+   behaves exactly as it always has, dim and all. */
+@media (min-width: 72rem) {
+  .ui-backdrop-aside {
+    background: transparent;
+    /* Off, so a click lands on the app rather than on a sheet of glass that
+       closes the dialog. The dialog turns it back on for itself. */
+    pointer-events: none;
+  }
+
+  .settings-modal-aside {
+    --ui-modal-width: 44rem;
+    pointer-events: auto;
+    /* The backdrop centres its child; this pushes it from centred to one
+       `--space-2xl` off the right edge. Done as a transform rather than by
+       changing the backdrop's `justify-content` because only one of the two
+       animates, and the move is the thing that has to read as deliberate. */
+    transform: translateX(calc((100vw - var(--ui-modal-width)) / 2 - var(--space-2xl)));
+  }
+
+  /* On the modal itself rather than the aside class, so it runs in both
+     directions — coming back to a centred dialog is the same movement. */
+  .settings-modal {
+    transition:
+      width 180ms ease,
+      transform 180ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .settings-modal {
+      transition: none;
+    }
+  }
+}
+
 .settings-modal {
   height: calc(100vh - var(--space-3xl) * 2);
   /* Not taller than it has anything to put in — past 44rem the panels are short

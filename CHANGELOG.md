@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-30 — Settings gets out of the way while you pick colours
+
+### Fixes
+
+- **The Settings window moves aside on Theme, Colours, Fonts and Snippets.** It narrows and sits against the right edge instead of filling the middle, so the sidebar, the page and most of what you're changing stay in view while you change it.
+- **The app behind it isn't dimmed any more on those four sections.** It was under a flat 50% black wash, which meant the strip you could see wasn't showing the colour you'd just picked — it was showing that colour at half brightness. Picking colours through it was guesswork.
+- **You can click the app while it's open.** Walk to another page, open a folder, look at a different screen — the window stays where it is instead of closing. Escape and the × still close it.
+- **The other sections are unchanged**, and so is everything on a window narrower than about 1150px, where moving the dialog aside wouldn't leave enough room to see anything.
+
 ## 2026-08-29 — the ring around a selected block
 
 ### Fixes

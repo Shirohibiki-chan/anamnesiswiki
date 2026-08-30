@@ -436,12 +436,26 @@ The values are provisional and Phase 12 re-tunes them per theme. **The roles and
 
 | Class | Variants |
 |---|---|
-| `.ui-backdrop` | `.ui-backdrop-top` (the search palette, anchored high) |
+| `.ui-backdrop` | `.ui-backdrop-top` (the search palette, anchored high) · `.ui-backdrop-aside` (transparent and click-through — see below) |
 | `.ui-modal` | `.ui-modal-sm` 22rem · `.ui-modal-md` 28rem · `.ui-modal-lg` 32rem |
 | `.ui-surface` | the raised-panel look without a dialog's geometry |
 | `.ui-btn` | `.ui-btn-primary` · `.ui-btn-secondary` · `.ui-btn-danger`, plus `.ui-btn-lg` for empty-state actions |
 | `.ui-icon-btn` | `.ui-icon-btn-sm` 20px · (base) 24px · `.ui-icon-btn-lg` 28px; picks up `aria-pressed` on its own |
 | `.ui-link` · `.ui-eyebrow` · `.ui-inline-remove` | — |
+
+#### Settings docks aside on the appearance sections
+
+On the four `look` tabs — Theme, Colours, Fonts and text, Snippets — the Settings dialog narrows to 44rem, slides against the right edge, and its backdrop goes fully transparent *and* `pointer-events: none`. The app behind stays visible in its true colours and stays clickable, so a theme can be judged on more than one page while the picker is open. Escape and the × close it; the backdrop no longer can, because it isn't there to click.
+
+Reported from use on 2026-08-30: choosing colours meant looking at a 960×704 dialog on a 1280×830 window with everything outside it under `--color-scrim`, a flat 50% black. The strip of app that *was* visible showed the colour at half brightness, so the panel could not be used for the one thing it exists for.
+
+Three things about it are deliberate:
+
+- **It keys off `group === "look"`, not a list of tab ids.** A fifth appearance section gets this for free, which is the only way it stays true.
+- **The dialog slides; it does not reflow.** The rail stays vertical and every panel keeps its layout — the only change is the width and the position. The dialog moves whenever you cross between an appearance section and an app one, and a slide is a movement you can follow; a slide plus a folding rail plus a collapsing grid is not.
+- **All of it lives inside `@media (min-width: 72rem)`.** Below that the dock would expose less than the tree sidebar's own width, so the class does nothing at all and Settings behaves exactly as it always has. `aria-modal` follows the same condition in the component — claiming a modal while the rest of the window is reachable by mouse is a lie to a screen reader.
+
+Guarded by `e2e/settings-gets-out-of-the-way.e2e.ts`, which measures the computed backdrop colour, the dialog's box and a real click landing on a tree row. None of that is decidable from the source, and a test asserting the class name would pass with the media query deleted.
 
 At most one `.ui-btn-primary` per screen. Secondary hover always means the accent tint — that's the single hover language for anything that's a button. Menu rows, tree rows and the recent-projects tiles keep their own, correctly: they aren't buttons.
 
