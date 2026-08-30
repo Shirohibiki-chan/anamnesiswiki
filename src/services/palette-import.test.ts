@@ -5,6 +5,13 @@ import { contrast, readPalette, relativeLuminance, themeFromPalette } from "./pa
 import { hexToRgb } from "./theme-editor";
 
 /**
+ * Every surface quiet text is drawn on. The floors are held against all four,
+ * and `--color-panel-edge` — menus, dropdowns, popovers, chips — is the one
+ * that matters: it is the lightest, and it was the one nobody was measuring.
+ */
+const SURFACES = ["--color-bg", "--color-panel", "--color-panel-alt", "--color-panel-edge"] as const;
+
+/**
  * A real export from the user's other project (CharSnap), which is what
  * prompted the importer. Kept verbatim — the point of this fixture is that it
  * was written by an app that knows nothing about Anamnesis, so its key names
@@ -88,15 +95,14 @@ describe("themeFromPalette", () => {
     expect(colors["--color-destructive"]).toBe("#dc2626");
   });
 
-  it("clears the readability floor at every text step, against both surfaces", () => {
+  it("clears the readability floor at every text step, against all four surfaces", () => {
     const { colors } = theme();
-    const surfaces = [colors["--color-bg"], colors["--color-panel"]];
-    const worst = (token: string) => Math.min(...surfaces.map((surface) => contrast(colors[token], surface)));
+    const worst = (token: string) => Math.min(...SURFACES.map((surface) => contrast(colors[token], colors[surface])));
 
     expect(worst("--color-text-primary")).toBeGreaterThanOrEqual(10);
-    expect(worst("--color-text-secondary")).toBeGreaterThanOrEqual(6.9);
-    expect(worst("--color-text-muted")).toBeGreaterThanOrEqual(4.5);
-    expect(worst("--color-text-placeholder")).toBeGreaterThanOrEqual(3);
+    expect(worst("--color-text-secondary")).toBeGreaterThanOrEqual(8);
+    expect(worst("--color-text-muted")).toBeGreaterThanOrEqual(6.5);
+    expect(worst("--color-text-placeholder")).toBeGreaterThanOrEqual(4.5);
   });
 
   it("holds the floor even when the palette's own text colour is unreadable", () => {
@@ -105,7 +111,7 @@ describe("themeFromPalette", () => {
     const built = themeFromPalette(readPalette('{"background":"#101418","panel":"#181d24","accent":"#2b3a4a"}'));
     const colors = built?.colors ?? {};
     expect(contrast(colors["--color-text-primary"], colors["--color-bg"])).toBeGreaterThan(12);
-    expect(contrast(colors["--color-text-muted"], colors["--color-bg"])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(colors["--color-text-muted"], colors["--color-bg"])).toBeGreaterThanOrEqual(6.5);
   });
 
   it("keeps the three border weights in order and visible", () => {
@@ -174,11 +180,17 @@ describe("themeFromPalette", () => {
  *
  * Here rather than in `constants/themes.test.ts` because `contrast` lives in
  * this file's subject and constants must not import a service (CLAUDE.md's
- * layer order). What it guards is `docs/handoff.md`'s rule: `--color-text-muted`
- * clears 4.5:1 and `--color-text-placeholder` 3:1, against *both* the window
- * and the panel, in every theme. All six were under it at once in 2026-08-07
- * because every one had been picked by eye and none had been measured — this is
- * the check that stops a seventh joining them.
+ * layer order). What it guards is the rule written beside the text tokens in
+ * index.css: 8:1 for secondary, 6.5 for muted and 4.5 for placeholder, against
+ * **all four** surfaces, in every theme.
+ *
+ * It has been wrong twice, in the same direction both times. In 2026-08-07 all
+ * six themes were under a 4.5 floor at once, because every one had been picked
+ * by eye and none had been measured. In 2026-08-30 all seven were under this
+ * one, because the floor was 4.5 — a pass mark borrowed from WCAG's minimum
+ * rather than a target — and because it was only ever measured against two of
+ * the four surfaces the app draws quiet text on. Menus, dropdowns and chips are
+ * `--color-panel-edge`, the lightest of them, and it was the one not checked.
  */
 describe("the themes in index.css hold that same floor", () => {
   const CSS = String(readFileSync("src/index.css", "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
@@ -212,15 +224,44 @@ describe("the themes in index.css hold that same floor", () => {
     expect(ids.length).toBeGreaterThanOrEqual(5);
   });
 
-  it.each(["dark", ...ids])("%s keeps quiet text readable on both surfaces", (id) => {
+  it.each(["dark", ...ids])("%s keeps quiet text readable on all four surfaces", (id) => {
     const theme = tokensFor(id);
-    const surfaces = [theme["--color-bg"], theme["--color-panel"]];
-    const worst = (token: string) => Math.min(...surfaces.map((surface) => contrast(theme[token], surface)));
+    const worst = (token: string) => Math.min(...SURFACES.map((surface) => contrast(theme[token], theme[surface])));
 
-    expect(worst("--color-text-muted")).toBeGreaterThanOrEqual(4.5);
-    expect(worst("--color-text-placeholder")).toBeGreaterThanOrEqual(3);
-    expect(worst("--color-text-secondary")).toBeGreaterThanOrEqual(4.5);
-    expect(worst("--color-text-primary")).toBeGreaterThanOrEqual(7);
+    expect(worst("--color-text-muted")).toBeGreaterThanOrEqual(6.5);
+    expect(worst("--color-text-placeholder")).toBeGreaterThanOrEqual(4.5);
+    expect(worst("--color-text-secondary")).toBeGreaterThanOrEqual(8);
+    expect(worst("--color-text-primary")).toBeGreaterThanOrEqual(9);
+  });
+
+  /**
+   * The step *between* the four, not just the floor under them. Raising the
+   * bottom of a ramp is how you flatten one: the fix for text nobody could
+   * read is not four greys nobody can tell apart, and `placeholder` in
+   * particular has to keep reading as an empty field rather than as a value.
+   * Measured on the panel, where all four are drawn most often.
+   */
+  it.each(["dark", ...ids])("%s keeps its four text steps apart", (id) => {
+    const theme = tokensFor(id);
+    const on = (token: string) => contrast(theme[token], theme["--color-panel"]);
+
+    expect(on("--color-text-placeholder")).toBeLessThan(on("--color-text-muted"));
+    expect(on("--color-text-muted")).toBeLessThan(on("--color-text-secondary"));
+    expect(on("--color-text-secondary")).toBeLessThan(on("--color-text-primary"));
+    expect(on("--color-text-muted") / on("--color-text-placeholder")).toBeGreaterThan(1.2);
+    expect(on("--color-text-primary") / on("--color-text-secondary")).toBeGreaterThan(1.2);
+  });
+
+  /**
+   * `--color-accent-light` draws every link and the selected page, as text, at
+   * body size. Daylight's was teal-600 at 3.74:1 on white — the theme's note
+   * said the light theme takes the darker teal "for anything that has to be
+   * legible as text", and this was the one place that hadn't followed.
+   */
+  it.each(["dark", ...ids])("%s keeps a link legible", (id) => {
+    const theme = tokensFor(id);
+    const worst = Math.min(...SURFACES.map((surface) => contrast(theme["--color-accent-light"], theme[surface])));
+    expect(worst).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each(["dark", ...ids])("%s keeps its three border weights in order", (id) => {

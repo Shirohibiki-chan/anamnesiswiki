@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-30 — the quiet text is brighter
+
+### Fixes
+
+- **Quiet text is brighter in all seven themes.** Hints under fields, dates, counts, the notes in the theme picker, the labels on properties, placeholder text in an empty box — everything that isn't the main body text has come up several steps. The main text hasn't moved; it didn't need to.
+- **The steps are spread out now.** There are four levels of text, and three of them used to be bunched at the dim end, so almost everything that wasn't a heading looked about equally faint. They're evenly spaced.
+- **Menus, dropdowns and chips get the same treatment.** They sit on the lightest surface a theme has, which is exactly where dim text is hardest to read, and it was the one surface nobody had ever checked. It was the worst place in the app for this and now it's held to the same standard as everywhere else.
+- **A hidden page's name in the sidebar, and a hidden tab's label, are readable.** Both were dimmed on top of being italic. The italic still says hidden; the dimming is much lighter.
+- **Abyssal's menus are a shade deeper.** Its dropdown background was lighter than every other theme's, light enough that no text colour could sit on it clearly, so it was the one theme where the fix above needed the background to move too.
+- **Links in Daylight are darker.** The teal used for links and the selected page was too pale against white to read comfortably at normal size. Buttons in that theme moved with it.
+
 ## 2026-08-29 — the ring around a selected block
 
 ### Fixes
