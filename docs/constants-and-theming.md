@@ -478,7 +478,7 @@ The values are provisional and Phase 12 re-tunes them per theme. **The roles and
 
 #### Settings docks aside on the appearance sections
 
-On the four `look` tabs — Theme, Colours, Fonts and text, Snippets — the Settings dialog narrows to 44rem, slides against the right edge, and its backdrop goes fully transparent *and* `pointer-events: none`. The app behind stays visible in its true colours and stays clickable, so a theme can be judged on more than one page while the picker is open. Escape and the × close it; the backdrop no longer can, because it isn't there to click.
+On the four `look` tabs — Theme, Colours, Fonts and text, Snippets — the Settings dialog narrows to 44rem and becomes a **full-height panel flush against the right edge** — square, no gap, no top or bottom border — and its backdrop goes fully transparent *and* `pointer-events: none`. The app behind stays visible in its true colours and stays clickable, so a theme can be judged on more than one page while the picker is open. Escape and the × close it; the backdrop no longer can, because it isn't there to click.
 
 Reported from use on 2026-08-30: choosing colours meant looking at a 960×704 dialog on a 1280×830 window with everything outside it under `--color-scrim`, a flat 50% black. The strip of app that *was* visible showed the colour at half brightness, so the panel could not be used for the one thing it exists for.
 
@@ -486,9 +486,16 @@ Three things about it are deliberate:
 
 - **It keys off `group === "look"`, not a list of tab ids.** A fifth appearance section gets this for free, which is the only way it stays true.
 - **The dialog slides; it does not reflow.** The rail stays vertical and every panel keeps its layout — the only change is the width and the position. The dialog moves whenever you cross between an appearance section and an app one, and a slide is a movement you can follow; a slide plus a folding rail plus a collapsing grid is not.
+- **It has to touch an edge.** The first version kept the floating-dialog shape: inset from the right by `--space-2xl`, rounded, and still capped at 44rem tall by `.settings-modal`'s own `max-height`. On a 2560×1400 window that is a 704px square adrift in the middle of nothing, anchored to nothing — it read as a lost box rather than as a panel, and was reported as such the day it shipped. `height: 100vh`, `border-radius: 0`, no top/right/bottom border, and a leftward shadow instead of the modal's downward one. The rules use a doubled `.settings-modal.settings-modal-aside` selector so they beat `.settings-modal`'s own geometry regardless of source order.
 - **All of it lives inside `@media (min-width: 72rem)`.** Below that the dock would expose less than the tree sidebar's own width, so the class does nothing at all and Settings behaves exactly as it always has. `aria-modal` follows the same condition in the component — claiming a modal while the rest of the window is reachable by mouse is a lie to a screen reader.
 
-Guarded by `e2e/settings-gets-out-of-the-way.e2e.ts`, which measures the computed backdrop colour, the dialog's box and a real click landing on a tree row. None of that is decidable from the source, and a test asserting the class name would pass with the media query deleted.
+Guarded by `e2e/settings-gets-out-of-the-way.e2e.ts`, which measures the computed backdrop colour, the dialog's box and corner radius, and a real click landing on a tree row. None of that is decidable from the source, and a test asserting the class name would pass with the media query deleted.
+
+#### `.settings-panel` keeps a 4px gutter for the focus ring
+
+`overflow-y: auto` makes an element a scroll container on **both** axes, so `.settings-panel` clips horizontally as well — and every full-width control in Settings starts exactly on its left edge. `:focus-visible` draws a 2px outline at 2px offset, so tabbing to a font picker gave it a ring with its whole left side sliced off: square against the panel edge, rounded on the other three. The right-hand side never showed it, because `padding-right` was already there to keep the scrollbar off the controls.
+
+The fix is `padding-left: var(--space-xs)` with an equal negative `margin-left`, so the ring gets somewhere to be drawn and nothing moves. **4px is the ring's own reach — offset plus width. If either changes in `index.css`, this changes with it.** It is not a Settings-specific bug; any `overflow: auto` container whose children run edge to edge has it.
 
 At most one `.ui-btn-primary` per screen. Secondary hover always means the accent tint — that's the single hover language for anything that's a button. Menu rows, tree rows and the recent-projects tiles keep their own, correctly: they aren't buttons.
 

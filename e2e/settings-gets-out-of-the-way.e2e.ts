@@ -70,6 +70,46 @@ describe("Settings gets out of the way on the appearance sections", () => {
     expect(box.x + box.width).toBeLessThanOrEqual(WIDTH);
   });
 
+  /**
+   * **It has to look docked, not merely be off to one side.** The first version
+   * kept the floating-dialog shape — inset from the edge, rounded, and capped
+   * at 44rem tall by `.settings-modal`'s own max-height — and on a 2560x1400
+   * window that is a 704px square adrift in the middle of nothing. It was
+   * reported the day it shipped, and fairly. A panel touches an edge.
+   */
+  it("fills the height and touches the right edge", async () => {
+    const box = await settledBox();
+    expect(box.x + box.width).toBe(WIDTH);
+
+    const shape = await app.window.locator(MODAL).evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { height: el.getBoundingClientRect().height, radius: s.borderTopRightRadius };
+    });
+    expect(shape.height).toBe(HEIGHT);
+    expect(shape.radius).toBe("0px");
+  });
+
+  /**
+   * `overflow-y: auto` makes the panel a scroll container on both axes, and
+   * every full-width control in it starts on its left edge — so a focus ring,
+   * drawn 4px outside the box, had its left side sliced off. Reported as the
+   * font picker looking cut in half. Pre-dates the dock and shows at every
+   * window size; it was only ever *noticed* once the panel got narrower.
+   */
+  it("leaves room for a focus ring inside the scrolling panel", async () => {
+    await openSettingsSection(app.window, "Fonts and text");
+    const gutters = await app.window.locator(".settings-panel").evaluate((panel) => {
+      const control = panel.querySelector("select, input, button");
+      if (!control) return null;
+      const box = control.getBoundingClientRect();
+      const scroller = panel.getBoundingClientRect();
+      return { left: box.left - scroller.left, right: scroller.right - box.right };
+    });
+    // 4px is the ring's reach: `outline-offset` plus `outline-width`.
+    expect(gutters?.left ?? 0).toBeGreaterThanOrEqual(4);
+    expect(gutters?.right ?? 0).toBeGreaterThanOrEqual(4);
+  });
+
   it("lets a click reach the app, and stays open when it does", async () => {
     // Behind the dialog in the ordinary sense — the backdrop is click-through,
     // so this lands on the tree. Walking to another page while the picker is
