@@ -391,8 +391,12 @@
   background: var(--color-accent-light);
 }
 
+/* Same treatment, and the same correction, as a hidden row in the tree — see
+   the note on `.tree-row-hidden` there. The italic carries it; the dimming is
+   only a second voice, and at 0.6 it was quieter than the floor any of the
+   text steps hold. */
 .page-tab-hidden .page-tab-label {
-  opacity: 0.6;
+  opacity: 0.72;
   font-style: italic;
 }
 

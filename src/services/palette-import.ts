@@ -101,6 +101,23 @@ function fadeToward(text: string, backdrop: string, surfaces: readonly string[],
   return mix(text, backdrop, pass);
 }
 
+/**
+ * `surface` pulled back toward `floorSurface` until `text` clears `target` on
+ * it. A surface only has to be light enough to read as a step; it never has to
+ * be light enough to cost the text ramp its top.
+ */
+function roomFor(surface: string, floorSurface: string, text: string, target: number): string {
+  if (contrast(text, surface) >= target) return surface;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 20; i += 1) {
+    const mid = (lo + hi) / 2;
+    if (contrast(text, mix(surface, floorSurface, mid)) >= target) hi = mid;
+    else lo = mid;
+  }
+  return mix(surface, floorSurface, hi);
+}
+
 /** A colour `ratio` away from `backdrop`, in the direction of `towards`. */
 function stepFrom(backdrop: string, towards: string, ratio: number): string {
   let low = 0;
@@ -188,15 +205,21 @@ export type PaletteTheme = {
 };
 
 /**
- * The floor every derived text step is solved for.
+ * The floor every derived text step is solved for, against **all four**
+ * surfaces — see the long note beside the text tokens in index.css, which this
+ * has to agree with or an imported theme reads dimmer than a built-in one.
  *
- * `muted` is AA for small text with a little headroom, because it's used on
- * counts, dates and hints that are already the smallest type in the app.
- * `placeholder` sits below it on purpose and always has: an empty field's
- * prompt has to read as *not filled in*, and the same rule applies whether the
- * theme was hand-written or imported. See the note at `:root` in index.css.
+ * `muted` used to be 4.6, a whisker over the AA minimum for small text, and it
+ * was solved against the window and the panel only. Both were too generous:
+ * counts, dates and hints are the smallest type in the app, and a good half of
+ * them are drawn on `--color-panel-edge`, which is lighter than either surface
+ * the floor was checking.
+ *
+ * `placeholder` still sits below the other two on purpose: an empty field's
+ * prompt has to read as *not filled in*, and that holds whether the theme was
+ * hand-written or imported.
  */
-const TEXT_FLOOR = { secondary: 7, muted: 4.6, placeholder: 3.05 };
+const TEXT_FLOOR = { secondary: 8, muted: 6.5, placeholder: 4.5 };
 
 /** Where the three border weights land against the window, as contrast ratios. */
 const BORDER_STEPS = { strong: 1.9, plain: 1.45, subtle: 1.18 };
@@ -254,7 +277,15 @@ export function themeFromPalette(entries: PaletteEntry[]): PaletteTheme | null {
     return stepFrom(bg, away, ratio);
   };
   const panel = surface(1.12);
-  const panelEdge = surface(1.42);
+  /* Menus, dropdowns and chips: the lightest surface, and the one that decides
+     how much room the text ramp has. Left to itself this picks whatever in the
+     palette sits about 1.42 away from the window, and a palette that offers
+     something lighter still gets taken — which is how Abyssal ended up with a
+     `--color-panel-edge` its own `--color-text-primary` only managed 9.1:1 on,
+     less headroom than any other theme's *secondary* step, and no room under
+     it for four distinct steps. Pulled back toward the panel until primary has
+     10.5 to work with, which every shipped theme clears. */
+  const panelEdge = roomFor(surface(1.42), panel, textPrimary, 10.5);
   // Between the window and the panels, never picked from the palette: it's the
   // top bar and the inputs, and its whole job is to be a shade nobody notices.
   const panelAlt = mix(bg, panel, 0.4);
@@ -339,6 +370,9 @@ export function themeFromPalette(entries: PaletteEntry[]): PaletteTheme | null {
     return step;
   };
 
+  /* Every surface quiet text can land on, hardest last. */
+  const TEXT_SURFACES = [panel, bg, panelAlt, panelEdge];
+
   const colors: Record<string, string> = {
     "--color-bg": bg,
     "--color-panel": panel,
@@ -346,9 +380,9 @@ export function themeFromPalette(entries: PaletteEntry[]): PaletteTheme | null {
     "--color-panel-edge": panelEdge,
 
     "--color-text-primary": textPrimary,
-    "--color-text-secondary": fadeToward(textPrimary, bg, [panel, bg], TEXT_FLOOR.secondary),
-    "--color-text-muted": fadeToward(textPrimary, bg, [panel, bg], TEXT_FLOOR.muted),
-    "--color-text-placeholder": fadeToward(textPrimary, bg, [panel, bg], TEXT_FLOOR.placeholder),
+    "--color-text-secondary": fadeToward(textPrimary, bg, TEXT_SURFACES, TEXT_FLOOR.secondary),
+    "--color-text-muted": fadeToward(textPrimary, bg, TEXT_SURFACES, TEXT_FLOOR.muted),
+    "--color-text-placeholder": fadeToward(textPrimary, bg, TEXT_SURFACES, TEXT_FLOOR.placeholder),
 
     "--color-accent-light": accentLight,
     "--color-accent-dark": accentDark,
