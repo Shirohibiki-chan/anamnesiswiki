@@ -78,9 +78,9 @@ the base tokens — the other six ship as `[data-theme]` blocks over the top (se
 | `--color-hover-strong` | *film* | Emphasis, **not** "on a raised surface" — stacked on an already-hovered row, or marking the keyboard selection |
 | `--color-accent-hover` | *film* | Hover on something already accented — secondary buttons, the selected nav row |
 | `--color-text-primary` | `#e8e8ee` | Body text, headings, active labels |
-| `--color-text-secondary` | `#9a9aaa` | Supporting text — descriptions, tab labels in inactive state |
-| `--color-text-muted` | `#84848f` | Quiet labels — property field labels, breadcrumb separators. **Has a contrast floor — see below** |
-| `--color-text-placeholder` | `#686871` | Placeholder text in inputs, disabled states. **Has a contrast floor — see below** |
+| `--color-text-secondary` | `#bcbcc7` | Supporting text — descriptions, tab labels in inactive state. **Has a contrast floor — see below** |
+| `--color-text-muted` | `#a9a9b3` | Quiet labels — property field labels, breadcrumb separators. **Has a contrast floor — see below** |
+| `--color-text-placeholder` | `#8c8c94` | Placeholder text in inputs, disabled states. **Has a contrast floor — see below** |
 | `--color-accent` | `var(--color-accent-faint)` | **An alias, not a value of its own** (Phase 11.5 — it used to be a byte-identical copy). It exists because shadcn/ui's "accent" role has that name and Phase 5's menu kit expects it; the app's own code should say `--color-accent-faint`. Note the trap in the name: this is the 15% tint, *not* the bold hue. Use `--color-accent-light`/`--color-accent-dark` for focus rings, progress bars and primary buttons. |
 | `--color-accent-light` | `#5eead4` | Accent text on dark surfaces — active tab labels, selected tree row text, save indicator |
 | `--color-accent-dark` | `#0d9488` | Hover states that need to go darker than base accent; every stop of the primary button's gradient is mixed from it |
@@ -244,45 +244,76 @@ Measured on `daylight`: 4.39:1 over a bright photo, but **1.11:1 over a dark one
 and 1.74:1 over a mid-tone**. A photo isn't a surface and doesn't follow the
 theme, so neither should what's drawn on top of it.
 
-#### The contrast floor on the two quiet greys
+#### The contrast floor on the three quiet steps
 
-**`--color-text-muted` must clear 4.5:1 against both `--color-panel` and
-`--color-bg`, in every theme.** It is not decoration: it writes the theme notes
-in the picker, the hint under every field, dates, counts, and the tree's own
-metadata — real information at 11–13px, which is WCAG AA small-text territory.
+**`--color-text-secondary` must clear 8:1, `--color-text-muted` 6.5:1 and
+`--color-text-placeholder` 4.5:1 — against all four surfaces (`--color-bg`,
+`--color-panel`, `--color-panel-alt`, `--color-panel-edge`), in every theme.**
 
-**`--color-text-placeholder` is held at 3:1**, deliberately lower. It labels a
-field you are about to type over, so it has to be legible and then get out of
-the way.
+None of it is decoration. The quiet steps write the theme notes in the picker,
+the hint under every field, dates, counts, and the tree's own metadata — real
+information at 11–13px. `--color-text-placeholder` sits below the other two on
+purpose: it labels a field you are about to type over, so it has to be legible
+and then get out of the way. Legible, not equal.
 
-All six themes were under the muted floor until 2026-08-07 — between 3.14 and
-3.94 — with Midnight, the default, the worst of them. Nothing had been measured;
-the ramps were picked by eye, which is how a whole palette fails one check
-together. Current worst-case figures, against whichever of the two backdrops is
-harder for that theme:
+The floors were raised on 2026-08-30, and the reason is worth keeping because it
+is the second time the same mistake has been made in the same place.
+
+- **The old numbers were pass marks, not targets.** `muted` was held at 4.5,
+  which is WCAG AA's *minimum* for small text, and this app spends it on its
+  smallest type. Every theme sat within a few hundredths of the line, and quiet
+  text was reported as hard to read across all seven by someone who does not
+  otherwise use accessibility settings.
+- **Three of the four steps were crowded into the dim end.** Primary measured
+  ~14 and the other three between 6.9 and 3.1, so the ramp did most of its work
+  in one jump and then split hairs. It now reads roughly 14 / 9.2 / 7.5 / 5.2 on
+  the panel.
+- **Two of the four surfaces were never measured.** Menus, dropdowns, popovers
+  and chips are all `--color-panel-edge`, the lightest surface in any theme.
+  Every theme cleared the old floor on the window and the panel; *no* theme
+  cleared it on `--color-panel-edge`, where `muted` came to 3.45–4.10.
+
+Two things moved that are not text, for the same reason:
+
+- **Abyssal's `--color-panel-edge`** was 1.34x its panel's luminance where the
+  other darks sit at 1.14–1.24, which left `--color-text-primary` itself at
+  9.1:1 on it — less headroom than any other theme's *secondary* step, and no
+  room underneath for four distinct steps. It is a shade deeper now. The
+  importer has the same clamp (`roomFor` in `palette-import.ts`), since that
+  edge came out of an imported palette in the first place.
+- **Daylight's accent pair** dropped a step, teal-600/700 to teal-700/800.
+  `--color-accent-light` draws every link and the selected page *as text*, and
+  teal-600 on white is 3.74:1 — under AA. Links now measure 4.97–5.47, and the
+  primary button's white label sits on a fill giving it 7.58.
+
+Current worst-case figures, against whichever of the four backdrops is hardest
+for that theme:
 
 | Theme | primary | secondary | muted | placeholder |
 |---|---|---|---|---|
-| Midnight | 14.25 | 7.41 | 5.08 | 3.16 |
-| Anamnesis Dark | 14.17 | 6.24 | 4.67 | 3.13 |
-| Ember | 14.62 | 7.20 | 4.69 | 3.08 |
-| Grove | 14.49 | 7.35 | 4.66 | 3.10 |
-| Nightbloom | 14.86 | 7.00 | 4.63 | 3.09 |
-| Abyssal | 12.19 | 7.04 | 4.62 | 3.05 |
-| Daylight | 16.28 | 6.86 | 4.63 | 3.12 |
+| Midnight | 11.49 | 8.01 | 6.53 | 4.52 |
+| Anamnesis Dark | 12.42 | 8.05 | 6.50 | 4.54 |
+| Ember | 12.62 | 8.00 | 6.53 | 4.50 |
+| Grove | 12.39 | 8.02 | 6.53 | 4.51 |
+| Nightbloom | 12.95 | 8.00 | 6.51 | 4.51 |
+| Abyssal | 10.54 | 8.01 | 6.54 | 4.50 |
+| Daylight | 15.44 | 8.11 | 6.51 | 4.53 |
 
-**If you retune a theme's text or surfaces, re-measure both.** A new theme is
-not finished until its muted grey clears 4.5 on its panel *and* its background
-— the two differ, and the darker one is not always the harder.
+**If you retune a theme's text or surfaces, re-measure all four.** A new theme
+is not finished until its quiet steps clear the floor on the lightest surface it
+has, which is nearly always `--color-panel-edge` and is nearly never the one you
+were looking at.
 
-**This is now a test, not just a rule.** `services/palette-import.test.ts` parses
+**This is a test, not just a rule.** `services/palette-import.test.ts` parses
 every `[data-theme]` block out of `index.css`, merges it over the `@theme` base,
-and asserts both floors against both surfaces — plus that each theme's three
-border weights stay in order. It lives in that file rather than beside the
-constants because `contrast` is a service and constants may not import one. The
-one recorded exception is `dark`'s `--color-border-subtle` at 1.097:1 against its
-panel, the faintest in the app; it's held as a ratchet that may not get fainter
-rather than quietly retuned, since changing the original palette is a decision.
+and asserts the three floors against all four surfaces — plus that the four
+steps stay *apart* (raising the bottom of a ramp is how you flatten one), that a
+link clears 4.5, and that each theme's three border weights stay in order. It
+lives in that file rather than beside the constants because `contrast` is a
+service and constants may not import one. The one recorded exception is `dark`'s
+`--color-border-subtle` at 1.097:1 against its panel, the faintest in the app;
+it's held as a ratchet that may not get fainter rather than quietly retuned,
+since changing the original palette is a decision.
 
 ### Callout blocks
 
@@ -304,7 +335,7 @@ The editor draws itself through two *separate* custom-property namespaces, both 
 
 - **`--bn-*`** — BlockNote core's own theme variables (`--bn-colors-editor-background`, `--bn-colors-hovered-background`, `--bn-font-family`, etc.). Overridden in `src/components/page/page.css` on `.editor-shell.bn-root`, all with `!important` — BlockNote's own built-in dark theme sets these same variables at `.bn-root[data-color-scheme=dark]`, which has equal-or-higher CSS specificity than a plain class, so a non-`!important` override would silently lose depending on stylesheet order.
 - **shadcn/ui's token set** (`--accent`, `--popover`, `--muted-foreground`, etc.) — `@blocknote/shadcn` (the menu/toolbar "flavor" package BlockNote needs to render its UI at all) is a Tailwind-utility-class component library built against shadcn/ui's standard token names, a completely different naming convention from the app's own tokens. `src/index.css`'s `@theme` block re-declares each one the package actually uses (`--color-background`, `--color-accent-foreground`, and so on — Tailwind v4 auto-generates a utility class from any `--color-*` name) pointed at the equivalent existing app token. `--color-accent` itself is the one token shared between both worlds — see the table above.
-- **`.editor-shell .bn-editor` in `page.css` sets `font-family` and `font-size` directly**, and has to. BlockNote's `.bn-default-styles` puts a literal Inter stack and a literal `16px` on the contenteditable element itself, and an own declaration beats an inherited one — so `--bn-font-family`, `.wiki-body`'s `--font-prose` and every `--fs-*` step were all being discarded for the page body while working everywhere else in the app. It takes `--fs-content` (`1rem` at scale 1, i.e. the same 16px it always was); the headings inside are sized in `em` and follow. That rule is the **only** place `--fs-content` may be used — see §Scales.
+- **`.editor-shell .bn-editor` in `page.css` sets `font-family` and `font-size` directly**, and has to. BlockNote's `.bn-default-styles` puts a literal Inter stack and a literal `16px` on the contenteditable element itself, and an own declaration beats an inherited one — so `--bn-font-family`, `.wiki-body`'s `--font-prose` and every `--fs-*` step were all being discarded for the page body while working everywhere else in the app. It takes `--fs-content` (`0.9375rem` at scale 1 — 15px, down from 16 on 2026-08-30); the headings inside are sized in `em` and follow, which is why one pixel off the body buys as much room as it does. That rule is the **only** place `--fs-content` may be used — see §Scales.
 - **`@source "../node_modules/@blocknote/shadcn";`** at the top of `index.css` is required for any of this to matter — Tailwind only generates CSS for a utility class it can see referenced in a scanned file, and this package lives in `node_modules`, outside Tailwind v4's default scan path. Adding a shadcn-flavor package without this directive silently ships components with most of their classes missing (no error, just unstyled — no hover states, wrong cursor, etc.).
 
 ### Node coloring and cascade
@@ -373,7 +404,9 @@ The one exception is `--radius-*`, which does use Tailwind's namespace — its t
 
 Every step is `calc(<base> * var(--fs-scale))`, and `--fs-scale` (default `1`) is what Settings → **Fonts and text**'s **Interface** slider sets. The obvious alternative — a `font-size` on the root element — moves every `rem` in the app at once, so asking for bigger text would also inflate all eight spacing steps, both sidebars and the reading column. The values in the table are at scale 1.
 
-There is a second multiplier, `--fs-scale-content`, behind the **Writing** slider, and one token that uses it: `--fs-content` (`1rem` at scale 1). The two exist separately because they answer different questions — the app's labels want to be as small as you can still read them, the text you write in wants to be comfortable, and those don't land on the same number. **`--fs-content` may only ever be used by `.editor-shell .bn-editor`.** "Writing" means the text on a page; a second element taking that token turns the slider into "some things, sort of". Its floor is lower than the UI's (0.7 vs 0.85) because the page body starts at 16px and has further to come down before it stops being readable.
+There is a second multiplier, `--fs-scale-content`, behind the **Writing** slider, and one token that uses it: `--fs-content` (`0.9375rem` at scale 1 — 15px). The two exist separately because they answer different questions — the app's labels want to be as small as you can still read them, the text you write in wants to be comfortable, and those don't land on the same number. **`--fs-content` may only ever be used by `.editor-shell .bn-editor`.** "Writing" means the text on a page; a second element taking that token turns the slider into "some things, sort of". Its floor is lower than the UI's (0.75 vs 0.85) because the page body is bigger than the app's 11px labels and has further to come down before it stops being readable.
+
+The body was 16px until 2026-08-30, when it was reported as too big at 100% — a small window could barely hold a paragraph. **When the base moves, move `CONTENT_SCALE_MIN` and `CONTENT_SCALE_MAX` with it.** They went 0.7/1.4 to 0.75/1.5 in the same change, so the smallest and largest the writing can actually be stayed at 11.25px and 22.5px. Changing what 100% means is a decision about the default; shortening the slider at both ends as a side effect is not.
 
 | Token | Value | Use for |
 |---|---|---|
