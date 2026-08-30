@@ -1,7 +1,7 @@
 // The only import path components have into the theme store and
 // theme-service. See CLAUDE.md's layer order.
 import { useEffect } from "react";
-import { FONT_LIBRARY, type LibraryFont } from "../constants/font-library";
+import { FONT_LIBRARY, type FontCategory, type LibraryFont } from "../constants/font-library";
 import { BUILT_IN_THEMES, FONT_SLOTS, type FontSlot, type FontSlotKey } from "../constants/themes";
 import { useThemeStore } from "../state/theme-store";
 import { familyFromStack, fontStackFor } from "../services/theme-service";
@@ -22,19 +22,38 @@ export function useThemeBootstrap(): void {
   }, [loadAppearance]);
 }
 
-/** The families a slot offers, grouped and ordered the way its picker shows them. */
-export function fontChoicesFor(slot: FontSlot): { cat: string; label: string; fonts: LibraryFont[] }[] {
-  const CATEGORY_LABEL: Record<string, string> = {
-    serif: "Serif — for reading",
-    sans: "Sans-serif",
-    display: "Display — for titles",
-    hand: "Handwriting",
-    mono: "Monospace",
-  };
-  return slot.cats
+const CATEGORY_LABEL: Record<FontCategory, { label: string; hint: string }> = {
+  serif: { label: "Serif", hint: "for reading" },
+  sans: { label: "Sans-serif", hint: "for menus and body text" },
+  display: { label: "Display", hint: "for titles" },
+  hand: { label: "Handwriting", hint: "for a journal page" },
+  mono: { label: "Monospace", hint: "for code and keys" },
+};
+
+const ALL_CATEGORIES: readonly FontCategory[] = ["serif", "sans", "display", "hand", "mono"];
+
+/**
+ * The families a slot offers, grouped, in the order its picker shows them.
+ *
+ * **Every slot offers every family.** It used to offer only the categories in
+ * `slot.cats` — so Monospace was reachable from the Code slot and nowhere
+ * else, and Handwriting was hidden from Interface on the grounds that a menu
+ * set in Gloria Hallelujah is unreadable. That is true and it was still the
+ * wrong call: it is the app deciding what she is allowed to want, on a screen
+ * whose entire purpose is her deciding what she wants. Wanting a monospace
+ * interface is a real taste, and a mistake made here is undone by picking
+ * again.
+ *
+ * `slot.cats` survives as the *order*, which is the half of it that was
+ * actually useful: Interface still opens on Sans-serif, Code still opens on
+ * Monospace. Everything else follows underneath.
+ */
+export function fontChoicesFor(slot: FontSlot): { cat: FontCategory; label: string; hint: string; fonts: LibraryFont[] }[] {
+  const order = [...slot.cats, ...ALL_CATEGORIES.filter((cat) => !slot.cats.includes(cat))];
+  return order
     .map((cat) => ({
       cat,
-      label: CATEGORY_LABEL[cat] ?? cat,
+      ...CATEGORY_LABEL[cat],
       fonts: FONT_LIBRARY.filter((font) => font.cat === cat).sort((a, b) => a.family.localeCompare(b.family)),
     }))
     .filter((group) => group.fonts.length > 0);

@@ -2,7 +2,7 @@
 // Run `node scripts/build-fonts.mjs` to regenerate.
 //
 // Every family bundled in src/fonts-library.css, which is every family the
-// font pickers in Settings → Fonts and text are allowed to offer. All of them are
+// font pickers in Settings → Appearance are allowed to offer. All of them are
 // SIL Open Font License or Apache 2.0 — that is the condition for being on
 // this list, and it's what makes shipping them legal.
 
@@ -21,6 +21,7 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "Cormorant Garamond", cat: "serif", italic: true },
   { family: "Lora", cat: "serif", italic: true },
   { family: "Crimson Pro", cat: "serif", italic: true },
+  { family: "Crimson Text", cat: "serif", italic: true },
   { family: "Spectral", cat: "serif", italic: true },
   { family: "Libre Baskerville", cat: "serif", italic: true },
   { family: "Vollkorn", cat: "serif", italic: true },
@@ -40,6 +41,8 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "Eczar", cat: "serif", italic: false },
   { family: "Rosarivo", cat: "serif", italic: true },
   { family: "Neuton", cat: "serif", italic: true },
+  { family: "Noto Serif", cat: "serif", italic: true },
+  { family: "Andada Pro", cat: "serif", italic: true },
   { family: "Manrope", cat: "sans", italic: false },
   { family: "DM Sans", cat: "sans", italic: false },
   { family: "Plus Jakarta Sans", cat: "sans", italic: false },
@@ -53,6 +56,7 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "Karla", cat: "sans", italic: false },
   { family: "Rubik", cat: "sans", italic: false },
   { family: "Nunito Sans", cat: "sans", italic: false },
+  { family: "Nunito", cat: "sans", italic: false },
   { family: "Mulish", cat: "sans", italic: false },
   { family: "Cabin", cat: "sans", italic: false },
   { family: "Barlow", cat: "sans", italic: false },
@@ -66,6 +70,14 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "Source Sans 3", cat: "sans", italic: false },
   { family: "Assistant", cat: "sans", italic: false },
   { family: "Hanken Grotesk", cat: "sans", italic: false },
+  { family: "Comfortaa", cat: "sans", italic: false },
+  { family: "Fredoka", cat: "sans", italic: false },
+  { family: "Fira Sans", cat: "sans", italic: false },
+  { family: "PT Sans", cat: "sans", italic: false },
+  { family: "Signika", cat: "sans", italic: false },
+  { family: "Atkinson Hyperlegible", cat: "sans", italic: false },
+  { family: "Lato", cat: "sans", italic: false },
+  { family: "Open Sans", cat: "sans", italic: false },
   { family: "Playfair Display", cat: "display", italic: false },
   { family: "Cinzel", cat: "display", italic: false },
   { family: "Cinzel Decorative", cat: "display", italic: false },
@@ -95,6 +107,9 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "Amatic SC", cat: "display", italic: false },
   { family: "Cormorant Infant", cat: "display", italic: false },
   { family: "Antic Didone", cat: "display", italic: false },
+  { family: "Righteous", cat: "display", italic: false },
+  { family: "Marcellus SC", cat: "display", italic: false },
+  { family: "Alegreya SC", cat: "display", italic: false },
   { family: "Caveat", cat: "hand", italic: false },
   { family: "Kalam", cat: "hand", italic: false },
   { family: "Shadows Into Light", cat: "hand", italic: false },
@@ -105,6 +120,9 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "Tangerine", cat: "hand", italic: false },
   { family: "Great Vibes", cat: "hand", italic: false },
   { family: "Dancing Script", cat: "hand", italic: false },
+  { family: "Handlee", cat: "hand", italic: false },
+  { family: "Delius", cat: "hand", italic: false },
+  { family: "Neucha", cat: "hand", italic: false },
   { family: "JetBrains Mono", cat: "mono", italic: false },
   { family: "IBM Plex Mono", cat: "mono", italic: false },
   { family: "Fira Code", cat: "mono", italic: false },
@@ -115,4 +133,7 @@ export const FONT_LIBRARY: readonly LibraryFont[] = [
   { family: "DM Mono", cat: "mono", italic: false },
   { family: "Courier Prime", cat: "mono", italic: false },
   { family: "Azeret Mono", cat: "mono", italic: false },
+  { family: "Noto Sans Mono", cat: "mono", italic: false },
+  { family: "Anonymous Pro", cat: "mono", italic: false },
+  { family: "Cousine", cat: "mono", italic: false },
 ];

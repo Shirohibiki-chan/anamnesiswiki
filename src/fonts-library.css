@@ -1,7 +1,7 @@
 /* GENERATED FILE — do not edit by hand.
    Run `node scripts/build-fonts.mjs` to regenerate.
 
-   98 open-licence families (SIL OFL or Apache 2.0), so a theme
+   119 open-licence families (SIL OFL or Apache 2.0), so a theme
    — built-in or one of hers — can name any of them and have it actually
    render. These are declarations, not downloads: the browser reads a woff2
    from public/fonts/library/ only when something on screen is set in it, so
@@ -104,6 +104,30 @@
   font-weight: 600;
   font-display: swap;
   src: url("/fonts/library/crimson-pro-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Crimson Text";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/crimson-text-400i.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Crimson Text";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/crimson-text-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Crimson Text";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/crimson-text-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -499,6 +523,54 @@
 }
 
 @font-face {
+  font-family: "Noto Serif";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/noto-serif-400i.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/noto-serif-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Serif";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/noto-serif-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Andada Pro";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/andada-pro-400i.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Andada Pro";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/andada-pro-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Andada Pro";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/andada-pro-600.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "Manrope";
   font-style: normal;
   font-weight: 400;
@@ -707,6 +779,22 @@
 }
 
 @font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/nunito-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/nunito-600.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "Mulish";
   font-style: normal;
   font-weight: 400;
@@ -912,6 +1000,110 @@
   font-weight: 600;
   font-display: swap;
   src: url("/fonts/library/hanken-grotesk-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Comfortaa";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/comfortaa-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Comfortaa";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/comfortaa-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/fredoka-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/fredoka-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Fira Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/fira-sans-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Fira Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/fira-sans-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "PT Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/pt-sans-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Signika";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/signika-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Signika";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/signika-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/atkinson-hyperlegible-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Lato";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/lato-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/open-sans-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/library/open-sans-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1147,6 +1339,30 @@
 }
 
 @font-face {
+  font-family: "Righteous";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/righteous-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Marcellus SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/marcellus-sc-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/alegreya-sc-400.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "Caveat";
   font-style: normal;
   font-weight: 400;
@@ -1227,6 +1443,30 @@
 }
 
 @font-face {
+  font-family: "Handlee";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/handlee-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Delius";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/delius-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Neucha";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/neucha-400.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "JetBrains Mono";
   font-style: normal;
   font-weight: 400;
@@ -1304,4 +1544,28 @@
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/library/azeret-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Sans Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/noto-sans-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Anonymous Pro";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/anonymous-pro-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Cousine";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/library/cousine-400.woff2") format("woff2");
 }

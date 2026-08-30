@@ -497,6 +497,22 @@ Guarded by `e2e/settings-gets-out-of-the-way.e2e.ts`, which measures the compute
 
 The fix is `padding-left: var(--space-xs)` with an equal negative `margin-left`, so the ring gets somewhere to be drawn and nothing moves. **4px is the ring's own reach — offset plus width. If either changes in `index.css`, this changes with it.** It is not a Settings-specific bug; any `overflow: auto` container whose children run edge to edge has it.
 
+#### The typeface menu is a component, not a `<select>`
+
+`FontPicker` in `components/shell/`. It was a native `<select>` with `<optgroup>`s until 2026-08-30, and the categories inside it were reported as impossible to tell apart while scrolling 119 families. Nothing in CSS could have fixed that: **a native popup is drawn outside the document**, so it takes no styling and cannot even be screenshotted to check. Owning the menu is what makes the headings ours.
+
+Three things came with it rather than after it:
+
+- **A search box.** A native select has type-ahead built in, so replacing one without a way to jump to a name would have removed a capability in exchange for looks. At 119 families that is the difference between a picker and a scroll.
+- **Sticky headings.** `position: sticky` on `.font-picker-group-label`, opaque in `--color-panel-edge` so rows don't slide visibly through the words. A heading that scrolls away answers "what categories exist"; the question being asked was "what am I looking at now".
+- **`z-index: 1001`, unlike every other popover in the app.** `.tree-popover` sits at 30, which is plenty in the tree and the properties panel because nothing is over those. This one opens from inside Settings, and `.ui-backdrop` is 1000 — both portal to `<body>`, so they share a stacking context and the dialog painted straight over the menu. It rendered `visibility: visible`, correctly sized, correctly positioned, and invisible. **Measurements said it was fine; the screenshot is what caught it.**
+
+Everything else — keyboard walking, focus return, click-outside, Escape, flipping above the trigger when there is no room below — comes from `TreePopover`, the same machinery the tree and the properties panel use. The one thing this file adds is `scrollIntoView` on option focus, because TreePopover focuses with `preventScroll`: right for a menu of eight, wrong for one of 119.
+
+`.font-picker-list` keeps its max-height at `min(50vh, 24rem)` rather than something taller. At 30rem the menu always cleared the top of the window, got clamped to the viewport margin, and covered the dialog header and the trigger that opened it.
+
+**Every slot offers every family** (`fontChoicesFor` in `hooks/use-theme.ts`). `FontSlot.cats` is ordering only — Interface opens on Sans-serif, Code on Monospace — and is no longer a filter. It was one, so Monospace was reachable from Code and nowhere else; that is the app deciding what the user is allowed to want, on the one screen that exists for them to decide what they want. Guarded by `src/hooks/use-theme.test.ts` and `e2e/picks-a-typeface.e2e.ts`.
+
 At most one `.ui-btn-primary` per screen. Secondary hover always means the accent tint — that's the single hover language for anything that's a button. Menu rows, tree rows and the recent-projects tiles keep their own, correctly: they aren't buttons.
 
 **The primary button is a deep fill lit from the top, with white text** (`--color-on-accent`), rebuilt 2026-08-18. Before that it was `--gradient-accent` over `--color-accent-light` with `--color-bg` as the text, and both halves were rejected. The reasoning is worth keeping because it constrains anyone changing it: **white on `--color-accent-light` measures about 1.5:1**, so a bright fill can only take dark text. Wanting white text means wanting a deep fill, and the brightness then has to move into the highlight — which is what gloss is. The gradient has four stops, and the 30% and 70% ones are the band the label sits on; only that band has to clear 4.5:1, which is what leaves the top edge free to be bright enough to see. Hold the *whole* fill dark enough for white text and you get a rectangle with no gradient in it. Every stop is mixed from `--color-accent-dark`, so it follows the theme.
