@@ -54,11 +54,19 @@ export type FontSlot = {
   label: string;
   hint: string;
   /**
-   * Which library categories this slot offers, most appropriate first. A
-   * filter on the picker, not a rule — the tokens themselves take any family.
-   * Writing gets handwriting faces because someone will want a journal page;
-   * Interface doesn't, because menus set in Gloria Hallelujah are unreadable
-   * and offering it is the app's suggestion, not hers.
+   * Which library categories this slot puts **first**. Ordering only, as of
+   * 2026-08-30 — every slot offers every family.
+   *
+   * It used to be a filter, so Monospace was reachable from the Code slot and
+   * nowhere else, and Interface withheld Handwriting on the grounds that a menu
+   * set in Gloria Hallelujah is unreadable. It is, and that was still the wrong
+   * call: it is the app deciding what she is allowed to want, on the one screen
+   * that exists for her to decide what she wants. Her words on finding it —
+   * *why are we gatekeeping fonts*. A bad pick here costs one more pick.
+   *
+   * What was worth keeping is the *order*: Interface opens on Sans-serif and
+   * Code on Monospace, because that is what those slots are usually for. See
+   * `fontChoicesFor` in hooks/use-theme.ts.
    */
   cats: readonly FontCategory[];
   /** A line of the user's own kind of prose, for judging the face by. */

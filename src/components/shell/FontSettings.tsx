@@ -20,6 +20,7 @@ import {
 } from "../../constants/themes";
 import { fontChoicesFor, useTheme } from "../../hooks/use-theme";
 import { CreateTheme } from "./CreateTheme";
+import { FontPicker } from "./FontPicker";
 
 /**
  * A slot as it works when faces belong to the theme: the value comes out of
@@ -92,40 +93,15 @@ function FontSlotField({
     // See ThemeEditor's ColorRow for what `data-setting` is — the id Settings
     // search scrolls to. A typeface slot's id is its token, both sides.
     <div className="appearance-font" data-setting={slot.token}>
+      {/* Still a `<label htmlFor>` even though the control is a button now:
+          the association is what makes clicking the word "Interface" open the
+          menu, and what a screen reader reads out before it. */}
       <label className="appearance-font-label" htmlFor={`font-${slot.key}`}>
         {slot.label}
         <span className="appearance-font-hint">{slot.hint}</span>
       </label>
 
-      <select
-        id={`font-${slot.key}`}
-        className="appearance-select"
-        value={chosen}
-        onChange={(event) => onPick(event.target.value || null)}
-      >
-        {/* Empty value, not a sentinel family name — an unset slot has to mean
-            "nothing is asked for here", so it stays tellable apart from a face
-            that happens to match. The label names it; the value stays empty. */}
-        <option value="">{emptyLabel}</option>
-        {unlisted && (
-          <optgroup label="Already in this theme">
-            <option value={unlisted} style={{ fontFamily: `"${unlisted}"` }}>
-              {unlisted}
-            </option>
-          </optgroup>
-        )}
-        {fontChoicesFor(slot).map((group) => (
-          <optgroup key={group.cat} label={group.label}>
-            {group.fonts.map((font) => (
-              // Each name written in its own face, so the list can be browsed
-              // by looking rather than by picking one at a time and undoing.
-              <option key={font.family} value={font.family} style={{ fontFamily: `"${font.family}"` }}>
-                {font.family}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+      <FontPicker slot={slot} chosen={chosen} emptyLabel={emptyLabel} unlisted={unlisted} onPick={onPick} />
 
       <p className="appearance-specimen" style={stack ? { fontFamily: stack } : undefined}>
         {slot.specimen}

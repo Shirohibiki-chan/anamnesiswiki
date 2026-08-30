@@ -1851,6 +1851,191 @@ ol.release-notes-list {
   cursor: pointer;
 }
 
+/* --- The typeface menu (FontPicker) ---
+   It used to be a `<select>` with `<optgroup>`s, and the operating system drew
+   the category headings. With 119 families in one list they were reported as
+   impossible to tell apart while scrolling, and nothing here could have fixed
+   that: a native popup is drawn outside the document, so it takes no CSS and
+   cannot even be screenshotted to check. This is the same control made ours.
+
+   `.tree-popover` supplies the surface, the elevation and the position; the
+   rules below are only what is inside it. */
+
+/* The trigger keeps `.appearance-select` as well, so it is the same box it has
+   always been — same height, border, focus ring and gutter. These add only
+   what a button needs that a select got for free. */
+.font-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: left;
+}
+
+.font-picker-trigger > span {
+  flex: 1;
+  min-width: 0;
+  /* One line, and the chevron never moves. A family name that is too long for
+     the box wraps nowhere useful — but it is also never the only way to know
+     what is set, since the specimen underneath is drawn in it. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font-picker-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.font-picker-menu {
+  /* **Above the modal layer, unlike every other popover in the app.**
+     `.tree-popover` sits at `z-index: 30`, which is plenty in the tree and the
+     properties panel — there is nothing over those. This one opens from inside
+     Settings, and `.ui-backdrop` is `z-index: 1000`. Both are portaled to
+     `<body>`, so they share a stacking context and the dialog simply painted
+     over the menu: it was in the DOM, `visibility: visible`, correctly sized
+     and positioned, and invisible on screen. Found by screenshotting the real
+     app after the measurements said everything was fine, which is the only way
+     that particular bug ever shows up. */
+  z-index: 1001;
+
+  /* Wider than the trigger on purpose: TreePopover clamps a popover that would
+     hang off the edge, so the extra width is free, and a family name gets a
+     whole row rather than two thirds of one. */
+  width: min(24rem, calc(100vw - var(--space-3xl)));
+  padding: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-height: 0;
+}
+
+/* **Not optional at this size.** A native select has type-ahead built in, so
+   replacing one without a way to jump to a name would have taken a capability
+   away in exchange for looks. */
+.font-picker-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.font-picker-search-icon {
+  position: absolute;
+  left: var(--space-md);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.font-picker-search-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-md) * 2 + 13px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.font-picker-search-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.font-picker-list {
+  overflow-y: auto;
+  /* Tall enough to show a category and the start of the next — the complaint
+     was about telling them apart while moving, which needs more than one on
+     screen at a time.
+
+     Not taller, though. TreePopover flips a menu above its trigger when there
+     is no room below, and at 30rem this one always flipped: it cleared the top
+     of the window, got clamped to the 8px margin, and covered the dialog's own
+     header and the trigger that opened it. At 24rem it opens downward from a
+     slot in the middle of the panel, which is where these four are. */
+  max-height: min(50vh, 24rem);
+  /* The gutter the focus ring is drawn into, cancelled by the margin — same
+     arrangement, and the same reason, as `.settings-panel`. An `overflow-y` of
+     `auto` clips on both axes, and these rows run edge to edge. */
+  padding-inline: var(--space-xs);
+  margin-inline: calc(var(--space-xs) * -1);
+}
+
+/* **The heading stays while its own options scroll under it.** A heading that
+   scrolls away answers "what categories exist" and not "what am I looking at
+   now", and the second one is what was actually being asked. */
+.font-picker-group-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  /* Opaque, or the rows slide visibly *through* the words. `--color-panel-edge`
+     is the popover's own fill, so the heading reads as part of the surface
+     rather than as a band laid on it. */
+  background: var(--color-panel-edge);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.font-picker-group-hint {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text-muted);
+}
+
+.font-picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  /* Not `inherit`: the row is drawn in the family it offers, set inline. Only
+     the size is fixed, so a 119-row list stays one height whatever is in it. */
+  font-size: var(--fs-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.font-picker-row:hover {
+  background: var(--color-hover);
+}
+
+.font-picker-row-selected {
+  background: var(--color-accent-faint);
+}
+
+.font-picker-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font-picker-row-check {
+  flex-shrink: 0;
+  color: var(--color-accent-light);
+}
+
+.font-picker-empty {
+  margin: 0;
+  padding: var(--space-lg) var(--space-md);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
 /* The chosen face, at reading size, in a sentence rather than a pangram — the
    question a font picker has to answer is "what do my pages look like in it",
    and "The quick brown fox" doesn't answer it. `min-height` so switching to a

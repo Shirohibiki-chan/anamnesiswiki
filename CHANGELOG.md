@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-30 — the font picker
+
+### Additions
+
+- **21 new typefaces**, bringing the library to 119. Nunito, Comfortaa, Fredoka and Righteous by request; Fira Sans, PT Sans and Signika for the Trebuchet MS shape; Atkinson Hyperlegible, which was drawn specifically to be easy to read; Lato and Open Sans; Crimson Text, Noto Serif and Andada Pro for reading; Marcellus SC and Alegreya SC for titles; Handlee, Delius and Neucha at the readable end of handwriting; and Noto Sans Mono, Anonymous Pro and Cousine for code.
+- **The typeface menu is the app's own now, not Windows'.** Category headings are proper headings that stay pinned to the top while their own fonts scroll underneath, so you can always see which group you're in. Every name is still written in its own face.
+- **There's a search box in it.** Type a few letters to jump straight to a face rather than scrolling 119 of them.
+
+### Changes
+
+- **Every slot offers every font.** Monospace used to be reachable only from Code, and Handwriting was hidden from Interface. Both slots now list everything, just in a sensible order — Interface still opens on the sans-serifs, Code still opens on the monospaces.
+
+### Notes
+
+- **Two you asked for aren't here.** Morpheus is free for personal use only and can't be shipped in an app that other people download; the closest thing already in the list is Metamorphous. Trebuchet MS is Microsoft's, and Ubuntu — the usual substitute — ships under a licence the library doesn't accept, so it got three lookalikes instead.
+- **Cinzel was already there**, under Titles.
+
 ## 2026-08-30 — Settings gets out of the way while you pick colours
 
 ### Fixes

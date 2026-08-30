@@ -71,19 +71,38 @@ const MONO = { weights: [400], italic: false, cat: "mono" };
 
 const LIBRARY = [
   // --- serif: made for long stretches of reading -------------------------
-  ...["EB Garamond", "Cormorant Garamond", "Lora", "Crimson Pro", "Spectral",
-      "Libre Baskerville", "Vollkorn", "Alegreya", "Literata", "Petrona",
-      "Faustina", "Bitter", "Zilla Slab", "Source Serif 4", "Cardo",
+  ...["EB Garamond", "Cormorant Garamond", "Lora", "Crimson Pro", "Crimson Text",
+      "Spectral", "Libre Baskerville", "Vollkorn", "Alegreya", "Literata",
+      "Petrona", "Faustina", "Bitter", "Zilla Slab", "Source Serif 4", "Cardo",
       "Gentium Book Plus", "Frank Ruhl Libre", "Merriweather", "PT Serif",
-      "Domine", "Eczar", "Rosarivo", "Neuton",
+      "Domine", "Eczar", "Rosarivo", "Neuton", "Noto Serif", "Andada Pro",
      ].map((family) => ({ family, ...TEXT_SERIF })),
 
   // --- sans: interface faces ---------------------------------------------
   ...["Manrope", "DM Sans", "Plus Jakarta Sans", "Figtree", "Lexend", "Outfit",
       "Sora", "Space Grotesk", "Work Sans", "Public Sans", "Karla", "Rubik",
-      "Nunito Sans", "Mulish", "Cabin", "Barlow", "Archivo", "Urbanist",
-      "Epilogue", "Chivo", "Raleway", "Quicksand", "Josefin Sans",
+      "Nunito Sans", "Nunito", "Mulish", "Cabin", "Barlow", "Archivo",
+      "Urbanist", "Epilogue", "Chivo", "Raleway", "Quicksand", "Josefin Sans",
       "Source Sans 3", "Assistant", "Hanken Grotesk",
+      // Rounded. `Comfortaa` and `Fredoka` are Display on Google's own
+      // classification and are `sans` here on purpose: the slot list in
+      // themes.ts only offers Display faces for Titles, and both are legible
+      // enough to set a menu or a page in, which is the whole reason to want
+      // them. Miscategorising them would have meant offering them for the one
+      // slot nobody asked for them in.
+      "Comfortaa", "Fredoka",
+      // Humanist, for the Trebuchet MS shape. Trebuchet itself is Microsoft's
+      // and can't be bundled; Ubuntu, the usual suggestion, ships under the
+      // Ubuntu Font Licence rather than OFL or Apache, which is the condition
+      // this list holds to. These three are the closest that clear it, and
+      // `Cabin` above was already here for the same reason.
+      "Fira Sans", "PT Sans", "Signika",
+      // Drawn for legibility rather than for looks — the Braille Institute's
+      // face, with letterforms pulled apart specifically so they can't be
+      // confused for each other.
+      "Atkinson Hyperlegible",
+      // The two everybody already reads without noticing.
+      "Lato", "Open Sans",
      ].map((family) => ({ family, ...TEXT_SANS })),
 
   // --- display: titles, and titles only ----------------------------------
@@ -94,18 +113,23 @@ const LIBRARY = [
       "Almendra", "Pirata One", "Trade Winds", "Bodoni Moda",
       "DM Serif Display", "Abril Fatface", "Bebas Neue", "Oswald",
       "Philosopher", "Amatic SC", "Cormorant Infant", "Antic Didone",
+      "Righteous", "Marcellus SC", "Alegreya SC",
      ].map((family) => ({ family, ...ONE })),
 
   // --- handwriting --------------------------------------------------------
   ...["Caveat", "Kalam", "Shadows Into Light", "Indie Flower",
       "Architects Daughter", "Patrick Hand", "Gloria Hallelujah", "Tangerine",
       "Great Vibes", "Dancing Script",
+      // The readable end of a category that mostly isn't. A journal page set
+      // in Gloria Hallelujah is a joke you stop finding funny on paragraph
+      // two; these three can hold a page.
+      "Handlee", "Delius", "Neucha",
      ].map((family) => ({ family, ...HAND })),
 
   // --- monospace ----------------------------------------------------------
   ...["JetBrains Mono", "IBM Plex Mono", "Fira Code", "Source Code Pro",
       "Space Mono", "Roboto Mono", "Inconsolata", "DM Mono", "Courier Prime",
-      "Azeret Mono",
+      "Azeret Mono", "Noto Sans Mono", "Anonymous Pro", "Cousine",
      ].map((family) => ({ family, ...MONO })),
 ];
 
