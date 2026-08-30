@@ -37,23 +37,33 @@ describe("Settings gets out of the way on the appearance sections", () => {
   }
 
   /**
-   * The dialog slides between the two positions over 180ms, and a box read the
-   * instant after a section is clicked is a box mid-flight — which is how this
-   * first failed, reporting the docked position for the centred case. Waits for
-   * two identical reads rather than for a guessed number of milliseconds, so
-   * retuning the transition doesn't quietly turn this into a flake.
+   * The dialog slides between its two positions over 180ms, so a box read the
+   * instant after a section is clicked is a box mid-flight. This polls until
+   * the box is where the caller expects it, and hands back whatever it last
+   * saw if it never gets there — so a real regression fails with the position
+   * it actually found rather than with a timeout.
+   *
+   * **It waits for the destination, not for the box to stop moving.** Waiting
+   * for two identical reads is what the first version did, and it passed
+   * locally and failed on CI: on a slower machine the class swap hadn't
+   * rendered yet, so the first two reads were both the *old* position and the
+   * helper called that settled. It reported the docked box for the centred
+   * case, 348px out. A "nothing changed recently" test cannot tell "arrived"
+   * from "hasn't started".
    */
-  async function settledBox(): Promise<{ x: number; width: number }> {
-    let previous = { x: -1, width: -1 };
-    for (let i = 0; i < 40; i += 1) {
+  async function boxWhere(done: (box: { x: number; width: number }) => boolean): Promise<{ x: number; width: number }> {
+    let last = { x: 0, width: 0 };
+    for (let i = 0; i < 160; i += 1) {
       const box = await app.window.locator(MODAL).boundingBox();
-      const now = { x: box?.x ?? 0, width: box?.width ?? 0 };
-      if (now.x === previous.x && now.width === previous.width) return now;
-      previous = now;
+      last = { x: box?.x ?? 0, width: box?.width ?? 0 };
+      if (done(last)) return last;
       await app.window.waitForTimeout(50);
     }
-    return previous;
+    return last;
   }
+
+  const docked = (box: { x: number; width: number }) => box.x + box.width === WIDTH;
+  const centred = (box: { x: number; width: number }) => Math.abs(box.x + box.width / 2 - WIDTH / 2) < 4;
 
   it("stops dimming the app on Colours", async () => {
     await openSettingsSection(app.window, "Colours");
@@ -63,7 +73,7 @@ describe("Settings gets out of the way on the appearance sections", () => {
   });
 
   it("leaves the sidebar and part of the page uncovered", async () => {
-    const box = await settledBox();
+    const box = await boxWhere(docked);
     // Left of the dialog, not merely narrower than the window. 260px is the
     // tree's own width; anything less exposes no whole surface to look at.
     expect(box.x).toBeGreaterThan(260);
@@ -78,7 +88,7 @@ describe("Settings gets out of the way on the appearance sections", () => {
    * reported the day it shipped, and fairly. A panel touches an edge.
    */
   it("fills the height and touches the right edge", async () => {
-    const box = await settledBox();
+    const box = await boxWhere(docked);
     expect(box.x + box.width).toBe(WIDTH);
 
     const shape = await app.window.locator(MODAL).evaluate((el) => {
@@ -123,7 +133,7 @@ describe("Settings gets out of the way on the appearance sections", () => {
     await openSettingsSection(app.window, "Sidebar");
     expect(await backdropPaint()).not.toBe("rgba(0, 0, 0, 0)");
 
-    const box = await settledBox();
+    const box = await boxWhere(centred);
     expect(Math.abs(box.x + box.width / 2 - WIDTH / 2)).toBeLessThan(4);
   });
 
