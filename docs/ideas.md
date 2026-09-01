@@ -306,4 +306,19 @@ Asked for by the user 2026-08-31. Wanted, unscheduled.
 
 **A page type rather than a block was her call and is worth keeping.** `TEMPLATE_KEYS` holds fifteen and adding one is routine; Phase 22 wants another for universes. A block would put a gallery inside some other page's body, which is the arrangement that makes "where are Damien's pictures" a question again.
 
+**There is a worked reference, and she sent a screenshot of it 2026-08-31**: an app called Rolecraft Vault, somebody else's, showing one character's pictures. It is a modal there and a page here, which is her call and the only part not to copy. Everything else in it is worth reading closely, because it is the shape she pointed at rather than a shape anyone here guessed.
+
+**Selection with bulk actions is how it answers "take the whole thing at once".** A *Select all*, then *Download selected* and *Delete selected* across the top, disabled until something is picked. That is a better answer than a lone Download-all button, and it is the one to take: the same control covers one picture, four, or the lot.
+
+**Its download button says "original quality" on it, and that word is doing real work.** Ours already behaves that way — *Save a copy* copies the bytes and refuses to convert — but nobody can see that from a button marked Download, and the whole reason she wants this is *just in case*, which is a promise about fidelity. Say it where it is read, not in a tooltip.
+
+**A "Default" badge sits on one tile, and here that is already a thing we have**: `node.image` is the page's portrait slot. A gallery that shows which picture is the page's portrait, and can set it from a tile, is close to free and removes a trip to the properties panel.
+
+**Click-to-enlarge is built.** The Phase 16 lightbox already shows the filename, arrows through every picture on the page rather than only the one clicked, and zooms and pans. A gallery inherits it rather than needing one.
+
+**Delete selected has a safety story already and must use it.** `asset-usage.ts` knows all four places a picture can be in use and exists precisely so a delete button can be trusted. A picture deleted from a gallery while a page elsewhere is still showing it is the failure that file was written to prevent.
+
+**Albums inside the gallery are the one thing not to copy reflexively.** Theirs has album chips with counts, an *All* and an *Unsorted*, a Create album box and a Remove from album. It is a second place to file a picture — and avoiding exactly that is the argument for a gallery page over library folders in the first place. Scoped to one character it is a smaller sin than a global flat list, and *Unsorted* with a live count is a genuinely good idea. Still a decision, and hers: **ask before building it**, because a gallery that also needs organising is no longer the thing that saved her from organising.
+
+**A size control** — Small / Medium / Large — sits in their header, and a count sits beside the name (*Ichigo · 4*). Both are cheap and both are the kind of thing that gets left out and then missed.
 **A gallery *of pages* is a real thing too, and folding it into this one is the mistake to avoid.** She said as much on 2026-08-31 — she can see the use, it simply isn't what she was asking for. That one is Phase 23 (Collections), which already has the data: a collection block pulls pages from manual links, the subpage index, tags or backlinks, and today draws them as a list. Cards with cover images is a layout on something already built, not a feature of its own. **It should not be called a gallery**, whatever it ends up being called — one word over both is precisely how Notion ended up with the wrong thing wearing the right name.
