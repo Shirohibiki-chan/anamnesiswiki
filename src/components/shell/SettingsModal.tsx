@@ -222,36 +222,37 @@ export function SettingsModal({ onClose, initialTab, initialVersion }: SettingsM
   const ActivePanel = PANELS[active.id];
 
   /**
-   * The four appearance sections put the dialog against the right edge and
-   * take the dim off the app, so the thing being changed is visible while it's
-   * being changed.
+   * The four appearance sections take the dim off the app and let clicks
+   * through to it, so the thing being changed is visible while it's being
+   * changed.
    *
-   * Reported from use: picking colours through a dialog covering 75% of the
-   * window, over an app dimmed 50% black, means never seeing the colour you
-   * picked — even the strip you *could* see was showing it at half brightness.
+   * Reported from use: picking colours through an app dimmed 50% black means
+   * never seeing the colour you picked — the strip you *could* see was showing
+   * it at half brightness. The dialog itself does not move: an earlier pass
+   * also docked it against the right edge on these four sections, and a dialog
+   * that jumps to the side of the window depending on which section you are on
+   * is a surprise every time, not a convenience.
    *
    * Keyed off the group rather than a list of ids, so a fifth `look` section
-   * gets this without anyone remembering to add it. The CSS ignores the class
-   * below 72rem of window: under that there is no room to expose anything
-   * worth looking at, and a narrow dialog jammed against the edge of a small
-   * screen is worse than a centred one.
+   * gets this without anyone remembering to add it.
    */
-  const aside = active.group === "look";
+  const seeThrough = active.group === "look";
 
   return createPortal(
-    /* The click-to-close handler stays on the backdrop in both modes. In aside
-       mode the CSS makes the backdrop transparent *and* click-through, so this
-       never fires there — clicking the app behind does what it normally does
-       and leaves the dialog open, which is the point: you can walk to another
-       page to see the theme on it. Escape and the × still close. */
-    <div className={`ui-backdrop${aside ? " ui-backdrop-aside" : ""}`} onClick={onClose}>
+    /* The click-to-close handler stays on the backdrop in both modes. On the
+       appearance sections the CSS makes the backdrop transparent *and*
+       click-through, so this never fires there — clicking the app behind does
+       what it normally does and leaves the dialog open, which is the point: you
+       can walk to another page to see the theme on it. Escape and the × still
+       close. */
+    <div className={`ui-backdrop${seeThrough ? " ui-backdrop-see-through" : ""}`} onClick={onClose}>
       <div
-        className={`ui-modal ui-modal-xl settings-modal${aside ? " settings-modal-aside" : ""}`}
+        className="ui-modal ui-modal-xl settings-modal"
         role="dialog"
         /* Not modal when the app behind it is genuinely usable. Claiming
            otherwise tells a screen reader the rest of the window is inert
            while a mouse can reach all of it. */
-        aria-modal={!aside}
+        aria-modal={!seeThrough}
         aria-labelledby="settings-title"
         onClick={(e) => e.stopPropagation()}
       >

@@ -990,6 +990,17 @@ under `acknowledgedWarnings`.
   when opened from low in a tall tree — present but unreachable, and it read as
   "adding a Note does nothing."
 
+- **A popover is positioned once, so it closes when the window resizes.** The
+  position comes from a rect captured at open time and nothing re-measures it —
+  which meant resizing the window moved the trigger out from under a menu that
+  stayed put, leaving it stranded mid-screen attached to nothing. Reported
+  2026-09-01 from the font menu. Closing rather than re-following, because
+  several of these anchor to a point that no longer exists after a resize (a
+  right-click position, a tree row that reflowed) — there is nothing to
+  re-measure against. **A popover that genuinely needs to survive a resize needs
+  a live anchor element, not a rect**, and that is a change to the prop, not a
+  workaround in one caller.
+
 - **`TreePopover` is not tree-only, and the start screen's project menu needs
   it for a second reason: `.start-main` scrolls.** A menu opened from a tile
   near the bottom is cut off by that box unless it leaves it. The clipping

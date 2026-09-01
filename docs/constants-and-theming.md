@@ -462,27 +462,27 @@ The values are provisional and Phase 12 re-tunes them per theme. **The roles and
 
 | Class | Variants |
 |---|---|
-| `.ui-backdrop` | `.ui-backdrop-top` (the search palette, anchored high) · `.ui-backdrop-aside` (transparent and click-through — see below) |
+| `.ui-backdrop` | `.ui-backdrop-top` (the search palette, anchored high) · `.ui-backdrop-see-through` (transparent and click-through — see below) |
 | `.ui-modal` | `.ui-modal-sm` 22rem · `.ui-modal-md` 28rem · `.ui-modal-lg` 32rem |
 | `.ui-surface` | the raised-panel look without a dialog's geometry |
 | `.ui-btn` | `.ui-btn-primary` · `.ui-btn-secondary` · `.ui-btn-danger`, plus `.ui-btn-lg` for empty-state actions |
 | `.ui-icon-btn` | `.ui-icon-btn-sm` 20px · (base) 24px · `.ui-icon-btn-lg` 28px; picks up `aria-pressed` on its own |
 | `.ui-link` · `.ui-eyebrow` · `.ui-inline-remove` | — |
 
-#### Settings docks aside on the appearance sections
+#### Settings stops dimming the app on the appearance sections
 
-On the four `look` tabs — Theme, Colours, Fonts and text, Snippets — the Settings dialog narrows to 44rem and becomes a **full-height panel flush against the right edge** — square, no gap, no top or bottom border — and its backdrop goes fully transparent *and* `pointer-events: none`. The app behind stays visible in its true colours and stays clickable, so a theme can be judged on more than one page while the picker is open. Escape and the × close it; the backdrop no longer can, because it isn't there to click.
+On the four `look` tabs — Theme, Colours, Fonts and text, Snippets — the Settings backdrop goes fully transparent *and* `pointer-events: none`. The app behind stays visible in its true colours and stays clickable, so a theme can be judged on more than one page while the picker is open. Escape and the × close it; the backdrop no longer can, because it isn't there to click.
 
-Reported from use on 2026-08-30: choosing colours meant looking at a 960×704 dialog on a 1280×830 window with everything outside it under `--color-scrim`, a flat 50% black. The strip of app that *was* visible showed the colour at half brightness, so the panel could not be used for the one thing it exists for.
+Reported from use on 2026-08-30: choosing colours meant looking at the app under `--color-scrim`, a flat 50% black. The strip of app that *was* visible showed the colour at half brightness, so the panel could not be used for the one thing it exists for.
 
-Three things about it are deliberate:
+Two things about it are deliberate:
 
 - **It keys off `group === "look"`, not a list of tab ids.** A fifth appearance section gets this for free, which is the only way it stays true.
-- **The dialog slides; it does not reflow.** The rail stays vertical and every panel keeps its layout — the only change is the width and the position. The dialog moves whenever you cross between an appearance section and an app one, and a slide is a movement you can follow; a slide plus a folding rail plus a collapsing grid is not.
-- **It has to touch an edge.** The first version kept the floating-dialog shape: inset from the right by `--space-2xl`, rounded, and still capped at 44rem tall by `.settings-modal`'s own `max-height`. On a 2560×1400 window that is a 704px square adrift in the middle of nothing, anchored to nothing — it read as a lost box rather than as a panel, and was reported as such the day it shipped. `height: 100vh`, `border-radius: 0`, no top/right/bottom border, and a leftward shadow instead of the modal's downward one. The rules use a doubled `.settings-modal.settings-modal-aside` selector so they beat `.settings-modal`'s own geometry regardless of source order.
-- **All of it lives inside `@media (min-width: 72rem)`.** Below that the dock would expose less than the tree sidebar's own width, so the class does nothing at all and Settings behaves exactly as it always has. `aria-modal` follows the same condition in the component — claiming a modal while the rest of the window is reachable by mouse is a lie to a screen reader.
+- **`aria-modal` follows the same condition** in the component — claiming a modal while the rest of the window is reachable by mouse is a lie to a screen reader.
 
-Guarded by `e2e/settings-gets-out-of-the-way.e2e.ts`, which measures the computed backdrop colour, the dialog's box and corner radius, and a real click landing on a tree row. None of that is decidable from the source, and a test asserting the class name would pass with the media query deleted.
+**The dialog itself does not move, and rebuilding that is not a small improvement.** The 2026-08-30 pass also narrowed Settings to 44rem and docked it full-height against the right edge on these four sections, sliding it back to centred for the rest, all inside `@media (min-width: 72rem)`. Removed 2026-09-01 on report, and the objection was not to the geometry: a dialog that sits in a different place depending on which section of it you are on is a surprise every single time it happens, and no amount of easing makes a window that moves under you feel intentional. The dim was the half of that change doing the real work, and it stayed. If the centred dialog is later found to cover too much, narrow it or move it in **both** modes so it is always in the same place — do not make its position a function of the section.
+
+Guarded by `e2e/settings-gets-out-of-the-way.e2e.ts`, which measures the computed backdrop colour, a real click landing on a tree row, and that the dialog's box is identical either side of the crossing. None of that is decidable from the source, and a test asserting the class name would pass with the rule deleted.
 
 #### `.settings-panel` keeps a 4px gutter for the focus ring
 
