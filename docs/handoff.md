@@ -2044,6 +2044,30 @@ under `acknowledgedWarnings`.
   "sword" into her prose. That branch is explicit in the inline walker so it
   reads as a decision rather than as an unknown type falling through.
 
+- **`emojiPicker={false}` on `BlockNoteView` is load-bearing, not tidiness.**
+  BlockNote mounts its own emoji picker on `:` by default, and two suggestion
+  menus cannot share a trigger: ours rendered on screen while theirs answered
+  the Enter, so a chosen glyph silently inserted a bare emoji character
+  instead. Nothing errored, and the only sign was a scenario failing on a count
+  several lines later. Turning it back on breaks the `:` menu in exactly that
+  invisible way.
+
+  **What that flag costs is already paid back.** `icon-menu-items.tsx` offers
+  BlockNote's own emoji list through `getDefaultEmojiPickerItems` — the full
+  emoji-mart set, not `constants/emoji.ts`, which is a curated few hundred for
+  a picker that browses. Replacing their list with that one would be a
+  downgrade, so the emoji half of the `:` menu is deliberately theirs, their
+  `onItemClick` included, which is also what keeps an emoji inserting as a
+  plain character the way it always did.
+
+- **A glyph and an emoji go into the writing as different kinds of thing, on
+  purpose.** An emoji is a letter — it was one before any of this and copying
+  it out of a page should still give you one — so it inserts as a character. A
+  glyph has no character to be, so it arrives as `icon` inline content that can
+  be clicked and changed. Making them uniform in either direction loses
+  something real: uniform characters cost the glyph its clickability, uniform
+  inline content makes an emoji stop behaving like text.
+
 ## Template swaps
 
 - **A template change must never drop a value, and it did until 2026-08-27.**

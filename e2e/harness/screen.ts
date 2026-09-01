@@ -31,6 +31,7 @@ const INFOBOX = ".infobox";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
+const EDITOR_INLINE_ICON = ".editor-inline-icon";
 const SUGGESTION_MENU = "#bn-suggestion-menu";
 const FORMATTING_BAR = ".bn-formatting-toolbar";
 
@@ -309,7 +310,18 @@ export async function formattingBarShown(window: Page): Promise<boolean> {
   return (await window.locator(FORMATTING_BAR).count()) > 0;
 }
 
-/** Whether the `/` (or `@`, or `[[`) suggestion menu is on screen right now. */
+/**
+ * How many icons are sitting in the open page's writing.
+ *
+ * A count rather than a list, because an icon has no text to read back — what a
+ * scenario can check is that one arrived, or that a colon somewhere did not
+ * quietly put one there.
+ */
+export async function inlineIconCount(window: Page): Promise<number> {
+  return window.locator(EDITOR_INLINE_ICON).count();
+}
+
+/** Whether the `/` (or `@`, or `[[`, or `:`) suggestion menu is on screen right now. */
 export async function suggestionMenuOpen(window: Page): Promise<boolean> {
   return (await window.locator(SUGGESTION_MENU).count()) > 0;
 }
@@ -343,6 +355,39 @@ export async function suggestionMenuBox(
 export async function suggestionMenuItems(window: Page): Promise<string[]> {
   const items = await window.locator(`${SUGGESTION_MENU} .bn-suggestion-menu-item`).allTextContents();
   return items.map(normalize);
+}
+
+/**
+ * Chooses the suggestion-menu option whose label is exactly `label`.
+ *
+ * **`.bn-suggestion-menu-item` is not one element per option.** Measured
+ * 2026-09-01: the shadcn menu puts that class on the option's outer row *and*
+ * on its icon, its title and its subtext, so one option is four matches and
+ * two of them have no text at all. Matching on the text and taking the last
+ * hit lands on the innermost element of the right option, which is inside the
+ * row that handles the click.
+ *
+ * The symptom when a scenario picks the wrong element is not an error: the
+ * menu closes, nothing is inserted, and it fails several lines later on a
+ * count.
+ *
+ * Exact rather than substring, because these lists really do hold a `sword`
+ * and a `swords`, and picking whichever came first would test nothing. An
+ * option with a subtext reads as its title, a space, then the subtext.
+ */
+export async function pickSuggestion(window: Page, label: string): Promise<void> {
+  const parts = window.locator(`${SUGGESTION_MENU} .bn-suggestion-menu-item`);
+  await parts.first().waitFor({ state: "visible", timeout: WAIT_MS });
+  const count = await parts.count();
+  let found = -1;
+  for (let i = 0; i < count; i += 1) {
+    const text = normalize((await parts.nth(i).textContent()) ?? "");
+    if (text === label || text.startsWith(`${label} `)) found = i;
+  }
+  if (found < 0) {
+    throw new Error(`No suggestion called "${label}". The menu offered: ${(await suggestionMenuItems(window)).join(", ")}`);
+  }
+  await parts.nth(found).click();
 }
 
 /** Everything written in the open page's editor, as one run of text. */

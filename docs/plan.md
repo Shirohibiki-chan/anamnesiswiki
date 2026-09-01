@@ -672,8 +672,10 @@ offers the same dialog with the name already in it. Detail is in
 called New page rather than Element** — this app's word for a page is "page",
 and the reference's word was only ever how the item got written down here.
 
-**Icon and the callout's own icon shipped 2026-09-01.** `/icon` puts a heart in
-the line being written and clicking it opens the picker; a callout's icon is a
+**Icon and the callout's own icon shipped 2026-09-01.** A `:` mid-sentence
+offers glyphs and emoji together and inserts what she picks; `/icon` is the
+second way in, since a slash only means a command at the start of an empty
+line, which is where an icon is least useful. Clicking an icon opens the picker; a callout's icon is a
 button that opens the same one, still derived from its colour until she picks
 something, with **No icon** and **The usual icon** as two separate ways out.
 Detail is in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.

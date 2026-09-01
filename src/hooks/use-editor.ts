@@ -14,7 +14,9 @@ import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-conte
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
 import { IconPickContext } from "../services/editor-blocks/icon-pick-context";
+import { getIconMenuItems } from "../services/editor-blocks/icon-menu-items";
 import { getIconSlashMenuItems } from "../services/editor-blocks/icon-slash-menu";
+import { ICON_TRIGGER, iconMenuOpens } from "../services/editor-blocks/icon-trigger";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
@@ -31,7 +33,7 @@ import {
 import { useDialogs } from "./use-dialogs";
 import { useProject } from "./use-project";
 
-export { WIKILINK_TRIGGER };
+export { WIKILINK_TRIGGER, ICON_TRIGGER };
 // Re-exported rather than imported straight from the service, for the same
 // reason everything else here is: this file is the only door components have
 // into services/editor-blocks/. Editor.tsx fills the slot with the component
@@ -219,6 +221,13 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     );
   }
 
+  // Already filtered, so it does not go through `filterSuggestionItems` — the
+  // glyph sets match on keywords the item titles do not carry. See
+  // icon-menu-items.tsx.
+  async function getIconItems(query: string): Promise<DefaultReactSuggestionItem[]> {
+    return getIconMenuItems(editor, query);
+  }
+
   async function getMentionItems(query: string): Promise<DefaultReactSuggestionItem[]> {
     return filterSuggestionItems(getMentionMenuItems(editor, nodes, nodeId), query);
   }
@@ -229,10 +238,12 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     handleChange,
     focusEnd,
     getSlashMenuItems,
+    getIconItems,
     getMentionItems,
     // Passed through rather than imported by the component, keeping this file
     // the only way into services/editor-blocks/ — see the header above.
     slashShouldOpen: slashOpensCommandMenu,
+    iconShouldOpen: iconMenuOpens,
     suggestionMenuFloating,
   };
 }

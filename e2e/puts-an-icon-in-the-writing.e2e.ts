@@ -14,7 +14,15 @@
 // usual one" have to stay two different answers.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { openPage, typeAtLineStartInEditor, waitForWorld } from "./harness/screen";
+import {
+  inlineIconCount,
+  openPage,
+  pickSuggestion,
+  suggestionMenuOpen,
+  typeInEditor,
+  typeAtLineStartInEditor,
+  waitForWorld,
+} from "./harness/screen";
 
 const PAGE = "Deep Nesting Test";
 
@@ -48,13 +56,35 @@ describe("an icon in the writing", () => {
 
   it("drops one in from the slash menu without asking first", async () => {
     await typeAtLineStartInEditor(app.window, "/icon");
-    await app.window.getByText("A small picture in the line you are writing").click();
+    await pickSuggestion(app.window, "Icon");
     await app.window.waitForTimeout(600);
 
     // It arrives already drawn. The picker does not open, on purpose — the
     // sentence carries on and the icon is changed afterwards.
     await inlineIcon().waitFor({ state: "visible", timeout: 10_000 });
     expect(await app.window.locator(".icon-picker").count()).toBe(0);
+  });
+
+  it("takes one in the middle of a sentence, which the slash menu cannot", async () => {
+    // The reason `:` exists at all: `/` only means a command at the start of a
+    // line, and an icon is wanted inside a line already being written.
+    await typeInEditor(app.window, " she drew her :swo");
+    await app.window.waitForTimeout(600);
+    // Chosen with the keyboard, the way the menu is actually driven — Enter
+    // takes the highlighted option.
+    await app.window.keyboard.press("Enter");
+    await app.window.waitForTimeout(600);
+
+    // Two now — the one the slash menu put on its own line, and this one.
+    expect(await inlineIconCount(app.window)).toBe(2);
+  });
+
+  it("leaves a colon alone when it is punctuation", async () => {
+    await typeInEditor(app.window, " Note:");
+    await app.window.waitForTimeout(400);
+    // No menu, and nothing inserted — the whole reason this trigger is gated.
+    expect(await suggestionMenuOpen(app.window)).toBe(false);
+    expect(await inlineIconCount(app.window)).toBe(2);
   });
 
   it("changes it when you click it, and remembers", async () => {

@@ -19,7 +19,7 @@ import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
-import { BlockRefRenderContext, IconPickContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import { BlockRefRenderContext, ICON_TRIGGER, IconPickContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
 import { EditorIconPicker } from "../blocks/EditorIconPicker";
@@ -94,8 +94,10 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
     handleChange,
     focusEnd,
     getSlashMenuItems,
+    getIconItems,
     getMentionItems,
     slashShouldOpen,
+    iconShouldOpen,
     suggestionMenuFloating,
   } = useEditor(nodeId, content, onContentChange);
   // Double-clicking a picture opens it full size; a single click still selects
@@ -167,6 +169,11 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         editor={editor}
         theme="dark"
         slashMenu={false}
+        // Off because our `:` menu replaces it and two menus cannot share one
+        // trigger — ours drew while theirs answered the Enter. See
+        // icon-menu-items.tsx, which offers BlockNote's own emoji list so
+        // nothing is lost by turning this off.
+        emojiPicker={false}
         className="wiki-body editor-shell"
         onKeyDownCapture={onKeyDownCapture}
         // Off, so PageFormattingToolbar above is the one on screen.
@@ -205,6 +212,16 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           triggerCharacter="/"
           getItems={getSlashMenuItems}
           shouldOpen={slashShouldOpen}
+          floatingUIOptions={suggestionMenuFloating}
+        />
+        {/* Its own trigger rather than a `/` command, because an icon is
+            wanted in the middle of a sentence and `/` deliberately only means a
+            command at the start of a line. `shouldOpen` is what keeps `Note:`
+            and `10:30` from opening it — see icon-trigger.ts. */}
+        <SuggestionMenuController
+          triggerCharacter={ICON_TRIGGER}
+          getItems={getIconItems}
+          shouldOpen={iconShouldOpen}
           floatingUIOptions={suggestionMenuFloating}
         />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} floatingUIOptions={suggestionMenuFloating} />

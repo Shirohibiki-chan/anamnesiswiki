@@ -4700,3 +4700,28 @@ caution, and the dashed empty slot a cleared callout leaves behind.
 across the top and ours does not. It needs somewhere to live that outlasts the
 popover, which is a small piece of app state rather than anything about icons —
 it is in `docs/plan.md` under the phase.
+
+**Follow-up the same day: the `:` trigger.** The entry above shipped with
+`/icon` as the only way in, and that was close to useless — a slash only means
+a command at the start of an empty line (her rule, 2026-08-28), which is
+exactly where an icon is least wanted. She called it immediately. The fix is a
+trigger of its own, ungated the way `@` and `[[` are, with one rule on it:
+`iconMenuOpens` requires the character before the colon to be nothing or
+whitespace, so `Note:`, `Chapter 4:` and `10:` stay shut and ` :swo` opens.
+Seven unit tests over that pair of cases.
+
+**It cost a conflict nobody had noticed.** `BlockNoteView` mounts BlockNote's
+own emoji picker on `:` by default, so for a while two menus were live on one
+key — ours drew on screen and theirs answered the Enter, inserting a bare emoji
+where a glyph had been chosen. Nothing threw; the only symptom was a scenario
+failing on a count several lines later, which took three runs and a DOM dump to
+pin down. `emojiPicker={false}` settles it, and the emoji half of our menu is
+now BlockNote's own list through `getDefaultEmojiPickerItems` — the full
+emoji-mart set rather than `constants/emoji.ts`'s curated few hundred, so
+nothing was lost by turning theirs off.
+
+**And a trap in the app test suite, now written down.**
+`.bn-suggestion-menu-item` is on the option's row *and* on its icon, title and
+subtext, so one option is four matches — clicking the wrong one closes the menu
+and inserts nothing, silently. `pickSuggestion` in `e2e/harness/screen.ts` is
+the helper that gets it right, and says why.
