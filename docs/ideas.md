@@ -282,6 +282,19 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 ---
 
+**Links wearing the colour of the page they point at**
+
+Her idea, 2026-08-31, offered as a small one and as a start rather than a fix: a mention chip takes the colour of its target, so ten similarly-named links stop looking identical. **Her own caveat is the right one to keep at the top** — some people never set a colour, and some use the same colour for different things, so this narrows the problem rather than solving it.
+
+**Colour is inherited, which makes it work better than it sounds.** `getEffectiveColor` in `tree-service.ts` walks up to the nearest ancestor that set one and reports whether the page owns it. So colouring a handful of top-level folders — `ACD`, `Marvel`, one per universe — gives every page beneath them a colour without anyone touching a single character page. That is the version worth building: reading the *effective* colour rather than only `node.color` turns "nobody sets colours" from the common case into a choice.
+
+**Cheap, because the chip already does the lookup.** A mention stores `nodeId` and resolves the node live to draw its current name (which is why renaming a page updates every chip). The colour is on the same node it already has in hand.
+
+**Colour must not be the only signal.** It fails for anyone who cannot separate two of them, and it fails for the person using one colour for several things, which she named herself. The complement is already there: every template has an icon, so a chip can say *Character* or *Location* without any colour at all, and the two together do more than either. Contrast rules apply as everywhere else in this project — a tinted chip still has to be comfortably readable, not merely passing.
+
+**It leans on a feature that is already flagged as needing an overhaul.** `plan.md` → Queued Adjustments carries the folder-colour rework, undesigned and to be asked about rather than guessed at. Giving colour a second job raises what that overhaul has to get right, so these two should be looked at together rather than this being slipped in first.
+
+---
 **How bot creators actually organise — two real vaults**
 
 Not a feature. Screenshots from two bot creators, sent by the user 2026-08-31, kept because **they are the target demographic and they are not her** — bot creators are usually roleplayers too, which is the overlap.
