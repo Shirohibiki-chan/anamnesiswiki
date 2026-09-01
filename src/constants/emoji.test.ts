@@ -24,6 +24,14 @@ describe("the emoji the picker offers", () => {
     expect(matches("laugh").length).toBeGreaterThan(0);
   });
 
+  it("finds one written the way a chat app writes it", () => {
+    // The picker is opened *by* a colon, so the closing one gets typed out of
+    // habit. `joy:` matching nothing reads as a broken search.
+    const matches = (query: string) => searchEmoji(query).flatMap((group) => group.emoji.map((e) => e.char));
+    expect(matches("joy:")).toContain("😂");
+    expect(matches(":joy:")).toContain("😂");
+  });
+
   it("gives every entry a character to draw", () => {
     for (const group of EMOJI_GROUPS) {
       for (const entry of group.emoji) {

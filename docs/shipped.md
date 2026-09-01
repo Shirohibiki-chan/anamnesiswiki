@@ -4764,3 +4764,16 @@ and the trigger read that as having nowhere to anchor and declined to open. So
 the picker worked everywhere except the most ordinary place to type, a fresh
 line, and it was reported from use rather than caught here. The fallback is the
 line element's own box, and there is a scenario on it now.
+
+**Three more found by using it, all in one gesture.** She typed `:joy:` and
+nothing happened, which turned out to be three separate faults stacked:
+`TreePopover` focused the first tab button rather than the search box (its
+measuring frame makes `autoFocus` a no-op, which its own comments already knew
+about focusing and nobody had connected to `autoFocus`); the closing colon of
+`:joy:` matched nothing, since the box is reached *by* a colon and the habit is
+to type the other one; and searching only looked inside the selected tab, so an
+emoji's name typed on the Glyphs tab returned "Nothing matches" with the answer
+one click away. Stripping colons also fixed an open-cost regression nobody had
+reported yet — a box holding just `:` counted as a search, and a search draws
+all 1870 emoji, so every open of the picker anywhere in the app had picked up
+about three quarters of a second.

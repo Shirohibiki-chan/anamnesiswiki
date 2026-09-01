@@ -90,7 +90,13 @@ export const EMOJI_GROUPS: EmojiGroup[] = emojiData.categories
  * rather than showing an empty heading.
  */
 export function searchEmoji(query: string): EmojiGroup[] {
-  const trimmed = query.trim().toLowerCase();
+  // **Colons are stripped, because `:joy:` is how people type this.** The
+  // trigger that opens the picker is a colon, so the muscle memory arriving
+  // from every chat app is to type the closing one too — and a query of
+  // `joy:` matches nothing, which reads as the search being broken rather
+  // than as the app being fussy about punctuation. No emoji keyword contains
+  // a colon, so nothing is lost by ignoring them.
+  const trimmed = query.split(":").join("").trim().toLowerCase();
   if (!trimmed) return EMOJI_GROUPS;
   return EMOJI_GROUPS.map((group) => ({
     name: group.name,

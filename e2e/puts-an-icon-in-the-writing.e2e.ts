@@ -115,13 +115,42 @@ describe("an icon in the writing", () => {
     await app.window.waitForTimeout(400);
   });
 
+  it("takes an emoji typed the way a chat app types it", async () => {
+    // Reported from use 2026-09-01, and two bugs in one gesture: focus landed
+    // on a tab button rather than the search box, so typing did nothing at
+    // all; and the closing colon of `:joy:` matched nothing even once it did.
+    // The picker also opens on the Glyphs tab, so a search has to cross into
+    // the emoji or the answer is "Nothing matches" with the emoji one click
+    // away, unmentioned.
+    await typeInEditor(app.window, " and she laughed ");
+    await app.window.keyboard.press(":");
+    await app.window.waitForTimeout(600);
+    expect(await iconPickerOpen(app.window)).toBe(true);
+
+    await app.window.keyboard.type("joy:", { delay: 40 });
+    await app.window.waitForTimeout(700);
+    // Typed into the picker's own search box, which is where focus has to be.
+    expect(await app.window.locator(".icon-picker input").inputValue()).toBe(":joy:");
+    expect(await app.window.locator(".icon-picker-option").count()).toBeGreaterThan(0);
+
+    await app.window.locator(".icon-picker-option").first().click();
+    await app.window.waitForTimeout(800);
+    // The colon is gone and the word she typed is not left behind in the page.
+    const text = await app.window.locator(".editor-shell .bn-editor").first().innerText();
+    expect(text).not.toContain("joy");
+    expect(text).toContain("and she laughed");
+  });
+
   it("leaves a colon alone when it is punctuation", async () => {
+    // Counted rather than hardcoded: this runs after every other scenario in
+    // the file, so a number here would need editing each time one is added.
+    const before = await inlineIconCount(app.window);
     await typeInEditor(app.window, " Note:");
     await app.window.waitForTimeout(500);
     // Nothing opened and nothing was inserted — the whole reason the trigger is
     // gated on what comes before it.
     expect(await iconPickerOpen(app.window)).toBe(false);
-    expect(await inlineIconCount(app.window)).toBe(2);
+    expect(await inlineIconCount(app.window)).toBe(before);
   });
 
   it("changes it when you click it, and remembers", async () => {

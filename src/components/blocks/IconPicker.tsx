@@ -44,12 +44,40 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(CATALOGUE_PAGE);
 
-  const glyphGroups = searchGlyphs(query);
-  const emojiGroups = searchEmoji(query);
-  const groups = tab === "glyphs" ? glyphGroups : emojiGroups;
+  /**
+   * **Searching crosses the tabs; browsing does not.**
+   *
+   * The tabs are how you *browse* two different kinds of thing, and they were
+   * how you searched them too — which meant typing `joy` on the Glyphs tab
+   * said "Nothing matches" while the emoji sat one click away, unmentioned.
+   * With the picker now opening on a typed `:`, that is the first thing
+   * anybody does: the colon is the key every chat app uses to reach an emoji,
+   * so arriving on the Glyphs tab and typing an emoji's name is the normal
+   * case rather than a mistake.
+   *
+   * So a query shows everything that matches it, glyphs first and emoji under
+   * them, whichever tab is selected. Clear the box and you are back to
+   * browsing the tab you are on.
+   */
+  /**
+   * The query with its colons taken out, which is the one both searches see.
+   *
+   * **A colon is punctuation from the trigger, not something being searched
+   * for.** The picker opens on a typed `:` and that character lands in this
+   * box, so a box holding `:` is an empty search and has to behave like one —
+   * otherwise every open counts as a search, and a search draws all 1870
+   * emoji whether or not anyone asked for them. Measured 2026-09-01: that put
+   * three quarters of a second on opening the picker anywhere in the app.
+   */
+  const trimmed = query.split(":").join("").trim();
+  const searching = trimmed.length > 0;
+  const glyphGroups = searchGlyphs(trimmed);
+  const emojiGroups = searchEmoji(trimmed);
+  const showGlyphs = searching || tab === "glyphs";
+  const showEmoji = searching || tab === "emoji";
   // Searching looks through everything Lucide ships; browsing shows the
   // curated groups first and then the rest of the catalogue underneath.
-  const rest = query.trim() ? searchCatalogue(query) : restOfCatalogue();
+  const rest = searching ? searchCatalogue(trimmed) : restOfCatalogue();
   const restShown = rest.slice(0, shown);
 
   return (
@@ -99,12 +127,12 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
       )}
 
       <div className="icon-picker-scroll">
-        {groups.length === 0 && (tab === "emoji" || rest.length === 0) && (
+        {glyphGroups.length === 0 && emojiGroups.length === 0 && rest.length === 0 && (
           <p className="icon-picker-empty">Nothing matches.</p>
         )}
 
-        {tab === "glyphs"
-          ? glyphGroups.map((group) => (
+        {showGlyphs &&
+          glyphGroups.map((group) => (
               <div key={group.name}>
                 <div className="ui-eyebrow icon-picker-heading">{group.name}</div>
                 <div className="icon-picker-grid">
@@ -126,8 +154,10 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
                   })}
                 </div>
               </div>
-            ))
-          : emojiGroups.map((group) => (
+            ))}
+
+        {showEmoji &&
+          emojiGroups.map((group) => (
               <div key={group.name}>
                 <div className="ui-eyebrow icon-picker-heading">{group.name}</div>
                 <div className="icon-picker-grid">
@@ -153,10 +183,10 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
         {/* Everything else Lucide ships. Held below the suggestions so the
             useful ones are still the first thing in the box, and revealed a
             screenful at a time so opening the picker stays instant. */}
-        {tab === "glyphs" && rest.length > 0 && (
+        {showGlyphs && rest.length > 0 && (
           <div>
             <div className="ui-eyebrow icon-picker-heading">
-              {query.trim() ? "Everything else" : "All icons"}
+              {searching ? "Everything else" : "All icons"}
             </div>
             <div className="icon-picker-grid">
               {restShown.map((glyph) => {

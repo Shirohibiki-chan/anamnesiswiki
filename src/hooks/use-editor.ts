@@ -252,11 +252,14 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     setIconTrigger(null);
     editor.focus();
     if (!icon) return;
-    // The colon is one character immediately before the caret, and it is only
-    // taken out now that there is something to put in its place.
+    // **Only if the colon is actually there.** Whether the keystroke reaches
+    // the document at all depends on where focus went when the picker opened,
+    // which is a race this cannot win — and deleting one character regardless
+    // eats the space or the letter she typed before it. Measured 2026-09-01:
+    // it had been eating the space.
     editor.transact((tr) => {
       const { from } = tr.selection;
-      if (from > 0) tr.delete(from - 1, from);
+      if (from > 0 && tr.doc.textBetween(from - 1, from) === ICON_TRIGGER) tr.delete(from - 1, from);
     });
     editor.insertInlineContent([{ type: ICON_INLINE_TYPE, props: { icon } }, " "]);
   }

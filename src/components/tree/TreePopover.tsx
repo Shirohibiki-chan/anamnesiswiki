@@ -167,6 +167,16 @@ export function TreePopover({ anchorRect, onClose, className, children }: TreePo
   // Only when nothing inside has claimed focus already: several popovers open
   // on an `autoFocus` search box, and stealing it back to the first button
   // would undo the more useful thing.
+  //
+  // **And `autoFocus` alone cannot be trusted here, which took until
+  // 2026-09-01 to notice.** The measuring pass below renders the popover
+  // hidden for a frame, and `autoFocus` on a hidden input is the same silent
+  // no-op that the note above describes for this effect — so by the time
+  // anything is visible, nothing inside has claimed focus and the first
+  // *button* takes it. In the icon picker that meant the search box looked
+  // ready and every keystroke went into a tab button instead: the picker
+  // opened, and typing did nothing at all. So a text field inside wins over
+  // the first button, which is what the paragraph above always intended.
   const hasFocused = useRef(false);
   useEffect(() => {
     const el = ref.current;
@@ -177,7 +187,8 @@ export function TreePopover({ anchorRect, onClose, className, children }: TreePo
     if (!el || hasFocused.current || style.visibility === "hidden") return;
     hasFocused.current = true;
     if (el.contains(document.activeElement)) return;
-    (itemsIn()[0] ?? el).focus({ preventScroll: true });
+    const field = el.querySelector<HTMLElement>('input:not([type="hidden"]):not([disabled]), textarea:not([disabled])');
+    (field ?? itemsIn()[0] ?? el).focus({ preventScroll: true });
   }, [itemsIn, style]);
 
   return createPortal(

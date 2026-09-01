@@ -2091,6 +2091,29 @@ under `acknowledgedWarnings`.
   place to type, a fresh line. The fallback is the line element's own box.
   Anything else anchored to a caret in this editor wants the same fallback.
 
+- **A popover that opens on a search box has to focus the field itself; the
+  field's own `autoFocus` cannot do it.** `TreePopover` renders hidden for one
+  frame to measure itself, and `autoFocus` on a hidden input is the same silent
+  no-op its own comments already record for focusing. So by the time anything
+  is visible nothing inside has claimed focus and the first *button* takes it —
+  which is how the icon picker shipped with a search box that looked ready and
+  swallowed every keystroke into a tab button. It now prefers a text field over
+  the first button when it moves focus in, which is what its comment always
+  said it intended.
+
+- **A colon in the icon picker's search box is punctuation, not a search.** The
+  picker opens on a typed `:` and that character lands in the box, so the box
+  starts out holding one. Treating that as a query makes every open a search,
+  and a search draws all 1870 emoji — three quarters of a second added to
+  opening the picker anywhere in the app. Colons are stripped before either
+  search runs, which is also what makes `:joy:` find what a chat app would.
+
+- **Searching crosses the tabs; browsing does not.** The tabs are for browsing
+  two kinds of thing, and searching within one of them meant typing an emoji's
+  name on the Glyphs tab and being told nothing matched, with the answer one
+  click away and unmentioned. Since the picker opens on the key every chat app
+  uses to reach an emoji, that is the normal case rather than a mistake.
+
 ## Template swaps
 
 - **A template change must never drop a value, and it did until 2026-08-27.**
