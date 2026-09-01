@@ -310,6 +310,12 @@ Asked for by the user 2026-08-31. Wanted, unscheduled.
 
 **The concept is tiles that are pictures, each with its own caption, that open bigger when clicked and can be taken back out.** That is the whole of it, and everything below is either already built or a small addition to something built.
 
+**Two anti-goals, both read off Notion's own gallery view, which she screenshotted 2026-08-31.** They are the same failure twice: a thing called a gallery that is not actually about the pictures.
+
+- **You cannot see the pictures.** Every card crops to the same wide rectangle whatever shape the picture is, so a portrait image — which is most character art, and most of hers — has a band taken out of its middle and the rest thrown away. **This makes tile shape a real decision rather than a detail**, and it is undecided: uniform tiles that letterbox instead of cropping, uniform portrait-shaped tiles, or tiles that keep each picture's own proportions and pack around one another. What is already settled is the constraint — a tile shows the picture, so anything wide and fixed is wrong before it starts.
+- **Clicking a tile opens a page.** Not the picture. Even the caption is a page title with a document icon beside it, so the label names a document too. Here a tile opens the picture in the lightbox, and the caption names the picture.
+
+
 **Captions want the name we already keep.** A picture's file is a UUID and its name is a label in `.names.json`, so a tile has something to draw without inventing a second field — and an unnamed picture needs a fallback that isn't the id.
 
 **Click-to-enlarge is built.** The Phase 16 lightbox already shows the filename, arrows through every picture on the page rather than only the one clicked, and zooms and pans. A gallery inherits it rather than needing its own.
