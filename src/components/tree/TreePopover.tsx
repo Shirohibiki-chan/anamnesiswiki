@@ -144,6 +144,21 @@ export function TreePopover({ anchorRect, onClose, className, children }: TreePo
     setStyle({ position: "fixed", top, left, visibility: "visible" });
   }, [anchorRect]);
 
+  // **A resize closes it.** The position above is measured once, from a rect
+  // captured when the menu opened, and nothing re-measures it — so resizing the
+  // window moved the trigger out from under a menu that stayed exactly where it
+  // was, leaving it stranded in the middle of the screen attached to nothing.
+  // Reported from the font menu, where a small window opened one near the left
+  // edge and growing the window left it adrift over the page. Closing rather
+  // than re-measuring because several of these are anchored to a point that no
+  // longer exists after a resize (a right-click position, a tree row that
+  // reflowed), so there is nothing to re-measure against; and a menu is a
+  // moment's decision, not something you resize the window around.
+  useEffect(() => {
+    window.addEventListener("resize", onClose);
+    return () => window.removeEventListener("resize", onClose);
+  }, [onClose]);
+
   // A popover portals to the end of <body>, so Tab from the trigger walks the
   // rest of the *page* and never enters the menu — which is what made these
   // unreachable from the keyboard. Moving focus in on open is what fixes that,

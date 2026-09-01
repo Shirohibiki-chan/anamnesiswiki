@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-01 — page text is Nunito now
+
+### Fixes
+
+- **Menus close when you resize the window instead of floating off on their own.** A dropdown works out where to sit at the moment you open it and then stays put, so making the window bigger while one was open left it stranded in the middle of the screen, attached to nothing — easiest to hit with the typeface menu, but every menu in the app did it. They now close if the window changes size; open it again and it comes up in the right place.
+
+### Changes
+
+- **Settings stays in the middle of the window on every section.** It used to slide over and dock against the right edge on Theme, Colours, Fonts and Snippets, and slide back for the rest. The app behind it is still undimmed and still clickable on those four — that's the half that let you actually see the colour you'd just picked — but the window itself no longer moves depending on which section you're on.
+- **Pages are written in Nunito instead of Quicksand.** Same rounded, friendly shape, but with a taller lowercase and less gap between letters, so a full page of it reads more settled and takes up a touch less room. Only the writing on a page changed — headings and the rest of the app are the same faces as before, and this is the starting point, so if you'd already picked your own face for writing in Settings, nothing moved.
+
 ## 2026-08-30 — the font picker
 
 ### Additions

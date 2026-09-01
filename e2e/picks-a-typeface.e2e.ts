@@ -103,6 +103,41 @@ describe("picking a typeface", () => {
     expect(headings[0]).toContain("MONOSPACE");
   });
 
+  /**
+   * Reported 2026-09-01: opening this menu in a small window and then making
+   * the window bigger left it sitting in the middle of the screen, attached to
+   * nothing. The position is measured once, from a rect captured at open time,
+   * and a resize moves the trigger out from under it — so the menu closes on a
+   * resize now. Driven here rather than unit tested because "is it still
+   * pinned to its trigger" is a pair of real bounding boxes.
+   */
+  it("closes on a resize rather than being left stranded", async () => {
+    await resizeWindow(app, 1100, 800);
+    await app.window.locator(slot("--font-ui")).click();
+    await app.window.locator(MENU).waitFor({ state: "visible", timeout: 10_000 });
+
+    await resizeWindow(app, 1600, 950);
+    await app.window.locator(MENU).waitFor({ state: "detached", timeout: 10_000 });
+    expect(await app.window.locator(MENU).count()).toBe(0);
+
+    // And it still opens where it belongs afterwards.
+    await app.window.locator(slot("--font-ui")).click();
+    await app.window.locator(MENU).waitFor({ state: "visible", timeout: 10_000 });
+    const gap = await app.window.evaluate(
+      ([triggerSel, menuSel]) => {
+        const trigger = document.querySelector(triggerSel)?.getBoundingClientRect();
+        const menu = document.querySelector(menuSel)?.getBoundingClientRect();
+        if (!trigger || !menu) return null;
+        return { below: menu.top - trigger.bottom, overlap: Math.min(trigger.right, menu.right) - Math.max(trigger.left, menu.left) };
+      },
+      [slot("--font-ui"), MENU],
+    );
+    expect(gap?.below ?? -1).toBeGreaterThanOrEqual(0);
+    // Sharing horizontal space with its trigger is what "attached to it" means.
+    expect(gap?.overlap ?? 0).toBeGreaterThan(0);
+    await app.window.keyboard.press("Escape");
+  });
+
   it("says nothing to the console while doing it", () => {
     expect(app.errors).toEqual([]);
   });
