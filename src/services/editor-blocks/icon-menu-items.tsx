@@ -44,7 +44,14 @@ import { ICON_INLINE_TYPE } from "../../constants/schema";
  * picker with one click rather than being a dead end.
  */
 const GLYPH_LIMIT = 24;
-const EMOJI_LIMIT = 12;
+/**
+ * **Fewer emoji than glyphs, because an emoji row is nearly empty.** A glyph
+ * row carries a name you can read; an emoji has none worth showing, so twelve
+ * of them is twelve tall rows holding one character each and a menu that
+ * scrolls past the thing she was looking for. Six is a tail under the glyphs
+ * rather than a second list. The picker's Emoji tab is where browsing lives.
+ */
+const EMOJI_LIMIT = 6;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
 export async function getIconMenuItems(editor: any, query: string): Promise<DefaultReactSuggestionItem[]> {
@@ -57,7 +64,16 @@ export async function getIconMenuItems(editor: any, query: string): Promise<Defa
 
   // Theirs, kept whole: the items *and* their own `onItemClick`, so an emoji
   // lands exactly as it did before this menu existed. `id` is the character.
-  const emoji = (await getDefaultEmojiPickerItems(editor, query)).slice(0, EMOJI_LIMIT);
+  //
+  // **Only once she has typed something.** With an empty query their list is
+  // every emoji there is, and the first twelve of several thousand are
+  // whichever the data file happens to start with — a row of `💯` and `🆔`
+  // under the glyphs, which is noise standing where the useful default should
+  // be. A bare `:` shows the glyphs; the emoji arrive when there is a word to
+  // match them against.
+  const emoji = query.trim()
+    ? (await getDefaultEmojiPickerItems(editor, query)).slice(0, EMOJI_LIMIT)
+    : [];
 
   return [
     ...glyphs.map((glyph) => {
@@ -72,11 +88,14 @@ export async function getIconMenuItems(editor: any, query: string): Promise<Defa
       };
     }),
     ...emoji.map((entry) => ({
-      // The character is the title, because the name of an emoji is not what
-      // anybody recognises it by.
+      // **The character is the title and there is no icon beside it.** It is
+      // the one row in this menu whose title *is* a picture, so giving it an
+      // icon as well drew every emoji twice — once in the icon column and once
+      // in the text. An emoji is recognised by looking at it and by nothing
+      // else, which is why there is no name here to put in the title instead:
+      // BlockNote's items carry the character and its click, and that is all.
       title: entry.id,
       group: "Emoji",
-      icon: <span className="icon-as-text">{entry.id}</span>,
       onItemClick: entry.onItemClick,
     })),
   ];
