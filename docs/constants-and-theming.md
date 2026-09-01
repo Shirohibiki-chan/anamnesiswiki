@@ -2,38 +2,31 @@
 
 ## Key Constants (`src/constants/`)
 
-- **`palette.ts`** — `COLOR_PALETTE` array (10 preset colors used for node coloring: teal `#5eead4`, sky `#7dd3fc`, purple `#c4b5fd`, rose `#fda4af`, amber `#fcd34d`, sage `#86efac`, orange `#fdba74`, indigo `#a5b4fc`, red `#fca5a5`, gray `#a1a1aa`) plus a `default` entry with no hex (clears the color). `getPaletteHex(key)` resolves a palette key to its hex; returns null for default. Must stay in sync with `--color-palette-*` tokens in `index.css`.
+One line per file. **Deliberately not an inventory of their contents** — the previous version of this section transcribed palette hexes, every `TEMPLATE_KEYS` entry and a list of `limits.ts` values, and all three drifted out of date while the rest of this document stayed current. What belongs here is what a file is *for* and any rule that spans more than one file; the values live in the file.
 
-- **`icons.ts`** — `TEMPLATE_ICONS` map from template key to lucide-react icon component (`folder → FolderIcon`, `character → User`, `location → MapPin`, `faction → Users`, `item → Package`, `event → Calendar`, `species → Sparkles`, `note → FileText`). Import via `getTemplateIcon(templateKey)` — do not import lucide directly in components.
+- **`callout-colors.ts`** — what a coloured callout means and the icon that says so. Colour and type are separate axes; only colour is here.
+- **`code-languages.ts`** — the languages a code block offers, in dropdown order. A deliberate subset of the 48 `@blocknote/code-block` ships.
+- **`collection-sources.ts`** — where a collection block gets its pages (Manual links, Subpage index, Tag index, Backlinks). In constants because the block's heading, the source picker and Add Block all name them and must not disagree.
+- **`default-project-template.ts`** — the one project template that ships, so "Start from a template" works on a machine nobody has sent a file to.
+- **`emoji.ts`** — the emoji half of the icon picker. Stored as the character itself, so it costs nothing in the bundle.
+- **`font-library.ts`** — **generated; do not edit by hand.** Every family bundled in `src/fonts-library.css`. Regenerate with `node scripts/build-fonts.mjs`.
+- **`glyphs.ts`** / **`glyph-catalogue.ts`** — the curated front of the icon picker, and every icon Lucide ships behind it.
+- **`icons.ts`** — template key to lucide icon. **The only place lucide-react is imported for template icons** — components go through `getTemplateIcon()`.
+- **`layout.ts`** — layout numbers more than one file has to agree on, such as the sidebar's per-level indent, which `react-arborist` also takes as a prop.
+- **`limits.ts`** — hard numeric limits: image size, search result and snippet caps, per-name length, lightbox zoom range, breadcrumb depth. **Nesting depth is not among them and must not be added** — `CLAUDE.md` → Data on disk records that deep nesting is uncapped and must not be warned about, measured 2026-08-11. `LONG_PATH_ADVICE_CHARS` is the wording threshold for advice, not a cap.
+- **`links.ts`** — the only web addresses the app knows. All of them are this repository and none is fetched; they are handed to the system browser. The updater's endpoint is not here — it lives in `src-tauri/tauri.conf.json`.
+- **`meter-styles.ts`** — the shapes a meter block draws in, with the names and icons the UI uses.
+- **`palette.ts`** — the node-colouring palette. Data, not UI tokens, and **must stay in sync with the `--color-palette-*` custom properties in `src/index.css`**. `getPaletteHex(key)` resolves one; the default entry has no hex and clears the colour.
+- **`paths.ts`** — on-disk filenames (`project.json`, `_folder.json`, `_page.json`, the dot-files under `assets/`) plus `ASSET_REF_PREFIX`, the scheme a stored picture reference uses.
+- **`project-template.ts`** — the `.antpl` file: a project's shape in one file somebody can send you. **Not the same thing as `TemplateLibrary` in `schema.ts`** — that is a page copied, this is a project's shape.
+- **`property-suggestions.ts`** — suggested property names per template, offered as chips in the Add property form. Suggestions, never a schema.
+- **`schema.ts`** — canonical `Node` / `Tab` / `Project` shapes, `TEMPLATE_KEYS`, and the `createNode` / `createTab` factories. `BlockNoteDocument` stays a loose `unknown[]` on purpose: constants may never import from `services/`. See `docs/spec.md` §Data model.
+- **`settings.ts`** — the settings rail: which sections exist, in what order, and what each says about itself. Adding a section is an entry here *and* one in `SettingsModal.tsx`'s `PANELS` map, which a test checks are in step.
+- **`shortcuts.ts`** — app-level keyboard shortcuts, plus `EDITOR_RESERVED_BINDINGS`, the combinations BlockNote already owns. Anything added here must stay clear of that list.
+- **`theme-tokens.ts`** — what the theme editor is allowed to edit: twenty colours in five groups plus the gradient slots, deliberately a subset of the token system.
+- **`themes.ts`** — the themes that ship and how one is resolved.
 
-- **`format.ts`** — five formatting utilities used across the app:
-  - `fmt(n)` — abbreviates to K / M / B (used in the properties panel for reference counts)
-  - `fmtFull(n)` — comma-separated full number
-  - `fmtDate(iso)` — short locale date (e.g., `"May 16, 2026"`)
-  - `fmtRelative(iso)` — human-relative (e.g., `"3d ago"`, `"just now"`)
-  - `slugify(name)` — sanitizes a node name into a safe filename (strips path separators, quotes, trims to 100 chars); used by `filesystem-service.ts` when writing node files
-
-- **`limits.ts`** — hard numeric constants:
-  - `AUTOSAVE_DEBOUNCE_MS = 300` — how long after a change before writing to disk
-  - `MAX_FILENAME_CHARS = 100` — truncate longer names when generating filenames
-  - `MAX_TREE_DEPTH = 12` — soft cap; warn the user when nesting approaches this (Windows path length concern)
-  - `MAX_TAG_LENGTH = 40` — cap for a single tag string
-
-- **`keyboard.ts`** — `SHORTCUTS` map from action name to keyboard shortcut string (`newPage: 'Mod+N'`, `search: 'Mod+K'`, `save: 'Mod+S'` — save is a no-op since autosave handles it, but the shortcut fires the save-indicator so the user gets feedback, `nextTab: 'Mod+Alt+ArrowRight'`, `prevTab: 'Mod+Alt+ArrowLeft'`). `Mod` resolves to Cmd on macOS and Ctrl elsewhere.
-
-- **`paths.ts`** — default file locations:
-  - `DEFAULT_PROJECTS_DIR` — resolves to `~/Documents/Anamnesis/` via Tauri path API
-  - `PROJECT_FILE = 'project.json'` — filename for project metadata
-  - `FOLDER_META_FILE = '_folder.json'` — filename for folder metadata (underscore prefix keeps it sorted first)
-  - `ASSETS_DIR = 'assets'` — subfolder inside a project for uploaded images
-
-- **`schema.ts`** — `createNode(templateKey, overrides)` and `createTab(overrides)` factory functions that stamp out default-shaped objects; `TEMPLATE_KEYS` array (`['folder', 'character', 'location', 'faction', 'item', 'event', 'species', 'note']`) — canonical order used in the New Page modal. Node fields: `id` (uuid), `parentId`, `templateKey`, `name`, `tabs`, `properties`, `tags`, `color`, `createdAt`, `updatedAt`. Tab fields: `id`, `label`, `hidden`, `content` (BlockNote JSON document).
-
-- **`lk-schema.ts`** — LegendKeeper format constants for import/export:
-  - `LK_SUPPORTED_VERSION = 1` — bail with a warning on other versions
-  - `LK_PANEL_TYPE_MAP` — mapping from LK panel types to our callout types (`info → info`, `note → quote`, `success → info`, `warning → secret`, `error → secret`)
-  - `LK_TAB_SIGNATURES` — mapping from tab-name arrays to inferred template keys (see CLAUDE.md §LegendKeeper Import/Export)
-
+**Three entries were removed from this section on 2026-08-31 because the files do not exist and their contents are nowhere in the tree:** `format.ts` (`fmt`, `fmtFull`, `fmtDate`, `fmtRelative`, `slugify`), `keyboard.ts` (a `SHORTCUTS` map — `shortcuts.ts` is the real one and has a different shape), and `lk-schema.ts` (`LK_SUPPORTED_VERSION`, `LK_PANEL_TYPE_MAP`, `LK_TAB_SIGNATURES`). Filename sanitising is `sanitizeSegment` in `filesystem-service.ts`. Don't reinstate them from this document's history.
 ---
 
 ## CSS / Theming (`src/index.css`)

@@ -8,7 +8,7 @@
 | `tree/` | Left sidebar — project tree, search/filter, project header, color picker popover |
 | `page/` | Center content area — page title, tab strip, breadcrumb bar, BlockNote editor wrapper, folder view |
 | `properties/` | Right sidebar — image slot and template-driven property fields (text, tags, references, dates) |
-| `modals/` | Full-screen overlay dialogs and the base modal wrapper they all use |
+| `modals/` | **Empty** — holds only a `.gitkeep`. Dialogs live beside the feature they belong to; see the Dialogs section below |
 
 ---
 
@@ -46,7 +46,7 @@
 
 | What you see | File |
 |---|---|
-| Left sidebar container — top tab strip (Project / Templates / Assets), search bar, and the tree itself. Only the Project tab has behavior in Phase 1. | `src/components/tree/TreeSidebar.tsx` |
+| Left sidebar container — top tab strip (Project / Templates / Assets), search bar, and the tree itself. All three tabs are live — Templates and Assets shipped in Phase 17. | `src/components/tree/TreeSidebar.tsx` |
 | The project name row at the top of the tree with a home icon and "+" button for adding a top-level page | `src/components/tree/ProjectHeader.tsx` |
 | Search / filter input at the top of the tree. Passes through to `createSearchMatcher` in `tree-service.ts`, which owns the `Fuse.js` index per scope. | `src/components/tree/TreeSearch.tsx` |
 | The "what am I searching" menu and the chip that shows a narrowed scope — shared by the tree filter and the Ctrl-K palette, which pass their own scope lists in. Typing a leading `#` sets tag scope and deletes itself from the field. | `src/components/search/SearchScopeMenu.tsx` |
@@ -88,13 +88,22 @@
 | Created / Updated dates at the foot of the panel, exact time on hover | `src/components/properties/PropertyTimestamps.tsx` |
 | The All properties & tags view — every property name and tag in the project with use counts, project-wide rename (merging when the new name exists) and delete, and click-through to the pages using one. A chip property also lists its values, each renameable, recolourable and deletable across the project. Opens from the search palette's footer or Ctrl+Shift+K | `src/components/properties/AllPropertiesModal.tsx` |
 
-### Modals (`src/components/modals/`)
+### Dialogs
+
+**There is no shared modal component and `src/components/modals/` is empty** — it holds a `.gitkeep` and nothing else. Each dialog lives with the feature it belongs to. This section listed a `modals/Modal.tsx` base wrapper and six dialogs inside that folder until 2026-08-31; none of it was true, and two of the files named had never been built at all.
 
 | What you see | File |
 |---|---|
-| Base modal wrapper used by every dialog below — renders a blurred backdrop, handles Escape-to-close, and shows a "Discard changes?" confirm dialog when `isDirty` is true | `src/components/modals/Modal.tsx` |
-| LegendKeeper import wizard — file picker for `.lk` files, preview of the parsed tree with inferred template counts per branch, warnings for content types that will lossy-convert (columns, inline icons), Confirm button that commits the import | `src/components/modals/ImportModal.tsx` |
-| LegendKeeper export dialog — checkbox tree of what to export (all / folders / specific pages), Cancel and Export buttons; produces a `.lk` file the user saves anywhere | `src/components/modals/ExportModal.tsx` |
-| Publish dialog (Phase 1.5) — checkbox tree of what to publish, "include hidden tabs?" toggle (default off), tag filter, output folder picker; on Publish, generates a static site to the chosen folder | `src/components/modals/PublishModal.tsx` |
-| Two-step confirm dialog used for destructive actions (delete node with children, reset project, replace-on-import) — requires the user to type the item name or click a second confirm button | `src/components/modals/ConfirmDialog.tsx` |
-| "About" / help dialog — shows app version, links to `docs/glossary.md` rendered in-app, credits, license | `src/components/modals/AboutModal.tsx` |
+| LegendKeeper import — file picker, preview of the parsed tree, warnings for what will convert lossily | `src/components/import/ImportModal.tsx` |
+| LegendKeeper export — what to export, and the `.lk` file it writes | `src/components/export/ExportModal.tsx` |
+| Two-step confirm for destructive actions | `src/components/shell/ConfirmDialog.tsx` |
+| A message with nothing to decide — the one-way notices | `src/components/shell/NoticeDialog.tsx` |
+| Settings, and its rail of sections | `src/components/shell/SettingsModal.tsx` |
+| Picking a picture from the library | `src/components/shell/AssetPickerDialog.tsx` |
+| Saving a page as a template | `src/components/shell/SaveAsTemplateDialog.tsx` |
+| Making a page and linking to it without leaving the sentence | `src/components/shell/NewPageLinkDialog.tsx` |
+| The full-size picture viewer | `src/components/shell/Lightbox.tsx` |
+| Start from a template, and managing pinned projects | `src/components/start/TemplatePickerDialog.tsx`, `src/components/start/ManagePinsDialog.tsx` |
+| All properties & tags | `src/components/properties/AllPropertiesModal.tsx` |
+
+**Not built:** a Publish dialog (Phase 1.5) and an About dialog (`plan.md` → Queued Adjustments). Both were listed here as though they existed.
