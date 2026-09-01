@@ -284,13 +284,17 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 **A gallery page, and the pictures on it can be taken back out**
 
-Asked for by the user 2026-08-31. Wanted, unscheduled. Notion has a version of this and she rates it the worst she has seen, so it is a warning rather than a shape to copy — **what exactly is wrong with theirs should be asked rather than guessed at**, because it is the only description of the target anybody has.
+Asked for by the user 2026-08-31. Wanted, unscheduled.
+
+**A tile is a picture. That is the whole definition, and it is also the entire complaint about Notion's.** She went and checked theirs the same day: what they call a gallery is a view of *pages* drawn as cards, where the image on a card is that page's cover. The word promises pictures and hands over documents, and putting thirty images in one means making thirty pages to hang them on. Ours holds pictures. Nothing about a tile is a page.
 
 **The case is one gallery per character, and somebody is doing it today.** The botmaker whose folder plugin is described in `plan.md` uploads the pictures of each bot into a folder belonging to that bot — Damien's, Valera's, one each. That is the shape to serve, and it is worth saying plainly because an earlier reading of this idea treated a per-character picture folder as something our asset library already covers. It does not.
 
 **The library is the wrong home for it, and not narrowly.** A folder there is a flat label, a picture carries exactly one, and the sidebar is a dropdown whose stress case was already fifty folders (see above). One folder per character puts the character count straight into that dropdown, and it puts a character's pictures somewhere other than the character — two places to keep in step, which is the arrangement that goes stale.
 
 **A gallery page gets the grouping for nothing.** The tree already nests and a character is already a page, so Damien's gallery is a child of Damien and there is no second set of folders to keep in order. This is the thing the app's own shape is good at and the library isn't; see `CLAUDE.md` → Data on disk for why any page can hold pages.
+
+**Pictures come from the library or straight off her PC, and that is a difference in the picker rather than in the storage.** `uploadAsset` already takes the bytes, the extension and the file's own name, and anything arriving that way lands in `assets/` like every other upload. So "put this file from my computer in this gallery" is not a second path to build, and a picture dropped into a gallery is in the library by construction rather than as a separate copy.
 
 **The download is the point, and most of it is built.** *Save a copy* has been on a picture in a page since Phase 16: it goes through the OS save dialog, copies the original bytes, and keeps whatever extension the file already had rather than converting anything. It exists because BlockNote's own Download button calls `window.open`, which is not a download in a Tauri window. So a gallery isn't inventing this — it is putting what already works on every tile, plus, presumably, a way to take the whole page at once.
 
@@ -301,3 +305,5 @@ Asked for by the user 2026-08-31. Wanted, unscheduled. Notion has a version of t
 **Who "people" means decides how much of this can be built now.** Inside the app it is her and one other person, and that half is buildable today. A world handed to anyone else is Phase 1.5 (Publish), where the download is an anchor on an exported page and the export has to actually carry the files — so that half waits for Publish rather than being designed around it now.
 
 **A page type rather than a block was her call and is worth keeping.** `TEMPLATE_KEYS` holds fifteen and adding one is routine; Phase 22 wants another for universes. A block would put a gallery inside some other page's body, which is the arrangement that makes "where are Damien's pictures" a question again.
+
+**A gallery *of pages* is a real thing too, and folding it into this one is the mistake to avoid.** She said as much on 2026-08-31 — she can see the use, it simply isn't what she was asking for. That one is Phase 23 (Collections), which already has the data: a collection block pulls pages from manual links, the subpage index, tags or backlinks, and today draws them as a list. Cards with cover images is a layout on something already built, not a feature of its own. **It should not be called a gallery**, whatever it ends up being called — one word over both is precisely how Notion ended up with the wrong thing wearing the right name.
