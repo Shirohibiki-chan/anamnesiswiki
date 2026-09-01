@@ -46,3 +46,41 @@ export function getCalloutIconLabel(color: string | undefined): string | undefin
   if (!color || color.startsWith("#")) return undefined;
   return CALLOUT_ICONS.find((entry) => entry.keys.includes(color))?.label;
 }
+
+/**
+ * What a callout stores when it has been told to wear no icon at all.
+ *
+ * **"No icon" and "the usual icon" are two different answers**, and an empty
+ * prop can only carry one of them. Empty is the default — the icon the colour
+ * implies — so refusing one needs a value of its own. A sentinel rather than a
+ * second boolean prop: BlockNote props are flat, and one field with three
+ * states cannot disagree with itself the way two fields can.
+ *
+ * It is a word no glyph in the catalogue is called, and an emoji is a
+ * character, so nothing she could actually pick collides with it.
+ */
+export const CALLOUT_ICON_NONE = "none";
+
+/** What to draw on a callout, once the colour and her choice are both read. */
+export type CalloutIconChoice =
+  | { kind: "none" }
+  /** The convention its colour implies, which is what an untouched callout wears. */
+  | { kind: "derived"; icon: LucideIcon; label: string }
+  /** One she picked: a glyph name, or an emoji character. */
+  | { kind: "chosen"; name: string };
+
+/**
+ * Derived unless overridden — her call 2026-08-28.
+ *
+ * **The convention is kept as the starting point on purpose.** A tick on a
+ * green box is read without being learned, and a callout that started blank
+ * would need decorating by hand before it said anything at all. So the colour
+ * still speaks first, and picking an icon is what stops it.
+ */
+export function resolveCalloutIcon(color: string | undefined, icon: string | undefined): CalloutIconChoice {
+  if (icon === CALLOUT_ICON_NONE) return { kind: "none" };
+  if (icon) return { kind: "chosen", name: icon };
+  const derived = getCalloutIcon(color);
+  if (!derived) return { kind: "none" };
+  return { kind: "derived", icon: derived, label: getCalloutIconLabel(color) ?? "" };
+}

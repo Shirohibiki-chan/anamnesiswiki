@@ -9,7 +9,7 @@
 // nothing is fetched, nothing is bundled, and the system font draws it. It
 // also means an unknown stored value degrades to text rather than to a crash.
 import { useState } from "react";
-import { X } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import { searchEmoji } from "../../constants/emoji";
 import { getGlyph, restOfCatalogue, searchCatalogue, searchGlyphs } from "../../constants/glyphs";
 import { getTemplateIcon } from "../../constants/icons";
@@ -27,9 +27,19 @@ type IconPickerProps = {
   /** The icon currently chosen, so it can be shown as picked and cleared. */
   value: string | undefined;
   onPick: (icon: string | undefined) => void;
+  /**
+   * A second answer beside "No icon", for a control whose blank state means
+   * something rather than nothing.
+   *
+   * **A callout is the case this exists for** (Phase 19.5): its blank state is
+   * the icon its colour implies, so "no icon" and "back to the usual one" are
+   * two different answers and one clear button can only give one of them.
+   * Everywhere else starts from nothing and leaves this out.
+   */
+  defaultAction?: { label: string; onPick: () => void };
 };
 
-export function IconPicker({ value, onPick }: IconPickerProps) {
+export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
   const [tab, setTab] = useState<"glyphs" | "emoji">("glyphs");
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(CATALOGUE_PAGE);
@@ -75,10 +85,17 @@ export function IconPicker({ value, onPick }: IconPickerProps) {
       {/* Clearing is here rather than in the menu that opened this, because
           "no icon" is one of the answers to "which icon", and going back out
           to find it somewhere else is the same errand done twice. */}
-      {value && (
-        <button type="button" className="icon-picker-clear" onClick={() => onPick(undefined)}>
-          <X size={12} /> No icon
-        </button>
+      {(value || defaultAction) && (
+        <div className="icon-picker-clears">
+          <button type="button" className="icon-picker-clear" onClick={() => onPick(undefined)}>
+            <X size={12} /> No icon
+          </button>
+          {defaultAction && (
+            <button type="button" className="icon-picker-clear" onClick={defaultAction.onPick}>
+              <RotateCcw size={12} /> {defaultAction.label}
+            </button>
+          )}
+        </div>
       )}
 
       <div className="icon-picker-scroll">

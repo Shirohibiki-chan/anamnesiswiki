@@ -95,6 +95,37 @@ export const INFOBOX_TYPE = "infobox";
  */
 export const BLOCK_ID_SEPARATOR = ",";
 
+/**
+ * The inline icon — a small picture sitting in a line of writing (Phase 19.5).
+ *
+ * **It is an icon you can click, which is the whole of why it is not an
+ * emoji.** BlockNote's own emoji command asks first and inserts a character:
+ * once it is on the page it is a letter like any other, and changing it means
+ * deleting it and starting again. This is inline content with a prop, so the
+ * icon stays a thing on the page that knows it is an icon and opens its picker
+ * when you click it.
+ *
+ * **Stored the same way every other icon in the app is** — a Lucide name for a
+ * glyph, the character itself for an emoji — so `MeterIcon` draws one without
+ * knowing where it came from, and a name that later leaves the catalogue
+ * degrades to its own text rather than to nothing.
+ *
+ * Here rather than beside the BlockNote spec for the same reason
+ * `BLOCK_REF_TYPE` is: it is a name written into saved documents, and plain
+ * TypeScript has to be able to read it back out.
+ */
+export const ICON_INLINE_TYPE = "icon";
+
+/**
+ * What an inline icon is when nothing has been chosen yet.
+ *
+ * **Deliberately arbitrary, and that is the design.** Inserting one puts a
+ * heart in the sentence and lets her carry on typing; a picker that opened
+ * first would stop the sentence to ask a question she may not have an answer
+ * to yet. The reference does the same thing with the same icon.
+ */
+export const DEFAULT_INLINE_ICON = "heart";
+
 // One of the allowed values on a select / multi-select / status property.
 // `color` is a key from constants/palette.ts's COLOR_PALETTE, not a hex —
 // the same list node colours come from, so a chip recolours with the theme

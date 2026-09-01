@@ -701,6 +701,51 @@
   display: flex;
   margin-bottom: var(--space-sm);
   color: var(--callout-accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.editor-callout-icon:hover {
+  background: var(--color-hover);
+}
+
+/* A callout wearing no icon still has somewhere to click to give it one — an
+   empty square that only shows itself while the pointer is over the callout,
+   the same manner as the colour dot in the opposite corner. Sized to match the
+   icon it would hold, so nothing shifts when one lands in it. */
+.editor-callout-icon-empty {
+  width: 15px;
+  height: 15px;
+  border: 1px dashed var(--color-border);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.editor-callout:hover .editor-callout-icon-empty {
+  opacity: 1;
+}
+
+/* An icon sitting in a line of writing. `middle` rather than the baseline
+   because a 16px square hung off a text baseline sits low enough to look
+   dropped, and the small negative margin keeps the line height it is in from
+   growing by a pixel where one appears. */
+.editor-inline-icon-wrap {
+  display: inline;
+}
+
+.editor-inline-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin: -2px 1px 0;
+  padding: 1px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+}
+
+.editor-inline-icon:hover {
+  background: var(--color-hover);
 }
 
 /* Hidden until the pointer is over the callout, so a page being read is a page

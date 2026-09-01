@@ -13,6 +13,8 @@ import { withoutDanglingBlockRefs } from "../services/block-service";
 import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
+import { IconPickContext } from "../services/editor-blocks/icon-pick-context";
+import { getIconSlashMenuItems } from "../services/editor-blocks/icon-slash-menu";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
@@ -35,6 +37,9 @@ export { WIKILINK_TRIGGER };
 // into services/editor-blocks/. Editor.tsx fills the slot with the component
 // that actually draws a block — see PageBlock.tsx.
 export { BlockRefRenderContext };
+// The other slot the component layer fills: the icon picker a callout and an
+// inline icon open. Same door, same reason — see EditorIconPicker.tsx.
+export { IconPickContext };
 
 export function useEditor(nodeId: string, content: unknown[], onContentChange: (content: unknown[]) => void) {
   // The full-store subscription is deliberate here: the mention menu and
@@ -204,6 +209,7 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
         ...withoutBuiltInQuote(getDefaultReactSlashMenuItems(editor)),
         ...getCalloutSlashMenuItems(editor),
         ...getNewPageSlashMenuItems(() => void insertNewPageLink("")),
+        ...getIconSlashMenuItems(editor),
         // The sidebar's blocks, offered in the page. `addBlock` makes the
         // record and hands back its id; the menu item points the document at
         // it. See page-block-slash-menu.tsx.

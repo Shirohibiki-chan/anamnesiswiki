@@ -11,7 +11,7 @@ export const secretBlockSpec = createReactBlockSpec(
     // way it did.** BlockNote fills a missing prop in with this on read, so a
     // page from before Phase 19.5 comes back as an uncoloured callout rather
     // than as a block the schema does not recognise.
-    propSchema: { color: { default: "" } },
+    propSchema: { color: { default: "" }, icon: { default: "" } },
     content: "inline",
   },
   {
@@ -19,6 +19,8 @@ export const secretBlockSpec = createReactBlockSpec(
       <CalloutWrapper
         variant="secret"
         color={block.props.color}
+        icon={block.props.icon}
+        onIcon={(icon) => editor.updateBlock(block, { props: { icon } })}
         onColor={(color) => editor.updateBlock(block, { props: { color } })}
         contentRef={contentRef}
       />
