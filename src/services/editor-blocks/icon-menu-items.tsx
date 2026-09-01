@@ -43,15 +43,15 @@ import { ICON_INLINE_TYPE } from "../../constants/schema";
  * and the icon is clickable afterwards, so a near miss here opens the full
  * picker with one click rather than being a dead end.
  */
-const GLYPH_LIMIT = 24;
+const GLYPH_LIMIT = 48;
 /**
- * **Fewer emoji than glyphs, because an emoji row is nearly empty.** A glyph
- * row carries a name you can read; an emoji has none worth showing, so twelve
- * of them is twelve tall rows holding one character each and a menu that
- * scrolls past the thing she was looking for. Six is a tail under the glyphs
- * rather than a second list. The picker's Emoji tab is where browsing lives.
+ * **Both are generous because the menu is a grid.** They were much smaller
+ * while this drew as a list, where every entry cost a whole row; eight across
+ * means a screenful of icons is a couple of centimetres. Still capped, because
+ * the catalogue is fifteen hundred and the picker is where browsing all of
+ * them belongs.
  */
-const EMOJI_LIMIT = 6;
+const EMOJI_LIMIT = 24;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- schema-agnostic: accepts an editor with any custom block/inline-content schema
 export async function getIconMenuItems(editor: any, query: string): Promise<DefaultReactSuggestionItem[]> {

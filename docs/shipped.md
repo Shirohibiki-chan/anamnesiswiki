@@ -4725,3 +4725,11 @@ nothing was lost by turning theirs off.
 subtext, so one option is four matches — clicking the wrong one closes the menu
 and inserts nothing, silently. `pickSuggestion` in `e2e/harness/screen.ts` is
 the helper that gets it right, and says why.
+
+**And it drew as a list first, which was the wrong shape.** BlockNote's default
+suggestion renderer puts one item per row with its name beside it. That is
+right for commands and wrong for pictures: a column of single icons, scrolled,
+next to a picker in the same app that had been drawing a proper grid since
+Phase 18c. `IconMenu.tsx` renders the menu's items through the picker's own
+`icon-picker-grid`, which also let the caps go up — 48 glyphs and 24 emoji,
+where the list could only carry a handful before it filled the window.

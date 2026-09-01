@@ -2060,6 +2060,16 @@ under `acknowledgedWarnings`.
   `onItemClick` included, which is also what keeps an emoji inserting as a
   plain character the way it always did.
 
+- **The `:` menu draws as a grid, and that is `suggestionMenuComponent`, not
+  styling.** BlockNote's default renderer is one item per row with its name
+  beside it — right for a menu of commands, wrong for a menu of pictures, and
+  the first version of this shipped that way and was rejected on sight.
+  `IconMenu.tsx` renders the same `icon-picker-grid` the real picker uses, so
+  the two cannot drift into looking like different features. What it
+  deliberately does *not* have is a search box: what she types after the colon
+  is the query and BlockNote owns it, so a second input inside the menu would
+  be two fields fighting over the same keystrokes.
+
 - **A glyph and an emoji go into the writing as different kinds of thing, on
   purpose.** An emoji is a letter — it was one before any of this and copying
   it out of a page should still give you one — so it inserts as a character. A

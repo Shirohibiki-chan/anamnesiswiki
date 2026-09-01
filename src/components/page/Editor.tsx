@@ -23,6 +23,7 @@ import { BlockRefRenderContext, ICON_TRIGGER, IconPickContext, useEditor, WIKILI
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
 import { EditorIconPicker } from "../blocks/EditorIconPicker";
+import { IconMenu } from "../blocks/IconMenu";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
@@ -222,6 +223,9 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           triggerCharacter={ICON_TRIGGER}
           getItems={getIconItems}
           shouldOpen={iconShouldOpen}
+          // The picker's grid rather than a list of rows — a menu of pictures
+          // is read as a grid. See IconMenu.tsx.
+          suggestionMenuComponent={IconMenu}
           floatingUIOptions={suggestionMenuFloating}
         />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} floatingUIOptions={suggestionMenuFloating} />
