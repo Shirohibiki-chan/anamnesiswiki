@@ -279,3 +279,25 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 **What we can't take from LK, and it's settled:** the export contains **no asset library at all**. Both of her accounts, checked field by field — no filenames, no folder names, no media section; a picture exists only as a bare CDN URL inside a page, with `attrs.id` empty. So imported pictures can never arrive named or filed, and the names she gives them here are hers alone. See `docs/lk-format.md`.
 
 **Folder shape in the sidebar** is settled and shipped 2026-08-18: a dropdown. One line naming the folder you’re in, the folders themselves in a menu over the pictures. It went chips → tiles → dropdown in a day; her call, and the right one, because it’s the only shape whose cost doesn’t grow with the number of folders. Measured at fifty: the block shape was 26 rows and 1101px, a fifth of it visible at a time. The menu grew its own filter box the same day (#183), which is what makes fifty rows usable rather than merely reachable.
+
+---
+
+**A gallery page, and the pictures on it can be taken back out**
+
+Asked for by the user 2026-08-31. Wanted, unscheduled. Notion has a version of this and she rates it the worst she has seen, so it is a warning rather than a shape to copy — **what exactly is wrong with theirs should be asked rather than guessed at**, because it is the only description of the target anybody has.
+
+**The case is one gallery per character, and somebody is doing it today.** The botmaker whose folder plugin is described in `plan.md` uploads the pictures of each bot into a folder belonging to that bot — Damien's, Valera's, one each. That is the shape to serve, and it is worth saying plainly because an earlier reading of this idea treated a per-character picture folder as something our asset library already covers. It does not.
+
+**The library is the wrong home for it, and not narrowly.** A folder there is a flat label, a picture carries exactly one, and the sidebar is a dropdown whose stress case was already fifty folders (see above). One folder per character puts the character count straight into that dropdown, and it puts a character's pictures somewhere other than the character — two places to keep in step, which is the arrangement that goes stale.
+
+**A gallery page gets the grouping for nothing.** The tree already nests and a character is already a page, so Damien's gallery is a child of Damien and there is no second set of folders to keep in order. This is the thing the app's own shape is good at and the library isn't; see `CLAUDE.md` → Data on disk for why any page can hold pages.
+
+**The download is the point, and most of it is built.** *Save a copy* has been on a picture in a page since Phase 16: it goes through the OS save dialog, copies the original bytes, and keeps whatever extension the file already had rather than converting anything. It exists because BlockNote's own Download button calls `window.open`, which is not a download in a Tauri window. So a gallery isn't inventing this — it is putting what already works on every tile, plus, presumably, a way to take the whole page at once.
+
+**The suggested filename is what decides whether it feels cheap.** A picture's file is a UUID and the name she typed is a label in `.names.json`, so a gallery that drops `a3f9b2…png` into Downloads is exactly the experience being complained about. The label is load-bearing here, and an unnamed picture needs a fallback that is worth having rather than the id.
+
+**Two kinds of picture behave differently and the grid has to say which is which.** One in the library has its bytes here. An embedded one lives on someone else's server, has no bytes here, and *Save a copy* opens it in the browser instead — deliberately, since fetching it would be the app making a request nobody asked for. In a grid of thirty, a tile that opens a browser instead of saving is a surprise unless it is marked as one.
+
+**Who "people" means decides how much of this can be built now.** Inside the app it is her and one other person, and that half is buildable today. A world handed to anyone else is Phase 1.5 (Publish), where the download is an anchor on an exported page and the export has to actually carry the files — so that half waits for Publish rather than being designed around it now.
+
+**A page type rather than a block was her call and is worth keeping.** `TEMPLATE_KEYS` holds fifteen and adding one is routine; Phase 22 wants another for universes. A block would put a gallery inside some other page's body, which is the arrangement that makes "where are Damien's pictures" a question again.
