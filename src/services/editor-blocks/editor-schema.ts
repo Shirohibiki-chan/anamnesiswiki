@@ -8,6 +8,7 @@ import { infoboxSpec } from "./infobox";
 import { infoBlockSpec } from "./info-block";
 import { quoteBlockSpec } from "./quote-block";
 import { secretBlockSpec } from "./secret-block";
+import { iconInlineContentSpec } from "./icon-inline-content";
 import { mentionInlineContentSpec } from "./mention-inline-content";
 
 export const editorSchema = BlockNoteSchema.create({
@@ -31,5 +32,9 @@ export const editorSchema = BlockNoteSchema.create({
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,
     mention: mentionInlineContentSpec,
+    // A clickable icon in the middle of a sentence. Phase 19.5 — inline
+    // content rather than a character, which is what lets it be asked again
+    // after it has been placed.
+    icon: iconInlineContentSpec,
   },
 });

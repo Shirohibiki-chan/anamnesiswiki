@@ -8,8 +8,9 @@
 // therefore can't travel inside a `.lk` at all.
 import { normalizeCodeLanguage } from "../constants/code-languages";
 import { READING_COLUMN_WIDTH } from "../constants/layout";
+import { getGlyph } from "../constants/glyphs";
 import { COLOR_PALETTE } from "../constants/palette";
-import { FOLDER_TEMPLATE_KEY, type Node, type Project, type Tab } from "../constants/schema";
+import { FOLDER_TEMPLATE_KEY, ICON_INLINE_TYPE, type Node, type Project, type Tab } from "../constants/schema";
 import { sourceUrlFor, type AssetSources } from "./asset-sources";
 import { assetFileName } from "./asset-urls";
 import type { RenderableProperty } from "./property-service";
@@ -229,6 +230,18 @@ function convertInline(content: unknown, idMap: Map<string, string>): LkNode[] {
           pushTextRun(out, child.text, marksFromStyles(child.styles, linkMark));
         }
       }
+      continue;
+    }
+
+    if (raw.type === ICON_INLINE_TYPE) {
+      // **An emoji survives and a glyph does not, and that is the honest
+      // answer rather than a shortcut.** An emoji icon is stored as its own
+      // character, so it goes out as text and comes back as text — the same
+      // thing it looked like. A Lucide glyph is a drawing with no character
+      // behind it and LK has nothing to put it in, so it is dropped rather
+      // than exported as a word that would arrive as the literal "sword".
+      const icon = typeof raw.props?.icon === "string" ? raw.props.icon : "";
+      if (icon && !getGlyph(icon)) pushTextRun(out, icon, undefined);
       continue;
     }
 

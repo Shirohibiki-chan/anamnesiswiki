@@ -1249,6 +1249,15 @@
   background: var(--color-panel);
 }
 
+/* Two answers side by side where a control has both — "no icon at all" and
+   "back to the one the colour implies". A row rather than a stack so a picker
+   that has both is not two lines taller than one that has one. */
+.icon-picker-clears {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
 .icon-picker-clear {
   display: flex;
   align-items: center;

@@ -2,6 +2,107 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-28 — undo reaches the panel, and the tree keeps its own history
+
+### Additions
+
+- **Undo now covers the panel down the right of a page.** Every field, every tag, the other names, a picture's crop and description, and every block in it — added, removed, moved, recoloured, renamed, or a meter dragged. Until now that panel was the one part of the app where a mistake couldn't be taken back.
+- **A run of typing counts as one undo, not thirty.** Keep typing in a field and it stays one edit; stop for a couple of seconds and whatever you type next is its own. Same for dragging a meter or moving a picture's crop — one drag, one undo.
+- **A page's tabs can be undone too** — adding one, renaming it, hiding it, dragging it into a different order, and deleting one. Deleting a tab takes what's written in it with it, and until now that was gone the moment you clicked. *What's inside* a tab is still the editor's own undo on Ctrl+Z, unchanged.
+- **The undo message says what it undid** — "Undid changing Age", "Undid adding a meter" — in the same place saving reports itself.
+- **The tree itself has earlier versions now.** Right-click the project's name at the top of the sidebar and choose *Earlier versions of the tree*. It keeps the order of your pages, which one is the home page, which are pinned and which folders were open — the things that live in `project.json` rather than in any page.
+- **Restoring an arrangement leaves your pages alone.** Nothing is written, deleted or brought back; pages deleted since the copy was taken stay deleted, and the panel says how many of those there are before you press anything.
+- **Settings → History.** How often a copy is kept (every minute up to every half hour), how far back they go (a week up to a year) and how many any one page keeps.
+- **A page's right-click menu says how many earlier versions it has**, or "none yet", so you can tell without opening the list.
+
+## 2026-08-27 — Ctrl+Z belongs to what you're writing
+
+### Changes
+
+- **Ctrl+Z now only ever undoes your writing.** It used to do double duty: the editor's undo while your cursor was in a page, and Anamnesis's own undo — the one that takes back a rename, a delete, a move — everywhere else. Same key, two meanings, depending on where you'd last clicked.
+- **The sidebar's undo moved to Ctrl+Shift+Z**, and its redo to **Ctrl+Shift+Y**. They work wherever your cursor is now, including mid-sentence, since they no longer have to get out of the editor's way.
+- Both are still rebindable in Settings → Keyboard. **If you'd already changed either of them to Ctrl+Z or Ctrl+Y, that change is dropped** and you'll get the new keys — those two now belong to the editor and the app won't take them.
+## 2026-08-27 — a warning you can tell to stop
+
+### Additions
+
+- **The "couldn't be opened" notice has an "I know about this one" button.** Some files are never going to open — a sync conflict copy you're keeping on purpose, something you dropped in the folder yourself — and until now that notice greeted you every single time you opened the world, with only a × that lasted until the next launch.
+- **It's per file, and it remembers what the file looked like.** If that file changes, the notice comes back: saying you know about one problem doesn't silence the next one in the same file.
+- It's remembered for this installation of Anamnesis rather than inside the world, so a world you copy to another machine still warns you over there.
+- **The "couldn't be saved" warning deliberately has no such button.** That one means your writing might not be on disk, and a permanent mute on it is a button for losing work.
+
+## 2026-08-27 — the page keeps its room
+
+### Fixes
+
+- **Dragging both side panels wide can no longer squeeze the page down to nothing.** The two panels could be dragged to 520 and 560 pixels, which is wider than the app's smallest window — so at that size, dragging both out left the page between them with no room at all and nothing to read.
+- The page now holds a minimum width, and the panels give the room back instead. **Your panel widths aren't changed by this**: they render narrower only while the window is too small for all three, and they're back exactly where you put them the moment it isn't.
+- **The edge you drag stays on the edge of the panel**, including when the window has had to make a panel narrower than you set it.
+- **Dragged all the way out, the two sidebars now come to rest at the same width.** Before, whichever one you dragged first took all the room and the second one wouldn't move at all. Each can go up to half of what the two of them have between them, so it no longer matters which you drag first — and the page keeps its own minimum throughout.
+- The trade, worth knowing: **a very wide sidebar beside a slim properties panel isn't possible any more.** Each stops at half the room even if the other one isn't using its share. Say the word if you'd rather have the old freedom back.
+
+## 2026-08-27 — a template no longer takes your fields with it
+
+### Fixes
+
+- **Applying one of your own templates to a page keeps what you'd already written in that page's fields.** Before, the template's fields replaced the page's outright: anything the template had no equivalent of lost its value, and the block that had been showing it turned into a **MISSING PROPERTY** note — which was the only sign anything had gone. The text was still in the file with no way back to it.
+- Those fields are now kept as properties of that page, with their names, their types and what was in them, listed after the template's own. The block that was showing one keeps working.
+- **Empty fields the new template doesn't have are dropped** rather than carried, so a page doesn't slowly collect the blank fields of every template it has ever been. Nothing with anything in it is ever dropped.
+- If you have a **MISSING PROPERTY** block sitting on a page from before this, it's still just a block — its `⋯` menu removes it, and removing it doesn't delete anything else.
+## 2026-08-27 — text boxes the size of the text
+
+### Fixes
+
+- **A sidebar note longer than three lines is no longer clipped behind a scrollbar.** Every multi-line field in the properties panel — text blocks, and the longer template fields — is now exactly as tall as what you've written in it, however long that is. It was a fixed three lines, which was wrong in both directions: a one-line note reserved space it wasn't using, and a four-line one hid its fourth behind a scrollbar inside a panel that already scrolls.
+- The field's box still only appears when you hover or click into it. With the scrollbar gone there's nothing drawn around a note you're not editing.
+## 2026-08-27 — a way back to what a page used to say
+
+### Additions
+
+- **Anamnesis keeps earlier versions of your pages, on your own disk.** Before it saves over a page it puts a copy of what was there aside — at most one every five minutes, and always before a page is deleted. Right-click any page in the sidebar and choose **Earlier versions** to see what's kept, read each one, and put one back.
+- **You can read a version before you restore it.** The panel shows what that copy said, tab by tab, so you're choosing between versions rather than between timestamps. Arrow keys walk the list.
+- **Restoring is safe to get wrong.** What's on the page right now is kept as a version first, and **Ctrl+Z** undoes a restore in one press. A restore puts the writing, properties, tags and title back, and leaves the page exactly where it is in your tree.
+- **The copies are ordinary files you can use without the app**, in a `.history` folder inside your project, with a note in it explaining what they are. They travel with the project when you copy or back it up, and deleting the folder loses the history and nothing else.
+- Old copies are cleared out on their own: anything past 30 days, and more than 50 of any one page. **The most recent copy of a page is never deleted**, however old it is.
+## 2026-08-27 — every shortcut on one screen
+
+### Additions
+
+- **Press `?` to see every keyboard shortcut you have.** It opens a list of all of them with the keys each one is currently on — including anything you've changed, since it reads the same settings the keys themselves do rather than a list written down somewhere. Press `?` again to close it, or Escape. **While you're writing, `F1` does the same thing**, because a question mark in the middle of a sentence should stay a question mark.
+- **The four keys you can't change are on that list too**, named as fixed rather than left out: Ctrl+R to reload, F11 for fullscreen, F12 for the developer tools, and `?` itself.
+- It works on the front page as well as inside a world.
+
+### Adjustments
+
+- **Settings → Keyboard now mentions `?` and `F1`** in its note about the keys that can't be rebound, which had three on it and now has four.
+## 2026-08-27 — somewhere to send it
+
+### Additions
+
+- **You can report a bug from inside the app.** Settings has a new **Report a bug** section: press *Open a bug report* and it opens a form in your browser with a box for what happened, plus the version you're running, which build it is and what system it's on already filled in. Nothing is sent until you press Submit on that page, and the exact text it carries is on screen first so you can read it, trim it, or decide against it. A report filed there is public — worth knowing before you paste a crash into it, since the details include file paths and a path carries the name of a world and of a page.
+- **If you haven't got a GitHub account, *Copy the details* does the same job.** It puts the whole thing on your clipboard to send to somebody who has one — which is how the Linux build has been getting tested.
+- **The crash screen has a *Report this* button.** It copies the details and opens the same form with them filled in, so a crash goes from blank window to written-down in one press. The clipboard is loaded first, because a web link can only carry so much text and the rest is worth keeping.
+- **A report says which of the two builds it came from.** The Windows/Tauri build and the newer Electron one have been shipping under the same version number, so the number alone couldn't tell them apart; every report now names the shell as well.
+
+### Renames
+
+- **Settings → Privacy is now Settings → Report a bug.** It held one thing — the crash log — and the crash log exists so you can send it to somebody. It's still there, underneath the report section, saying where the file lives and copying the last crash on its own.
+
+## 2026-08-27 — the keys the window didn't answer
+
+### Additions
+
+- **Ctrl+R reloads the window, and F11 goes fullscreen.** Neither key did anything before — Anamnesis draws its own top bar and switches off the plain File/Edit/View menu that comes with the window, and that menu turned out to be what those two keys were attached to. They work now, wherever you are in the app, including the front page.
+- **Reloading is safe to press while you're writing.** Anything not yet saved is written to disk before the window goes, and the app lets go of the world properly on the way out — so it opens straight back into it rather than deciding somebody else has it open.
+- **Settings → Keyboard now mentions all three keys it can't rebind**, those two plus F12 for the developer tools, instead of leaving them off the list entirely.
+
+## 2026-08-27 — a window that tells you what happened
+
+### Additions
+
+- **A crash no longer leaves you looking at a blank window.** If Anamnesis hits a problem it can't carry on from, it now says so on screen: what went wrong, that your worlds on disk weren't touched by it, and a button to start the app up again. The details are there to read rather than hidden, with a button that copies them if you want to send them on to someone.
+- **The last few crashes are written down, on your own computer.** They go in a file kept beside your settings, five at a time, and nothing about them is sent anywhere. Settings → Privacy says where the file is and can copy the most recent one — useful for the kind of fault that doesn't take the window down but still goes wrong quietly in the background.
+
 ## 2026-08-27 — it doesn't report on you
 
 ### Changes

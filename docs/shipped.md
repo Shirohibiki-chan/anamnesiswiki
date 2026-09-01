@@ -4650,3 +4650,53 @@ happened in memory looks exactly like one that worked until the app is opened
 again.
 
 Suites after: 1,574 unit tests (from 1,531), 81 app scenarios (from 77).
+
+## Phase 19.5 — An icon in the writing, and the callout's own ✅ Shipped 2026-09-01
+
+Asked for 2026-08-28 off her screenshots of the reference, in two halves that
+share one control: an `/icon` command that puts a clickable icon in a sentence,
+and a callout whose icon she picks rather than inherits.
+
+**Most of it already existed, and finding that out was the first real work.**
+The plan said Glyphs was "the half we do not have" and that `constants/icons.ts`
+— a dozen template icons — was the whole of what the app had. That was written
+against the wrong file. Phase 18c had already shipped `glyph-catalogue.ts`
+(every Lucide icon by name, ~1500), `glyphs.ts` (a curated set in front of it),
+`emoji.ts`, and `IconPicker.tsx` with the tabs and the search box over all of
+them — built for a meter's readings and deliberately built knowing nothing about
+meters, which is exactly why it took this without changes. Five call sites were
+already using it, a page's own icon among them. So the estimate the plan carried
+— a search index, a browsable grid of 1500, "do not answer this by shipping the
+emoji tab alone" — was work already done nine days earlier.
+
+**What was actually built:**
+
+- `icon` inline content (`icon-inline-content.tsx`, `IconChip.tsx`), holding one
+  prop: a Lucide name or an emoji character, the same storage shape every other
+  icon in the app uses. `/icon` inserts a heart and a trailing space and does
+  not open the picker — the sentence carries on and the icon is changed after.
+- An `icon` prop on all three callouts, with `resolveCalloutIcon` deciding
+  between derived, chosen and removed. Default `""`, so every callout ever
+  written comes back exactly as it was.
+- `IconPickContext` — the second slot the component layer fills in the editor,
+  after `BlockRefRenderContext`. `EditorIconPicker` is what fills it: the
+  existing picker inside `TreePopover`, which portals to the body, so the
+  picker's search box is never inside ProseMirror's contenteditable.
+- One additive prop on `IconPicker`: `defaultAction`, which is what puts **The
+  usual icon** beside **No icon** for a control whose blank state means
+  something. The other five call sites pass nothing and are unchanged.
+
+**Measurements.** The bundle grew 2.8 KB (2,638,793 → 2,641,570 bytes), because
+the fifteen hundred icons were already in it — `glyph-catalogue.ts` does
+`import *` and Phase 18c had already paid for that. 1636 unit tests pass, plus
+five new ones over `resolveCalloutIcon`; four new scenarios in
+`puts-an-icon-in-the-writing.e2e.ts` drive the real Electron app, including two
+full reloads, because everything interesting here is a round trip through the
+autosave and the schema's defaults. Screenshotted in the running app before
+calling it done: the picker over a page, an amber callout with its derived
+caution, and the dashed empty slot a cleared callout leaves behind.
+
+**The one thing deliberately left:** the reference's picker keeps a Recent row
+across the top and ours does not. It needs somewhere to live that outlasts the
+popover, which is a small piece of app state rather than anything about icons —
+it is in `docs/plan.md` under the phase.

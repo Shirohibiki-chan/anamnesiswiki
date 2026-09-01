@@ -16,13 +16,27 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–18 and 27 are done. The app is shippable**, and **Phase 19 (Safety
-Net) is next**. `docs/plan.md` has the remaining phases plus the unscheduled
-Phase 1.5 (Publish); `docs/shipped.md` has what each finished phase delivered.
+**Phases 0–19, 27 and 29 are done, and Phase 19.5 (Blocks in the Page) is what
+is being worked.** The app is shippable and shipping — v0.6.0 is out on the
+Electron shell. `docs/plan.md` has the rest of 19.5, the remaining phases and
+the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
+piece delivered.
+
+**Phase 19 — Safety Net — closed 2026-08-28**: undo across the right-hand panel
+and a page's tabs, version history in `project.json`, retention in Settings.
+**Phase 19.5 is part-shipped**, and the parts that landed are the ones a new
+session is most likely to touch: a block standing in the page body and an
+infobox grouping several (2026-08-29), callout colours and New page from inside
+the editor (2026-08-28), and the inline icon plus the callout's own icon
+(2026-09-01). What still binds the code from all of it is §Editor & templates
+and §Sidebar blocks below. **Still open in the phase:** dragging a block wider,
+the infobox's own menu, a Recent row in the icon picker, and the slash-command
+and markdown halves of the shortcut sheet.
+
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
 
-The most recent ones are the ones a new session is most likely to touch.
+The ones before that, in case a change reaches back into them.
 **Phase 14 — Everyday Navigation — closed 2026-08-11**: eleven small things
 felt daily, one PR each. **Phase 15 — Right-Click Menu, Full Pass — closed
 2026-08-11**:
@@ -1989,6 +2003,46 @@ under `acknowledgedWarnings`.
   so a picture can be dragged exactly until its edge meets that box. Changing
   these to the content width would look more correct and would quietly make the
   last strip of a zoomed picture unreachable.
+
+- **A callout's `icon` prop has three states and only two of them look like
+  values.** Empty means *derive it from the colour* — a tick on green, a
+  caution on amber — and `CALLOUT_ICON_NONE` means *she took it off*. Reading
+  empty as "no icon" is the tempting simplification and it is wrong: it puts
+  the tick back on a callout she deliberately cleared, on the next page load,
+  silently. `resolveCalloutIcon` is the one place that decides, and it is unit
+  tested for exactly that pair.
+
+- **The inline icon is inline content, not a character, and that is the whole
+  feature.** BlockNote's own emoji command inserts a character; the moment it
+  lands it is a letter and the only edit available is deleting it. `icon`
+  inline content keeps a prop, so it can be clicked and asked again. Anything
+  that "simplifies" it into an inserted glyph character removes the reason it
+  exists.
+
+- **The icon picker reaches the editor's blocks through a context, and what
+  fills that context must be declared at module level.** `IconPickContext` is
+  filled by `EditorIconPicker` in `Editor.tsx` for the same reason
+  `BlockRefRenderContext` is filled by `PAGE_BLOCK_RENDERERS`: it is rendered
+  as a component *type*, and a component built during a render is a new type
+  every keystroke, which tears the popover down as she types. Both the callout
+  and the chip carry an `eslint-disable` for `react-hooks/static-components`
+  saying so — the rule cannot see across a context, and the invariant is real
+  but lives on the provider.
+
+- **There are two components that draw a stored icon and both are needed.**
+  `MeterIcon` (components/blocks/IconPicker.tsx) and `StoredIcon`
+  (services/editor-blocks/) do the same six lines on opposite sides of the
+  layer boundary — services may not import a component, so the editor's own
+  blocks cannot use the first one. Same split, same reason, as
+  `CalloutColorButton` beside `ColorSwatches`. Deleting either as a duplicate
+  breaks the layer rule rather than tidying anything.
+
+- **A glyph in the writing does not survive a `.lk` export, and an emoji
+  does.** An emoji is stored as its own character so it goes out as text; a
+  Lucide glyph is a drawing with no character behind it and the format has
+  nowhere to put it, so `lk-export.ts` drops it rather than writing the word
+  "sword" into her prose. That branch is explicit in the inline walker so it
+  reads as a decision rather than as an unknown type falling through.
 
 ## Template swaps
 

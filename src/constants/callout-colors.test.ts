@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCalloutIcon, getCalloutIconLabel } from "./callout-colors";
+import { CALLOUT_ICON_NONE, getCalloutIcon, getCalloutIconLabel, resolveCalloutIcon } from "./callout-colors";
 import { COLOR_PALETTE } from "./palette";
 
 describe("what a coloured callout says", () => {
@@ -51,5 +51,34 @@ describe("what a coloured callout says", () => {
       expect(known.has(key), `${key} is not in the palette`).toBe(true);
       expect(getCalloutIcon(key), `${key} has no icon`).toBeDefined();
     }
+  });
+});
+
+describe("choosing a callout's icon, or refusing one", () => {
+  it("wears the colour's own icon until she picks one", () => {
+    expect(resolveCalloutIcon("emerald", "")).toMatchObject({ kind: "derived", label: "Confirmation" });
+  });
+
+  it("stops deriving once she has picked", () => {
+    // The point of the override: a green callout wearing a sword is still
+    // green, and the tick does not come back to argue with it.
+    expect(resolveCalloutIcon("emerald", "sword")).toEqual({ kind: "chosen", name: "sword" });
+  });
+
+  it("keeps an emoji as itself", () => {
+    expect(resolveCalloutIcon("", "🗡️")).toEqual({ kind: "chosen", name: "🗡️" });
+  });
+
+  it("tells no icon apart from the usual icon", () => {
+    // The distinction the whole sentinel exists for. Removing the icon from a
+    // green callout has to survive; falling back to the derived tick would be
+    // the app putting back the thing she just took off.
+    expect(resolveCalloutIcon("emerald", CALLOUT_ICON_NONE)).toEqual({ kind: "none" });
+    expect(resolveCalloutIcon("emerald", "")).not.toEqual({ kind: "none" });
+  });
+
+  it("draws nothing on a colour with no convention behind it", () => {
+    expect(resolveCalloutIcon("plum", "")).toEqual({ kind: "none" });
+    expect(resolveCalloutIcon("#c0ffee", "")).toEqual({ kind: "none" });
   });
 });

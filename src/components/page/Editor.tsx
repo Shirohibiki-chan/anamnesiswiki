@@ -19,9 +19,10 @@ import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
-import { BlockRefRenderContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import { BlockRefRenderContext, IconPickContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
+import { EditorIconPicker } from "../blocks/EditorIconPicker";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
@@ -145,6 +146,7 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
     // instead. See PAGE_BLOCK_RENDERERS below for why that value is a module
     // constant.
     <BlockRefRenderContext.Provider value={PAGE_BLOCK_RENDERERS}>
+    <IconPickContext.Provider value={EditorIconPicker}>
     <div
       ref={imageLightboxRef}
       className="editor-shell-wrapper"
@@ -213,6 +215,7 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         />
       </BlockNoteView>
     </div>
+    </IconPickContext.Provider>
     </BlockRefRenderContext.Provider>
   );
 }
