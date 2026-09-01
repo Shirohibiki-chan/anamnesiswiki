@@ -12,6 +12,8 @@ Work phases top-down. Do not start a phase until the previous one is complete an
 
 Gaps in the sequence are phases that have shipped and moved to `docs/shipped.md` — 27 and 29 are gone from here for that reason, not lost. Phase 2 sits at the bottom out of order on purpose: it is deferred rather than queued, and its heading says so.
 
+**Automate the repetitive parts wherever there is a choice.** The user's standing direction, 2026-08-31, and the same thing said by the botmaker whose folder-preset request sits at the top of Queued Adjustments: the reason to keep a world in a tool like this rather than in folders is not doing the same small job by hand for every character. Where a feature can either do a step for someone or ask them to repeat it, it does the step. **The rule that keeps that from becoming its own annoyance came with the same request** — automation is something offered and switched on, never something that happens to a page on its own, and anything a person typed themselves outranks it.
+
 See `docs/spec.md` for the full spec, `CLAUDE.md` for architecture rules, and `docs/prototype/anamnesis.jsx` for a reference React prototype that demonstrates layout and tree behavior (its template content is filler — the real copy lives in `src/services/template-registry.ts`).
 
 ---
@@ -23,6 +25,32 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 ---
 
 ## Queued Adjustments
+
+- **A template's sub-pages arrive under the template's own names, with nothing
+  tying them to the page they landed in.** Asked for 2026-08-31 by a botmaker
+  in her Discord who'd had the same thing built as an Obsidian plugin: every
+  character folder holds the same three subfolders, and they want each one
+  named after the folder holding it — `Damien` giving `Damien_Pics`. **Most of
+  it already ships.** A template keeps the pages saved inside it and applying
+  one pours them in (`applyCustomTemplate`), so "a different preset for a
+  different occasion" is what the Templates tab already holds. The missing
+  piece is a token in the child's name — `{parent}_Pics` in the library,
+  resolved into a real name on the page.
+
+  **Two things decide its shape.** It has to resolve to a real name rather than
+  be substituted at draw time: a page's folder on disk is named from
+  `node.name`, so a name that only exists in the UI leaves `{parent}_Pics`
+  sitting in her file explorer. And it can't resolve when the template is
+  applied — a page made from a template is named *after* its children land — so
+  this is a rename-time rule, and renaming the parent later has to carry the
+  children with it.
+
+  **It is switched on, never assumed.** The other person in that conversation
+  said the opposite thing the same day — they name their subfolders something
+  different every time, so a preset that renamed them on its own would be work
+  to undo. The token is set per child when the template is saved, a template
+  can carry one on one child and not the others, and a name typed by hand is
+  never written over.
 
 - **Keep peeling logic out of `project-store.ts`, a slice at a time.** A
   read-through on 2026-08-28 found it at 3,226 lines and around 140 actions in
