@@ -12,6 +12,8 @@ Work phases top-down. Do not start a phase until the previous one is complete an
 
 Gaps in the sequence are phases that have shipped and moved to `docs/shipped.md` — 27 and 29 are gone from here for that reason, not lost. Phase 2 sits at the bottom out of order on purpose: it is deferred rather than queued, and its heading says so.
 
+**Automate the repetitive parts wherever there is a choice.** The user's standing direction, 2026-08-31, and the same thing said by the botmaker whose folder-preset request sits at the top of Queued Adjustments: the reason to keep a world in a tool like this rather than in folders is not doing the same small job by hand for every character. Where a feature can either do a step for someone or ask them to repeat it, it does the step. **The rule that keeps that from becoming its own annoyance came with the same request** — automation is something offered and switched on, never something that happens to a page on its own, and anything a person typed themselves outranks it.
+
 See `docs/spec.md` for the full spec, `CLAUDE.md` for architecture rules, and `docs/prototype/anamnesis.jsx` for a reference React prototype that demonstrates layout and tree behavior (its template content is filler — the real copy lives in `src/services/template-registry.ts`).
 
 ---
@@ -23,6 +25,69 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 ---
 
 ## Queued Adjustments
+
+- **A page's sub-pages arrive under the names the template gave them, with
+  nothing tying them to the page they landed in.** Asked for 2026-08-31 by a
+  botmaker in her Discord, who had the same thing built as an Obsidian plugin
+  the night before and sent it over — 300 lines of plain JavaScript, read here
+  the same day. Every character folder there holds the same three subfolders,
+  and creating one names each after the folder holding it: `Damien` giving
+  `Damien_Pics`, `Damien_Sheets`, `Damien_Overrides`.
+
+  **Take its rules, not its shape, because it is built around a limitation we
+  don't have.** Her point, and it is the load-bearing one — the difference is
+  a decision she made against Obsidian rather than a thing that happened to
+  turn out this way (`CLAUDE.md` → Data on disk). Obsidian keeps
+  folders and notes as different kinds of thing, and a note cannot hold notes —
+  so a plugin that wants a repeatable structure has nowhere to put it except a
+  new object of its own, a "folder preset" living in plugin settings with a
+  list of folder names in it. Here every page holds pages, and one that gains a
+  child becomes a directory on disk that moment (`usesDirectoryStorage`). A
+  folder with three subfolders *is* a page with three child pages. Building a
+  second, parallel kind of preset for it would import the limitation along with
+  the feature.
+
+  **So this belongs to templates, and most of it is already there.** A template
+  saved off a page keeps the pages saved inside it and `applyCustomTemplate`
+  pours them in, which is the structure half done. The children want nothing
+  heavy — a child made from the blank template is already the cheap object —
+  so there is no new kind of thing to design here, only a naming rule to add to
+  one that exists.
+
+  **The naming rule is worth copying exactly.** There is no `{parent}` token to
+  write: you type `Pics`, and prefixing is simply what the preset does, with a
+  separator (`_` by default, editable, allowed to be empty) between the halves.
+  That is better than a token, which has to be typed correctly on every child
+  when the thing every child wants is identical.
+
+  **What the prefix buys here is narrower than it looks, and worth knowing
+  before pricing it.** Links won't break either way — a mention stores
+  `nodeId`, not a name — and same-named siblings already get a `(2)` on the
+  filename with the page's own name untouched. What a dozen pages called `Pics`
+  actually ruins is every list that shows pages *by name*: the `@` menu, the
+  wikilink picker, Ctrl-K. That is the case for the feature, and it is a real
+  one.
+
+  **Ask for the name first.** The plugin's modal takes the folder name, then
+  where it goes, then the preset, then makes everything — so nothing is ever
+  named after an unnamed parent. Ours is the other way round: a page made from
+  a template is added blank, filled, and named last, which is exactly why the
+  children would land under an Untitled parent. Reversing that for this route
+  is the change. **Whether renaming a parent later renames its children is a
+  separate decision** — the plugin bakes the name in and never revisits it, so
+  a renamed folder there keeps subfolders naming the old one.
+
+  **Applying to a page that already exists is the second route and the one that
+  reaches her world.** Right-clicking offers it, using the page's current name
+  as the prefix; Valeraverse is already full of characters, so a route that
+  only fires on new pages would reach almost none of them. A child of that name
+  already there is skipped and the rest are still made, with a count afterwards
+  — which is what makes running it twice safe.
+
+  **Nothing happens on its own.** The other person in that conversation names
+  their subfolders differently every time and would undo anything automatic. A
+  preset is chosen at the moment of creating, and a page made the ordinary way
+  is untouched: no toggle to find, no rule running in the background.
 
 - **Keep peeling logic out of `project-store.ts`, a slice at a time.** A
   read-through on 2026-08-28 found it at 3,226 lines and around 140 actions in
