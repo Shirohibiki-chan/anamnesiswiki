@@ -93,6 +93,12 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   plus its cascade one press rather than several. Wrong cascade, one undo, no
   setting.
 
+  **The simpler argument is hers, and it is the one to keep: a name is
+  editable text.** If the cascade renames a child she wanted left alone, she
+  types it back — no undo, nothing to find in Settings. A wrong cascade
+  costs a typo's worth of work to fix, and that is exactly what makes it safe
+  to do by default rather than something to ask permission for.
+
   **Applying to a page that already exists is the second route and the one that
   reaches her world.** Right-clicking offers it, using the page's current name
   as the prefix; Valeraverse is already full of characters, so a route that
