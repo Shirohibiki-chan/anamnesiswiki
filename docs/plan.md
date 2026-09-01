@@ -35,7 +35,9 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   `Damien_Pics`, `Damien_Sheets`, `Damien_Overrides`.
 
   **Take its rules, not its shape, because it is built around a limitation we
-  don't have.** Her point, and it is the load-bearing one: Obsidian keeps
+  don't have.** Her point, and it is the load-bearing one — the difference is
+  a decision she made against Obsidian rather than a thing that happened to
+  turn out this way (`CLAUDE.md` → Data on disk). Obsidian keeps
   folders and notes as different kinds of thing, and a note cannot hold notes —
   so a plugin that wants a repeatable structure has nowhere to put it except a
   new object of its own, a "folder preset" living in plugin settings with a
