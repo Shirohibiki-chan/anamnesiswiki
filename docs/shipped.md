@@ -4726,10 +4726,27 @@ subtext, so one option is four matches — clicking the wrong one closes the men
 and inserts nothing, silently. `pickSuggestion` in `e2e/harness/screen.ts` is
 the helper that gets it right, and says why.
 
-**And it drew as a list first, which was the wrong shape.** BlockNote's default
-suggestion renderer puts one item per row with its name beside it. That is
-right for commands and wrong for pictures: a column of single icons, scrolled,
-next to a picker in the same app that had been drawing a proper grid since
-Phase 18c. `IconMenu.tsx` renders the menu's items through the picker's own
-`icon-picker-grid`, which also let the caps go up — 48 glyphs and 24 emoji,
-where the list could only carry a handful before it filled the window.
+**And it took three cuts to get the shape right, which is the part worth
+keeping.** The first was BlockNote's default suggestion menu: one icon per row
+with its name beside it, scrolled vertically. The second drew the same items in
+the picker's grid. Both were rejected on sight, and the second rejection is the
+one that named the real problem — *a menu can only be searched by typing, so
+there is no way to reach an icon whose name you do not know*, which is most of
+fifteen hundred of them. Her words for it were that nobody would use a menu
+they cannot scroll.
+
+**So the third cut opens the picker itself.** `IconPicker` had both halves
+since Phase 18c — a search box over everything and a browsable grid under it —
+and building a lookalike beside it was the mistake, twice. `use-editor` owns
+the trigger now: the `:` keystroke is read off the DOM selection (which is the
+only thing carrying both the text before the caret and the caret's rectangle at
+that moment), the colon is left in the writing until an icon replaces it, and
+`insertIconAtTrigger` swaps the one for the other. `IconMenu.tsx` and
+`icon-menu-items.tsx` were deleted rather than kept around.
+
+**One thing it cost, and it is not fixed.** BlockNote's emoji picker used to
+own `:` and carried the complete emoji-mart set; ours is `constants/emoji.ts`,
+129 emoji curated for browsing. Turning theirs off to take the key means the
+emoji half is narrower than it was. The fix is a dependency on
+`@emoji-mart/data` and an Emoji tab built from it — raised with her rather than
+done quietly, because it is a new dependency and a bundle cost.

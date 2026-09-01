@@ -3,20 +3,20 @@
 // page/Editor.tsx used to reach into six of those modules itself; everything
 // that isn't a BlockNote React component now goes through here, leaving that
 // component to do nothing but render.
-import { useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
+import { ICON_INLINE_TYPE } from "../constants/schema";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { withoutDanglingBlockRefs } from "../services/block-service";
 import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
 import { IconPickContext } from "../services/editor-blocks/icon-pick-context";
-import { getIconMenuItems } from "../services/editor-blocks/icon-menu-items";
 import { getIconSlashMenuItems } from "../services/editor-blocks/icon-slash-menu";
-import { ICON_TRIGGER, iconMenuOpens } from "../services/editor-blocks/icon-trigger";
+import { ICON_TRIGGER, iconTriggerOpens } from "../services/editor-blocks/icon-trigger";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
@@ -33,7 +33,7 @@ import {
 import { useDialogs } from "./use-dialogs";
 import { useProject } from "./use-project";
 
-export { WIKILINK_TRIGGER, ICON_TRIGGER };
+export { WIKILINK_TRIGGER };
 // Re-exported rather than imported straight from the service, for the same
 // reason everything else here is: this file is the only door components have
 // into services/editor-blocks/. Editor.tsx fills the slot with the component
@@ -49,6 +49,13 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   // component is already re-rendering as the user types regardless.
   const { nodes, rootPath, uploadAsset, addBlock } = useProject();
   const { requestNewPageLink } = useDialogs();
+  /**
+   * Where the icon picker is open, or null.
+   *
+   * **A rectangle rather than a boolean**, because the popover is anchored to
+   * the caret and the caret has moved on by the time anything renders.
+   */
+  const [iconTrigger, setIconTrigger] = useState<DOMRect | null>(null);
 
   /**
    * The saved document with pointers to deleted blocks taken out (Phase 19.5).
@@ -188,7 +195,63 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
   function onKeyDownCapture(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (handleSuggestionListKeys(event)) return;
     if (handleImageKeys(editor, event)) return;
+    if (event.key === ICON_TRIGGER) openIconTriggerIfReaching();
     confirmWikilinkBracket(event);
+  }
+
+  /**
+   * The `:` that opens the icon picker where the caret is.
+   *
+   * **The colon is allowed to type itself.** Swallowing it and putting it back
+   * on cancel is the shape `offerMissingPage` above already rejected — the same
+   * thing with a way to go wrong — so what she typed stays on screen, and it is
+   * removed only if an icon actually replaces it.
+   *
+   * **Read off the DOM selection rather than the document**, because this runs
+   * on the keystroke, before ProseMirror has seen it: the text before the caret
+   * is what the rule needs and the caret's rectangle is what the popover needs,
+   * and the selection has both at exactly this moment.
+   */
+  function openIconTriggerIfReaching() {
+    const selection = globalThis.getSelection();
+    if (!selection?.isCollapsed || !selection.anchorNode || selection.rangeCount === 0) return;
+    const node = selection.anchorNode;
+    // A text node gives the line so far; landing on an element means the caret
+    // is between nodes, and offset 0 there is the start of the block.
+    const before =
+      node.nodeType === globalThis.Node.TEXT_NODE
+        ? (node.textContent ?? "").slice(0, selection.anchorOffset)
+        : selection.anchorOffset === 0
+          ? ""
+          : " ";
+    if (!iconTriggerOpens(before)) return;
+    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    // A collapsed range has no width and, in an empty block, sometimes no
+    // position at all — the editor's own box is a worse anchor than the caret
+    // but a much better one than the top-left corner of the window.
+    setIconTrigger(rect.height > 0 ? rect : null);
+  }
+
+  function closeIconTrigger() {
+    setIconTrigger(null);
+    // The picker is a portal and it took the keyboard; handing focus back is
+    // what stops her being left mid-sentence with nowhere for the next letter
+    // to go. Same reasoning as the New page dialog above.
+    editor.focus();
+  }
+
+  /** Swaps the typed `:` for the icon she chose. */
+  function insertIconAtTrigger(icon: string | undefined) {
+    setIconTrigger(null);
+    editor.focus();
+    if (!icon) return;
+    // The colon is one character immediately before the caret, and it is only
+    // taken out now that there is something to put in its place.
+    editor.transact((tr) => {
+      const { from } = tr.selection;
+      if (from > 0) tr.delete(from - 1, from);
+    });
+    editor.insertInlineContent([{ type: ICON_INLINE_TYPE, props: { icon } }, " "]);
   }
 
   function handleChange() {
@@ -221,13 +284,6 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     );
   }
 
-  // Already filtered, so it does not go through `filterSuggestionItems` — the
-  // glyph sets match on keywords the item titles do not carry. See
-  // icon-menu-items.tsx.
-  async function getIconItems(query: string): Promise<DefaultReactSuggestionItem[]> {
-    return getIconMenuItems(editor, query);
-  }
-
   async function getMentionItems(query: string): Promise<DefaultReactSuggestionItem[]> {
     return filterSuggestionItems(getMentionMenuItems(editor, nodes, nodeId), query);
   }
@@ -238,12 +294,13 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     handleChange,
     focusEnd,
     getSlashMenuItems,
-    getIconItems,
     getMentionItems,
     // Passed through rather than imported by the component, keeping this file
     // the only way into services/editor-blocks/ — see the header above.
     slashShouldOpen: slashOpensCommandMenu,
-    iconShouldOpen: iconMenuOpens,
+    iconTrigger,
+    closeIconTrigger,
+    insertIconAtTrigger,
     suggestionMenuFloating,
   };
 }

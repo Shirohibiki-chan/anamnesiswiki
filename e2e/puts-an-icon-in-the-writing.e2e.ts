@@ -15,10 +15,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
+  iconPickerOpen,
   inlineIconCount,
   openPage,
+  pickIcon,
   pickSuggestion,
-  suggestionMenuOpen,
+  searchIcons,
   typeInEditor,
   typeAtLineStartInEditor,
   waitForWorld,
@@ -65,25 +67,32 @@ describe("an icon in the writing", () => {
     expect(await app.window.locator(".icon-picker").count()).toBe(0);
   });
 
-  it("takes one in the middle of a sentence, which the slash menu cannot", async () => {
+  it("opens the picker in the middle of a sentence, which the slash menu cannot", async () => {
     // The reason `:` exists at all: `/` only means a command at the start of a
-    // line, and an icon is wanted inside a line already being written.
-    await typeInEditor(app.window, " she drew her :swo");
+    // line, and an icon is wanted inside a line already being written. What
+    // opens is the whole picker — search box, both tabs, the full catalogue —
+    // rather than a list that can only be typed at.
+    await typeInEditor(app.window, " she drew her ");
+    await app.window.keyboard.press(":");
     await app.window.waitForTimeout(600);
-    // Chosen with the keyboard, the way the menu is actually driven — Enter
-    // takes the highlighted option.
-    await app.window.keyboard.press("Enter");
-    await app.window.waitForTimeout(600);
+    expect(await iconPickerOpen(app.window)).toBe(true);
 
-    // Two now — the one the slash menu put on its own line, and this one.
+    await searchIcons(app.window, "sword");
+    await pickIcon(app.window, "sword");
+    await app.window.waitForTimeout(800);
+
+    // Two now — the one the slash menu put in, and this one. And the colon she
+    // typed is gone, swapped for what she picked rather than left behind it.
     expect(await inlineIconCount(app.window)).toBe(2);
+    expect(await app.window.locator(".editor-shell .bn-editor").first().innerText()).not.toContain("her :");
   });
 
   it("leaves a colon alone when it is punctuation", async () => {
     await typeInEditor(app.window, " Note:");
-    await app.window.waitForTimeout(400);
-    // No menu, and nothing inserted — the whole reason this trigger is gated.
-    expect(await suggestionMenuOpen(app.window)).toBe(false);
+    await app.window.waitForTimeout(500);
+    // Nothing opened and nothing was inserted — the whole reason the trigger is
+    // gated on what comes before it.
+    expect(await iconPickerOpen(app.window)).toBe(false);
     expect(await inlineIconCount(app.window)).toBe(2);
   });
 

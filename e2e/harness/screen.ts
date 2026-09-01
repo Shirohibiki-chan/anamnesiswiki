@@ -32,6 +32,7 @@ const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 const EDITOR_INLINE_ICON = ".editor-inline-icon";
+const ICON_PICKER = ".icon-picker";
 const SUGGESTION_MENU = "#bn-suggestion-menu";
 const FORMATTING_BAR = ".bn-formatting-toolbar";
 
@@ -321,7 +322,22 @@ export async function inlineIconCount(window: Page): Promise<number> {
   return window.locator(EDITOR_INLINE_ICON).count();
 }
 
-/** Whether the `/` (or `@`, or `[[`, or `:`) suggestion menu is on screen right now. */
+/** Whether the icon picker — tabs, search box and grid — is on screen right now. */
+export async function iconPickerOpen(window: Page): Promise<boolean> {
+  return (await window.locator(ICON_PICKER).count()) > 0;
+}
+
+/** Types into the icon picker's own search box, which is where its filtering lives. */
+export async function searchIcons(window: Page, text: string): Promise<void> {
+  await window.getByPlaceholder("Search icons").fill(text);
+}
+
+/** Chooses an icon out of the picker's grid by its name. */
+export async function pickIcon(window: Page, name: string): Promise<void> {
+  await window.getByLabel(name, { exact: true }).first().click();
+}
+
+/** Whether the `/` (or `@`, or `[[`) suggestion menu is on screen right now. */
 export async function suggestionMenuOpen(window: Page): Promise<boolean> {
   return (await window.locator(SUGGESTION_MENU).count()) > 0;
 }

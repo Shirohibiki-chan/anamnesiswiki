@@ -2045,38 +2045,34 @@ under `acknowledgedWarnings`.
   reads as a decision rather than as an unknown type falling through.
 
 - **`emojiPicker={false}` on `BlockNoteView` is load-bearing, not tidiness.**
-  BlockNote mounts its own emoji picker on `:` by default, and two suggestion
-  menus cannot share a trigger: ours rendered on screen while theirs answered
-  the Enter, so a chosen glyph silently inserted a bare emoji character
-  instead. Nothing errored, and the only sign was a scenario failing on a count
-  several lines later. Turning it back on breaks the `:` menu in exactly that
-  invisible way.
+  BlockNote mounts its own emoji picker on `:` by default, and that key is ours
+  now — a colon opens the app's icon picker at the caret. Two things on one
+  trigger is not a state that can work: while both were live, ours drew on
+  screen and theirs answered the Enter, inserting a bare emoji where a glyph
+  had been chosen. Nothing threw, and the only sign was a scenario failing on a
+  count several lines later.
 
-  **What that flag costs is already paid back.** `icon-menu-items.tsx` offers
-  BlockNote's own emoji list through `getDefaultEmojiPickerItems` — the full
-  emoji-mart set, not `constants/emoji.ts`, which is a curated few hundred for
-  a picker that browses. Replacing their list with that one would be a
-  downgrade, so the emoji half of the `:` menu is deliberately theirs, their
-  `onItemClick` included, which is also what keeps an emoji inserting as a
-  plain character the way it always did.
+- **A `:` opens the picker itself, not a menu that resembles it, and that was
+  arrived at the hard way.** The first cut was a BlockNote suggestion menu
+  listing matches; the second drew those matches in the picker's grid. Both
+  were rejected on sight and for the same reason: a menu can only be searched
+  by typing, so there is no way to reach an icon whose name you do not know,
+  which is most of fifteen hundred of them. `IconPicker` already solved this in
+  Phase 18c — a search box *and* a scrollable grid — so the trigger opens that.
+  **Do not replace it with a suggestion menu again**, however much more natural
+  the BlockNote-shaped answer looks from the code.
 
-- **The `:` menu draws as a grid, and that is `suggestionMenuComponent`, not
-  styling.** BlockNote's default renderer is one item per row with its name
-  beside it — right for a menu of commands, wrong for a menu of pictures, and
-  the first version of this shipped that way and was rejected on sight.
-  `IconMenu.tsx` renders the same `icon-picker-grid` the real picker uses, so
-  the two cannot drift into looking like different features. What it
-  deliberately does *not* have is a search box: what she types after the colon
-  is the query and BlockNote owns it, so a second input inside the menu would
-  be two fields fighting over the same keystrokes.
+- **The typed colon stays in the document while the picker is open.** It is
+  removed only when an icon actually replaces it (`insertIconAtTrigger`), and
+  backing out leaves what she typed exactly where she typed it. Swallowing the
+  keystroke and restoring it on cancel is the shape `offerMissingPage` already
+  rejected for the wikilink brackets — the same thing with a way to go wrong.
 
-- **A glyph and an emoji go into the writing as different kinds of thing, on
-  purpose.** An emoji is a letter — it was one before any of this and copying
-  it out of a page should still give you one — so it inserts as a character. A
-  glyph has no character to be, so it arrives as `icon` inline content that can
-  be clicked and changed. Making them uniform in either direction loses
-  something real: uniform characters cost the glyph its clickability, uniform
-  inline content makes an emoji stop behaving like text.
+- **The trigger reads the DOM selection, not the document.** It runs on the
+  keystroke, before ProseMirror has seen the colon, and the selection is the
+  one thing that has both halves at that moment: the text before the caret,
+  which is what the rule needs, and the caret's rectangle, which is what the
+  popover anchors to.
 
 ## Template swaps
 

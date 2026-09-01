@@ -19,11 +19,10 @@ import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
-import { BlockRefRenderContext, ICON_TRIGGER, IconPickContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import { BlockRefRenderContext, IconPickContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
 import { EditorIconPicker } from "../blocks/EditorIconPicker";
-import { IconMenu } from "../blocks/IconMenu";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
@@ -95,10 +94,11 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
     handleChange,
     focusEnd,
     getSlashMenuItems,
-    getIconItems,
     getMentionItems,
     slashShouldOpen,
-    iconShouldOpen,
+    iconTrigger,
+    closeIconTrigger,
+    insertIconAtTrigger,
     suggestionMenuFloating,
   } = useEditor(nodeId, content, onContentChange);
   // Double-clicking a picture opens it full size; a single click still selects
@@ -215,19 +215,6 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           shouldOpen={slashShouldOpen}
           floatingUIOptions={suggestionMenuFloating}
         />
-        {/* Its own trigger rather than a `/` command, because an icon is
-            wanted in the middle of a sentence and `/` deliberately only means a
-            command at the start of a line. `shouldOpen` is what keeps `Note:`
-            and `10:30` from opening it — see icon-trigger.ts. */}
-        <SuggestionMenuController
-          triggerCharacter={ICON_TRIGGER}
-          getItems={getIconItems}
-          shouldOpen={iconShouldOpen}
-          // The picker's grid rather than a list of rows — a menu of pictures
-          // is read as a grid. See IconMenu.tsx.
-          suggestionMenuComponent={IconMenu}
-          floatingUIOptions={suggestionMenuFloating}
-        />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} floatingUIOptions={suggestionMenuFloating} />
         <SuggestionMenuController
           triggerCharacter={WIKILINK_TRIGGER}
@@ -235,6 +222,22 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           floatingUIOptions={suggestionMenuFloating}
         />
       </BlockNoteView>
+      {/* **A `:` opens the picker itself, not a menu that looks like it.** The
+          first cut of this was a suggestion menu listing matches, and it could
+          only ever be searched by typing — no way to scroll to a thing whose
+          name you do not know, which is most of them. This is the same control
+          the page title and a meter open: a search box over the whole
+          catalogue, both tabs, and a grid you can browse. See
+          hooks/use-editor.ts for the trigger and what replaces the typed
+          colon. */}
+      {iconTrigger && (
+        <EditorIconPicker
+          anchorRect={iconTrigger}
+          value={undefined}
+          onPick={insertIconAtTrigger}
+          onClose={closeIconTrigger}
+        />
+      )}
     </div>
     </IconPickContext.Provider>
     </BlockRefRenderContext.Provider>
