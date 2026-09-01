@@ -2052,22 +2052,6 @@ under `acknowledgedWarnings`.
   had been chosen. Nothing threw, and the only sign was a scenario failing on a
   count several lines later.
 
-- **A `:` opens the picker itself, not a menu that resembles it, and that was
-  arrived at the hard way.** The first cut was a BlockNote suggestion menu
-  listing matches; the second drew those matches in the picker's grid. Both
-  were rejected on sight and for the same reason: a menu can only be searched
-  by typing, so there is no way to reach an icon whose name you do not know,
-  which is most of fifteen hundred of them. `IconPicker` already solved this in
-  Phase 18c — a search box *and* a scrollable grid — so the trigger opens that.
-  **Do not replace it with a suggestion menu again**, however much more natural
-  the BlockNote-shaped answer looks from the code.
-
-- **The typed colon stays in the document while the picker is open.** It is
-  removed only when an icon actually replaces it (`insertIconAtTrigger`), and
-  backing out leaves what she typed exactly where she typed it. Swallowing the
-  keystroke and restoring it on cancel is the shape `offerMissingPage` already
-  rejected for the wikilink brackets — the same thing with a way to go wrong.
-
 - **The trigger reads the DOM selection, not the document.** It runs on the
   keystroke, before ProseMirror has seen the colon, and the selection is the
   one thing that has both halves at that moment: the text before the caret,
@@ -2113,6 +2097,31 @@ under `acknowledgedWarnings`.
   name on the Glyphs tab and being told nothing matched, with the answer one
   click away and unmentioned. Since the picker opens on the key every chat app
   uses to reach an emoji, that is the normal case rather than a mistake.
+
+- **Two controls on one key, and neither is a substitute for the other. Her
+  call 2026-09-01, after three attempts to make one do both jobs.** `:` plus at
+  least two characters is the type-ahead — a single column, emoji named
+  `:joy:`, taken with Enter or Tab, the Discord gesture for when you already
+  know the name. `Ctrl+:` opens the picker — the whole catalogue, both tabs, a
+  grid to scroll, for when you do not. **Do not merge them again.** The three
+  rejected attempts were: a type-ahead alone (nothing to scroll), the same
+  items drawn in the picker's grid (still only searchable by typing), and the
+  picker alone on a bare `:` (no fast path, and a colon is punctuation far more
+  often than it is a request).
+
+- **`minQueryLength` is what keeps a bare colon from opening anything**, and it
+  is doing the same job for `:` that `shouldOpen` does for `/`: this is a
+  character people type in ordinary prose, and a menu on every one is the
+  complaint that gated the slash menu arriving by a different door. The
+  `shouldOpen` rule sits on top of it, so `Note:` and `10:30` stay shut even
+  once something is typed after them.
+
+- **The chord is prevented, so its colon reaches neither the writing nor the
+  search box.** The picker's field is focused the moment it opens, so a
+  trigger character that slipped through would have her first keystroke
+  filtering against punctuation — which is exactly what happened while `:`
+  itself opened the picker, and is why the box now starts empty by
+  construction rather than by cleaning up after the fact.
 
 ## Template swaps
 

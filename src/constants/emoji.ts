@@ -26,7 +26,20 @@
 // either list again.
 import data from "@emoji-mart/data";
 
-export type EmojiGroup = { name: string; emoji: { char: string; keywords: string }[] };
+export type Emoji = {
+  char: string;
+  /**
+   * The `:word:` name, without its colons.
+   *
+   * **Kept apart from the keywords because it is shown, not only matched.** The
+   * `:` menu writes it back out as `:joy:`, which is how the thing is named
+   * everywhere else somebody types one.
+   */
+  id: string;
+  keywords: string;
+};
+
+export type EmojiGroup = { name: string; emoji: Emoji[] };
 
 /**
  * emoji-mart's own category ids, in its own order, given the names it gives
@@ -77,6 +90,7 @@ export const EMOJI_GROUPS: EmojiGroup[] = emojiData.categories
       .filter((entry): entry is EmojiMartEntry => Boolean(entry?.skins?.[0]?.native))
       .map((entry) => ({
         char: entry.skins[0].native,
+        id: entry.id,
         keywords: `${entry.id} ${entry.name} ${entry.keywords.join(" ")}`.toLowerCase(),
       })),
   }))

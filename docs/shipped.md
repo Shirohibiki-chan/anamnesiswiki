@@ -4777,3 +4777,22 @@ one click away. Stripping colons also fixed an open-cost regression nobody had
 reported yet — a box holding just `:` counted as a search, and a search draws
 all 1870 emoji, so every open of the picker anywhere in the app had picked up
 about three quarters of a second.
+
+**It ended as two controls on one key, and the route there is the record worth
+keeping.** Four cuts: a suggestion menu listing matches (rejected — a single
+column of pictures with no way to scroll the rest); the same items drawn in the
+picker's grid (rejected — still only reachable by typing a name you might not
+know); the picker itself on a bare `:` (rejected — no fast path for when you
+*do* know the name, and it fired on punctuation); and finally both, split by
+key. `:` plus two characters is the type-ahead, single column, emoji written as
+`:joy:`, Enter or Tab to take one. `Ctrl+:` opens the picker. Her call, and the
+lesson is that "surely it can be both" was the right question all along — the
+three failures were each an attempt to make one control cover two jobs.
+
+**What the split cost in code is small**, which is the tell that it was the
+right shape: `minQueryLength` on BlockNote's own controller does the "type
+something first" half, `shouldOpen` keeps the `Note:` rule on top of it, and
+the chord is `preventDefault`ed so its colon reaches neither the writing nor
+the picker's focused search box. Arrow keys, Tab and Enter came free —
+`handleSuggestionListKeys` has translated those for every suggestion menu in
+the app since Phase 14.

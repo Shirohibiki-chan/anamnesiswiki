@@ -18,9 +18,9 @@ import {
   iconPickerOpen,
   inlineIconCount,
   openPage,
-  pickIcon,
   pickSuggestion,
-  searchIcons,
+  suggestionMenuItems,
+  suggestionMenuOpen,
   typeInEditor,
   typeAtLineStartInEditor,
   waitForWorld,
@@ -67,90 +67,81 @@ describe("an icon in the writing", () => {
     expect(await app.window.locator(".icon-picker").count()).toBe(0);
   });
 
-  it("opens the picker in the middle of a sentence, which the slash menu cannot", async () => {
-    // The reason `:` exists at all: `/` only means a command at the start of a
-    // line, and an icon is wanted inside a line already being written. What
-    // opens is the whole picker — search box, both tabs, the full catalogue —
-    // rather than a list that can only be typed at.
-    await typeInEditor(app.window, " she drew her ");
-    await app.window.keyboard.press(":");
-    await app.window.waitForTimeout(600);
-    expect(await iconPickerOpen(app.window)).toBe(true);
-
-    await searchIcons(app.window, "sword");
-    await pickIcon(app.window, "sword");
-    await app.window.waitForTimeout(800);
-
-    // Two now — the one the slash menu put in, and this one. And the colon she
-    // typed is gone, swapped for what she picked rather than left behind it.
-    expect(await inlineIconCount(app.window)).toBe(2);
-    expect(await app.window.locator(".editor-shell .bn-editor").first().innerText()).not.toContain("her :");
-  });
-
-  it("opens on a line with nothing on it, which is where it first did not", async () => {
-    // Regression, reported from use 2026-09-01: a colon on an empty line did
-    // nothing at all. The caret has no rectangle in an empty block — it
-    // measures as zero — and the first cut read that as "no position" and
-    // declined to open. The most ordinary place to type is the one place it
-    // did not work.
-    await typeInEditor(app.window, "");
-    await app.window.keyboard.press("Enter");
-    await app.window.waitForTimeout(400);
-    await app.window.keyboard.press(":");
-    await app.window.waitForTimeout(600);
-    expect(await iconPickerOpen(app.window)).toBe(true);
-    await app.window.keyboard.press("Escape");
-    await app.window.waitForTimeout(400);
-  });
-
-  it("offers every emoji there is, not a hand-picked corner of them", async () => {
-    await app.window.keyboard.press(":");
-    await app.window.waitForTimeout(600);
-    await app.window.getByRole("button", { name: "Emoji" }).click();
-    await app.window.waitForTimeout(1000);
-    // The curated list this replaced held 129. The number here is the whole
-    // set, and the point of the check is that nobody quietly trims it again.
-    expect(await app.window.locator(".icon-picker-option").count()).toBeGreaterThan(1500);
-    await app.window.keyboard.press("Escape");
-    await app.window.waitForTimeout(400);
-  });
-
-  it("takes an emoji typed the way a chat app types it", async () => {
-    // Reported from use 2026-09-01, and two bugs in one gesture: focus landed
-    // on a tab button rather than the search box, so typing did nothing at
-    // all; and the closing colon of `:joy:` matched nothing even once it did.
-    // The picker also opens on the Glyphs tab, so a search has to cross into
-    // the emoji or the answer is "Nothing matches" with the emoji one click
-    // away, unmentioned.
+  it("does nothing on a bare colon, and opens once there is something to match", async () => {
+    // Her call 2026-09-01, after three attempts to make one control do both
+    // jobs: a colon on its own is punctuation far more often than it is a
+    // request, so the type-ahead waits for something to search for.
     await typeInEditor(app.window, " and she laughed ");
     await app.window.keyboard.press(":");
-    await app.window.waitForTimeout(600);
-    expect(await iconPickerOpen(app.window)).toBe(true);
+    await app.window.waitForTimeout(500);
+    expect(await suggestionMenuOpen(app.window)).toBe(false);
+    expect(await iconPickerOpen(app.window)).toBe(false);
 
-    await app.window.keyboard.type("joy:", { delay: 40 });
+    await app.window.keyboard.type("sm", { delay: 40 });
     await app.window.waitForTimeout(700);
-    // Typed into the picker's own search box, which is where focus has to be.
-    expect(await app.window.locator(".icon-picker input").inputValue()).toBe(":joy:");
-    expect(await app.window.locator(".icon-picker-option").count()).toBeGreaterThan(0);
+    expect(await suggestionMenuOpen(app.window)).toBe(true);
+  });
 
-    await app.window.locator(".icon-picker-option").first().click();
+  it("is driven by the keyboard, arrows and Enter, without reaching for the mouse", async () => {
+    // The whole point of a type-ahead. Tab takes the highlighted item too —
+    // that machinery is shared with the other suggestion menus.
+    await app.window.keyboard.press("ArrowDown");
+    await app.window.keyboard.press("Enter");
     await app.window.waitForTimeout(800);
-    // The colon is gone and the word she typed is not left behind in the page.
+
     const text = await app.window.locator(".editor-shell .bn-editor").first().innerText();
-    expect(text).not.toContain("joy");
+    // The colon and what was typed after it are gone, replaced by what she
+    // took — and an emoji goes in as a character, the way it always has.
+    expect(text).not.toContain(":sm");
     expect(text).toContain("and she laughed");
   });
 
+  it("finds an emoji by the name a chat app calls it", async () => {
+    await typeInEditor(app.window, " truly ");
+    await app.window.keyboard.press(":");
+    await app.window.keyboard.type("joy", { delay: 40 });
+    await app.window.waitForTimeout(700);
+    // Written back out with its colons, which is what the thing is called
+    // everywhere else somebody types one.
+    expect(await suggestionMenuItems(app.window)).toContain(":joy:");
+  });
+
   it("leaves a colon alone when it is punctuation", async () => {
-    // Counted rather than hardcoded: this runs after every other scenario in
-    // the file, so a number here would need editing each time one is added.
     const before = await inlineIconCount(app.window);
+    await app.window.keyboard.press("Escape");
     await typeInEditor(app.window, " Note:");
     await app.window.waitForTimeout(500);
-    // Nothing opened and nothing was inserted — the whole reason the trigger is
-    // gated on what comes before it.
-    expect(await iconPickerOpen(app.window)).toBe(false);
+    // Nothing opened and nothing was inserted — the trigger is gated on what
+    // comes before the colon as well as on what follows it.
+    expect(await suggestionMenuOpen(app.window)).toBe(false);
     expect(await inlineIconCount(app.window)).toBe(before);
+  });
+
+  it("opens the whole picker on Ctrl and the same key", async () => {
+    // The other half of the pair: the type-ahead is for when you know the
+    // name, this is for when you do not. It opens on an empty line too, which
+    // is where an earlier cut of it did not — the caret has no rectangle in an
+    // empty block and that was read as having nowhere to anchor.
+    await typeInEditor(app.window, "");
+    await app.window.keyboard.press("Enter");
+    await app.window.waitForTimeout(400);
+    await app.window.keyboard.press("Control+:");
+    await app.window.waitForTimeout(700);
+    expect(await iconPickerOpen(app.window)).toBe(true);
+    // **Empty, not holding the colon it was opened with.** The search box is
+    // focused, so a stray trigger character in it means the first thing she
+    // types is filtering against punctuation.
+    expect(await app.window.locator(".icon-picker input").inputValue()).toBe("");
+  });
+
+  it("offers every emoji there is, not a hand-picked corner of them", async () => {
+    await app.window.getByRole("button", { name: "Emoji" }).click();
+    await app.window.waitForTimeout(1000);
+    // The curated list this replaced held 129. The point of the check is that
+    // nobody quietly trims it again.
+    expect(await app.window.locator(".icon-picker-option").count()).toBeGreaterThan(1500);
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForTimeout(400);
   });
 
   it("changes it when you click it, and remembers", async () => {
