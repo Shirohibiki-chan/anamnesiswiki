@@ -225,11 +225,18 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
           ? ""
           : " ";
     if (!iconTriggerOpens(before)) return;
-    const rect = selection.getRangeAt(0).getBoundingClientRect();
-    // A collapsed range has no width and, in an empty block, sometimes no
-    // position at all — the editor's own box is a worse anchor than the caret
-    // but a much better one than the top-left corner of the window.
-    setIconTrigger(rect.height > 0 ? rect : null);
+    const caret = selection.getRangeAt(0).getBoundingClientRect();
+    // **A collapsed range in an empty block measures as nothing**, which is
+    // most of the time somebody wants this: a fresh line, or the start of one.
+    // Measured 2026-09-01 — the first cut treated a zero-height rectangle as
+    // "no position" and quietly declined to open, so a colon on an empty line
+    // did nothing at all. Fall back to the line's own box, which is a slightly
+    // worse anchor and an infinitely better one than not opening.
+    const line =
+      node.nodeType === globalThis.Node.TEXT_NODE ? node.parentElement : (node as globalThis.Element);
+    const rect = caret.height > 0 ? caret : (line?.getBoundingClientRect() ?? caret);
+    if (rect.height === 0 && rect.top === 0) return;
+    setIconTrigger(rect);
   }
 
   function closeIconTrigger() {

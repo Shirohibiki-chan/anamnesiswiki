@@ -87,6 +87,34 @@ describe("an icon in the writing", () => {
     expect(await app.window.locator(".editor-shell .bn-editor").first().innerText()).not.toContain("her :");
   });
 
+  it("opens on a line with nothing on it, which is where it first did not", async () => {
+    // Regression, reported from use 2026-09-01: a colon on an empty line did
+    // nothing at all. The caret has no rectangle in an empty block — it
+    // measures as zero — and the first cut read that as "no position" and
+    // declined to open. The most ordinary place to type is the one place it
+    // did not work.
+    await typeInEditor(app.window, "");
+    await app.window.keyboard.press("Enter");
+    await app.window.waitForTimeout(400);
+    await app.window.keyboard.press(":");
+    await app.window.waitForTimeout(600);
+    expect(await iconPickerOpen(app.window)).toBe(true);
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForTimeout(400);
+  });
+
+  it("offers every emoji there is, not a hand-picked corner of them", async () => {
+    await app.window.keyboard.press(":");
+    await app.window.waitForTimeout(600);
+    await app.window.getByRole("button", { name: "Emoji" }).click();
+    await app.window.waitForTimeout(1000);
+    // The curated list this replaced held 129. The number here is the whole
+    // set, and the point of the check is that nobody quietly trims it again.
+    expect(await app.window.locator(".icon-picker-option").count()).toBeGreaterThan(1500);
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForTimeout(400);
+  });
+
   it("leaves a colon alone when it is punctuation", async () => {
     await typeInEditor(app.window, " Note:");
     await app.window.waitForTimeout(500);

@@ -4744,9 +4744,23 @@ that moment), the colon is left in the writing until an icon replaces it, and
 `insertIconAtTrigger` swaps the one for the other. `IconMenu.tsx` and
 `icon-menu-items.tsx` were deleted rather than kept around.
 
-**One thing it cost, and it is not fixed.** BlockNote's emoji picker used to
-own `:` and carried the complete emoji-mart set; ours is `constants/emoji.ts`,
-129 emoji curated for browsing. Turning theirs off to take the key means the
-emoji half is narrower than it was. The fix is a dependency on
-`@emoji-mart/data` and an Emoji tab built from it — raised with her rather than
-done quietly, because it is a new dependency and a bundle cost.
+**And the emoji half was fixed the same day rather than left as a cost.**
+Taking `:` from BlockNote meant losing the complete emoji-mart set it carried,
+against `constants/emoji.ts`'s 129 curated ones. She approved the dependency,
+so `@emoji-mart/data` (MIT, the same file BlockNote itself depends on) is now
+ours directly and `emoji.ts` reshapes it into what the picker draws: 1870
+emoji in the eight groups an emoji keyboard uses, searched by name, keyword and
+shortcode. It reaches every picker in the app, not just the editor's — a page's
+icon and a meter's readings gained the full set too.
+
+**Measurements.** ~475KB of JSON in the bundle, the same trade
+`glyph-catalogue.ts` records for the icons. The Emoji tab draws all 1870 in
+about 760ms on first open, which is the cost of not paging it; paging is what
+the glyph tab does and it is the thing she rejected, so the whole list stays.
+
+**One bug found in the same pass, and it was the worst kind.** A caret in an
+empty block has no rectangle — `getBoundingClientRect()` returns all zeros —
+and the trigger read that as having nowhere to anchor and declined to open. So
+the picker worked everywhere except the most ordinary place to type, a fresh
+line, and it was reported from use rather than caught here. The fallback is the
+line element's own box, and there is a scenario on it now.

@@ -26,6 +26,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.8)
+      '@emoji-mart/data':
+        specifier: ^1.2.1
+        version: 1.2.1
       '@shikijs/core':
         specifier: ^4.4.3
         version: 4.4.3

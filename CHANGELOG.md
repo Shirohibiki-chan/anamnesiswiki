@@ -5,6 +5,7 @@
 ### Additions
 
 - **You can put an icon in a line of writing, and click it to change it.** Type a colon mid-sentence and the icon picker opens right at the cursor — the same one the page title and a meter use, with its search box, both tabs, and the whole library there to scroll. Pick something and it replaces the colon you typed. It stays an icon after it lands, which is the difference between this and dropping an emoji in: an emoji is a letter the moment it exists and the only way to change one is to delete it and start again.
+- **A colon on an empty line opens it too.** It didn't at first — the picker worked everywhere except a fresh line, which is the most ordinary place to type. Fixed.
 - **A colon you meant as a colon is still a colon.** The picker only opens where a colon couldn't be punctuation — at the start of a line, or after a space. `Note:`, `Chapter 4:` and `10:30` all leave it alone. And if you open it by accident, Escape puts you back exactly where you were with your colon still there.
 - **`/icon` works too**, and drops a heart in for you to change afterwards. It's the second way in rather than the first, because `/` only means a command at the start of an empty line — which is exactly where an icon is least useful.
 - **A callout's icon is yours to choose.** The tick on a green box and the caution on an amber one are still what you get without doing anything — that convention is worth keeping, and a callout that started blank would need decorating by hand before it said anything at all. But the icon is a button now: click it and pick whatever you like, on any callout, in any colour.
@@ -12,7 +13,7 @@
 
 ### Notes
 
-- **The colon key used to open the editor's own emoji grid, and now opens the picker instead.** Everything that grid did, the picker does — searching, scrolling, clicking — except that its Emoji tab holds 129 emoji rather than every one there is. That's a hand-picked list from when the picker was built, and it's narrower than what the colon gave you before. Say the word and I'll make that tab the full set.
+- **The picker's Emoji tab is every emoji now — 1870 of them, up from 129.** It used to be a hand-picked list, which is fine right up until you want one nobody thought to pick. They're in the eight groups an emoji keyboard uses, and searching finds them by name, by keyword, or by the `:word:` people type in chat apps. This is everywhere the picker appears, so a page's icon and a meter's markers get the full set too, not just the writing.
 - **A callout with no icon still has somewhere to click.** An empty square appears in the corner while your pointer is over the callout, the same way the colour dot does, so an icon you removed can be put back.
 - **Icons in your writing don't survive an export to LegendKeeper.** An emoji does — it's a character, so it goes out as itself — but a glyph is a drawing and there's nothing in that format to put it in, so it's dropped rather than exported as the word "sword". Everything else about the page exports as it did.
 

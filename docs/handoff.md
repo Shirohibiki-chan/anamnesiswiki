@@ -2074,6 +2074,23 @@ under `acknowledgedWarnings`.
   which is what the rule needs, and the caret's rectangle, which is what the
   popover anchors to.
 
+- **The emoji list is `@emoji-mart/data`, and it is deliberately not curated.**
+  Phase 18c shipped 129 hand-picked ones; the argument against that is hers and
+  it generalises — you cannot scroll to a thing whose name you do not know if
+  it was never in the list, and a curated set is the option that eventually
+  fails to hold the thing somebody wants. It is also the same file BlockNote
+  depends on, so this is the list she already had inside the editor, now
+  reachable from every picker. **Do not trim it back to a browsable size**;
+  browsability is the grid's job, not the list's.
+
+- **A caret in an empty block has no rectangle, and a popover anchored to one
+  has to expect that.** Measured 2026-09-01: `getBoundingClientRect()` on a
+  collapsed range in an empty paragraph returns all zeros, so the first cut of
+  the `:` trigger read that as "nowhere to put this" and quietly declined to
+  open — which meant the picker worked everywhere except the most ordinary
+  place to type, a fresh line. The fallback is the line element's own box.
+  Anything else anchored to a caret in this editor wants the same fallback.
+
 ## Template swaps
 
 - **A template change must never drop a value, and it did until 2026-08-27.**
