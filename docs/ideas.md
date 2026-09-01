@@ -282,7 +282,7 @@ Raised by the user 2026-08-13 after comparing directly against LK.
 
 ---
 
-**A gallery page, and the pictures on it can be taken back out**
+**Image gallery — a page of pictures that can be taken back out**
 
 Asked for by the user 2026-08-31. Wanted, unscheduled.
 
@@ -290,6 +290,52 @@ Asked for by the user 2026-08-31. Wanted, unscheduled.
 
 **The case is one gallery per character, and somebody is doing it today.** The botmaker whose folder plugin is described in `plan.md` uploads the pictures of each bot into a folder belonging to that bot — Damien's, Valera's, one each. That is the shape to serve, and it is worth saying plainly because an earlier reading of this idea treated a per-character picture folder as something our asset library already covers. It does not.
 
+**The library is the wrong home for it, and not narrowly.** A folder there is a flat label, a picture carries exactly one, and the sidebar is a dropdown whose stress case was already fifty folders (see above). One folder per character puts the character count straight into that dropdown, and it puts a character's pictures somewhere other than the character — two places to keep in step, which is the arrangement that goes stale.
+
+**A gallery page gets the grouping for nothing.** The tree already nests and a character is already a page, so Damien's gallery is a child of Damien and there is no second set of folders to keep in order. This is the thing the app's own shape is good at and the library isn't; see `CLAUDE.md` → Data on disk for why any page can hold pages.
+
+**Pictures come from the library or straight off her PC, and that is a difference in the picker rather than in the storage.** `uploadAsset` already takes the bytes, the extension and the file's own name, and anything arriving that way lands in `assets/` like every other upload. So "put this file from my computer in this gallery" is not a second path to build, and a picture dropped into a gallery is in the library by construction rather than as a separate copy.
+
+**The download is the point, and most of it is built.** *Save a copy* has been on a picture in a page since Phase 16: it goes through the OS save dialog, copies the original bytes, and keeps whatever extension the file already had rather than converting anything. It exists because BlockNote's own Download button calls `window.open`, which is not a download in a Tauri window. So a gallery isn't inventing this — it is putting what already works on every tile, plus, presumably, a way to take the whole page at once.
+
+**The suggested filename is what decides whether it feels cheap.** A picture's file is a UUID and the name she typed is a label in `.names.json`, so a gallery that drops `a3f9b2…png` into Downloads is exactly the experience being complained about. The label is load-bearing here, and an unnamed picture needs a fallback that is worth having rather than the id.
+
+**Two kinds of picture behave differently and the grid has to say which is which.** One in the library has its bytes here. An embedded one lives on someone else's server, has no bytes here, and *Save a copy* opens it in the browser instead — deliberately, since fetching it would be the app making a request nobody asked for. In a grid of thirty, a tile that opens a browser instead of saving is a surprise unless it is marked as one.
+
+**Who "people" means decides how much of this can be built now.** Inside the app it is her and one other person, and that half is buildable today. A world handed to anyone else is Phase 1.5 (Publish), where the download is an anchor on an exported page and the export has to actually carry the files — so that half waits for Publish rather than being designed around it now.
+
+**A page type rather than a block was her call and is worth keeping.** `TEMPLATE_KEYS` holds fifteen and adding one is routine; Phase 22 wants another for universes. A block would put a gallery inside some other page's body, which is the arrangement that makes "where are Damien's pictures" a question again.
+
+**She sent a screenshot of one on 2026-08-31 — Rolecraft Vault, somebody else's app — as an example of what an image gallery *is*, not a design to match.** Her correction the same day, and worth keeping at the top of anything read off that picture: their app is a different app, and this should still look like a page here. So take the concept and leave the chrome.
+
+**The concept is tiles that are pictures, each with its own caption, that open bigger when clicked and can be taken back out.** That is the whole of it, and everything below is either already built or a small addition to something built.
+
+**Two anti-goals, both read off Notion's own gallery view, which she screenshotted 2026-08-31.** They are the same failure twice: a thing called a gallery that is not actually about the pictures.
+
+- **You cannot see the pictures.** Every card crops to the same wide rectangle whatever shape the picture is, so a portrait image — which is most character art, and most of hers — has a band taken out of its middle and the rest thrown away. **This makes tile shape a real decision rather than a detail**, and it is undecided: uniform tiles that letterbox instead of cropping, uniform portrait-shaped tiles, or tiles that keep each picture's own proportions and pack around one another. What is already settled is the constraint — a tile shows the picture, so anything wide and fixed is wrong before it starts.
+- **Clicking a tile opens a page.** Not the picture. Even the caption is a page title with a document icon beside it, so the label names a document too. Here a tile opens the picture in the lightbox, and the caption names the picture.
+
+
+**Captions want the name we already keep.** A picture's file is a UUID and its name is a label in `.names.json`, so a tile has something to draw without inventing a second field — and an unnamed picture needs a fallback that isn't the id.
+
+**Click-to-enlarge is built.** The Phase 16 lightbox already shows the filename, arrows through every picture on the page rather than only the one clicked, and zooms and pans. A gallery inherits it rather than needing its own.
+
+**"Original quality" is worth saying on the button, in those words.** Ours already behaves that way — *Save a copy* copies the bytes and refuses to convert — but nobody can see that from a button marked Download, and *just in case* is a promise about fidelity. Theirs says it; that part is worth stealing.
+
+**One picture is already the page's portrait** (`node.image`), and theirs marks that on the tile. Showing it, and setting it from a tile, is close to free and saves a trip to the properties panel.
+
+**Selecting several pictures and acting on them together** is how theirs answers taking the whole page at once, and it is a better shape than a lone Download-all: one control covers one picture or forty. If deleting is ever part of that, it goes through `asset-usage.ts`, which knows all four places a picture can be in use and exists so that a delete button can be trusted.
+
+**What is theirs and not asked for, listed so nobody builds it off a screenshot:** a Small/Medium/Large size toggle, albums *inside* the gallery with their own counts, and the whole thing being a modal with a Close button. The albums one is the one to actually ask about rather than quietly include — a second place to file a picture is precisely what a gallery page was meant to save her from.
+**Two things, two words — her split, 2026-08-31, and it is what keeps this from becoming Notion's mess.** The names she landed on: **image gallery** for the pictures, **database** for pages laid out as cards. Notion's whole failure is one word stretched over both, so the rule underneath outlives either name — one name per thing, and no name shared.
+
+**The qualifier goes on the ambiguous word, which is why this beats calling it just "gallery".** Notion has trained a lot of people that a gallery is cards of pages, so the bare word arrives already meaning the wrong thing; *image gallery* cannot. It also settles an objection that killed the alternative: in Notion a gallery is a view **of** a database rather than its sibling, so a plain Gallery sitting next to a Database invites the assumption that one lives inside the other. Spelling out *image* takes the two out of that relationship.
+
+**"Collection" was the other candidate and she ruled it out for a reason worth keeping.** It is too useful a word to spend on UI plumbing — a collection is a thing that exists *inside* a world (a character's inventory, an archive of relics, a set of anything she is writing about), and a feature name eats the word everywhere it appears. Same reasoning that made *gallery* a problem in the first place. The word stays free for her world.
+
+**One caveat on *database*, recorded rather than argued.** In Notion the word carries typed columns, sorts, filters, formulas, rollups and relations; ours is pages gathered by a rule with filtering planned. The name is a promise slightly ahead of the feature, which is a cost she accepted knowingly against her audience already speaking the word fluently.
+
+**The page-side half already mostly exists here.** A collection block pulls pages from manual links, the subpage index, tags or backlinks and draws them as a list; Phase 23 in `plan.md` is currently called Collections. Cards with cover images is a layout on that, not a new feature — **so the rename to Database is a real edit to `plan.md` and the other tracking docs, and belongs in its own change rather than being smuggled into this entry.** Nothing user-facing says "collection" today: a block's heading is its source's name, so the app itself needs no migration.
 **The library is the wrong home for it, and not narrowly.** A folder there is a flat label, a picture carries exactly one, and the sidebar is a dropdown whose stress case was already fifty folders (see above). One folder per character puts the character count straight into that dropdown, and it puts a character's pictures somewhere other than the character — two places to keep in step, which is the arrangement that goes stale.
 
 **A gallery page gets the grouping for nothing.** The tree already nests and a character is already a page, so Damien's gallery is a child of Damien and there is no second set of folders to keep in order. This is the thing the app's own shape is good at and the library isn't; see `CLAUDE.md` → Data on disk for why any page can hold pages.
