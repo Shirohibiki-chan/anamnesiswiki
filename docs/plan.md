@@ -60,6 +60,12 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   That is better than a token, which has to be typed correctly on every child
   when the thing every child wants is identical.
 
+  **The rule is set on the preset as a whole rather than per child — her
+  call 2026-08-31.** One prefix switch and one separator box, covering every
+  child in it, the way the plugin does it. A template wanting some children
+  prefixed and others not is two templates, which is cheaper to explain than a
+  checkbox on every row.
+
   **What the prefix buys here is narrower than it looks, and worth knowing
   before pricing it.** Links won't break either way — a mention stores
   `nodeId`, not a name — and same-named siblings already get a `(2)` on the
@@ -73,9 +79,25 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   named after an unnamed parent. Ours is the other way round: a page made from
   a template is added blank, filled, and named last, which is exactly why the
   children would land under an Untitled parent. Reversing that for this route
-  is the change. **Whether renaming a parent later renames its children is a
-  separate decision** — the plugin bakes the name in and never revisits it, so
-  a renamed folder there keeps subfolders naming the old one.
+  is the change.
+
+  **Renaming a page renames its preset-named children with it. Her call
+  2026-08-31**, over the plugin's own behaviour — it bakes the name in at
+  creation and never revisits it, so a renamed folder there keeps subfolders
+  naming the old one, which goes wrong the first time a typo is fixed. **She
+  asked whether a setting for "ask me each time" belongs beside it, and it
+  does not.** A preference for a rare event is one nobody finds, and a prompt
+  in the middle of a rename slows the common case down to serve the rare one.
+  Undo is the answer that already exists: Phase 19 covers the panel and a
+  page's tabs, and `history-service`'s `collapseSince` is what makes a rename
+  plus its cascade one press rather than several. Wrong cascade, one undo, no
+  setting.
+
+  **The simpler argument is hers, and it is the one to keep: a name is
+  editable text.** If the cascade renames a child she wanted left alone, she
+  types it back — no undo, nothing to find in Settings. A wrong cascade
+  costs a typo's worth of work to fix, and that is exactly what makes it safe
+  to do by default rather than something to ask permission for.
 
   **Applying to a page that already exists is the second route and the one that
   reaches her world.** Right-clicking offers it, using the page's current name
@@ -755,13 +777,15 @@ The tree then shows one universe at a time, at the root. Today an AU character i
 
 **Explicitly not building: base profiles with per-AU overrides.** Proposed and rejected by the user the same day, and worth not re-opening. Overrides only pay off when the variants are mostly identical, and hers diverge on species, appearance, history, relationships and most of the prose — the base profile would be pure indirection. It would also put "am I editing canon or this AU?" in front of every keystroke, and turn a character on disk into a base plus a stack of patches, which cuts against the plain-JSON promise. If cross-universe navigation is ever wanted, the cheap version is a plain "variant of" link between pages, no inheritance.
 
-**Sequenced before the three big views** so Collections, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wants somewhere to live, and Phase 21 is what builds the left rail it belongs in. Putting it before that means placing it twice.
+**Sequenced before the three big views** so Database, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wants somewhere to live, and Phase 21 is what builds the left rail it belongs in. Putting it before that means placing it twice.
 
 ---
 
-## Phase 23 — Collections
+## Phase 23 — Database
 
-A filtered table or gallery view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
+A filtered table or card view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
+
+**Named Database as of 2026-08-31; it was Collections until then.** The rename came out of naming the image gallery (`docs/ideas.md`): a gallery holds pictures, a database holds pages laid out as cards, and no name is shared — one word stretched over both is exactly Notion's failure. *Collection* was the other candidate and she held it back on purpose, not for a use she has in mind but because it is a valuable word and a feature name spends it everywhere at once. **Nothing user-facing said "collection", so there was nothing to migrate** — a block's heading is its source's name (Manual links, Subpage index, Tag index, Backlinks). The code still says `collection`; that is internal and can follow whenever this phase is built. **One cost, accepted knowingly:** in Notion the word carries typed columns, sorts, formulas and relations, so the name runs slightly ahead of what this phase builds.
 
 ---
 
@@ -777,7 +801,7 @@ Obsidian's graph is the thing to beat, so what's wrong with it is the spec. Five
 - **Nodes have to look like her tree, not like dots.** Obsidian draws every note as the same grey circle, which throws away the one thing this app knows and Obsidian doesn't: templates. Characters, locations, factions and species carry their sidebar icon and her chosen node colour into the graph. This is the single biggest legibility win available and it's nearly free — `constants/icons.ts` and the colour cascade already exist.
 - **The same project has to look the same every time you open it.** Force-directed layouts settle differently on every run, so there's no building a memory of where anything is. Seed the simulation deterministically and remember pinned positions.
 - **Scoped by default, not everything at once.** One universe (Phase 22), widened on request. Five AUs rendered together is precisely the hairball that makes people close the tab.
-- **Filters are visible controls, not a query syntax.** Filter by template and by tag using Phase 23's Collections filter model rather than inventing a second language for the same job.
+- **Filters are visible controls, not a query syntax.** Filter by template and by tag using Phase 23's Database filter model rather than inventing a second language for the same job.
 - **Clicking a node must not throw the graph away.** It opens a preview beside the graph; going to the page is a deliberate second action.
 
 Both run on the reference index built in Phase 18, so neither starts from nothing. D3-force is the likely library.
@@ -821,7 +845,7 @@ unlabelled fork and a fork that stops look identical.
 
 **Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure, and the loose notes — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
 
-**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom and edge rendering from Phase 24 — its *layout*, per the note above, is the one thing not to inherit. It doesn't otherwise depend on Collections or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
+**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom and edge rendering from Phase 24 — its *layout*, per the note above, is the one thing not to inherit. It doesn't otherwise depend on Database or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
 
 ---
 
