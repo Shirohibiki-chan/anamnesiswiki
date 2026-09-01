@@ -26,31 +26,60 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
-- **A template's sub-pages arrive under the template's own names, with nothing
-  tying them to the page they landed in.** Asked for 2026-08-31 by a botmaker
-  in her Discord who'd had the same thing built as an Obsidian plugin: every
-  character folder holds the same three subfolders, and they want each one
-  named after the folder holding it — `Damien` giving `Damien_Pics`. **Most of
-  it already ships.** A template keeps the pages saved inside it and applying
-  one pours them in (`applyCustomTemplate`), so "a different preset for a
-  different occasion" is what the Templates tab already holds. The missing
-  piece is a token in the child's name — `{parent}_Pics` in the library,
-  resolved into a real name on the page.
+- **A page's sub-pages arrive under the names the template gave them, with
+  nothing tying them to the page they landed in.** Asked for 2026-08-31 by a
+  botmaker in her Discord, who had the same thing built as an Obsidian plugin
+  the night before and sent it over — 300 lines of plain JavaScript, read here
+  on 2026-08-31, so the design below is taken off working code rather than
+  guessed at. Every character
+  folder there holds the same three subfolders, and creating one names each
+  after the folder holding it — `Damien` giving `Damien_Pics`, `Damien_Sheets`,
+  `Damien_Overrides`.
 
-  **Two things decide its shape.** It has to resolve to a real name rather than
-  be substituted at draw time: a page's folder on disk is named from
-  `node.name`, so a name that only exists in the UI leaves `{parent}_Pics`
-  sitting in her file explorer. And it can't resolve when the template is
-  applied — a page made from a template is named *after* its children land — so
-  this is a rename-time rule, and renaming the parent later has to carry the
-  children with it.
+  **A preset there is three things: a name, a separator, and a list of
+  subfolder names.** No page content, no properties, no pictures. There is no
+  `{parent}` token to write — you type `Pics`, and prefixing is simply what a
+  preset does, with the separator (`_` by default, editable, allowed to be
+  empty) sitting between the two halves. That is a better idea than a token and
+  worth taking over one: a token has to be typed correctly on every child, and
+  the one thing every child wants is the same thing.
 
-  **It is switched on, never assumed.** The other person in that conversation
-  said the opposite thing the same day — they name their subfolders something
-  different every time, so a preset that renamed them on its own would be work
-  to undo. The token is set per child when the template is saved, a template
-  can carry one on one child and not the others, and a name typed by hand is
-  never written over.
+  **So the open question is what a preset *is* here, and it should be settled
+  before anything is built.** Our custom templates already carry the pages
+  saved inside them and `applyCustomTemplate` already pours them in, so the
+  structure half exists — but a template is a heavy object, and reaching for
+  one to get three empty folders means dragging tabs, properties and a picture
+  along for the ride. Either a template grows a prefix-and-separator setting,
+  or presets are their own small thing beside them. The plugin chose separate;
+  it had no choice, since Obsidian templates don't make folders at all, so its
+  answer isn't evidence for ours.
+
+  **It asks for the name first, and that removes the hard part.** The modal
+  takes the folder name, then where it goes, then which preset, then creates
+  the parent and the children in one go — so the name is known before anything
+  is named after it. Our own flow is the opposite way round: making a page from
+  a template adds a blank page, pours the template in, and asks for a name
+  afterwards, which is why the children would land under an Untitled parent.
+  That flow is what changes for this route, and it is a smaller change than the
+  rename-time rule it replaces. **Whether renaming the parent later renames the
+  children is then a separate decision** — the plugin bakes the name in at
+  creation and never revisits it, so a renamed folder keeps subfolders naming
+  the old one. Worth doing better than, not worth blocking on.
+
+  **The second entry point is the one that matters for a world that already
+  exists.** Right-clicking a folder offers *apply the preset to this one*,
+  using the folder's current name as the prefix. Valeraverse is already full of
+  characters, so the route that only works on new pages would reach almost none
+  of it. Where a child of that name is already there it is skipped and the rest
+  are still made, with a count reported afterwards — which is the behaviour
+  that makes applying twice safe.
+
+  **Nothing happens on its own, and that is the whole answer to the objection
+  she passed on.** The other person in that conversation names their subfolders
+  differently every time and would be undoing anything automatic. In the plugin
+  a preset is chosen from a dropdown at the moment of creating, and a folder
+  made the ordinary way is untouched — no toggle to find, no rule running in
+  the background. Keep that shape; it is what makes the feature ignorable.
 
 - **Keep peeling logic out of `project-store.ts`, a slice at a time.** A
   read-through on 2026-08-28 found it at 3,226 lines and around 140 actions in
