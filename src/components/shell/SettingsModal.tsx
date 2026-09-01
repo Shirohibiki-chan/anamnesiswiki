@@ -222,37 +222,40 @@ export function SettingsModal({ onClose, initialTab, initialVersion }: SettingsM
   const ActivePanel = PANELS[active.id];
 
   /**
-   * The four appearance sections take the dim off the app and let clicks
-   * through to it, so the thing being changed is visible while it's being
-   * changed.
+   * **Settings is a panel down the right edge, not a dialog in the middle, and
+   * it is that on every section.** The app behind it keeps its true colours and
+   * stays clickable throughout.
    *
-   * Reported from use: picking colours through an app dimmed 50% black means
-   * never seeing the colour you picked — the strip you *could* see was showing
-   * it at half brightness. The dialog itself does not move: an earlier pass
-   * also docked it against the right edge on these four sections, and a dialog
-   * that jumps to the side of the window depending on which section you are on
-   * is a surprise every time, not a convenience.
+   * Three passes got here and the middle one is the instructive one. Reported
+   * 2026-08-30: picking colours through an app dimmed 50% black means never
+   * seeing the colour you picked. The fix docked the dialog aside *only* on the
+   * four appearance sections and slid it back for the rest — and a window that
+   * sits somewhere different depending on which section of it you are on was
+   * reported as annoying within the day, fairly. Centring it everywhere instead
+   * just traded that for a box covering the page, which is the surface you most
+   * need to see. So: one position, at an edge, always.
    *
-   * Keyed off the group rather than a list of ids, so a fifth `look` section
-   * gets this without anyone remembering to add it.
+   * That means there is nothing here keyed off the section any more, and adding
+   * something would be reintroducing the bug. The class list is unconditional
+   * on purpose.
    */
-  const seeThrough = active.group === "look";
 
   return createPortal(
-    /* The click-to-close handler stays on the backdrop in both modes. On the
-       appearance sections the CSS makes the backdrop transparent *and*
-       click-through, so this never fires there — clicking the app behind does
-       what it normally does and leaves the dialog open, which is the point: you
-       can walk to another page to see the theme on it. Escape and the × still
-       close. */
-    <div className={`ui-backdrop${seeThrough ? " ui-backdrop-see-through" : ""}`} onClick={onClose}>
+    /* **No click-to-close, deliberately, and no handler here to suggest
+       otherwise.** The backdrop is transparent and `pointer-events: none`, so a
+       click lands on the app behind — which is the point: walk to another page,
+       open a folder, watch the theme on something real while the picker is
+       open. A panel that vanished every time you clicked the app it exists to
+       change would be unusable. Escape and the × close it. If the backdrop is
+       ever given pointer events back, this is the line that has to come back
+       with it. */
+    <div className="ui-backdrop ui-backdrop-see-through">
       <div
         className="ui-modal ui-modal-xl settings-modal"
         role="dialog"
-        /* Not modal when the app behind it is genuinely usable. Claiming
-           otherwise tells a screen reader the rest of the window is inert
-           while a mouse can reach all of it. */
-        aria-modal={!seeThrough}
+        /* Never modal: the rest of the window is genuinely reachable by mouse
+           and keyboard, and saying otherwise is a lie to a screen reader. */
+        aria-modal={false}
         aria-labelledby="settings-title"
         onClick={(e) => e.stopPropagation()}
       >

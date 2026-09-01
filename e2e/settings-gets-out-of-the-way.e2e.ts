@@ -1,18 +1,18 @@
-// The appearance sections of Settings stop dimming the app and let clicks
-// through to it, so a colour can be judged while it is being picked — and the
-// dialog itself stays exactly where it is while they do.
+// Settings is a panel at the right edge of the window, on every section, with
+// the app beside it in its true colours and still clickable.
 //
 // **Worth a scenario rather than a unit test** because none of it is decidable
-// from the source. Whether the app is visible behind the dialog is a computed
-// backgroundColor and a real click landing on a real tree row; a test that
-// asserted the class name would pass with the rule deleted, which is the way
-// this would actually break.
+// from the source. Whether the app is visible behind it is a computed
+// backgroundColor and a real click landing on a real tree row; whether it is
+// docked is a bounding box against the window. A test asserting the class name
+// would pass with the rules deleted, which is how this would actually break.
 //
-// **The dock is gone, deliberately.** Until 2026-09-01 these four sections also
-// slid the dialog against the right edge and back again, and this file asserted
-// the docked geometry. Removed on report: a dialog that sits somewhere else
-// depending on which section of it you are on is a surprise every time. The
-// staying-put assertion below is the guard against it coming back by accident.
+// **The assertions that matter most are the ones comparing two sections.** Two
+// earlier passes each shipped a version of the same bug — something about the
+// panel keyed off which section was open, so it changed under you as you moved
+// through it. First the position (docked on the four appearance sections,
+// centred for the rest), then, after that was pulled, the dim. Reading the same
+// property either side of the crossing is the guard against a third.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, resizeWindow, type RunningApp } from "./harness/launch-app";
 import { openPage, openSettings, openSettingsSection, pageTitle, waitForWorld } from "./harness/screen";
@@ -23,7 +23,7 @@ const MODAL = ".settings-modal";
 const WIDTH = 1400;
 const HEIGHT = 880;
 
-describe("Settings gets out of the way on the appearance sections", () => {
+describe("Settings sits beside the app instead of over it", () => {
   let app: RunningApp;
 
   beforeAll(async () => {
@@ -42,22 +42,41 @@ describe("Settings gets out of the way on the appearance sections", () => {
     return app.window.locator(BACKDROP).evaluate((el) => getComputedStyle(el).backgroundColor);
   }
 
-  async function modalBox(): Promise<{ x: number; width: number }> {
+  async function modalBox(): Promise<{ x: number; width: number; height: number }> {
     const box = await app.window.locator(MODAL).boundingBox();
-    return { x: box?.x ?? 0, width: box?.width ?? 0 };
+    return { x: box?.x ?? 0, width: box?.width ?? 0, height: box?.height ?? 0 };
   }
 
-  const isCentred = (box: { x: number; width: number }) => Math.abs(box.x + box.width / 2 - WIDTH / 2) < 4;
-
-  it("stops dimming the app on Colours", async () => {
+  it("never dims the app, on an appearance section or an app one", async () => {
     await openSettingsSection(app.window, "Colours");
     // Fully transparent, not merely lighter: a colour seen through any wash is
     // not the colour that was picked, which is the whole complaint.
     expect(await backdropPaint()).toBe("rgba(0, 0, 0, 0)");
+
+    await openSettingsSection(app.window, "Keyboard");
+    expect(await backdropPaint()).toBe("rgba(0, 0, 0, 0)");
   });
 
-  it("stays centred there, like everywhere else", async () => {
-    expect(isCentred(await modalBox())).toBe(true);
+  /**
+   * **It has to look docked, not merely be off to one side.** An early version
+   * kept the floating-dialog shape — inset from the edge, rounded, capped at
+   * 44rem tall — and on a large window that is a square adrift in the middle of
+   * nothing, anchored to nothing. It read as a lost box, not a panel.
+   */
+  it("fills the height and touches the right edge", async () => {
+    const box = await modalBox();
+    expect(box.x + box.width).toBe(WIDTH);
+    expect(box.height).toBe(HEIGHT);
+
+    const radius = await app.window.locator(MODAL).evaluate((el) => getComputedStyle(el).borderTopRightRadius);
+    expect(radius).toBe("0px");
+  });
+
+  it("leaves the sidebar and part of the page uncovered", async () => {
+    const box = await modalBox();
+    // Left of the panel, not merely narrower than the window. 260px is the
+    // tree's own width; anything less exposes no whole surface to look at.
+    expect(box.x).toBeGreaterThan(260);
   });
 
   /**
@@ -81,25 +100,35 @@ describe("Settings gets out of the way on the appearance sections", () => {
   });
 
   it("lets a click reach the app, and stays open when it does", async () => {
-    // Behind the dialog in the ordinary sense — the backdrop is click-through,
-    // so this lands on the tree. Walking to another page while the picker is
-    // open is the point: a theme is judged on more than one screen.
+    // The backdrop is click-through, so this lands on the tree. Walking to
+    // another page while the picker is open is the point: a theme is judged on
+    // more than one screen. It is also what click-to-close would have taken
+    // away, which is why Settings no longer has it.
     await app.window.locator(".tree-row-name", { hasText: "Quietgate" }).first().click();
     expect(await pageTitle(app.window)).toBe("Quietgate");
     expect(await app.window.locator(MODAL).isVisible()).toBe(true);
   });
 
-  it("dims the app again on the app sections, without moving the dialog", async () => {
-    const before = await modalBox();
-    await openSettingsSection(app.window, "Sidebar");
-    expect(await backdropPaint()).not.toBe("rgba(0, 0, 0, 0)");
+  it("does not move or resize when you cross between sections", async () => {
+    await openSettingsSection(app.window, "Colours");
+    const onLook = await modalBox();
 
-    // Same box, not merely a centred one: crossing between an appearance
-    // section and an app one is the moment the dock used to fire.
-    const after = await modalBox();
-    expect(after.x).toBe(before.x);
-    expect(after.width).toBe(before.width);
-    expect(isCentred(after)).toBe(true);
+    await openSettingsSection(app.window, "Sidebar");
+    const onApp = await modalBox();
+
+    // Identical, not merely both docked: this crossing is where both earlier
+    // versions of this feature changed something under the pointer.
+    expect(onApp).toEqual(onLook);
+  });
+
+  it("still docks on a narrow window, giving up width instead of position", async () => {
+    await resizeWindow(app, 900, 700);
+    const box = await modalBox();
+    expect(box.x + box.width).toBe(900);
+    // Narrower than it was, and still leaving a usable strip of app beside it.
+    expect(box.width).toBeLessThan(704);
+    expect(box.x).toBeGreaterThanOrEqual(260);
+    await resizeWindow(app, WIDTH, HEIGHT);
   });
 
   it("says nothing to the console while doing it", () => {

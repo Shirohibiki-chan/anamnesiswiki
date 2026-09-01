@@ -493,45 +493,73 @@
    nav and the section heading away with it; you'd be reading a settings screen
    with no way to see which section you were in.
 
-   Second, the dialog is a *fixed* height rather than one that fits its panel.
-   The modal is centred, so a panel swap on an auto-height dialog moves the nav
-   by half the height difference — you'd click "Snippets" and the rail would
-   jump out from under the pointer. A floor used to paper over this; a real
-   height removes it. */
+   Second, the panel is a *fixed* height rather than one that fits its content.
+   This mattered most while Settings was a centred dialog, where a panel swap on
+   an auto-height box moved the nav by half the height difference — you'd click
+   "Snippets" and the rail would jump out from under the pointer. The dock below
+   pins it to both edges of the window, which settles it for good; the rule is
+   still written down because the height is now set in two places and someone
+   relaxing one of them should know what it was holding. */
 
-/* --- Out of the way, on the appearance sections ---
-   The four `look` sections take the dim off the app and stop the backdrop
-   swallowing clicks. Reported from use: choosing colours meant looking at the
-   app under `--color-scrim`, a flat 50% black, so the strip you could see
-   wasn't the colour you had just picked; it was that colour at half
-   brightness. A colour editor you cannot see the result through is a text
-   field.
+/* --- Settings is a panel at the right edge, always ---
+   Transparent backdrop, no pointer events, full height, flush to the edge. The
+   app behind keeps its true colours and stays clickable, so a theme can be
+   judged on a real page while it is being picked.
 
-   **The dialog itself doesn't move.** A pass on 2026-08-30 also docked it
-   against the right edge on these four sections and slid it back for the rest.
-   Removed 2026-09-01: a dialog that sits in a different place depending on
-   which section of it you're on is a surprise every time it happens, and the
-   dim was the half of that change doing the actual work. Don't rebuild the
-   dock — if the centred dialog turns out to cover too much, narrow it or move
-   it in *both* modes, so it is always in the same place. */
+   **Three passes, and the two rejected ones are the reason this is
+   unconditional.** 2026-08-30: choosing colours meant looking at the app under
+   `--color-scrim`, a flat 50% black — the strip you could see showed the colour
+   at half brightness, so the panel could not be used for the one thing it
+   exists for. That pass docked the dialog aside on the four `look` sections
+   only and slid it back to centred for the rest, which was reported as annoying
+   the same week: a window that sits somewhere different depending on which
+   section of it you are on is a surprise every single time, and easing does not
+   make a window that moves under you feel intentional. Centring it everywhere
+   instead (2026-09-01, briefly) traded that for a box sitting on the page —
+   which is the surface you most need to see, so it was useless in a second way.
+
+   One position, at an edge, on every section. **Nothing in this block may be
+   keyed off which section is open** — that is the bug both earlier passes
+   shipped, in two different properties.
+
+   It docks at every window size rather than falling back to a centred dialog
+   below some width, for the same reason. The width gives way instead: the
+   `max()` keeps at least 17rem of app to the left of it, which is about the
+   tree sidebar, and the `min()` stops it growing past the point where the
+   panels inside are short text on a very wide page. */
 .ui-backdrop-see-through {
   background: transparent;
-  /* Off, so a click lands on the app rather than on a sheet of glass that
-     closes the dialog. The dialog turns it back on for itself. */
+  /* Off, so a click lands on the app rather than on a sheet of glass. The
+     panel turns it back on for itself. */
   pointer-events: none;
 }
 
-.ui-backdrop-see-through .settings-modal {
-  pointer-events: auto;
-}
-
 .settings-modal {
-  height: calc(100vh - var(--space-3xl) * 2);
-  /* Not taller than it has anything to put in — past 44rem the panels are short
-     text on a very tall page. The `min()` is not decoration: this overrides the
-     window cap `.ui-modal` sets, and a bare `44rem` sent the dialog off the top
-     of a 450px-tall window the moment the rule below let its height go auto. */
-  max-height: min(44rem, calc(100vh - var(--space-3xl) * 2));
+  --ui-modal-width: min(44rem, max(26rem, 100vw - 17rem));
+  pointer-events: auto;
+
+  /* **Full height, flush to the edge, square.** A first attempt at this kept
+     the floating-dialog shape — rounded, inset from the edge, capped at 44rem
+     tall — and on a 2560x1400 window that is a 704px square adrift in the
+     middle of nothing, anchored to no edge and belonging to nothing. It read as
+     a lost box rather than as a panel, which is a fair description of what it
+     was. A dock has to touch something. */
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  /* Leftward rather than the modal's own downward shadow: the seam that needs
+     depth is the one against the app, and there are no other edges now. */
+  box-shadow: -16px 0 40px rgb(0 0 0 / 0.35);
+
+  /* The backdrop is a centring flex container shared with every other dialog in
+     the app; this pushes just this one to the end of it. Cheaper and steadier
+     than a transform — there is no longer anything to animate, because it never
+     moves. */
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .settings-header {
@@ -824,13 +852,14 @@
 /* A short or narrow window can't give a rail its column, so it goes back to
    being a strip. Both axes are checked: the height matters as much as the
    width, since a rail is only worth the space when the panel beside it is tall
-   enough to be worth reading. The dialog stops being a fixed height here — at
-   this size the panel swap it was smoothing out is the least of it. */
-@media (max-width: 46rem), (max-height: 32rem) {
-  .settings-modal {
-    height: auto;
-  }
+   enough to be worth reading.
 
+   **The panel stays full height here** — this used to release the height too,
+   because a centred dialog that changes height moves its own nav by half the
+   difference when you swap panels, and you'd click Snippets and have the rail
+   jump out from under the pointer. A panel pinned to both edges of the window
+   cannot do that, so the release is gone with the reason for it. */
+@media (max-width: 46rem), (max-height: 32rem) {
   .settings-body {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-xl);

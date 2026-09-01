@@ -8,7 +8,7 @@
 
 ### Changes
 
-- **Settings stays in the middle of the window on every section.** It used to slide over and dock against the right edge on Theme, Colours, Fonts and Snippets, and slide back for the rest. The app behind it is still undimmed and still clickable on those four — that's the half that let you actually see the colour you'd just picked — but the window itself no longer moves depending on which section you're on.
+- **Settings is a panel down the right-hand side now, on every section, and it never moves.** It used to slide over to the right on Theme, Colours, Fonts and Snippets and slide back to the middle for everything else, which meant it sat somewhere different depending on which part of it you were in. Now it's always in the same place: full height, against the right edge, with the sidebar and most of your page still visible beside it. The app there stays undimmed and clickable on every section too, so you can walk to another page and watch a theme land on it while you're still picking. Escape and the × close it; clicking the app no longer does, because that would shut the panel every time you went to look at something.
 - **Pages are written in Nunito instead of Quicksand.** Same rounded, friendly shape, but with a taller lowercase and less gap between letters, so a full page of it reads more settled and takes up a touch less room. Only the writing on a page changed — headings and the rest of the app are the same faces as before, and this is the starting point, so if you'd already picked your own face for writing in Settings, nothing moved.
 
 ## 2026-08-30 — the font picker
