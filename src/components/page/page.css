@@ -1909,7 +1909,16 @@
   border-radius: var(--radius-md);
 }
 
+/* **And nothing inside it keeps a ring of its own.** BlockNote rings a selected
+   block *and* its content element; a row's content element is a zero-size
+   marker, so that ring came out as a small blue square floating at the row's
+   left edge — read out of the running app, 0×0 with `outline: solid`. Named
+   element by element rather than with a `*`, so a button inside a row keeps its
+   own focus ring. */
 .bn-editor .ProseMirror-selectednode.node-pageColumns,
-.bn-editor .ProseMirror-selectednode.node-pageColumn {
+.bn-editor .ProseMirror-selectednode.node-pageColumn,
+.bn-editor .ProseMirror-selectednode > .bn-block-content,
+.bn-editor .ProseMirror-selectednode > .bn-block-content > .page-columns,
+.bn-editor .ProseMirror-selectednode > .bn-block-content > .page-column {
   outline: none;
 }
