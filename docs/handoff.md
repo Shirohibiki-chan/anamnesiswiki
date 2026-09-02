@@ -3478,6 +3478,15 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   package we cannot license, but the plugins keyed on the names ship in core
   and attach to anything called that.
 
+- **Anything a row of columns needs from the stylesheet has to out-specify
+  BlockNote's nesting rules.** Phase 19.5. Its indent is
+  `.bn-block-group .bn-block-group{margin-left:24px}` and its guide line is a
+  `::before` on `.bn-block-group .bn-block-group > .bn-block-outer:not(...)`.
+  A two-class rule of ours *ties* the first and loses, and loses the second
+  outright — so lanes sat 24px in from the writing column with their text 24px
+  inside that again, and every lane carried two stray verticals. The column
+  rules therefore all start with `.bn-editor`. Ordinary nesting keeps both.
+
 - **The `/` menu is ours, and it keeps BlockNote's ids.** Phase 19.5.
   BlockNote's own suggestion menu left the previous query's group headings in
   the DOM — measured: two items in one group, four headings drawn — so

@@ -14,6 +14,7 @@
 
 ### Fixes
 
+- **Columns don't have stray vertical lines through them any more.** The editor draws a faint line beside anything indented, and a column is indented twice over — so every lane had one line at its edge and another beside its writing. They're gone inside a row, and the writing in a lane now starts exactly where the rest of the page's writing does instead of a couple of dozen pixels in.
 - **The `/` menu stopped stacking up headings.** Typing a few letters left the headings of everything you'd filtered past still on screen — `/colum` showed BASIC BLOCKS and three PAGE BLOCKS above the two things that actually matched. The menu is drawn by the app now instead of by the editor library, so it also looks like the rest of the app's menus.
 
 ### Notes
