@@ -1896,3 +1896,20 @@
   color: var(--color-text-muted);
   font-size: var(--fs-sm);
 }
+
+/* **A selected row is ringed as a row, not as its marker.** The row's own
+   element is a zero-height div — everything visible belongs to the lanes — so
+   BlockNote's selection ring drew a six-pixel box in the gutter, which reads as
+   a stray blue square and says nothing about what is selected. The ring moves
+   onto the whole row instead; `:has` is what lets a child's state style the box
+   around it. */
+.bn-editor .bn-block-outer:has(> .bn-block > .ProseMirror-selectednode.node-pageColumns) {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
+
+.bn-editor .ProseMirror-selectednode.node-pageColumns,
+.bn-editor .ProseMirror-selectednode.node-pageColumn {
+  outline: none;
+}

@@ -13,12 +13,15 @@ import {
   FormattingToolbarController,
   SuggestionMenuController,
   getFormattingToolbarItems,
+  useBlockNoteEditor,
+  useEditorSelectionChange,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { PageSlashMenu } from "./PageSlashMenu";
 import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
+import { selectionHoldsNoText } from "../../services/column-service";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
 import {
   BlockRefRenderContext,
@@ -57,6 +60,27 @@ import { SaveImageButton } from "./SaveImageButton";
  * dropped focus back to the page. Same for the rename box beside it.
  */
 function PageFormattingToolbar() {
+  const editor = useBlockNoteEditor();
+  const [nothingToSay, setNothingToSay] = useState(false);
+
+  // **A bar with every button hidden is worse than no bar.** Each item in that
+  // strip hides itself when it does not apply, so selecting a row of columns —
+  // or any of our blocks that hold no writing of their own — left an empty
+  // ten-pixel box with a border and a shadow sitting above the page. Reported
+  // as "the text editor bar", and read out of her running app to be sure: zero
+  // children, 10px tall, one node selected, that node the row.
+  useEditorSelectionChange(() => {
+    try {
+      const selected = editor.getSelection()?.blocks ?? [editor.getTextCursorPosition().block];
+      setNothingToSay(selectionHoldsNoText(selected));
+    } catch {
+      // A selection the editor cannot describe is not a reason to hide the bar.
+      setNothingToSay(false);
+    }
+  }, editor);
+
+  if (nothingToSay) return null;
+
   return (
     <FormattingToolbar>
       {getFormattingToolbarItems().map((item) =>
