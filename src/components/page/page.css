@@ -1760,7 +1760,12 @@
   cursor: pointer;
 }
 
-.bn-block-outer:hover .page-column-remove,
+/* **Only the lane you are pointing at.** Hovering anywhere in a row used to
+   light up every lane's remove and every divider at once, which is a lot of
+   furniture appearing over a paragraph you were only reading. Anchored to a
+   lane's own box — which is exactly a child of the row's block group, so the
+   row's outer does not match it. */
+.node-pageColumns + .bn-block-group > .bn-block-outer:hover .page-column-remove,
 .page-column-remove:focus-visible {
   opacity: 1;
 }
@@ -1791,7 +1796,7 @@
   transition: opacity 120ms ease;
 }
 
-.node-pageColumns + .bn-block-group:hover .column-divider,
+.node-pageColumns + .bn-block-group > .bn-block-outer:hover .column-divider,
 .column-divider:focus-visible {
   opacity: 1;
 }
@@ -1811,4 +1816,83 @@
 
 .column-divider:focus-visible {
   outline: none;
+}
+
+/* ── The `/` menu ─────────────────────────────────────────────────────────
+   Phase 19.5. Ours rather than BlockNote's, because its own menu kept the
+   previous query's group headings on screen — see PageSlashMenu.tsx. It
+   borrows the frame every other menu in the app uses (`.tree-context-menu`
+   plus the scrolling and sticky headings of `.block-add-menu`), so the only
+   thing described here is a row with two lines in it. */
+/* **It carries its own surface.** `.tree-context-menu` is only the list; every
+   other use of it sits inside `.tree-popover`, which supplies the fill, the
+   edge and the elevation. Dropped straight into the editor it came out
+   transparent, with the page's own writing legible through the menu. Same
+   tokens as that popover, so the two read as one kind of thing. */
+.page-slash-menu {
+  min-width: 260px;
+  max-width: 340px;
+  padding: var(--space-xs) 0;
+  background: var(--color-panel-edge);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-modal);
+}
+
+.page-slash-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The selected row is the one the arrow keys are on, so it has to read as
+   chosen without the pointer being anywhere near it. */
+.page-slash-item:hover,
+.page-slash-item-selected {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.page-slash-item > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.page-slash-item-selected > svg,
+.page-slash-item:hover > svg {
+  color: var(--color-accent-light);
+}
+
+.page-slash-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.page-slash-title {
+  font-size: var(--fs-sm);
+}
+
+/* The line that says what the entry does. It wraps rather than truncating —
+   a hint cut off mid-sentence is worse than no hint. */
+.page-slash-subtext {
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  line-height: 1.35;
+}
+
+.page-slash-empty {
+  margin: 0;
+  padding: var(--space-lg) var(--space-xl);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
 }

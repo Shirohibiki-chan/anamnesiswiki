@@ -12,10 +12,15 @@
 - **Removing a column keeps what you wrote in it.** The × under a lane hands its writing to the lane beside it; if that leaves a single column, the row comes apart and everything lands back on the page. Nothing disappears.
 - **Add a column, or take the row apart.** Two buttons under a row you're pointing at: one more lane, or Ungroup, which turns the whole thing back into ordinary paragraphs with every word kept.
 
+### Fixes
+
+- **The `/` menu stopped stacking up headings.** Typing a few letters left the headings of everything you'd filtered past still on screen — `/colum` showed BASIC BLOCKS and three PAGE BLOCKS above the two things that actually matched. The menu is drawn by the app now instead of by the editor library, so it also looks like the rest of the app's menus.
+
 ### Notes
 
 - **Ours rather than the ready-made one.** BlockNote sells columns as a separate package that would mean either paying for it or relicensing the whole app, so this is built against its ordinary block API instead. Same feature, no strings.
 - **A row you drag stays that way.** The widths are stored with the page, so they're still there when you reopen it.
+- **The controls on a row are plain for now** — a × under each lane, and two small buttons under the row. They only appear for the lane you're pointing at, and they're placed to stay out of each other's way rather than designed; that comes later.
 
 ## 2026-09-02 — the infobox's Add Block, tidied up
 
