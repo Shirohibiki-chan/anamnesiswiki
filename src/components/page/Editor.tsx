@@ -89,7 +89,18 @@ function PageFormattingToolbar() {
   // children, 10px tall, one node selected, that node the row.
   useEditorSelectionChange(() => setNothingToSay(holdsNoText(editor)), editor);
 
-  if (nothingToSay) return null;
+  // **It says so rather than going away.** The first cut returned nothing here,
+  // which is wrong for the bar she actually uses: hers is set to stay at the
+  // top of the page, so a bar that disappears whenever a row of columns is
+  // selected is a bar that keeps leaving — worse than the empty strip it
+  // replaced. It keeps its place and explains itself instead.
+  if (nothingToSay) {
+    return (
+      <FormattingToolbar>
+        <span className="formatting-bar-hint">Select some writing to format it</span>
+      </FormattingToolbar>
+    );
+  }
 
   return (
     <FormattingToolbar>

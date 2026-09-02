@@ -1922,3 +1922,20 @@
 .bn-editor .ProseMirror-selectednode > .bn-block-content > .page-column {
   outline: none;
 }
+
+/* What the formatting bar says when there is nothing to format — a row of
+   columns selected, say, which holds no writing of its own. It keeps the bar's
+   own height, so the page does not shift as the selection moves in and out of
+   one. */
+.formatting-bar-hint {
+  display: inline-flex;
+  align-items: center;
+  /* 36px is what the tallest control in the bar comes to, so the bar is the
+     same height with the hint in it as with its buttons — measured at 46 and
+     40 before this. A bar that changes height as the selection moves is a page
+     that jumps. */
+  height: 36px;
+  padding: 0 var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}

@@ -14,7 +14,7 @@
 
 ### Fixes
 
-- **The formatting bar doesn't turn into an empty strip any more.** Selecting a row of columns — or any block that holds no writing of its own — hides every button in the bar, and the empty box was left sitting there with its border and shadow, reading as something half-loaded. It draws nothing at all for those now. The small blue mark that came with it was the row's selection ring drawn around an invisible marker; it goes around the whole row instead.
+- **The formatting bar doesn't turn into an empty strip any more.** Selecting a row of columns — or any block that holds no writing of its own — hides every button in the bar, and the empty box was left sitting there with its border and shadow, reading as something half-loaded. It now keeps its place, at its usual height, and says *Select some writing to format it*. The small blue mark that came with it was the row's selection ring drawn around an invisible marker; it goes around the whole row instead.
 - **The `/` menu stopped stacking up headings.** Typing a few letters left the headings of everything you'd filtered past still on screen — `/colum` showed BASIC BLOCKS and three PAGE BLOCKS above the two things that actually matched. The menu is drawn by the app now instead of by the editor library, so it also looks like the rest of the app's menus.
 
 ### Notes
