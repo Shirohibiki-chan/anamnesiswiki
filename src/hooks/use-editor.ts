@@ -3,7 +3,7 @@
 // page/Editor.tsx used to reach into six of those modules itself; everything
 // that isn't a BlockNote React component now goes through here, leaving that
 // component to do nothing but render.
-import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
@@ -22,6 +22,7 @@ import { ICON_MIN_QUERY, ICON_TRIGGER, iconMenuOpens, isIconPickerChord } from "
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
+import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
 import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
 import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
@@ -110,6 +111,35 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     },
     resolveFileUrl: (url: string) => resolveAssetUrl(rootPath, url),
   });
+
+  /**
+   * Keeps a row of columns a row of columns. Phase 19.5.
+   *
+   * **A row draws every child of its own as a lane, and nothing stops an
+   * ordinary block becoming a child.** BlockNote blocks can hold any block, so
+   * a paragraph that ends up in a row *is* a column until something says
+   * otherwise — which is how a page came back with five lanes, two of them a
+   * character wide. Rather than fight every route in (Enter in the wrong place,
+   * a block dragged, a paste), the shape is repaired after each change: strays
+   * are moved out onto the page, and a row left with one lane is unwrapped with
+   * its writing kept. The rules are in `column-service.ts`.
+   *
+   * **The guard is not optional.** A repair is itself a change, so without it
+   * this would call itself; `applyColumnRepairs` runs its own passes and the
+   * flag keeps the re-entry out.
+   */
+  useEffect(() => {
+    let repairing = false;
+    return editor.onChange(() => {
+      if (repairing) return;
+      repairing = true;
+      try {
+        applyColumnRepairs(editor as unknown as RepairableEditor);
+      } finally {
+        repairing = false;
+      }
+    });
+  }, [editor]);
 
   /**
    * Names she has already been asked about and said no to.
