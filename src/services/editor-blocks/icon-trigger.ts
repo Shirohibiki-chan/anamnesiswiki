@@ -64,3 +64,27 @@ export function iconMenuOpens(tr: TriggerTransaction): boolean {
   const before = tr.doc.textBetween(blockStart, selection.from);
   return iconTriggerOpens(before.endsWith(ICON_TRIGGER) ? before.slice(0, -1) : before);
 }
+
+/**
+ * Whether a keystroke is the chord that opens the picker.
+ *
+ * **Both halves of the colon key count, and that is the whole reason this is a
+ * function.** A colon is `Shift` and the semicolon key, so the natural way to
+ * ask for "control colon" is to hold Control and hit that key — which arrives
+ * as `;`, not `:`, and an earlier cut accepted only the second. Reported as the
+ * chord doing nothing at all.
+ *
+ * `code` is checked as well as `key` so this holds on a layout that puts the
+ * colon somewhere else: the physical key keeps its `Semicolon` code, and a
+ * layout where `:` is typed some other way still matches on the character.
+ */
+export function isIconPickerChord(event: {
+  key: string;
+  code?: string;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+}): boolean {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return false;
+  return event.key === ICON_TRIGGER || event.key === ";" || event.code === "Semicolon";
+}

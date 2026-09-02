@@ -5,7 +5,7 @@
 ### Additions
 
 - **Type `:` and a couple of letters to drop an emoji or an icon into a sentence.** `:sm` and you get a list — `:smile:`, `:smiley:`, `:grinning:` — arrow keys to move, Enter or Tab to take one, the way it works in Discord. A bare colon on its own does nothing, so a colon you meant as punctuation stays punctuation.
-- **Ctrl+`:` opens the full picker instead**, at your cursor: the search box, both tabs, and every icon and emoji there is to scroll through. That's the one for when you don't know what the thing is called.
+- **Ctrl+`:` opens the full picker instead**, at your cursor: the search box, both tabs, and every icon and emoji there is to scroll through. That's the one for when you don't know what the thing is called. Holding shift for the colon is optional — Ctrl and the colon key does it either way.
 - **They're two halves of the same job.** The first is for when you know the name and don't want to reach for the mouse; the second is for browsing. Neither can do the other's job well, which is why there are two.
 - **An icon you place is still clickable afterwards** — click it and the picker opens on it, so you can change your mind without deleting anything. Emoji go in as ordinary characters, the way they always have, so they copy and export as themselves.
 - **`/icon` works too**, and drops a heart in for you to change afterwards.

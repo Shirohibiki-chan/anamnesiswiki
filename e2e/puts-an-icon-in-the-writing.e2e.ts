@@ -125,7 +125,17 @@ describe("an icon in the writing", () => {
     await typeInEditor(app.window, "");
     await app.window.keyboard.press("Enter");
     await app.window.waitForTimeout(400);
-    await app.window.keyboard.press("Control+:");
+    // **Without the shift**, which is how "control colon" is most naturally
+    // typed: Control and the colon key. That arrives as a semicolon, and an
+    // earlier cut accepted only the colon — reported as the chord doing
+    // nothing at all.
+    await app.window.keyboard.press("Control+Semicolon");
+    await app.window.waitForTimeout(700);
+    expect(await iconPickerOpen(app.window)).toBe(true);
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForTimeout(400);
+
+    await app.window.keyboard.press("Control+Shift+Semicolon");
     await app.window.waitForTimeout(700);
     expect(await iconPickerOpen(app.window)).toBe(true);
     // **Empty, not holding the colon it was opened with.** The search box is
