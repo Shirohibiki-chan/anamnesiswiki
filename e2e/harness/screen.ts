@@ -30,6 +30,8 @@ const PAGE_BLOCK = ".page-block";
 const INFOBOX = ".infobox";
 const BLOCK_FRAME = ".block-frame";
 const PAGE_INFOBOX = ".page-infobox";
+const BLOCK_ADD_MENU = ".block-add-menu";
+const MENU_HEADING = ".tree-context-menu-heading";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
@@ -251,8 +253,50 @@ export async function infoboxBlockTitles(window: Page): Promise<string[]> {
 
 /** Adds a block to the page's first infobox, by the name on its menu item. */
 export async function addBlockToInfobox(window: Page, label: string): Promise<void> {
-  await window.locator(".infobox-add").first().click();
+  await openInfoboxAddMenu(window);
   await window.getByRole("button", { name: label, exact: true }).first().click();
+}
+
+/** The section headings in the infobox's own Add Block menu, top to bottom. */
+export async function infoboxAddHeadings(window: Page): Promise<string[]> {
+  await openInfoboxAddMenu(window);
+  const headings = await window.locator(`${BLOCK_ADD_MENU} ${MENU_HEADING}`).allTextContents();
+  await closeMenu(window);
+  return headings.map(normalize);
+}
+
+/**
+ * The fields that menu is still offering — the page's own properties that no
+ * block is showing yet.
+ *
+ * Read as "everything after the Properties heading" rather than by a class of
+ * its own, because that is what the menu means by the section: the heading and
+ * the run of buttons under it, with nothing marking where it ends.
+ */
+export async function propertiesOfferedByInfobox(window: Page): Promise<string[]> {
+  await openInfoboxAddMenu(window);
+  const offered = await window.locator(BLOCK_ADD_MENU).first().evaluate((menu, heading) => {
+    const rows = [...menu.children];
+    const at = rows.findIndex((row) => row.matches(heading) && row.textContent?.trim() === "Properties");
+    if (at === -1) return [];
+    return rows
+      .slice(at + 1)
+      .filter((row) => row.tagName === "BUTTON")
+      .map((row) => row.textContent?.trim() ?? "")
+      .filter((label) => label !== "+ New property");
+  }, MENU_HEADING);
+  await closeMenu(window);
+  return offered;
+}
+
+async function openInfoboxAddMenu(window: Page): Promise<void> {
+  await window.locator(".infobox-add").first().click();
+  await window.waitForTimeout(300);
+}
+
+async function closeMenu(window: Page): Promise<void> {
+  await window.keyboard.press("Escape");
+  await window.waitForTimeout(200);
 }
 
 /**

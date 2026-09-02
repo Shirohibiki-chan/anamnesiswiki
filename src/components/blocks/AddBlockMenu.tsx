@@ -114,17 +114,26 @@ export function AddBlockMenu({
         </button>
       ))}
 
-      <div className="tree-context-menu-heading">Properties</div>
-      {onNewProperty && (
-        <button type="button" onClick={onNewProperty}>
-          + New property
-        </button>
+      {/* **A heading over nothing is worse than a missing section.** Inside an
+          infobox there is no New property button, so a page whose fields are
+          all already shown left the word Properties sitting at the bottom of
+          the menu with an empty space under it, which reads as a list that
+          failed to load rather than as a list with nothing in it. */}
+      {(onNewProperty || unshown.length > 0) && (
+        <>
+          <div className="tree-context-menu-heading">Properties</div>
+          {onNewProperty && (
+            <button type="button" onClick={onNewProperty}>
+              + New property
+            </button>
+          )}
+          {unshown.map((prop) => (
+            <button key={prop.key} type="button" onClick={() => onAddProperty(prop.key)}>
+              {prop.label}
+            </button>
+          ))}
+        </>
       )}
-      {unshown.map((prop) => (
-        <button key={prop.key} type="button" onClick={() => onAddProperty(prop.key)}>
-          {prop.label}
-        </button>
-      ))}
     </div>
   );
 }
