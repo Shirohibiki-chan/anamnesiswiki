@@ -3487,6 +3487,17 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   inside that again, and every lane carried two stray verticals. The column
   rules therefore all start with `.bn-editor`. Ordinary nesting keeps both.
 
+- **Ctrl+A is bound by us, because a container block breaks the editor's own
+  handling of it.** Phase 19.5, found in use. Measured both ways in the running
+  app: with no row on the page, select-all selected the writing (positions
+  3–1443); with a row, it collapsed the cursor to the *end* of the document and
+  selected nothing, so the Backspace after it deleted one character. **The
+  command was never the problem** — `selectAll` run directly produced a correct
+  `AllSelection` on the same document throughout — so `select-all.ts` binds the
+  key to that command through BlockNote's extension API. Anything else that
+  behaves oddly around our container blocks is worth checking the same way:
+  drive the command directly first, and only then blame the feature.
+
 - **The `/` menu is ours, and it keeps BlockNote's ids.** Phase 19.5.
   BlockNote's own suggestion menu left the previous query's group headings in
   the DOM — measured: two items in one group, four headings drawn — so
