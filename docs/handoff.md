@@ -3478,6 +3478,38 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   package we cannot license, but the plugins keyed on the names ship in core
   and attach to anything called that.
 
+- **A row of columns cannot say what it may contain, so its shape is repaired
+  rather than prevented.** Phase 19.5, after a bug report with a screenshot: a
+  row draws every child of its own as a lane, and BlockNote blocks accept any
+  block as a child — so a paragraph that lands in a row *is* a column. She got
+  to five that way, two of them a character wide. `column-service.ts` reads the
+  document and says what is wrong; `apply-column-repairs.ts` turns that into
+  editor calls; `use-editor.ts` runs it on every change behind a re-entry guard.
+  **Do not try to block the routes in** — Enter, a drag, a paste and an undo all
+  reach the same place, and the repair covers them at once.
+
+- **Widths are keyed by lane id, never by position.** Same report. Rules that
+  said "the first lane is 67%" landed on whatever happened to be first once a
+  stray block was in the row. And **a share is used only when every lane has
+  one** (`laneShares`): a lane added or removed resets the row to even, because
+  a mixed row is where a lane ends up a sliver.
+
+- **A rule generated at runtime has to out-specify the stylesheet it is fighting.**
+  Phase 19.5. `page.css` sizes lanes with `.node-pageColumns + .bn-block-group >
+  .bn-block-outer` — three classes — and the first generated rule was two, so
+  every width written was correct and none of them applied. The generator now
+  emits that same selector plus the lane's id. A generated rule that "does
+  nothing" is nearly always this.
+
+- **Hover controls inside the editor collide, and only a screenshot shows it.**
+  Phase 19.5, three times in one afternoon: a lane's remove button on the
+  trailing edge sat on top of the resize divider and swallowed the drag; the
+  same button in a lane's top corner sat on the first word of the writing; and
+  the row's toolbar above the row was clipped off the top of the page, because a
+  row is usually the first block. What works is a band *under* the row — the
+  row's tools at its right, each lane's remove under its own leading edge. Check
+  a new control against a one-line lane, which is the case with no free space.
+
 - **A block's drag handle sits in the space to its left, and that space is not
   free.** Phase 19.5. Measured in the running app: a lane starting at x=620 had
   `.bn-side-menu` covering 604–644 on hover, which swallowed every pointer-down

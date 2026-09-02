@@ -8,6 +8,9 @@
 - **Everything works inside a lane.** They hold ordinary writing, so headings, callouts, pictures, links, the `/` menu and a block dragged in from the sidebar all behave exactly as they do anywhere else on the page.
 - **The line between two lanes is draggable.** Take hold of it and pull to give one lane more room; it sticks to a half, a third, two thirds and the quarters on the way past, and is free between them. The arrow keys move it too, five percent a press, if you'd rather not drag.
 - **A lane can't be squeezed to nothing** — it stops at about a sixth of the row, which is roughly where a line of text stops being readable.
+- **A row keeps its own shape.** Anything that isn't a column can't sit in a row pretending to be one: press Enter in the wrong place, or drag a block in, and it lands on the page under the row instead of turning into a fifth lane.
+- **Removing a column keeps what you wrote in it.** The × under a lane hands its writing to the lane beside it; if that leaves a single column, the row comes apart and everything lands back on the page. Nothing disappears.
+- **Add a column, or take the row apart.** Two buttons under a row you're pointing at: one more lane, or Ungroup, which turns the whole thing back into ordinary paragraphs with every word kept.
 
 ### Notes
 

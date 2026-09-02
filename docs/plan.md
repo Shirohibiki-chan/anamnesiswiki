@@ -672,6 +672,11 @@ built in is a decision rather than an accident.
   entries are the interesting pair and she called them out by name as handy.
   They are the same question as this phase's per-block width from the other end:
   auto-adapt is "be as wide as what you hold", fixed is "be the width I set".
+  **Seen in use 2026-09-02: auto-adapt overrides a width she dragged** — a box
+  set that way snaps back to a column's edge instead of staying where it was
+  put, and only a fixed-width box keeps a dragged size. So the two are a real
+  either/or rather than a preference, and Fixed width is the one that has to
+  exist before dragging an infobox means anything.
   **The resize work they were waiting on shipped 2026-09-02**, so they are
   buildable now: an infobox already has a width and a way to drag it, and what
   is missing is the pair of menu items that set it without a drag. Auto-adapt
@@ -680,7 +685,13 @@ built in is a decision rather than an accident.
   top is its own small feature and unrelated to either.
 - **Layout: Full width, Align center, Wrap left, Wrap right.** See above: two of
   these four are the wrapping we are not building yet, and Align center is cheap
-  and could ship with the width work.
+  and could ship with the width work. **Confirmed from her screenshots of the
+  menu, 2026-09-02**, along with what those settings do in use: a fixed-width
+  box set to Wrap right sits over on the right of the page with ordinary
+  paragraphs above it and empty space beside it, and **no columns are involved**
+  — the position comes from this submenu, not from a row of columns. Worth
+  saying plainly because it looked like free placement on the page at first, and
+  it is not.
 - **A colour row along the top of the menu**, with the same swatches the
   callouts got in Phase 19.5 and a clear button beside them. **This one is
   nearly free** — `COLOR_PALETTE` and the callout colour control already exist

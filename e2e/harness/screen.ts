@@ -304,6 +304,26 @@ export async function dragColumnDivider(window: Page, at: number, ratio: number)
   await window.waitForTimeout(400);
 }
 
+/** Removes one lane through its own control, which keeps the writing. */
+export async function removeColumnLane(window: Page, at: number, row = 0): Promise<void> {
+  await window.locator(`${COLUMN_ROW} + .bn-block-group`).nth(row).locator("> .bn-block-outer").nth(at).hover();
+  await window.getByLabel("Remove this column").nth(at).click();
+  await window.waitForTimeout(600);
+}
+
+/** The row's own controls: another lane, or back to ordinary paragraphs. */
+export async function addColumnLane(window: Page, row = 0): Promise<void> {
+  await window.locator(COLUMN_ROW).nth(row).hover();
+  await window.getByTitle("Add a column").nth(row).click();
+  await window.waitForTimeout(600);
+}
+
+export async function ungroupColumns(window: Page, row = 0): Promise<void> {
+  await window.locator(COLUMN_ROW).nth(row).hover();
+  await window.getByTitle("Put this back to ordinary paragraphs").nth(row).click();
+  await window.waitForTimeout(600);
+}
+
 /** Puts the keyboard on a column divider, for the arrow keys. */
 export async function focusColumnDivider(window: Page, at: number): Promise<void> {
   await window.locator(COLUMN_ROW).first().hover();
