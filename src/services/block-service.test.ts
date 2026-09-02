@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createNode, type Block, type BlockKind, type Node } from "../constants/schema";
 import {
+  BLOCK_WIDTH_MIN,
+  snapBlockWidth,
+  storedBlockWidth,
   blockIdsInPage,
   blockKindLabel,
   blocksFor,
@@ -519,5 +522,37 @@ describe("sweeping an infobox", () => {
     expect(withoutDanglingBlockRefs(doc, alive)).toEqual([
       { type: "heading", children: [{ type: "infobox", props: { blockIds: "keep" } }] },
     ]);
+  });
+});
+
+describe("block widths", () => {
+  it("sticks to a half, a third or a quarter when the drag lands near one", () => {
+    expect(snapBlockWidth(48)).toBe(50);
+    expect(snapBlockWidth(52)).toBe(50);
+    expect(snapBlockWidth(35)).toBe(33);
+    expect(snapBlockWidth(26)).toBe(25);
+  });
+
+  it("leaves a width alone anywhere between them, so a free drag stays free", () => {
+    expect(snapBlockWidth(40)).toBe(40);
+    expect(snapBlockWidth(58)).toBe(58);
+    expect(snapBlockWidth(85)).toBe(85);
+  });
+
+  it("refuses a width too narrow to hold the block's own controls", () => {
+    expect(snapBlockWidth(4)).toBe(BLOCK_WIDTH_MIN);
+    expect(snapBlockWidth(-200)).toBe(BLOCK_WIDTH_MIN);
+  });
+
+  it("never goes past the column it is measured against", () => {
+    expect(snapBlockWidth(140)).toBe(100);
+  });
+
+  it("stores nothing at full width, so an ordinary block carries no field", () => {
+    expect(storedBlockWidth(100)).toBeUndefined();
+    expect(storedBlockWidth(90)).toBe(90);
+    // The snap runs first: a drag that ends near the edge is a full-width
+    // block, and full width is the absent field rather than a stored 100.
+    expect(storedBlockWidth(98)).toBeUndefined();
   });
 });

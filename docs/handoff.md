@@ -29,9 +29,10 @@ session is most likely to touch: a block standing in the page body and an
 infobox grouping several (2026-08-29), callout colours and New page from inside
 the editor (2026-08-28), and the inline icon plus the callout's own icon
 (2026-09-01). What still binds the code from all of it is §Editor & templates
-and §Sidebar blocks below. **Still open in the phase:** dragging a block wider,
-the infobox's own menu, a Recent row in the icon picker, and the slash-command
-and markdown halves of the shortcut sheet.
+and §Sidebar blocks below. Dragging a block or an infobox wider landed
+2026-09-02. **Still open in the phase:** columns in the page, the infobox's own
+menu, a Recent row in the icon picker, and the slash-command and markdown
+halves of the shortcut sheet.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3426,6 +3427,36 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   leaves the frame standing, while it removes a lone `blockRef` outright — an
   empty infobox is ordinary, and deleting one because a single block was removed
   would take its survivors out of the page too.
+
+- **The row is the column and the frame is the box, and a width goes on the
+  frame.** Phase 19.5, 2026-09-02. `.page-block` (and `.page-infobox`) is the
+  full width of the writing column whatever width the block is drawn at — it is
+  what a percentage is a percentage *of*, and what the handles are dragged
+  across — and `.block-frame` inside it is the part that resizes. Two things
+  follow and both were bugs first: **the selection ring belongs on the frame**,
+  or a block at half width is ringed with the empty half beside it, which means
+  BlockNote's own `.ProseMirror-selectednode > *` rule has to be cancelled on
+  the row; and **a width handle measures its own `parentElement`**, so anything
+  that adds a wrapper between the two silently changes what a drag is relative
+  to.
+
+- **A block's width is on its record; an infobox's is a prop, and they undo in
+  different places.** Phase 19.5. A block is a record in `node.blocks`, so
+  `setBlockWidth` writes there and a drag comes back under the *panel's* undo —
+  which is what lets a block keep its width through a trip to the sidebar and
+  back. An infobox has no record at all, so its width is a prop on the BlockNote
+  block and is undone by the *editor*. **Both spell full width as nothing** —
+  the field absent on a record, `0` in the prop, because BlockNote props have no
+  absent — so nothing that looks ordinary carries a field saying so, and an
+  infobox written before this opens at the width it always had.
+
+- **The record is written on every pointer move and the prop is written once.**
+  Phase 19.5, and the asymmetry is deliberate. `editBlocks` takes a merge key,
+  so a hundred writes during one drag collapse into one undo entry; the editor
+  has no such thing, and a hundred `updateBlock` calls would be a hundred steps
+  for Ctrl+Z to walk back one at a time. So `Infobox` holds the width in state
+  while the pointer is down and stores it on release. Anything that moves a
+  width from one home to the other has to move this with it.
 
 - **A pointer with no block behind it is an ordinary state, not corruption.**
   The record and the pointer are saved through different paths — the panel

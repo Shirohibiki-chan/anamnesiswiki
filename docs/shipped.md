@@ -4651,6 +4651,48 @@ again.
 
 Suites after: 1,574 unit tests (from 1,531), 81 app scenarios (from 77).
 
+## Phase 19.5 — Dragging a block wider ✅ Shipped 2026-09-02
+
+The page is wider than the sidebar, and this is where she says how much of that
+width a block should take. Either edge of a block or an infobox in the page is a
+grab handle; the box follows the pointer, snapping to halves, thirds and
+quarters as it passes them and running free between.
+
+**Both behaviours came from her, in one sentence** — the reference lets a box
+snap to the column *or* drag normally, so this does both rather than choosing:
+`snapBlockWidth` pulls a drag onto 25/33/50/67/75/100 within three points and
+leaves it alone anywhere else. It is one function with four unit tests, and it
+is what makes two blocks meant to match actually match.
+
+**What was built:**
+
+- `width` on `Block` — a percentage, 25 to 100, absent meaning the whole column
+  — plus `setBlockWidth` in the store, which carries a merge key so a drag of
+  forty writes is one undo entry.
+- `width` as a prop on the infobox block, since a frame has no record to put it
+  on. Stored as `0` for full width, because a BlockNote prop cannot be absent.
+- `BlockWidthHandle.tsx`: two handles, pointer capture, the mirrored left edge,
+  arrow keys at 5% a press, Home and double-click back to full width, and a
+  percentage readout that appears only while dragging.
+- A DOM split in the page block and the infobox: the row stays the full column,
+  a new `.block-frame` inside it is what resizes. The selection ring moved onto
+  the frame with it, and BlockNote's own ring had to be cancelled on the row.
+
+**Verified against the real app** (`pnpm test:app`, throwaway scenario, deleted
+after): the right edge dragged to 67% and stayed there; the left edge dragged
+mirrored and narrowed the block; the readout stayed inside the frame — it was
+clipped in half by the frame's `overflow: hidden` the first time, which is what
+the screenshot was for; the ring drew on the frame and not the row; Home
+restored full width and ArrowLeft stepped it down; an infobox dragged to half
+width came back at half width after a reload.
+
+**Two things this deliberately did not do.** The space beside a narrow block
+stays empty — filling it is columns, which is the next piece and is a custom
+block because `@blocknote/xl-multi-column` is licensed out of reach. And the
+infobox's Auto-adapt / Fixed width menu items are still not built; they were
+waiting on this and are buildable now.
+
+
 ## Phase 19.5 — An icon in the writing, and the callout's own ✅ Shipped 2026-09-01
 
 Asked for 2026-08-28 off her screenshots of the reference, in two halves that

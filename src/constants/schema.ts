@@ -314,6 +314,21 @@ export type Block = {
   // A key from constants/palette.ts's COLOR_PALETTE, never a hex — same rule
   // as node colours and property options, so a block recolours with the theme.
   color?: string;
+  /**
+   * How wide the block is drawn where there is room for a choice: a percentage
+   * of the writing column, 25 to 100. Phase 19.5.
+   *
+   * **It is on the block rather than on the page, and that is deliberate.** A
+   * block dragged out of the page into the sidebar and back should still be as
+   * wide as it was, and only the block itself knows how wide it wants to be —
+   * a meter of eleven dials wants the room, a portrait does not.
+   *
+   * **Absent means the whole column**, which is what every block had before
+   * this could be set, so nothing that looks ordinary carries a field saying
+   * so. **The sidebar ignores it outright**: 60% of a 340px column is not a
+   * width anyone chose, it is the same block made unusable.
+   */
+  width?: number;
   // `property` only: which property this block shows, matching a key in
   // `properties` / `customProperties`. Removing the block leaves both alone —
   // hiding a field is not deleting its value, and the block can be added back.

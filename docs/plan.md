@@ -485,17 +485,14 @@ layout could never show. **It is resizable there**, by dragging either side.
   - **The cost is that the sidebar has to read the documents.** Working out what
     is left means walking every tab's document, children included, for pointers.
     It is derived per page and memoised there; nothing about it is per-keystroke.
-- **Width is per-block and belongs on the block**, not on the page. It is the
-  one piece of presentation the sidebar has no use for, so it needs a sensible
-  reading when the same block is shown in a 340px panel: ignore it there.
-  **One consequence of the decision above, worth knowing before it is
-  discovered:** the record lives in `node.blocks`, so dragging a block wider is
-  a panel edit and comes back under the panel's undo, not the editor's. That is
-  the right side to have it on — width is a property of the block, and a block
-  dragged from the page to the sidebar and back should still be as wide as it
-  was — but it does mean Ctrl+Z in the middle of the page will not undo a
-  resize, and the two undo stacks meeting here needs checking in use rather
-  than assuming.
+- **Dragging a block wider shipped 2026-09-02.** Either edge of a block or an
+  infobox in the page, snapping to halves, thirds and quarters and free between
+  them; the width is on the block's own record, so it survives the trip to the
+  sidebar and back and the sidebar ignores it. Detail is in `docs/shipped.md`;
+  what binds the code is in `docs/handoff.md`. **The one thing to know before
+  changing it:** a resize is a panel edit and comes back under the panel's undo
+  rather than the editor's, which is the right side to have it on and does mean
+  Ctrl+Z in the writing will not undo one.
 - **Not to be confused with Phase 21's splittable columns.** That rearranges
   the app's panels; this puts one block inside the document. They meet only in
   that both make the middle of the window less fixed than it is today.
@@ -641,9 +638,12 @@ built in is a decision rather than an accident.
   entries are the interesting pair and she called them out by name as handy.
   They are the same question as this phase's per-block width from the other end:
   auto-adapt is "be as wide as what you hold", fixed is "be the width I set".
-  **They belong with the resize work, not before it** — a Fixed width setting
-  with no way to drag the width is a menu item that opens nothing. Pin to top is
-  its own small feature and unrelated to either.
+  **The resize work they were waiting on shipped 2026-09-02**, so they are
+  buildable now: an infobox already has a width and a way to drag it, and what
+  is missing is the pair of menu items that set it without a drag. Auto-adapt
+  is the one with a question still in it — "as wide as what you hold" means
+  measuring the blocks inside, which is not what dragging an edge does. Pin to
+  top is its own small feature and unrelated to either.
 - **Layout: Full width, Align center, Wrap left, Wrap right.** See above: two of
   these four are the wrapping we are not building yet, and Align center is cheap
   and could ship with the width work.

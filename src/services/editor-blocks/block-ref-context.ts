@@ -31,7 +31,7 @@ export type BlockRefRenderer = ComponentType<{ blockId: string }>;
  * one of those writes back to the prop on this block in the document. The
  * renderer is handed the id so it can say *which* infobox changed.
  */
-export type InfoboxRenderer = ComponentType<{ editorBlockId: string; blockIds: string[] }>;
+export type InfoboxRenderer = ComponentType<{ editorBlockId: string; blockIds: string[]; width: number }>;
 
 /** Both renderers, which arrive together and are never useful apart. */
 export type PageBlockRenderers = {

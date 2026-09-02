@@ -374,6 +374,17 @@ export type ProjectStoreState = {
   setBlockTitle: (nodeId: string, blockId: string, title: string | undefined) => void;
   setBlockTitleShown: (nodeId: string, blockId: string, shown: boolean) => void;
   setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
+  /**
+   * How wide the block is drawn in the page, as a percentage; `undefined` puts
+   * it back to the whole column. Phase 19.5.
+   *
+   * **A panel edit rather than an editor one, and that follows from where the
+   * width lives.** The record is in `node.blocks`, so Ctrl+Z in the middle of
+   * the page will not undo a resize — the right-hand panel's undo does. It is
+   * the right side to have it on: the width belongs to the block, and a block
+   * dragged to the sidebar and back is still the width she made it.
+   */
+  setBlockWidth: (nodeId: string, blockId: string, width: number | undefined) => void;
   setBlockText: (nodeId: string, blockId: string, text: string) => void;
   setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
   // Phase 18c's meters. A meter block holds a list of readings, so everything
@@ -1770,6 +1781,17 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       editBlocks(nodeId, (blocks) =>
         blocks.map((block) => (block.id === blockId ? withField(block, "color", color) : block)),
         "recolouring a block",
+      );
+    },
+
+    // **One undo entry for one drag**, by way of the merge key: a resize writes
+    // on every pointer move so the block redraws under the pointer, and without
+    // this a single drag across the page would leave forty entries to undo.
+    setBlockWidth(nodeId, blockId, width) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) => (block.id === blockId ? withField(block, "width", width) : block)),
+        "resizing a block",
+        `block-width:${nodeId}:${blockId}`,
       );
     },
 

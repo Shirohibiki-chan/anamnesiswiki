@@ -1844,11 +1844,6 @@
    cursor rule here is only so the box does not advertise a text caret it will
    not accept. */
 .page-block {
-  margin: var(--space-lg) 0;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--color-panel);
-  overflow: hidden;
   cursor: default;
   /* **`flex: 1` because BlockNote's own wrapper is a flex row**, measured in
      the built app rather than assumed: `.bn-block-content` is `display: flex`,
@@ -1862,6 +1857,23 @@
      out of the window instead of reflowing inside it. */
   flex: 1;
   min-width: 0;
+}
+
+/* **The box, inside the column.** Phase 19.5 split this off the row above so a
+   block could be dragged narrower than the writing: the row stays the full
+   width of the column — it is what a percentage is a percentage *of*, and what
+   the handles are dragged across — and this is the part that actually resizes.
+   Everything that draws the block moved down here with it.
+
+   `position: relative` is for the two width handles, which sit on its inner
+   edges (BlockWidthHandle.tsx). */
+.block-frame {
+  position: relative;
+  margin: var(--space-lg) 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  overflow: hidden;
 }
 
 /* The last block in a panel keeps its bottom rule, because the panel continues
@@ -1914,6 +1926,7 @@
 }
 
 .infobox {
+  position: relative;
   margin: var(--space-lg) 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1931,7 +1944,7 @@
    never the line that was written. A plain declaration of any specificity loses
    to an `!important` one, so this is the weight that rule set rather than one
    chosen here. See the note beside it in page.css. */
-.bn-root .page-block {
+.bn-root .block-frame {
   border-color: var(--color-border-subtle) !important;
 }
 
@@ -1957,13 +1970,23 @@
 
    Out-specifies BlockNote's `.ProseMirror-selectednode>*` rather than fighting
    it with `!important` — neither of its two rules carries one. */
+.ProseMirror-selectednode .block-frame,
+.ProseMirror-selectednode .infobox {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+/* **And the row itself never wears it.** The row is the whole writing column
+   whatever width the block is, so BlockNote's ring drawn there would sit a long
+   way out from a block dragged narrow — a box selected at half width with a
+   highlight around the empty half beside it. The ring belongs to the box, which
+   is the rule above. */
 .ProseMirror-selectednode > .page-block,
 .ProseMirror-selectednode > .page-infobox,
 .ProseMirror-selectednode > .bn-block-content > .page-block,
 .ProseMirror-selectednode > .bn-block-content > .page-infobox {
-  outline: 2px solid var(--color-accent-light);
-  outline-offset: 2px;
-  border-radius: var(--radius-md);
+  outline: none;
 }
 
 /* The blocks inside keep the panel's separators, because here there *is*
@@ -1993,4 +2016,94 @@
    page. */
 .infobox-add {
   margin: 0 var(--space-sm) var(--space-sm);
+}
+
+/* ── Dragging a block wider ───────────────────────────────────────────────
+   Phase 19.5. A grip on each inner edge of a block or an infobox in the page.
+
+   **They appear on hover rather than sitting there.** A page of writing with a
+   pair of grab bars down every block in it reads as a form; the block should
+   look like part of the page until she reaches for it. Focus and the drag
+   itself both keep them shown — a handle that vanishes when tabbed to is a
+   control only a mouse can find. */
+.block-width-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.block-width-left {
+  left: 0;
+}
+
+.block-width-right {
+  right: 0;
+}
+
+.block-frame:hover > .block-width-handle,
+.infobox:hover > .block-width-handle,
+.block-width-handle:focus-visible,
+.block-width-dragging {
+  opacity: 1;
+}
+
+/* The grip is a short bar rather than the full height of the block: a line down
+   the whole edge reads as the block's border having gone wrong, and a stats
+   panel can be tall enough that a full-height bar is the loudest thing on the
+   page. */
+.block-width-handle::before {
+  content: "";
+  width: 3px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.block-width-handle:hover::before,
+.block-width-handle:focus-visible::before,
+.block-width-dragging::before {
+  background: var(--color-accent-light);
+}
+
+.block-width-handle:focus-visible {
+  outline: none;
+}
+
+/* **The number is only there mid-drag**, and it is on the surface the popovers
+   use rather than the block's own — a readout the same colour as what is under
+   it is unreadable exactly when it is needed. */
+.block-width-readout {
+  position: absolute;
+  top: var(--space-md);
+  padding: 2px 6px;
+  /* Inside the box, beside the handle rather than on it. The frame clips what
+     overflows it, and a readout centred on a handle that is itself on the edge
+     comes out with half the number cut off — which is how it first shipped in
+     the drag screenshot. */
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-edge);
+  color: var(--color-text-primary);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.block-width-right > .block-width-readout {
+  right: 100%;
+  margin-right: var(--space-xs);
+}
+
+.block-width-left > .block-width-readout {
+  left: 100%;
+  margin-left: var(--space-xs);
 }

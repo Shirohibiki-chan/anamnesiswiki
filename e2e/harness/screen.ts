@@ -28,6 +28,8 @@ const PAGE_BLOCK = ".page-block";
 // Phase 19.5: a framed group of the page's blocks. `.page-infobox` is the
 // BlockNote block; `.infobox` is the frame the app draws inside it.
 const INFOBOX = ".infobox";
+const BLOCK_FRAME = ".block-frame";
+const PAGE_INFOBOX = ".page-infobox";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
@@ -251,6 +253,80 @@ export async function infoboxBlockTitles(window: Page): Promise<string[]> {
 export async function addBlockToInfobox(window: Page, label: string): Promise<void> {
   await window.locator(".infobox-add").first().click();
   await window.getByRole("button", { name: label, exact: true }).first().click();
+}
+
+/**
+ * How much of the writing column a block in the page is taking, 0 to 1.
+ * Phase 19.5.
+ *
+ * A ratio rather than a pixel width, because the column itself depends on the
+ * window and on how wide the two panels beside it have been dragged — the
+ * question a scenario is asking is "half the page", never "364 pixels".
+ */
+export async function pageBlockWidthRatio(window: Page): Promise<number> {
+  return widthRatio(window, BLOCK_FRAME, PAGE_BLOCK);
+}
+
+/** The same, for the page's first infobox. */
+export async function infoboxWidthRatio(window: Page): Promise<number> {
+  return widthRatio(window, INFOBOX, PAGE_INFOBOX);
+}
+
+async function widthRatio(window: Page, box: string, column: string): Promise<number> {
+  const inner = await window.locator(box).first().boundingBox();
+  const outer = await window.locator(column).first().boundingBox();
+  if (!inner || !outer || outer.width === 0) throw new Error(`nothing to measure at ${box}`);
+  return inner.width / outer.width;
+}
+
+/**
+ * Drags one edge of a block in the page until it is `ratio` of the column
+ * wide. Phase 19.5.
+ *
+ * **A real press, move and release rather than a synthetic event**, because
+ * that is the whole feature: the handle takes pointer capture on the way down
+ * and the block is redrawn on every move. `side` is which edge to take hold
+ * of — the left one is mirrored, so both widen the block away from the page.
+ */
+export async function dragBlockEdge(
+  window: Page,
+  side: "left" | "right",
+  ratio: number,
+  box: string = BLOCK_FRAME,
+): Promise<void> {
+  const frame = window.locator(box).first();
+  await frame.hover();
+  const handle = await window.locator(`${box} .block-width-${side}`).first().boundingBox();
+  const start = await frame.boundingBox();
+  const column = await window.locator(box === INFOBOX ? PAGE_INFOBOX : PAGE_BLOCK).first().boundingBox();
+  if (!handle || !start || !column) throw new Error("no width handle to drag");
+
+  // How far the pointer has to travel is the difference between the width the
+  // block has and the width it is wanted at — and the left handle travels the
+  // other way for the same result, which is the mirroring being exercised.
+  const y = handle.y + handle.height / 2;
+  const from = handle.x + handle.width / 2;
+  const grown = column.width * ratio - start.width;
+  const target = side === "right" ? from + grown : from - grown;
+  await window.mouse.move(from, y);
+  await window.mouse.down();
+  await window.mouse.move(target, y, { steps: 10 });
+  await window.mouse.up();
+  await window.waitForTimeout(400);
+}
+
+/** The same, for the page's first infobox. */
+export async function dragInfoboxEdge(window: Page, side: "left" | "right", ratio: number): Promise<void> {
+  await dragBlockEdge(window, side, ratio, INFOBOX);
+}
+
+/**
+ * Puts the keyboard on one of a block's width handles, for the arrow keys and
+ * Home. Phase 19.5 — dragging must not be the only way to set a width.
+ */
+export async function focusBlockWidthHandle(window: Page, side: "left" | "right"): Promise<void> {
+  await window.locator(BLOCK_FRAME).first().hover();
+  await window.locator(`${BLOCK_FRAME} .block-width-${side}`).first().focus();
 }
 
 /**

@@ -14,7 +14,9 @@
 // them to the sidebar's ordering would move the block somewhere invisible.
 import { useProject } from "../../hooks/use-project";
 import { useBlocks } from "../../hooks/use-blocks";
+import { BLOCK_WIDTH_FULL, storedBlockWidth } from "../../services/block-service";
 import { BlockList } from "./BlockList";
+import { BlockWidthHandles } from "./BlockWidthHandle";
 import "./blocks.css";
 
 /**
@@ -40,20 +42,37 @@ import "./blocks.css";
  * subtree whose type changed — the same bug the formatting toolbar had.
  */
 export function PageBlock({ blockId }: { blockId: string }) {
-  const { project, nodes } = useProject();
+  const { project, nodes, setBlockWidth } = useProject();
   const node = project?.selectedId ? nodes[project.selectedId] : undefined;
   const { blocks, properties } = useBlocks(node);
 
   const block = blocks.find((candidate) => candidate.id === blockId);
   if (!node || !block) return null;
 
+  // **The frame is what gets the width, not the row it sits in.** The row is
+  // the whole writing column — it has to be, or there would be nothing for a
+  // percentage to be a percentage *of*, and nothing for the handles to be
+  // dragged across. See blocks.css.
+  const width = block.width ?? BLOCK_WIDTH_FULL;
+
   return (
-    <BlockList
-      node={node}
-      blocks={[block]}
-      properties={properties}
-      onReorder={() => {}}
-      onMove={() => {}}
-    />
+    <div className="block-frame" style={width === BLOCK_WIDTH_FULL ? undefined : { width: `${width}%` }}>
+      <BlockList
+        node={node}
+        blocks={[block]}
+        properties={properties}
+        onReorder={() => {}}
+        onMove={() => {}}
+      />
+      {/* Written straight to the record on every move, which is what redraws
+          the block under the pointer. The store merges the run into one undo
+          entry — see setBlockWidth. */}
+      <BlockWidthHandles
+        width={width}
+        label={block.title || "This block"}
+        onResize={(next) => setBlockWidth(node.id, block.id, storedBlockWidth(next))}
+        onReset={() => setBlockWidth(node.id, block.id, undefined)}
+      />
+    </div>
   );
 }
