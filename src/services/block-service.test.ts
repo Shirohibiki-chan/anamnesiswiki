@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createNode, type Block, type BlockKind, type Node } from "../constants/schema";
 import {
   BLOCK_WIDTH_MIN,
+  parseColumnWidths,
+  serialiseColumnWidths,
   snapBlockWidth,
   storedBlockWidth,
   blockIdsInPage,
@@ -554,5 +556,27 @@ describe("block widths", () => {
     // The snap runs first: a drag that ends near the edge is a full-width
     // block, and full width is the absent field rather than a stored 100.
     expect(storedBlockWidth(98)).toBeUndefined();
+  });
+});
+
+describe("column widths", () => {
+  it("reads a row's shares back out", () => {
+    expect(parseColumnWidths("67,33", 2)).toEqual([67, 33]);
+    expect(serialiseColumnWidths([67, 33])).toBe("67,33");
+  });
+
+  it("splits the row evenly when nothing is stored", () => {
+    expect(parseColumnWidths("", 2)).toEqual([50, 50]);
+    expect(parseColumnWidths("", 4)).toEqual([25, 25, 25, 25]);
+  });
+
+  it("falls back to even when the stored list no longer fits the row", () => {
+    // A lane deleted or added leaves a list of the wrong length behind, and a
+    // row drawn from it would be missing a share or carrying a spare one. An
+    // even split is wrong in a way that is obvious and recoverable; a row with
+    // a lane of zero width is not.
+    expect(parseColumnWidths("67,33", 3)).toEqual([100 / 3, 100 / 3, 100 / 3]);
+    expect(parseColumnWidths("wide,narrow", 2)).toEqual([50, 50]);
+    expect(parseColumnWidths("100,0", 2)).toEqual([50, 50]);
   });
 });
