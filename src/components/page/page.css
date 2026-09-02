@@ -1632,7 +1632,11 @@
   height: 0;
 }
 
-.node-pageColumns + .bn-block-group {
+/* `.bn-editor` is on the front of this and the lane rule below only to beat
+   the library's own `.bn-block-group .bn-block-group{margin-left:24px}`, which
+   ties with a two-class selector and wins the tie. Measured: a lane starting
+   24px in from the writing column, and its text 24px inside that again. */
+.bn-editor .node-pageColumns + .bn-block-group {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2xl);
@@ -1656,6 +1660,21 @@
   position: relative;
 }
 
+/* **No nesting guides inside a row.** BlockNote draws the vertical line beside
+   indented content as a `::before` on any block in a nested group — and a row
+   of columns is nested twice, so a lane got a line at its left *and* every
+   paragraph inside the lane got another. Two stray verticals per column, which
+   is what she asked about: they read as part of the columns and are not.
+
+   The selectors carry `.bn-editor` and the `:not()` only to out-specify the
+   library's own rule, which is `.bn-block-group .bn-block-group >
+   .bn-block-outer:not([data-prev-depth-changed]):before`. Ordinary nesting —
+   a bullet under a bullet — keeps its guide. */
+.bn-editor .node-pageColumns + .bn-block-group > .bn-block-outer:not([data-prev-depth-changed])::before,
+.bn-editor .node-pageColumn + .bn-block-group > .bn-block-outer:not([data-prev-depth-changed])::before {
+  display: none;
+}
+
 /* The lane's own marker element, like the row's: nothing to see. The writing in
    a lane is in the block group beside this. */
 .page-column {
@@ -1667,7 +1686,7 @@
    here: once for the row (above) and once for the writing inside each lane,
    which was starting 23px in from the lane's own edge and left every column
    looking misaligned with the page. */
-.node-pageColumn + .bn-block-group {
+.bn-editor .node-pageColumn + .bn-block-group {
   margin-left: 0;
   padding-left: 0;
   border-left: none;
