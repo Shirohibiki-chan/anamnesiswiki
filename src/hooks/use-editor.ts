@@ -18,7 +18,7 @@ import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/edito
 import { IconPickContext } from "../services/editor-blocks/icon-pick-context";
 import { getIconSlashMenuItems } from "../services/editor-blocks/icon-slash-menu";
 import { getIconMenuItems } from "../services/editor-blocks/icon-menu-items";
-import { ICON_MIN_QUERY, ICON_TRIGGER, iconMenuOpens } from "../services/editor-blocks/icon-trigger";
+import { ICON_MIN_QUERY, ICON_TRIGGER, iconMenuOpens, isIconPickerChord } from "../services/editor-blocks/icon-trigger";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
@@ -204,7 +204,7 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
     // never reaches the writing *or* the picker's search box — the box has to
     // start empty or the first thing she types is filtering against
     // punctuation.
-    if (event.key === ICON_TRIGGER && (event.ctrlKey || event.metaKey)) {
+    if (isIconPickerChord(event)) {
       event.preventDefault();
       event.stopPropagation();
       openIconPicker();

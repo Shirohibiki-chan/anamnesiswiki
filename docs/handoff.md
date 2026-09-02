@@ -2116,6 +2116,14 @@ under `acknowledgedWarnings`.
   `shouldOpen` rule sits on top of it, so `Note:` and `10:30` stay shut even
   once something is typed after them.
 
+- **The chord takes the colon key with *or* without the shift.** A colon is
+  Shift and the semicolon key, so "control colon" is most naturally typed as
+  Control and that key — which arrives as `;`. An earlier cut accepted only
+  `:` and was reported as the chord doing nothing at all. `isIconPickerChord`
+  also matches on `code === "Semicolon"` so a layout that moves the colon still
+  works, and refuses anything with Alt held, because AltGr arrives as Ctrl+Alt
+  on Windows and is how a real character is typed on several layouts.
+
 - **The chord is prevented, so its colon reaches neither the writing nor the
   search box.** The picker's field is focused the moment it opens, so a
   trigger character that slipped through would have her first keystroke
