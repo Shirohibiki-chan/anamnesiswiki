@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-02 — blocks you can drag narrower
+
+### Additions
+
+- **A block sitting in your page can be dragged narrower.** Take hold of either edge — a small bar appears there when your pointer is over the block — and pull. The block follows, and the number in the corner tells you how much of the page it is taking while you drag.
+- **It sticks to the useful widths on the way past.** Half the page, a third, two thirds, a quarter, three quarters: come near one and it clicks onto it, so two blocks meant to match end up matching. Anywhere else it is free, and stops wherever you let go.
+- **An infobox resizes exactly the same way**, by the same edges.
+- **The width belongs to the block, not to the page it is on.** Drag a block back out to the sidebar and into the page again and it is still the width you made it. The sidebar itself ignores widths — a block squeezed to half of a narrow column would be unusable, so it fills the column there as it always did.
+- **Two ways back to full width**: double-click either edge, or put the keyboard on it and press Home. The left and right arrows step it 5% at a time, so the whole thing works without a precise mouse drag.
+
+### Notes
+
+- **A resize is undone by the panel's undo, not by Ctrl+Z in your writing.** The width is stored on the block itself, which is what lets it survive the trip to the sidebar and back — and that puts it on the same undo as everything else about a block.
+- **The space beside a narrow block stays empty for now.** Putting a second thing next to it is columns, which is the next piece of this.
+
 ## 2026-09-01 — an icon in the middle of a sentence
 
 ### Additions
@@ -209,17 +224,3 @@
 ### Changes
 
 - **Importing recognises Country and Technology pages** rather than bringing them in as plain notes. Kinds we haven't seen an example of still import as notes with all their tabs and writing intact, as before.
-
-## 2026-08-28 — the templates are laid out our way now
-
-### Changes
-
-- **Every template has been rebuilt from the shape up.** The words were rewritten a while back, but the layout under them hadn't changed at all — the same tabs in the same order, the same headings, and the same run of blocks repeated identically on every tab of every template. That's all been redesigned.
-- **The sections are named differently, and every one still explains itself.** A Character page goes Appearance, Manner, Motivations; an Item goes Appearance, Abilities, Limits; an Event goes In brief, Causes, Aftermath. Each heading has a line under it saying what belongs there, the way it always did.
-- **The tabs are named for what's in them.** No more "Overview" on everything: a Character opens on *Who They Are* with *Ties* beside it, a Location on *The Place*, an Item on *The Thing Itself*.
-- **Character has a Ties tab.** Somewhere to put who they're closest to, who they're at odds with, and who owes whom — with a reminder that @ links a page that already exists.
-- **Species is three tabs instead of five.** Five on an empty page read as homework. Beliefs and Relations are now sections inside *Living*.
-- **Faction splits into what they want, who's inside, and what everyone else thinks** — the last one hidden until you want it.
-- **Each template opens differently.** The prompt at the top asks for something now rather than telling you what a character or a location is, and the quote and secret blocks turn up where they're actually useful instead of on every single tab.
-
-**Pages you've already made are untouched.** This only changes what a *new* page starts with. If you've customised a built-in template yourself, your version still wins.

@@ -19,7 +19,14 @@ import { InfoboxSlot } from "./BlockRefSlot";
 
 export const infoboxConfig = {
   type: INFOBOX_TYPE,
-  propSchema: { blockIds: { default: "" } },
+  // **`width` is a percentage of the writing column, and 0 means the whole of
+  // it.** Phase 19.5. It is the one width in the app that is *not* on a block
+  // record, and it has nowhere else to be: an infobox is a frame in the
+  // document with no record of its own, so its width is a prop like its
+  // contents are. That also puts it under the editor's undo rather than the
+  // panel's, which is the opposite of a block's width — the two live in
+  // different places and each is undone where it was written.
+  propSchema: { blockIds: { default: "" }, width: { default: 0 } },
   content: "none",
 } as const;
 
@@ -30,7 +37,11 @@ export const infoboxSpec = createReactBlockSpec(infoboxConfig, {
   // instead of the field it looks like it is in.
   render: ({ block }) => (
     <div className="page-infobox" contentEditable={false}>
-      <InfoboxSlot editorBlockId={block.id} blockIds={parseBlockIds(block.props.blockIds)} />
+      <InfoboxSlot
+        editorBlockId={block.id}
+        blockIds={parseBlockIds(block.props.blockIds)}
+        width={block.props.width}
+      />
     </div>
   ),
 })();

@@ -526,3 +526,54 @@ export function blockKindLabel(kind: BlockKind): string {
       return "a meter";
   }
 }
+
+/**
+ * The narrowest a block may be dragged, as a percentage of the writing column.
+ *
+ * A quarter of a 728px page is 182px, which is about as narrow as a block with
+ * a title, a menu and a grip can be drawn before the controls are wider than
+ * the content. Anything narrower is not a width she chose; it is a block she
+ * can no longer use, and there is no handle left to drag it back out with.
+ */
+export const BLOCK_WIDTH_MIN = 25;
+
+/** The whole writing column, which is what a block with no stored width gets. */
+export const BLOCK_WIDTH_FULL = 100;
+
+/**
+ * The widths a drag sticks to: halves, thirds and quarters of the column.
+ *
+ * **Both behaviours in one, which is what the reference does** — near one of
+ * these the drag snaps to it, anywhere else it is free. So a block can be
+ * eyeballed to any width, and a block meant to be exactly half the page does
+ * not have to be nudged into place a pixel at a time. The tolerance is small
+ * enough that the free drag never feels caught.
+ */
+export const BLOCK_WIDTH_SNAPS = [25, 33, 50, 67, 75, 100];
+
+const SNAP_TOLERANCE = 3;
+
+/**
+ * A dragged width, clamped to what is allowed and pulled onto a snap point if
+ * it is close to one. Whole numbers, because a stored 49.7% is a width nobody
+ * asked for and it prints badly in the handle's readout.
+ */
+export function snapBlockWidth(width: number): number {
+  const clamped = Math.min(BLOCK_WIDTH_FULL, Math.max(BLOCK_WIDTH_MIN, Math.round(width)));
+  const snap = BLOCK_WIDTH_SNAPS.find((point) => Math.abs(point - clamped) <= SNAP_TOLERANCE);
+  return snap ?? clamped;
+}
+
+/**
+ * What to store for a width, which is `undefined` at full width.
+ *
+ * Full width is the default and every block had it before this existed, so a
+ * block that looks ordinary carries no field saying so — the same rule
+ * `showTitle` and `showMax` follow.
+ */
+export function storedBlockWidth(width: number): number | undefined {
+  // Snapped first, so a drag that ends a hair short of the edge stores nothing
+  // rather than a 100 that means the same thing and reads as a set width.
+  const snapped = snapBlockWidth(width);
+  return snapped >= BLOCK_WIDTH_FULL ? undefined : snapped;
+}

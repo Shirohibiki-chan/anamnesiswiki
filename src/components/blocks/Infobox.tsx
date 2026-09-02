@@ -16,12 +16,13 @@ import { useState } from "react";
 import type { Block, BlockKind } from "../../constants/schema";
 import { Plus } from "lucide-react";
 import { useBlockNoteEditor } from "@blocknote/react";
-import { serialiseBlockIds } from "../../services/block-service";
+import { BLOCK_WIDTH_FULL, serialiseBlockIds, storedBlockWidth } from "../../services/block-service";
 import { useBlocks } from "../../hooks/use-blocks";
 import { useProject } from "../../hooks/use-project";
 import { TreePopover } from "../tree/TreePopover";
 import { AddBlockMenu } from "./AddBlockMenu";
 import { BlockList } from "./BlockList";
+import { BlockWidthHandles } from "./BlockWidthHandle";
 import "./blocks.css";
 
 /**
@@ -34,12 +35,27 @@ import "./blocks.css";
  * the editor through a context and rendered as a component type, and React
  * discards a subtree whose type changed.
  */
-export function Infobox({ editorBlockId, blockIds }: { editorBlockId: string; blockIds: string[] }) {
+export function Infobox({
+  editorBlockId,
+  blockIds,
+  width,
+}: {
+  editorBlockId: string;
+  blockIds: string[];
+  width: number;
+}) {
   const { project, nodes, addBlock } = useProject();
   const editor = useBlockNoteEditor();
   const node = project?.selectedId ? nodes[project.selectedId] : undefined;
   const { blocks, properties, unshown } = useBlocks(node);
   const [addRect, setAddRect] = useState<DOMRect | null>(null);
+  // **The width is held here while it is being dragged and written once when
+  // it is let go**, which is where this parts company with a block's own width.
+  // A block writes to its record on every move and the store merges the run;
+  // this writes to the document, and a hundred `updateBlock` calls would be a
+  // hundred steps in the editor's own undo — Ctrl+Z pressed once afterwards
+  // would move the edge a pixel.
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
 
   // **Ids that name nothing are skipped rather than drawn as gaps.** A block
   // removed from its own menu leaves its id here until the page is next opened
@@ -49,9 +65,14 @@ export function Infobox({ editorBlockId, blockIds }: { editorBlockId: string; bl
 
   if (!node) return null;
 
-  /** Writes a new list back onto this frame. The one way this component saves. */
+  /** Writes a new list back onto this frame. */
   function setHeld(ids: string[]) {
     editor.updateBlock(editorBlockId, { props: { blockIds: serialiseBlockIds(ids) } });
+  }
+
+  /** Stores the frame's width. 0 is the whole column, and is what Home gives. */
+  function setWidth(next: number) {
+    editor.updateBlock(editorBlockId, { props: { width: storedBlockWidth(next) ?? 0 } });
   }
 
   function handleReorder(activeId: string, overId: string) {
@@ -77,8 +98,29 @@ export function Infobox({ editorBlockId, blockIds }: { editorBlockId: string; bl
     setAddRect(null);
   }
 
+  // Zero is stored for "the whole column" so an infobox made before this
+  // existed opens at the width it always had, rather than at BlockNote's
+  // numeric default of nothing.
+  const drawnWidth = dragWidth ?? (width > 0 ? width : BLOCK_WIDTH_FULL);
+
   return (
-    <div className="infobox">
+    <div
+      className="infobox"
+      style={drawnWidth === BLOCK_WIDTH_FULL ? undefined : { width: `${drawnWidth}%` }}
+    >
+      <BlockWidthHandles
+        width={drawnWidth}
+        label="This infobox"
+        onResize={setDragWidth}
+        onCommit={(next) => {
+          setWidth(next);
+          setDragWidth(null);
+        }}
+        onReset={() => {
+          setDragWidth(null);
+          setWidth(BLOCK_WIDTH_FULL);
+        }}
+      />
       {held.length > 0 && (
         <BlockList
           node={node}
