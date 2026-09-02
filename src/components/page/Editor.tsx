@@ -15,6 +15,7 @@ import {
   getFormattingToolbarItems,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
+import { PageSlashMenu } from "./PageSlashMenu";
 import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
@@ -218,11 +219,16 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
             and `[[` menus below keep opening wherever they are typed: those
             characters mean nothing else in prose, and a `[[` mid-sentence is
             exactly how a link gets written. */}
+        {/* Drawn by us rather than by BlockNote — its own menu left the
+            previous query's group headings in the DOM, which is what a
+            screenshot of `/colum` under four headings turned out to be. See
+            PageSlashMenu.tsx. */}
         <SuggestionMenuController
           triggerCharacter="/"
           getItems={getSlashMenuItems}
           shouldOpen={slashShouldOpen}
           floatingUIOptions={suggestionMenuFloating}
+          suggestionMenuComponent={PageSlashMenu}
         />
         {/* The type-ahead half of the icon work: `:sm` and take it with Enter
             or Tab, the way every chat app does it. `minQueryLength` is what

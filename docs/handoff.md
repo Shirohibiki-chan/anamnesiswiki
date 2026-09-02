@@ -3478,6 +3478,18 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   package we cannot license, but the plugins keyed on the names ship in core
   and attach to anything called that.
 
+- **The `/` menu is ours, and it keeps BlockNote's ids.** Phase 19.5.
+  BlockNote's own suggestion menu left the previous query's group headings in
+  the DOM — measured: two items in one group, four headings drawn — so
+  `PageSlashMenu.tsx` replaces it through `suggestionMenuComponent`. It is
+  presentational; the controller still finds items, tracks the selection and
+  handles keys. **Keep `id="bn-suggestion-menu"`, the per-item
+  `bn-suggestion-menu-item-<n>` ids and the `bn-suggestion-menu-item` class**:
+  the editor points `aria-activedescendant` at them and every scenario that
+  picks from this menu finds options by them. The harness reads an option with
+  `innerText`, not `textContent`, because a title and its explanation are two
+  elements and run together otherwise.
+
 - **A row of columns cannot say what it may contain, so its shape is repaired
   rather than prevented.** Phase 19.5, after a bug report with a screenshot: a
   row draws every child of its own as a lane, and BlockNote blocks accept any

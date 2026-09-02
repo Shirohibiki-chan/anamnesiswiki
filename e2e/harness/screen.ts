@@ -568,8 +568,15 @@ export async function suggestionMenuBox(
 
 /** The options the suggestion menu is currently offering, top to bottom. */
 export async function suggestionMenuItems(window: Page): Promise<string[]> {
-  const items = await window.locator(`${SUGGESTION_MENU} .bn-suggestion-menu-item`).allTextContents();
-  return items.map(normalize);
+  // **`innerText`, not `textContent`.** An option is a title and a line of
+  // explanation in two elements; `textContent` runs them together into
+  // `IconA picture in a sentence`, which matches nothing anybody would name.
+  // `innerText` puts the line break in and `normalize` turns it into a space.
+  const parts = window.locator(`${SUGGESTION_MENU} .bn-suggestion-menu-item`);
+  const count = await parts.count();
+  const items: string[] = [];
+  for (let i = 0; i < count; i += 1) items.push(normalize(await parts.nth(i).innerText()));
+  return items;
 }
 
 /**
@@ -596,7 +603,8 @@ export async function pickSuggestion(window: Page, label: string): Promise<void>
   const count = await parts.count();
   let found = -1;
   for (let i = 0; i < count; i += 1) {
-    const text = normalize((await parts.nth(i).textContent()) ?? "");
+    // See `suggestionMenuItems` on why this is `innerText`.
+    const text = normalize(await parts.nth(i).innerText());
     if (text === label || text.startsWith(`${label} `)) found = i;
   }
   if (found < 0) {
