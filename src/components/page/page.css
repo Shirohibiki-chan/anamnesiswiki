@@ -1673,6 +1673,103 @@
   border-left: none;
 }
 
+/* **A row's own controls, because BlockNote's handle only offers a delete.**
+   Phase 19.5, after a report of writing disappearing when a column was removed:
+   the handle beside a row can delete it and nothing else, so the row carries
+   the two things that are not destructive — another lane, and a way back to
+   ordinary paragraphs with everything kept.
+
+   They sit above the row's top-right corner and appear with the pointer, the
+   way a block's own controls do. `position: absolute` against the row's
+   `.bn-block-outer`, which the layout rules already make a positioned box. */
+/* **The row's own box has to be the thing they are positioned against.** The
+   lanes are positioned boxes already; the row is not, so without this the
+   buttons resolved against the editor shell and sat at the top of the window —
+   clipped away entirely when the row was the first thing on the page. */
+.bn-block-outer:has(> .bn-block > .react-renderer > .bn-block-content[data-content-type="pageColumns"]) {
+  position: relative;
+}
+
+.page-columns-tools {
+  position: absolute;
+  /* Below the row rather than above it: above is off the top of the page when
+     the row is the first block, which is exactly where a row usually goes. */
+  bottom: calc(var(--space-xl) * -1);
+  right: 0;
+  z-index: 2;
+  display: flex;
+  gap: var(--space-xs);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+/* **Descendant selectors, not a chain of `>`.** BlockNote wraps a custom block
+   in a `.react-renderer` div, and writing the exact path down meant a rule that
+   matched nothing the day the wrapper changed — the lane's own button never
+   appeared once, with no error to explain it. */
+.bn-block-outer:hover .page-columns-tools,
+.page-columns-tools:focus-within {
+  opacity: 1;
+}
+
+.page-columns-tools > button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-edge);
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.page-columns-tools > button:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+
+/* One lane's own remove, in its top-*left* corner.
+   
+   **Not the right-hand one, and the reason is that the divider lives there.**
+   A lane's trailing edge is a 14px drag strip; a button in the same corner
+   covers the top of it, and a drag aimed at the divider's middle lands on the
+   button instead — measured, after the resize appeared to do nothing at all.
+   The leading corner is the lane's own start and belongs to nothing else. */
+.page-column-remove {
+  position: absolute;
+  /* **Below the lane, not inside it.** A lane one line tall has no free corner
+     — measured, the button came out sitting on the first word of the writing,
+     invisible against it. Under the lane's leading edge it collides with
+     nothing: the divider owns the trailing edge, BlockNote's drag handle sits
+     outside the leading one, and the row's own tools are at the far right. */
+  bottom: calc(var(--space-lg) * -1);
+  left: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  cursor: pointer;
+}
+
+.bn-block-outer:hover .page-column-remove,
+.page-column-remove:focus-visible {
+  opacity: 1;
+}
+
+.page-column-remove:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
 /* **The divider is a hit area, not a line.** A one-pixel border is impossible
    to grab; this is a comfortable strip sitting in the gap between two lanes,
    invisible until the pointer is near it. It draws the line itself so the line

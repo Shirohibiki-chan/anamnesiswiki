@@ -4695,9 +4695,37 @@ sharing evenly; text typed into each staying in its own lane; the divider drag
 splitting 50/50 into 67/33; both text and widths surviving a reload; the arrow
 keys moving a divider; and three lanes from the other menu entry.
 
-**Not built:** adding or removing a lane from an existing row, and a row's own
-menu. A row is made and unmade from the slash menu and BlockNote's block handle
-for now.
+**Then she used it, and it fell apart** — reported the same day with a
+screenshot: pressing Enter made new columns until there were five, removing one
+took its writing with it, and resizing left lanes a single character wide. All
+three were the same root cause: **a row accepts any block as a child and draws
+every child as a lane.** A stray paragraph *was* a column, and positional width
+rules then landed on the wrong things.
+
+**The second pass, the same day:**
+
+- `column-service.ts` — pure rules over the document: what is wrong with a row's
+  shape, and what each lane's share should be. Thirteen unit tests, no app
+  needed, which is the point: every one of these cases arrived as a bug.
+- `apply-column-repairs.ts` and a change handler in `use-editor.ts` — strays are
+  moved out onto the page, and a row left with one lane is unwrapped with its
+  writing kept. Capped passes and a re-entry guard, because a repair is itself a
+  change.
+- Widths **keyed by lane id**, and only used when every lane has one, so adding
+  or removing a lane resets to even rather than leaving a sliver.
+- A row's own controls — **Add column** and **Ungroup** (back to ordinary
+  paragraphs, everything kept) — and a **remove** on each lane that hands its
+  writing to the lane beside it. The escape hatch her report was really about.
+
+**Three more things measured rather than guessed**, all in `docs/handoff.md`: a
+generated rule loses to the stylesheet unless it matches its specificity (every
+width was correct and none applied); a lane's remove button on the trailing edge
+swallows the resize drag, and in the top corner sits on the writing; and a row's
+toolbar above the row is clipped off the page, because a row is usually the
+first block on it.
+
+**Not built:** a row's own menu, moving a lane left or right, and anything about
+how a row behaves nested inside another one.
 
 
 ## Phase 19.5 — Dragging a block wider ✅ Shipped 2026-09-02
