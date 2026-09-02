@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-02 — columns
+
+### Additions
+
+- **Two lanes of writing, side by side.** Type `/columns` (or `/two columns`) and the page splits into two lanes you can write in independently — a portrait or a stat block on one side, prose on the other. `/three columns` gives three.
+- **Everything works inside a lane.** They hold ordinary writing, so headings, callouts, pictures, links, the `/` menu and a block dragged in from the sidebar all behave exactly as they do anywhere else on the page.
+- **The line between two lanes is draggable.** Take hold of it and pull to give one lane more room; it sticks to a half, a third, two thirds and the quarters on the way past, and is free between them. The arrow keys move it too, five percent a press, if you'd rather not drag.
+- **A lane can't be squeezed to nothing** — it stops at about a sixth of the row, which is roughly where a line of text stops being readable.
+
+### Notes
+
+- **Ours rather than the ready-made one.** BlockNote sells columns as a separate package that would mean either paying for it or relicensing the whole app, so this is built against its ordinary block API instead. Same feature, no strings.
+- **A row you drag stays that way.** The widths are stored with the page, so they're still there when you reopen it.
+
 ## 2026-09-02 — the infobox's Add Block, tidied up
 
 ### Fixes
@@ -203,13 +217,3 @@
 - **Where it goes defaults to the page you're on**, and you can search for somewhere else or clear it with the × to put it at the top of the tree.
 - **Writing `[[Something]]` for a page that doesn't exist now offers to make it.** It used to sit there as plain text with brackets showing, and the only way on was to go and make the page yourself somewhere else. Now the same window opens with the name already filled in, and the brackets turn into a link once the page exists.
 - **Backing out costs nothing.** What you typed stays exactly as you typed it, brackets and all, and you're put back where you were so you can keep going. It won't ask about that name again.
-
-## 2026-08-28 — projects can be deleted
-
-### Additions
-
-- **A project can be deleted.** It's on the tile's ••• menu, under Archive. Until now Archive was the only way to get a project out of the list, and all that does is hide the tile — the folder stayed on your disk with no way to get rid of it except doing it yourself in File Explorer.
-- **It goes to the recycle bin, not into thin air.** The whole project folder is moved there, so if you delete the wrong one you can put it back. You're asked first, and the warning names the project and says the whole folder is what goes.
-- **It tidies up after itself.** A deleted project leaves the archive, any groups you'd filed it under, your pins and the recently-opened list, so nothing is left pointing at a folder that isn't there. If it happened to be the last project you had open, the app won't try to reopen it next time it starts.
-- **It says so afterwards.** A small panel slides up at the bottom of the window — *Deleted "Orynthia". The folder is in your recycle bin.* — and fades on its own after a few seconds. The tile disappearing tells you something happened; this tells you where it went, which is the thing worth knowing if you deleted the wrong one.
-- **A project another window has open won't be deleted**, the same as renaming one — you're told to go to that window instead.

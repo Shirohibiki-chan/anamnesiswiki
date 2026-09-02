@@ -4651,6 +4651,55 @@ again.
 
 Suites after: 1,574 unit tests (from 1,531), 81 app scenarios (from 77).
 
+## Phase 19.5 — Columns ✅ Shipped 2026-09-02
+
+Side-by-side lanes of writing in a page, and the next piece after a block's own
+width — the space beside a narrowed block now has something to put in it.
+
+**Two blocks, built on BlockNote's own nesting.** `pageColumns` is the row and
+`pageColumn` is a lane; a lane holds ordinary blocks as children, so a paragraph
+in a column is a paragraph. The layout is CSS on the block group BlockNote
+already renders for a block's children, which is why the slash menu, drag
+handles, selection and undo all keep working inside a lane without being
+reimplemented.
+
+**Written by hand because the ready-made one is out of reach**
+(`@blocknote/xl-multi-column` is GPL-or-paid against an MIT app, settled
+2026-08-27). About 200 lines plus stylesheet.
+
+**What was built:**
+
+- `columns.tsx` (the two specs), `ColumnLane.tsx` (the row, a lane, the divider)
+  and `column-slash-menu.tsx` (Two columns / Three columns), plus the layout in
+  `page.css`.
+- Widths as one prop on the row — `parseColumnWidths` / `serialiseColumnWidths`
+  in `block-service.ts`, with a floor of 15% per lane and the same snap points a
+  block's width uses.
+- A divider on each lane's right edge: pointer capture, snapping, arrow keys.
+
+**Three things went wrong, all of them worth the time they cost:**
+
+1. **The editor froze on the first insert, with no error.** Sizing the lane
+   meant writing `flex-grow` onto an element ProseMirror owns, and ProseMirror
+   re-reads its document when its DOM changes underneath it — write, re-render,
+   write. Five test runs each left a renderer spinning a core, which is what she
+   noticed before I did. The widths are a stylesheet now.
+2. **`columnList` and `column` are reserved by BlockNote core** even though the
+   blocks are not — core ships plugins keyed on those names. Renamed.
+3. **The divider never received a pointer-down**, because a lane's drag handle
+   occupies the gap to its left. Measured, then moved onto the lane's own edge,
+   which also matches the width handles.
+
+**Verified against the real app** (`pnpm test:app`): two lanes side by side and
+sharing evenly; text typed into each staying in its own lane; the divider drag
+splitting 50/50 into 67/33; both text and widths surviving a reload; the arrow
+keys moving a divider; and three lanes from the other menu entry.
+
+**Not built:** adding or removing a lane from an existing row, and a row's own
+menu. A row is made and unmade from the slash menu and BlockNote's block handle
+for now.
+
+
 ## Phase 19.5 — Dragging a block wider ✅ Shipped 2026-09-02
 
 The page is wider than the sidebar, and this is where she says how much of that

@@ -551,6 +551,39 @@ export const BLOCK_WIDTH_FULL = 100;
  */
 export const BLOCK_WIDTH_SNAPS = [25, 33, 50, 67, 75, 100];
 
+/**
+ * A row of columns' widths, read back as one share per lane.
+ *
+ * **Stored on the row rather than on each lane, and joined into a string**, for
+ * the reason an infobox's list of ids is: BlockNote props are flat. Keeping
+ * them together also means a drag writes one prop rather than two, so half a
+ * resize can never be undone on its own.
+ *
+ * Anything missing, short, or not a number comes back as an even split — a row
+ * whose widths have never been touched stores nothing at all.
+ */
+export function parseColumnWidths(value: string, count: number): number[] {
+  const even = Array.from({ length: count }, () => 100 / count);
+  if (!value) return even;
+  const parsed = value.split(BLOCK_ID_SEPARATOR).map((part) => Number(part));
+  if (parsed.length !== count || parsed.some((width) => !Number.isFinite(width) || width <= 0)) return even;
+  return parsed;
+}
+
+/** The other direction. Whole numbers, so a row reads as percentages. */
+export function serialiseColumnWidths(widths: number[]): string {
+  return widths.map((width) => String(Math.round(width))).join(BLOCK_ID_SEPARATOR);
+}
+
+/**
+ * The narrowest a *column* may be dragged, which is not the same number.
+ *
+ * A column holds ordinary writing rather than a block with its own controls,
+ * and a row of three starts at a third each — a floor of 25 would leave almost
+ * nothing to drag. This is about where a line of text stops being readable.
+ */
+export const COLUMN_WIDTH_MIN = 15;
+
 const SNAP_TOLERANCE = 3;
 
 /**
@@ -558,8 +591,8 @@ const SNAP_TOLERANCE = 3;
  * it is close to one. Whole numbers, because a stored 49.7% is a width nobody
  * asked for and it prints badly in the handle's readout.
  */
-export function snapBlockWidth(width: number): number {
-  const clamped = Math.min(BLOCK_WIDTH_FULL, Math.max(BLOCK_WIDTH_MIN, Math.round(width)));
+export function snapBlockWidth(width: number, min: number = BLOCK_WIDTH_MIN): number {
+  const clamped = Math.min(BLOCK_WIDTH_FULL, Math.max(min, Math.round(width)));
   const snap = BLOCK_WIDTH_SNAPS.find((point) => Math.abs(point - clamped) <= SNAP_TOLERANCE);
   return snap ?? clamped;
 }

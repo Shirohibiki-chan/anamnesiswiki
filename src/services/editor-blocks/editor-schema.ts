@@ -3,6 +3,7 @@
 // section and docs/constants-and-theming.md §Callout blocks.
 import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs } from "@blocknote/core";
 import { blockRefSpec } from "./block-ref";
+import { columnListSpec, columnSpec } from "./columns";
 import { codeBlockSpec } from "./code-block";
 import { infoboxSpec } from "./infobox";
 import { infoBlockSpec } from "./info-block";
@@ -28,6 +29,12 @@ export const editorSchema = BlockNoteSchema.create({
     // Several of them in a bordered frame, with its own Add Block. Phase 19.5 —
     // it holds a list of ids, not blocks.
     infobox: infoboxSpec,
+    // Side-by-side lanes of writing. Phase 19.5 — a row and its columns, both
+    // holding ordinary blocks as children rather than content of their own, so
+    // a paragraph in a lane is an ordinary paragraph. Ours rather than
+    // BlockNote's `xl-` package, which is licensed out of reach; see columns.tsx.
+    pageColumns: columnListSpec,
+    pageColumn: columnSpec,
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

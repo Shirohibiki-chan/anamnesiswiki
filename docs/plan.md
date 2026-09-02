@@ -549,6 +549,13 @@ Meter that lands on a bar and makes her go find the setting.
   app ships under GPL-3.0 — a licence change to the released app, which is the
   user's decision and nobody else's; the other branch is paid.
 
+  **Columns shipped 2026-09-02**, written by hand as `pageColumns` /
+  `pageColumn` — a row block whose children are lanes, whose children are
+  ordinary blocks — with a draggable divider between lanes. Detail is in
+  `docs/shipped.md`; what binds the code is in `docs/handoff.md`, and it is
+  worth reading before touching them: BlockNote reserves the names `columnList`
+  and `column`, and writing to the editor's own DOM freezes the app.
+
   **Both branches are refused, settled 2026-08-27, and this is not to be raised
   again.** She will not pay for a dependency and the app stays MIT — a licence
   fee, or relicensing the entire app, to obtain one editor block is out of all
@@ -559,9 +566,10 @@ Meter that lands on a bar and makes her go find the setting.
   callouts in `src/services/editor-blocks/`. Real work, no licence attached, and
   it should be estimated as build time rather than reopened as a choice.
 
-  Separately: it overlaps this phase's per-block width and Phase 21's splittable
-  panels; three different things called columns, and the naming needs settling
-  before any of them ship.
+  **The naming is settled as of 2026-09-02**, since two of the three have now
+  shipped: **Columns** is this — lanes of writing inside a page. **Width** is
+  how much of the page one block takes. Phase 21's are **panes**, and nothing
+  in the UI calls them columns.
 - **Callout colours shipped 2026-08-28.** Any callout takes a colour from
   `COLOR_PALETTE`; the four conventional hues carry an icon; type still decides
   behaviour, so a red Secret is still a Secret. It also fixed a `.lk` import bug
@@ -625,6 +633,32 @@ meter block inside an infobox rather than a gauge block sitting in the page.
   decision it reached still stands and for the same reason: **build the
   full-width version first**, because BlockNote does not float blocks and
   wrapping is a much larger job. It is now a known gap rather than an unknown.
+
+### An image block holds its own picture — decided 2026-09-02, not built
+
+**Found by her the moment blocks reached the page body.** An image block is a
+window onto `node.image`, the page's one picture — so a picture dropped into a
+block in the writing became the page's portrait, and a second image block
+showed the same picture rather than a new one. That was defensible while an
+image block only ever appeared in the sidebar. It is not now.
+
+**Her call, given the options: each image block holds its own picture, and one
+of them is marked as the page's.** The page picture is the one the tree row,
+the hover preview and the LK export use, so it cannot simply be dropped — the
+alternative offered (no page picture at all) was refused for that reason.
+
+What that means for the build, none of which is done:
+
+- A picture on the **block** rather than only on the node: an asset id, its alt
+  text and its focus point, the three fields `node.image` carries today.
+- **Which block is the page's picture** has to be stored, and the first image
+  block a page has should get it automatically — otherwise every page that
+  already has a portrait loses it on the next read.
+- **Existing pages must open unchanged.** Every page in her world with a
+  portrait has exactly one image block reading `node.image`; that block has to
+  keep drawing that picture with nothing rewritten on disk.
+- The block's menu is where "use this as the page's picture" belongs, beside
+  the picture's own controls.
 
 ### The infobox's own menu, from her screenshots
 

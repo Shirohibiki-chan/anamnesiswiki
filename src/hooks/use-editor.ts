@@ -22,6 +22,7 @@ import { ICON_MIN_QUERY, ICON_TRIGGER, iconMenuOpens, isIconPickerChord } from "
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
+import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
 import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
@@ -285,6 +286,9 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
         // record and hands back its id; the menu item points the document at
         // it. See page-block-slash-menu.tsx.
         ...getPageBlockSlashMenuItems(editor, (kind, extra) => addBlock(nodeId, kind, extra)),
+        // Side-by-side lanes. Nothing to make first — a row is made of blocks
+        // the editor already knows how to draw. See column-slash-menu.tsx.
+        ...getColumnSlashMenuItems(editor),
       ],
       query,
     );

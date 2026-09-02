@@ -30,9 +30,10 @@ infobox grouping several (2026-08-29), callout colours and New page from inside
 the editor (2026-08-28), and the inline icon plus the callout's own icon
 (2026-09-01). What still binds the code from all of it is §Editor & templates
 and §Sidebar blocks below. Dragging a block or an infobox wider landed
-2026-09-02. **Still open in the phase:** columns in the page, the infobox's own
-menu, a Recent row in the icon picker, and the slash-command and markdown
-halves of the shortcut sheet.
+2026-09-02, and columns the same day. **Still open in the phase:** an image
+block holding its own picture (decided 2026-09-02, scoped in `docs/plan.md`),
+the infobox's own menu, a Recent row in the icon picker, and the slash-command
+and markdown halves of the shortcut sheet.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3457,6 +3458,39 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   for Ctrl+Z to walk back one at a time. So `Infobox` holds the width in state
   while the pointer is down and stores it on release. Anything that moves a
   width from one home to the other has to move this with it.
+
+- **Never write to the editor's own DOM, and never name a block after one of
+  BlockNote's.** Phase 19.5's columns, 2026-09-02, and both of these cost a
+  frozen app rather than an error message.
+
+  The first: a lane's box is `.bn-block-outer`, which BlockNote renders, so the
+  obvious way to size it is a layout effect setting `flex-grow` on it.
+  ProseMirror watches its own DOM for changes it did not make — the write makes
+  it re-read the document, which re-renders the node view, which writes again,
+  and the renderer spins with nothing thrown. Guarding "only write when it
+  differs" does not help, because the element is rebuilt each time round. **So
+  the row renders `nth-child` rules into `document.head` instead**
+  (`ColumnRow` in `ColumnLane.tsx`), keyed by its own `data-id`. Anything that
+  needs to size an element BlockNote owns has to go the same way.
+
+  The second: the types are `pageColumns` and `pageColumn` because **core
+  reserves `columnList` and `column`**. The specs for those live in the `xl-`
+  package we cannot license, but the plugins keyed on the names ship in core
+  and attach to anything called that.
+
+- **A block's drag handle sits in the space to its left, and that space is not
+  free.** Phase 19.5. Measured in the running app: a lane starting at x=620 had
+  `.bn-side-menu` covering 604–644 on hover, which swallowed every pointer-down
+  meant for a divider centred in the gap. The divider hangs off its own lane's
+  right edge instead. Anything else that wants a control in the gutter beside a
+  block has the same problem and needs the same answer.
+
+- **Custom blocks are wrapped, so `.bn-block-content + .bn-block-group` matches
+  nothing.** Phase 19.5. BlockNote puts a `.react-renderer.node-<type>` div
+  around a custom block's content, so a block's children — the group the lanes
+  live in — are that wrapper's sibling, not the content's. The layout rules key
+  off `.node-pageColumns` for that reason, and the first version silently drew
+  two stacked lanes instead of a row.
 
 - **A pointer with no block behind it is an ordinary state, not corruption.**
   The record and the pointer are saved through different paths — the panel

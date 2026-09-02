@@ -30,6 +30,8 @@ const PAGE_BLOCK = ".page-block";
 const INFOBOX = ".infobox";
 const BLOCK_FRAME = ".block-frame";
 const PAGE_INFOBOX = ".page-infobox";
+const COLUMN_ROW = ".node-pageColumns";
+const COLUMN_DIVIDER = ".column-divider";
 const BLOCK_ADD_MENU = ".block-add-menu";
 const MENU_HEADING = ".tree-context-menu-heading";
 const BLOCK_TITLE = ".block-title";
@@ -249,6 +251,63 @@ export async function infoboxCount(window: Page): Promise<number> {
 export async function infoboxBlockTitles(window: Page): Promise<string[]> {
   const titles = await window.locator(`${INFOBOX} ${BLOCK_TITLE}`).allTextContents();
   return titles.map(normalize);
+}
+
+/**
+ * The lanes of the page's first row of columns, left to right. Phase 19.5.
+ *
+ * **Positions and widths rather than a screenshot**, because the question a
+ * scenario asks about columns is "are these side by side, and how is the room
+ * split" — both of which are numbers. The text comes along so the same call can
+ * answer which lane something was typed into.
+ */
+export async function columnLanes(window: Page, row = 0): Promise<{ x: number; width: number; text: string }[]> {
+  return window.evaluate(
+    ([selector, at]) => {
+      const group = document.querySelectorAll(selector as string)[at as number]?.nextElementSibling;
+      return [...(group?.children ?? [])].map((lane) => {
+        const box = lane.getBoundingClientRect();
+        return { x: Math.round(box.x), width: Math.round(box.width), text: (lane as HTMLElement).innerText.trim() };
+      });
+    },
+    [COLUMN_ROW, row] as [string, number],
+  );
+}
+
+/** Clicks into one lane, to write in it. */
+export async function clickColumnLane(window: Page, at: number, row = 0): Promise<void> {
+  await window.locator(`${COLUMN_ROW} + .bn-block-group`).nth(row).locator("> .bn-block-outer").nth(at).click();
+  await window.waitForTimeout(200);
+}
+
+/** How many rows of columns the open page is showing. */
+export async function columnRowCount(window: Page): Promise<number> {
+  return window.locator(COLUMN_ROW).count();
+}
+
+/**
+ * Drags the divider after lane `at` until that lane is `ratio` of the row.
+ *
+ * A real press, move and release: the divider takes pointer capture on the way
+ * down, and the whole point of the control is what happens between.
+ */
+export async function dragColumnDivider(window: Page, at: number, ratio: number): Promise<void> {
+  const lanes = await columnLanes(window);
+  const handle = await window.locator(COLUMN_DIVIDER).nth(at).boundingBox();
+  if (!handle || lanes.length < at + 2) throw new Error("no divider to drag");
+  const span = lanes[at + 1].x + lanes[at + 1].width - lanes[at].x;
+  const y = handle.y + handle.height / 2;
+  await window.mouse.move(handle.x + handle.width / 2, y);
+  await window.mouse.down();
+  await window.mouse.move(lanes[at].x + span * ratio, y, { steps: 10 });
+  await window.mouse.up();
+  await window.waitForTimeout(400);
+}
+
+/** Puts the keyboard on a column divider, for the arrow keys. */
+export async function focusColumnDivider(window: Page, at: number): Promise<void> {
+  await window.locator(COLUMN_ROW).first().hover();
+  await window.locator(COLUMN_DIVIDER).nth(at).focus();
 }
 
 /** Adds a block to the page's first infobox, by the name on its menu item. */

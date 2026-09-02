@@ -1611,3 +1611,107 @@
 .page-title-icon-button:hover {
   background: var(--color-hover);
 }
+
+/* ── Columns ──────────────────────────────────────────────────────────────
+   Phase 19.5. Side-by-side lanes of writing, built out of BlockNote's own
+   nesting rather than a layout of ours: a `pageColumns` block holds `pageColumn`
+   blocks as children, and the editor renders any block's children into a
+   `.bn-block-group` next to it. Turning *that* group into a flex row is the
+   whole feature — which is why everything else about the editor keeps working
+   inside a lane.
+
+   The row itself draws nothing. It exists so ProseMirror has a block to put
+   the lanes under, and so the drag handle beside it moves the whole row.
+
+   **The selector is `.node-pageColumns`, not the content element.** BlockNote
+   wraps a custom block's content in a `.react-renderer` div, so the block group
+   holding the lanes is that wrapper's sibling rather than the content's — a
+   `.bn-block-content + .bn-block-group` rule matches nothing at all, silently,
+   which is how the first version came out as two stacked lanes. */
+.page-columns {
+  height: 0;
+}
+
+.node-pageColumns + .bn-block-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2xl);
+  /* BlockNote indents a block group, which is right for a nested list and
+     wrong here — a row of columns is not filed under the empty block above it,
+     it *is* that block. */
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+
+/* Each lane. `flex: 1 1 0` is the starting point and the share written on the
+   column overrides the grow — see columns.tsx, which sets it on this element
+   because it is the box that is actually a column and BlockNote renders it.
+
+   `position: relative` is for the divider, which is drawn from inside the lane
+   and has to be able to stand its full height. */
+.node-pageColumns + .bn-block-group > .bn-block-outer {
+  flex: 1 1 0;
+  min-width: 0;
+  position: relative;
+}
+
+/* The lane's own marker element, like the row's: nothing to see. The writing in
+   a lane is in the block group beside this. */
+.page-column {
+  height: 0;
+}
+
+/* **A lane's writing starts where the lane does.** BlockNote indents a nested
+   block group, which is right for a bullet under a bullet and wrong twice over
+   here: once for the row (above) and once for the writing inside each lane,
+   which was starting 23px in from the lane's own edge and left every column
+   looking misaligned with the page. */
+.node-pageColumn + .bn-block-group {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+
+/* **The divider is a hit area, not a line.** A one-pixel border is impossible
+   to grab; this is a comfortable strip sitting in the gap between two lanes,
+   invisible until the pointer is near it. It draws the line itself so the line
+   can brighten without the gap changing width. */
+.column-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* On the lane's own right edge rather than centred in the gap — the gap
+     belongs to the next lane's drag handle. See ColumnLane.tsx. */
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.node-pageColumns + .bn-block-group:hover .column-divider,
+.column-divider:focus-visible {
+  opacity: 1;
+}
+
+.column-divider::before {
+  content: "";
+  width: 2px;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.column-divider:hover::before,
+.column-divider:focus-visible::before {
+  background: var(--color-accent-light);
+}
+
+.column-divider:focus-visible {
+  outline: none;
+}

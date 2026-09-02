@@ -86,6 +86,37 @@ export const BLOCK_REF_TYPE = "blockRef";
 export const INFOBOX_TYPE = "infobox";
 
 /**
+ * Side-by-side lanes of writing in the page (Phase 19.5).
+ *
+ * **Two block names, because a row of columns is a container of containers.**
+ * The row is one block and each lane is another; a lane holds ordinary blocks as its
+ * own children, which is how the writing in one lane stays writing — nothing
+ * about a paragraph changes because it is in a column.
+ *
+ * **Written by hand against BlockNote's block API rather than installed.**
+ * BlockNote ships this as `@blocknote/xl-multi-column`, which is
+ * `GPL-3.0 OR PROPRIETARY` while this app is MIT: taking it means relicensing
+ * the whole app or paying, for one editor block. Settled 2026-08-27, and
+ * `docs/plan.md` Phase 19.5 has the reasoning so it is not reopened.
+ *
+ * **The word means three different things in this project.** These are columns
+ * in the writing; a block's own `width` is how much of the page one block
+ * takes; Phase 21's split panes are the app's layout. Only this one is called
+ * Columns in the UI.
+ *
+ * **`pageColumns` rather than `columnList`, and the prefix is load-bearing.**
+ * BlockNote's core reserves `columnList` and `column`: the specs live in the
+ * `xl-` package we cannot use, but the *plugins* keyed on those names ship in
+ * core and attach to any node called that. Ours answered to them and the
+ * editor locked up on the first insert — no error, just a renderer spinning.
+ * Never name a custom block after one of theirs.
+ */
+export const COLUMN_LIST_TYPE = "pageColumns";
+
+/** One lane inside a `pageColumns` row. Holds blocks as children; see above. */
+export const COLUMN_TYPE = "pageColumn";
+
+/**
  * How an infobox writes down which blocks it holds.
  *
  * **A joined string because BlockNote props are flat.** Its prop schema takes
