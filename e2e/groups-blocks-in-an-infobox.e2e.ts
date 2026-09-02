@@ -11,8 +11,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
   addBlockToInfobox,
+  infoboxAddHeadings,
   infoboxBlockTitles,
   infoboxCount,
+  propertiesOfferedByInfobox,
   openPage,
   panelBlockTitles,
   typeAtLineStartInEditor,
@@ -61,6 +63,21 @@ describe("grouping blocks in an infobox", () => {
     expect(await panelBlockTitles(app.window)).not.toContain("Gauge");
   });
 
+  it("drops the Properties heading once there is nothing left under it", async () => {
+    // **A heading over an empty space reads as a list that failed to load.**
+    // The frame's menu has no New property button — that form belongs to the
+    // panel — so on a page whose fields are all already shown, Properties was
+    // a word at the bottom of the menu with nothing beneath it.
+    const remaining = await propertiesOfferedByInfobox(app.window);
+    for (const field of remaining) {
+      await addBlockToInfobox(app.window, field);
+      await app.window.waitForTimeout(600);
+    }
+
+    expect(await propertiesOfferedByInfobox(app.window)).toEqual([]);
+    expect(await infoboxAddHeadings(app.window)).not.toContain("Properties");
+  });
+
   it("is still grouped after a reload", async () => {
     // Where a block lives is derived from the page's writing on every read, so
     // a group that only holds together until restart means the list of ids
@@ -71,7 +88,8 @@ describe("grouping blocks in an infobox", () => {
     await app.window.waitForTimeout(800);
 
     expect(await infoboxCount(app.window)).toBe(1);
-    expect(await infoboxBlockTitles(app.window)).toEqual(["Text", "Gauge"]);
+    expect(await infoboxBlockTitles(app.window)).toContain("Text");
+    expect(await infoboxBlockTitles(app.window)).toContain("Gauge");
   });
 
   it("gives its blocks back to the sidebar when the frame is deleted", async () => {

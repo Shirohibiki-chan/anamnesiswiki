@@ -2,6 +2,24 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-28 — five new kinds of page, and Species is now Race
+
+### Additions
+
+- **Country.** A nation isn't somewhere you can stand, so it stopped sharing a template with Location. Territory, peoples and economy on the first tab, a map tab, a *Rule* tab for government, law, what it can put in the field and who it borders, and a hidden *Past* for founding, wars and the last few years.
+- **Creature.** Animals, monsters, the thing in the woods. Appearance, behaviour and habitat, then an *Encounters* tab for the signs one is near, what it can actually do to a person, and how people deal with them.
+- **Technology.** Inventions and machinery, magical or otherwise — what it looks like, how it works, what it was for. Then who has it, what it costs, what it made obsolete, and who's building a better one.
+- **Scene.** One moment as a piece of writing rather than a piece of history: setting, who's present, and what's different by the end. A hidden *Drafting* tab holds beats, lines you don't want to lose, and what isn't working yet.
+- **Quest.** Objective, who's asking, stakes and payment, with a hidden *Running It* tab for the steps, the obstacles and the twists. Written with a table in mind, but a plot thread works the same way.
+
+### Renames
+
+- **Species is now Race.** With Creature taking the animals, the old name was pointing at the wrong half — "Species" reads as the non-sentient one, which is the opposite of what that template was for. **Pages you already made are fine and nothing on disk was rewritten**; they keep their icon, their fields and their writing, and simply show up as Race.
+
+### Changes
+
+- **Importing recognises Country and Technology pages** rather than bringing them in as plain notes. Kinds we haven't seen an example of still import as notes with all their tabs and writing intact, as before.
+
 ## 2026-08-28 — the templates are laid out our way now
 
 ### Changes

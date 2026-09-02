@@ -2013,9 +2013,26 @@
 
 /* Add Block sits inside the frame rather than under it: it belongs to this
    infobox, and one floating below the border would read as belonging to the
-   page. */
+   page.
+
+   **It is as wide as its own words, not as wide as the frame.** The sidebar's
+   Add Block spans its panel on purpose — it is the last row of a list and its
+   hover reads as one — but a frame in the middle of a page is not a list, and
+   a highlight running the whole way across it was the loudest thing in the
+   box. Inheriting the panel's `width: 100%` also put the button 6px past the
+   right edge while leaving a 6px gap on the left, so the one thing it had
+   going for it was not even symmetrical.
+
+   `inline-flex` rather than `width: auto`: the button is a flex row and a
+   block-level flex box fills its container whatever its width says. */
 .infobox-add {
-  margin: 0 var(--space-sm) var(--space-sm);
+  display: inline-flex;
+  width: auto;
+  margin: 0 var(--space-md) var(--space-md);
+  /* Its own padding is what the highlight is now, so it is even on all four
+     sides — and the label still lands on the inset the blocks above it use. */
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
 }
 
 /* ── Dragging a block wider ───────────────────────────────────────────────

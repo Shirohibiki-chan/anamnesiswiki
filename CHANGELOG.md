@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-02 — the infobox's Add Block, tidied up
+
+### Fixes
+
+- **Add Block inside an infobox lights up only itself.** The highlight used to run almost the whole way across the frame — and not evenly, since it started a few pixels in on the left and ran off the edge on the right. It is a small rounded button now, as wide as its own words, sitting under whatever the frame is holding. The one in the sidebar still spans its panel, because there it is the last row of a list and reads as one.
+- **The infobox menu no longer ends with a Properties heading over nothing.** That section offers the page's own fields that nothing is showing yet, so on a page where every field is already on screen there was a word at the bottom of the menu with an empty space under it, which reads as a list that failed to load. The heading now appears only when there is something under it.
+
 ## 2026-09-02 — blocks you can drag narrower
 
 ### Additions
@@ -206,21 +213,3 @@
 - **It tidies up after itself.** A deleted project leaves the archive, any groups you'd filed it under, your pins and the recently-opened list, so nothing is left pointing at a folder that isn't there. If it happened to be the last project you had open, the app won't try to reopen it next time it starts.
 - **It says so afterwards.** A small panel slides up at the bottom of the window — *Deleted "Orynthia". The folder is in your recycle bin.* — and fades on its own after a few seconds. The tile disappearing tells you something happened; this tells you where it went, which is the thing worth knowing if you deleted the wrong one.
 - **A project another window has open won't be deleted**, the same as renaming one — you're told to go to that window instead.
-
-## 2026-08-28 — five new kinds of page, and Species is now Race
-
-### Additions
-
-- **Country.** A nation isn't somewhere you can stand, so it stopped sharing a template with Location. Territory, peoples and economy on the first tab, a map tab, a *Rule* tab for government, law, what it can put in the field and who it borders, and a hidden *Past* for founding, wars and the last few years.
-- **Creature.** Animals, monsters, the thing in the woods. Appearance, behaviour and habitat, then an *Encounters* tab for the signs one is near, what it can actually do to a person, and how people deal with them.
-- **Technology.** Inventions and machinery, magical or otherwise — what it looks like, how it works, what it was for. Then who has it, what it costs, what it made obsolete, and who's building a better one.
-- **Scene.** One moment as a piece of writing rather than a piece of history: setting, who's present, and what's different by the end. A hidden *Drafting* tab holds beats, lines you don't want to lose, and what isn't working yet.
-- **Quest.** Objective, who's asking, stakes and payment, with a hidden *Running It* tab for the steps, the obstacles and the twists. Written with a table in mind, but a plot thread works the same way.
-
-### Renames
-
-- **Species is now Race.** With Creature taking the animals, the old name was pointing at the wrong half — "Species" reads as the non-sentient one, which is the opposite of what that template was for. **Pages you already made are fine and nothing on disk was rewritten**; they keep their icon, their fields and their writing, and simply show up as Race.
-
-### Changes
-
-- **Importing recognises Country and Technology pages** rather than bringing them in as plain notes. Kinds we haven't seen an example of still import as notes with all their tabs and writing intact, as before.
