@@ -19,7 +19,14 @@ import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
-import { BlockRefRenderContext, IconPickContext, useEditor, WIKILINK_TRIGGER } from "../../hooks/use-editor";
+import {
+  BlockRefRenderContext,
+  ICON_MIN_QUERY,
+  ICON_TRIGGER,
+  IconPickContext,
+  useEditor,
+  WIKILINK_TRIGGER,
+} from "../../hooks/use-editor";
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
 import { EditorIconPicker } from "../blocks/EditorIconPicker";
@@ -94,8 +101,13 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
     handleChange,
     focusEnd,
     getSlashMenuItems,
+    getIconItems,
     getMentionItems,
     slashShouldOpen,
+    iconShouldOpen,
+    iconTrigger,
+    closeIconTrigger,
+    insertIconAtTrigger,
     suggestionMenuFloating,
   } = useEditor(nodeId, content, onContentChange);
   // Double-clicking a picture opens it full size; a single click still selects
@@ -167,6 +179,11 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
         editor={editor}
         theme="dark"
         slashMenu={false}
+        // Off because our `:` menu replaces it and two menus cannot share one
+        // trigger — ours drew while theirs answered the Enter. See
+        // icon-menu-items.tsx, which offers BlockNote's own emoji list so
+        // nothing is lost by turning this off.
+        emojiPicker={false}
         className="wiki-body editor-shell"
         onKeyDownCapture={onKeyDownCapture}
         // Off, so PageFormattingToolbar above is the one on screen.
@@ -207,6 +224,18 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           shouldOpen={slashShouldOpen}
           floatingUIOptions={suggestionMenuFloating}
         />
+        {/* The type-ahead half of the icon work: `:sm` and take it with Enter
+            or Tab, the way every chat app does it. `minQueryLength` is what
+            keeps a bare colon from opening anything — punctuation far more
+            often than a request — and `shouldOpen` keeps `Note:` and `10:30`
+            shut on top of that. The picker is the other half, on Ctrl+`:`. */}
+        <SuggestionMenuController
+          triggerCharacter={ICON_TRIGGER}
+          getItems={getIconItems}
+          shouldOpen={iconShouldOpen}
+          minQueryLength={ICON_MIN_QUERY}
+          floatingUIOptions={suggestionMenuFloating}
+        />
         <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} floatingUIOptions={suggestionMenuFloating} />
         <SuggestionMenuController
           triggerCharacter={WIKILINK_TRIGGER}
@@ -214,6 +243,20 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
           floatingUIOptions={suggestionMenuFloating}
         />
       </BlockNoteView>
+      {/* **Ctrl+`:` opens the picker, and it is the browsing half of a pair.**
+          A type-ahead can only be searched by typing, so there is no way to
+          reach an icon whose name you do not know — which is most of fifteen
+          hundred of them. This is the same control the page title and a meter
+          open: a search box over the whole catalogue, both tabs, and a grid to
+          scroll. See hooks/use-editor.ts for the key. */}
+      {iconTrigger && (
+        <EditorIconPicker
+          anchorRect={iconTrigger}
+          value={undefined}
+          onPick={insertIconAtTrigger}
+          onClose={closeIconTrigger}
+        />
+      )}
     </div>
     </IconPickContext.Provider>
     </BlockRefRenderContext.Provider>

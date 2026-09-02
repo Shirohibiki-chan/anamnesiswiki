@@ -4700,3 +4700,99 @@ caution, and the dashed empty slot a cleared callout leaves behind.
 across the top and ours does not. It needs somewhere to live that outlasts the
 popover, which is a small piece of app state rather than anything about icons —
 it is in `docs/plan.md` under the phase.
+
+**Follow-up the same day: the `:` trigger.** The entry above shipped with
+`/icon` as the only way in, and that was close to useless — a slash only means
+a command at the start of an empty line (her rule, 2026-08-28), which is
+exactly where an icon is least wanted. She called it immediately. The fix is a
+trigger of its own, ungated the way `@` and `[[` are, with one rule on it:
+`iconMenuOpens` requires the character before the colon to be nothing or
+whitespace, so `Note:`, `Chapter 4:` and `10:` stay shut and ` :swo` opens.
+Seven unit tests over that pair of cases.
+
+**It cost a conflict nobody had noticed.** `BlockNoteView` mounts BlockNote's
+own emoji picker on `:` by default, so for a while two menus were live on one
+key — ours drew on screen and theirs answered the Enter, inserting a bare emoji
+where a glyph had been chosen. Nothing threw; the only symptom was a scenario
+failing on a count several lines later, which took three runs and a DOM dump to
+pin down. `emojiPicker={false}` settles it, and the emoji half of our menu is
+now BlockNote's own list through `getDefaultEmojiPickerItems` — the full
+emoji-mart set rather than `constants/emoji.ts`'s curated few hundred, so
+nothing was lost by turning theirs off.
+
+**And a trap in the app test suite, now written down.**
+`.bn-suggestion-menu-item` is on the option's row *and* on its icon, title and
+subtext, so one option is four matches — clicking the wrong one closes the menu
+and inserts nothing, silently. `pickSuggestion` in `e2e/harness/screen.ts` is
+the helper that gets it right, and says why.
+
+**And it took three cuts to get the shape right, which is the part worth
+keeping.** The first was BlockNote's default suggestion menu: one icon per row
+with its name beside it, scrolled vertically. The second drew the same items in
+the picker's grid. Both were rejected on sight, and the second rejection is the
+one that named the real problem — *a menu can only be searched by typing, so
+there is no way to reach an icon whose name you do not know*, which is most of
+fifteen hundred of them. Her words for it were that nobody would use a menu
+they cannot scroll.
+
+**So the third cut opens the picker itself.** `IconPicker` had both halves
+since Phase 18c — a search box over everything and a browsable grid under it —
+and building a lookalike beside it was the mistake, twice. `use-editor` owns
+the trigger now: the `:` keystroke is read off the DOM selection (which is the
+only thing carrying both the text before the caret and the caret's rectangle at
+that moment), the colon is left in the writing until an icon replaces it, and
+`insertIconAtTrigger` swaps the one for the other. `IconMenu.tsx` and
+`icon-menu-items.tsx` were deleted rather than kept around.
+
+**And the emoji half was fixed the same day rather than left as a cost.**
+Taking `:` from BlockNote meant losing the complete emoji-mart set it carried,
+against `constants/emoji.ts`'s 129 curated ones. She approved the dependency,
+so `@emoji-mart/data` (MIT, the same file BlockNote itself depends on) is now
+ours directly and `emoji.ts` reshapes it into what the picker draws: 1870
+emoji in the eight groups an emoji keyboard uses, searched by name, keyword and
+shortcode. It reaches every picker in the app, not just the editor's — a page's
+icon and a meter's readings gained the full set too.
+
+**Measurements.** ~475KB of JSON in the bundle, the same trade
+`glyph-catalogue.ts` records for the icons. The Emoji tab draws all 1870 in
+about 760ms on first open, which is the cost of not paging it; paging is what
+the glyph tab does and it is the thing she rejected, so the whole list stays.
+
+**One bug found in the same pass, and it was the worst kind.** A caret in an
+empty block has no rectangle — `getBoundingClientRect()` returns all zeros —
+and the trigger read that as having nowhere to anchor and declined to open. So
+the picker worked everywhere except the most ordinary place to type, a fresh
+line, and it was reported from use rather than caught here. The fallback is the
+line element's own box, and there is a scenario on it now.
+
+**Three more found by using it, all in one gesture.** She typed `:joy:` and
+nothing happened, which turned out to be three separate faults stacked:
+`TreePopover` focused the first tab button rather than the search box (its
+measuring frame makes `autoFocus` a no-op, which its own comments already knew
+about focusing and nobody had connected to `autoFocus`); the closing colon of
+`:joy:` matched nothing, since the box is reached *by* a colon and the habit is
+to type the other one; and searching only looked inside the selected tab, so an
+emoji's name typed on the Glyphs tab returned "Nothing matches" with the answer
+one click away. Stripping colons also fixed an open-cost regression nobody had
+reported yet — a box holding just `:` counted as a search, and a search draws
+all 1870 emoji, so every open of the picker anywhere in the app had picked up
+about three quarters of a second.
+
+**It ended as two controls on one key, and the route there is the record worth
+keeping.** Four cuts: a suggestion menu listing matches (rejected — a single
+column of pictures with no way to scroll the rest); the same items drawn in the
+picker's grid (rejected — still only reachable by typing a name you might not
+know); the picker itself on a bare `:` (rejected — no fast path for when you
+*do* know the name, and it fired on punctuation); and finally both, split by
+key. `:` plus two characters is the type-ahead, single column, emoji written as
+`:joy:`, Enter or Tab to take one. `Ctrl+:` opens the picker. Her call, and the
+lesson is that "surely it can be both" was the right question all along — the
+three failures were each an attempt to make one control cover two jobs.
+
+**What the split cost in code is small**, which is the tell that it was the
+right shape: `minQueryLength` on BlockNote's own controller does the "type
+something first" half, `shouldOpen` keeps the `Note:` rule on top of it, and
+the chord is `preventDefault`ed so its colon reaches neither the writing nor
+the picker's focused search box. Arrow keys, Tab and Enter came free —
+`handleSuggestionListKeys` has translated those for every suggestion menu in
+the app since Phase 14.

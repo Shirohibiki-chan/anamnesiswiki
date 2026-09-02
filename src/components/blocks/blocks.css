@@ -1249,6 +1249,22 @@
   background: var(--color-panel);
 }
 
+/* The `:` menu's surface. The suggestion menu gives it a floating box and
+   nothing else, so the panel look is here — deliberately the same tokens the
+   picker's popover gets from TreePopover, since it is the same control reached
+   a different way. Bounded and scrolled for the same reason the picker is: the
+   catalogue is longer than any window. */
+.icon-menu {
+  width: 268px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-md, 0 8px 24px rgb(0 0 0 / 45%));
+}
+
 /* Two answers side by side where a control has both — "no icon at all" and
    "back to the one the colour implies". A row rather than a stack so a picker
    that has both is not two lines taller than one that has one. */

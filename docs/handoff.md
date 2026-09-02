@@ -2044,6 +2044,85 @@ under `acknowledgedWarnings`.
   "sword" into her prose. That branch is explicit in the inline walker so it
   reads as a decision rather than as an unknown type falling through.
 
+- **`emojiPicker={false}` on `BlockNoteView` is load-bearing, not tidiness.**
+  BlockNote mounts its own emoji picker on `:` by default, and that key is ours
+  now — a colon opens the app's icon picker at the caret. Two things on one
+  trigger is not a state that can work: while both were live, ours drew on
+  screen and theirs answered the Enter, inserting a bare emoji where a glyph
+  had been chosen. Nothing threw, and the only sign was a scenario failing on a
+  count several lines later.
+
+- **The trigger reads the DOM selection, not the document.** It runs on the
+  keystroke, before ProseMirror has seen the colon, and the selection is the
+  one thing that has both halves at that moment: the text before the caret,
+  which is what the rule needs, and the caret's rectangle, which is what the
+  popover anchors to.
+
+- **The emoji list is `@emoji-mart/data`, and it is deliberately not curated.**
+  Phase 18c shipped 129 hand-picked ones; the argument against that is hers and
+  it generalises — you cannot scroll to a thing whose name you do not know if
+  it was never in the list, and a curated set is the option that eventually
+  fails to hold the thing somebody wants. It is also the same file BlockNote
+  depends on, so this is the list she already had inside the editor, now
+  reachable from every picker. **Do not trim it back to a browsable size**;
+  browsability is the grid's job, not the list's.
+
+- **A caret in an empty block has no rectangle, and a popover anchored to one
+  has to expect that.** Measured 2026-09-01: `getBoundingClientRect()` on a
+  collapsed range in an empty paragraph returns all zeros, so the first cut of
+  the `:` trigger read that as "nowhere to put this" and quietly declined to
+  open — which meant the picker worked everywhere except the most ordinary
+  place to type, a fresh line. The fallback is the line element's own box.
+  Anything else anchored to a caret in this editor wants the same fallback.
+
+- **A popover that opens on a search box has to focus the field itself; the
+  field's own `autoFocus` cannot do it.** `TreePopover` renders hidden for one
+  frame to measure itself, and `autoFocus` on a hidden input is the same silent
+  no-op its own comments already record for focusing. So by the time anything
+  is visible nothing inside has claimed focus and the first *button* takes it —
+  which is how the icon picker shipped with a search box that looked ready and
+  swallowed every keystroke into a tab button. It now prefers a text field over
+  the first button when it moves focus in, which is what its comment always
+  said it intended.
+
+- **A colon in the icon picker's search box is punctuation, not a search.** The
+  picker opens on a typed `:` and that character lands in the box, so the box
+  starts out holding one. Treating that as a query makes every open a search,
+  and a search draws all 1870 emoji — three quarters of a second added to
+  opening the picker anywhere in the app. Colons are stripped before either
+  search runs, which is also what makes `:joy:` find what a chat app would.
+
+- **Searching crosses the tabs; browsing does not.** The tabs are for browsing
+  two kinds of thing, and searching within one of them meant typing an emoji's
+  name on the Glyphs tab and being told nothing matched, with the answer one
+  click away and unmentioned. Since the picker opens on the key every chat app
+  uses to reach an emoji, that is the normal case rather than a mistake.
+
+- **Two controls on one key, and neither is a substitute for the other. Her
+  call 2026-09-01, after three attempts to make one do both jobs.** `:` plus at
+  least two characters is the type-ahead — a single column, emoji named
+  `:joy:`, taken with Enter or Tab, the Discord gesture for when you already
+  know the name. `Ctrl+:` opens the picker — the whole catalogue, both tabs, a
+  grid to scroll, for when you do not. **Do not merge them again.** The three
+  rejected attempts were: a type-ahead alone (nothing to scroll), the same
+  items drawn in the picker's grid (still only searchable by typing), and the
+  picker alone on a bare `:` (no fast path, and a colon is punctuation far more
+  often than it is a request).
+
+- **`minQueryLength` is what keeps a bare colon from opening anything**, and it
+  is doing the same job for `:` that `shouldOpen` does for `/`: this is a
+  character people type in ordinary prose, and a menu on every one is the
+  complaint that gated the slash menu arriving by a different door. The
+  `shouldOpen` rule sits on top of it, so `Note:` and `10:30` stay shut even
+  once something is typed after them.
+
+- **The chord is prevented, so its colon reaches neither the writing nor the
+  search box.** The picker's field is focused the moment it opens, so a
+  trigger character that slipped through would have her first keystroke
+  filtering against punctuation — which is exactly what happened while `:`
+  itself opened the picker, and is why the box now starts empty by
+  construction rather than by cleaning up after the fact.
+
 ## Template swaps
 
 - **A template change must never drop a value, and it did until 2026-08-27.**

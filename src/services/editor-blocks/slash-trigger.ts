@@ -16,7 +16,7 @@
  * would put a second copy of ProseMirror's types in our tree for nothing. A real
  * `Transaction` satisfies this, which is all the call site needs.
  */
-type TriggerTransaction = {
+export type TriggerTransaction = {
   selection: { empty: boolean; from: number; $from: { parentOffset: number } };
   doc: { textBetween: (from: number, to: number) => string };
 };
