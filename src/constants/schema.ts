@@ -367,6 +367,26 @@ export type Block = {
   // `text` only: the block's own writing. The one kind in 18a whose data
   // exists nowhere else.
   text?: string;
+  /**
+   * `image` only: this block's own picture, and its description and crop —
+   * the same three fields `node.image`, `node.imageAlt` and `node.imageFocusY`
+   * carry, because they are the same three facts about a picture. Phase 19.5.
+   *
+   * **The page's own picture is not stored here, and that is the whole rule.**
+   * One image block on a page is the page's — the one the tree row, the hover
+   * preview and the LK export show — and *that* block's picture lives on the
+   * node, where those three have always read it. Every other image block's
+   * lives here. One picture, one place, either way: see `blockImage` in
+   * block-service.ts, which is the only thing that should decide which.
+   *
+   * **Absent on every page written before this existed**, which is what makes
+   * them open unchanged: a page with one image block has that block reading
+   * `node.image`, exactly as it did when an image block could only be a window
+   * onto the page's portrait.
+   */
+  image?: string;
+  imageAlt?: string;
+  imageFocusY?: number;
   // `link` only, and no new one is ever created: Phase 18b replaced it with a
   // `collection` whose source is "manual", which is the same feature holding a
   // list instead of a single page. Kept readable so the pages that already
@@ -500,6 +520,21 @@ export type Node = {
   // clearing it returns the whole photo. So this field is both the focus point
   // *and* the flag saying the slot is cropped at all.
   imageFocusY?: number;
+  /**
+   * Which image block draws `image` above — the page's own picture. Phase 19.5.
+   *
+   * **Absent is the ordinary state and means "the first image block there is",**
+   * which is what makes every page written before this open unchanged: a page
+   * with one image block has always shown the page's portrait in it, and the
+   * fallback says exactly that without a word being written to disk. It is
+   * stored only once she picks a different one.
+   *
+   * **A page can have several image blocks and only one of them is this.** The
+   * others hold their own pictures on their own records — see `Block.image`.
+   * Nothing outside `blockImage` and `pageImageBlockId` in block-service.ts
+   * should read this field.
+   */
+  pageImageBlockId?: string;
   // A separate full-width cover image shown above the page title (Phase 8's
   // PageBanner) — distinct from `image` above, matching LegendKeeper's own
   // banner-vs-sidebar-image distinction. Same assets/ dir, addressed the same

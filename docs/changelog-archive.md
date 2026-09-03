@@ -2,6 +2,15 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-28 — make a page without leaving the one you're writing
+
+### Additions
+
+- **You can make a page from inside the editor.** Type `/` and pick *New page*. A small window asks four things — what it's called, what the link should say if that's different, where it goes, and whether it's hidden — then makes the page and drops a link to it where your cursor was. You stay where you are; nothing opens the new page or takes you to it.
+- **Where it goes defaults to the page you're on**, and you can search for somewhere else or clear it with the × to put it at the top of the tree.
+- **Writing `[[Something]]` for a page that doesn't exist now offers to make it.** It used to sit there as plain text with brackets showing, and the only way on was to go and make the page yourself somewhere else. Now the same window opens with the name already filled in, and the brackets turn into a link once the page exists.
+- **Backing out costs nothing.** What you typed stays exactly as you typed it, brackets and all, and you're put back where you were so you can keep going. It won't ask about that name again.
+
 ## 2026-08-28 — projects can be deleted
 
 ### Additions

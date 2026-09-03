@@ -28,6 +28,7 @@ import { getMeterStyleOption } from "../../constants/meter-styles";
 import type { Block, Node, PropertyOption } from "../../constants/schema";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProject } from "../../hooks/use-project";
+import { usePageImage } from "../../hooks/use-page-image";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
 import { isPipMeter, meterPip, meterSegmented, metersOf } from "../../services/meter-service";
 import type { RenderableProperty } from "../../services/property-service";
@@ -91,10 +92,15 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
     editMeter,
     editMeters,
     setNodeAliases,
+    setPageImageBlock,
   } = useProject();
   const { confirmDestructive } = useDialogs();
   const knownOptions = useKnownOptions();
   const allTags = useAllTags();
+  // Asked of the page rather than of `blocks`: this list may be one block of a
+  // page that has three, and which of them is the page's picture is a question
+  // about all of them. See use-page-image.ts.
+  const { pictureOf } = usePageImage(node);
 
   // Which block's rating symbol is being chosen. The picker is a popover over
   // the list rather than inside the block, because the menu that opens it has
@@ -180,14 +186,19 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
   // block the user can't reach to remove.
   function renderBlock(block: Block): { natural: string; body: ReactNode } {
     if (block.kind === "image") {
+      // **Its own picture, unless it is the one holding the page's** — Phase
+      // 19.5, and the whole of what changed: two image blocks on a page are two
+      // photographs now, not one shown twice.
+      const picture = pictureOf(block);
       return {
         natural: "Image",
         body: (
           <ImageSlot
             nodeId={node.id}
-            image={node.image}
-            imageAlt={node.imageAlt}
-            imageFocusY={node.imageFocusY}
+            blockId={block.id}
+            image={picture.image}
+            imageAlt={picture.imageAlt}
+            imageFocusY={picture.imageFocusY}
             hasBanner={node.banner !== undefined}
           />
         ),
@@ -332,6 +343,14 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
                 onMove={(direction) => onMove(block.id, direction)}
                 onRemove={() => removeBlock(node.id, block.id)}
                 onDeleteProperty={propertyKey ? () => void deleteProperty(propertyKey, natural) : undefined}
+                pageImage={
+                  block.kind === "image"
+                    ? {
+                        isPageImage: pictureOf(block).isPageImage,
+                        onUse: () => setPageImageBlock(node.id, block.id),
+                      }
+                    : undefined
+                }
                 collection={
                   block.kind === "collection"
                     ? {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-03 — a picture block holds its own picture
+
+### Additions
+
+- **Every picture block holds its own picture now.** Put two on a page and they're two photographs, not the same one drawn twice. Before this, every picture block was a window onto the page's own portrait — so a picture dropped into a block in the middle of the writing quietly became the portrait as well, and a second picture block showed whatever the first one did.
+- **One of them is the page's picture, and you pick which.** The block's `⋯` menu says *The page's picture* on the one that has it, and offers *Use as the page's picture* on any other. That's the picture the tree row, the hover preview and the LegendKeeper export use.
+- **Picking a different one swaps the two pictures over** rather than overwriting anything, so choosing wrong and choosing again costs you nothing.
+- **Duplicating a picture block gives you the picture with it**, instead of an empty frame beside a full one.
+
+### Notes
+
+- **Every page you already have opens exactly as it was.** The first picture block on a page holds the page's picture unless you say otherwise, which is what every page with a portrait already looked like — nothing on disk was rewritten to make this work.
+- **Removing the block that holds the page's picture doesn't throw the picture away.** If there's another picture block on the page it takes over, and the page's picture becomes whatever that one is showing; if there isn't, the portrait stays on the page for the next picture block you add.
+- **The Assets tab counts these.** A photo held only by a picture block in the writing is in use, so it won't turn up in the list of pictures nothing is pointing at. Duplicating a page, saving one as a template and pouring a template into a page all give the copy its own files, the same as the portrait and the cover have always done.
+
 ## 2026-09-02 — columns
 
 ### Additions
@@ -219,12 +234,3 @@
 
 - **Warnings imported from a `.lk` file were being turned into secrets.** There were only three kinds of callout and no colours, so warning and error panels were given the nearest-looking one — but Secret is the box that gets stripped out when a page is shared, so every warning in an imported world was quietly marked don't-show-anyone, with nothing on screen saying so. They now come in as a callout coloured amber or red, and a success panel comes in green. **Pages you've already imported keep whatever they were brought in as** — this changes what a new import does, not what's already on your disk.
 - **Those colours survive going back out to a `.lk` file** — an amber callout leaves as a warning, red as an error, green as a success. Other colours are ours alone and leave as a plain info panel.
-
-## 2026-08-28 — make a page without leaving the one you're writing
-
-### Additions
-
-- **You can make a page from inside the editor.** Type `/` and pick *New page*. A small window asks four things — what it's called, what the link should say if that's different, where it goes, and whether it's hidden — then makes the page and drops a link to it where your cursor was. You stay where you are; nothing opens the new page or takes you to it.
-- **Where it goes defaults to the page you're on**, and you can search for somewhere else or clear it with the × to put it at the top of the tree.
-- **Writing `[[Something]]` for a page that doesn't exist now offers to make it.** It used to sit there as plain text with brackets showing, and the only way on was to go and make the page yourself somewhere else. Now the same window opens with the name already filled in, and the brackets turn into a link once the page exists.
-- **Backing out costs nothing.** What you typed stays exactly as you typed it, brackets and all, and you're put back where you were so you can keep going. It won't ask about that name again.

@@ -462,12 +462,189 @@ export function moveBlock(blocks: Block[], fromIndex: number, toIndex: number): 
  * showing the same field; that is allowed, and editing either edits the one
  * property, because the value was never in the block.
  */
-export function duplicateBlock(blocks: Block[], blockId: string): Block[] {
+export function duplicateBlock(blocks: Block[], blockId: string, picture?: BlockPicture): Block[] {
   const index = blocks.findIndex((block) => block.id === blockId);
   if (index === -1) return blocks;
+  const copy: Block = { ...blocks[index], id: crypto.randomUUID() };
   const next = [...blocks];
-  next.splice(index + 1, 0, { ...blocks[index], id: crypto.randomUUID() });
+  // **A copy of the page's picture keeps the picture, and stops being the
+  // page's.** Only one block can be that, so the copy holds the same photo on
+  // its own record — the same file, which is what the picture library is for.
+  // Without this, duplicating the one block whose content is a photograph
+  // would hand back an empty frame.
+  next.splice(index + 1, 0, copy.kind === "image" && picture ? withBlockImage(copy, picture) : copy);
   return next;
+}
+
+/**
+ * ---- Image blocks and the page's own picture (Phase 19.5) ----
+ *
+ * **Every image block holds its own picture, and one of them is the page's.**
+ * The page's picture is `node.image` — what the tree row, the hover preview and
+ * the LK export show — so that one cannot simply become a field on a block;
+ * what it becomes instead is a block that *reads the node*. Every other image
+ * block reads its own record. One picture, one place, and no two fields that
+ * can disagree about the same photograph.
+ *
+ * Before this, an image block was a window onto `node.image` and nothing else,
+ * so a picture dropped into one in the middle of the writing became the page's
+ * portrait and a second image block showed the same photo. Her call, 2026-09-02:
+ * see `docs/plan.md` Phase 19.5.
+ */
+
+/** The image blocks in a list, in the order they are drawn. */
+export function imageBlocks(blocks: Block[]): Block[] {
+  return blocks.filter((block) => block.kind === "image");
+}
+
+/**
+ * Which block draws the page's own picture, or undefined if none does.
+ *
+ * **Absent `pageImageBlockId` means the first image block**, which is what
+ * makes an existing page open unchanged — it has exactly one image block and it
+ * has always shown the portrait. A stored id that names no block left on the
+ * page means no block draws it: the portrait is still the page's and still
+ * shows in the tree, it simply has no window on this page any more.
+ */
+export function pageImageBlockId(node: Node, blocks: Block[]): string | undefined {
+  const images = imageBlocks(blocks);
+  if (node.pageImageBlockId === undefined) return images[0]?.id;
+  return images.find((block) => block.id === node.pageImageBlockId)?.id;
+}
+
+/** A picture, wherever it is kept: the three fields that describe one. */
+export type BlockPicture = { image?: string; imageAlt?: string; imageFocusY?: number };
+
+/**
+ * The picture one image block draws — off the node when it is the page's,
+ * off the block otherwise.
+ *
+ * The one place that decides. Everything that shows, replaces or clears an
+ * image block's picture asks here first, so there is never a second answer to
+ * "where does this photo live".
+ */
+export function blockImage(node: Node, blocks: Block[], block: Block): BlockPicture {
+  if (block.id === pageImageBlockId(node, blocks)) {
+    return { image: node.image, imageAlt: node.imageAlt, imageFocusY: node.imageFocusY };
+  }
+  return { image: block.image, imageAlt: block.imageAlt, imageFocusY: block.imageFocusY };
+}
+
+/** The three picture fields written onto a block, absent ones removed. */
+export function withBlockImage(block: Block, picture: BlockPicture): Block {
+  let next = block;
+  for (const field of ["image", "imageAlt", "imageFocusY"] as const) {
+    if (field in picture) next = withField(next, field, picture[field]);
+  }
+  return next;
+}
+
+/**
+ * Every picture a node's image blocks hold on their own records.
+ *
+ * **`node.image` is deliberately not among them** — it is the page's own
+ * portrait and every caller here already counts it separately. What this adds
+ * is the pictures that used to be impossible: the ones in the writing.
+ *
+ * Takes the stored list rather than a derived one, because a derived block has
+ * never been edited and so has no picture of its own by definition.
+ */
+export function blockImageFiles(blocks: Block[] | undefined): string[] {
+  const found: string[] = [];
+  for (const block of blocks ?? []) {
+    if (block.kind === "image" && block.image) found.push(block.image);
+  }
+  return found;
+}
+
+/**
+ * Every image block's picture rewritten through `replace` — how a page's
+ * blocks come along when its pictures are copied.
+ *
+ * Duplicating a page, saving one as a template and pouring a template into one
+ * all give the arriving page private copies of its pictures, so that replacing
+ * one later cannot delete another page's. That has always covered `image` and
+ * `banner`; the pictures inside the writing are the third set, and one missed
+ * here is a file two pages share without knowing it.
+ *
+ * Returns the list it was given when there is nothing to rewrite.
+ */
+export function withCopiedBlockImages(
+  blocks: Block[] | undefined,
+  replace: (fileName: string) => string | undefined,
+): Block[] | undefined {
+  if (!blocks?.some((block) => block.kind === "image" && block.image)) return blocks;
+  return blocks.map((block) =>
+    block.kind === "image" && block.image ? withField(block, "image", replace(block.image)) : block,
+  );
+}
+
+/** The fields one edit writes to a page. Blocks, and a picture that moved. */
+export type ImageBlockPatch = Partial<Pick<Node, "blocks" | "image" | "imageAlt" | "imageFocusY" | "pageImageBlockId">>;
+
+/**
+ * Taking a block off the page: the block list, plus whatever that does to the
+ * page's own picture.
+ *
+ * **Removing the block that draws the page's picture does not delete the
+ * picture** — removing a block has never deleted what was in it, and a portrait
+ * is on the tree row and in the export as well. What it does is move the mark:
+ * the next image block becomes the page's, and if that one is holding a picture
+ * of its own then *that* is the page's picture from now on. A block with no
+ * picture of its own inherits the portrait instead of blanking it, which is
+ * what an image block has always done.
+ *
+ * Returns the whole patch rather than applying it, so the block list and the
+ * picture land in one edit and come back together on undo.
+ */
+export function planBlockRemoval(node: Node, blocks: Block[], blockId: string): ImageBlockPatch {
+  const next = blocks.filter((block) => block.id !== blockId);
+  if (next.length === blocks.length) return {};
+  if (pageImageBlockId(node, blocks) !== blockId) return { blocks: next };
+
+  // The pointer is dropped rather than re-aimed: absent already means "the
+  // first image block there is", which is the block being promoted here.
+  const patch: ImageBlockPatch = { blocks: next, pageImageBlockId: undefined };
+  const promoted = imageBlocks(next)[0];
+  if (!promoted?.image) return patch;
+
+  patch.blocks = next.map((block) =>
+    block.id === promoted.id ? withBlockImage(block, { image: undefined, imageAlt: undefined, imageFocusY: undefined }) : block,
+  );
+  patch.image = promoted.image;
+  patch.imageAlt = promoted.imageAlt;
+  patch.imageFocusY = promoted.imageFocusY;
+  return patch;
+}
+
+/**
+ * Making one image block the page's picture: the two pictures swap places.
+ *
+ * The chosen block's picture moves onto the node, where the tree row and the
+ * export read it, and the picture that was the page's moves onto the block that
+ * used to hold the mark. Nothing is copied and nothing is dropped — the two
+ * blocks trade what they are showing, which is what "use this one instead"
+ * means when both frames are on screen.
+ */
+export function planPageImageBlock(node: Node, blocks: Block[], blockId: string): ImageBlockPatch {
+  const chosen = imageBlocks(blocks).find((block) => block.id === blockId);
+  const currentId = pageImageBlockId(node, blocks);
+  if (!chosen || currentId === blockId) return {};
+
+  const moving: BlockPicture = { image: chosen.image, imageAlt: chosen.imageAlt, imageFocusY: chosen.imageFocusY };
+  const displaced: BlockPicture = { image: node.image, imageAlt: node.imageAlt, imageFocusY: node.imageFocusY };
+
+  return {
+    blocks: blocks.map((block) => {
+      if (block.id === blockId) return withBlockImage(block, { image: undefined, imageAlt: undefined, imageFocusY: undefined });
+      if (block.id === currentId) return withBlockImage(block, displaced);
+      return block;
+    }),
+    image: moving.image,
+    imageAlt: moving.imageAlt,
+    imageFocusY: moving.imageFocusY,
+    pageImageBlockId: blockId,
+  };
 }
 
 /**

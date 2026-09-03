@@ -66,14 +66,22 @@ import {
 } from "../services/tab-service";
 import { getDefaultTabs, getPropertySchema, getTemplate } from "../services/template-registry";
 import {
+  blockImage,
+  blockImageFiles,
   blockKindLabel,
   blocksFor,
   duplicateBlock as duplicateBlockIn,
   moveBlock,
   newBlock,
+  pageImageBlockId,
+  planBlockRemoval,
+  planPageImageBlock,
   planTemplateSwap,
   seedBlocks,
+  withBlockImage,
+  withCopiedBlockImages,
   withField,
+  type BlockPicture,
 } from "../services/block-service";
 import {
   isPipMeter,
@@ -174,7 +182,10 @@ type CapturedAsset = { fileName: string; bytes: Uint8Array };
 async function captureAssets(rootPath: string, nodes: Node[]): Promise<CapturedAsset[]> {
   const captured: CapturedAsset[] = [];
   for (const node of nodes) {
-    for (const fileName of [node.image, node.banner]) {
+    // The image blocks' own pictures alongside the two slots (Phase 19.5) —
+    // a photo held only by a block in the writing is as deleted as the
+    // portrait when the page goes, so it has to be readable to come back.
+    for (const fileName of [node.image, node.banner, ...blockImageFiles(node.blocks)]) {
       if (!fileName) continue;
       try {
         captured.push({ fileName, bytes: await fsService.readAssetImage(rootPath, fileName) });
@@ -184,6 +195,30 @@ async function captureAssets(rootPath: string, nodes: Node[]): Promise<CapturedA
     }
   }
   return captured;
+}
+
+/**
+ * A page's blocks, with every picture they hold copied to a file of its own
+ * (Phase 19.5).
+ *
+ * **The third set of pictures a page can carry**, after the portrait and the
+ * cover, and the one every copying path has to be taught by hand: duplicating a
+ * page, saving one as a template and pouring a template into a page all give the
+ * arriving copy private files, so that replacing a picture on one page can never
+ * empty another. A block missed here is a file two pages share without knowing.
+ *
+ * A picture that will not copy is dropped rather than shared — `copy` returns
+ * undefined for one it cannot read, and the block arrives empty. Sharing the
+ * original's filename is the one outcome that can lose someone else's picture.
+ */
+async function withCopiedBlockPictures(
+  blocks: Block[] | undefined,
+  copy: (fileName: string) => Promise<string | undefined>,
+): Promise<Block[] | undefined> {
+  const files = [...new Set(blockImageFiles(blocks))];
+  if (files.length === 0) return blocks;
+  const copies = new Map(await Promise.all(files.map(async (file) => [file, await copy(file)] as const)));
+  return withCopiedBlockImages(blocks, (file) => copies.get(file));
 }
 
 export type ProjectStoreState = {
@@ -433,12 +468,27 @@ export type ProjectStoreState = {
    * templates at once, which is why nothing deletes an asset without asking
    * `isAssetInUse` first.
    */
-  setNodeImageFromLibrary: (nodeId: string, fileName: string) => void;
-  clearNodeImage: (nodeId: string) => Promise<void>;
-  setImageAlt: (nodeId: string, alt: string) => void;
-  setImageFocus: (nodeId: string, focusY: number) => void;
-  clearImageFocus: (nodeId: string) => void;
-  setBannerFromImage: (nodeId: string) => Promise<void>;
+  /**
+   * The five below name an *image block* as well as a page, and one rule
+   * decides where each write lands (Phase 19.5): the block that draws the
+   * page's own picture writes to the node, and every other image block writes
+   * to its own record. See `blockImage` in block-service.ts — nothing here
+   * decides that for itself.
+   */
+  setNodeImageFromLibrary: (nodeId: string, blockId: string, fileName: string) => void;
+  clearNodeImage: (nodeId: string, blockId: string) => Promise<void>;
+  setImageAlt: (nodeId: string, blockId: string, alt: string) => void;
+  setImageFocus: (nodeId: string, blockId: string, focusY: number) => void;
+  clearImageFocus: (nodeId: string, blockId: string) => void;
+  setBannerFromImage: (nodeId: string, blockId: string) => Promise<void>;
+  /**
+   * Hand the page's own picture to a different image block — the one the tree
+   * row, the hover preview and the export show. Phase 19.5.
+   *
+   * The two pictures trade places rather than one overwriting the other, so
+   * nothing is lost by choosing wrong and choosing again.
+   */
+  setPageImageBlock: (nodeId: string, blockId: string) => void;
   /**
    * Writes a picture into the project's `assets/` and hands back the reference
    * that goes inside a page's image block (Phase 16). Unlike `setNodeImage`
@@ -825,6 +875,59 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     // un-materialises it — the page goes back to having no block list at all,
     // which is what it had. patchNode reads that field for itself.
     patchNode(label, nodeId, { blocks: next }, mergeKey);
+  };
+
+  /**
+   * A page's blocks as they stand, derived if the page has never had a list.
+   *
+   * The read half of `editBlocks`, pulled out for the image-block writes below:
+   * they have to know which block draws the page's picture *before* deciding
+   * where the write goes, and that question is asked of the resolved list.
+   */
+  const currentBlocks = (node: Node): Block[] => blocksFor(node, getPropertySchema(node.templateKey));
+
+  /** The picture one image block is showing, wherever that picture is kept. */
+  const pictureOf = (node: Node, blockId: string): BlockPicture => {
+    const blocks = currentBlocks(node);
+    const block = blocks.find((candidate) => candidate.id === blockId);
+    return block ? blockImage(node, blocks, block) : {};
+  };
+
+  /**
+   * One image block's picture, changed (Phase 19.5).
+   *
+   * **Where it lands is not this function's decision and not the caller's** —
+   * `blockImage`'s rule decides: the page's own picture is on the node, every
+   * other image block's is on its own record. One place either way, so nothing
+   * has to be kept in step with anything.
+   *
+   * `imageSource` goes with the picture whenever the picture itself changes:
+   * it is the web address an LK-imported photo came from, and leaving the old
+   * one behind makes an export hand out the previous picture's address for this
+   * one. Absent from the block records for the same reason it is meaningless
+   * there — nothing but a page's own portrait is exported.
+   */
+  const patchBlockImage = (
+    nodeId: string,
+    blockId: string,
+    picture: BlockPicture,
+    label: string,
+    mergeKey?: string,
+  ): void => {
+    const node = get().nodes[nodeId];
+    if (!node) return;
+    const blocks = currentBlocks(node);
+    if (pageImageBlockId(node, blocks) === blockId) {
+      patchNode(label, nodeId, "image" in picture ? { ...picture, imageSource: undefined } : picture, mergeKey);
+      return;
+    }
+    if (!blocks.some((block) => block.id === blockId && block.kind === "image")) return;
+    editBlocks(
+      nodeId,
+      (list) => list.map((block) => (block.id === blockId ? withBlockImage(block, picture) : block)),
+      label,
+      mergeKey,
+    );
   };
 
   /**
@@ -1744,8 +1847,16 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // be added back from the same list it was hidden from. Deleting the
     // property itself is `deletePageProperty`, which is a different action
     // with a different name for a reason.
+    // **Not `editBlocks`, because removing the block that draws the page's
+    // picture moves the picture as well as the list** — see planBlockRemoval,
+    // which decides both — and the two have to land in one patch or undo puts
+    // the block back without its photo.
     removeBlock(nodeId, blockId) {
-      editBlocks(nodeId, (blocks) => blocks.filter((block) => block.id !== blockId), "removing a block");
+      const node = get().nodes[nodeId];
+      if (!node) return;
+      const patch = planBlockRemoval(node, currentBlocks(node), blockId);
+      if (!patch.blocks) return;
+      patchNode("removing a block", nodeId, patch);
     },
 
     reorderBlocks(nodeId, fromIndex, toIndex) {
@@ -1753,7 +1864,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     },
 
     duplicateBlock(nodeId, blockId) {
-      editBlocks(nodeId, (blocks) => duplicateBlockIn(blocks, blockId), "duplicating a block");
+      const node = get().nodes[nodeId];
+      if (!node) return;
+      // The copy of an image block keeps the picture rather than coming out
+      // empty, which for the page's own picture means reading it off the node.
+      const picture = pictureOf(node, blockId);
+      editBlocks(nodeId, (blocks) => duplicateBlockIn(blocks, blockId, picture), "duplicating a block");
     },
 
     // An empty title is not a title: it is stored as absent so the block falls
@@ -2040,63 +2156,83 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // Point this node's portrait at a picture the project already has. The
     // whole difference from setNodeImage above is that no file is written:
     // one file, any number of references. See docs/handoff.md on the library.
-    setNodeImageFromLibrary(nodeId, fileName) {
+    setNodeImageFromLibrary(nodeId, blockId, fileName) {
       const { rootPath, nodes } = get();
-      if (!rootPath || !nodes[nodeId]) return;
+      const existing = nodes[nodeId];
+      if (!rootPath || !existing) return;
 
-      const previousImage = nodes[nodeId]?.image;
+      const previousImage = pictureOf(existing, blockId).image;
       if (previousImage === fileName) return;
       // The crop travels with the slot, not with the file — a different
       // picture in the same slot is a different shape, and keeping the old
-      // offset would crop the new one somewhere arbitrary. `imageSource` goes
-      // for the reason described in setNodeImage above.
-      get().updateNode(nodeId, {
-        image: fileName,
-        imageAlt: undefined,
-        imageFocusY: undefined,
-        imageSource: undefined,
-      });
+      // offset would crop the new one somewhere arbitrary.
+      patchBlockImage(
+        nodeId,
+        blockId,
+        { image: fileName, imageAlt: undefined, imageFocusY: undefined },
+        "changing a picture",
+      );
       releaseAsset(rootPath, previousImage);
     },
 
-    async clearNodeImage(nodeId) {
+    async clearNodeImage(nodeId, blockId) {
       const { rootPath, nodes } = get();
       const existing = nodes[nodeId];
-      if (!rootPath || !existing?.image) return;
-      const previousImage = existing.image;
+      if (!rootPath || !existing) return;
+      const previousImage = pictureOf(existing, blockId).image;
+      if (!previousImage) return;
       // The crop and the description belong to the picture that's going, not
       // to the slot — leaving either behind would apply them to whatever is
       // uploaded next.
-      get().updateNode(nodeId, { image: undefined, imageAlt: undefined, imageFocusY: undefined });
+      patchBlockImage(
+        nodeId,
+        blockId,
+        { image: undefined, imageAlt: undefined, imageFocusY: undefined },
+        "removing a picture",
+      );
       releaseAsset(rootPath, previousImage);
     },
 
-    setImageAlt(nodeId, alt) {
+    setImageAlt(nodeId, blockId, alt) {
       const trimmed = alt.trim();
-      patchNode(
-        "describing a picture",
+      patchBlockImage(
         nodeId,
+        blockId,
         { imageAlt: trimmed === "" ? undefined : trimmed },
-        `image-alt:${nodeId}`,
+        "describing a picture",
+        `image-alt:${nodeId}:${blockId}`,
       );
     },
 
     // Dragged rather than typed, so it writes continuously for as long as the
     // pointer is down — the merge key is what makes one drag one entry.
-    setImageFocus(nodeId, focusY) {
-      patchNode(
-        "moving a picture",
+    setImageFocus(nodeId, blockId, focusY) {
+      patchBlockImage(
         nodeId,
+        blockId,
         { imageFocusY: Math.min(100, Math.max(0, focusY)) },
-        `image-focus:${nodeId}`,
+        "moving a picture",
+        `image-focus:${nodeId}:${blockId}`,
       );
     },
 
     // Back to the whole photo at its own shape. Absent is the uncropped state
     // rather than a stored 50, so this clears rather than resets — see
     // schema.ts on why the field is its own flag.
-    clearImageFocus(nodeId) {
-      patchNode("recentring a picture", nodeId, { imageFocusY: undefined });
+    clearImageFocus(nodeId, blockId) {
+      patchBlockImage(nodeId, blockId, { imageFocusY: undefined }, "recentring a picture");
+    },
+
+    // **The two pictures trade places** — see planPageImageBlock, which is
+    // where that is decided and tested. One patch rather than two, so the
+    // block that gains the mark and the picture that moves with it are one
+    // step of undo.
+    setPageImageBlock(nodeId, blockId) {
+      const node = get().nodes[nodeId];
+      if (!node) return;
+      const patch = planPageImageBlock(node, currentBlocks(node), blockId);
+      if (!patch.blocks) return;
+      patchNode("changing the page's picture", nodeId, patch);
     },
 
     // A picture dropped, pasted or picked inside the editor. Deliberately not
@@ -2282,10 +2418,15 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     },
 
     // "Set cover" — the sidebar portrait becomes the page's banner as well.
-    async setBannerFromImage(nodeId) {
+    async setBannerFromImage(nodeId, blockId) {
       const { rootPath, nodes } = get();
       const existing = nodes[nodeId];
-      if (!rootPath || !existing?.image) return;
+      if (!rootPath || !existing) return;
+      // Whichever picture *this* block is showing, which since Phase 19.5 is
+      // not always the page's own — an image block in the middle of the writing
+      // holds its own photo, and "set as cover" there means that one.
+      const picture = pictureOf(existing, blockId);
+      if (!picture.image) return;
 
       // The cover points at the portrait's own file now, and no longer takes a
       // copy of it. The copy existed because setNodeImage's cleanup deleted the
@@ -2296,8 +2437,10 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const previousBanner = get().nodes[nodeId]?.banner;
       // `imageSource` carries across because it describes this exact picture,
       // and LK export needs an address for the cover as much as for the
-      // portrait — same picture, same address, nothing invented.
-      get().updateNode(nodeId, { banner: existing.image, bannerFocusY: 50, bannerSource: existing.imageSource });
+      // portrait — same picture, same address, nothing invented. It only
+      // describes the page's own portrait, so a block's own photo takes none.
+      const bannerSource = picture.image === existing.image ? existing.imageSource : undefined;
+      get().updateNode(nodeId, { banner: picture.image, bannerFocusY: 50, bannerSource });
       releaseAsset(rootPath, previousBanner);
     },
 
@@ -2572,8 +2715,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         await Promise.all(
           subtreeIds.map(async (subId): Promise<[string, ClonedAssetNames]> => {
             const source = nodes[subId];
-            const [image, banner] = await Promise.all([cloneAsset(source.image), cloneAsset(source.banner)]);
-            return [subId, { image, banner }];
+            const [image, banner, blocks] = await Promise.all([
+              cloneAsset(source.image),
+              cloneAsset(source.banner),
+              withCopiedBlockPictures(source.blocks, cloneAsset),
+            ]);
+            return [subId, { image, banner, blocks }];
           }),
         ),
       );
@@ -2638,8 +2785,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // later deletes the template's out from under it.
       const withOwnAssets = await Promise.all(
         clones.map(async (clone) => {
-          const [image, banner] = await Promise.all([copyAssetFile(rootPath, clone.image), copyAssetFile(rootPath, clone.banner)]);
-          return { ...clone, image, banner };
+          const [image, banner, blocks] = await Promise.all([
+            copyAssetFile(rootPath, clone.image),
+            copyAssetFile(rootPath, clone.banner),
+            withCopiedBlockPictures(clone.blocks, (fileName) => copyAssetFile(rootPath, fileName)),
+          ]);
+          return { ...clone, image, banner, blocks };
         }),
       );
 
@@ -2810,15 +2961,25 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // Every picture gets a private copy, the root's included — a page sharing
       // the template's filename would lose its image the moment the template
       // was deleted or re-saved.
-      const copyAssetsOf = async <T extends { image?: string; banner?: string }>(node: T): Promise<T> => {
-        const [image, banner] = await Promise.all([
+      const copyAssetsOf = async <T extends { image?: string; banner?: string; blocks?: Block[] }>(
+        node: T,
+      ): Promise<T> => {
+        const [image, banner, blocks] = await Promise.all([
           copyAssetFile(rootPath, node.image),
           copyAssetFile(rootPath, node.banner),
+          withCopiedBlockPictures(node.blocks, (fileName) => copyAssetFile(rootPath, fileName)),
         ]);
-        return { ...node, image, banner };
+        return { ...node, image, banner, blocks };
       };
       const arriving = await Promise.all(clones.map(copyAssetsOf));
-      const { image: rootImage, banner: rootBanner } = await copyAssetsOf(source);
+      // The root's two slots only. Its *blocks* are deliberately not copied:
+      // the page keeps its own block list through the swap below — see
+      // planTemplateSwap — so a copy of the template's image blocks would be
+      // files on disk that nothing ever points at.
+      const [rootImage, rootBanner] = await Promise.all([
+        copyAssetFile(rootPath, source.image),
+        copyAssetFile(rootPath, source.banner),
+      ]);
 
       // Deep-copied out of the library rather than shared with it: writing on
       // the page afterwards must not quietly edit the template it came from.

@@ -19,13 +19,23 @@ import { useProject } from "../../hooks/use-project";
 
 type ImageSlotProps = {
   nodeId: string;
+  /**
+   * The image block this slot is drawing (Phase 19.5).
+   *
+   * **Every write below names it, and none of them decides what that means.**
+   * The block holding the page's own picture writes to the node, where the tree
+   * row and the export read it; every other image block writes to its own
+   * record. The store's `blockImage` rule is the single answer — see
+   * hooks/use-page-image.ts, which is where the picture above comes from.
+   */
+  blockId: string;
   image?: string;
   imageAlt?: string;
   imageFocusY?: number;
   hasBanner: boolean;
 };
 
-export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: ImageSlotProps) {
+export function ImageSlot({ nodeId, blockId, image, imageAlt, imageFocusY, hasBanner }: ImageSlotProps) {
   const { setNodeImageFromLibrary, clearNodeImage, setImageAlt, setImageFocus, clearImageFocus, setBannerFromImage } =
     useProject();
   const { confirmDestructive, requestAssetPick } = useDialogs();
@@ -51,7 +61,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
     try {
       const fileName = await uploadPicture(file);
       setError(null);
-      setNodeImageFromLibrary(nodeId, fileName);
+      setNodeImageFromLibrary(nodeId, blockId, fileName);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "That picture couldn't be added.");
     }
@@ -61,14 +71,14 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
   // from computer" inside it.
   async function pickImage() {
     const picked = await requestAssetPick("Choose a picture for this page");
-    if (picked) setNodeImageFromLibrary(nodeId, picked);
+    if (picked) setNodeImageFromLibrary(nodeId, blockId, picked);
   }
 
   // Entering reposition mode crops the slot even before the first drag, so
   // there's a frame to drag *within* — otherwise the handles move a picture
   // that isn't being clipped by anything and nothing appears to happen.
   function startRepositioning() {
-    if (!isCropped) setImageFocus(nodeId, 50);
+    if (!isCropped) setImageFocus(nodeId, blockId, 50);
     setIsRepositioning(true);
   }
 
@@ -88,7 +98,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
     if (!dragState.current || !frameRef.current) return;
     const height = frameRef.current.offsetHeight || 1;
     const deltaPercent = ((e.clientY - dragState.current.startY) / height) * 100;
-    setImageFocus(nodeId, dragState.current.startFocus + deltaPercent);
+    setImageFocus(nodeId, blockId, dragState.current.startFocus + deltaPercent);
   }
 
   function handlePointerUp() {
@@ -102,7 +112,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
       const confirmed = await confirmDestructive("Replace this page's cover image with the picture in the sidebar?");
       if (!confirmed) return;
     }
-    await setBannerFromImage(nodeId);
+    await setBannerFromImage(nodeId, blockId);
   }
 
   const slotClasses = [
@@ -152,7 +162,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
               title="Remove image"
               onClick={(e) => {
                 e.stopPropagation();
-                void clearNodeImage(nodeId);
+                void clearNodeImage(nodeId, blockId);
               }}
             >
               <X size={12} />
@@ -165,7 +175,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
                     type="button"
                     className="property-image-reposition-btn"
                     onClick={() => {
-                      clearImageFocus(nodeId);
+                      clearImageFocus(nodeId, blockId);
                       setIsRepositioning(false);
                     }}
                   >
@@ -250,7 +260,7 @@ export function ImageSlot({ nodeId, image, imageAlt, imageFocusY, hasBanner }: I
           onBlur={(e) => {
             // Escape sets this before unmounting the field, so the blur that
             // follows knows to throw the edit away rather than save it.
-            if (!cancelDescribe.current) setImageAlt(nodeId, e.currentTarget.value);
+            if (!cancelDescribe.current) setImageAlt(nodeId, blockId, e.currentTarget.value);
             cancelDescribe.current = false;
             setIsDescribing(false);
           }}

@@ -3,14 +3,15 @@
 // The Assets tab is built on trusting this, so it is written to be exhaustive
 // rather than convenient: a picture reported as unused gets a delete button,
 // and a miss here means a page quietly losing its picture. See docs/plan.md
-// Phase 17, which lists the four places a picture can be in use — this file is
-// all four.
+// Phase 17, which lists the places a picture can be in use — this file is all of
+// them, and Phase 19.5's image blocks are the newest.
 //
 // Pure, and deliberately takes both records as arguments rather than reaching
 // for the store: the template library is the one everything else forgets, and
 // making it a parameter means a caller cannot leave it out by accident.
 import { ASSET_REF_PREFIX } from "../constants/paths";
 import type { Node, TemplateLibrary } from "../constants/schema";
+import { blockImageFiles } from "./block-service";
 
 /** Where one use of a picture is. */
 export type AssetUse = {
@@ -18,8 +19,13 @@ export type AssetUse = {
    * `portrait` and `banner` are slots on a page; `page` is an image block
    * written into one of its tabs. Kept apart because removing them is
    * different work — a slot is cleared, a block is taken out.
+   *
+   * `block` is one of the page's own image blocks holding its own picture
+   * (Phase 19.5) — the fourth route, and the one that arrived last. Before it
+   * existed an image block could only be a window onto the portrait, so
+   * everything an image block showed was already counted as `portrait`.
    */
-  where: "portrait" | "banner" | "page";
+  where: "portrait" | "banner" | "page" | "block";
   /** The node holding it, in whichever record `source` names. */
   nodeId: string;
   nodeName: string;
@@ -71,11 +77,15 @@ export function assetRefsInContent(content: unknown): string[] {
   return found;
 }
 
-/** Every asset filename this one node points at, by any of the three routes. */
+/** Every asset filename this one node points at, by any of the four routes. */
 function usesIn(node: Node): { fileName: string; where: AssetUse["where"] }[] {
   const uses: { fileName: string; where: AssetUse["where"] }[] = [];
   if (node.image) uses.push({ fileName: node.image, where: "portrait" });
   if (node.banner) uses.push({ fileName: node.banner, where: "banner" });
+  // The page's own image blocks. A picture in one of these is held nowhere
+  // else on the node, so missing them here is the Assets tab offering to
+  // delete a photograph that is on screen.
+  for (const fileName of blockImageFiles(node.blocks)) uses.push({ fileName, where: "block" });
   // Hidden tabs included. A hidden tab is one she isn't looking at, not one
   // that stopped holding what's written in it.
   for (const tab of node.tabs) {

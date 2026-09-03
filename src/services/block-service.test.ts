@@ -7,6 +7,8 @@ import {
   snapBlockWidth,
   storedBlockWidth,
   blockIdsInPage,
+  blockImage,
+  blockImageFiles,
   blockKindLabel,
   blocksFor,
   parseBlockIds,
@@ -18,9 +20,13 @@ import {
   migrateBlocks,
   moveBlock,
   newBlock,
+  pageImageBlockId,
+  planBlockRemoval,
+  planPageImageBlock,
   planTemplateSwap,
   seedBlocks,
   unshownPropertyKeys,
+  withCopiedBlockImages,
   withField,
 } from "./block-service";
 import type { RenderableProperty } from "./property-service";
@@ -578,5 +584,121 @@ describe("column widths", () => {
     expect(parseColumnWidths("67,33", 3)).toEqual([100 / 3, 100 / 3, 100 / 3]);
     expect(parseColumnWidths("wide,narrow", 2)).toEqual([50, 50]);
     expect(parseColumnWidths("100,0", 2)).toEqual([50, 50]);
+  });
+});
+
+// Phase 19.5: an image block holds its own picture, and one of them holds the
+// page's. The rule these tests are protecting is that a picture lives in
+// exactly one place — on the node when the block is the page's, on the block
+// otherwise — so nothing has two answers to keep in step.
+describe("image blocks and the page's own picture", () => {
+  const image = (id: string, patch: Partial<Block> = {}): Block => ({ id, kind: "image", ...patch });
+
+  it("gives the page's picture to the first image block when nothing is stored", () => {
+    const node = page({ blocks: [image("a"), image("b")], image: "portrait.png" });
+    expect(pageImageBlockId(node, node.blocks!)).toBe("a");
+    expect(blockImage(node, node.blocks!, node.blocks![0]).image).toBe("portrait.png");
+  });
+
+  // The migration, and the whole of it: a page written before this existed has
+  // one image block, no stored pointer and no picture on the block. It has to
+  // draw the portrait with nothing rewritten on disk.
+  it("draws an old page's portrait in its one image block, unchanged", () => {
+    const node = page({ blocks: undefined, image: "portrait.png", imageAlt: "Valera", imageFocusY: 30 });
+    const blocks = blocksFor(node, schema);
+    const slot = blocks.find((block) => block.kind === "image")!;
+    expect(blockImage(node, blocks, slot)).toEqual({
+      image: "portrait.png",
+      imageAlt: "Valera",
+      imageFocusY: 30,
+    });
+  });
+
+  it("draws every other image block from its own record", () => {
+    const node = page({ blocks: [image("a"), image("b", { image: "sword.png" })], image: "portrait.png" });
+    expect(blockImage(node, node.blocks!, node.blocks![1]).image).toBe("sword.png");
+  });
+
+  it("honours a stored choice, and draws nothing for a block that has gone", () => {
+    const chosen = page({ blocks: [image("a"), image("b")], pageImageBlockId: "b" });
+    expect(pageImageBlockId(chosen, chosen.blocks!)).toBe("b");
+    const orphaned = page({ blocks: [image("a")], pageImageBlockId: "gone" });
+    expect(pageImageBlockId(orphaned, orphaned.blocks!)).toBeUndefined();
+  });
+
+  it("trades the two pictures when another block is made the page's", () => {
+    const node = page({
+      blocks: [image("a"), image("b", { image: "sword.png", imageAlt: "A sword" })],
+      image: "portrait.png",
+      imageAlt: "Valera",
+    });
+    const patch = planPageImageBlock(node, node.blocks!, "b");
+
+    expect(patch.image).toBe("sword.png");
+    expect(patch.imageAlt).toBe("A sword");
+    expect(patch.pageImageBlockId).toBe("b");
+    // Nothing is lost by choosing wrong: the portrait moves into the block
+    // that used to hold the mark, and the chosen block stops holding its own.
+    expect(patch.blocks?.find((block) => block.id === "a")).toEqual(
+      image("a", { image: "portrait.png", imageAlt: "Valera" }),
+    );
+    expect(patch.blocks?.find((block) => block.id === "b")).toEqual(image("b"));
+  });
+
+  it("does nothing when the block asked for already holds the page's picture", () => {
+    const node = page({ blocks: [image("a")], image: "portrait.png" });
+    expect(planPageImageBlock(node, node.blocks!, "a")).toEqual({});
+  });
+
+  // Removing a block has never deleted what was in it, and a portrait is on
+  // the tree row and in the export as well as in this frame.
+  it("keeps the portrait when the last image block is removed", () => {
+    const node = page({ blocks: [image("a"), { id: "t", kind: "tags" }], image: "portrait.png" });
+    const patch = planBlockRemoval(node, node.blocks!, "a");
+    expect(patch.blocks).toEqual([{ id: "t", kind: "tags" }]);
+    expect("image" in patch).toBe(false);
+  });
+
+  it("promotes the next image block's own picture when the page's block is removed", () => {
+    const node = page({
+      blocks: [image("a"), image("b", { image: "sword.png", imageFocusY: 20 })],
+      image: "portrait.png",
+    });
+    const patch = planBlockRemoval(node, node.blocks!, "a");
+    // The mark moves to the block that is left, and the page's picture follows
+    // it — otherwise the promoted block would draw the portrait instead of the
+    // photo it is holding.
+    expect(patch.image).toBe("sword.png");
+    expect(patch.imageFocusY).toBe(20);
+    expect(patch.blocks).toEqual([image("b")]);
+    expect(patch.pageImageBlockId).toBeUndefined();
+  });
+
+  it("lets a promoted block with no picture of its own inherit the portrait", () => {
+    const node = page({ blocks: [image("a"), image("b")], image: "portrait.png" });
+    const patch = planBlockRemoval(node, node.blocks!, "a");
+    expect(patch.blocks).toEqual([image("b")]);
+    expect("image" in patch).toBe(false);
+  });
+
+  it("hands a duplicate its own copy of the picture rather than an empty frame", () => {
+    const blocks = [image("a")];
+    const copied = duplicateBlock(blocks, "a", { image: "portrait.png", imageAlt: "Valera" });
+    expect(copied[1].image).toBe("portrait.png");
+    expect(copied[1].imageAlt).toBe("Valera");
+    expect(copied[1].id).not.toBe("a");
+  });
+
+  it("lists the pictures the blocks hold, and copies them one file each", () => {
+    const blocks = [image("a", { image: "sword.png" }), image("b"), image("c", { image: "map.png" })];
+    expect(blockImageFiles(blocks)).toEqual(["sword.png", "map.png"]);
+    expect(blockImageFiles(undefined)).toEqual([]);
+
+    const copied = withCopiedBlockImages(blocks, (fileName) => `copy-${fileName}`);
+    expect(copied?.map((block) => block.image)).toEqual(["copy-sword.png", undefined, "copy-map.png"]);
+    // The list comes back untouched when there is nothing in it to copy, which
+    // is what keeps a page that has no pictures from being rewritten.
+    const plain = [image("a")];
+    expect(withCopiedBlockImages(plain, (fileName) => fileName)).toBe(plain);
   });
 });

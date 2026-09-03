@@ -634,31 +634,29 @@ meter block inside an infobox rather than a gauge block sitting in the page.
   full-width version first**, because BlockNote does not float blocks and
   wrapping is a much larger job. It is now a known gap rather than an unknown.
 
-### An image block holds its own picture — decided 2026-09-02, not built
+### An image block holds its own picture — shipped 2026-09-03
 
-**Found by her the moment blocks reached the page body.** An image block is a
+**Found by her the moment blocks reached the page body.** An image block was a
 window onto `node.image`, the page's one picture — so a picture dropped into a
-block in the writing became the page's portrait, and a second image block
-showed the same picture rather than a new one. That was defensible while an
-image block only ever appeared in the sidebar. It is not now.
+block in the writing became the page's portrait, and a second image block showed
+the same picture rather than a new one. That was defensible while an image block
+only ever appeared in the sidebar; it stopped being so the day one could stand
+in the writing.
 
 **Her call, given the options: each image block holds its own picture, and one
-of them is marked as the page's.** The page picture is the one the tree row,
-the hover preview and the LK export use, so it cannot simply be dropped — the
+of them is marked as the page's.** The page picture is the one the tree row, the
+hover preview and the LK export use, so it could not simply be dropped — the
 alternative offered (no page picture at all) was refused for that reason.
 
-What that means for the build, none of which is done:
+A picture lives in exactly one place: on the node when the block is the page's,
+on the block otherwise, with the mark stored only once she moves it. Detail is
+in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.
 
-- A picture on the **block** rather than only on the node: an asset id, its alt
-  text and its focus point, the three fields `node.image` carries today.
-- **Which block is the page's picture** has to be stored, and the first image
-  block a page has should get it automatically — otherwise every page that
-  already has a portrait loses it on the next read.
-- **Existing pages must open unchanged.** Every page in her world with a
-  portrait has exactly one image block reading `node.image`; that block has to
-  keep drawing that picture with nothing rewritten on disk.
-- The block's menu is where "use this as the page's picture" belongs, beside
-  the picture's own controls.
+**Still open, and deliberately not built with it:** the same question for a
+*cover*. `node.banner` is one per page the way `node.image` used to be, and
+"Set as cover" on a block in the writing now sets the page's one cover from
+whatever that block is showing. Nobody has asked for more than one cover, and
+there is nowhere on a page a second one would go.
 
 ### The infobox's own menu, from her screenshots
 

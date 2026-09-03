@@ -30,10 +30,10 @@ infobox grouping several (2026-08-29), callout colours and New page from inside
 the editor (2026-08-28), and the inline icon plus the callout's own icon
 (2026-09-01). What still binds the code from all of it is §Editor & templates
 and §Sidebar blocks below. Dragging a block or an infobox wider landed
-2026-09-02, and columns the same day. **Still open in the phase:** an image
-block holding its own picture (decided 2026-09-02, scoped in `docs/plan.md`),
-the infobox's own menu, a Recent row in the icon picker, and the slash-command
-and markdown halves of the shortcut sheet.
+2026-09-02, columns the same day, and a picture block holding its own picture on
+2026-09-03. **Still open in the phase:** the infobox's own menu, a Recent row in
+the icon picker, and the slash-command and markdown halves of the shortcut
+sheet.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3403,6 +3403,36 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   that can disagree, and there is no way to tell which one is right when it
   does. Reasoning in `docs/plan.md` Phase 19.5.
 
+- **A picture lives in exactly one place, and `blockImage` is the only thing
+  that decides which.** Phase 19.5. Every image block holds its own picture on
+  its own record; the *one* block marked as the page's writes to the node
+  instead — `image`, `imageAlt`, `imageFocusY`, where the tree row, the hover
+  preview and the LK export have always read it. There is deliberately no
+  mirroring: a photo is on the node or on the block, never both, so nothing has
+  to be kept in step. **Anything that shows, replaces or clears an image block's
+  picture goes through `blockImage` (services) or `usePageImage` (components)** —
+  a second copy of that rule in a component is how the two records start
+  disagreeing.
+
+- **`node.pageImageBlockId` absent means "the first image block there is", and
+  that is the migration.** Every page written before Phase 19.5 has one image
+  block showing the portrait, and the fallback says exactly that without a byte
+  being written — the same derivation-on-read that `blocksFor` uses for the
+  block list. It is stored only when she picks a different block. **A stored id
+  naming no block left on the page means no block draws the page's picture**,
+  which is an ordinary state: the portrait is still the page's, still on the
+  tree row, it just has no window on this page.
+
+- **Adding a picture to a page means teaching every copying path about it.**
+  Phase 19.5 added a fourth route a picture can be referenced by, and each of
+  these had to be told: `asset-usage.ts` (a photo held only by a block in the
+  writing is *in use* — miss it and the Assets tab offers to delete a picture
+  that is on screen), duplicating a page, saving one as a template, pouring a
+  template into a page, and `captureAssets` for a deleted page's restore. The
+  first is the one that loses data; the middle three leave two pages sharing one
+  file, which the next release of that file deletes out from under one of them.
+  `withCopiedBlockPictures` in the store is the shared half.
+
 - **An infobox claims its contents the same way a lone pointer claims one, and
   both have to be read in the same place.** Phase 19.5. `claimedBy` in
   `block-service.ts` answers for both kinds, and `blockIdsInPage` and the sweep
@@ -4022,6 +4052,15 @@ Deferred on purpose, not forgotten:
   queued adjustment in `docs/plan.md`.
 - **Layout is only measured at 1280×800**, and narrow windows are where
   truncation bites hardest.
+
+- **A page block does not survive an LK export, and since 2026-09-03 that can
+  cost a picture.** A `blockRef` or an infobox in the writing hits
+  `convertBlock`'s `default` branch and leaves an empty paragraph — they are
+  ours, and `.lk` has nothing shaped like them. That was a stat panel going
+  missing while blocks in the page held no data of their own; now that a picture
+  block holds its own photograph, it is a photograph going missing too. The page
+  *portrait* still exports exactly as it did. Fixing it means deciding what an
+  infobox is in LK's vocabulary, which nobody has asked for.
 
 - **Nothing has been imported into real LegendKeeper from an export we wrote.**
   The round trip is verified through our own importer, against the real

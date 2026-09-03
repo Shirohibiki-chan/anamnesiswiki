@@ -4728,6 +4728,69 @@ first block on it.
 how a row behaves nested inside another one.
 
 
+## Phase 19.5 — A picture block holds its own picture ✅ Shipped 2026-09-03
+
+Found by her the moment blocks reached the page body: an image block was a
+window onto `node.image` and nothing else, so a picture dropped into one in the
+middle of the writing became the page's portrait, and a second image block drew
+the same photograph rather than a new one.
+
+**The model, which is the whole of the change.** A picture lives in exactly one
+place. The block marked as the page's writes to the node — `image`, `imageAlt`,
+`imageFocusY`, where the tree row, the hover preview and the LK export have
+always read it — and every other image block writes to its own record. There is
+no mirroring and no second copy to keep in step, which is what the `home`-field
+argument in `docs/plan.md` warned against for block *placement* and applies here
+for the same reason.
+
+**The mark is stored only once she moves it.** `node.pageImageBlockId` absent
+means "the first image block there is", which is exactly what every page written
+before this looked like — one image block, showing the portrait — so no page in
+her world was rewritten to make this work. That is the migration, and it is the
+same derivation-on-read trick Phase 18a used for the block list itself.
+
+**What was built:**
+
+- `Block.image` / `imageAlt` / `imageFocusY`, and `Node.pageImageBlockId`.
+- `blockImage`, `pageImageBlockId`, `planPageImageBlock` and `planBlockRemoval`
+  in `block-service.ts` — the second and third return a whole node patch rather
+  than applying anything, so the block list and the picture that moved with it
+  land in one edit and come back together on undo.
+- `usePageImage`, the components' only door to that rule, resolving against the
+  page's whole block list rather than the slice being drawn — a one-block slice
+  would make every lone image block the page's.
+- `ImageSlot` takes a `blockId` and every write names it; the store's
+  `patchBlockImage` decides where it lands. `setBannerFromImage` follows the
+  block's own picture too, so "Set as cover" in the writing means that photo.
+- `setPageImageBlock`, and the block menu's *Use as the page's picture* — the
+  block that already has it says so, checked and inert, rather than showing an
+  entry that does nothing.
+- The four copy paths taught about the new pictures: the Assets tab's usage
+  index (a photo held only by a block in the writing is *in use*, so it is never
+  offered for deletion), duplicating a page, saving one as a template, pouring a
+  template into a page, and the capture that lets a deleted page's pictures come
+  back.
+
+**Two behaviours worth knowing.** Duplicating a picture block hands the copy the
+same photograph rather than an empty frame — one file, two references, which is
+what the picture library is for. And removing the block holding the page's
+picture does not delete the picture: the next image block takes the mark, and if
+*it* is holding a photo of its own then that becomes the page's, which is the
+only answer that never leaves a block drawing something it does not own.
+
+**Verified:** 13 unit tests over the swap, the promotion and the migration; an
+asset-usage test for the route that could otherwise offer a live photograph for
+deletion; and `e2e/picks-the-pages-picture.e2e.ts` driving the real app — two
+picture blocks on one page, the mark moving from the sidebar's to the one in the
+writing, and surviving a reload. `openBlockMenu` in the e2e harness had to be
+rooted at the panel while doing it: a block in the writing draws the same shell
+with the same label, so the unrooted lookup had started taking whichever the DOM
+held first.
+
+**Not done, and not asked for:** a cover per block. `node.banner` is still one
+per page, and there is nowhere on a page a second one would go.
+
+
 ## Phase 19.5 — Dragging a block wider ✅ Shipped 2026-09-02
 
 The page is wider than the sidebar, and this is where she says how much of that
