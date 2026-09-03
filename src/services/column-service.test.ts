@@ -6,6 +6,7 @@ import {
   laneToKeepWriting,
   parseLaneWidths,
   planColumnRepairs,
+  selectionHoldsNoText,
   serialiseLaneWidths,
   widthsAfterDrag,
   type DocumentBlock,
@@ -107,5 +108,23 @@ describe("removing a lane", () => {
 
   it("has nowhere to put it when there is only one lane", () => {
     expect(laneToKeepWriting(["a"], "a")).toBeNull();
+  });
+});
+
+describe("what the formatting bar has to say", () => {
+  it("says nothing about a row, a lane, a pointer or an infobox", () => {
+    expect(selectionHoldsNoText([{ type: COLUMN_ROW_TYPE }])).toBe(true);
+    expect(selectionHoldsNoText([{ type: COLUMN_LANE_TYPE }])).toBe(true);
+    expect(selectionHoldsNoText([{ type: "blockRef" }])).toBe(true);
+    expect(selectionHoldsNoText([{ type: "infobox" }])).toBe(true);
+  });
+
+  it("has plenty to say about writing", () => {
+    expect(selectionHoldsNoText([{ type: "paragraph" }])).toBe(false);
+    expect(selectionHoldsNoText([{ type: COLUMN_ROW_TYPE }, { type: "paragraph" }])).toBe(false);
+  });
+
+  it("says nothing about nothing, which leaves the bar as it was", () => {
+    expect(selectionHoldsNoText([])).toBe(false);
   });
 });

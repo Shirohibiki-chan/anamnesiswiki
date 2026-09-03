@@ -14,7 +14,9 @@
 
 ### Fixes
 
+- **Ctrl+A works again on a page with columns on it.** A row anywhere on the page stopped select-all selecting anything at all — the cursor jumped to the end instead, so the Backspace after it took out one character rather than the page. Ctrl+A then Backspace now clears the lot, columns included.
 - **Columns don't have stray vertical lines through them any more.** The editor draws a faint line beside anything indented, and a column is indented twice over — so every lane had one line at its edge and another beside its writing. They're gone inside a row, and the writing in a lane now starts exactly where the rest of the page's writing does instead of a couple of dozen pixels in.
+- **The formatting bar doesn't turn into an empty strip any more.** Selecting a row of columns — or any block that holds no writing of its own — hides every button in the bar, and the empty box was left sitting there with its border and shadow, reading as something half-loaded. It now keeps its place, at its usual height, and says *Select some writing to format it*. The small blue mark that came with it was the row's selection ring drawn around an invisible marker; it goes around the whole row instead.
 - **The `/` menu stopped stacking up headings.** Typing a few letters left the headings of everything you'd filtered past still on screen — `/colum` showed BASIC BLOCKS and three PAGE BLOCKS above the two things that actually matched. The menu is drawn by the app now instead of by the editor library, so it also looks like the rest of the app's menus.
 
 ### Notes

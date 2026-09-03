@@ -145,3 +145,25 @@ export function laneToKeepWriting(laneIds: string[], removing: string): string |
   if (at === -1 || laneIds.length < 2) return null;
   return at === 0 ? laneIds[1] : laneIds[at - 1];
 }
+
+/**
+ * Block types that hold no writing of their own.
+ *
+ * All four are ours, and all four are containers or pointers: what is written
+ * "in" them lives somewhere else — in `node.blocks`, or in the lanes' children.
+ */
+export const BLOCKS_WITHOUT_TEXT = new Set([COLUMN_ROW_TYPE, COLUMN_LANE_TYPE, "blockRef", "infobox"]);
+
+/**
+ * Whether a selection is on something with no writing in it — in which case
+ * the formatting bar has nothing to offer and should not be drawn.
+ *
+ * **This is a bug she found rather than a tidy-up.** Every item in that bar
+ * hides itself when it does not apply, so selecting a row of columns left the
+ * bar on screen as an empty ten-pixel strip with a border and a shadow, which
+ * reads as something half-loaded. Read live from her running app: zero
+ * children, 10px tall, one node selected, and that node the row.
+ */
+export function selectionHoldsNoText(blocks: { type: string }[]): boolean {
+  return blocks.length > 0 && blocks.every((block) => BLOCKS_WITHOUT_TEXT.has(block.type));
+}

@@ -13,12 +13,15 @@ import {
   FormattingToolbarController,
   SuggestionMenuController,
   getFormattingToolbarItems,
+  useBlockNoteEditor,
+  useEditorSelectionChange,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { PageSlashMenu } from "./PageSlashMenu";
 import "@blocknote/shadcn/style.css";
 import { Fragment, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
+import { selectionHoldsNoText } from "../../services/column-service";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
 import {
   BlockRefRenderContext,
@@ -56,7 +59,49 @@ import { SaveImageButton } from "./SaveImageButton";
  * `useState` in BlockNote's own button, so it closed on the first character and
  * dropped focus back to the page. Same for the rename box beside it.
  */
+/**
+ * Whether what is selected right now has any writing in it.
+ *
+ * Wrapped in a `try` because a selection the editor cannot describe — mid-drag,
+ * mid-teardown — is not a reason to take the bar away.
+ */
+function holdsNoText(editor: { getSelection: () => { blocks: { type: string }[] } | undefined; getTextCursorPosition: () => { block: { type: string } } }): boolean {
+  try {
+    return selectionHoldsNoText(editor.getSelection()?.blocks ?? [editor.getTextCursorPosition().block]);
+  } catch {
+    return false;
+  }
+}
+
 function PageFormattingToolbar() {
+  const editor = useBlockNoteEditor();
+  // **Seeded, not just watched.** The hook below only fires when the selection
+  // *changes*, so a bar mounting while a row is already selected — which is
+  // exactly the state she was sitting in — would stay empty until she clicked
+  // somewhere else.
+  const [nothingToSay, setNothingToSay] = useState(() => holdsNoText(editor));
+
+  // **A bar with every button hidden is worse than no bar.** Each item in that
+  // strip hides itself when it does not apply, so selecting a row of columns —
+  // or any of our blocks that hold no writing of their own — left an empty
+  // ten-pixel box with a border and a shadow sitting above the page. Reported
+  // as "the text editor bar", and read out of her running app to be sure: zero
+  // children, 10px tall, one node selected, that node the row.
+  useEditorSelectionChange(() => setNothingToSay(holdsNoText(editor)), editor);
+
+  // **It says so rather than going away.** The first cut returned nothing here,
+  // which is wrong for the bar she actually uses: hers is set to stay at the
+  // top of the page, so a bar that disappears whenever a row of columns is
+  // selected is a bar that keeps leaving — worse than the empty strip it
+  // replaced. It keeps its place and explains itself instead.
+  if (nothingToSay) {
+    return (
+      <FormattingToolbar>
+        <span className="formatting-bar-hint">Select some writing to format it</span>
+      </FormattingToolbar>
+    );
+  }
+
   return (
     <FormattingToolbar>
       {getFormattingToolbarItems().map((item) =>

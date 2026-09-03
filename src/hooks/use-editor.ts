@@ -24,6 +24,7 @@ import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-item
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
 import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
 import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
+import { selectAllExtension } from "../services/editor-blocks/select-all";
 import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
@@ -81,6 +82,9 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
 
   const editor = useCreateBlockNote({
     schema: editorSchema,
+    // Ctrl+A, which stops selecting anything once a row of columns is on the
+    // page. See select-all.ts — the command works, the key handling does not.
+    extensions: [selectAllExtension()],
     initialContent: openedContent.length > 0 ? (openedContent as never) : undefined,
     // Phase 16. These two are what make a picture inside a page possible at
     // all: BlockNote's image block holds a single string, so `uploadFile`

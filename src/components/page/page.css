@@ -1915,3 +1915,46 @@
   color: var(--color-text-muted);
   font-size: var(--fs-sm);
 }
+
+/* **A selected row is ringed as a row, not as its marker.** The row's own
+   element is a zero-height div — everything visible belongs to the lanes — so
+   BlockNote's selection ring drew a six-pixel box in the gutter, which reads as
+   a stray blue square and says nothing about what is selected. The ring moves
+   onto the whole row instead; `:has` is what lets a child's state style the box
+   around it. */
+.bn-editor .bn-block-outer:has(> .bn-block > .ProseMirror-selectednode.node-pageColumns) {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
+
+/* **And nothing inside it keeps a ring of its own.** BlockNote rings a selected
+   block *and* its content element; a row's content element is a zero-size
+   marker, so that ring came out as a small blue square floating at the row's
+   left edge — read out of the running app, 0×0 with `outline: solid`. Named
+   element by element rather than with a `*`, so a button inside a row keeps its
+   own focus ring. */
+.bn-editor .ProseMirror-selectednode.node-pageColumns,
+.bn-editor .ProseMirror-selectednode.node-pageColumn,
+.bn-editor .ProseMirror-selectednode > .bn-block-content,
+.bn-editor .ProseMirror-selectednode > .bn-block-content > .page-columns,
+.bn-editor .ProseMirror-selectednode > .bn-block-content > .page-column {
+  outline: none;
+}
+
+/* What the formatting bar says when there is nothing to format — a row of
+   columns selected, say, which holds no writing of its own. It keeps the bar's
+   own height, so the page does not shift as the selection moves in and out of
+   one. */
+.formatting-bar-hint {
+  display: inline-flex;
+  align-items: center;
+  /* 36px is what the tallest control in the bar comes to, so the bar is the
+     same height with the hint in it as with its buttons — measured at 46 and
+     40 before this. A bar that changes height as the selection moves is a page
+     that jumps. */
+  height: 36px;
+  padding: 0 var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
