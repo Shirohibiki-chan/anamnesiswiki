@@ -235,9 +235,14 @@ function meterBlock(longLabels) {
   };
 }
 
+// The picture block is not added here, and that is not an oversight: pages get
+// their portraits after the graph is built (see main), so this ran when every
+// node.image was still undefined. It used to try, and the branch was dead for
+// as long as it existed — no generated world had a picture block in any panel,
+// while a third of its pages had a portrait file on disk with nowhere to show
+// it. It is added where the picture is picked instead.
 function sidebarFor(node, refTargets, hardCase) {
   const blocks = [];
-  if (node.image) blocks.push({ id: uuid(), kind: "image" });
   blocks.push({ id: uuid(), kind: "property", propertyKey: "summary" });
   if (chance(0.5)) blocks.push({ id: uuid(), kind: "tags" });
   if (chance(0.4)) blocks.push({ id: uuid(), kind: "text", title: "Note to self", text: sentence() });
@@ -555,6 +560,14 @@ function main() {
     if (node.templateKey === "folder") continue;
     if (chance(0.35)) node.image = pick(portraits).fileName;
     if (chance(0.15)) node.banner = pick(banners).fileName;
+    // The block that shows the portrait, added here because this is where the
+    // portrait is decided — see sidebarFor, which cannot know. At the top of
+    // the panel, which is where a page written by the app itself puts it.
+    //
+    // **A page with an empty panel keeps one.** The empty hard case is a page
+    // whose blocks list is deliberately empty and is the whole point of that
+    // page; a portrait must not quietly put something in it.
+    if (node.image && node.blocks?.length) node.blocks.unshift({ id: uuid(), kind: "image" });
   }
 
   for (const { node, dirSegments, fileName } of planPaths(nodes)) {
