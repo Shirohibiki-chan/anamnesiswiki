@@ -89,6 +89,14 @@ describe("indexAssetUsage", () => {
     expect(usersOf(index, "map.png")).toEqual(["project:page:v"]);
   });
 
+  it("counts a picture held by one of the page's own image blocks", () => {
+    const index = indexAssetUsage(
+      byId([node({ id: "v", name: "Valera", blocks: [{ id: "b1", kind: "image", image: "sword.png" }] })]),
+      empty,
+    );
+    expect(usersOf(index, "sword.png")).toEqual(["project:block:v"]);
+  });
+
   // A hidden tab is one she isn't looking at, not one that stopped holding
   // what's written in it.
   it("looks inside hidden tabs", () => {
@@ -222,6 +230,16 @@ describe("isAssetInUse", () => {
 
   it("finds it inside a page, including a hidden tab", () => {
     const nodes = byId([node({ id: "a", name: "Valera", tabs: [tab([imageBlock("map.png")], { hidden: true })] })]);
+    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+  });
+
+  // Phase 19.5: an image block on the page can hold its own picture, held
+  // nowhere else on the node. Missing it here is the Assets tab offering to
+  // delete a photograph that is on screen.
+  it("finds it in one of the page's own image blocks", () => {
+    const nodes = byId([
+      node({ id: "a", name: "Valera", blocks: [{ id: "b1", kind: "image", image: "map.png" }] }),
+    ]);
     expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
   });
 

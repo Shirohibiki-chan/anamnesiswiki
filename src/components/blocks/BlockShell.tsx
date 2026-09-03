@@ -62,6 +62,14 @@ type BlockShellProps = {
     source: CollectionSource;
     onSetSource: (source: CollectionSource) => void;
   };
+  /**
+   * Present only for an image block: whether this is the frame the page's own
+   * picture lives in, and how to make it so. Phase 19.5.
+   */
+  pageImage?: {
+    isPageImage: boolean;
+    onUse: () => void;
+  };
   children: ReactNode;
 };
 
@@ -82,6 +90,7 @@ export function BlockShell({
   onDeleteProperty,
   meter,
   collection,
+  pageImage,
   children,
 }: BlockShellProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -230,6 +239,15 @@ export function BlockShell({
               onRemove();
               setMenuRect(null);
             }}
+            pageImage={
+              pageImage && {
+                isPageImage: pageImage.isPageImage,
+                onUse: () => {
+                  pageImage.onUse();
+                  setMenuRect(null);
+                },
+              }
+            }
             collection={
               collection && {
                 ...collection,

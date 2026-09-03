@@ -78,7 +78,9 @@ export function getPageBlockSlashMenuItems(
     },
     {
       title: "Picture block",
-      subtext: "The page's picture, at full width",
+      // Not "the page's picture" any more: as of Phase 19.5 every picture block
+      // holds its own photo, and only one of them is the page's.
+      subtext: "A picture, in a block of its own",
       // Not "image": BlockNote's own Image entry is in this menu too, and that
       // one inserts a picture into the writing. These are different things and
       // the words have to be different or the menu is a coin toss.

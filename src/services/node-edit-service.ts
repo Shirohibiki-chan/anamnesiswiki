@@ -19,7 +19,7 @@
 // See filesystem-service.ts's `planRelocations` for the other half of the
 // story: this plans the *graph*, that plans the *paths*.
 import { orderSiblings, selectionRoots } from "./tree-service";
-import type { Node, Project } from "../constants/schema";
+import type { Block, Node, Project } from "../constants/schema";
 
 /**
  * The sibling order as the tree is actually showing it right now — the stored
@@ -249,6 +249,12 @@ export function duplicateScope(nodes: Record<string, Node>, ids: readonly string
 export type ClonedAssetNames = {
   image?: string;
   banner?: string;
+  /**
+   * The page's blocks, with the pictures its image blocks hold copied too
+   * (Phase 19.5). Absent when the page has no block list of its own, which is
+   * every page written before blocks existed.
+   */
+  blocks?: Block[];
 };
 
 export type DuplicatePlan = {
@@ -293,9 +299,10 @@ export function planDuplicate(
   const clones: Node[] = subtreeIds.map((subId) => {
     const source = nodes[subId];
     const isRoot = rootIds.has(subId);
-    const { image, banner } = assets.get(subId) ?? {};
+    const { image, banner, blocks } = assets.get(subId) ?? {};
     return {
       ...source,
+      blocks: blocks ?? source.blocks,
       id: idMap.get(subId)!,
       parentId: isRoot ? source.parentId : (idMap.get(source.parentId!) ?? null),
       name: isRoot ? `${source.name} (Copy)` : source.name,

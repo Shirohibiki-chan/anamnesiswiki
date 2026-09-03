@@ -3,7 +3,7 @@
 // job, the same as every other menu in the app — see tree/ContextMenu.tsx,
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
-import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Grid2x2, PencilLine, Plus, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Grid2x2, Image as ImageIcon, PencilLine, Plus, Trash2, Type } from "lucide-react";
 import { COLLECTION_SOURCES } from "../../constants/collection-sources";
 import { METER_STYLES } from "../../constants/meter-styles";
 import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
@@ -71,6 +71,15 @@ type BlockMenuProps = {
     source: CollectionSource;
     onSetSource: (source: CollectionSource) => void;
   };
+  /**
+   * Present only for an image block: whether this one holds the page's own
+   * picture — the one on the tree row, the hover preview and the export — and
+   * how to hand it that job. Phase 19.5.
+   */
+  pageImage?: {
+    isPageImage: boolean;
+    onUse: () => void;
+  };
 };
 
 export function BlockMenu({
@@ -88,6 +97,7 @@ export function BlockMenu({
   onDeleteProperty,
   meter,
   collection,
+  pageImage,
 }: BlockMenuProps) {
   return (
     <div className="tree-context-menu block-menu">
@@ -230,6 +240,27 @@ export function BlockMenu({
               </button>
             ))}
           </div>
+        </>
+      )}
+
+      {/* **The one that already holds it says so rather than disappearing.**
+          A page has several image blocks now and only one of them is the
+          portrait; a menu that simply omits the entry on that one leaves you
+          opening all three to find out which. Checked and inert, the way the
+          collection sources above answer the same question. */}
+      {pageImage && (
+        <>
+          <div className="block-menu-separator" />
+          <button
+            type="button"
+            className={pageImage.isPageImage ? "tree-context-menu-checked" : undefined}
+            aria-pressed={pageImage.isPageImage}
+            disabled={pageImage.isPageImage}
+            onClick={pageImage.onUse}
+          >
+            <ImageIcon size={13} /> {pageImage.isPageImage ? "The page's picture" : "Use as the page's picture"}
+            {pageImage.isPageImage && <Check size={13} className="block-menu-trailing-check" />}
+          </button>
         </>
       )}
 

@@ -33,6 +33,7 @@ const PAGE_INFOBOX = ".page-infobox";
 const COLUMN_ROW = ".node-pageColumns";
 const COLUMN_DIVIDER = ".column-divider";
 const BLOCK_ADD_MENU = ".block-add-menu";
+const BLOCK_MENU = ".block-menu";
 const MENU_HEADING = ".tree-context-menu-heading";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
@@ -330,6 +331,12 @@ export async function focusColumnDivider(window: Page, at: number): Promise<void
   await window.locator(COLUMN_DIVIDER).nth(at).focus();
 }
 
+/** Adds a block to the right-hand panel, by the name on its menu item. */
+export async function addBlockToPanel(window: Page, label: string): Promise<void> {
+  await window.getByRole("button", { name: "Add Block", exact: true }).click();
+  await window.getByRole("button", { name: label, exact: true }).first().click();
+}
+
 /** Adds a block to the page's first infobox, by the name on its menu item. */
 export async function addBlockToInfobox(window: Page, label: string): Promise<void> {
   await openInfoboxAddMenu(window);
@@ -453,14 +460,36 @@ export async function focusBlockWidthHandle(window: Page, side: "left" | "right"
 }
 
 /**
- * Opens one block's `⋯` menu, named by the heading the block is showing.
+ * Opens one sidebar block's `⋯` menu, named by the heading the block is showing.
  *
  * By label rather than by class, for the reason `openSettings` gives: the
  * button is already labelled for screen readers, so this hook cannot rot
  * without the accessibility rotting with it.
+ *
+ * **Rooted at the panel, the same way `panelBlockTitles` is and for the same
+ * reason.** A block in the writing draws the same shell with the same label, so
+ * an unrooted lookup takes whichever the DOM holds first — which since Phase
+ * 19.5 is the one in the page. `openPageBlockMenu` is the other half.
  */
 export async function openBlockMenu(window: Page, title: string): Promise<void> {
-  await window.getByLabel(`${title} block options`, { exact: true }).first().click();
+  await window.locator(BLOCK_PANEL).getByLabel(`${title} block options`, { exact: true }).first().click();
+}
+
+/**
+ * Opens the `⋯` menu of a block drawn in the *writing*, named by its heading.
+ *
+ * Separate from `openBlockMenu` because the two can be showing the same
+ * heading at once — a picture block in the page and the sidebar's own are both
+ * called Image — and an unrooted lookup would take whichever the DOM happens to
+ * hold first. Phase 19.5.
+ */
+export async function openPageBlockMenu(window: Page, title: string): Promise<void> {
+  await window.locator(PAGE_BLOCK).getByLabel(`${title} block options`, { exact: true }).first().click();
+}
+
+/** What the open block menu is offering, top to bottom. */
+export async function blockMenuItems(window: Page): Promise<string[]> {
+  return (await window.locator(`${BLOCK_MENU} button`).allTextContents()).map(normalize);
 }
 
 /**
