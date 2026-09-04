@@ -504,20 +504,35 @@ export async function followPageLink(window: Page, text: string): Promise<void> 
  * between: it takes itself off after a couple of seconds.
  */
 export async function arrivedBlockText(window: Page): Promise<string | null> {
-  // **Measured and read in one go, inside the page.** The mark is a box drawn
-  // over the block and it moves while the page is still scrolling, so a
-  // rectangle fetched in one call and asked about in the next can point at the
-  // paragraph above by the time it is asked. Both happen in the same frame
-  // here.
-  const readUnderMark = () =>
+  // **The block is found by matching rectangles, not by asking what is under a
+  // point.** `elementFromPoint` answers null for anything outside the window,
+  // so a mark on a block below the fold reads as no mark at all — which is how
+  // this passed here and failed on CI, where the window is a different shape.
+  //
+  // **Measured and matched in one call, inside the page.** The mark moves while
+  // the page is still scrolling, so a rectangle fetched in one call and asked
+  // about in the next can name the paragraph above it.
+  const readMarkedBlock = () =>
     window.evaluate((mark: string) => {
       const box = document.querySelector(mark);
       if (!box) return null;
-      const rect = box.getBoundingClientRect();
+      const over = box.getBoundingClientRect();
       // No size yet: it is drawn a frame before it is measured and placed.
-      if (rect.width === 0) return null;
-      const under = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-      return under?.closest("[data-id]")?.textContent ?? null;
+      if (over.width === 0) return null;
+      let best: Element | null = null;
+      let closest = Infinity;
+      for (const block of document.querySelectorAll(".bn-editor [data-id]")) {
+        const rect = block.getBoundingClientRect();
+        const gap = Math.abs(rect.top - over.top) + Math.abs(rect.left - over.left) + Math.abs(rect.height - over.height);
+        if (gap < closest) {
+          closest = gap;
+          best = block;
+        }
+      }
+      // The mark is drawn *as* a block's rectangle, so the one it belongs to is
+      // an exact match give or take a rounding error. Anything else means it is
+      // sitting over nothing, which is worth reporting as nothing.
+      return closest <= 4 ? (best?.textContent ?? null) : null;
     }, BLOCK_ARRIVAL);
 
   // **Polled, because the mark takes itself off after a couple of seconds** —
@@ -525,9 +540,25 @@ export async function arrivedBlockText(window: Page): Promise<string | null> {
   // single sample failed on CI rather than on anything the app did.
   const deadline = Date.now() + 1500;
   for (;;) {
-    const found = await readUnderMark();
+    const found = await readMarkedBlock();
     if (found !== null) return normalize(found);
     if (Date.now() > deadline) return null;
+    await window.waitForTimeout(50);
+  }
+}
+
+/**
+ * Whether a block is marked at all, whatever it is sitting over. Phase 19.5.
+ *
+ * Its own helper so a scenario can tell "nothing was marked" apart from "the
+ * wrong block was marked" — the two look identical through `arrivedBlockText`,
+ * and they are different bugs.
+ */
+export async function arrivalMarkShown(window: Page): Promise<boolean> {
+  const deadline = Date.now() + 1500;
+  for (;;) {
+    if ((await window.locator(BLOCK_ARRIVAL).count()) > 0) return true;
+    if (Date.now() > deadline) return false;
     await window.waitForTimeout(50);
   }
 }

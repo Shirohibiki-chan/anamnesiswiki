@@ -10,6 +10,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
+  arrivalMarkShown,
   arrivedBlockText,
   blockInView,
   editorBlockMenuItems,
@@ -53,7 +54,10 @@ describe("linking to a spot on a page", () => {
 
     await followPageLink(app.window, "further down");
     // The mark is read first and with nothing waited for in front of it: it is
-    // on screen for two seconds and then gone by design.
+    // on screen for two seconds and then gone by design. Asked in two steps so
+    // that a failure says which half went wrong — nothing marked at all, or the
+    // wrong block marked.
+    expect(await arrivalMarkShown(app.window)).toBe(true);
     expect(await arrivedBlockText(app.window)).toContain(TARGET);
 
     // The scroll is animated, so it is the one to give a moment.
