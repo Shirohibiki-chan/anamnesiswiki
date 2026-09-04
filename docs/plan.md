@@ -547,15 +547,20 @@ Meter that lands on a bar and makes her go find the setting.
   in `docs/shipped.md`, and the matching rules are the part worth reading before
   changing it — `auto-link-service.ts` has them with a test each.
 
-  **The hints toggle is the half that is still open, and it is not the cheap
-  half after all.** The plan said it could ship first because it changes
-  nothing; what it actually needs is a marker drawn *over* text in the editor,
-  which means a ProseMirror decoration plugin — and writing to the editor's own
-  DOM is what froze the app during the columns work, so the ordinary DOM route
-  is closed. **The preview dialog answers most of the same question**: it lists
-  what could be linked, in the sentences it was found in, and closing it changes
-  nothing. What is genuinely missing is seeing it *while writing* rather than
-  when asking.
+  **The hints toggle is the half that is still open, and the reason given for
+  that was wrong too — corrected 2026-09-04 alongside the wrapping claim.** It
+  needs a marker drawn *over* text in the editor, which means a ProseMirror
+  decoration. This entry then said the route was closed because writing to the
+  editor's own DOM froze the app during the columns work — but those are two
+  different acts. **A decoration is the supported way to draw over text**, it is
+  reached through BlockNote's own extension API (`select-all.ts` already
+  registers an extension that way), and it is not the hand-written DOM that
+  caused the freeze. It is ordinary work, not a blocked path.
+
+  **The preview dialog answers most of the same question** — it lists what could
+  be linked, in the sentences it was found in, and closing it changes nothing —
+  so this is a nicety rather than a gap. What is genuinely missing is seeing it
+  *while writing* rather than when asking.
 - **Table of contents — shipped 2026-09-04, as Contents.** Derived from the
   headings already in the document, so it stores nothing and cannot go stale:
   the block is a marker and the list is read every time it draws. Detail is in
@@ -665,9 +670,10 @@ meter block inside an infobox rather than a gauge block sitting in the page.
   offering **Full width, Align center, Wrap left, Wrap right**. What this entry
   said before — that her screenshots showed it full-width, so wrapping was an
   open question — was reasoning from the pictures we happened to have. The
-  decision it reached still stands and for the same reason: **build the
-  full-width version first**, because BlockNote does not float blocks and
-  wrapping is a much larger job. It is now a known gap rather than an unknown.
+  decision it reached still stands, though not for the reason it gave: build the
+  full-width version first because it is the smaller piece, not because wrapping
+  is out of reach. **The claim that BlockNote cannot float a block was wrong,
+  and was never checked** — see the Wrap entry below, which has the measurement.
 
 ### An image block holds its own picture — shipped 2026-09-03
 
@@ -704,10 +710,34 @@ the code is in `docs/handoff.md`.
 here rather than in the shipped log because the first is work rather than an
 omission:
 
-- **Wrap left and Wrap right**, which is the same wall the phase already named:
-  BlockNote does not float a block, so text flowing around an infobox is a much
-  larger job than the rest of that submenu was. Full width and Align centre —
-  the two that do not need floating — are built.
+- **Wrap left and Wrap right, and the wall this used to name is not there.**
+  Full width and Align centre are built; these two are not, and they are the
+  only items left on the Layout submenu.
+
+  **What this entry said until 2026-09-04 was that BlockNote cannot float a
+  block. That was never true and was never tested** — it came from the original
+  scoping and was repeated three times without anyone checking it. She asked
+  the obvious question (the reference is ProseMirror, so what is different
+  here?) and the answer is: nothing. `@blocknote/core` is built on `@tiptap/core`,
+  which is ProseMirror, and a `.lk` file's content is ProseMirror JSON — the
+  importer has been reading it since Phase 8.
+
+  **Measured in the running app the same day.** An infobox given `float: right`
+  and a width re-wraps the paragraphs after it: the first line's right edge came
+  in from x=860 to x=617, and two lines became four. Nothing else was needed —
+  the blocks after it do not have to be persuaded out of their own layout.
+
+  **The one real constraint found while testing it**, and it is the ordinary
+  one: ProseMirror owns those elements and wipes an inline style off them, so
+  the float has to come from a stylesheet rule keyed off the block — which is
+  how every other thing our blocks do to themselves already works.
+
+  **So this is a bounded piece of work rather than a wall.** What it needs is a
+  `wrap` on the block's own record beside `width` and `centred`, two more items
+  in the frame's menu, and the same clearing question the reference has to
+  answer: what a heading after a floated frame does. Worth checking while
+  building it: how the hover controls and the width handles sit beside a
+  floated block, and what happens to one inside a column lane.
 - **Pin to top — dropped 2026-09-04, and not to be revived without a use for
   it.** Asked what she expected it to do, she did not know either: it was on the
   list because it was on the reference's menu in a screenshot, not because
