@@ -3507,6 +3507,20 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   transformed ancestor can move it. Same rule as the columns work: **do not
   write into the editor's DOM.**
 
+- **Two claims about what BlockNote cannot do were wrong, and the lesson is the
+  general one.** Corrected 2026-09-04, both by measurement in the running app
+  after she asked why the reference could do what we said we could not: **it can
+  float a block** (an infobox given `float: right` re-wraps the paragraphs after
+  it — the constraint is only that the rule must come from a stylesheet, since
+  ProseMirror wipes inline styles off its own elements), and **a ProseMirror
+  decoration is a supported route, not the DOM-writing that froze the app during
+  the columns work**. Both had been repeated across three documents without
+  anyone testing them. `@blocknote/core` is `@tiptap/core`, which is
+  ProseMirror; a `.lk` file's content is ProseMirror JSON. **Before writing that
+  the editor cannot do something, try it in the running app** — the same rule
+  the plan learned about reading for the thing rather than for the file you
+  remember.
+
 - **The row of hover controls beside a block holds two, and a third does not
   fit.** Phase 19.5, measured: the gutter between the editor's left edge and the
   writing is 54px, BlockNote's `+` and handle fill it, and a third button pushes

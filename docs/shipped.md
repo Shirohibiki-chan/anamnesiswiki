@@ -4842,12 +4842,15 @@ linked, one undo taking the pass back, and a second run finding nothing because
 the words are inside links now. Twenty unit tests over the matching and the
 rewrite. Looked at it in the real app on a throwaway, since deleted.
 
-**The hints toggle did not ship with it, and the plan's estimate of it was
-wrong.** It was written down as the cheap half because it changes nothing; what
-it needs is a marker drawn over text in the editor, which means a ProseMirror
-decoration plugin — and writing to the editor's own DOM is what froze the app
-during the columns work. The dialog answers most of the same question, since it
-lists what could be linked and closing it changes nothing.
+**The hints toggle did not ship with it.** It needs a marker drawn over text in
+the editor, which means a ProseMirror decoration. **What this entry said next
+was wrong, and was corrected on 2026-09-04**: it claimed that route was closed
+because writing to the editor's own DOM froze the app during the columns work.
+Those are two different acts — a decoration is the supported way to draw over
+text, reached through the same extension API `select-all.ts` already uses. The
+dialog answers most of the same question, since it lists what could be linked
+and closing it changes nothing, so this stayed unbuilt for being a nicety rather
+than for being blocked.
 
 
 ## Phase 19.5 — Contents, and the picker's Recent row ✅ Shipped 2026-09-04
