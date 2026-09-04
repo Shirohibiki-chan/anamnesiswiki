@@ -29,10 +29,16 @@ export function useDialogs() {
   const pendingNewPageLink = useDialogStore((s) => s.pendingNewPageLink);
   const requestNewPageLink = useDialogStore((s) => s.requestNewPageLink);
   const resolveNewPageLink = useDialogStore((s) => s.resolveNewPageLink);
+  const pendingAutoLink = useDialogStore((s) => s.pendingAutoLink);
+  const requestAutoLink = useDialogStore((s) => s.requestAutoLink);
+  const resolveAutoLink = useDialogStore((s) => s.resolveAutoLink);
   return {
     pendingNewPageLink,
     requestNewPageLink,
     resolveNewPageLink,
+    pendingAutoLink,
+    requestAutoLink,
+    resolveAutoLink,
     historyNodeId,
     openHistory,
     closeHistory,

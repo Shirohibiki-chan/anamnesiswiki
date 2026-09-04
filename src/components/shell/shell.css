@@ -60,6 +60,82 @@
    to the sidebar's fields, and a dialog reaching across for it would make a
    sidebar tweak able to reshape this. */
 
+/* ── Link page names ──────────────────────────────────────────────────────
+   Phase 19.5. What the bulk auto-link is about to do, before it does it.
+
+   **Sized to be read rather than skimmed past.** This is the one dialog whose
+   whole job is that she looks at it: it lists prose it is about to rewrite,
+   some of it on parts of the page that are off screen. So the list scrolls
+   inside the modal rather than the modal growing past the window. */
+.auto-link-intro {
+  margin: 0 0 var(--space-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.auto-link-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  margin-bottom: var(--space-lg);
+}
+
+.auto-link-group {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.auto-link-group:last-child {
+  border-bottom: none;
+}
+
+/* The whole row is the label, so the name and the count are both places to
+   click — a checkbox on its own is a 13px target beside a line of text that
+   looks like it should work. */
+.auto-link-page {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.auto-link-page-name {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.auto-link-count {
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* The sentences, indented under the name they belong to and quieter than it:
+   the name is the decision and these are the evidence for it. */
+.auto-link-samples {
+  margin: var(--space-xs) 0 0;
+  padding-left: calc(var(--space-lg) + var(--space-sm));
+  list-style: none;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.auto-link-samples li {
+  padding: 1px 0;
+  /* Long lines wrap rather than ellipsing: the point of showing the sentence
+     is that she can read it. */
+  overflow-wrap: anywhere;
+}
+
+.auto-link-more {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.auto-link-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
 .new-page-field {
   display: block;
   margin-bottom: var(--space-lg);

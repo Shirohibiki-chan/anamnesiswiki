@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-04 — linking the names you've already written
+
+### Additions
+
+- **`/link page names` turns the page names in your writing into links.** It reads the page you're on, finds every place another page's name is written as plain text, and shows you the list before it touches anything.
+- **You pick what gets linked.** One row per page, with the sentences it found the name in, all ticked to start with — untick anything that's a coincidence rather than a reference. Cancel and nothing at all is written.
+- **One undo takes the whole lot back**, however many links it made.
+- **It won't link the wrong thing.** Whole words only, so a page called *Art* doesn't claim the middle of *particular*; a name two pages share is skipped rather than guessed at; the longer name wins where two overlap; nicknames count; and a page never links to itself.
+- **Your wording is kept.** If the sentence says the page's name exactly, the link follows the page if you rename it later. If it says a nickname, or says it in lower case, the link keeps what you wrote instead of quietly retitling your sentence.
+
+### Notes
+
+- **The other half of this — a marker on text that *could* be linked, while you're writing — isn't built.** It turned out to be the harder half rather than the easy one; the list in the dialog covers most of what it was for, since it shows you what could be linked and closing it changes nothing.
+
 ## 2026-09-04 — a contents list, and the icons you used last
 
 ### Additions
@@ -224,16 +238,3 @@
 - **Settings → Writing, a new section**, for how the editor behaves while you're writing in it rather than what it looks like.
 - **The formatting bar can stay at the top of the page.** The strip with bold, italic and the rest normally appears over your text when you select some and goes away again; now you can have it always there instead, above what you're writing. The buttons do exactly the same thing either way — this is only about where the strip lives.
 - **It appears-on-selection by default**, the way it always has, so nothing changes unless you go and change it.
-
-## 2026-08-28 — a tidy-up under the floor
-
-### Changes
-
-- **Internal tidy-up, nothing visible in the app:** the code that decides what happens when you move, delete or duplicate a page has been lifted out of the big file it was buried in and given tests of its own — 43 of them. It had none before. That code works out things like which pages go with a folder you delete, where a copy lands in the list, and what happens to the home button or a shortcut when the page it pointed at is gone. It all worked; it just couldn't be checked without launching the whole app, so nothing was checking it very often.
-- **Moving and deleting a page are now tested against the real app too**, which they never were — the only test that mentioned deleting was about deleting a whole project. The new one files a page into a folder, deletes one, and pins one and deletes it, closing and reopening the window each time. That last part is the point: a move or a delete that only happened on screen looks exactly like one that worked, right up until you next open Anamnesis.
-- **One thing you could just about trip over is fixed.** Dropping a page into a folder that stopped existing while you were mid-drag is now refused outright rather than filed somewhere unfindable. You'd have to delete the folder in the second between picking a page up and letting go, so this is closing a gap rather than fixing something you've hit.
-- **The picture on a project's tile is drawn by one piece of code now** instead of five near-identical copies — the big pinned card, the tile, the little square in the side list and both thumbnails in the Pinned Projects window. They all agreed, but nothing was making them, so changing how a cover looks meant finding four files and hoping that was all of them.
-
-### Adjustments
-
-- **A rule in Claude's instructions file has been removed**, because it was never yours and never followed. It said no part of the on-screen code was allowed to call a piece of shared logic directly — it arrived in the very first commit, in the same batch as the network rule you got rid of in August, and it had no reason written next to it. 22 of the app's 103 screen components broke it, almost all for harmless things like working out how long ago something was. The rule above it, the one about how the app's memory is reached, is real and stays.
