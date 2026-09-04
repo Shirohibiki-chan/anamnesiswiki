@@ -31,6 +31,7 @@ const INFOBOX = ".infobox";
 const BLOCK_FRAME = ".block-frame";
 const PAGE_INFOBOX = ".page-infobox";
 const PAGE_CONTENTS = ".page-contents";
+const AUTO_LINK_GROUP = ".auto-link-group";
 const COLUMN_ROW = ".node-pageColumns";
 const COLUMN_DIVIDER = ".column-divider";
 const BLOCK_ADD_MENU = ".block-add-menu";
@@ -369,6 +370,29 @@ export async function infoboxGaps(window: Page, at = 0): Promise<{ left: number;
     left: (frame.x - row.x) / row.width,
     right: (row.x + row.width - (frame.x + frame.width)) / row.width,
   };
+}
+
+/**
+ * The pages the "Link page names" dialog is offering, with how many times each
+ * is written on the page. Phase 19.5.
+ */
+export async function autoLinkOffers(window: Page): Promise<string[]> {
+  return (await window.locator(`${AUTO_LINK_GROUP} label`).allTextContents()).map(normalize);
+}
+
+/**
+ * Unticks one of those pages, by name.
+ *
+ * **Matched against the name element, never the whole row.** Each row also
+ * carries the sentences the name was found in, and those sentences name other
+ * pages — a `hasText` on the row unticked whichever row happened to *mention*
+ * the name first, which is a test that silently checks the wrong thing.
+ */
+export async function untickAutoLink(window: Page, pageName: string): Promise<void> {
+  const row = window
+    .locator(AUTO_LINK_GROUP)
+    .filter({ has: window.locator(".auto-link-page-name", { hasText: new RegExp(`^${pageName}$`) }) });
+  await row.first().locator("input").uncheck();
 }
 
 /** The rows of the page's contents block, top to bottom. Phase 19.5. */

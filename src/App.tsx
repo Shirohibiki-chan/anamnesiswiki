@@ -1,4 +1,5 @@
 import { AssetPickerDialog } from "./components/shell/AssetPickerDialog";
+import { AutoLinkDialog } from "./components/shell/AutoLinkDialog";
 import { NewPageLinkDialog } from "./components/shell/NewPageLinkDialog";
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
 import { Lightbox } from "./components/shell/Lightbox";
@@ -79,6 +80,7 @@ function App() {
           matches nothing), which is the same reason the picture library sits
           up here. */}
       <NewPageLinkDialog />
+      <AutoLinkDialog />
       {/* Raised from a tree row's menu, which react-arborist renders itself —
           the same routing reason as the export request and SaveAsTemplate
           above. Keyed by the page, so pointing it at another one starts its
