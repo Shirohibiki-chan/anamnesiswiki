@@ -23,6 +23,7 @@ import { createCodeBlockSpec } from "@blocknote/core";
 import { createBundledHighlighter } from "@shikijs/core";
 import { createJavaScriptRawEngine } from "@shikijs/engine-javascript/raw";
 import { CODE_LANGUAGES, DEFAULT_CODE_LANGUAGE } from "../../constants/code-languages";
+import { copyText } from "../clipboard-service";
 
 /**
  * The grammars we ship, one dynamic import each.
@@ -241,10 +242,9 @@ function icon(paths: string, state: string): string {
  * block it was given is a snapshot, so a button closing over it would copy
  * whatever the code said when the block first appeared.
  *
- * `execCommand` is kept as a fallback because `navigator.clipboard` needs a
- * secure context, and the Tauri webview's origin isn't `https:`. It works
- * today; if a webview update ever changes that, this degrades to the old API
- * instead of a button that silently does nothing.
+ * The fallback behind `navigator.clipboard` lives in `clipboard-service.ts`
+ * now, shared with a block's copied link; the reason it is there is written up
+ * with it.
  *
  * **All three states are in the DOM from the start and CSS shows one of them.**
  * The obvious version rewrites `innerHTML` on each click, but this subtree lives
@@ -272,26 +272,9 @@ function buildCopyButton(getText: () => string): { element: HTMLButtonElement; d
     }, 1600);
   };
 
-  const write = async (text: string): Promise<boolean> => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      const scratch = document.createElement("textarea");
-      scratch.value = text;
-      scratch.setAttribute("aria-hidden", "true");
-      scratch.style.cssText = "position:fixed;top:-1000px;opacity:0";
-      document.body.append(scratch);
-      scratch.select();
-      const ok = document.execCommand("copy");
-      scratch.remove();
-      return ok;
-    }
-  };
-
   const onClick = (event: MouseEvent): void => {
     event.preventDefault();
-    void write(getText()).then(confirm);
+    void copyText(getText()).then(confirm);
   };
 
   // Without this, pressing the button moves the caret out of whatever you were

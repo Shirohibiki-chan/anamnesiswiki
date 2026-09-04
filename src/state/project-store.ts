@@ -27,6 +27,7 @@ import * as fsService from "../services/filesystem-service";
 import { acknowledge, parseAcknowledgements, unacknowledged } from "../services/acknowledgements";
 import { getAcknowledgedWarnings, setAcknowledgedWarnings } from "../services/app-settings-service";
 import { isReservedWorldName } from "../services/world-scan";
+import { tabHoldingBlock } from "../services/anchor-service";
 import { assetRef, releaseAssetUrls } from "../services/asset-urls";
 import { isAssetInUse } from "../services/asset-usage";
 import { cancelSave, flushAllSaves, flushSave, scheduleSave, setSaveErrorHandler } from "../services/autosave";
@@ -285,7 +286,9 @@ export type ProjectStoreState = {
   // Deliberately not part of Project: it's a single navigation, not state
   // worth writing to disk. Carries the node id as well so PageView can ignore
   // a leftover from an earlier jump instead of applying it to the wrong page.
-  pendingFocus: { nodeId: string; tabId: string } | null;
+  // `blockId` is the other half, and only a block link sets it: the block in
+  // that tab's writing to scroll to and mark on arrival. See anchor-service.ts.
+  pendingFocus: { nodeId: string; tabId: string; blockId?: string } | null;
   // A page created a moment ago, still called "Untitled", whose title should
   // open straight into its rename input. Session-only and never written to
   // disk, like pendingFocus above, and it carries a node id for the same
@@ -656,6 +659,24 @@ export type ProjectStoreState = {
   setNodeColor: (ids: string[], color: string | undefined) => void;
   setNodeHidden: (ids: string[], hidden: boolean) => void;
   selectNode: (id: string | null, tabId?: string) => void;
+  /**
+   * Follow a link to one block: the page, the tab it turns out to be in, and
+   * the block itself scrolled to. Phase 19.5.
+   *
+   * An ordinary navigation with an extra target, so Back comes straight out of
+   * it. **A block that is no longer there still opens its page** — the link
+   * names a page and a spot on it, and losing the spot is not a reason to
+   * refuse the page.
+   */
+  openBlockLink: (nodeId: string, blockId: string) => void;
+  /**
+   * The block link has been followed and the block marked; forget it.
+   *
+   * **A one-shot, the way `pendingRenameId` is**, and for the same reason:
+   * without this, switching to another tab and back would scroll the page and
+   * flash the block again, days after the link was followed.
+   */
+  clearPendingAnchor: () => void;
   // Moving over the session's navigation history rather than adding to it.
   // Both are no-ops at the ends of the stack, so the buttons can stay mounted
   // and just go quiet.
@@ -1054,7 +1075,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
    * Expanding the target's ancestors is deliberately *not* done here: TreePanel
    * already does it for every selection however it was made.
    */
-  const applySelection = (id: string | null, tabId: string | undefined, navHistory: NavHistory): void => {
+  const applySelection = (
+    id: string | null,
+    tabId: string | undefined,
+    navHistory: NavHistory,
+    blockId?: string,
+  ): void => {
     const { rootPath, project, nodes, focusedId, pendingRenameId } = get();
     if (!rootPath || !project) return;
     const nextProject: Project = { ...project, selectedId: id, selectedName: id ? (nodes[id]?.name ?? null) : null };
@@ -1074,7 +1100,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // centre keeps editing the template, which reads as the click doing
       // nothing at all.
       openTemplateId: null,
-      pendingFocus: id && tabId ? { nodeId: id, tabId } : null,
+      pendingFocus: id && tabId ? { nodeId: id, tabId, ...(blockId ? { blockId } : {}) } : null,
       // Survives only the one selection that opens the page it names — which
       // is the selection the create hook makes a line after asking. Every
       // other navigation clears it, so coming back to a page you never got
@@ -3182,6 +3208,22 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // forget to. Back and forward deliberately don't come through here — see
       // `applySelection`.
       applySelection(id, tabId, visit(navHistory, id));
+    },
+
+    openBlockLink(nodeId, blockId) {
+      const { navHistory, nodes } = get();
+      const node = nodes[nodeId];
+      if (!node) return;
+      // Which tab is worked out here rather than carried in the link, so a
+      // block moved between tabs keeps the links to it. See anchor-service.ts.
+      const tabId = tabHoldingBlock(node.tabs, blockId) ?? undefined;
+      applySelection(nodeId, tabId, visit(navHistory, nodeId), tabId ? blockId : undefined);
+    },
+
+    clearPendingAnchor() {
+      const { pendingFocus } = get();
+      if (!pendingFocus?.blockId) return;
+      set({ pendingFocus: { nodeId: pendingFocus.nodeId, tabId: pendingFocus.tabId } });
     },
 
     goBack() {

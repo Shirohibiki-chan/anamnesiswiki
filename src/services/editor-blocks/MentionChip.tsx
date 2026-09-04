@@ -4,6 +4,7 @@
 // custom-block-in-services/ layering note.
 import type { ReactCustomInlineContentRenderProps } from "@blocknote/react";
 import type { DefaultStyleSchema } from "@blocknote/core";
+import { Hash } from "lucide-react";
 import { getTemplateIcon } from "../../constants/icons";
 import { useHoverPreview } from "../../hooks/use-hover-preview";
 import { useNode, useProjectActions } from "../../hooks/use-project";
@@ -13,13 +14,23 @@ import type { MentionConfig } from "./mention-inline-content";
 type MentionChipProps = ReactCustomInlineContentRenderProps<MentionConfig, DefaultStyleSchema>;
 
 export function MentionChip({ inlineContent, contentRef }: MentionChipProps) {
-  const { nodeId, label, text } = inlineContent.props;
+  const { nodeId, label, text, blockId } = inlineContent.props;
   // Narrow subscriptions on purpose: a document can hold dozens of these, and
   // a full-store subscription re-rendered every one of them on every keystroke.
   const target = useNode(nodeId);
-  const { selectNode } = useProjectActions();
+  const { selectNode, openBlockLink } = useProjectActions();
   const { preview, anchorRect, open, close } = useHoverPreview(target?.id ?? null);
   const Icon = getTemplateIcon(target?.templateKey ?? "note");
+
+  // **A link to a spot on a page is still a link to the page**, so losing the
+  // spot — the block deleted, or the page rewritten around it — leaves an
+  // ordinary mention rather than a dead one. The store works out which tab the
+  // block is in and quietly skips the scroll when the answer is none.
+  const follow = (): void => {
+    if (!target) return;
+    if (blockId) openBlockLink(target.id, blockId);
+    else selectNode(target.id);
+  };
 
   return (
     <>
@@ -28,9 +39,9 @@ export function MentionChip({ inlineContent, contentRef }: MentionChipProps) {
         className={`editor-mention${target ? "" : " editor-mention-broken"}`}
         role={target ? "link" : undefined}
         tabIndex={target ? 0 : undefined}
-        onClick={() => target && selectNode(target.id)}
+        onClick={follow}
         onKeyDown={(e) => {
-          if (target && (e.key === "Enter" || e.key === " ")) selectNode(target.id);
+          if (e.key === "Enter" || e.key === " ") follow();
         }}
         // Focus opens it too, and not only for a screen reader: this is a
         // tabbable link, and a preview you can only reach with a pointer is
@@ -48,6 +59,11 @@ export function MentionChip({ inlineContent, contentRef }: MentionChipProps) {
             page, and it must stay the default — `text` is only set when she
             deliberately asked this one link to read differently. */}
         {text || target?.name || label}
+        {/* **Said on the chip, because the two go to different places.** A
+            link to a spot on a page and a link to the page read identically
+            otherwise, and which one she wrote is the thing she would be
+            checking. */}
+        {blockId && <Hash size={10} className="editor-mention-spot" aria-label="a spot on that page" />}
       </span>
       {preview && anchorRect && <HoverPreviewCard anchorRect={anchorRect} preview={preview} />}
     </>

@@ -260,6 +260,45 @@ function sidebarFor(node, refTargets, hardCase) {
   return blocks;
 }
 
+// ------------------------------------------------------------- block links
+// Phase 19.5: a link that goes to one block rather than to the top of a page.
+// **A hard case with fixed content**, because the thing under test is an id
+// written in two places at once — a chip pointing at a block, and that block
+// carrying the id — and a generated page cannot promise either half.
+const BLOCK_LINK_PAGE_ID = "b10c1000-0000-4000-a000-000000000001";
+const BLOCK_LINK_PAGE_NAME = "A Link To A Spot Further Down This Page";
+// The block the link points at. A real id, not a readable one, because that is
+// what BlockNote mints and what the app has to carry around.
+const BLOCK_LINK_TARGET_ID = "b10c1000-0000-4000-a000-000000000002";
+const BLOCK_LINK_TARGET_HEADING = "The Spot Being Linked To";
+
+function blockLinkBody(nodeId) {
+  const filler = [
+    "This page exists so a link to one spot in it can be followed and seen to land.",
+    "What is above the fold has to be long enough that the block below is genuinely off screen.",
+    "Otherwise the jump proves nothing: everything was already in view before the link was clicked.",
+    "So there is a quantity of writing here, and it is deliberately unremarkable.",
+    "None of it is generated, because the ids either side of this page have to stay put.",
+  ];
+  const blocks = [
+    {
+      type: "paragraph",
+      content: [
+        ...text("The part worth reading is "),
+        {
+          type: "mention",
+          props: { nodeId, label: BLOCK_LINK_PAGE_NAME, text: "further down", blockId: BLOCK_LINK_TARGET_ID },
+        },
+        ...text(", rather than up here."),
+      ],
+    },
+  ];
+  for (let i = 0; i < 12; i++) blocks.push(p(filler[i % filler.length]));
+  blocks.push({ id: BLOCK_LINK_TARGET_ID, type: "heading", props: { level: 2 }, content: text(BLOCK_LINK_TARGET_HEADING) });
+  blocks.push(p("And this is what was worth coming down here for."));
+  return blocks;
+}
+
 // ---------------------------------------------------------------- hard cases
 // Pages the generator always writes, whatever the seed, because each one is a
 // bug we have shipped or nearly shipped. The name says what it tests.
@@ -287,7 +326,10 @@ function buildGraph(pageCount) {
 
   function add(input) {
     const node = {
-      id: uuid(),
+      // An id of its own where one is handed in: the block-link page below is
+      // written after the random content and must not draw from the stream, or
+      // adding it would change every page in the world. See it for why.
+      id: input.id ?? uuid(),
       parentId: input.parentId,
       templateKey: input.templateKey,
       name: input.name,
@@ -400,6 +442,22 @@ function buildGraph(pageCount) {
     };
     node.blocks = sidebarFor(node, mentionable, hardCase);
   }
+
+  // **Written last, from constants, and that is the whole trick.** Anything
+  // added before this point draws from the seeded stream, so a page inserted
+  // among the others changes every name and every paragraph after it — and the
+  // scenarios in `e2e/` open pages by the names this generator produces. This
+  // one takes a fixed id, fixed words and no random draws at all, so it is a
+  // page that appears out of nowhere and shifts nothing.
+  const spot = add({
+    id: BLOCK_LINK_PAGE_ID,
+    parentId: oddities.id,
+    templateKey: "note",
+    name: BLOCK_LINK_PAGE_NAME,
+    tags: ["test-case"],
+  });
+  spot.tabs = [{ id: "overview", label: "Overview", hidden: false, content: blockLinkBody(spot.id) }];
+  spot.properties = { summary: "A page that links to a spot in its own writing." };
 
   return nodes;
 }
