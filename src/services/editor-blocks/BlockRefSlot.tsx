@@ -27,6 +27,8 @@ export function InfoboxSlot(props: {
   color: string;
   autoWidth: boolean;
   centred: boolean;
+  /** "left", "right", or empty for a frame that takes its own line. */
+  wrap: string;
 }) {
   const renderers = useContext(BlockRefRenderContext);
   if (!renderers) return null;

@@ -10,7 +10,7 @@
 // wide as what you hold", fixed is "be the width I set"; a box cannot be both,
 // so they are drawn as one choice with a tick on the answer, the way the
 // collection sources are.
-import { Check, Copy, Maximize2, Scaling, Trash2, AlignCenter, AlignLeft } from "lucide-react";
+import { Check, Copy, Maximize2, Scaling, Trash2, AlignCenter, AlignLeft, WrapText } from "lucide-react";
 import { ColorSwatches } from "./ColorSwatches";
 
 type InfoboxMenuProps = {
@@ -19,12 +19,16 @@ type InfoboxMenuProps = {
   color: string;
   autoWidth: boolean;
   centred: boolean;
+  /** "left", "right", or empty — which side the writing goes round. */
+  wrap: string;
   /** Already the whole column, so "Full width" has nothing to do. */
   isFullWidth: boolean;
   onColor: (color: string | undefined) => void;
   onAutoWidth: (auto: boolean) => void;
   onFullWidth: () => void;
   onCentred: (centred: boolean) => void;
+  /** The side to sit on, or empty to stop wrapping and take a line of its own. */
+  onWrap: (side: string) => void;
   onDuplicate: () => void;
   onRemove: () => void;
 };
@@ -34,11 +38,13 @@ export function InfoboxMenu({
   color,
   autoWidth,
   centred,
+  wrap,
   isFullWidth,
   onColor,
   onAutoWidth,
   onFullWidth,
   onCentred,
+  onWrap,
   onDuplicate,
   onRemove,
 }: InfoboxMenuProps) {
@@ -94,6 +100,25 @@ export function InfoboxMenu({
         {centred ? <AlignLeft size={13} /> : <AlignCenter size={13} />}
         {centred ? "Align left" : "Align centre"}
       </button>
+      {/* **Both sides, and clicking the one that is on turns it off** — the
+          same shape as Align centre above it, and the only way back to a frame
+          that takes a line of its own without going through Full width. */}
+      {(["left", "right"] as const).map((side) => (
+        <button
+          key={side}
+          type="button"
+          className={wrap === side ? "tree-context-menu-checked" : undefined}
+          aria-pressed={wrap === side}
+          onClick={() => onWrap(wrap === side ? "" : side)}
+        >
+          <WrapText size={13} />
+          <span className="block-source-label">
+            Wrap {side}
+            <small>{wrap === side ? "The writing goes round it" : `Sits ${side}, writing beside it`}</small>
+          </span>
+          {wrap === side && <Check size={13} className="block-menu-trailing-check" />}
+        </button>
+      ))}
 
       <div className="block-menu-separator" />
 

@@ -26,6 +26,25 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
+- **A marker on text that could be linked, while she is writing.** The other
+  half of `/link page names`, which shipped in Phase 19.5; this is the half that
+  shows what *could* be linked without being asked. It wants a ProseMirror
+  decoration, reached through BlockNote's own extension API the way
+  `select-all.ts` reaches it — ordinary work, and it was wrongly written down as
+  a blocked path until 2026-09-04.
+
+  **It is a nicety rather than a gap**, which is why it is here rather than in a
+  phase: the preview dialog already lists what could be linked, in the sentences
+  it was found in, and closing it changes nothing. What is missing is seeing it
+  while writing rather than when asking.
+
+- **An infobox cannot be put inside a lane of columns.** Measured 2026-09-04:
+  the `/` menu opens inside a lane and offers it, and the frame lands outside
+  the row altogether — not in the lane, not in the row. Nothing says so, which
+  is the part that makes it a bug rather than a limit. Not caused by the
+  wrapping work; found while checking whether a wrapped frame behaves inside a
+  lane, which is still unanswered because of it.
+
 - **A page's sub-pages arrive under the names the template gave them, with
   nothing tying them to the page they landed in.** Asked for 2026-08-31 by a
   botmaker in her Discord, who had the same thing built as an Obsidian plugin
@@ -422,375 +441,16 @@ binds the code is in `docs/handoff.md`.
 **Phase 19 (Safety Net) shipped 2026-08-28** — version history for pages, undo
 across the whole right-hand panel and a page's tabs, the tree's own history, and
 retention she can set. Detail is in `docs/shipped.md`.
-**Phase 19.5 is next**, and it is the next one in this file.
+**Phase 19.5 (Blocks in the Page) shipped 2026-09-04** — a block can sit in the
+writing, on its own or inside an infobox, and be dragged between there and the
+sidebar; the frame has its own menu, colour, width and layout, and the writing
+wraps around it; the insert menu offers what she listed; a page's headings make
+a contents list; and a block hands out a link to itself. Detail is in
+`docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
+**Phase 20 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 19.5 — Blocks in the Page
-
-**Scoped 2026-08-21, from her screenshots of the reference, and not built with
-the rest of Phase 18.** It is a feature rather than a fix and it wants its own
-change; it is written down here rather than in Queued Adjustments because it
-is not an adjustment to anything.
-
-**A sidebar block can be dragged into the middle of the page**, where it keeps
-working and gets more room — her screenshots show a gauge block in the page
-body holding eleven dials in a wide grid, which the sidebar's two-across
-layout could never show. **It is resizable there**, by dragging either side.
-
-- **The block model already fits; the document model is the work.** A block is
-  a record in an ordered list (`Block` in `constants/schema.ts`) and the panel
-  is a renderer over it. Putting one in the page means BlockNote holding it,
-  which is a custom block — `src/services/editor-blocks/` already has three
-  (Info, Quote, Secret) and `CLAUDE.md` says to extend BlockNote through its
-  documented API and never fork it.
-- **Settled 2026-08-28: the pointer, and where a block is drawn is derived
-  rather than stored.** `node.blocks` stays the one list of a page's blocks —
-  every block is a record in it wherever it appears — and the document holds a
-  custom BlockNote block carrying that block's id and nothing else of substance.
-  **Which of the three homes a block is in is then read off the documents, not
-  written down anywhere:** a block some tab's document points at is drawn there,
-  and the sidebar shows what is left. This is the decision the phase said was
-  expensive to change later, so the reasoning is below rather than in a commit.
-
-  - **It is what makes all six directions moves.** Sidebar → page → infobox →
-    sidebar changes which document holds a pointer and never touches the record,
-    so nothing is converted, no field can be dropped on the way, and a block
-    that goes somewhere and comes back is the same block rather than a copy of
-    one. Under the copy model every one of those hops rewrites the block.
-  - **The alternative worth naming and rejecting is a `home` field on the
-    block.** It is easier to write, and it is a second answer to a question the
-    documents already answer — two records that can disagree, with no way to
-    tell which is right when they do. A block claiming to be in the page while
-    no document points at it is a bug we would have to invent a repair for.
-  - **Deleting the pointer is not deleting the block.** Taking the block out of
-    the page in the editor drops the pointer, so the block reappears in the
-    sidebar; deleting it for real is the block's own Remove, which takes the
-    record out of `node.blocks`. **A pointer with no record behind it renders
-    nothing and is swept on the next read** — the two halves are edited through
-    different paths and cannot be made to commit together, so the dangling
-    pointer has to be an ordinary state rather than an error.
-  - **A hidden tab still claims its blocks**, and that is deliberate: hiding a
-    tab hides what is written in it, and a block sitting in that writing is part
-    of it. The alternative — the block popping back into the sidebar when the
-    tab is hidden — makes hiding a tab quietly rearrange the sidebar.
-  - **Two pointers at one block was the state to think about, and it is guarded
-    as of 2026-09-04.** Left alone it is two live views of one record — type in
-    one and the other changes — which is defensible and is not what a copy means
-    anywhere else in the app. A repeated pointer now clones the record and aims
-    itself at the copy, on the same pass that keeps a row of columns in shape.
-    Detail is in `docs/shipped.md`.
-
-    **The route that was expected to cause it does not, and that turned over a
-    real gap.** Copying a block in the writing and pasting it does not produce a
-    second pointer: the block does not survive the clipboard at all. BlockNote
-    writes the clipboard as HTML and our custom blocks have no rule for reading
-    themselves back, so a copied stat panel comes back as nothing and the block
-    returns to the sidebar. **Nothing is lost** — the record is untouched, which
-    is the model working — but a page copied wholesale into another page arrives
-    without its panels, silently. Fixing it means rendering an id into the DOM
-    for these blocks and giving each spec a `parse` rule; the guard above is
-    what makes that safe to do, since a pointer that survives the clipboard is
-    a duplicate the moment it lands.
-  - **The cost is that the sidebar has to read the documents.** Working out what
-    is left means walking every tab's document, children included, for pointers.
-    It is derived per page and memoised there; nothing about it is per-keystroke.
-- **Dragging a block wider shipped 2026-09-02.** Either edge of a block or an
-  infobox in the page, snapping to halves, thirds and quarters and free between
-  them; the width is on the block's own record, so it survives the trip to the
-  sidebar and back and the sidebar ignores it. Detail is in `docs/shipped.md`;
-  what binds the code is in `docs/handoff.md`. **The one thing to know before
-  changing it:** a resize is a panel edit and comes back under the panel's undo
-  rather than the editor's, which is the right side to have it on and does mean
-  Ctrl+Z in the writing will not undo one.
-- **Not to be confused with Phase 21's splittable columns.** That rearranges
-  the app's panels; this puts one block inside the document. They meet only in
-  that both make the middle of the window less fixed than it is today.
-
-### The insert menu, checked item by item against what we have
-
-**Added 2026-08-27 from the user's list of the reference's `/` commands.** It
-belongs in this phase because it is the same question from the other end: this
-phase asks how a block gets into the page, and the list below is *which* blocks
-she expects to find there. Most of it already exists and needs routing, not
-building — which is the argument for the pointer model above, not against it.
-
-**Already in the slash menu, nothing to do.** BlockNote's own defaults cover
-more of her list than it looks: all six headings, bullet / numbered / to-do
-lists, table, divider, image, code block, page break, emoji, and — this is the
-one that is easy to miss — **expand, which is BlockNote's toggle headings and
-toggle list**. Our three callouts (Info, Quote, Secret) sit beside them, which
-covers callout, quote and secret. Mention is there too, on `@` rather than `/`.
-Before building any of these, check `use-editor.ts` — it hands the menu the
-full default list minus the duplicate Quote, so the defaults are live.
-
-**Exists as a sidebar block, and is exactly what this phase is for.** Text box,
-properties, tags, alias, image, link block, and the three indexes — subpage
-index, tag index, backlinks — are all built and all in the sidebar today. The
-three indexes are one `collection` block with a switchable source
-(`collection-sources.ts`), so they are three menu entries over one block, not
-three blocks.
-
-**Meters are the same shape of problem, one size up.** One `meter` block draws
-eight ways (`MeterStyle`), so "all meters" is eight entries pointing at one
-block with its style preset — worth doing that way rather than one entry called
-Meter that lands on a bar and makes her go find the setting.
-
-**Not built anywhere yet, and each one is its own small piece of work:**
-
-- **Bulk auto-link — shipped 2026-09-04, as "Link page names".** `/link page
-  names` finds every page name written as prose on the open page and shows what
-  it would link before writing anything; the whole pass is one undo. Detail is
-  in `docs/shipped.md`, and the matching rules are the part worth reading before
-  changing it — `auto-link-service.ts` has them with a test each.
-
-  **The hints toggle is the half that is still open, and the reason given for
-  that was wrong too — corrected 2026-09-04 alongside the wrapping claim.** It
-  needs a marker drawn *over* text in the editor, which means a ProseMirror
-  decoration. This entry then said the route was closed because writing to the
-  editor's own DOM froze the app during the columns work — but those are two
-  different acts. **A decoration is the supported way to draw over text**, it is
-  reached through BlockNote's own extension API (`select-all.ts` already
-  registers an extension that way), and it is not the hand-written DOM that
-  caused the freeze. It is ordinary work, not a blocked path.
-
-  **The preview dialog answers most of the same question** — it lists what could
-  be linked, in the sentences it was found in, and closing it changes nothing —
-  so this is a nicety rather than a gap. What is genuinely missing is seeing it
-  *while writing* rather than when asking.
-- **Table of contents — shipped 2026-09-04, as Contents.** Derived from the
-  headings already in the document, so it stores nothing and cannot go stale:
-  the block is a marker and the list is read every time it draws. Detail is in
-  `docs/shipped.md`. It is called Contents in the menu rather than Table of
-  contents, which is a phrase from a printed book.
-- **Layout / columns, and it is the one item here with a licence problem.**
-  BlockNote ships this as `@blocknote/xl-multi-column`, an official package
-  rather than a fork, so it satisfies `CLAUDE.md` on that count. But **core is
-  MPL-2.0 and the `xl-` packages are `GPL-3.0 OR PROPRIETARY`** (checked against
-  npm 2026-08-27), and Anamnesis is MIT. Taking the GPL branch means the whole
-  app ships under GPL-3.0 — a licence change to the released app, which is the
-  user's decision and nobody else's; the other branch is paid.
-
-  **Columns shipped 2026-09-02**, written by hand as `pageColumns` /
-  `pageColumn` — a row block whose children are lanes, whose children are
-  ordinary blocks — with a draggable divider between lanes. Detail is in
-  `docs/shipped.md`; what binds the code is in `docs/handoff.md`, and it is
-  worth reading before touching them: BlockNote reserves the names `columnList`
-  and `column`, and writing to the editor's own DOM freezes the app.
-
-  **Both branches are refused, settled 2026-08-27, and this is not to be raised
-  again.** She will not pay for a dependency and the app stays MIT — a licence
-  fee, or relicensing the entire app, to obtain one editor block is out of all
-  proportion to what is being bought. **So `@blocknote/xl-multi-column` is not
-  to be installed**, and neither is anything else in BlockNote's `xl-` family,
-  which is all on the same terms. Columns get **a custom block written against
-  BlockNote's own block API** — the same route as the Info, Quote and Secret
-  callouts in `src/services/editor-blocks/`. Real work, no licence attached, and
-  it should be estimated as build time rather than reopened as a choice.
-
-  **The naming is settled as of 2026-09-02**, since two of the three have now
-  shipped: **Columns** is this — lanes of writing inside a page. **Width** is
-  how much of the page one block takes. Phase 21's are **panes**, and nothing
-  in the UI calls them columns.
-- **Callout colours shipped 2026-08-28.** Any callout takes a colour from
-  `COLOR_PALETTE`; the four conventional hues carry an icon; type still decides
-  behaviour, so a red Secret is still a Secret. It also fixed a `.lk` import bug
-  it happened to expose — LK's warning and error panels used to arrive as
-  Secrets, which meant every imported warning was silently marked as something
-  a publish must strip. Detail is in `docs/shipped.md`, and what binds the code
-  is in `docs/handoff.md` and `docs/constants-and-theming.md`.
-- **Block anchors — shipped 2026-09-04.** Every block in the writing offers
-  **Copy link to this block** in its own menu; pasting one back into any page's
-  writing makes a chip that goes there, scrolls to the block and marks it.
-  Detail is in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.
-
-  **The id question this entry raised answered itself.** BlockNote already mints
-  an id per block and writes it into the document, so the stable thing to point
-  at was there all along — nothing derived from the heading's words, and nothing
-  new stored. What the entry warned about is exactly what was avoided.
-
-  **It is in the block's menu rather than a `#` in the row beside it, and that
-  is a measurement rather than a preference.** Built as a third button first:
-  the gutter those controls sit in is 54px, exactly two of them wide, so the row
-  grew left over the edge of the writing column and took the click that puts the
-  caret at the start of a line — a dozen scenarios that type into a page started
-  copying links instead. The reference has a wider gutter to spend.
-
-  **One thing it is not, deliberately.** A block link is only meaningful inside
-  Anamnesis — a world is a folder on her machine, so there is no address a
-  browser could open, and pasting one elsewhere gives a line of scheme text.
-  **The sidebar's blocks do not offer it** either: this is a link to a spot in
-  the writing, and a block dragged into the page gets the item like everything
-  else there.
-- **Linked events.** Phase 25's territory — there are no events to link until
-  storylines exist. Listed here so it is not mistaken for a gap in this phase.
-
-**Infobox is a container, and the word means two different things.** Settled
-2026-08-27, and worth stating plainly because the confusion cost a round trip:
-**the thing she has been calling an infobox is a callout** — a coloured box with
-an icon and text, which the app has had since Phase 1 and which only wants the
-colours above. **The thing the reference calls an infobox is a block panel
-sitting in the page body**: a bordered frame with its own Add Block button,
-offering the same blocks the sidebar offers — Text Box, Properties, Image.
-
-**An infobox is a third place a block can live, not a replacement for the second
-one.** A first draft of this entry claimed it collapsed the phase into a single
-feature; the user corrected that the same day, and the correction is the
-important part: **blocks can be dragged out of an infobox into the page body and
-back in**, so a block standing on its own in the document has to work anyway.
-The infobox groups blocks; it does not host them exclusively. Everything the
-phase above says about a lone block in the page still stands.
-
-What it does change is the count of *editor* blocks. There are **two** to build,
-not ten and not one: one that is a single block, and one that is a container of
-them. Both draw through the same renderer, so a block kind added later appears in
-all three places without being ported to any of them. It also very likely
-explains the eleven-dial screenshot that started this phase — that was probably a
-meter block inside an infobox rather than a gauge block sitting in the page.
-
-- **Three homes and dragging between all of them is the real shape of this
-  phase**, and it is more work than either half suggested on its own: sidebar,
-  page body, and infobox, with a block movable between any two. **This is what
-  settles the pointer-versus-copy question above, and settles it toward the
-  pointer** — under the copy model, every one of those six directions is a
-  conversion that can lose fields, and a block dragged sidebar → infobox → page
-  is a block rewritten twice. Under the pointer model each is a move.
-- **The pointer-versus-copy question above survives unchanged** and is still the
-  expensive decision: whether an infobox's blocks live in `node.blocks` with the
-  document holding a reference, or in the document outright. Prefer the pointer,
-  for the reasons already given.
-- **Their Media section — YouTube, Spotify, SoundCloud, Map — is out of scope**
-  until asked for. It was never on her list; it is listed here only so that
-  seeing it in a screenshot later does not read as something we missed.
-- **Not open any more: the reference wraps text around it.** Corrected
-  2026-08-29 by a screenshot of its own menu, which carries a Layout submenu
-  offering **Full width, Align center, Wrap left, Wrap right**. What this entry
-  said before — that her screenshots showed it full-width, so wrapping was an
-  open question — was reasoning from the pictures we happened to have. The
-  decision it reached still stands, though not for the reason it gave: build the
-  full-width version first because it is the smaller piece, not because wrapping
-  is out of reach. **The claim that BlockNote cannot float a block was wrong,
-  and was never checked** — see the Wrap entry below, which has the measurement.
-
-### An image block holds its own picture — shipped 2026-09-03
-
-**Found by her the moment blocks reached the page body.** An image block was a
-window onto `node.image`, the page's one picture — so a picture dropped into a
-block in the writing became the page's portrait, and a second image block showed
-the same picture rather than a new one. That was defensible while an image block
-only ever appeared in the sidebar; it stopped being so the day one could stand
-in the writing.
-
-**Her call, given the options: each image block holds its own picture, and one
-of them is marked as the page's.** The page picture is the one the tree row, the
-hover preview and the LK export use, so it could not simply be dropped — the
-alternative offered (no page picture at all) was refused for that reason.
-
-A picture lives in exactly one place: on the node when the block is the page's,
-on the block otherwise, with the mark stored only once she moves it. Detail is
-in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.
-
-**Still open, and deliberately not built with it:** the same question for a
-*cover*. `node.banner` is one per page the way `node.image` used to be, and
-"Set as cover" on a block in the writing now sets the page's one cover from
-whatever that block is showing. Nobody has asked for more than one cover, and
-there is nowhere on a page a second one would go.
-
-### The infobox's own menu — shipped 2026-09-04
-
-**Written down 2026-08-29 off her screenshots, built 2026-09-04.** The frame has
-its own `⋯` now, beside its Add Block: a colour row, the width pair, Align
-centre, Duplicate and Remove infobox. Detail is in `docs/shipped.md`; what binds
-the code is in `docs/handoff.md`.
-
-**One of the reference's items is still missing and one is dropped**, listed
-here rather than in the shipped log because the first is work rather than an
-omission:
-
-- **Wrap left and Wrap right, and the wall this used to name is not there.**
-  Full width and Align centre are built; these two are not, and they are the
-  only items left on the Layout submenu.
-
-  **What this entry said until 2026-09-04 was that BlockNote cannot float a
-  block. That was never true and was never tested** — it came from the original
-  scoping and was repeated three times without anyone checking it. She asked
-  the obvious question (the reference is ProseMirror, so what is different
-  here?) and the answer is: nothing. `@blocknote/core` is built on `@tiptap/core`,
-  which is ProseMirror, and a `.lk` file's content is ProseMirror JSON — the
-  importer has been reading it since Phase 8.
-
-  **Measured in the running app the same day.** An infobox given `float: right`
-  and a width re-wraps the paragraphs after it: the first line's right edge came
-  in from x=860 to x=617, and two lines became four. Nothing else was needed —
-  the blocks after it do not have to be persuaded out of their own layout.
-
-  **The one real constraint found while testing it**, and it is the ordinary
-  one: ProseMirror owns those elements and wipes an inline style off them, so
-  the float has to come from a stylesheet rule keyed off the block — which is
-  how every other thing our blocks do to themselves already works.
-
-  **So this is a bounded piece of work rather than a wall.** What it needs is a
-  `wrap` on the block's own record beside `width` and `centred`, two more items
-  in the frame's menu, and the same clearing question the reference has to
-  answer: what a heading after a floated frame does. Worth checking while
-  building it: how the hover controls and the width handles sit beside a
-  floated block, and what happens to one inside a column lane.
-- **Pin to top — dropped 2026-09-04, and not to be revived without a use for
-  it.** Asked what she expected it to do, she did not know either: it was on the
-  list because it was on the reference's menu in a screenshot, not because
-  anything wanted it. That is the whole reason it was ever written down, and it
-  is not a reason to build it. If it comes back it will come back as a thing
-  somebody is trying to do — a frame that stays put while a long page scrolls,
-  most likely — and it can be designed then.
-
-**One decision worth not re-litigating: dragging an edge leaves auto-adapt.**
-The reference springs the frame back to its contents, so an auto-adapt box
-cannot be dragged at all. Ours turns auto off and keeps the width, because a
-handle that visibly does nothing is worse than an either/or you can leave by
-using it. Told from use, if she wants the reference's behaviour instead, it is
-one line.
-
-**Element shipped 2026-08-28, as New page.** The `/` menu makes a page and
-links to it without leaving the sentence, and a `[[Name]]` nothing answers to
-offers the same dialog with the name already in it. Detail is in
-`docs/shipped.md`; what still binds the code is in `docs/handoff.md`. **It is
-called New page rather than Element** — this app's word for a page is "page",
-and the reference's word was only ever how the item got written down here.
-
-**Icon and the callout's own icon shipped 2026-09-01.** A `:` mid-sentence
-offers glyphs and emoji together and inserts what she picks; `/icon` is the
-second way in, since a slash only means a command at the start of an empty
-line, which is where an icon is least useful. Clicking an icon opens the picker; a callout's icon is a
-button that opens the same one, still derived from its colour until she picks
-something, with **No icon** and **The usual icon** as two separate ways out.
-Detail is in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.
-
-**What that entry used to say about Glyphs was wrong, and the correction is
-worth keeping.** It said a searchable icon set was "the half we do not have" and
-that `constants/icons.ts` was the whole of what existed. It was not: Phase 18c
-shipped `glyph-catalogue.ts`, which is every Lucide icon by name, behind
-`IconPicker.tsx` with a search box, an emoji tab and a curated set in front of
-the catalogue — built for a meter's readings and deliberately built to know
-nothing about meters. Five things were already opening it before this phase
-touched it, a page's own icon among them. **The lesson is the general one:** the
-plan was written against `icons.ts` because that is the file the phase before
-had been reading, and a "we do not have X" written in a plan doc does not
-re-check itself. Read for the thing, not for the file you remember.
-
-- **The Recent row shipped 2026-09-04.** The last eight icons picked, across
-  the top of the picker while browsing and out of the way while searching. They
-  live in preferences beside the saved colours, for the same reason those do: a
-  page's icon, a callout's and a meter's all open the one picker, so what she
-  used last is hers rather than any one world's.
-
-**Why it is worth doing:** the sidebar is a column, and a panel of stats is a
-grid. Everything Phase 18c built is squeezed by that column — four gauges go
-two-across and a fifth pushes the page's fields off the bottom. This is the
-part of the reference she compared ours to and found ours wanting, and it is
-the one part of that comparison the sidebar itself cannot answer.
 
 ---
 

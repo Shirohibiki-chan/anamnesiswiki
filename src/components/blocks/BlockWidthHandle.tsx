@@ -20,6 +20,22 @@ import "./blocks.css";
 
 const KEYBOARD_STEP = 5;
 
+/**
+ * How wide the thing a percentage is measured against actually is.
+ *
+ * **The editor's box is not the writing column**: it carries the gutter the
+ * hover controls live in on both sides, 54px each. A wrapped frame's width is
+ * drawn in container units, which are a percentage of that same content box, so
+ * a drag measured against the outer box would set a number that draws narrower
+ * than the pointer.
+ */
+function writingWidth(column: Element, measureAgainst: "parent" | "column"): number {
+  const box = column.getBoundingClientRect().width;
+  if (measureAgainst !== "column") return box;
+  const style = getComputedStyle(column);
+  return box - parseFloat(style.paddingLeft || "0") - parseFloat(style.paddingRight || "0");
+}
+
 type BlockWidthHandlesProps = {
   /** The width drawn right now, as a percentage of the writing column. */
   width: number;
@@ -31,6 +47,15 @@ type BlockWidthHandlesProps = {
   onCommit?: (width: number) => void;
   /** Double-click, and Home — back to the whole column. */
   onReset: () => void;
+  /**
+   * What the percentage is a percentage *of*. Phase 19.5.
+   *
+   * `"parent"` is the ordinary answer and the one that makes a block inside a
+   * frame measure against the frame. `"column"` is for a wrapped infobox: it is
+   * inside a floated box that is only as wide as itself, so the parent is the
+   * frame's own width and every pixel of a drag would be worth four.
+   */
+  measureAgainst?: "parent" | "column";
 };
 
 export function BlockWidthHandles(props: BlockWidthHandlesProps) {
@@ -49,6 +74,7 @@ function BlockWidthHandle({
   onResize,
   onCommit,
   onReset,
+  measureAgainst = "parent",
 }: BlockWidthHandlesProps & { side: "left" | "right" }) {
   const handleRef = useRef<HTMLDivElement>(null);
   // The three measurements a drag needs, taken once when it starts. Measuring
@@ -70,9 +96,10 @@ function BlockWidthHandle({
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     // The frame this handle sits in, and the column that frame is measured
     // against — which is the element BlockNote gives the block, so a block
-    // inside an infobox one day still measures against what holds it.
+    // inside an infobox one day still measures against what holds it. A wrapped
+    // frame is the exception: see `measureAgainst`.
     const frame = handleRef.current?.parentElement;
-    const column = frame?.parentElement;
+    const column = measureAgainst === "column" ? frame?.closest(".bn-editor") : frame?.parentElement;
     if (!frame || !column) return;
     // Pointer capture rather than a window listener: the pointer leaves this
     // narrow strip in the first frame of any real drag, and the release has to
@@ -83,7 +110,7 @@ function BlockWidthHandle({
     start.current = {
       x: event.clientX,
       blockWidth: frame.getBoundingClientRect().width,
-      columnWidth: column.getBoundingClientRect().width,
+      columnWidth: writingWidth(column, measureAgainst),
     };
     setDragged(width);
   }

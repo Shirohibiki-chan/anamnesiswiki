@@ -44,6 +44,16 @@ export const infoboxConfig = {
     color: { default: "" },
     autoWidth: { default: false },
     centred: { default: false },
+    /**
+     * Text flowing around the frame: `"left"` or `"right"` for which side the
+     * frame sits on, empty for the ordinary thing, where the frame takes its
+     * own line. Phase 19.5, and the last item on the reference's Layout menu.
+     *
+     * **A third value rather than a second boolean beside `centred`**, because
+     * these are answers to one question — where the frame sits — and a box
+     * cannot be both centred and wrapped. Setting either clears the other.
+     */
+    wrap: { default: "" },
   },
   content: "none",
 } as const;
@@ -62,6 +72,7 @@ export const infoboxSpec = createReactBlockSpec(infoboxConfig, {
         color={block.props.color}
         autoWidth={block.props.autoWidth}
         centred={block.props.centred}
+        wrap={block.props.wrap}
       />
     </div>
   ),

@@ -3507,12 +3507,29 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   transformed ancestor can move it. Same rule as the columns work: **do not
   write into the editor's DOM.**
 
+- **`@blocknote/xl-*` is not to be installed, and this is settled.** The whole
+  family is `GPL-3.0 OR PROPRIETARY` and this app is MIT, so taking the free
+  branch relicenses everything she ships and the other branch is paid. Columns
+  were written by hand against BlockNote's own block API for that reason
+  (Phase 19.5), and anything else that family offers gets the same answer.
+
+- **Wrapping the writing round a frame is three rules, and all three are
+  load-bearing.** Phase 19.5. **The float goes on the block BlockNote gave the
+  infobox, not on the frame** — writing flows round a float only inside the same
+  formatting context, and the writing after an infobox is a run of sibling
+  blocks. That element belongs to ProseMirror and wipes inline styles, so
+  `blocks.css` reaches it with `:has()` from the class the frame draws on
+  itself. **Its width is in `cqw`, not per cent**, because a percentage inside a
+  float is a percentage of the float: 50% drew at 74px where 254 was wanted. The
+  container is declared on `.bn-editor`, so `cqw` is a share of the writing
+  column — which is what every width in the page has always meant. **And the
+  drag measures against that column** (`measureAgainst` on `BlockWidthHandle`),
+  minus the editor's own gutters, or every pixel of a drag is worth four.
+
 - **Two claims about what BlockNote cannot do were wrong, and the lesson is the
   general one.** Corrected 2026-09-04, both by measurement in the running app
   after she asked why the reference could do what we said we could not: **it can
-  float a block** (an infobox given `float: right` re-wraps the paragraphs after
-  it — the constraint is only that the rule must come from a stylesheet, since
-  ProseMirror wipes inline styles off its own elements), and **a ProseMirror
+  float a block** — built the same day, see above — and **a ProseMirror
   decoration is a supported route, not the DOM-writing that froze the app during
   the columns work**. Both had been repeated across three documents without
   anyone testing them. `@blocknote/core` is `@tiptap/core`, which is

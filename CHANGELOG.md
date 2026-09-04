@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-04 — the writing goes round an infobox
+
+### Additions
+
+- **An infobox can sit to one side with your writing flowing around it.** Its `⋯` menu has **Wrap left** and **Wrap right** beside Full width and Align centre — pick a side and the paragraphs after it fill the space beside it instead of starting below it.
+- **Picking a side gives it half the page** if it was the full width, since there would be nothing to wrap around otherwise. A frame you have already made narrower keeps the width you gave it, and you can still drag its edges afterwards.
+- **Picking the same side again puts it back** on a line of its own. Align centre and Full width also switch wrapping off, since a frame cannot be in two places.
+
+### Notes
+
+- **This was written down as impossible, and it wasn't.** The docs said the editor could not float a block, three times, and nobody had tried it. Asked why the reference manages it, the answer turned out to be that ours manages it too.
+
 ## 2026-09-04 — links to a spot on a page
 
 ### Additions
@@ -234,10 +246,3 @@
 
 - **The pinned row shows four projects again instead of three.** The width a card aims for was measured against a row that has since given space to the panel beside it and to a scrollbar, so the fourth card needed a wider window than the one you use — and it quietly dropped to three rather than saying anything. It now fits four down to a much narrower window, with room to spare.
 - **On a very wide window you may now see five across** where you saw four. Same rule, just reaching the next step sooner.
-
-## 2026-08-28 — the slash menu stays on the screen
-
-### Fixes
-
-- **The `/` menu no longer runs off the edge of the window.** Depending on where your cursor was on the page, the command list could hang off the bottom — or, when it opened upwards instead, off the top, with its first rows above the window entirely. It now fits the room it actually has, wherever the cursor is.
-- **It still won't be enormous.** On a tall window it stops at about eight rows rather than filling the screen, which is what the old rule was reaching for; the difference is that the limit can no longer make the menu *bigger* than the space it has to fit in.

@@ -448,6 +448,56 @@ export async function untickAutoLink(window: Page, pageName: string): Promise<vo
   await row.first().locator("input").uncheck();
 }
 
+/**
+ * Picks something out of the infobox's own menu by name. Phase 19.5.
+ *
+ * The menu closes on the click, the same as it does for a person.
+ */
+export async function pickInfoboxMenuItem(window: Page, label: string): Promise<void> {
+  await openInfoboxMenu(window);
+  await window.locator(`${BLOCK_MENU} button`).filter({ hasText: label }).first().click();
+  await window.waitForTimeout(400);
+}
+
+/**
+ * Where a frame sits and what the writing after it does. Phase 19.5.
+ *
+ * **One measurement, taken inside the page**, because the question is about two
+ * elements at once: the frame's box, and the shape of the first line of the
+ * paragraph after it. `lines` is how many lines that paragraph takes, which is
+ * the plainest evidence that the writing is going round something.
+ */
+export async function textAroundInfobox(
+  window: Page,
+): Promise<{ frameLeft: number; frameRight: number; columnLeft: number; columnRight: number; lineRight: number; lineLeft: number; lines: number } | null> {
+  return window.evaluate(
+    ({ frameSel, editorSel }) => {
+      const frame = document.querySelector(frameSel);
+      const block = frame?.closest(".bn-block-outer");
+      const after = block?.nextElementSibling?.querySelector(".bn-block-content");
+      const editor = document.querySelector(editorSel);
+      if (!frame || !after || !editor) return null;
+      const range = document.createRange();
+      range.selectNodeContents(after);
+      const lines = Array.from(range.getClientRects()).filter((rect) => rect.width > 0);
+      if (lines.length === 0) return null;
+      const box = frame.getBoundingClientRect();
+      const column = editor.getBoundingClientRect();
+      const style = getComputedStyle(editor);
+      return {
+        frameLeft: Math.round(box.left),
+        frameRight: Math.round(box.right),
+        columnLeft: Math.round(column.left + parseFloat(style.paddingLeft || "0")),
+        columnRight: Math.round(column.right - parseFloat(style.paddingRight || "0")),
+        lineLeft: Math.round(lines[0].left),
+        lineRight: Math.round(lines[0].right),
+        lines: lines.length,
+      };
+    },
+    { frameSel: INFOBOX, editorSel: EDITOR },
+  );
+}
+
 /** The rows of the page's contents block, top to bottom. Phase 19.5. */
 export async function contentsRows(window: Page): Promise<string[]> {
   return (await window.locator(`${PAGE_CONTENTS} button`).allTextContents()).map(normalize);
