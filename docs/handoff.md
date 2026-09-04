@@ -4122,6 +4122,15 @@ runs, and the package installs as a pointer to a program that was never fetched.
 `release.yml` and `appimage-test.yml` — were deleted on 2026-08-28 with the
 Tauri release path. A new workflow that pins 10 reintroduces the defect.
 
+**Anything on screen for a moment has to be polled for, and measured inside the
+page.** Phase 19.5's mark on a block lasts two seconds; the scenario read it
+once, which passed here in four seconds and failed on CI, where the same suite
+takes seventeen minutes. Two rules came out of it: poll until it appears rather
+than sampling after a fixed wait, and do the measuring and the reading in one
+`evaluate` — a rectangle fetched in one call and asked about in the next points
+at the paragraph above by the time it is asked, because the page is still
+scrolling.
+
 **`viewportSize()` is null for the app suite's window** — Playwright only knows
 it for a window it sized itself — so a helper asking whether something is on
 screen reads `window.innerHeight` out of the page instead. The version that used

@@ -500,22 +500,36 @@ export async function followPageLink(window: Page, text: string): Promise<void> 
  * what is underneath it, which is also the only question worth asking: a mark
  * sitting over the wrong paragraph would pass any test of its own contents.
  *
- * **Read straight after following the link.** It fades on its own after a
- * couple of seconds, which is the behaviour rather than a race.
+ * **Read straight after following the link**, with nothing waited for in
+ * between: it takes itself off after a couple of seconds.
  */
 export async function arrivedBlockText(window: Page): Promise<string | null> {
-  const marked = window.locator(BLOCK_ARRIVAL).first();
-  if ((await marked.count()) === 0) return null;
-  const box = await marked.boundingBox();
-  if (!box || box.width === 0) return null;
-  const under = await window.evaluate(
-    ({ x, y }) => {
-      const el = document.elementFromPoint(x, y);
-      return el?.closest("[data-id]")?.textContent ?? null;
-    },
-    { x: box.x + box.width / 2, y: box.y + box.height / 2 },
-  );
-  return under === null ? null : normalize(under);
+  // **Measured and read in one go, inside the page.** The mark is a box drawn
+  // over the block and it moves while the page is still scrolling, so a
+  // rectangle fetched in one call and asked about in the next can point at the
+  // paragraph above by the time it is asked. Both happen in the same frame
+  // here.
+  const readUnderMark = () =>
+    window.evaluate((mark: string) => {
+      const box = document.querySelector(mark);
+      if (!box) return null;
+      const rect = box.getBoundingClientRect();
+      // No size yet: it is drawn a frame before it is measured and placed.
+      if (rect.width === 0) return null;
+      const under = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return under?.closest("[data-id]")?.textContent ?? null;
+    }, BLOCK_ARRIVAL);
+
+  // **Polled, because the mark takes itself off after a couple of seconds** —
+  // a slow machine can spend most of that window getting here, which is how a
+  // single sample failed on CI rather than on anything the app did.
+  const deadline = Date.now() + 1500;
+  for (;;) {
+    const found = await readUnderMark();
+    if (found !== null) return normalize(found);
+    if (Date.now() > deadline) return null;
+    await window.waitForTimeout(50);
+  }
 }
 
 /**
@@ -527,13 +541,20 @@ export async function arrivedBlockText(window: Page): Promise<string | null> {
 export async function blockInView(window: Page, text: string): Promise<boolean> {
   const block = window.locator(`${EDITOR} ${EDITOR_BLOCK}`).filter({ hasText: text }).first();
   if ((await block.count()) === 0) return false;
-  const box = await block.boundingBox();
   // **Asked of the page rather than of Playwright.** `viewportSize()` is null
   // for a window the harness did not size itself, which is every Electron
   // window here — and a helper reading it would answer "no" to everything.
   const height = await window.evaluate(() => window.innerHeight);
-  if (!box || !height) return false;
-  return box.y >= 0 && box.y + box.height <= height;
+  if (!height) return false;
+  // Given a moment, because the scroll that brings a block into view is
+  // animated and a slow machine takes longer over it than a fast one.
+  const deadline = Date.now() + 1500;
+  for (;;) {
+    const box = await block.boundingBox();
+    if (box && box.y >= 0 && box.y + box.height <= height) return true;
+    if (Date.now() > deadline) return false;
+    await window.waitForTimeout(50);
+  }
 }
 
 /** The icons in the picker's Recent row, newest first. Phase 19.5. */

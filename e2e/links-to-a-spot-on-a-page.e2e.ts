@@ -52,9 +52,12 @@ describe("linking to a spot on a page", () => {
     expect(await blockInView(app.window, TARGET)).toBe(false);
 
     await followPageLink(app.window, "further down");
-    await app.window.waitForTimeout(600);
-
+    // The mark is read first and with nothing waited for in front of it: it is
+    // on screen for two seconds and then gone by design.
     expect(await arrivedBlockText(app.window)).toContain(TARGET);
+
+    // The scroll is animated, so it is the one to give a moment.
+    await app.window.waitForTimeout(700);
     expect(await blockInView(app.window, TARGET)).toBe(true);
   });
 
