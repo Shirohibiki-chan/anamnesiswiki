@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-04 — dragging a block behaves itself
+
+### Fixes
+
+- **A block being dragged doesn't warp any more.** Dragging one block past another stretched or squashed whatever you were holding — a picture blown up to twice its size, headings shrunk to nothing, a gauge spilling out through the side of its own box. It was the drag library resizing the block to the shape of the gap it was over; it now just moves.
+- **A block inside an infobox can be picked up at all.** The frame's own resize handles run down its inner edges, right over the grip of every block in it, so taking hold of a block usually grabbed the frame and resized it instead. The grip wins where the two overlap.
+
 ## 2026-09-04 — a contents list, and the icons you used last
 
 ### Additions
@@ -224,16 +231,3 @@
 - **Settings → Writing, a new section**, for how the editor behaves while you're writing in it rather than what it looks like.
 - **The formatting bar can stay at the top of the page.** The strip with bold, italic and the rest normally appears over your text when you select some and goes away again; now you can have it always there instead, above what you're writing. The buttons do exactly the same thing either way — this is only about where the strip lives.
 - **It appears-on-selection by default**, the way it always has, so nothing changes unless you go and change it.
-
-## 2026-08-28 — a tidy-up under the floor
-
-### Changes
-
-- **Internal tidy-up, nothing visible in the app:** the code that decides what happens when you move, delete or duplicate a page has been lifted out of the big file it was buried in and given tests of its own — 43 of them. It had none before. That code works out things like which pages go with a folder you delete, where a copy lands in the list, and what happens to the home button or a shortcut when the page it pointed at is gone. It all worked; it just couldn't be checked without launching the whole app, so nothing was checking it very often.
-- **Moving and deleting a page are now tested against the real app too**, which they never were — the only test that mentioned deleting was about deleting a whole project. The new one files a page into a folder, deletes one, and pins one and deletes it, closing and reopening the window each time. That last part is the point: a move or a delete that only happened on screen looks exactly like one that worked, right up until you next open Anamnesis.
-- **One thing you could just about trip over is fixed.** Dropping a page into a folder that stopped existing while you were mid-drag is now refused outright rather than filed somewhere unfindable. You'd have to delete the folder in the second between picking a page up and letting go, so this is closing a gap rather than fixing something you've hit.
-- **The picture on a project's tile is drawn by one piece of code now** instead of five near-identical copies — the big pinned card, the tile, the little square in the side list and both thumbnails in the Pinned Projects window. They all agreed, but nothing was making them, so changing how a cover looks meant finding four files and hoping that was all of them.
-
-### Adjustments
-
-- **A rule in Claude's instructions file has been removed**, because it was never yours and never followed. It said no part of the on-screen code was allowed to call a piece of shared logic directly — it arrived in the very first commit, in the same batch as the network rule you got rid of in August, and it had no reason written next to it. 22 of the app's 103 screen components broke it, almost all for harmless things like working out how long ago something was. The rule above it, the one about how the app's memory is reached, is real and stays.

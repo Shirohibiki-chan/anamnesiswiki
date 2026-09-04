@@ -2203,6 +2203,16 @@
   transition: opacity 120ms ease;
 }
 
+/* **A block's grip wins where the two overlap.** The frame's resize handles run
+   the full height of its inner edges and the grip of every block inside sits
+   5px from that same edge, so the handle was swallowing the grips: a block in
+   an infobox could not be picked up at all, and trying to resized the frame
+   instead. The grip is a 16px square that only appears when the pointer is over
+   its block; the rest of the edge is still the handle's. */
+.infobox .block-grip {
+  z-index: 2;
+}
+
 .block-width-left {
   left: 0;
 }
