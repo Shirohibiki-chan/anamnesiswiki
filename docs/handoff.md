@@ -3443,6 +3443,20 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   numbers and booleans and not arrays; `parseBlockIds` / `serialiseBlockIds` are
   the only things that know the separator.
 
+- **A block being dragged is translated, never transformed.** `BlockShell` uses
+  `CSS.Translate.toString`, not `CSS.Transform.toString`: dnd-kit's full
+  transform carries a *scale* that stretches the dragged item to the shape of
+  the slot it is over, and the blocks in this panel are wildly different heights
+  — a picture is three times a text box. With the scale in, dragging one past
+  another blew the picture up, squashed the headings and pushed a gauge out
+  through the side of its box. Reported from use 2026-09-04.
+
+- **An infobox's resize handles run over the grips of the blocks inside it**,
+  so the grip is given the higher `z-index` and wins the 16px square it
+  occupies. Without that a block in a frame cannot be picked up at all — the
+  press lands on the frame's edge and resizes it instead. Anything else added to
+  a frame's inner edge inherits the same problem.
+
 - **Linking page names in bulk never writes without the dialog.** Phase 19.5.
   `auto-link-service.ts` finds and rewrites; `requestAutoLink` sits between the
   two, and the whole rewrite goes through one `editor.transact` so one undo

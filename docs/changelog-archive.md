@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-28 — the formatting bar can stay put
+
+### Additions
+
+- **Settings → Writing, a new section**, for how the editor behaves while you're writing in it rather than what it looks like.
+- **The formatting bar can stay at the top of the page.** The strip with bold, italic and the rest normally appears over your text when you select some and goes away again; now you can have it always there instead, above what you're writing. The buttons do exactly the same thing either way — this is only about where the strip lives.
+- **It appears-on-selection by default**, the way it always has, so nothing changes unless you go and change it.
+
 ## 2026-08-28 — a tidy-up under the floor
 
 ### Changes

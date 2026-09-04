@@ -145,7 +145,15 @@ export function BlockShell({
       ref={setNodeRef}
       className={`block-shell${isDragging ? " block-shell-dragging" : ""}`}
       style={{
-        transform: CSS.Transform.toString(transform),
+        // **Translate, never `CSS.Transform`.** dnd-kit's full transform carries
+        // a scale as well as a move: it stretches the block being dragged to
+        // the shape of the slot it is over, and the blocks in this panel are
+        // wildly different heights — a picture is three times a text box. So
+        // dragging a short block past a tall one blew the picture up to twice
+        // its size, squashed the headings, and pushed a gauge out through the
+        // side of its own box. Reported from use 2026-09-04, and it is the
+        // documented remedy: a block being dragged should move, not resize.
+        transform: CSS.Translate.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
         ...(hex ? { ["--block-accent" as string]: hex } : {}),

@@ -373,6 +373,51 @@ export async function infoboxGaps(window: Page, at = 0): Promise<{ left: number;
 }
 
 /**
+ * Picks a block up by its grip and holds it `by` pixels lower, without letting
+ * go — so a scenario can look at what a block being dragged actually looks
+ * like. `drop` finishes the gesture.
+ *
+ * Rooted where the caller says, because a block in an infobox and a block in
+ * the panel are dragged by the same-looking handle in two different lists.
+ */
+export async function pickUpBlock(window: Page, where: "panel" | "infobox", at: number, by: number): Promise<void> {
+  const root = where === "panel" ? BLOCK_PANEL : INFOBOX;
+  const shell = window.locator(`${root} ${BLOCK_SHELL}`).nth(at);
+  await shell.hover();
+  await window.waitForTimeout(200);
+  const grip = await shell.locator(".block-grip").boundingBox();
+  if (!grip) throw new Error("no grip to take hold of");
+  await window.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await window.mouse.down();
+  await window.mouse.move(grip.x + grip.width / 2, grip.y + by, { steps: 12 });
+  await window.waitForTimeout(400);
+}
+
+export async function dropBlock(window: Page): Promise<void> {
+  await window.mouse.up();
+  await window.waitForTimeout(600);
+}
+
+/**
+ * The block currently being dragged: how tall it is drawn, and whether anything
+ * is scaling it.
+ *
+ * **The scale is the thing worth asking about.** dnd-kit's full transform
+ * stretches the dragged item to the shape of the slot it is over, which in a
+ * panel of blocks of wildly different heights blows a picture up to twice its
+ * size — see BlockShell.
+ */
+export async function draggedBlockShape(window: Page): Promise<{ height: number; scaled: boolean } | null> {
+  return window.evaluate(() => {
+    const dragged = [...document.querySelectorAll<HTMLElement>(".block-shell")].find(
+      (shell) => shell.style.opacity === "0.4",
+    );
+    if (!dragged) return null;
+    return { height: Math.round(dragged.getBoundingClientRect().height), scaled: dragged.style.transform.includes("scale") };
+  });
+}
+
+/**
  * The pages the "Link page names" dialog is offering, with how many times each
  * is written on the page. Phase 19.5.
  */
