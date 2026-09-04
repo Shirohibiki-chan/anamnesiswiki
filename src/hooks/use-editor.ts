@@ -12,6 +12,7 @@ import { isGlyph } from "../constants/glyphs";
 import { ICON_INLINE_TYPE } from "../constants/schema";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { blockIdsInPage, withoutDanglingBlockRefs } from "../services/block-service";
+import { blocksToRelink, findLinkMatches, linkableNames, withLinkedMatches } from "../services/auto-link-service";
 import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
@@ -24,6 +25,7 @@ import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-item
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
 import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
 import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
+import { getAutoLinkSlashMenuItems } from "../services/editor-blocks/auto-link-slash-menu";
 import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
 import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
@@ -59,7 +61,7 @@ export function useEditor(
   // wikilink resolution both need to see every node in the project, and this
   // component is already re-rendering as the user types regardless.
   const { nodes, rootPath, uploadAsset, addBlock, duplicateBlocks } = useProject();
-  const { requestNewPageLink } = useDialogs();
+  const { requestNewPageLink, requestAutoLink, showNotice } = useDialogs();
   /**
    * Where the icon picker is open, or null.
    *
@@ -348,6 +350,43 @@ export function useEditor(
     editor.focus();
   }
 
+  /**
+   * Offers to turn the page names written on this page into links.
+   *
+   * **Three steps, and the middle one is the feature** (Phase 19.5): find the
+   * names, show her what would change, and only then write. This is the one
+   * command in the app that rewrites prose she is not looking at, so it never
+   * writes anything the dialog has not listed.
+   *
+   * **One transaction, so one Ctrl+Z takes all of it back.** A page where
+   * twelve links have to be undone twelve times is a page nobody would risk
+   * running this on.
+   */
+  async function linkPageNames() {
+    const names = linkableNames(nodes, nodeId);
+    const matches = findLinkMatches(editor.document, names);
+    if (matches.length === 0) {
+      showNotice("Nothing on this page matches another page's name.");
+      return;
+    }
+
+    const chosen = await requestAutoLink(matches);
+    // Focus comes back either way, cancel included — the dialog is a portal and
+    // it takes the keyboard; closing it without putting the caret back leaves
+    // her mid-sentence with nowhere for the next letter to go.
+    editor.focus();
+    if (!chosen || chosen.length === 0) return;
+
+    editor.transact(() => {
+      for (const blockId of blocksToRelink(chosen)) {
+        const block = editor.getBlock(blockId);
+        if (!block || !Array.isArray(block.content)) continue;
+        const content = withLinkedMatches(block.content as unknown[], chosen, blockId);
+        if (content !== block.content) editor.updateBlock(blockId, { content: content as never });
+      }
+    });
+  }
+
   async function getSlashMenuItems(query: string): Promise<DefaultReactSuggestionItem[]> {
     return filterSuggestionItems(
       [
@@ -362,6 +401,9 @@ export function useEditor(
         // Side-by-side lanes. Nothing to make first — a row is made of blocks
         // the editor already knows how to draw. See column-slash-menu.tsx.
         ...getColumnSlashMenuItems(editor),
+        // The one entry that inserts nothing: it acts on prose already written.
+        // See auto-link-slash-menu.tsx.
+        ...getAutoLinkSlashMenuItems(() => void linkPageNames()),
       ],
       query,
     );

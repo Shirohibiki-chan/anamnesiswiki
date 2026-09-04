@@ -7,6 +7,21 @@
 - **A block being dragged doesn't warp any more.** Dragging one block past another stretched or squashed whatever you were holding — a picture blown up to twice its size, headings shrunk to nothing, a gauge spilling out through the side of its own box. It was the drag library resizing the block to the shape of the gap it was over; it now just moves.
 - **A block inside an infobox can be picked up at all.** The frame's own resize handles run down its inner edges, right over the grip of every block in it, so taking hold of a block usually grabbed the frame and resized it instead. The grip wins where the two overlap.
 
+## 2026-09-04 — linking the names you've already written
+
+### Additions
+
+- **`/link page names` turns the page names in your writing into links.** It reads the page you're on, finds every place another page's name is written as plain text, and shows you the list before it touches anything.
+- **You pick what gets linked.** One row per page, with the sentences it found the name in, all ticked to start with — untick anything that's a coincidence rather than a reference. Cancel and nothing at all is written.
+- **One undo takes the whole lot back**, however many links it made.
+- **It won't link the wrong thing.** Whole words only, so a page called *Art* doesn't claim the middle of *particular*; a name two pages share is skipped rather than guessed at; the longer name wins where two overlap; nicknames count; and a page never links to itself.
+- **Your wording is kept.** If the sentence says the page's name exactly, the link follows the page if you rename it later. If it says a nickname, or says it in lower case, the link keeps what you wrote instead of quietly retitling your sentence.
+
+### Notes
+
+- **The other half of this — a marker on text that *could* be linked, while you're writing — isn't built.** It turned out to be the harder half rather than the easy one; the list in the dialog covers most of what it was for, since it shows you what could be linked and closing it changes nothing.
+
+
 ## 2026-09-04 — a contents list, and the icons you used last
 
 ### Additions
@@ -223,11 +238,3 @@
 ### Fixes
 
 - **A block deleted from its `⋯` menu no longer leaves a gap in the page.** It draws nothing straight away, and the leftover reference is tidied out of the page the next time you open it.
-
-## 2026-08-28 — the formatting bar can stay put
-
-### Additions
-
-- **Settings → Writing, a new section**, for how the editor behaves while you're writing in it rather than what it looks like.
-- **The formatting bar can stay at the top of the page.** The strip with bold, italic and the rest normally appears over your text when you select some and goes away again; now you can have it always there instead, above what you're writing. The buttons do exactly the same thing either way — this is only about where the strip lives.
-- **It appears-on-selection by default**, the way it always has, so nothing changes unless you go and change it.

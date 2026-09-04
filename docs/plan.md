@@ -541,16 +541,21 @@ Meter that lands on a bar and makes her go find the setting.
 
 **Not built anywhere yet, and each one is its own small piece of work:**
 
-- **Bulk auto-link, and the hints toggle.** The two she named first, and the
-  only two on the list that are not blocks at all — they are commands that act
-  on prose already typed. `link-index.ts` already knows every page's name and
-  already distinguishes a prose mention from a property one, so the matching
-  half is largely there; the risky half is that a bulk pass **rewrites the
-  document**, which nothing else in the app does. It needs to be undoable in one
-  step and it needs a preview of what it is about to link before it does it —
-  a page where forty names silently turn blue is worse than no feature. The
-  hints toggle is the cheap half and can ship first: a marker on text that
-  *could* be linked, no rewrite involved.
+- **Bulk auto-link — shipped 2026-09-04, as "Link page names".** `/link page
+  names` finds every page name written as prose on the open page and shows what
+  it would link before writing anything; the whole pass is one undo. Detail is
+  in `docs/shipped.md`, and the matching rules are the part worth reading before
+  changing it — `auto-link-service.ts` has them with a test each.
+
+  **The hints toggle is the half that is still open, and it is not the cheap
+  half after all.** The plan said it could ship first because it changes
+  nothing; what it actually needs is a marker drawn *over* text in the editor,
+  which means a ProseMirror decoration plugin — and writing to the editor's own
+  DOM is what froze the app during the columns work, so the ordinary DOM route
+  is closed. **The preview dialog answers most of the same question**: it lists
+  what could be linked, in the sentences it was found in, and closing it changes
+  nothing. What is genuinely missing is seeing it *while writing* rather than
+  when asking.
 - **Table of contents — shipped 2026-09-04, as Contents.** Derived from the
   headings already in the document, so it stores nothing and cannot go stale:
   the block is a marker and the list is read every time it draws. Detail is in

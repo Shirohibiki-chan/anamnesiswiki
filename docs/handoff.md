@@ -33,8 +33,8 @@ and §Sidebar blocks below. Dragging a block or an infobox wider landed
 2026-09-02, columns the same day, a picture block holding its own picture on
 2026-09-03, and on 2026-09-04 the infobox's own menu, clone-on-paste, the
 contents list and the icon picker's Recent row. **Still open in the
-phase:** block anchors, bulk auto-link and its hints toggle, and wrapping text
-around an infobox. Pin to top was dropped — see `docs/plan.md`.
+phase:** block anchors, the link-hints toggle, and wrapping text around an
+infobox. Pin to top was dropped — see `docs/plan.md`.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3456,6 +3456,14 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   occupies. Without that a block in a frame cannot be picked up at all — the
   press lands on the frame's edge and resizes it instead. Anything else added to
   a frame's inner edge inherits the same problem.
+
+- **Linking page names in bulk never writes without the dialog.** Phase 19.5.
+  `auto-link-service.ts` finds and rewrites; `requestAutoLink` sits between the
+  two, and the whole rewrite goes through one `editor.transact` so one undo
+  takes it back. This is the only thing in the app that edits prose she is not
+  looking at — anything added to it (a keyboard shortcut, a run-on-save, a
+  whole-project pass) inherits both conditions, and the second one is the
+  easier to lose.
 
 - **The contents block stores nothing, and it must stay that way.** Phase 19.5.
   `pageContents` has an empty prop schema; `headingsOf` reads the document each

@@ -11,6 +11,11 @@
 // one: it's raised by a row's right-click menu, and react-arborist renders
 // rows itself, so there are no props to thread a callback down through.
 import { create } from "zustand";
+// A type only, and the one import this file has beyond zustand: the dialog is
+// the middle of the auto-link command and hands the matches straight back to
+// the code that applies them, so inventing a second shape for them here would
+// be a copy to keep in step.
+import type { LinkMatch as AutoLinkMatch } from "../services/auto-link-service";
 
 type PendingConfirm = { message: string; resolve: (ok: boolean) => void };
 
@@ -85,6 +90,17 @@ export type NewPageLinkPrefill = { name: string; parentId: string | null };
 export type NewPageLink = { nodeId: string; name: string; linkText: string };
 type PendingNewPageLink = NewPageLinkPrefill & { resolve: (link: NewPageLink | null) => void };
 
+/**
+ * The names found written as prose on the open page, waiting to be looked at.
+ *
+ * **The whole point of this dialog is that nothing happens without it** (Phase
+ * 19.5): linking in bulk rewrites writing she has already done, which nothing
+ * else in the app does, so the matches are shown first and she chooses which
+ * of them become links. Resolving with an empty list is a real answer — it
+ * means she looked and wanted none of them.
+ */
+type PendingAutoLink = { matches: AutoLinkMatch[]; resolve: (chosen: AutoLinkMatch[] | null) => void };
+
 type DialogStoreState = {
   pendingConfirm: PendingConfirm | null;
   requestConfirm: (message: string) => Promise<boolean>;
@@ -124,6 +140,9 @@ type DialogStoreState = {
   pendingNewPageLink: PendingNewPageLink | null;
   requestNewPageLink: (prefill: NewPageLinkPrefill) => Promise<NewPageLink | null>;
   resolveNewPageLink: (link: NewPageLink | null) => void;
+  pendingAutoLink: PendingAutoLink | null;
+  requestAutoLink: (matches: AutoLinkMatch[]) => Promise<AutoLinkMatch[] | null>;
+  resolveAutoLink: (chosen: AutoLinkMatch[] | null) => void;
 };
 
 export const useDialogStore = create<DialogStoreState>((set, get) => ({
@@ -133,6 +152,7 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
   pendingTemplateScope: null,
   pendingAssetPick: null,
   pendingNewPageLink: null,
+  pendingAutoLink: null,
   historyNodeId: null,
   isProjectHistoryOpen: false,
 
@@ -176,6 +196,19 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
     if (!pending) return;
     set({ pendingNewPageLink: null });
     pending.resolve(link);
+  },
+
+  requestAutoLink(matches) {
+    return new Promise<AutoLinkMatch[] | null>((resolve) => {
+      set({ pendingAutoLink: { matches, resolve } });
+    });
+  },
+
+  resolveAutoLink(chosen) {
+    const pending = get().pendingAutoLink;
+    if (!pending) return;
+    set({ pendingAutoLink: null });
+    pending.resolve(chosen);
   },
 
   requestTemplateScope(pageName) {

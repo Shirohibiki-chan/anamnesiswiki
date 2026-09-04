@@ -4728,6 +4728,61 @@ first block on it.
 how a row behaves nested inside another one.
 
 
+## Phase 19.5 — Link page names ✅ Shipped 2026-09-04
+
+The first of the two commands she named when the insert-menu list was written,
+and the only thing in the app that rewrites prose already typed. `/link page
+names` reads the open page, finds every page name written as plain text, shows
+what it would link, and writes only what is left ticked.
+
+**The dialog is the feature, not the packaging.** The plan's condition for
+building this at all was that a bulk pass must not surprise her — a page where
+forty names quietly turn blue is worse than no feature — so the finding and the
+writing are separate functions with the preview between them. Matches are
+grouped by page rather than listed one per line, because the decision is almost
+always "should mentions of Quietgate be links" rather than a judgement on one
+sentence; each row carries the sentences the name was found in, so what she is
+judging is visible without leaving the dialog. Cancelling writes nothing.
+
+**One transaction, so one Ctrl+Z takes all of it back.** A page needing twelve
+undos is a page nobody would run this on twice.
+
+**The matching rules are the part that makes it safe**, and each has a test:
+
+- **Whole words only.** Without it a page called Art claims the middle of
+  "particular" — the sort of thing found weeks later in a paragraph nobody was
+  looking at.
+- **Ambiguous names are skipped**, exactly as `[[ ]]` skips them: if two pages
+  are called Sable, nothing here can tell which one a sentence meant.
+- **The longest name wins**, so a sentence naming Valera Jiang links to her
+  rather than to Valera.
+- **Aliases count**, since an alias is a name everywhere else in the app.
+- **A page never links to itself**, or a character page would become a page of
+  links to the page you are on.
+- **Names under three characters are left out** — two letters is noise the
+  whole-word rule cannot save.
+- **Text inside an existing link is never matched**, which falls out of the
+  model rather than being a rule: a mention is a different kind of inline item,
+  so a second pass has nothing to find.
+- **The wording is pinned only when the prose says something other than the
+  page's own name.** Linking "Quietgate" leaves the wording open so the link
+  follows a rename; linking "quietgate" or an alias keeps what she wrote,
+  because rewriting her sentence to match a page title is an edit, not a link.
+
+**Verified:** `e2e/links-the-names-on-a-page.e2e.ts` — the dialog offering both
+names, Cancel leaving the page untouched, one name unticked and only the other
+linked, one undo taking the pass back, and a second run finding nothing because
+the words are inside links now. Twenty unit tests over the matching and the
+rewrite. Looked at it in the real app on a throwaway, since deleted.
+
+**The hints toggle did not ship with it, and the plan's estimate of it was
+wrong.** It was written down as the cheap half because it changes nothing; what
+it needs is a marker drawn over text in the editor, which means a ProseMirror
+decoration plugin — and writing to the editor's own DOM is what froze the app
+during the columns work. The dialog answers most of the same question, since it
+lists what could be linked and closing it changes nothing.
+
+
 ## Phase 19.5 — Contents, and the picker's Recent row ✅ Shipped 2026-09-04
 
 Two of the small things left on the phase's list, built together because
