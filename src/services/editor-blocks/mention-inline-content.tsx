@@ -35,6 +35,17 @@ export const mentionConfig = {
      * something in it.
      */
     text: { default: "" },
+    /**
+     * One block on that page, when the link points at a spot rather than at
+     * the page as a whole. Phase 19.5, written by pasting what a block's own
+     * menu copied.
+     *
+     * **BlockNote's own block id, and it is stored rather than derived.** An
+     * id made out of the heading it sits under would be readable and would
+     * break the first time the heading was reworded — see anchor-service.ts.
+     * Empty is the ordinary mention, which goes to the top of the page.
+     */
+    blockId: { default: "" },
   },
   content: "none",
 } as const;

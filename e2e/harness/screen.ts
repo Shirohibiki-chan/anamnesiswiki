@@ -40,6 +40,14 @@ const MENU_HEADING = ".tree-context-menu-heading";
 const BLOCK_TITLE = ".block-title";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
+// Phase 19.5: the `#` on a chip that goes to one block rather than to the top
+// of a page, the controls that appear beside a block on hover, and the mark on
+// a block a link has just been followed to.
+const EDITOR_MENTION_SPOT = ".editor-mention-spot";
+const EDITOR_BLOCK = ".bn-block-outer";
+const BLOCK_SIDE_MENU = ".bn-side-menu";
+const EDITOR_BLOCK_MENU = ".bn-drag-handle-menu";
+const BLOCK_ARRIVAL = ".block-anchor-arrival";
 const EDITOR_INLINE_ICON = ".editor-inline-icon";
 const ICON_PICKER = ".icon-picker";
 const SUGGESTION_MENU = "#bn-suggestion-menu";
@@ -443,6 +451,141 @@ export async function untickAutoLink(window: Page, pageName: string): Promise<vo
 /** The rows of the page's contents block, top to bottom. Phase 19.5. */
 export async function contentsRows(window: Page): Promise<string[]> {
   return (await window.locator(`${PAGE_CONTENTS} button`).allTextContents()).map(normalize);
+}
+
+/**
+ * Opens a block's own menu — the one on the handle beside it — and reads what
+ * it offers, top to bottom. Phase 19.5.
+ *
+ * **Read rather than clicked.** The item this was written for copies a link,
+ * and copying in the app suite would overwrite whatever the person running the
+ * tests had on their clipboard; docs/handoff.md forbids the same thing for
+ * Ctrl+C. What a scenario can check is that it is offered.
+ */
+export async function editorBlockMenuItems(window: Page, at: number): Promise<string[]> {
+  const block = window.locator(`${EDITOR} ${EDITOR_BLOCK}`).nth(at);
+  await block.waitFor({ state: "visible", timeout: WAIT_MS });
+  await block.hover();
+  await window.locator(`${BLOCK_SIDE_MENU} button`).last().click();
+  const menu = window.locator(EDITOR_BLOCK_MENU).first();
+  await menu.waitFor({ state: "visible", timeout: WAIT_MS });
+  const items = (await menu.locator("[role='menuitem'], button").allTextContents()).map(normalize);
+  await window.keyboard.press("Escape");
+  return items.filter((item) => item.length > 0);
+}
+
+/** How many of the page's links go to a spot on a page rather than to a page. */
+export async function spotLinkCount(window: Page): Promise<number> {
+  return window.locator(`${EDITOR} ${EDITOR_MENTION_SPOT}`).count();
+}
+
+/**
+ * Clicks a link in the writing by the words it reads as. Phase 19.5.
+ *
+ * The one helper here that deliberately clicks inside the editor — see
+ * `typeInEditor`, which avoids it for exactly this reason.
+ */
+export async function followPageLink(window: Page, text: string): Promise<void> {
+  const chip = window.locator(EDITOR_MENTION).filter({ hasText: text }).first();
+  await chip.waitFor({ state: "visible", timeout: WAIT_MS });
+  await chip.click();
+}
+
+/**
+ * The words of the block a link has just landed on, or null if nothing on
+ * screen is marked. Phase 19.5.
+ *
+ * **Read through the mark rather than off it.** The mark is a box drawn over
+ * the block and holds no words of its own — see BlockAnchor.tsx — so this asks
+ * what is underneath it, which is also the only question worth asking: a mark
+ * sitting over the wrong paragraph would pass any test of its own contents.
+ *
+ * **Read straight after following the link**, with nothing waited for in
+ * between: it takes itself off after a couple of seconds.
+ */
+export async function arrivedBlockText(window: Page): Promise<string | null> {
+  // **The block is found by matching rectangles, not by asking what is under a
+  // point.** `elementFromPoint` answers null for anything outside the window,
+  // so a mark on a block below the fold reads as no mark at all — which is how
+  // this passed here and failed on CI, where the window is a different shape.
+  //
+  // **Measured and matched in one call, inside the page.** The mark moves while
+  // the page is still scrolling, so a rectangle fetched in one call and asked
+  // about in the next can name the paragraph above it.
+  const readMarkedBlock = () =>
+    window.evaluate((mark: string) => {
+      const box = document.querySelector(mark);
+      if (!box) return null;
+      const over = box.getBoundingClientRect();
+      // No size yet: it is drawn a frame before it is measured and placed.
+      if (over.width === 0) return null;
+      let best: Element | null = null;
+      let closest = Infinity;
+      for (const block of document.querySelectorAll(".bn-editor [data-id]")) {
+        const rect = block.getBoundingClientRect();
+        const gap = Math.abs(rect.top - over.top) + Math.abs(rect.left - over.left) + Math.abs(rect.height - over.height);
+        if (gap < closest) {
+          closest = gap;
+          best = block;
+        }
+      }
+      // The mark is drawn *as* a block's rectangle, so the one it belongs to is
+      // an exact match give or take a rounding error. Anything else means it is
+      // sitting over nothing, which is worth reporting as nothing.
+      return closest <= 4 ? (best?.textContent ?? null) : null;
+    }, BLOCK_ARRIVAL);
+
+  // **Polled, because the mark takes itself off after a couple of seconds** —
+  // a slow machine can spend most of that window getting here, which is how a
+  // single sample failed on CI rather than on anything the app did.
+  const deadline = Date.now() + 1500;
+  for (;;) {
+    const found = await readMarkedBlock();
+    if (found !== null) return normalize(found);
+    if (Date.now() > deadline) return null;
+    await window.waitForTimeout(50);
+  }
+}
+
+/**
+ * Whether a block is marked at all, whatever it is sitting over. Phase 19.5.
+ *
+ * Its own helper so a scenario can tell "nothing was marked" apart from "the
+ * wrong block was marked" — the two look identical through `arrivedBlockText`,
+ * and they are different bugs.
+ */
+export async function arrivalMarkShown(window: Page): Promise<boolean> {
+  const deadline = Date.now() + 1500;
+  for (;;) {
+    if ((await window.locator(BLOCK_ARRIVAL).count()) > 0) return true;
+    if (Date.now() > deadline) return false;
+    await window.waitForTimeout(50);
+  }
+}
+
+/**
+ * Whether a block with these words is inside the window as it stands.
+ *
+ * What "scrolled to it" means from outside: the page moved far enough that the
+ * thing being linked to is somewhere a person could read it.
+ */
+export async function blockInView(window: Page, text: string): Promise<boolean> {
+  const block = window.locator(`${EDITOR} ${EDITOR_BLOCK}`).filter({ hasText: text }).first();
+  if ((await block.count()) === 0) return false;
+  // **Asked of the page rather than of Playwright.** `viewportSize()` is null
+  // for a window the harness did not size itself, which is every Electron
+  // window here — and a helper reading it would answer "no" to everything.
+  const height = await window.evaluate(() => window.innerHeight);
+  if (!height) return false;
+  // Given a moment, because the scroll that brings a block into view is
+  // animated and a slow machine takes longer over it than a fast one.
+  const deadline = Date.now() + 1500;
+  for (;;) {
+    const box = await block.boundingBox();
+    if (box && box.y >= 0 && box.y + box.height <= height) return true;
+    if (Date.now() > deadline) return false;
+    await window.waitForTimeout(50);
+  }
 }
 
 /** The icons in the picker's Recent row, newest first. Phase 19.5. */

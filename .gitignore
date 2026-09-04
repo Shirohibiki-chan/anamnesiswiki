@@ -37,3 +37,10 @@ release/
 # Written by the release workflow so the notes reach electron-builder as a
 # file rather than as a command-line argument Windows would refuse.
 release-notes.md
+
+# Emitted by `tsc -b`, which is not how this repo typechecks (`pnpm build` runs
+# a plain `tsc`). Four of these landed in a commit once; the build itself never
+# wants them.
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

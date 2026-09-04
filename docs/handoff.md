@@ -3489,6 +3489,48 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   — including hers. Nothing in `e2e/` may drive Ctrl+C or Ctrl+V. It is also why
   clone-on-paste is covered by unit tests on both halves instead.
 
+- **A block link points at BlockNote's block id, and nothing else may be used
+  for it.** Phase 19.5. Every block in a document carries an id BlockNote minted
+  and the document stores, so it survives editing the words, moving the block,
+  and reopening the app — checked in the running app before the feature was
+  built on it. **An id derived from the heading's text is the trap here**: it is
+  readable, it is what a web app would use, and it dies silently the first time
+  a heading is reworded, taking every link she pasted with it. Which *tab* a
+  block is in is worked out at follow time (`tabHoldingBlock`) rather than
+  stored in the link, so moving a block between tabs cannot break one.
+
+- **The mark on a block — a link landing on it, or its link being copied — must
+  not be a class on the block.** Phase 19.5, measured: the element is replaced within 50ms because the
+  click changes the selection and ProseMirror redraws the block. It is a box
+  drawn over the block, positioned against the window, re-measured each frame
+  while the smooth scroll runs, and portalled out to `document.body` so no
+  transformed ancestor can move it. Same rule as the columns work: **do not
+  write into the editor's DOM.**
+
+- **The row of hover controls beside a block holds two, and a third does not
+  fit.** Phase 19.5, measured: the gutter between the editor's left edge and the
+  writing is 54px, BlockNote's `+` and handle fill it, and a third button pushes
+  the row out past the editor's edge — over the strip a click lands in to put
+  the caret at the start of a line. That is why "Copy link to this block" is in
+  the handle's menu rather than a `#` beside it. Anything else that wants to be
+  in that row has the same 54px to spend.
+
+- **The side menu is ours to compose now.** Phase 19.5: `sideMenu={false}` on
+  `BlockNoteView` and a `SideMenuController` rendering `PageSideMenu`. Two
+  consequences. Like the formatting toolbar it is handed over as a *component
+  type*, so it must stay at the module level and what it needs from the page
+  arrives through `BlockAnchorContext`. And **passing children to
+  `DragHandleButton` replaces the menu's default items**, so Delete, Colors and
+  the two table-header items are listed there by hand — anything BlockNote adds
+  to that menu in a future version has to be added with them.
+
+- **A paste the app claims is caught in the capture phase and must fall through
+  otherwise.** Phase 19.5. `onPasteCapture` on the view runs before BlockNote's
+  own handling, which is what stops a block link being inserted twice; anything
+  that is not one of our links — including a link naming a page this world does
+  not have — has to be left for the editor, or ordinary pasting quietly changes
+  shape.
+
 - **The infobox's own controls live at the bottom of the frame, and that is a
   fix rather than a preference.** Phase 19.5. Its `⋯` was built in the top right
   corner, where the reference has it and where every menu belongs — and that is
@@ -4079,6 +4121,29 @@ runs, and the package installs as a pointer to a program that was never fetched.
 **Every workflow pins 11 as of 2026-08-26**, and the two that did not move —
 `release.yml` and `appimage-test.yml` — were deleted on 2026-08-28 with the
 Tauri release path. A new workflow that pins 10 reintroduces the defect.
+
+**Anything on screen for a moment has to be polled for, and measured inside the
+page.** Phase 19.5's mark on a block lasts two seconds; the scenario read it
+once, which passed here in four seconds and failed on CI, where the same suite
+takes seventeen minutes. Two rules came out of it: poll until it appears rather
+than sampling after a fixed wait, and do the measuring and the reading in one
+`evaluate` — a rectangle fetched in one call and asked about in the next points
+at the paragraph above by the time it is asked, because the page is still
+scrolling.
+
+**`viewportSize()` is null for the app suite's window** — Playwright only knows
+it for a window it sized itself — so a helper asking whether something is on
+screen reads `window.innerHeight` out of the page instead. The version that used
+Playwright's answer said "no" to everything, which is a passing feature that
+looks broken.
+
+**The generated world's fixed-content pages must stay at the end of
+`buildGraph`.** Phase 19.5 added one — a page whose link points at a block
+further down itself, which needs the same id written in two places and so cannot
+be generated. Everything before that point draws from the seeded stream, and the
+scenarios open pages by the names it produces, so a page inserted among the
+others renames half the world. It is added last and carries fixed ids, which
+costs one draw and leaves every other file identical (diffed either side).
 
 Scenarios are written in the vocabulary of `e2e/harness/screen.ts` and add no
 selectors of their own — the app has almost no test hooks in its markup, so

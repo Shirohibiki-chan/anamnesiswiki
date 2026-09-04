@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-04 — links to a spot on a page
+
+### Additions
+
+- **Every block in your writing can hand you a link to itself.** Hover a paragraph, a heading, a picture, a stat panel — anything sitting in the page — open its menu on the handle beside it, and the first item is **Copy link to this block**. The block lights up for a moment to say that's the one your link points at.
+- **Paste it into your writing and it becomes a link.** It reads as the page's name with a small `#` on it, so you can tell at a glance that it goes to a spot on that page rather than to the top of it.
+- **Following one takes you there and shows you where "there" is.** The page opens on whichever tab the block is in, scrolls to it, and marks it for a couple of seconds so you can see which of the paragraphs you came for. The mark fades on its own; there is nothing to dismiss.
+- **The link keeps working while you write.** It points at the block itself rather than at the words in it, so rewording a heading, moving the block down the page, or moving it into another tab all leave every link to it intact. If you delete the block, the link still opens the page.
+
+### Notes
+
+- **A block link only means something inside Anamnesis.** Paste one into a chat window and you get a line of text starting `anamnesis://` — your world is a folder on your own computer, so there is no web address it could be instead.
+- **It's in the block's menu rather than a third `#` button beside it.** The strip those buttons sit in is only as wide as two of them; a third covered the left edge of the writing, where a click is meant to put the cursor at the start of a line.
+- **The blocks in the sidebar panel don't offer it.** This is a link to a spot in the writing; drag a block into the page and it gets the item like everything else there.
+
 ## 2026-09-04 — dragging a block behaves itself
 
 ### Fixes
@@ -226,15 +241,3 @@
 
 - **The `/` menu no longer runs off the edge of the window.** Depending on where your cursor was on the page, the command list could hang off the bottom — or, when it opened upwards instead, off the top, with its first rows above the window entirely. It now fits the room it actually has, wherever the cursor is.
 - **It still won't be enormous.** On a tall window it stops at about eight rows rather than filling the screen, which is what the old rule was reaching for; the difference is that the limit can no longer make the menu *bigger* than the space it has to fit in.
-
-## 2026-08-28 — blocks can live in the page
-
-### Additions
-
-- **A block can now sit in the middle of a page instead of in the sidebar.** Type `/` and you'll find a new **Page blocks** group — text block, picture, tags, alias, the three indexes and backlinks — plus all eight meters. Pick one and it's placed where you're writing, at the full width of the page rather than squeezed into a 340px column. This is what the sidebar could never do: a row of gauges has room to spread out.
-- **It's the same block, not a copy.** A block you put in the page leaves the sidebar, because there is only ever one of it. Everything works exactly as it did — the `⋯` menu, the title, the colour, the fields — since the page and the sidebar draw blocks through the same code.
-- **Take it out and it goes back to the sidebar.** Hover the block, click the handle beside it, and Delete. Nothing is lost: the block returns to the panel it came from. Deleting it for good is still **Remove** in the block's own `⋯` menu.
-
-### Fixes
-
-- **A block deleted from its `⋯` menu no longer leaves a gap in the page.** It draws nothing straight away, and the leftover reference is tidied out of the page the next time you open it.

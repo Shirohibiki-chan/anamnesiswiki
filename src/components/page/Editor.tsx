@@ -8,22 +8,32 @@
 // hooks/use-editor.ts, per CLAUDE.md's rule that components never import
 // services directly.
 import {
+  AddBlockButton,
+  BlockColorsItem,
+  DragHandleButton,
+  RemoveBlockItem,
   FilePanelController,
   FormattingToolbar,
   FormattingToolbarController,
+  SideMenu,
+  SideMenuController,
   SuggestionMenuController,
+  TableColumnHeaderItem,
+  TableRowHeaderItem,
   getFormattingToolbarItems,
   useBlockNoteEditor,
   useEditorSelectionChange,
+  type SideMenuProps,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { PageSlashMenu } from "./PageSlashMenu";
 import "@blocknote/shadcn/style.css";
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { selectionHoldsNoText } from "../../services/column-service";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
 import {
+  BlockAnchorContext,
   BlockRefRenderContext,
   ICON_MIN_QUERY,
   ICON_TRIGGER,
@@ -34,6 +44,7 @@ import {
 import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
 import { EditorIconPicker } from "../blocks/EditorIconPicker";
+import { BlockAnchorArrival, BlockAnchorMenuItem } from "./BlockAnchor";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
@@ -134,6 +145,37 @@ function PageFormattingToolbar() {
  */
 const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox };
 
+/**
+ * The controls beside a block on hover, and what its own menu holds.
+ *
+ * **The row itself is BlockNote's two, unchanged, and that is deliberate** —
+ * the gutter is 54px and fits exactly two. See BlockAnchorMenuItem, which was
+ * built as a third one first and had to move in here.
+ *
+ * **Passing children to the handle means listing the menu's own items**, since
+ * BlockNote draws its defaults only when it is given none. The four below are
+ * those defaults, in its order, with its words; anything it adds to that menu
+ * in a future version will have to be added here too.
+ *
+ * **Module-level for the reason everything else here is** — this is handed to
+ * `SideMenuController` as a component type, and a type that changes identity on
+ * every keystroke has its subtree thrown away and rebuilt.
+ */
+function PageSideMenu(props: SideMenuProps) {
+  return (
+    <SideMenu {...props}>
+      <AddBlockButton />
+      <DragHandleButton {...props}>
+        <BlockAnchorMenuItem />
+        <RemoveBlockItem>Delete</RemoveBlockItem>
+        <BlockColorsItem>Colors</BlockColorsItem>
+        <TableRowHeaderItem>Header row</TableRowHeaderItem>
+        <TableColumnHeaderItem>Header column</TableColumnHeaderItem>
+      </DragHandleButton>
+    </SideMenu>
+  );
+}
+
 type EditorProps = {
   nodeId: string;
   /**
@@ -152,6 +194,9 @@ export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps)
   const {
     editor,
     onKeyDownCapture,
+    onPasteCapture,
+    revealBlockId,
+    anchorArrived,
     handleChange,
     focusEnd,
     getSlashMenuItems,
@@ -174,6 +219,12 @@ export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps)
   // portal below re-renders once the node exists — a ref alone is null on the
   // first pass and nothing would ever mount into it.
   const [fixedBarSlot, setFixedBarSlot] = useState<HTMLDivElement | null>(null);
+  // The block whose link was copied a moment ago, which is marked to say so —
+  // see BlockAnchor.tsx. Held here rather than in the item, which is inside a
+  // menu that shuts on the click.
+  const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
+  const forgetCopied = useCallback(() => setCopiedBlockId(null), []);
+  const anchorSlot = useMemo(() => ({ nodeId, onCopied: setCopiedBlockId }), [nodeId]);
 
   // Dragged out of the sidebar's Assets tab. The picture is already in the
   // project, so this points at the file rather than uploading a second copy of
@@ -213,6 +264,9 @@ export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps)
     // constant.
     <BlockRefRenderContext.Provider value={PAGE_BLOCK_RENDERERS}>
     <IconPickContext.Provider value={EditorIconPicker}>
+    {/* What a block's "Copy link to this block" needs: the page it writes into
+        the link, and somewhere to say the copy happened. */}
+    <BlockAnchorContext.Provider value={anchorSlot}>
     <div
       ref={imageLightboxRef}
       className="editor-shell-wrapper"
@@ -240,10 +294,17 @@ export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps)
         emojiPicker={false}
         className="wiki-body editor-shell"
         onKeyDownCapture={onKeyDownCapture}
+        // A block link off the clipboard becomes a chip rather than a line of
+        // scheme text. On the way down, before BlockNote's own handling — see
+        // use-editor.ts.
+        onPasteCapture={onPasteCapture}
         // Off, so PageFormattingToolbar above is the one on screen.
         formattingToolbar={false}
         // Off for the same reason: PageFilePanel below adds the library tab.
         filePanel={false}
+        // Off so PageSideMenu above is what draws that row — the same two
+        // buttons, with "Copy link to this block" added to the handle's menu.
+        sideMenu={false}
         onChange={handleChange}
       >
         {/* **Kept on screen, or brought up by a selection — her call, 2026-08-28.**
@@ -264,6 +325,17 @@ export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps)
           ? fixedBarSlot && createPortal(<PageFormattingToolbar />, fixedBarSlot)
           : <FormattingToolbarController formattingToolbar={PageFormattingToolbar} />}
         <FilePanelController filePanel={PageFilePanel} />
+        <SideMenuController sideMenu={PageSideMenu} />
+        {/* Marks the block a link has just been followed to. Null the rest of
+            the time, which is all but a second or two of the app's life. */}
+        <BlockAnchorArrival
+          blockId={revealBlockId ?? copiedBlockId}
+          // Only a link arriving moves the page. A copy marks the block she is
+          // already looking at, and scrolling it to the middle of the window
+          // under her pointer would read as the page jumping for no reason.
+          scroll={revealBlockId !== null}
+          onArrived={revealBlockId ? anchorArrived : forgetCopied}
+        />
         {/* All three take the same floating options — see use-editor.ts. Without
             them a menu opened near the bottom of the window is positioned while
             it's still an empty loading strip and then grows off the screen. */}
@@ -317,6 +389,7 @@ export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps)
         />
       )}
     </div>
+    </BlockAnchorContext.Provider>
     </IconPickContext.Provider>
     </BlockRefRenderContext.Provider>
   );

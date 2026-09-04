@@ -4728,6 +4728,73 @@ first block on it.
 how a row behaves nested inside another one.
 
 
+## Phase 19.5 — Links to a spot on a page ✅ Shipped 2026-09-04
+
+A link to one block rather than to the top of a page, off her screenshots of the
+reference. Two features wearing one control, the way the plan said: something
+stable to point at, and a link that goes there.
+
+**The hard half was already built, by BlockNote.** Every block in a document
+carries an id it minted and the document stores, so the stable thing to point at
+needed nothing invented — no id derived from a heading's words, which is what
+the plan warned against and what dies the first time a heading is reworded.
+Checked in the running app rather than assumed: a heading kept the same
+`data-id` across an edit, a save and a reopen.
+
+**A link is a line of text, and that is what makes it paste-able.**
+`anamnesis://page/<page>#<block>`, written by `anchor-service.ts` and read back
+by it. The menu item copies one; a paste of one anywhere in the writing becomes
+an ordinary mention chip carrying the block's id as well as the page's. Anything
+else on the clipboard is left alone, including a link naming a page this world
+does not have — a chip pointing at nothing is worse than the text she pasted.
+
+**Which tab the block is in is worked out when the link is followed**, never
+written into it. A block moved from one tab to another keeps every link to it,
+and a link to a block that has been deleted opens the page rather than refusing.
+
+**Three things were measured in the running app and all three changed the
+design:**
+
+- **The `#` could not stay in the row beside the block.** It was built there
+  first, where the reference has it. That gutter is 54px wide and BlockNote's
+  two buttons already fill it, so a third pushed the row out over the left edge
+  of the writing — and took the click that puts the caret at the start of a
+  line. Twelve scenario files that type into a page started copying links
+  instead, which is exactly what it would do to her. It moved into the block's
+  own menu, where it costs one more click and takes nothing away.
+- **The mark on the block you land on cannot be a class on the block.** The
+  first cut added one; the element was gone inside 50ms, because clicking the
+  chip changes the selection and ProseMirror redraws the block. It is a box
+  drawn over the block instead, positioned against the window and re-measured
+  each frame while the page scrolls — nothing is written into the editor's DOM,
+  which is the rule the columns work arrived at the hard way.
+- **The menu shuts on the click, so the item cannot say it worked.** The block
+  is marked for a moment instead — the same mark a link arriving leaves, minus
+  the scroll, which reads as *this is what your link points at*. A copy that
+  fails says so through the notice dialog, since nothing is on the clipboard.
+
+**One dead end worth writing down**, because it cost an hour and it will look
+tempting again: when the row was still three wide, the fix attempted first was
+to move the harness's click a few pixels right, into the writing. It does not
+work — a click in the first block leaves Ctrl+End somewhere the suggestion menu
+will not open from, and the failure appears in a scenario about the `/` menu
+with nothing to connect it to. The gutter click is load-bearing; leave it alone.
+
+**Verified:** `e2e/links-to-a-spot-on-a-page.e2e.ts` — the item offered in a
+block's menu, the chip saying it goes to a spot, following it landing on the
+right block with the page scrolled to it, and the mark gone again two seconds
+later. Unit tests over the link format, what is refused as a link, and finding
+the tab a block is in. The copy and the paste themselves were driven by hand in
+the real app, with the machine's clipboard read first and put back afterwards:
+the app suite may not touch it (see handoff).
+
+**The world the scenarios run against carries the link**, because of that same
+rule: a hard case page in `make-test-world.mjs` with a chip at the top and the
+block it points at twelve paragraphs below. It is written after all the random
+content and takes fixed ids, so adding it shifted nothing else in the generated
+world — checked by diffing a world made either side of the change.
+
+
 ## Phase 19.5 — Link page names ✅ Shipped 2026-09-04
 
 The first of the two commands she named when the insert-menu list was written,

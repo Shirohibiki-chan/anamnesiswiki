@@ -597,14 +597,29 @@ Meter that lands on a bar and makes her go find the setting.
   Secrets, which meant every imported warning was silently marked as something
   a publish must strip. Detail is in `docs/shipped.md`, and what binds the code
   is in `docs/handoff.md` and `docs/constants-and-theming.md`.
-- **Block anchors — the `#` that appears on hover and links to that block.**
-  Asked for 2026-08-27 off the same screenshots. Not on the original command
-  list because it is not something you insert; it is a handle on a block that is
-  already there. Worth knowing it is two features wearing one control: a
-  *stable id per block* to point at, and *a link that scrolls to it*. The second
-  is easy and the first is the one to think about — an id derived from the
-  heading text moves when the text is edited, and any link she pasted elsewhere
-  dies quietly. Prefer an id that is stored, not derived.
+- **Block anchors — shipped 2026-09-04.** Every block in the writing offers
+  **Copy link to this block** in its own menu; pasting one back into any page's
+  writing makes a chip that goes there, scrolls to the block and marks it.
+  Detail is in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.
+
+  **The id question this entry raised answered itself.** BlockNote already mints
+  an id per block and writes it into the document, so the stable thing to point
+  at was there all along — nothing derived from the heading's words, and nothing
+  new stored. What the entry warned about is exactly what was avoided.
+
+  **It is in the block's menu rather than a `#` in the row beside it, and that
+  is a measurement rather than a preference.** Built as a third button first:
+  the gutter those controls sit in is 54px, exactly two of them wide, so the row
+  grew left over the edge of the writing column and took the click that puts the
+  caret at the start of a line — a dozen scenarios that type into a page started
+  copying links instead. The reference has a wider gutter to spend.
+
+  **One thing it is not, deliberately.** A block link is only meaningful inside
+  Anamnesis — a world is a folder on her machine, so there is no address a
+  browser could open, and pasting one elsewhere gives a line of scheme text.
+  **The sidebar's blocks do not offer it** either: this is a link to a spot in
+  the writing, and a block dragged into the page gets the item like everything
+  else there.
 - **Linked events.** Phase 25's territory — there are no events to link until
   storylines exist. Listed here so it is not mistaken for a gap in this phase.
 

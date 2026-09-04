@@ -3,7 +3,14 @@
 // page/Editor.tsx used to reach into six of those modules itself; everything
 // that isn't a BlockNote React component now goes through here, leaving that
 // component to do nothing but render.
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent as ReactClipboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { filterSuggestionItems } from "@blocknote/core";
 import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
@@ -11,8 +18,10 @@ import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { isGlyph } from "../constants/glyphs";
 import { ICON_INLINE_TYPE } from "../constants/schema";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
+import { parseAnchorLink } from "../services/anchor-service";
 import { blockIdsInPage, withoutDanglingBlockRefs } from "../services/block-service";
 import { blocksToRelink, findLinkMatches, linkableNames, withLinkedMatches } from "../services/auto-link-service";
+import { BlockAnchorContext } from "../services/editor-blocks/block-anchor-context";
 import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
@@ -50,6 +59,9 @@ export { BlockRefRenderContext };
 // The other slot the component layer fills: the icon picker a callout and an
 // inline icon open. Same door, same reason — see EditorIconPicker.tsx.
 export { IconPickContext };
+// The third: what a block's "Copy link to this block" needs from the page it is
+// sitting in. See BlockAnchor.tsx.
+export { BlockAnchorContext };
 
 export function useEditor(
   nodeId: string,
@@ -60,7 +72,7 @@ export function useEditor(
   // The full-store subscription is deliberate here: the mention menu and
   // wikilink resolution both need to see every node in the project, and this
   // component is already re-rendering as the user types regardless.
-  const { nodes, rootPath, uploadAsset, addBlock, duplicateBlocks } = useProject();
+  const { nodes, rootPath, uploadAsset, addBlock, duplicateBlocks, pendingFocus, clearPendingAnchor } = useProject();
   const { requestNewPageLink, requestAutoLink, showNotice } = useDialogs();
   /**
    * Where the icon picker is open, or null.
@@ -222,7 +234,7 @@ export function useEditor(
         // to if the page is ever deleted; `text` is only written when she asked
         // for different wording, because an always-written one would stop every
         // chip in the world following renames. See mention-inline-content.
-        props: { nodeId: link.nodeId, label: link.name, text: link.linkText },
+        props: { nodeId: link.nodeId, label: link.name, text: link.linkText, blockId: "" },
       },
       " ",
     ]);
@@ -260,6 +272,45 @@ export function useEditor(
   // type it again.
   useSuggestionResume(editor, WIKILINK_TRIGGER, UNCLOSED_WIKILINK);
   useSuggestionResume(editor, "/", UNFINISHED_SLASH);
+
+  /**
+   * A block link pasted back into the writing becomes a chip. Phase 19.5.
+   *
+   * **Caught before the editor sees it, which is what the capture phase is
+   * for.** BlockNote listens on the writing itself, so a handler on the way
+   * down runs first and stopping the event there means it never arrives —
+   * nothing is inserted twice and nothing has to be un-inserted.
+   *
+   * **Anything that is not one of our links is left alone.** That includes a
+   * link to a page in a world that isn't open: it names an id nothing here
+   * answers to, and a chip pointing at nothing is worse than the text she
+   * pasted.
+   */
+  function onPasteCapture(event: ReactClipboardEvent<HTMLDivElement>) {
+    const anchor = parseAnchorLink(event.clipboardData.getData("text/plain"));
+    const target = anchor && nodes[anchor.nodeId];
+    if (!anchor || !target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    editor.insertInlineContent([
+      { type: "mention", props: { nodeId: anchor.nodeId, label: target.name, text: "", blockId: anchor.blockId } },
+      " ",
+    ]);
+  }
+
+  /**
+   * The block a link has just brought us to, or null.
+   *
+   * Both halves are checked because the editor on screen is one tab of one
+   * page: a leftover from an earlier jump must not mark a block on whatever is
+   * open now. Cleared once it has been shown — see the store's `pendingFocus`,
+   * which is a one-shot for the same reason `pendingRenameId` is.
+   */
+  const revealBlockId =
+    pendingFocus && pendingFocus.nodeId === nodeId && pendingFocus.tabId === tabId
+      ? (pendingFocus.blockId ?? null)
+      : null;
+  const anchorArrived = useCallback(() => clearPendingAnchor(), [clearPendingAnchor]);
 
   // One capture handler for the editor, because a React element takes one
   // `onKeyDownCapture`. Suggestion-list movement goes first and reports
@@ -423,6 +474,9 @@ export function useEditor(
   return {
     editor,
     onKeyDownCapture,
+    onPasteCapture,
+    revealBlockId,
+    anchorArrived,
     handleChange,
     focusEnd,
     getSlashMenuItems,

@@ -651,6 +651,43 @@
   height: 16px !important;
 }
 
+/* A block a link has just landed on, or one whose link has just been copied.
+   **A mark that fades rather than one that has to be dismissed** — it answers
+   "which of these did I come here for" on a page of paragraphs that look alike,
+   and two seconds later there is nothing to clear up.
+
+   **A box drawn over the block rather than a style on it**, positioned against
+   the window and followed frame by frame while the page scrolls — the block's
+   own element is ProseMirror's and is replaced the moment the selection
+   changes. See BlockAnchor.tsx, where that was measured. */
+.block-anchor-arrival {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-faint);
+  box-shadow: 0 0 0 4px var(--color-accent-faint);
+  animation: block-anchor-arrival 2s ease-out forwards;
+}
+
+@keyframes block-anchor-arrival {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The mark still has to be visible without the fade — it is the whole point of
+   the jump. It is taken off with the class, two seconds later, either way. */
+@media (prefers-reduced-motion: reduce) {
+  .block-anchor-arrival {
+    animation: none;
+  }
+}
+
 /* BlockNote's own editable region shrink-wraps to its content and won't
    stretch to fill this wrapper no matter what's asked of .bn-editor here —
    so the "click anywhere in this box to focus" behavior is instead handled
@@ -1121,6 +1158,12 @@
 
 .editor-mention:hover {
   background: var(--color-accent-hover);
+}
+
+/* The `#` on a chip that goes to a spot on a page rather than to the top of
+   one. Quieter than the name it follows: it is a qualifier, not the link. */
+.editor-mention-spot {
+  opacity: 0.6;
 }
 
 .editor-mention-broken {

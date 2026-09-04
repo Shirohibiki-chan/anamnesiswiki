@@ -44,6 +44,8 @@ export function useProjectActions() {
       setNodeIcon: state.setNodeIcon,
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
+      openBlockLink: state.openBlockLink,
+      clearPendingAnchor: state.clearPendingAnchor,
       setProjectHome: state.setProjectHome,
       togglePinned: state.togglePinned,
       setFocus: state.setFocus,
