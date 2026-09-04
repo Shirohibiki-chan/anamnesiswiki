@@ -30,6 +30,7 @@ const PAGE_BLOCK = ".page-block";
 const INFOBOX = ".infobox";
 const BLOCK_FRAME = ".block-frame";
 const PAGE_INFOBOX = ".page-infobox";
+const PAGE_CONTENTS = ".page-contents";
 const COLUMN_ROW = ".node-pageColumns";
 const COLUMN_DIVIDER = ".column-divider";
 const BLOCK_ADD_MENU = ".block-add-menu";
@@ -368,6 +369,17 @@ export async function infoboxGaps(window: Page, at = 0): Promise<{ left: number;
     left: (frame.x - row.x) / row.width,
     right: (row.x + row.width - (frame.x + frame.width)) / row.width,
   };
+}
+
+/** The rows of the page's contents block, top to bottom. Phase 19.5. */
+export async function contentsRows(window: Page): Promise<string[]> {
+  return (await window.locator(`${PAGE_CONTENTS} button`).allTextContents()).map(normalize);
+}
+
+/** The icons in the picker's Recent row, newest first. Phase 19.5. */
+export async function recentIcons(window: Page): Promise<string[]> {
+  const buttons = await window.locator(".icon-picker-recent button").all();
+  return Promise.all(buttons.map(async (button) => (await button.getAttribute("aria-label")) ?? ""));
 }
 
 /** What one infobox's text block is holding. */

@@ -8,6 +8,8 @@ import {
   MAX_SAVED_COLORS,
   parsePreferences,
   withSavedColor,
+  withRecentIcon,
+  MAX_RECENT_ICONS,
 } from "./preferences-service";
 
 describe("parsePreferences", () => {
@@ -147,5 +149,49 @@ describe("how long earlier versions are kept", () => {
     for (const minutes of HISTORY_INTERVAL_MINUTES) expect(minutes).toBeGreaterThan(0);
     for (const days of HISTORY_KEEP_DAYS) expect(days).toBeGreaterThan(0);
     for (const count of HISTORY_PER_PAGE) expect(count).toBeGreaterThan(0);
+  });
+});
+
+// Phase 19.5: the picker's Recent row. Same rule the saved colours follow, and
+// deliberately not the same cleaning — a glyph name is a key into a catalogue
+// and an emoji is a character, and neither is ours to change the case of.
+describe("withRecentIcon", () => {
+  it("puts the icon just picked at the front", () => {
+    expect(withRecentIcon(["sword"], "castle")).toEqual(["castle", "sword"]);
+  });
+
+  it("moves one already there rather than repeating it", () => {
+    expect(withRecentIcon(["sword", "castle"], "castle")).toEqual(["castle", "sword"]);
+  });
+
+  it("keeps emoji and glyph names side by side, exactly as given", () => {
+    expect(withRecentIcon(["sword"], "🗡️")).toEqual(["🗡️", "sword"]);
+    expect(withRecentIcon([], "CastleGate")).toEqual(["CastleGate"]);
+  });
+
+  // The store leans on this to tell a real pick from picking the same icon
+  // again — which is most picks, and each one would be a settings write.
+  it("hands back the list it was given when nothing would change", () => {
+    const recent = ["sword", "castle"];
+    expect(withRecentIcon(recent, "sword")).toBe(recent);
+    expect(withRecentIcon(recent, "  ")).toBe(recent);
+  });
+
+  it("keeps the row to one row", () => {
+    const full = Array.from({ length: MAX_RECENT_ICONS }, (_, at) => `icon-${at}`);
+    expect(withRecentIcon(full, "new")).toHaveLength(MAX_RECENT_ICONS);
+    expect(withRecentIcon(full, "new")[0]).toBe("new");
+  });
+});
+
+describe("parsePreferences: recent icons", () => {
+  it("keeps a stored row", () => {
+    expect(parsePreferences({ recentIcons: ["sword", "🗡️"] }).recentIcons).toEqual(["sword", "🗡️"]);
+  });
+
+  it("drops entries that are not icons, and caps the row", () => {
+    const parsed = parsePreferences({ recentIcons: ["sword", 7, "", null, "castle"] });
+    expect(parsed.recentIcons).toEqual(["sword", "castle"]);
+    expect(parsePreferences({ recentIcons: Array(20).fill("x") }).recentIcons).toHaveLength(MAX_RECENT_ICONS);
   });
 });

@@ -1298,6 +1298,16 @@
   overflow-y: auto;
 }
 
+/* The last few she picked, above the scrolling half rather than inside it —
+   the point of the row is that it is always the first thing under the search
+   box, and one that scrolled away with the catalogue would not be. Phase 19.5.
+   Its rule separates it from the browsing below without adding a heading
+   weight the groups in the list do not have. */
+.icon-picker-recent {
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
 .icon-picker-heading {
   position: sticky;
   top: 0;
@@ -1906,6 +1916,68 @@
    all, not a blank one. */
 .page-block:empty {
   display: none;
+}
+
+/* ── The contents list ────────────────────────────────────────────────────
+   Phase 19.5. The page's own headings, listed in the page.
+
+   **Quieter than a block, because it is a signpost rather than content.** It
+   sits in the writing and is not part of it: a left rule and indented rows
+   rather than a bordered panel, so it reads as an aside instead of competing
+   with the headings it is pointing at. */
+.page-contents {
+  margin: var(--space-lg) 0;
+  padding: var(--space-sm) 0 var(--space-sm) var(--space-lg);
+  border-left: 2px solid var(--color-border);
+}
+
+.page-contents-title {
+  display: block;
+  margin-bottom: var(--space-sm);
+  color: var(--color-text-muted);
+}
+
+.page-contents-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.page-contents-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A row is a button so it can be reached by keyboard, and looks like a line of
+   the list rather than a control — the whole list would otherwise be a stack of
+   things asking to be pressed. */
+.page-contents-item button {
+  display: block;
+  width: 100%;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-contents-item button:hover {
+  color: var(--color-accent-light);
+  text-decoration: underline;
+}
+
+/* Indented by heading level, so the shape of the page is visible in the shape
+   of the list. Three levels, which is all BlockNote's headings have. */
+.page-contents-level-2 button {
+  padding-left: var(--space-lg);
+}
+
+.page-contents-level-3 button {
+  padding-left: calc(var(--space-lg) * 2);
 }
 
 /* ── The infobox ──────────────────────────────────────────────────────────

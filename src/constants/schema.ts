@@ -117,6 +117,19 @@ export const COLUMN_LIST_TYPE = "pageColumns";
 export const COLUMN_TYPE = "pageColumn";
 
 /**
+ * A contents list built from the page's own headings (Phase 19.5).
+ *
+ * **It stores nothing.** The block is a marker saying "a contents list goes
+ * here"; the list itself is read out of the document every time it draws, so it
+ * cannot disagree with the headings it is listing. The one item on the phase's
+ * insert-menu list with no data model question attached.
+ *
+ * **Prefixed for the reason `pageColumns` is** — a custom block must never wear
+ * the name of one of BlockNote's own, or that block's plugins attach to ours.
+ */
+export const PAGE_CONTENTS_TYPE = "pageContents";
+
+/**
  * How an infobox writes down which blocks it holds.
  *
  * **A joined string because BlockNote props are flat.** Its prop schema takes

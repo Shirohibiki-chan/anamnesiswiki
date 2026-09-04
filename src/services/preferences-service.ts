@@ -113,6 +113,15 @@ export const PROJECT_SORT_LABELS: Record<ProjectSort, string> = {
 export const MAX_SAVED_COLORS = 8;
 
 /**
+ * How many icons the picker keeps across its top. Phase 19.5.
+ *
+ * Eight, like the colours, and for the same reason: one row. A "recent" list
+ * long enough to need looking through is not a shortcut, it is a second
+ * catalogue above the catalogue.
+ */
+export const MAX_RECENT_ICONS = 8;
+
+/**
  * How often a page's previous contents are copied aside, in minutes.
  *
  * The default is `limits.ts`'s five, and the reasoning for it is there. What
@@ -190,6 +199,17 @@ export type Preferences = {
    */
   savedColors: string[];
   /**
+   * The icons she has picked lately, newest first (Phase 19.5).
+   *
+   * **In preferences for the same reason `savedColors` is**: a page's icon, a
+   * callout's, a meter's reading and an icon in a sentence all open the one
+   * picker, and the last few she chose are hers rather than any one world's.
+   * Glyph names and emoji characters together, stored exactly as the thing that
+   * uses them stores them — see `MeterIcon`, which draws either without being
+   * told which it has.
+   */
+  recentIcons: string[];
+  /**
    * The retention rules for earlier versions (Phase 19).
    *
    * App-level rather than per-project, like every other preference here: this
@@ -210,6 +230,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   projectView: "grid",
   projectSort: "active",
   savedColors: [],
+  recentIcons: [],
   // Derived from the shipped limits rather than written again, so the setting
   // and the constants it overrides cannot disagree about what "default" means.
   historyIntervalMinutes: (SNAPSHOT_INTERVAL_MS / 60_000) as HistoryIntervalMinutes,
@@ -232,6 +253,23 @@ export function withSavedColor(saved: string[], color: string): string[] {
 }
 
 /**
+ * The recent list with one icon on the front of it. Phase 19.5.
+ *
+ * The same rule `withSavedColor` follows — newest first, de-duplicated, capped
+ * — and pure for the same reason. Not lower-cased, unlike a colour: a glyph
+ * name is a key into the catalogue and an emoji is a character, and neither is
+ * ours to change the case of.
+ */
+export function withRecentIcon(recent: string[], icon: string): string[] {
+  const cleaned = icon.trim();
+  // The list it was given back when nothing would change, so the store can
+  // tell a real pick from picking the same icon again — which is most picks,
+  // and each one would otherwise be a write to app-settings.json.
+  if (!cleaned || recent[0] === cleaned) return recent;
+  return [cleaned, ...recent.filter((existing) => existing !== cleaned)].slice(0, MAX_RECENT_ICONS);
+}
+
+/**
  * Whatever came back out of app-settings.json, reduced to preferences we'd
  * accept today. Same shape and same reasoning as `parsePanelWidths`: it's an
  * ordinary JSON file that outlives any given version of the app, and a value
@@ -251,6 +289,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const projectView = source.projectView;
   const projectSort = source.projectSort;
   const savedColors = source.savedColors;
+  const recentIcons = source.recentIcons;
   const historyIntervalMinutes = source.historyIntervalMinutes;
   const historyKeepDays = source.historyKeepDays;
   const historyPerPage = source.historyPerPage;
@@ -286,6 +325,15 @@ export function parsePreferences(raw: unknown): Preferences {
           .map((entry) => entry.toLowerCase())
           .slice(0, MAX_SAVED_COLORS)
       : DEFAULT_PREFERENCES.savedColors,
+    // Any non-empty string is a possible icon — a glyph name or an emoji — so
+    // this only checks it is one, and caps the row. A name no longer in the
+    // catalogue draws as its own text rather than as nothing, which is the same
+    // thing every other stored icon does.
+    recentIcons: Array.isArray(recentIcons)
+      ? recentIcons
+          .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+          .slice(0, MAX_RECENT_ICONS)
+      : DEFAULT_PREFERENCES.recentIcons,
     // Membership rather than a range, for the same reason `listPageSize` is:
     // a hand-edited number that no control can show would be obeyed by a panel
     // displaying something else.

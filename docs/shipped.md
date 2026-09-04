@@ -4728,6 +4728,48 @@ first block on it.
 how a row behaves nested inside another one.
 
 
+## Phase 19.5 — Contents, and the picker's Recent row ✅ Shipped 2026-09-04
+
+Two of the small things left on the phase's list, built together because
+neither is big enough to be worth its own trip.
+
+**Contents** is the one item on the insert-menu list with no data model question
+in it. The block stores nothing at all — `pageContents` has an empty prop schema
+— and `headingsOf` reads the document every time it draws, so a heading renamed
+is renamed in the list, a heading deleted is gone from it, and there is no
+second copy to go stale. It redraws on `useEditorChange`, because a list that
+only refreshed on reopening the page would be wrong for the whole of the time
+she was writing the headings it lists.
+
+Three things in it were decided rather than fallen into. **Nested headings
+count** — BlockNote's toggle heading holds what is under it as children, and a
+list that read only the top level would stop at the first collapsible section.
+**A heading with nothing typed in it yet is left out**, so pressing Enter does
+not add a blank row to the list. And **inline content is walked rather than
+read off a `text` field**: a heading with one bold word in it is three runs, and
+taking the first would list it by its first two words.
+
+Clicking a row **scrolls** rather than putting the caret there. Following a
+contents list should not quietly move where the next keystroke lands.
+
+**The Recent row** is the last part of her icon-picker screenshot that was
+missing, and the reason it lagged is that it needs somewhere to live that
+outlasts the popover. It lives in preferences beside the saved colours —
+`recentIcons`, capped at eight by `MAX_RECENT_ICONS` — because a page's icon, a
+callout's, a meter's reading and an icon in a sentence all open the one picker.
+Every pick in the picker goes through one wrapper that remembers it, the row
+included, so re-picking keeps an icon at the front; clearing is not a pick and
+is not remembered. The row shows while browsing and goes away while searching,
+where the question is what matches rather than what she used last.
+
+**Verified:** `e2e/lists-the-pages-headings.e2e.ts` drives both — the list
+holding the page's headings, **a heading written afterwards turning up in it**
+(the assertion that fails if anything ever stores those rows), the list
+surviving a reload, and an icon picked, the picker closed, and the icon found in
+Recent when it reopens. Plus six unit tests over `headingsOf` and seven over
+`withRecentIcon` and its parsing.
+
+
 ## Phase 19.5 — A repeated pointer clones its block ✅ Shipped 2026-09-04
 
 The last piece of the pointer model the phase is built on: `node.blocks` holds
