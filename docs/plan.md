@@ -447,22 +447,10 @@ sidebar; the frame has its own menu, colour, width and layout, and the writing
 wraps around it; the insert menu offers what she listed; a page's headings make
 a contents list; and a block hands out a link to itself. Detail is in
 `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phase 20 is next**, and it is the next one in this file.
+**Phase 21 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 20 — Markdown & Folder Import
-
-**Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
-
-**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
-
-JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs/ideas.md`).
-
-**One Import button, more entries behind it — not a button per format.** Settled 2026-08-18: the errand is "bring my world in", and which program it came out of is a detail of the file, not a decision she should have to make before the picker opens. `pickImportFile` in `dialog-service.ts` already has the shape — a filter list plus an All files fallback — so each new importer adds a filter entry and a branch on what the file turns out to be, the way theme import already works out `.css` from `.json` after the fact. The folder-drag entry point above is the exception and stays separate, because a folder isn't something a file picker returns.
 
 ---
 
@@ -470,13 +458,27 @@ JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs
 
 The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` and it should only happen once, after the features it has to arrange actually exist.
 
-- Left rail replacing the top bar, with Project / Templates / Assets moved into it.
-- Splittable columns — open to the right, open in new tab, open in new window, split right, split down.
-- **A title bar that looks like the app**, filed here by the user 2026-08-21 rather than queued separately. The bar across the top of the window is the stock Windows one and the only part of Anamnesis that ignores the theme; on a dark theme the app reads as sitting inside somebody else's chrome. Nobody chose it — `decorations` is absent from `src-tauri/tauri.conf.json`, so it is the default.
+**The reference is Obsidian, not LegendKeeper, and this section had it wrong until 2026-09-04.** It was written from LK screenshots, and at least two of its three items are not LK's — the user placed the split as Obsidian's and reproduced it there to check. Scoping an item against the wrong app is how it gets built wrong: LK has no splits at all, so nothing here was ever parity.
+
+**Order: the rail, then the title bar, then the splits.** The rail is what the other two are built against — the title bar sits beside it, the splits divide what is left of the window — and it is much the smallest of the three. `TopBar.tsx` is seventy lines holding nav, search, settings and the panel toggle.
+
+- **Left rail replacing the top bar**, with Project / Templates / Assets moved into it.
+
+- **A title bar that looks like the app**, filed by the user 2026-08-21. The bar across the top of the window is the stock Windows one and the only part of Anamnesis that ignores the theme; on a dark theme the app reads as sitting inside somebody else's chrome. Nobody chose it — the window is created with the default frame in `electron/main.js`, and there is no `frame: false` anywhere. (This used to point at `decorations` in `src-tauri/tauri.conf.json`, which has shipped nothing since v0.5.0.)
 
   **It belongs to this phase because this phase is already replacing what sits under it.** The top bar goes away here, so a custom title bar built earlier is built against a frame that is about to be deleted, and built twice.
 
-  **The switch is one line and the consequences are not.** Turning decorations off hands us minimise, maximise and close, a drag region, double-click-to-maximise, the resize edges, and — the one that gets missed — Windows 11's snap layouts, which appear on hover over the *native* maximise button and are how a lot of people arrange windows. A custom bar that skips them takes a working feature off her machine to gain a colour. Design that part; the buttons are the easy half.
+  **The switch is one line and the consequences are not.** Turning the frame off hands us minimise, maximise and close, a drag region, double-click-to-maximise, the resize edges, and — the one that gets missed — Windows 11's snap layouts, which appear on hover over the *native* maximise button and are how a lot of people arrange windows. A custom bar that skips them takes a working feature off her machine to gain a colour. Design that part; the buttons are the easy half.
+
+- **Splittable columns** — open to the right, open in new tab, open in new window, split right, split down.
+
+  **A pane here is a whole page, and that is the difference from Obsidian.** Settled with the user 2026-09-04. Obsidian can let its right sidebar follow whichever pane has focus because what sits in it — backlinks, an outline — costs nothing to lose. Ours is the page itself: the portrait, the properties, the meters. Her point, and it is the one that decides the design — borrowing Obsidian's answer only works while the thing being swapped is disposable, and here it is not.
+
+  **The right bar follows the focused pane even so, and that is her call rather than a concession.** Two panes cannot each carry one: `TREE_MIN_WIDTH` 180, plus twice `CENTER_MIN_WIDTH` 420, plus twice `PROPERTIES_MIN_WIDTH` 220, is about 1460px against a window that opens at 1280 and may be dragged down to 900. One right bar pointing at one pane is the only arrangement that survives a small window, and it leaves the three-column layout alone — the panel does not move, it changes what it is describing.
+
+  **Two rules keep that from reading as broken, and both are load-bearing.** **Focus has to be sticky rather than literal**: editing a meter or a property puts real keyboard focus *into the right bar*, and a panel that swapped on that would change under her hand mid-click. It means the last pane whose page she was in, and it holds there while she works the panel. **And the active pane has to be visibly marked** — a right bar showing a stat block with no way to tell which of two characters it belongs to is worse than an empty one, because it is confidently wrong.
+
+  **Splitting puts the cursor in the new pane**, so the right bar points at what was just opened. Obsidian's behaviour, checked by the user 2026-09-04.
 
 ---
 
@@ -695,3 +697,23 @@ answer now lives, because several of these are rules rather than one-off calls.
 Only if the shared-folder sync approach demonstrably stops working. Options in preference order: Supabase (hosted Postgres + auth), Yjs + y-webrtc (P2P CRDT), self-hosted sync server.
 
 Do not scaffold in earlier phases. The file-per-node data model already sets us up well for any of these.
+
+---
+
+## Phase 20 — Markdown & Folder Import (Deferred)
+
+**Deferred 2026-09-04 by the user, in favour of Phase 21.** Not dropped and not disliked — mistimed. Her world is already in Anamnesis, so an importer serves people arriving from somewhere else: her boyfriend, who was talked out of starting in Obsidian, and the botmaker in her Discord who uses it. That is a real audience and a later one. Phase 21 is the shell she looks at every day, and it won on that.
+
+**What it was, kept whole so none of it has to be worked out twice:**
+
+**Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
+
+**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
+
+JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs/ideas.md`).
+
+**One Import button, more entries behind it — not a button per format.** Settled 2026-08-18: the errand is "bring my world in", and which program it came out of is a detail of the file, not a decision she should have to make before the picker opens. `pickImportFile` in `dialog-service.ts` already has the shape — a filter list plus an All files fallback — so each new importer adds a filter entry and a branch on what the file turns out to be, the way theme import already works out `.css` from `.json` after the fact. The folder-drag entry point above is the exception and stays separate, because a folder isn't something a file picker returns.
+
+**What made it long, which is the part to weigh when it comes back.** Reading a folder of plain `.md` files is the small half: `readDir` is already in the host contract and works on both shells, and since any page here can hold pages, a directory maps to a page with children without inventing anything. Our `[[wikilinks]]` are Obsidian's syntax already, so that part is resolution rather than translation. The length is in the rest of the tail — Obsidian's embeds and tags; a front-matter parser the repo does not have; copying pictures in and repointing every reference; zip, which nothing in the app has ever opened, `.lk` being plain JSON; and the folder-drag entry point, which needs checking before it is scoped, because what a dropped folder hands the page is not obviously the path `readDir` wants.
+
+**Phase 28 expects this phase to exist.** Its markdown export is written down as something to build *with* this importer rather than separately — one map read in both directions, and the round-trip test that comes free with it. Whichever of the two is built first therefore carries the shared map, and the other should be re-read before it starts.
