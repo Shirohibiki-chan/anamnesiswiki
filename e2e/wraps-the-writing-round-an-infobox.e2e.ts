@@ -21,6 +21,17 @@ import {
 // for the frame to sit in the middle of.
 const PAGE = "A Link To A Spot Further Down This Page";
 
+// **The slack is wide on purpose.** Where a line breaks depends on the fonts the
+// machine has, and CI has different ones — the same paragraph ended 18px further
+// from the edge there than here, which failed a 12px tolerance and meant
+// nothing. What this scenario asks is whether a line runs the width of the page
+// or stops a third of the way across it, and that difference is 250px.
+const NEAR_THE_EDGE = 60;
+
+// A frame flush against one side is still a few pixels inside it: its own border
+// and the padding of the block holding it.
+const FLUSH = 16;
+
 describe("wrapping the writing round an infobox", () => {
   let app: RunningApp;
   let plainLines = 0;
@@ -46,7 +57,7 @@ describe("wrapping the writing round an infobox", () => {
     expect(before).not.toBeNull();
     plainLines = before!.lines;
     // The paragraph under it runs the whole width of the writing.
-    expect(before!.lineRight).toBeGreaterThan(before!.columnRight - 12);
+    expect(before!.columnRight - before!.lineRight).toBeLessThan(NEAR_THE_EDGE);
   });
 
   it("puts the frame on the right and the writing beside it", async () => {
@@ -55,7 +66,7 @@ describe("wrapping the writing round an infobox", () => {
     expect(after).not.toBeNull();
 
     // The frame is against the right-hand edge of the column…
-    expect(after!.frameRight).toBeGreaterThan(after!.columnRight - 8);
+    expect(after!.frameRight).toBeGreaterThan(after!.columnRight - FLUSH);
     expect(after!.frameLeft).toBeGreaterThan(after!.columnLeft + 40);
     // …and the line beside it stops before it starts, which is the whole
     // feature: the paragraph is no longer running the full width.
@@ -66,7 +77,7 @@ describe("wrapping the writing round an infobox", () => {
   it("puts it on the left, with the writing on its right", async () => {
     await pickInfoboxMenuItem(app.window, "Wrap left");
     const after = await textAroundInfobox(app.window);
-    expect(after!.frameLeft).toBeLessThan(after!.columnLeft + 8);
+    expect(after!.frameLeft).toBeLessThan(after!.columnLeft + FLUSH);
     // The line now starts after the frame rather than ending before it.
     expect(after!.lineLeft).toBeGreaterThan(after!.frameRight - 4);
   });
@@ -74,7 +85,7 @@ describe("wrapping the writing round an infobox", () => {
   it("stops wrapping when the same side is picked again", async () => {
     await pickInfoboxMenuItem(app.window, "Wrap left");
     const after = await textAroundInfobox(app.window);
-    expect(after!.lineRight).toBeGreaterThan(after!.columnRight - 12);
+    expect(after!.columnRight - after!.lineRight).toBeLessThan(NEAR_THE_EDGE);
     expect(after!.lines).toBe(plainLines);
   });
 });
