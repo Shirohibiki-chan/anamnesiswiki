@@ -157,6 +157,70 @@ export function blockIdsInPage(tabs: Tab[]): Set<string> {
 }
 
 /**
+ * One pointer that claims a block something else already claims. Phase 19.5.
+ *
+ * A `blockRef` is the pointer, so the whole block is rewritten; an infobox
+ * holds a list, so only the entry at `index` is.
+ */
+export type RepeatedClaim = {
+  /** The block in the *document* holding the repeat — not the page block. */
+  editorBlockId: string;
+  /** The page block being claimed twice. */
+  blockId: string;
+  /** Which entry of an infobox's list, or -1 for a lone pointer. */
+  index: number;
+  /** That frame's list as it stands, so the caller can rewrite one entry of it. */
+  ids: string[];
+};
+
+/**
+ * Pointers that claim a block some other pointer already has. Phase 19.5.
+ *
+ * **Copying a block in the writing and pasting it is the way this happens**,
+ * and left alone it is two live views of one record: type in one and the other
+ * changes, because there is only one. That is defensible and is not what a
+ * paste means anywhere else in the app, so the record is cloned and the second
+ * pointer aimed at the clone — see `docs/plan.md` Phase 19.5.
+ *
+ * **The first claim in reading order keeps the block**, so the thing that was
+ * already on the page is never the one that moves.
+ *
+ * `claimedElsewhere` is what the page's *other* tabs are holding, since a copy
+ * pasted into a second tab is the same duplicate and this only ever sees one
+ * document. Ids in it lose outright: the tab being edited is the copy.
+ */
+export function findRepeatedClaims(content: unknown[], claimedElsewhere: Iterable<string> = []): RepeatedClaim[] {
+  const seen = new Set<string>(claimedElsewhere);
+  const repeats: RepeatedClaim[] = [];
+
+  function walk(documentBlocks: unknown): void {
+    if (!Array.isArray(documentBlocks)) return;
+    for (const entry of documentBlocks) {
+      if (!entry || typeof entry !== "object") continue;
+      const candidate = entry as { id?: unknown; type?: unknown; props?: unknown; children?: unknown };
+      const editorBlockId = typeof candidate.id === "string" ? candidate.id : "";
+      const claims = claimedBy(candidate);
+      claims.forEach((blockId, at) => {
+        if (!seen.has(blockId)) {
+          seen.add(blockId);
+          return;
+        }
+        // An id repeated *inside one infobox's own list* counts too: the frame
+        // would draw the same block twice down its own length.
+        if (editorBlockId) {
+          const inFrame = candidate.type === INFOBOX_TYPE;
+          repeats.push({ editorBlockId, blockId, index: inFrame ? at : -1, ids: inFrame ? claims : [] });
+        }
+      });
+      walk(candidate.children);
+    }
+  }
+
+  walk(content);
+  return repeats;
+}
+
+/**
  * The page blocks one entry in a document lays claim to.
  *
  * **Two kinds of claim, and both have to be read here or the sidebar draws a

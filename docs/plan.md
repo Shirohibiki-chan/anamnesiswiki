@@ -477,11 +477,24 @@ layout could never show. **It is resizable there**, by dragging either side.
     tab hides what is written in it, and a block sitting in that writing is part
     of it. The alternative — the block popping back into the sidebar when the
     tab is hidden — makes hiding a tab quietly rearrange the sidebar.
-  - **Two pointers at one block is the state to think about**, and it arrives by
-    copying the block in the editor and pasting it. Left alone it is two live
-    views of one record, which is defensible but is not what a paste means
-    anywhere else in the app. **Clone the record on paste** so a pasted block is
-    a new block, and treat that as part of this work rather than after it.
+  - **Two pointers at one block was the state to think about, and it is guarded
+    as of 2026-09-04.** Left alone it is two live views of one record — type in
+    one and the other changes — which is defensible and is not what a copy means
+    anywhere else in the app. A repeated pointer now clones the record and aims
+    itself at the copy, on the same pass that keeps a row of columns in shape.
+    Detail is in `docs/shipped.md`.
+
+    **The route that was expected to cause it does not, and that turned over a
+    real gap.** Copying a block in the writing and pasting it does not produce a
+    second pointer: the block does not survive the clipboard at all. BlockNote
+    writes the clipboard as HTML and our custom blocks have no rule for reading
+    themselves back, so a copied stat panel comes back as nothing and the block
+    returns to the sidebar. **Nothing is lost** — the record is untouched, which
+    is the model working — but a page copied wholesale into another page arrives
+    without its panels, silently. Fixing it means rendering an id into the DOM
+    for these blocks and giving each spec a `parse` rule; the guard above is
+    what makes that safe to do, since a pointer that survives the clipboard is
+    a duplicate the moment it lands.
   - **The cost is that the sidebar has to read the documents.** Working out what
     is left means walking every tab's document, children included, for pointers.
     It is derived per page and memoised there; nothing about it is per-keystroke.

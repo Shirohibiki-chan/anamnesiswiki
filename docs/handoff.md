@@ -3443,6 +3443,23 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   numbers and booleans and not arrays; `parseBlockIds` / `serialiseBlockIds` are
   the only things that know the separator.
 
+- **One record, one pointer — and the editor's change handler is what keeps it
+  that way.** Phase 19.5. A pointer that claims a block an earlier pointer
+  already has gets the record cloned and is aimed at the copy
+  (`applyPointerClones`, beside the column repairs and running on the same
+  pass). Two pointers at one block would be two live views of one record, which
+  is the state the whole pointer model exists to prevent. **The page's other
+  tabs count**, and they are told apart by tab id — never by comparing content
+  arrays, which stop matching the open tab a moment after it is typed in and
+  make every pointer in it a duplicate of itself, which is a clone per
+  keystroke.
+
+- **Copy and paste in the app suite uses the real machine clipboard.** Found
+  2026-09-04 while trying to test the above: a scenario that copies or pastes
+  depends on, and overwrites, whatever the person running the tests had copied
+  — including hers. Nothing in `e2e/` may drive Ctrl+C or Ctrl+V. It is also why
+  clone-on-paste is covered by unit tests on both halves instead.
+
 - **The infobox's own controls live at the bottom of the frame, and that is a
   fix rather than a preference.** Phase 19.5. Its `⋯` was built in the top right
   corner, where the reference has it and where every menu belongs — and that is

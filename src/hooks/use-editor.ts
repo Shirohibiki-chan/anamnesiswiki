@@ -11,7 +11,7 @@ import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { isGlyph } from "../constants/glyphs";
 import { ICON_INLINE_TYPE } from "../constants/schema";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
-import { withoutDanglingBlockRefs } from "../services/block-service";
+import { blockIdsInPage, withoutDanglingBlockRefs } from "../services/block-service";
 import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
 import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
@@ -23,6 +23,7 @@ import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
 import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
 import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
+import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
 import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
 import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
@@ -48,11 +49,16 @@ export { BlockRefRenderContext };
 // inline icon open. Same door, same reason — see EditorIconPicker.tsx.
 export { IconPickContext };
 
-export function useEditor(nodeId: string, content: unknown[], onContentChange: (content: unknown[]) => void) {
+export function useEditor(
+  nodeId: string,
+  tabId: string,
+  content: unknown[],
+  onContentChange: (content: unknown[]) => void,
+) {
   // The full-store subscription is deliberate here: the mention menu and
   // wikilink resolution both need to see every node in the project, and this
   // component is already re-rendering as the user types regardless.
-  const { nodes, rootPath, uploadAsset, addBlock } = useProject();
+  const { nodes, rootPath, uploadAsset, addBlock, duplicateBlocks } = useProject();
   const { requestNewPageLink } = useDialogs();
   /**
    * Where the icon picker is open, or null.
@@ -132,6 +138,22 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
    * this would call itself; `applyColumnRepairs` runs its own passes and the
    * flag keeps the re-entry out.
    */
+  /**
+   * The page as it stands, for the change handler below.
+   *
+   * **A ref rather than a dependency**, because that handler is registered once
+   * per editor and would otherwise capture the page as it was when the editor
+   * was created — which is every page except the one being typed into by the
+   * time it matters.
+   */
+  const page = useRef(nodes[nodeId]);
+  // Written in an effect rather than during the render, which React's own rule
+  // forbids: the handler below runs after the render either way, so it never
+  // sees a page older than the keystroke it is reacting to.
+  useEffect(() => {
+    page.current = nodes[nodeId];
+  }, [nodes, nodeId]);
+
   useEffect(() => {
     let repairing = false;
     return editor.onChange(() => {
@@ -139,11 +161,28 @@ export function useEditor(nodeId: string, content: unknown[], onContentChange: (
       repairing = true;
       try {
         applyColumnRepairs(editor as unknown as RepairableEditor);
+        // **A pasted block becomes a block of its own.** Copying a block in the
+        // writing copies its *pointer*, so without this the paste is a second
+        // window onto one record — see applyPointerClones. Run here rather than
+        // on a paste handler because a pointer can be duplicated several ways
+        // and the document is the only place that knows it happened.
+        const node = page.current;
+        if (node) {
+          // **By tab id, never by comparing the content arrays.** The stored
+          // content is replaced on every save, so an identity check would stop
+          // matching the open tab a moment after it was typed in — and the tab
+          // being edited would count as "somewhere else", making every pointer
+          // in it a duplicate of itself. That is a clone per keystroke.
+          const elsewhere = blockIdsInPage(node.tabs.filter((tab) => tab.id !== tabId));
+          applyPointerClones(editor as unknown as PointerEditor, elsewhere, (blockId) =>
+            duplicateBlocks(node.id, [blockId]).get(blockId),
+          );
+        }
       } finally {
         repairing = false;
       }
     });
-  }, [editor]);
+  }, [editor, tabId, duplicateBlocks]);
 
   /**
    * Names she has already been asked about and said no to.
