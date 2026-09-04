@@ -71,6 +71,7 @@ import {
   blockKindLabel,
   blocksFor,
   duplicateBlock as duplicateBlockIn,
+  duplicateBlocks as duplicateBlocksIn,
   moveBlock,
   newBlock,
   pageImageBlockId,
@@ -406,6 +407,15 @@ export type ProjectStoreState = {
   removeBlock: (nodeId: string, blockId: string) => void;
   reorderBlocks: (nodeId: string, fromIndex: number, toIndex: number) => void;
   duplicateBlock: (nodeId: string, blockId: string) => void;
+  /**
+   * Copies several blocks in one edit and hands back old id → new id.
+   *
+   * **What duplicating an infobox needs.** A frame holds pointers, so a copied
+   * frame has to point at copies — see `duplicateBlocks` in block-service.ts.
+   * The map is returned because the caller is the one that writes the new
+   * frame's list, and only it knows what the old one held.
+   */
+  duplicateBlocks: (nodeId: string, blockIds: string[]) => Map<string, string>;
   setBlockTitle: (nodeId: string, blockId: string, title: string | undefined) => void;
   setBlockTitleShown: (nodeId: string, blockId: string, shown: boolean) => void;
   setBlockColor: (nodeId: string, blockId: string, color: string | undefined) => void;
@@ -1870,6 +1880,20 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // empty, which for the page's own picture means reading it off the node.
       const picture = pictureOf(node, blockId);
       editBlocks(nodeId, (blocks) => duplicateBlockIn(blocks, blockId, picture), "duplicating a block");
+    },
+
+    duplicateBlocks(nodeId, blockIds) {
+      const node = get().nodes[nodeId];
+      if (!node) return new Map();
+      // Planned first so the ids can be handed back, then applied — the edit
+      // below re-derives the list, and minting inside it would leave the caller
+      // with no way to learn what the copies are called.
+      const plan = duplicateBlocksIn(currentBlocks(node), blockIds, () => crypto.randomUUID(), (block) =>
+        pictureOf(node, block.id),
+      );
+      if (plan.idMap.size === 0) return plan.idMap;
+      editBlocks(nodeId, () => plan.blocks, "duplicating an infobox");
+      return plan.idMap;
     },
 
     // An empty title is not a title: it is stored as absent so the block falls

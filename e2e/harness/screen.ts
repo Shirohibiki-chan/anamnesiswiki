@@ -343,6 +343,38 @@ export async function addBlockToInfobox(window: Page, label: string): Promise<vo
   await window.getByRole("button", { name: label, exact: true }).first().click();
 }
 
+/**
+ * Opens one infobox's own `⋯` menu — the frame's, not that of any block in it.
+ * Phase 19.5.
+ */
+export async function openInfoboxMenu(window: Page, at = 0): Promise<void> {
+  await window.locator(INFOBOX).nth(at).hover();
+  await window.locator(INFOBOX).nth(at).locator(".infobox-menu-trigger").click();
+  await window.waitForTimeout(300);
+}
+
+/**
+ * Where an infobox sits across the writing column: how much empty space is on
+ * each side of it, as a fraction of the column.
+ *
+ * The honest way to ask whether a frame is centred — a class name would say
+ * what the app *meant*, and this says what it did.
+ */
+export async function infoboxGaps(window: Page, at = 0): Promise<{ left: number; right: number }> {
+  const frame = await window.locator(INFOBOX).nth(at).boundingBox();
+  const row = await window.locator(PAGE_INFOBOX).nth(at).boundingBox();
+  if (!frame || !row || row.width === 0) return { left: 0, right: 0 };
+  return {
+    left: (frame.x - row.x) / row.width,
+    right: (row.x + row.width - (frame.x + frame.width)) / row.width,
+  };
+}
+
+/** What one infobox's text block is holding. */
+export async function infoboxText(window: Page, at = 0): Promise<string> {
+  return window.locator(INFOBOX).nth(at).locator("textarea").first().inputValue();
+}
+
 /** The section headings in the infobox's own Add Block menu, top to bottom. */
 export async function infoboxAddHeadings(window: Page): Promise<string[]> {
   await openInfoboxAddMenu(window);

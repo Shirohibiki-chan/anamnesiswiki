@@ -1934,6 +1934,80 @@
   overflow: hidden;
 }
 
+/* **As wide as what it holds.** `max-content` is the honest reading of
+   "auto-adapt": the frame asks its contents how wide they would like to be. The
+   two bounds are what stop that being useless — a frame holding one long
+   paragraph would otherwise run off the page, and one holding a single tag
+   would shrink to the width of the word. The floor is the same 25% a block
+   cannot be dragged past, so nothing in the app can be narrower than that.
+
+   It beats an inline width because a dragged width is still stored while
+   auto-adapt is on — leaving it there is what lets Fixed put the frame back
+   where it was rather than at some default. */
+.infobox.infobox-auto {
+  width: max-content !important;
+  min-width: 25%;
+  max-width: 100%;
+}
+
+/* Only ever visible when the frame is narrower than the column, which is the
+   only time the question means anything. */
+.infobox.infobox-centred {
+  margin-inline: auto;
+}
+
+/* The frame's two controls, on one strip at the bottom. **Not the top right
+   corner**, which is where the first block inside draws its own `⋯` — the two
+   landed within a few pixels of each other and the wrong menu opened. */
+.infobox-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+/* Faint until the pointer is over the frame — the same manner as a callout's
+   colour dot, and for the same reason: a page being read is a page of writing,
+   not a page of buttons. It stays put for the keyboard, which cannot hover. */
+.infobox-menu-trigger {
+  margin-right: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  cursor: pointer;
+}
+
+.infobox:hover .infobox-menu-trigger,
+.infobox-menu-trigger:focus-visible {
+  opacity: 1;
+}
+
+.infobox-menu-trigger:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+/* A colour lands on the frame, which is a border and a wash — the same two
+   things a coloured callout gets, so the two read as one idea rather than two
+   coloured boxes that happen to share a palette. The border needs the weight
+   for the reason the rule below it does. */
+.infobox.infobox-colored {
+  background: color-mix(in srgb, var(--infobox-accent) 14%, var(--color-panel));
+}
+
+.bn-root .infobox.infobox-colored {
+  border-color: var(--infobox-accent) !important;
+}
+
 /* **`!important`, and it is not a shortcut.** `page.css` forces a border colour
    onto everything inside `.bn-root` with `!important`, to stop shadcn's
    popovers drawing a white outline in `currentColor`. Our blocks live in there

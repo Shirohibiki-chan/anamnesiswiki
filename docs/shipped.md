@@ -4728,6 +4728,54 @@ first block on it.
 how a row behaves nested inside another one.
 
 
+## Phase 19.5 — The infobox's own menu ✅ Shipped 2026-09-04
+
+Scoped off her screenshots on 2026-08-29, when the frame had Add Block and
+nothing else — everything you could do to an infobox was done to the blocks
+inside it, and the frame itself answered to BlockNote's generic Delete.
+
+**Where the `⋯` went is the one layout decision worth keeping.** The obvious
+place is the frame's top right corner, which is exactly where the first block
+inside draws its own `⋯` — built there first, and the two landed within a few
+pixels of each other, so the wrong menu opened depending on which pixel the
+pointer was over. Both of the frame's controls sit on the strip at the bottom
+instead, where nothing else claims them. Right-clicking the frame's own chrome
+opens the same menu; right-clicking a block inside still opens the block's.
+
+**What was built:**
+
+- Three props on the infobox block: `color`, `autoWidth`, `centred`. Booleans
+  rather than one word with three states, because "how wide" and "where it sits"
+  are two questions, and both default to what an infobox already did.
+- `InfoboxMenu.tsx` — the colour row (the same `ColorSwatches` a block's menu
+  uses, live preview included), the width either/or, Full width, Align centre,
+  Duplicate and Remove infobox.
+- `.infobox-auto`: `width: max-content` between a 25% floor and the column. The
+  floor is the same one a block cannot be dragged past, and it is what stops
+  "as wide as what it holds" meaning "as wide as the word *wip*".
+- `duplicateBlocks` in `block-service.ts` and its store action, which copy a run
+  of blocks in one edit and hand back old id → new id.
+
+**Duplicate is the item that had a decision in it, and the answer is copies.**
+An infobox holds pointers, so a copied frame pointing at the same records would
+put one block in two places — the thing the phase rules out everywhere else. The
+records are duplicated as a panel edit and the new frame is inserted after,
+which are two different undo stacks; that split is not new, it is how every edit
+to an infobox already works.
+
+**Verified:** `e2e/the-infobox-has-a-menu.e2e.ts` drives the real app — the
+frame shrinking to its contents and going back, an even gap either side when
+centred and none when not, and the copy proved separate by writing in one frame
+and reading the other. Plus four unit tests over `duplicateBlocks`. Looked at
+it, on a throwaway deleted afterwards: the menu, a teal frame, an auto-adapted
+one, a centred one, and both frames surviving a reload with their colour, width
+and alignment.
+
+**Two of the reference's items are still not built** — Wrap left/right, which
+needs floating BlockNote does not do, and Pin to top, which has never been
+scoped past its name. Both are in `docs/plan.md` with what they would need.
+
+
 ## Phase 19.5 — A picture block holds its own picture ✅ Shipped 2026-09-03
 
 Found by her the moment blocks reached the page body: an image block was a

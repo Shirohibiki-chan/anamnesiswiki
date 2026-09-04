@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createNode, type Block, type BlockKind, type Node } from "../constants/schema";
 import {
   BLOCK_WIDTH_MIN,
@@ -17,6 +17,7 @@ import {
   withoutDanglingBlockRefs,
   deriveBlocks,
   duplicateBlock,
+  duplicateBlocks,
   migrateBlocks,
   moveBlock,
   newBlock,
@@ -700,5 +701,48 @@ describe("image blocks and the page's own picture", () => {
     // is what keeps a page that has no pictures from being rewritten.
     const plain = [image("a")];
     expect(withCopiedBlockImages(plain, (fileName) => fileName)).toBe(plain);
+  });
+});
+
+// Phase 19.5: duplicating an infobox. The frame holds pointers, so the copy has
+// to be given copies — one block in two frames is what the phase rules out.
+describe("duplicateBlocks", () => {
+  const list = (): Block[] => [
+    { id: "a", kind: "text", text: "one" },
+    { id: "b", kind: "tags" },
+    { id: "c", kind: "image" },
+    { id: "d", kind: "alias" },
+  ];
+  let next = 0;
+  const mint = () => `new-${++next}`;
+
+  beforeEach(() => {
+    next = 0;
+  });
+
+  it("copies each one and says which copy is which", () => {
+    const { blocks, idMap } = duplicateBlocks(list(), ["a", "c"], mint);
+    expect(idMap.get("a")).toBe("new-1");
+    expect(idMap.get("c")).toBe("new-2");
+    expect(blocks.find((block) => block.id === "new-1")).toEqual({ id: "new-1", kind: "text", text: "one" });
+  });
+
+  // Together after the last of them, so a frame's blocks stay a run in storage
+  // rather than being interleaved with the ones they were copied from.
+  it("lands them all after the last block copied", () => {
+    const { blocks } = duplicateBlocks(list(), ["a", "c"], mint);
+    expect(blocks.map((block) => block.id)).toEqual(["a", "b", "c", "new-1", "new-2", "d"]);
+  });
+
+  it("gives an image block copy its own picture rather than an empty frame", () => {
+    const { blocks } = duplicateBlocks(list(), ["c"], mint, () => ({ image: "portrait.png" }));
+    expect(blocks.find((block) => block.id === "new-1")?.image).toBe("portrait.png");
+  });
+
+  it("does nothing at all for ids that name nothing", () => {
+    const before = list();
+    const { blocks, idMap } = duplicateBlocks(before, ["gone"], mint);
+    expect(blocks).toBe(before);
+    expect(idMap.size).toBe(0);
   });
 });
