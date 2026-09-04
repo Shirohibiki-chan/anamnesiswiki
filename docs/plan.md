@@ -38,13 +38,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   it was found in, and closing it changes nothing. What is missing is seeing it
   while writing rather than when asking.
 
-- **An infobox cannot be put inside a lane of columns.** Measured 2026-09-04:
-  the `/` menu opens inside a lane and offers it, and the frame lands outside
-  the row altogether — not in the lane, not in the row. Nothing says so, which
-  is the part that makes it a bug rather than a limit. Not caused by the
-  wrapping work; found while checking whether a wrapped frame behaves inside a
-  lane, which is still unanswered because of it.
-
 - **A page's sub-pages arrive under the names the template gave them, with
   nothing tying them to the page they landed in.** Asked for 2026-08-31 by a
   botmaker in her Discord, who had the same thing built as an Obsidian plugin

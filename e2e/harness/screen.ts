@@ -297,6 +297,37 @@ export async function columnRowCount(window: Page): Promise<number> {
 }
 
 /**
+ * The page's infobox measured against the lane of columns it is sitting in.
+ * Phase 19.5.
+ *
+ * **Both halves, because "outside the row" has two readings and they need
+ * telling apart.** `lane` is structural — which lane of the row actually holds
+ * the frame, or `null` for none of them — and the two widths are what the eye
+ * sees. A frame that has escaped its lane and one that is merely drawn wider
+ * than its lane look identical, so a scenario that asked only one of these
+ * would pass on half the bug.
+ */
+export async function infoboxInLane(
+  window: Page,
+  row = 0,
+): Promise<{ lane: number | null; frameWidth: number; laneWidth: number }> {
+  return window.evaluate(
+    ([rowSel, frameSel, at]) => {
+      const group = document.querySelectorAll(rowSel as string)[at as number]?.nextElementSibling;
+      const frame = document.querySelector(frameSel as string);
+      if (!group || !frame) return { lane: null, frameWidth: 0, laneWidth: 0 };
+      const holding = [...group.children].findIndex((child) => child.contains(frame));
+      return {
+        lane: holding === -1 ? null : holding,
+        frameWidth: Math.round(frame.getBoundingClientRect().width),
+        laneWidth: holding === -1 ? 0 : Math.round(group.children[holding].getBoundingClientRect().width),
+      };
+    },
+    [COLUMN_ROW, PAGE_INFOBOX, row] as [string, string, number],
+  );
+}
+
+/**
  * Drags the divider after lane `at` until that lane is `ratio` of the row.
  *
  * A real press, move and release: the divider takes pointer capture on the way

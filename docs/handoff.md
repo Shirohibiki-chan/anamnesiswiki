@@ -16,25 +16,25 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 27 and 29 are done, and Phase 19.5 (Blocks in the Page) is what
-is being worked.** The app is shippable and shipping — v0.6.0 is out on the
-Electron shell. `docs/plan.md` has the rest of 19.5, the remaining phases and
+**Phases 0–19, 19.5, 27 and 29 are done.** The app is shippable and shipping —
+v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
 
 **Phase 19 — Safety Net — closed 2026-08-28**: undo across the right-hand panel
 and a page's tabs, version history in `project.json`, retention in Settings.
-**Phase 19.5 is part-shipped**, and the parts that landed are the ones a new
-session is most likely to touch: a block standing in the page body and an
-infobox grouping several (2026-08-29), callout colours and New page from inside
-the editor (2026-08-28), and the inline icon plus the callout's own icon
+**Phase 19.5 — Blocks in the Page — closed 2026-09-04**, and its parts are the
+ones a new session is most likely to touch: a block standing in the page body
+and an infobox grouping several (2026-08-29), callout colours and New page from
+inside the editor (2026-08-28), and the inline icon plus the callout's own icon
 (2026-09-01). What still binds the code from all of it is §Editor & templates
 and §Sidebar blocks below. Dragging a block or an infobox wider landed
 2026-09-02, columns the same day, a picture block holding its own picture on
 2026-09-03, and on 2026-09-04 the infobox's own menu, clone-on-paste, the
-contents list and the icon picker's Recent row. **Still open in the
-phase:** block anchors, the link-hints toggle, and wrapping text around an
-infobox. Pin to top was dropped — see `docs/plan.md`.
+contents list, the icon picker's Recent row, a block handing out a link to
+itself, and the writing wrapping round a frame. Pin to top was dropped, and the
+marker for what could be linked while writing is queued rather than built — both
+in `docs/plan.md`.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3537,6 +3537,19 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   the editor cannot do something, try it in the running app** — the same rule
   the plan learned about reading for the thing rather than for the file you
   remember.
+
+- **A third claim of the same kind, and the count is the point.** Phase 19.5: an
+  infobox put inside a lane of columns was written down as landing outside the
+  row, and it does not. Checked in the running app 2026-09-04 with the `/` menu
+  used from inside a lane — the frame is parented in the lane it was asked for,
+  drawn no wider than that lane, and stays both once the writing is set to wrap
+  round it, with the row keeping its lanes throughout.
+  `e2e/puts-an-infobox-in-a-column-lane.e2e.ts` asserts all four, so it cannot go
+  back to being a claim. **"Outside the row" had two readings** — parented out of
+  the row, or sitting in the lane and drawn wider than one — and they look
+  identical on screen, so both have to be asked separately. What is still unknown
+  is the route that produced the original observation; if it turns up again, that
+  route is the missing piece rather than the observation.
 
 - **The row of hover controls beside a block holds two, and a third does not
   fit.** Phase 19.5, measured: the gutter between the editor's left edge and the
