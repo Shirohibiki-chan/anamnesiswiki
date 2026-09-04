@@ -415,7 +415,7 @@ Everything below comes out of one planning session: the user brought a list of r
 
 **Two framing decisions that shape the ordering:**
 
-1. **The "UI overhaul" is two jobs, not one.** The *look* (colour, type, spacing, icons, naming) is CSS tokens and is cheap — done early, everything built afterwards is born looking like Anamnesis. The *layout* (left rail, splittable columns, tabs) rewrites the app shell and touches components that don't exist yet — done early it gets done twice. Hence Phases 11–12 up front and Phase 21 near the end.
+1. **The "UI overhaul" is two jobs, not one.** The *look* (colour, type, spacing, icons, naming) is CSS tokens and is cheap — done early, everything built afterwards is born looking like Anamnesis. The *layout* (left rail, splittable columns, tabs) rewrites the app shell and touches components that don't exist yet — done early it gets done twice. Hence Phases 11–12 up front and Phase 21 near the end. (The layout half moved again on 2026-09-04: the splits are Phase 21.5, deferred, and Phase 21 kept the rail and the title bar.)
 
 2. **The identity pass is deliberately made reversible before it's attempted.** The user's stated blocker was being "extremely picky" with no fixed idea yet. The answer is to ship the theme switcher *first*, so a visual direction becomes a file that can be tried and deleted rather than a one-shot commitment, and then to present complete running directions to react to instead of asking for a design from a blank page. If a future session finds itself asking her to describe what she wants in the abstract, it has taken a wrong turn.
 
@@ -449,11 +449,11 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ## Phase 21 — Shell Rework
 
-The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` and it should only happen once, after the features it has to arrange actually exist.
+The look of the window, and the two pieces of it that are not the writing. It still touches `AppLayout.tsx`, but the rewrite that made this phase late went with the splits to Phase 21.5 — what is left is small, visible, and finishable.
 
-**The reference is Obsidian, not LegendKeeper, and this section had it wrong until 2026-09-04.** It was written from LK screenshots, and at least two of its three items are not LK's — the user placed the split as Obsidian's and reproduced it there to check. Scoping an item against the wrong app is how it gets built wrong: LK has no splits at all, so nothing here was ever parity.
+**The reference is Obsidian, not LegendKeeper, and this section had it wrong until 2026-09-04.** It was scoped from LK screenshots, and the split that used to sit here was not LK's at all — the user placed it as Obsidian's and reproduced it there to check. LK has no splits. That is worth remembering for the two items still here: neither should be assumed to be LK's without looking either.
 
-**Order: the rail, then the title bar, then the splits.** The rail is what the other two are built against — the title bar sits beside it, the splits divide what is left of the window — and it is much the smallest of the three. `TopBar.tsx` is seventy lines holding nav, search, settings and the panel toggle.
+**Order: the rail, then the title bar.** The title bar sits beside the rail and is built against it, and the rail is the smaller of the two — `TopBar.tsx` is seventy lines holding nav, search, settings and the panel toggle.
 
 - **Left rail replacing the top bar**, with Project / Templates / Assets moved into it.
 
@@ -462,16 +462,6 @@ The layout half of the overhaul. Late on purpose: it rewrites `AppLayout.tsx` an
   **It belongs to this phase because this phase is already replacing what sits under it.** The top bar goes away here, so a custom title bar built earlier is built against a frame that is about to be deleted, and built twice.
 
   **The switch is one line and the consequences are not.** Turning the frame off hands us minimise, maximise and close, a drag region, double-click-to-maximise, the resize edges, and — the one that gets missed — Windows 11's snap layouts, which appear on hover over the *native* maximise button and are how a lot of people arrange windows. A custom bar that skips them takes a working feature off her machine to gain a colour. Design that part; the buttons are the easy half.
-
-- **Splittable columns** — open to the right, open in new tab, open in new window, split right, split down.
-
-  **A pane here is a whole page, and that is the difference from Obsidian.** Settled with the user 2026-09-04. Obsidian can let its right sidebar follow whichever pane has focus because what sits in it — backlinks, an outline — costs nothing to lose. Ours is the page itself: the portrait, the properties, the meters. Her point, and it is the one that decides the design — borrowing Obsidian's answer only works while the thing being swapped is disposable, and here it is not.
-
-  **The right bar follows the focused pane even so, and that is her call rather than a concession.** Two panes cannot each carry one: `TREE_MIN_WIDTH` 180, plus twice `CENTER_MIN_WIDTH` 420, plus twice `PROPERTIES_MIN_WIDTH` 220, is about 1460px against a window that opens at 1280 and may be dragged down to 900. One right bar pointing at one pane is the only arrangement that survives a small window, and it leaves the three-column layout alone — the panel does not move, it changes what it is describing.
-
-  **Two rules keep that from reading as broken, and both are load-bearing.** **Focus has to be sticky rather than literal**: editing a meter or a property puts real keyboard focus *into the right bar*, and a panel that swapped on that would change under her hand mid-click. It means the last pane whose page she was in, and it holds there while she works the panel. **And the active pane has to be visibly marked** — a right bar showing a stat block with no way to tell which of two characters it belongs to is worse than an empty one, because it is confidently wrong.
-
-  **Splitting puts the cursor in the new pane**, so the right bar points at what was just opened. Obsidian's behaviour, checked by the user 2026-09-04.
 
 ---
 
@@ -710,3 +700,23 @@ JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs
 **What made it long, which is the part to weigh when it comes back.** Reading a folder of plain `.md` files is the small half: `readDir` is already in the host contract and works on both shells, and since any page here can hold pages, a directory maps to a page with children without inventing anything. Our `[[wikilinks]]` are Obsidian's syntax already, so that part is resolution rather than translation. The length is in the rest of the tail — Obsidian's embeds and tags; a front-matter parser the repo does not have; copying pictures in and repointing every reference; zip, which nothing in the app has ever opened, `.lk` being plain JSON; and the folder-drag entry point, which needs checking before it is scoped, because what a dropped folder hands the page is not obviously the path `readDir` wants.
 
 **Phase 28 expects this phase to exist.** Its markdown export is written down as something to build *with* this importer rather than separately — one map read in both directions, and the round-trip test that comes free with it. Whichever of the two is built first therefore carries the shared map, and the other should be re-read before it starts.
+
+---
+
+## Phase 21.5 — Split Panes (Deferred)
+
+**Deferred 2026-09-04 by the user, the same day it was designed.** Pulled out of Phase 21 rather than dropped — it was the piece that made that phase a rewrite, and without it the rail and the title bar are two small visible things she can have soon. The fractional number says where it came from and where it returns to.
+
+**It is hers, and the record used to suggest otherwise.** It went into the plan on 2026-07-31, scoped from LK screenshots and carrying no attribution, while the title bar filed beside it names her outright — which made this read as a parity item nobody asked for. It is not. She placed it as Obsidian's and confirmed it there with Obsidian's own split command before any of this was written down. LK has no splits at all, so the parity reading was wrong twice over.
+
+**What it is** — open to the right, open in new tab, open in new window, split right, split down.
+
+**A pane here is a whole page, and that is the difference from Obsidian.** Settled with the user 2026-09-04. Obsidian can let its right sidebar follow whichever pane has focus because what sits in it — backlinks, an outline — costs nothing to lose. Ours is the page itself: the portrait, the properties, the meters. Her point, and it is the one that decides the design — borrowing Obsidian's answer only works while the thing being swapped is disposable, and here it is not.
+
+**The right bar follows the focused pane even so, and that is her call rather than a concession.** Two panes cannot each carry one: `TREE_MIN_WIDTH` 180, plus twice `CENTER_MIN_WIDTH` 420, plus twice `PROPERTIES_MIN_WIDTH` 220, is about 1460px against a window that opens at 1280 and may be dragged down to 900. One right bar pointing at one pane is the only arrangement that survives a small window, and it leaves the three-column layout alone — the panel does not move, it changes what it is describing.
+
+**Two rules keep that from reading as broken, and both are load-bearing.** **Focus has to be sticky rather than literal**: editing a meter or a property puts real keyboard focus *into the right bar*, and a panel that swapped on that would change under her hand mid-click. It means the last pane whose page she was in, and it holds there while she works the panel. **And the active pane has to be visibly marked** — a right bar showing a stat block with no way to tell which of two characters it belongs to is worse than an empty one, because it is confidently wrong.
+
+**Splitting puts the cursor in the new pane**, so the right bar points at what was just opened. Obsidian's behaviour, checked by the user 2026-09-04.
+
+**What it costs, which is why it is parked rather than queued.** `AppLayout.tsx` is a fixed three-column grid: tree, one page, properties. This turns the middle into a tree of panes, each with its own tabs and its own history, and that is the rewrite Phase 21 was scheduled late in order to wait for. **Open in new window is a separate problem again** — `project-claim.ts` deliberately refuses to open one project in two windows, which is what stops two copies fighting over the same files, so that item means nothing until the claim is reworked to allow it on purpose.
