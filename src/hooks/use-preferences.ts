@@ -65,6 +65,20 @@ export function useSavedColors(): string[] {
   return usePreferencesStore((state) => state.preferences.savedColors);
 }
 
+/**
+ * The icons she has picked lately, newest first — the picker's Recent row.
+ *
+ * In preferences rather than in a project, like the saved colours beside it: a
+ * page's icon, a callout's and a meter's all open the one picker.
+ */
+export function useRecentIcons(): string[] {
+  return usePreferencesStore((state) => state.preferences.recentIcons);
+}
+
+export function useIconActions() {
+  return usePreferencesStore(useShallow((state) => ({ rememberIcon: state.rememberIcon })));
+}
+
 export function useColorActions() {
   return usePreferencesStore(
     useShallow((state) => ({ saveColor: state.saveColor, forgetColor: state.forgetColor })),

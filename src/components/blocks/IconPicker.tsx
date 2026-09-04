@@ -13,6 +13,7 @@ import { RotateCcw, X } from "lucide-react";
 import { searchEmoji } from "../../constants/emoji";
 import { getGlyph, restOfCatalogue, searchCatalogue, searchGlyphs } from "../../constants/glyphs";
 import { getTemplateIcon } from "../../constants/icons";
+import { useIconActions, useRecentIcons } from "../../hooks/use-preferences";
 
 /**
  * How much of the fifteen-hundred-icon catalogue is drawn at once.
@@ -40,6 +41,8 @@ type IconPickerProps = {
 };
 
 export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
+  const recent = useRecentIcons();
+  const { rememberIcon } = useIconActions();
   const [tab, setTab] = useState<"glyphs" | "emoji">("glyphs");
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(CATALOGUE_PAGE);
@@ -79,6 +82,19 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
   // curated groups first and then the rest of the catalogue underneath.
   const rest = searching ? searchCatalogue(trimmed) : restOfCatalogue();
   const restShown = rest.slice(0, shown);
+
+  /**
+   * Every pick goes through here, which is what keeps the Recent row honest.
+   *
+   * **Remembered wherever it was picked from** — the row itself included, so
+   * choosing the same icon twice keeps it at the front rather than letting it
+   * drift down the row. Clearing is not a pick and is not remembered: "no
+   * icon" is not an icon to offer again.
+   */
+  function pick(icon: string | undefined) {
+    if (icon) rememberIcon(icon);
+    onPick(icon);
+  }
 
   return (
     <div className="icon-picker">
@@ -126,6 +142,32 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
         </div>
       )}
 
+      {/* **Across the top, and only while browsing.** The reference keeps the
+          last few you chose there, and the reason it earns the room is that a
+          world uses the same dozen icons over and over — a second sword is two
+          clicks rather than a search. It goes away while searching, where the
+          question is what matches rather than what you used last. */}
+      {!searching && recent.length > 0 && (
+        <div className="icon-picker-recent">
+          <div className="ui-eyebrow icon-picker-heading">Recent</div>
+          <div className="icon-picker-grid">
+            {recent.map((icon) => (
+              <button
+                key={icon}
+                type="button"
+                className={`icon-picker-option${icon === value ? " icon-picker-option-active" : ""}`}
+                title={icon}
+                aria-label={icon}
+                aria-pressed={icon === value}
+                onClick={() => pick(icon)}
+              >
+                <MeterIcon icon={icon} size={16} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="icon-picker-scroll">
         {glyphGroups.length === 0 && emojiGroups.length === 0 && rest.length === 0 && (
           <p className="icon-picker-empty">Nothing matches.</p>
@@ -146,7 +188,7 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
                         title={glyph.name}
                         aria-label={glyph.name}
                         aria-pressed={value === glyph.name}
-                        onClick={() => onPick(glyph.name)}
+                        onClick={() => pick(glyph.name)}
                       >
                         <Glyph size={16} />
                       </button>
@@ -171,7 +213,7 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
                       title={entry.keywords.split(" ")[0]}
                       aria-label={entry.keywords.split(" ")[0]}
                       aria-pressed={value === entry.char}
-                      onClick={() => onPick(entry.char)}
+                      onClick={() => pick(entry.char)}
                     >
                       {entry.char}
                     </button>
@@ -199,7 +241,7 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
                     title={glyph.name}
                     aria-label={glyph.name}
                     aria-pressed={value === glyph.name}
-                    onClick={() => onPick(glyph.name)}
+                    onClick={() => pick(glyph.name)}
                   >
                     <Glyph size={16} />
                   </button>

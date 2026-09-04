@@ -31,10 +31,10 @@ the editor (2026-08-28), and the inline icon plus the callout's own icon
 (2026-09-01). What still binds the code from all of it is §Editor & templates
 and §Sidebar blocks below. Dragging a block or an infobox wider landed
 2026-09-02, columns the same day, a picture block holding its own picture on
-2026-09-03, and the infobox's own menu on 2026-09-04. **Still open in the
-phase:** a Recent row in the icon picker, the slash-command and markdown halves
-of the shortcut sheet, and two items of the infobox's menu that need decisions
-rather than time — wrapping text around a frame, and Pin to top.
+2026-09-03, and on 2026-09-04 the infobox's own menu, clone-on-paste, the
+contents list and the icon picker's Recent row. **Still open in the
+phase:** block anchors, bulk auto-link and its hints toggle, and wrapping text
+around an infobox. Pin to top was dropped — see `docs/plan.md`.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3442,6 +3442,13 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   of ids as a joined string**, because BlockNote's prop schema takes strings,
   numbers and booleans and not arrays; `parseBlockIds` / `serialiseBlockIds` are
   the only things that know the separator.
+
+- **The contents block stores nothing, and it must stay that way.** Phase 19.5.
+  `pageContents` has an empty prop schema; `headingsOf` reads the document each
+  time the list draws. Anything that caches those rows — for speed, or to
+  survive a reload — is a second record of what the headings say, and it is
+  wrong from the first rename. If it ever needs to be cheaper, memoise inside
+  the render, never in the block.
 
 - **One record, one pointer — and the editor's change handler is what keeps it
   that way.** Phase 19.5. A pointer that claims a block an earlier pointer

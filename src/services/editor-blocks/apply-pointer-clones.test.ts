@@ -56,7 +56,7 @@ describe("applyPointerClones", () => {
     const editor = fakeEditor([frame("e1", ["a", "a", "a"])]);
     let minted = 0;
     applyPointerClones(editor, [], () => `copy-${++minted}`);
-    expect(editor.document[0].props).toEqual({ blockIds: "a,copy-1,copy-2" });
+    expect((editor.document[0] as { props: unknown }).props).toEqual({ blockIds: "a,copy-1,copy-2" });
   });
 
   it("counts what another tab claims, so a copy pasted into a second tab is a copy", () => {

@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-28 — the slash menu, tidied
+
+### Fixes
+
+- **Clicking back onto a line with a `/` at the front brings the menu back.** It used to sit there dead — the only way on was to delete the slash and type it again. It comes back with whatever you'd typed after the slash still in it. Same for an unfinished `[[`, which already worked.
+- **A `/` only opens the menu at the start of a line now.** It used to open for *any* slash you typed — mid-word in `and/or`, straight after a full stop — which put the command list over your writing several times a paragraph. Everywhere else a slash is just a slash.
+- **It won't wrongly come back either.** Clicking onto a line that starts with `/` brings the menu back; moving the cursor through `and/or`, a date or a path leaves it shut. The rule for coming back is the same as the rule for typing, so the two can't disagree.
+
+### Changes
+
+- **The menu had a white outline.** Not a choice — the outline colour was never set, so it fell back to the colour of the text, which is nearly white. It's the same quiet line every other panel in the app uses now, and the menu has a proper shadow instead of none at all.
+- **The text is smaller and the rows are tighter**, matching the menus everywhere else in the app rather than being a size of their own. About nine options fit where five did, which is most of why it felt cramped.
+- **It can't be squashed to a sliver any more.** Open it near the bottom of a page and it used to collapse to a row and a half; it now keeps a usable height and scrolls.
+- **The group headings** (*Headings*, *Basic blocks*) read as headings now, in the same small caps the rest of the app uses for labels.
+
 ## 2026-08-28 — the link text box actually does something
 
 ### Fixes

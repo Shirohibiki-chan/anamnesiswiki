@@ -551,9 +551,11 @@ Meter that lands on a bar and makes her go find the setting.
   a page where forty names silently turn blue is worse than no feature. The
   hints toggle is the cheap half and can ship first: a marker on text that
   *could* be linked, no rewrite involved.
-- **Table of contents.** Derived from the headings already in the document, so
-  it stores nothing and cannot go stale — the one item here with no data model
-  question attached.
+- **Table of contents — shipped 2026-09-04, as Contents.** Derived from the
+  headings already in the document, so it stores nothing and cannot go stale:
+  the block is a marker and the list is read every time it draws. Detail is in
+  `docs/shipped.md`. It is called Contents in the menu rather than Table of
+  contents, which is a phrase from a printed book.
 - **Layout / columns, and it is the one item here with a licence problem.**
   BlockNote ships this as `@blocknote/xl-multi-column`, an official package
   rather than a fork, so it satisfies `CLAUDE.md` on that count. But **core is
@@ -678,18 +680,21 @@ its own `⋯` now, beside its Add Block: a colour row, the width pair, Align
 centre, Duplicate and Remove infobox. Detail is in `docs/shipped.md`; what binds
 the code is in `docs/handoff.md`.
 
-**Two of the reference's items are deliberately still missing**, and both are
-listed here rather than in the shipped log because they are work, not omissions:
+**One of the reference's items is still missing and one is dropped**, listed
+here rather than in the shipped log because the first is work rather than an
+omission:
 
 - **Wrap left and Wrap right**, which is the same wall the phase already named:
   BlockNote does not float a block, so text flowing around an infobox is a much
   larger job than the rest of that submenu was. Full width and Align centre —
   the two that do not need floating — are built.
-- **Pin to top.** It was never scoped past its name. Pinning to the top of
-  *what* is the question: the page's writing already has a top, and a frame that
-  left the flow of the document would need somewhere else to live and a rule for
-  what happens when there are two of them. Worth asking her what she expects it
-  to do before building anything.
+- **Pin to top — dropped 2026-09-04, and not to be revived without a use for
+  it.** Asked what she expected it to do, she did not know either: it was on the
+  list because it was on the reference's menu in a screenshot, not because
+  anything wanted it. That is the whole reason it was ever written down, and it
+  is not a reason to build it. If it comes back it will come back as a thing
+  somebody is trying to do — a frame that stays put while a long page scrolls,
+  most likely — and it can be designed then.
 
 **One decision worth not re-litigating: dragging an edge leaves auto-adapt.**
 The reference springs the frame back to its contents, so an auto-adapt box
@@ -725,10 +730,11 @@ plan was written against `icons.ts` because that is the file the phase before
 had been reading, and a "we do not have X" written in a plan doc does not
 re-check itself. Read for the thing, not for the file you remember.
 
-- **Still not built: a Recent row.** The reference's picker keeps the last few
-  you chose across the top, and ours does not — it is the one part of that
-  screenshot still missing. It needs somewhere to live that outlasts the
-  popover, which is the only reason it did not come along with the rest.
+- **The Recent row shipped 2026-09-04.** The last eight icons picked, across
+  the top of the picker while browsing and out of the way while searching. They
+  live in preferences beside the saved colours, for the same reason those do: a
+  page's icon, a callout's and a meter's all open the one picker, so what she
+  used last is hers rather than any one world's.
 
 **Why it is worth doing:** the sidebar is a column, and a panel of stats is a
 grid. Everything Phase 18c built is squeezed by that column — four gauges go

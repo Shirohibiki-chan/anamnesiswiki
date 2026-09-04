@@ -6,6 +6,7 @@ import { blockRefSpec } from "./block-ref";
 import { columnListSpec, columnSpec } from "./columns";
 import { codeBlockSpec } from "./code-block";
 import { infoboxSpec } from "./infobox";
+import { pageContentsSpec } from "./table-of-contents";
 import { infoBlockSpec } from "./info-block";
 import { quoteBlockSpec } from "./quote-block";
 import { secretBlockSpec } from "./secret-block";
@@ -35,6 +36,9 @@ export const editorSchema = BlockNoteSchema.create({
     // BlockNote's `xl-` package, which is licensed out of reach; see columns.tsx.
     pageColumns: columnListSpec,
     pageColumn: columnSpec,
+    // The page's own headings, listed. Phase 19.5 — it stores nothing and reads
+    // the document each time it draws, so it cannot go stale.
+    pageContents: pageContentsSpec,
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

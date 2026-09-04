@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-04 — a contents list, and the icons you used last
+
+### Additions
+
+- **A contents list you can drop into a page.** Type `/contents` and you get a list of that page's headings, in order, indented by their level. Click one to jump to it.
+- **It's never out of date**, because it isn't a copy — it reads the page every time it's drawn. Rename a heading and the list says the new name; write a new one and it appears; delete one and it's gone.
+- **The icon picker keeps the last eight icons you picked** across the top, so the ones a world actually uses are two clicks away instead of a search. They're remembered across projects and across restarts, and the row steps aside while you're searching.
+
 ## 2026-09-04 — a copied block becomes a block of its own
 
 ### Fixes
@@ -229,18 +237,3 @@
 ### Adjustments
 
 - **A rule in Claude's instructions file has been removed**, because it was never yours and never followed. It said no part of the on-screen code was allowed to call a piece of shared logic directly — it arrived in the very first commit, in the same batch as the network rule you got rid of in August, and it had no reason written next to it. 22 of the app's 103 screen components broke it, almost all for harmless things like working out how long ago something was. The rule above it, the one about how the app's memory is reached, is real and stays.
-
-## 2026-08-28 — the slash menu, tidied
-
-### Fixes
-
-- **Clicking back onto a line with a `/` at the front brings the menu back.** It used to sit there dead — the only way on was to delete the slash and type it again. It comes back with whatever you'd typed after the slash still in it. Same for an unfinished `[[`, which already worked.
-- **A `/` only opens the menu at the start of a line now.** It used to open for *any* slash you typed — mid-word in `and/or`, straight after a full stop — which put the command list over your writing several times a paragraph. Everywhere else a slash is just a slash.
-- **It won't wrongly come back either.** Clicking onto a line that starts with `/` brings the menu back; moving the cursor through `and/or`, a date or a path leaves it shut. The rule for coming back is the same as the rule for typing, so the two can't disagree.
-
-### Changes
-
-- **The menu had a white outline.** Not a choice — the outline colour was never set, so it fell back to the colour of the text, which is nearly white. It's the same quiet line every other panel in the app uses now, and the menu has a proper shadow instead of none at all.
-- **The text is smaller and the rows are tighter**, matching the menus everywhere else in the app rather than being a size of their own. About nine options fit where five did, which is most of why it felt cramped.
-- **It can't be squashed to a sliver any more.** Open it near the bottom of a page and it used to collapse to a row and a half; it now keeps a usable height and scrolls.
-- **The group headings** (*Headings*, *Basic blocks*) read as headings now, in the same small caps the rest of the app uses for labels.

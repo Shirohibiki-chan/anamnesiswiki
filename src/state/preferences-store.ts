@@ -8,6 +8,7 @@ import {
   DEFAULT_PREFERENCES,
   parsePreferences,
   withSavedColor,
+  withRecentIcon,
   type HistoryIntervalMinutes,
   type HistoryKeepDays,
   type HistoryPerPage,
@@ -36,6 +37,8 @@ export type PreferencesStoreState = {
   /** Keeps a colour mixed in the system picker, for use anywhere else. */
   saveColor: (color: string) => void;
   forgetColor: (color: string) => void;
+  /** One icon onto the front of the picker's Recent row. Phase 19.5. */
+  rememberIcon: (icon: string) => void;
 };
 
 export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
@@ -125,6 +128,15 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
         ...get().preferences,
         savedColors: get().preferences.savedColors.filter((entry) => entry !== color.toLowerCase()),
       });
+    },
+
+    rememberIcon(icon) {
+      const recent = withRecentIcon(get().preferences.recentIcons, icon);
+      // Same identity check `saveColor` makes: re-picking the icon already at
+      // the front is most of the picks, and each one would otherwise be a write
+      // to app-settings.json for a list that did not change.
+      if (recent === get().preferences.recentIcons) return;
+      apply({ ...get().preferences, recentIcons: recent });
     },
   };
 });
