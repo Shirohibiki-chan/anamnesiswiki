@@ -112,6 +112,7 @@ export function PageView() {
                 // keystroke and would remount the editor on each one.
                 key={`${activeTab.id}:${contentRevisions[node.id] ?? 0}`}
                 nodeId={node.id}
+                tabId={activeTab.id}
                 content={activeTab.content}
                 onContentChange={(content) => updateTabContent(node.id, activeTab.id, content)}
               />

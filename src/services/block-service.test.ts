@@ -7,6 +7,7 @@ import {
   snapBlockWidth,
   storedBlockWidth,
   blockIdsInPage,
+  findRepeatedClaims,
   blockImage,
   blockImageFiles,
   blockKindLabel,
@@ -744,5 +745,49 @@ describe("duplicateBlocks", () => {
     const { blocks, idMap } = duplicateBlocks(before, ["gone"], mint);
     expect(blocks).toBe(before);
     expect(idMap.size).toBe(0);
+  });
+});
+
+// Phase 19.5: copying a block in the writing copies its pointer, and two
+// pointers at one record is two windows onto the same block. These say which
+// pointer is the one to move.
+describe("findRepeatedClaims", () => {
+  const ref = (id: string, blockId: string) => ({ id, type: "blockRef", props: { blockId } });
+  const frame = (id: string, ids: string[]) => ({ id, type: "infobox", props: { blockIds: ids.join(",") } });
+
+  it("finds nothing when every pointer is its own", () => {
+    expect(findRepeatedClaims([ref("e1", "a"), frame("e2", ["b", "c"])])).toEqual([]);
+  });
+
+  // The first one in reading order keeps the block: what was already on the
+  // page is never the thing that moves.
+  it("reports the second pointer, not the first", () => {
+    const repeats = findRepeatedClaims([ref("e1", "a"), ref("e2", "a")]);
+    expect(repeats).toEqual([{ editorBlockId: "e2", blockId: "a", index: -1, ids: [] }]);
+  });
+
+  it("says which entry of an infobox's list is the repeat", () => {
+    const repeats = findRepeatedClaims([ref("e1", "b"), frame("e2", ["a", "b"])]);
+    expect(repeats).toEqual([{ editorBlockId: "e2", blockId: "b", index: 1, ids: ["a", "b"] }]);
+  });
+
+  it("counts an id repeated inside one frame's own list", () => {
+    const repeats = findRepeatedClaims([frame("e1", ["a", "a"])]);
+    expect(repeats).toEqual([{ editorBlockId: "e1", blockId: "a", index: 1, ids: ["a", "a"] }]);
+  });
+
+  // BlockNote nests, so a pointer indented under a list item is as real as one
+  // at the top level — the same reason blockIdsInPage walks children.
+  it("looks inside nested blocks", () => {
+    const nested = { id: "e0", type: "bulletListItem", children: [ref("e2", "a")] };
+    expect(findRepeatedClaims([ref("e1", "a"), nested])[0]?.editorBlockId).toBe("e2");
+  });
+
+  // A copy pasted into a second tab is the same duplicate, and the editor only
+  // ever holds one document. What the other tabs hold wins outright.
+  it("treats what another tab already claims as the first claim", () => {
+    expect(findRepeatedClaims([ref("e1", "a")], ["a"])).toEqual([
+      { editorBlockId: "e1", blockId: "a", index: -1, ids: [] },
+    ]);
   });
 });

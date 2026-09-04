@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-04 — a copied block becomes a block of its own
+
+### Fixes
+
+- **A block in the writing can no longer end up as two windows onto one thing.** Blocks in a page are shown by pointing at them, so a duplicated pointer meant two boxes drawing the same block — typing in one changed the other. Anything that ends up pointing twice now quietly gets its own copy of the block instead.
+
+### Notes
+
+- **Copying a block out of a page and pasting it elsewhere still loses it**, and that's a separate gap now written down: the editor puts the clipboard together as plain HTML and these blocks have no way to read themselves back out of it, so what you paste arrives without them. Nothing is lost from the page you copied *from* — the block goes back to its sidebar, untouched.
+
 ## 2026-09-04 — the infobox gets its own menu
 
 ### Additions
@@ -234,10 +244,3 @@
 - **The text is smaller and the rows are tighter**, matching the menus everywhere else in the app rather than being a size of their own. About nine options fit where five did, which is most of why it felt cramped.
 - **It can't be squashed to a sliver any more.** Open it near the bottom of a page and it used to collapse to a row and a half; it now keeps a usable height and scrolls.
 - **The group headings** (*Headings*, *Basic blocks*) read as headings now, in the same small caps the rest of the app uses for labels.
-
-## 2026-08-28 — the link text box actually does something
-
-### Fixes
-
-- **Link text in the New page window did nothing.** Whatever you typed there was thrown away and the link came out reading as the page's name. The box works now: type *the bell* for a page called *Ninefold Bell* and that's what the link says, while still pointing at the right page and still showing up in the tree under its real name.
-- **A link with no wording of its own still follows a rename**, which is why this took a moment to get right. Links look their page up as you read them, so renaming a page updates every link to it — the fix keeps that, and only pins the wording when you deliberately typed some.

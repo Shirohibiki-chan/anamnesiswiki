@@ -136,11 +136,19 @@ const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox };
 
 type EditorProps = {
   nodeId: string;
+  /**
+   * Which of the page's tabs this is showing.
+   *
+   * Only used to tell the page's *other* tabs apart from this one — a block
+   * pointer that also appears in another tab is a duplicate, and the editor
+   * holds one document. See `applyPointerClones`.
+   */
+  tabId: string;
   content: unknown[];
   onContentChange: (content: unknown[]) => void;
 };
 
-export function Editor({ nodeId, content, onContentChange }: EditorProps) {
+export function Editor({ nodeId, tabId, content, onContentChange }: EditorProps) {
   const {
     editor,
     onKeyDownCapture,
@@ -155,7 +163,7 @@ export function Editor({ nodeId, content, onContentChange }: EditorProps) {
     closeIconTrigger,
     insertIconAtTrigger,
     suggestionMenuFloating,
-  } = useEditor(nodeId, content, onContentChange);
+  } = useEditor(nodeId, tabId, content, onContentChange);
   // Double-clicking a picture opens it full size; a single click still selects
   // it, which is what raises the toolbar. The listener lives on this wrapper
   // rather than on anything BlockNote renders, so it covers every picture in

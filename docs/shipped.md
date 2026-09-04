@@ -4728,6 +4728,45 @@ first block on it.
 how a row behaves nested inside another one.
 
 
+## Phase 19.5 — A repeated pointer clones its block ✅ Shipped 2026-09-04
+
+The last piece of the pointer model the phase is built on: `node.blocks` holds
+the records, the document holds pointers, and one record must never have two
+pointers at it. Two would be two live views of one block — type in one and the
+other changes.
+
+`findRepeatedClaims` reads a document and reports every pointer claiming a block
+an earlier one already has, the first in reading order keeping it;
+`applyPointerClones` clones the record and aims the repeat at the copy. It runs
+on the same change handler as the column repairs, one at a time with the
+document re-read between passes — two repeats inside one infobox both rewrite
+that frame's list, and the second would otherwise be written from a list that no
+longer exists. A copy that cannot be made leaves the pointer alone: two views of
+one block is a poor state and a pointer at nothing is a worse one.
+
+**What the pass sees includes the page's other tabs**, since the editor holds
+one document and a copy pasted into a second tab is the same duplicate. They are
+told apart by tab id, never by comparing content arrays — the stored content is
+replaced on every save, so an identity check stops matching the open tab a
+moment after it is typed in, and the tab being edited would then count as
+somewhere else, making every pointer in it a duplicate of itself. That is a
+clone per keystroke.
+
+**The route the plan expected does not currently happen, which is the finding
+worth keeping.** Copying a page block and pasting it does not produce a second
+pointer — the block does not survive the clipboard at all. BlockNote writes the
+clipboard as HTML and our custom blocks have no rule for reading themselves
+back, so the block comes back as nothing and its record returns to the sidebar,
+untouched. Written up in `docs/plan.md` as a gap with what closing it needs.
+
+**Verified by unit tests on both halves** — six over the applier against a fake
+editor that really edits itself, so the re-read between passes is exercised
+rather than asserted, and six over the planner. **Deliberately not an app-suite
+scenario:** driving copy and paste there uses the machine's real clipboard, so
+the test would depend on, and clobber, whatever the person running it had
+copied. Found by trying it.
+
+
 ## Phase 19.5 — The infobox's own menu ✅ Shipped 2026-09-04
 
 Scoped off her screenshots on 2026-08-29, when the frame had Add Block and

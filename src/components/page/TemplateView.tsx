@@ -142,6 +142,7 @@ export function TemplateView({ template }: { template: Node }) {
                 // isn't in `nodes`, so nothing matches and every page stays
                 // offerable — which is right: a template may link to a page.
                 nodeId={template.id}
+                tabId={activeTab.id}
                 content={activeTab.content}
                 onContentChange={(content) => editing.updateTabContent(activeTab.id, content)}
               />
