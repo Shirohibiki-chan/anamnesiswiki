@@ -20,19 +20,18 @@ export function BlockRefSlot({ blockId }: { blockId: string }) {
   return <Block blockId={blockId} />;
 }
 
-export function InfoboxSlot({
-  editorBlockId,
-  blockIds,
-  width,
-}: {
+export function InfoboxSlot(props: {
   editorBlockId: string;
   blockIds: string[];
   width: number;
+  color: string;
+  autoWidth: boolean;
+  centred: boolean;
 }) {
   const renderers = useContext(BlockRefRenderContext);
   if (!renderers) return null;
   const { Infobox } = renderers;
   // An infobox with nothing in it still draws: the frame carries its own Add
   // Block, and an empty one is how every infobox starts.
-  return <Infobox editorBlockId={editorBlockId} blockIds={blockIds} width={width} />;
+  return <Infobox {...props} />;
 }

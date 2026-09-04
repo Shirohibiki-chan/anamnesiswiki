@@ -658,55 +658,32 @@ in `docs/shipped.md`; what binds the code is in `docs/handoff.md`.
 whatever that block is showing. Nobody has asked for more than one cover, and
 there is nowhere on a page a second one would go.
 
-### The infobox's own menu, from her screenshots
+### The infobox's own menu — shipped 2026-09-04
 
-**Written down 2026-08-29, after she asked whether any of it was noted. It was
-not.** None of the below is built; the shipped infobox has Add Block, and
-BlockNote's own handle gives it Delete. The list is here so that seeing it in a
-screenshot later does not read as something we missed, and so the order it gets
-built in is a decision rather than an accident.
+**Written down 2026-08-29 off her screenshots, built 2026-09-04.** The frame has
+its own `⋯` now, beside its Add Block: a colour row, the width pair, Align
+centre, Duplicate and Remove infobox. Detail is in `docs/shipped.md`; what binds
+the code is in `docs/handoff.md`.
 
-- **Infobox settings: Auto-adapt width, Fixed width, Pin to top.** The two width
-  entries are the interesting pair and she called them out by name as handy.
-  They are the same question as this phase's per-block width from the other end:
-  auto-adapt is "be as wide as what you hold", fixed is "be the width I set".
-  **Seen in use 2026-09-02: auto-adapt overrides a width she dragged** — a box
-  set that way snaps back to a column's edge instead of staying where it was
-  put, and only a fixed-width box keeps a dragged size. So the two are a real
-  either/or rather than a preference, and Fixed width is the one that has to
-  exist before dragging an infobox means anything.
-  **The resize work they were waiting on shipped 2026-09-02**, so they are
-  buildable now: an infobox already has a width and a way to drag it, and what
-  is missing is the pair of menu items that set it without a drag. Auto-adapt
-  is the one with a question still in it — "as wide as what you hold" means
-  measuring the blocks inside, which is not what dragging an edge does. Pin to
-  top is its own small feature and unrelated to either.
-- **Layout: Full width, Align center, Wrap left, Wrap right.** See above: two of
-  these four are the wrapping we are not building yet, and Align center is cheap
-  and could ship with the width work. **Confirmed from her screenshots of the
-  menu, 2026-09-02**, along with what those settings do in use: a fixed-width
-  box set to Wrap right sits over on the right of the page with ordinary
-  paragraphs above it and empty space beside it, and **no columns are involved**
-  — the position comes from this submenu, not from a row of columns. Worth
-  saying plainly because it looked like free placement on the page at first, and
-  it is not.
-- **A colour row along the top of the menu**, with the same swatches the
-  callouts got in Phase 19.5 and a clear button beside them. **This one is
-  nearly free** — `COLOR_PALETTE` and the callout colour control already exist
-  and an infobox is a container with a border, which is exactly what a colour
-  would land on. It is the cheapest item on this list.
-- **Duplicate.** Worth thinking about before building rather than after: an
-  infobox holds *pointers*, so duplicating one has to decide whether the copy
-  points at the same blocks or at copies of them. Pointing at the same ones puts
-  a block in two places, which the phase has ruled out everywhere else, so it
-  means cloning every block it holds — the same question the copy-and-paste gap
-  already has open.
-- **Remove infobox**, which we have as BlockNote's Delete on the block handle.
-  Worth putting in the app's own words at some point: "Delete" on a hover handle
-  is not obviously "and the blocks inside go back to the sidebar".
-- **Their empty infobox says what to put in it** — "Add a portrait, stats, or
-  quick facts" — rather than only naming itself. Ours names itself and says to
-  add blocks. Theirs is better and the fix is one string.
+**Two of the reference's items are deliberately still missing**, and both are
+listed here rather than in the shipped log because they are work, not omissions:
+
+- **Wrap left and Wrap right**, which is the same wall the phase already named:
+  BlockNote does not float a block, so text flowing around an infobox is a much
+  larger job than the rest of that submenu was. Full width and Align centre —
+  the two that do not need floating — are built.
+- **Pin to top.** It was never scoped past its name. Pinning to the top of
+  *what* is the question: the page's writing already has a top, and a frame that
+  left the flow of the document would need somewhere else to live and a rule for
+  what happens when there are two of them. Worth asking her what she expects it
+  to do before building anything.
+
+**One decision worth not re-litigating: dragging an edge leaves auto-adapt.**
+The reference springs the frame back to its contents, so an auto-adapt box
+cannot be dragged at all. Ours turns auto off and keeps the width, because a
+handle that visibly does nothing is worse than an either/or you can leave by
+using it. Told from use, if she wants the reference's behaviour instead, it is
+one line.
 
 **Element shipped 2026-08-28, as New page.** The `/` menu makes a page and
 links to it without leaving the sentence, and a `[[Name]]` nothing answers to

@@ -579,6 +579,47 @@ export function withCopiedBlockImages(
   );
 }
 
+/**
+ * Copies of several blocks at once, each landing after the last of them, and
+ * which new block stands for which old one.
+ *
+ * **This is what duplicating an infobox needs, and it is why the frame cannot
+ * simply be copied.** An infobox holds *pointers* — the blocks are records in
+ * `node.blocks` — so a copied frame pointing at the same ids would put one
+ * block in two places, which is the one thing this phase rules out everywhere
+ * else. The copy gets copies, and the map is how the new frame learns which
+ * ids to hold.
+ *
+ * **They land together after the last one rather than each after its own
+ * original**, so a frame's blocks stay a run in storage instead of being
+ * interleaved with the blocks they were copied from.
+ *
+ * `mintId` is an argument so a test can predict what comes out, the same way
+ * `planDuplicate` takes one.
+ */
+export function duplicateBlocks(
+  blocks: Block[],
+  blockIds: string[],
+  mintId: () => string,
+  pictureOf: (block: Block) => BlockPicture = () => ({}),
+): { blocks: Block[]; idMap: Map<string, string> } {
+  const copying = blockIds
+    .map((id) => blocks.find((block) => block.id === id))
+    .filter((block) => block !== undefined);
+  if (copying.length === 0) return { blocks, idMap: new Map() };
+
+  const idMap = new Map(copying.map((block) => [block.id, mintId()]));
+  const copies = copying.map((block) => {
+    const copy: Block = { ...block, id: idMap.get(block.id)! };
+    return copy.kind === "image" ? withBlockImage(copy, pictureOf(block)) : copy;
+  });
+
+  const last = Math.max(...copying.map((block) => blocks.findIndex((candidate) => candidate.id === block.id)));
+  const next = [...blocks];
+  next.splice(last + 1, 0, ...copies);
+  return { blocks: next, idMap };
+}
+
 /** The fields one edit writes to a page. Blocks, and a picture that moved. */
 export type ImageBlockPatch = Partial<Pick<Node, "blocks" | "image" | "imageAlt" | "imageFocusY" | "pageImageBlockId">>;
 

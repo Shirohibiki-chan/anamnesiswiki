@@ -26,7 +26,25 @@ export const infoboxConfig = {
   // contents are. That also puts it under the editor's undo rather than the
   // panel's, which is the opposite of a block's width — the two live in
   // different places and each is undone where it was written.
-  propSchema: { blockIds: { default: "" }, width: { default: 0 } },
+  //
+  // **`autoWidth` and `centred` are booleans rather than one word with three
+  // states**, because they are two different questions: how wide the frame is,
+  // and where it sits when it is narrower than the column. Both default to what
+  // an infobox did before they existed — a fixed width, aligned left — so
+  // nothing already written moves.
+  //
+  // **`autoWidth` wins over `width` while it is on**, and dragging an edge
+  // turns it off. That is the one place this deliberately parts company with
+  // the reference, where a dragged edge on an auto box springs back: a handle
+  // you can pull that does nothing is worse than an either/or you can leave by
+  // pulling it.
+  propSchema: {
+    blockIds: { default: "" },
+    width: { default: 0 },
+    color: { default: "" },
+    autoWidth: { default: false },
+    centred: { default: false },
+  },
   content: "none",
 } as const;
 
@@ -41,6 +59,9 @@ export const infoboxSpec = createReactBlockSpec(infoboxConfig, {
         editorBlockId={block.id}
         blockIds={parseBlockIds(block.props.blockIds)}
         width={block.props.width}
+        color={block.props.color}
+        autoWidth={block.props.autoWidth}
+        centred={block.props.centred}
       />
     </div>
   ),

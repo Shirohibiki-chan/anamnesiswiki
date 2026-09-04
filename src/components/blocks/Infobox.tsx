@@ -12,17 +12,21 @@
 // order it was given them. That is why reordering writes to the prop on this
 // block in the document rather than to `node.blocks` — see docs/handoff.md on
 // position on screen not being position in storage.
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import type { Block, BlockKind } from "../../constants/schema";
-import { Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { useBlockNoteEditor } from "@blocknote/react";
+import { getPaletteHex } from "../../constants/palette";
+import { INFOBOX_TYPE } from "../../constants/schema";
 import { BLOCK_WIDTH_FULL, serialiseBlockIds, storedBlockWidth } from "../../services/block-service";
 import { useBlocks } from "../../hooks/use-blocks";
+import { useColorPreview } from "../../hooks/use-color-preview";
 import { useProject } from "../../hooks/use-project";
 import { TreePopover } from "../tree/TreePopover";
 import { AddBlockMenu } from "./AddBlockMenu";
 import { BlockList } from "./BlockList";
 import { BlockWidthHandles } from "./BlockWidthHandle";
+import { InfoboxMenu } from "./InfoboxMenu";
 import "./blocks.css";
 
 /**
@@ -39,16 +43,26 @@ export function Infobox({
   editorBlockId,
   blockIds,
   width,
+  color,
+  autoWidth,
+  centred,
 }: {
   editorBlockId: string;
   blockIds: string[];
   width: number;
+  color: string;
+  autoWidth: boolean;
+  centred: boolean;
 }) {
-  const { project, nodes, addBlock } = useProject();
+  const { project, nodes, addBlock, duplicateBlocks } = useProject();
   const editor = useBlockNoteEditor();
   const node = project?.selectedId ? nodes[project.selectedId] : undefined;
   const { blocks, properties, unshown } = useBlocks(node);
   const [addRect, setAddRect] = useState<DOMRect | null>(null);
+  const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
+  // The colour being tried in the system picker, which only this frame reads.
+  // Same arrangement a block's own colour has — see BlockShell.
+  const previewHex = useColorPreview(editorBlockId);
   // **The width is held here while it is being dragged and written once when
   // it is let go**, which is where this parts company with a block's own width.
   // A block writes to its record on every move and the store merges the run;
@@ -72,7 +86,53 @@ export function Infobox({
 
   /** Stores the frame's width. 0 is the whole column, and is what Home gives. */
   function setWidth(next: number) {
-    editor.updateBlock(editorBlockId, { props: { width: storedBlockWidth(next) ?? 0 } });
+    // **A drag leaves auto-adapt**, which is the whole of how the either/or is
+    // escaped: pulling an edge is saying how wide it should be, and a frame
+    // that sprang back to its contents afterwards would read as a broken
+    // handle. See the note on the prop schema in editor-blocks/infobox.tsx.
+    editor.updateBlock(editorBlockId, { props: { width: storedBlockWidth(next) ?? 0, autoWidth: false } });
+  }
+
+  /** One of the frame's own settings, written back to its block. */
+  function setLook(props: { color?: string; autoWidth?: boolean; centred?: boolean; width?: number }) {
+    editor.updateBlock(editorBlockId, { props });
+  }
+
+  // **The copy holds copies**, because an infobox holds pointers and one block
+  // in two frames is the thing this phase rules out everywhere else. The
+  // records are duplicated first — that is a panel edit, under the panel's undo
+  // — and the frame that points at them is inserted after; the two halves are
+  // written through different paths and cannot be committed together, which is
+  // the same split every other edit to an infobox has.
+  function duplicate() {
+    const idMap = duplicateBlocks(node!.id, blockIds);
+    const copied = blockIds.map((id) => idMap.get(id)).filter((id) => id !== undefined);
+    editor.insertBlocks(
+      // `as never` for the reason ColumnLane's insert has one: this hook hands
+      // back the editor under BlockNote's default schema, which does not know
+      // our blocks exist. The alternative is threading the app's schema type
+      // into every file that touches the editor.
+      [
+        {
+          type: INFOBOX_TYPE,
+          props: { blockIds: serialiseBlockIds(copied), width, color, autoWidth, centred },
+        } as never,
+      ],
+      editorBlockId,
+      "after",
+    );
+    setMenuRect(null);
+  }
+
+  function openMenuAt(event: MouseEvent<HTMLDivElement>) {
+    // A block inside the frame answers for its own right-click; this is for the
+    // frame itself — its padding, its empty state, the strip its Add Block sits
+    // on. Same division the sidebar makes between a block and the panel's space.
+    const target = event.target as HTMLElement | null;
+    if (target?.closest(".block-shell, input, textarea, [contenteditable='true']")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setMenuRect(new DOMRect(event.clientX, event.clientY, 0, 0));
   }
 
   function handleReorder(activeId: string, overId: string) {
@@ -102,12 +162,31 @@ export function Infobox({
   // existed opens at the width it always had, rather than at BlockNote's
   // numeric default of nothing.
   const drawnWidth = dragWidth ?? (width > 0 ? width : BLOCK_WIDTH_FULL);
+  const hex = previewHex ?? getPaletteHex(color);
+  // **A drag beats auto-adapt while the pointer is down**, so the edge follows
+  // the pointer rather than the frame sitting still until it is let go — the
+  // write that turns auto off does not land until then.
+  const fitsContents = autoWidth && dragWidth === null;
+
+  const classes = [
+    "infobox",
+    hex ? "infobox-colored" : "",
+    fitsContents ? "infobox-auto" : "",
+    centred ? "infobox-centred" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
-      className="infobox"
-      style={drawnWidth === BLOCK_WIDTH_FULL ? undefined : { width: `${drawnWidth}%` }}
+      className={classes}
+      style={{
+        ...(fitsContents || drawnWidth === BLOCK_WIDTH_FULL ? {} : { width: `${drawnWidth}%` }),
+        ...(hex ? { ["--infobox-accent" as string]: hex } : {}),
+      }}
+      onContextMenu={openMenuAt}
     >
+
       <BlockWidthHandles
         width={drawnWidth}
         label="This infobox"
@@ -135,17 +214,75 @@ export function Infobox({
         <p className="infobox-empty">
           {/* An empty frame with no explanation reads as something that failed
               to load. It says what it is and what to do with it, once. */}
-          An infobox. Add the blocks you want grouped here.
+          {/* It says what to put in it rather than only naming itself. An
+              empty frame that introduces itself tells you nothing you cannot
+              see; the useful sentence is what it is for. */}
+          A frame for the things worth seeing at a glance — a picture, some
+          stats, a few of the page's fields.
         </p>
       )}
 
-      <button
-        type="button"
-        className="block-add-trigger infobox-add"
-        onClick={(e) => setAddRect(e.currentTarget.getBoundingClientRect())}
-      >
-        <Plus size={12} /> Add Block
-      </button>
+      {/* **The frame's two controls sit together, at the bottom.** The obvious
+          place for the menu is the top right corner, and that is exactly where
+          the first block inside draws its own `⋯` — two menus a few pixels
+          apart, one of them answering for the wrong thing. Down here they are
+          unambiguously the frame's, beside the other button that already is.
+
+          Faint until the pointer is over the frame, the same manner as a
+          callout's colour dot: a page being read is a page of writing, not a
+          page of buttons. */}
+      <div className="infobox-footer">
+        <button
+          type="button"
+          className="block-add-trigger infobox-add"
+          onClick={(e) => setAddRect(e.currentTarget.getBoundingClientRect())}
+        >
+          <Plus size={12} /> Add Block
+        </button>
+        <button
+          type="button"
+          className="infobox-menu-trigger"
+          aria-label="Infobox options"
+          title="Infobox options"
+          onClick={(e) => setMenuRect(e.currentTarget.getBoundingClientRect())}
+        >
+          <MoreHorizontal size={13} />
+        </button>
+      </div>
+
+      {menuRect && (
+        <TreePopover anchorRect={menuRect} onClose={() => setMenuRect(null)}>
+          <InfoboxMenu
+            editorBlockId={editorBlockId}
+            color={color}
+            autoWidth={autoWidth}
+            centred={centred}
+            isFullWidth={width === 0 || width >= BLOCK_WIDTH_FULL}
+            // Picking a colour leaves the menu open — see BlockMenu, where the
+            // same decision is written down.
+            onColor={(next) => setLook({ color: next ?? "" })}
+            onAutoWidth={(auto) => {
+              setLook({ autoWidth: auto });
+              setMenuRect(null);
+            }}
+            onFullWidth={() => {
+              setLook({ width: 0, autoWidth: false });
+              setMenuRect(null);
+            }}
+            onCentred={(next) => {
+              setLook({ centred: next });
+              setMenuRect(null);
+            }}
+            onDuplicate={duplicate}
+            onRemove={() => {
+              // The blocks are untouched: removing the frame drops the pointers
+              // and the records go back to being shown in the sidebar.
+              editor.removeBlocks([editorBlockId]);
+              setMenuRect(null);
+            }}
+          />
+        </TreePopover>
+      )}
 
       {addRect && (
         <TreePopover anchorRect={addRect} onClose={() => setAddRect(null)}>

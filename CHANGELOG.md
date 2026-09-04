@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-04 — the infobox gets its own menu
+
+### Additions
+
+- **An infobox has its own `⋯` now**, on the strip at the bottom beside its Add Block. Right-clicking the frame itself opens the same menu. (Right-clicking a block inside still opens that block's menu, as before.)
+- **Colour.** The same swatches a sidebar block and a callout use. It lands on the frame's border and tints what's behind the blocks, so a group of stats can be told apart from a group of quotes at a glance.
+- **Auto-adapt or fixed width.** Auto-adapt makes the frame as wide as whatever is in it; fixed keeps the width you dragged it to. It won't shrink past a quarter of the page or grow past the whole of it, so a frame holding one short tag doesn't come out the width of the word.
+- **Dragging an edge switches a frame back to fixed**, at the width you dragged it to — the handle always does something rather than springing back.
+- **Full width and Align centre.** Centre only shows up when the frame is narrower than the page, which is the only time it means anything; the same item then reads *Align left* to put it back.
+- **Duplicate**, which copies the frame *and* the blocks in it. The copy is separate: writing in one doesn't change the other.
+- **Remove infobox**, in the app's own words, saying what it does — the frame goes and the blocks in it go back to the sidebar. (The Delete on the editor's own hover handle does the same thing and always did; it just never said so.)
+
+### Changes
+
+- **An empty infobox says what it's for** rather than only naming itself: a picture, some stats, a few of the page's fields.
+
+### Notes
+
+- **Two things from the reference's version of this menu aren't built yet**, both because they need a decision rather than an afternoon: text wrapping around a frame (Wrap left / Wrap right), and Pin to top, which has never been pinned down past its name.
+
 ## 2026-09-03 — a picture block holds its own picture
 
 ### Additions
@@ -221,16 +241,3 @@
 
 - **Link text in the New page window did nothing.** Whatever you typed there was thrown away and the link came out reading as the page's name. The box works now: type *the bell* for a page called *Ninefold Bell* and that's what the link says, while still pointing at the right page and still showing up in the tree under its real name.
 - **A link with no wording of its own still follows a rename**, which is why this took a moment to get right. Links look their page up as you read them, so renaming a page updates every link to it — the fix keeps that, and only pins the wording when you deliberately typed some.
-
-## 2026-08-28 — callouts can be any colour
-
-### Additions
-
-- **A callout can be any colour you like.** Hover one and a small dot appears in its top right; click it for the palette. Info, Quote and Secret all take a colour, and *The usual colour* puts one back to how its kind normally looks.
-- **Four colours also get an icon, because everyone already knows what they mean** — a tick on green, a triangle on amber, an exclamation on red, an *i* on blue. Any green does it, not just one: emerald, sage, teal and pine all read as a tick. Every other colour just recolours the box, and a colour you mix yourself never gets an icon, since there's no meaning to read off it.
-- **Colouring a callout doesn't change what it is.** A red Secret is still a secret and still gets stripped when a page is shared; it keeps its 🔒 label whatever colour it's wearing.
-
-### Fixes
-
-- **Warnings imported from a `.lk` file were being turned into secrets.** There were only three kinds of callout and no colours, so warning and error panels were given the nearest-looking one — but Secret is the box that gets stripped out when a page is shared, so every warning in an imported world was quietly marked don't-show-anyone, with nothing on screen saying so. They now come in as a callout coloured amber or red, and a success panel comes in green. **Pages you've already imported keep whatever they were brought in as** — this changes what a new import does, not what's already on your disk.
-- **Those colours survive going back out to a `.lk` file** — an amber callout leaves as a warning, red as an error, green as a success. Other colours are ours alone and leave as a plain info panel.

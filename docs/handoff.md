@@ -30,10 +30,11 @@ infobox grouping several (2026-08-29), callout colours and New page from inside
 the editor (2026-08-28), and the inline icon plus the callout's own icon
 (2026-09-01). What still binds the code from all of it is §Editor & templates
 and §Sidebar blocks below. Dragging a block or an infobox wider landed
-2026-09-02, columns the same day, and a picture block holding its own picture on
-2026-09-03. **Still open in the phase:** the infobox's own menu, a Recent row in
-the icon picker, and the slash-command and markdown halves of the shortcut
-sheet.
+2026-09-02, columns the same day, a picture block holding its own picture on
+2026-09-03, and the infobox's own menu on 2026-09-04. **Still open in the
+phase:** a Recent row in the icon picker, the slash-command and markdown halves
+of the shortcut sheet, and two items of the infobox's menu that need decisions
+rather than time — wrapping text around a frame, and Pin to top.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.
@@ -3441,6 +3442,20 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   of ids as a joined string**, because BlockNote's prop schema takes strings,
   numbers and booleans and not arrays; `parseBlockIds` / `serialiseBlockIds` are
   the only things that know the separator.
+
+- **The infobox's own controls live at the bottom of the frame, and that is a
+  fix rather than a preference.** Phase 19.5. Its `⋯` was built in the top right
+  corner, where the reference has it and where every menu belongs — and that is
+  where the first block *inside* the frame draws its own `⋯`. Two menus a few
+  pixels apart, and which one opened depended on the pixel. Anything else the
+  frame gains goes on the strip beside Add Block, not above the first block.
+
+- **Duplicating an infobox gives the copy copies of the blocks, never the same
+  ids.** Phase 19.5, and it follows from the frame holding pointers: two frames
+  aimed at one record is one block in two places, which is the state the whole
+  phase is built to prevent. `duplicateBlocks` does the records as a panel edit
+  and the frame is inserted after — two undo stacks for one action, which is
+  what every edit to an infobox already is.
 
 - **An infobox's order is its own, and reordering writes to the document.** The
   sidebar draws `node.blocks` in storage order; an infobox draws the ids it
