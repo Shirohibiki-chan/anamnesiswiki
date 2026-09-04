@@ -39,6 +39,7 @@ export type InfoboxRenderer = ComponentType<{
   color: string;
   autoWidth: boolean;
   centred: boolean;
+  wrap: string;
 }>;
 
 /** Both renderers, which arrive together and are never useful apart. */

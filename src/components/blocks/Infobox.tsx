@@ -18,7 +18,7 @@ import { MoreHorizontal, Plus } from "lucide-react";
 import { useBlockNoteEditor } from "@blocknote/react";
 import { getPaletteHex } from "../../constants/palette";
 import { INFOBOX_TYPE } from "../../constants/schema";
-import { BLOCK_WIDTH_FULL, serialiseBlockIds, storedBlockWidth } from "../../services/block-service";
+import { BLOCK_WIDTH_FULL, BLOCK_WIDTH_HALF, serialiseBlockIds, storedBlockWidth } from "../../services/block-service";
 import { useBlocks } from "../../hooks/use-blocks";
 import { useColorPreview } from "../../hooks/use-color-preview";
 import { useProject } from "../../hooks/use-project";
@@ -46,6 +46,7 @@ export function Infobox({
   color,
   autoWidth,
   centred,
+  wrap,
 }: {
   editorBlockId: string;
   blockIds: string[];
@@ -53,6 +54,7 @@ export function Infobox({
   color: string;
   autoWidth: boolean;
   centred: boolean;
+  wrap: string;
 }) {
   const { project, nodes, addBlock, duplicateBlocks } = useProject();
   const editor = useBlockNoteEditor();
@@ -94,8 +96,27 @@ export function Infobox({
   }
 
   /** One of the frame's own settings, written back to its block. */
-  function setLook(props: { color?: string; autoWidth?: boolean; centred?: boolean; width?: number }) {
+  function setLook(props: { color?: string; autoWidth?: boolean; centred?: boolean; width?: number; wrap?: string }) {
     editor.updateBlock(editorBlockId, { props });
+  }
+
+  /**
+   * Which side the writing goes round, or neither.
+   *
+   * **A frame the width of the column cannot be wrapped around**, so choosing a
+   * side gives it half the column to sit in — the alternative is a menu item
+   * that appears to do nothing. A frame already narrower than the column, by a
+   * drag or by auto-adapt, keeps the width it has.
+   */
+  function setWrap(side: string) {
+    const narrow = autoWidth || (width > 0 && width < BLOCK_WIDTH_FULL);
+    setLook({
+      wrap: side,
+      // Centred and wrapped are two answers to one question. See the prop
+      // schema in editor-blocks/infobox.tsx.
+      ...(side ? { centred: false } : {}),
+      ...(side && !narrow ? { width: BLOCK_WIDTH_HALF } : {}),
+    });
   }
 
   // **The copy holds copies**, because an infobox holds pointers and one block
@@ -168,11 +189,18 @@ export function Infobox({
   // write that turns auto off does not land until then.
   const fitsContents = autoWidth && dragWidth === null;
 
+  // **Wrapping is drawn on the frame and floated on the block around it**, which
+  // is a rule this file cannot carry out on its own: the element the writing
+  // flows around has to be the one BlockNote gave the block, and that belongs
+  // to ProseMirror. The class goes here and `blocks.css` reaches out to that
+  // element with `:has()`. See docs/handoff.md.
+  const wrapped = wrap === "left" || wrap === "right";
   const classes = [
     "infobox",
     hex ? "infobox-colored" : "",
     fitsContents ? "infobox-auto" : "",
-    centred ? "infobox-centred" : "",
+    centred && !wrapped ? "infobox-centred" : "",
+    wrapped ? `infobox-wrap-${wrap}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -181,7 +209,15 @@ export function Infobox({
     <div
       className={classes}
       style={{
-        ...(fitsContents || drawnWidth === BLOCK_WIDTH_FULL ? {} : { width: `${drawnWidth}%` }),
+        // **Container units while it is wrapped, per cent otherwise.** A
+        // wrapped frame is inside a floated box that is only as wide as the
+        // frame, so a percentage here would be a percentage of itself —
+        // measured at 74px where 254 was asked for. `cqw` is a percentage of
+        // the writing column, which is what the number has always meant; see
+        // the container declared on the editor in blocks.css.
+        ...(fitsContents || drawnWidth === BLOCK_WIDTH_FULL
+          ? {}
+          : { width: wrapped ? `${drawnWidth}cqw` : `${drawnWidth}%` }),
         ...(hex ? { ["--infobox-accent" as string]: hex } : {}),
       }}
       onContextMenu={openMenuAt}
@@ -190,6 +226,11 @@ export function Infobox({
       <BlockWidthHandles
         width={drawnWidth}
         label="This infobox"
+        // **A wrapped frame is measured against the column, not against what
+        // holds it.** Floating it puts it in a box that is its own width, so the
+        // ordinary "how wide is my parent" reading would make every pixel of
+        // the drag worth four.
+        measureAgainst={wrapped ? "column" : "parent"}
         onResize={setDragWidth}
         onCommit={(next) => {
           setWidth(next);
@@ -256,7 +297,8 @@ export function Infobox({
             editorBlockId={editorBlockId}
             color={color}
             autoWidth={autoWidth}
-            centred={centred}
+            centred={centred && !wrapped}
+            wrap={wrap}
             isFullWidth={width === 0 || width >= BLOCK_WIDTH_FULL}
             // Picking a colour leaves the menu open — see BlockMenu, where the
             // same decision is written down.
@@ -266,11 +308,16 @@ export function Infobox({
               setMenuRect(null);
             }}
             onFullWidth={() => {
-              setLook({ width: 0, autoWidth: false });
+              // Nothing to wrap around any more, so the sides come off with it.
+              setLook({ width: 0, autoWidth: false, wrap: "" });
               setMenuRect(null);
             }}
             onCentred={(next) => {
-              setLook({ centred: next });
+              setLook({ centred: next, wrap: "" });
+              setMenuRect(null);
+            }}
+            onWrap={(side) => {
+              setWrap(side);
               setMenuRect(null);
             }}
             onDuplicate={duplicate}

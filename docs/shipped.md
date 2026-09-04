@@ -4467,6 +4467,62 @@ the two and so was the one a shortcut would land on.
 
 ---
 
+## Phase 19.5 — Blocks in the Page ✅ Shipped whole 2026-09-04
+
+The phase's own entry, written when the last item on its list shipped. The
+feature entries that follow are what each piece did; this is what the phase
+*decided*, lifted out of `docs/plan.md` when it left that file.
+
+**What it was for.** The sidebar is a column and a panel of stats is a grid:
+four gauges go two-across there and a fifth pushes the page's fields off the
+bottom. This is the part of the reference she compared ours to and found ours
+wanting, and the one part the sidebar itself could never answer.
+
+**The expensive decision, and it held: a block is a record and the document
+holds a pointer.** `node.blocks` stays the one list of a page's blocks, wherever
+they are drawn; a custom BlockNote block carries an id and nothing else of
+substance; and **which of the three homes a block is in is read off the
+documents rather than stored**. That is what makes all six directions between
+sidebar, page and infobox *moves* rather than conversions — nothing is rewritten
+on the way, so a block that goes somewhere and comes back is the same block. The
+alternative worth naming and rejecting was a `home` field on the block: easier
+to write, and a second answer to a question the documents already answer, with
+no way to tell which is right when they disagree. What still binds the code is
+in `docs/handoff.md`.
+
+**Three homes, and dragging between all of them, is the real shape of it** — the
+infobox groups blocks, it does not host them exclusively, and a block standing
+alone in the writing had to work anyway. Her correction, 2026-08-27, and the
+reason the pointer model won.
+
+**Two words were settled here and neither is up for grabs.** *Columns* are lanes
+of writing inside a page; *width* is how much of the page one block takes; and
+Phase 21's are *panes*. Nothing in the UI calls a pane a column.
+
+**One dependency is refused, and this is not to be raised again.** BlockNote
+ships multi-column as `@blocknote/xl-multi-column`, and the whole `xl-` family
+is `GPL-3.0 OR PROPRIETARY` against our MIT. Paying, or relicensing the entire
+app, to obtain one editor block is out of all proportion; columns were written
+by hand instead. Settled 2026-08-27.
+
+**One item was dropped rather than built: Pin to top.** Asked what she expected
+it to do, she did not know either — it was on the list because it was on the
+reference's menu in a screenshot. If it comes back it will come back as
+something somebody is trying to do.
+
+**What shipped, each with its own entry below:** New page from inside the editor;
+callout colours; an icon in the writing; a picture block that holds its own
+picture; dragging a block wider; columns; a repeated pointer cloning its block;
+the infobox's own menu; Contents and the picker's Recent row; linking the page
+names already written; links to a spot on a page; and the writing going round an
+infobox.
+
+**What it did not build, and both are in Queued Adjustments rather than lost:**
+the marker showing what *could* be linked while she writes, and — found while
+checking the wrapping — that an infobox put inside a lane of columns lands
+outside the row instead.
+
+
 ## Phase 19.5 — New page, from inside the editor ✅ Shipped 2026-08-28
 
 The first *feature* of Phase 19.5, and the cheapest one on its list — everything
@@ -4726,6 +4782,63 @@ first block on it.
 
 **Not built:** a row's own menu, moving a lane left or right, and anything about
 how a row behaves nested inside another one.
+
+
+## Phase 19.5 — The writing goes round an infobox ✅ Shipped 2026-09-04
+
+Wrap left and Wrap right, the last two items on the reference's Layout submenu,
+and the last thing on the phase's list that anyone had asked for.
+
+**It shipped because a claim was checked.** Three documents said BlockNote
+cannot float a block, so wrapping was "a much larger job" and a known gap. None
+of the three had been tested. She asked the obvious question — the reference is
+ProseMirror, and so is this, so what is different? — and the answer was nothing:
+`@blocknote/core` is built on `@tiptap/core`, which is ProseMirror, and a `.lk`
+file's content has been ProseMirror JSON since the importer was written.
+
+**Measured before anything was built.** An infobox given `float: right` in the
+running app re-wrapped the paragraphs after it: the first line's right edge came
+in from x=860 to x=617, and two lines became four.
+
+**Three things had to be true for it to work, and each was measured:**
+
+- **The float goes on the block, not on the frame.** Writing flows around a
+  float only inside the same formatting context, and the writing after an
+  infobox is a run of sibling *blocks* — so the element that floats has to be
+  the one BlockNote gave the block. That element is ProseMirror's and wipes any
+  style written onto it, so `blocks.css` reaches it with `:has()` from the class
+  the frame draws on itself.
+- **The width has to be in container units.** A percentage inside a float is a
+  percentage of the float, which is the frame itself: 50% drew at 74px where 254
+  was asked for. `cqw` is a share of the writing column, which is what a width
+  has always meant here, and the container is declared on the editor. Declaring
+  it costs nothing elsewhere — measured with and without on a page holding no
+  floated frame, and every box came out the same size.
+- **The drag has to measure against the column too.** A wrapped frame's parent
+  is a box its own width, so the ordinary "how wide is my parent" reading made
+  every pixel of a drag worth four. `BlockWidthHandle` takes a `measureAgainst`
+  for it, and subtracts the editor's own gutters, which container units exclude.
+
+**Choosing a side gives a full-width frame half the column**, because wrapping
+one that fills the column is a menu item that visibly does nothing. A frame
+already narrower — dragged, or on auto-adapt — keeps what it has.
+
+**Centred and wrapped are one question, not two.** Either clears the other, and
+Full width clears both; picking the side that is already on turns wrapping off,
+which is the only way back to a frame on its own line without going through Full
+width.
+
+**Verified:** `e2e/wraps-the-writing-round-an-infobox.e2e.ts` measures the
+geometry rather than the class — the frame against the right edge with the line
+beside it stopping before it starts, the same on the left with the line starting
+after it ends, and the paragraph back to full width when wrapping is turned off.
+Looked at in the running app: both sides, the menu showing which is on, and a
+drag of the left edge growing the frame by what the pointer moved.
+
+**Two things left as they are, both seen:** the hover controls beside a floated
+frame sit over the wrapped writing rather than in a gutter, since a float has no
+gutter beside it; and a frame is capped at the width of whatever holds it, which
+is what keeps one inside a column lane rather than hanging out of it.
 
 
 ## Phase 19.5 — Links to a spot on a page ✅ Shipped 2026-09-04

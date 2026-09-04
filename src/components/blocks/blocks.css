@@ -2028,6 +2028,62 @@
   margin-inline: auto;
 }
 
+/* --- Wrapping the writing round a frame. Phase 19.5. ---
+
+   **The float goes on the block, not on the frame, and that is the whole
+   trick.** Text flows around a float only in the same formatting context, and
+   the writing after an infobox is a run of sibling blocks — so the element that
+   has to float is the one BlockNote gives the block, which belongs to
+   ProseMirror and wipes any style written onto it. `:has()` reaches it from the
+   class the frame draws on itself instead. Measured in the running app on
+   2026-09-04: the paragraph after a floated frame re-wrapped, its first line
+   coming in from x=860 to x=617.
+
+   The chain is spelt out rather than using a bare descendant match so that a
+   frame *inside* something else cannot float that as well. */
+.editor-shell .bn-block-outer:has(> .bn-block > * > .bn-block-content > .page-infobox > .infobox-wrap-left),
+.editor-shell .bn-block-outer:has(> .bn-block > * > .bn-block-content > .page-infobox > .infobox-wrap-right) {
+  /* Only as wide as the frame inside it, which is where the width lives. */
+  width: fit-content;
+  max-width: 100%;
+}
+
+.editor-shell .bn-block-outer:has(> .bn-block > * > .bn-block-content > .page-infobox > .infobox-wrap-left) {
+  float: left;
+  margin-right: var(--space-lg);
+}
+
+.editor-shell .bn-block-outer:has(> .bn-block > * > .bn-block-content > .page-infobox > .infobox-wrap-right) {
+  float: right;
+  margin-left: var(--space-lg);
+}
+
+/* **The column, for the container units a wrapped frame's width is drawn in.**
+   A percentage inside a float is a percentage of the float — which is the frame
+   itself, so 50% drew at a quarter of what was asked for. `cqw` is a percentage
+   of this element's content box, which is what a block's width has always
+   meant. Declaring it costs nothing anywhere else: measured with and without on
+   a page with no floated frame on it, and every box came out the same size.
+
+   It also keeps a tall frame inside the writing rather than hanging out of the
+   bottom of it, since an inline-size container contains its floats. */
+.editor-shell .bn-editor {
+  container-type: inline-size;
+}
+
+/* The gap under a wrapped frame, so the line that clears it is not touching the
+   bottom edge. The sides are on the float above; this is the one both share.
+
+   **The cap is what keeps a wrapped frame inside anything narrower than the
+   page**, a column lane most obviously: container units are a share of the
+   writing column, so half of it is wider than a lane. It fills the lane instead
+   of hanging out of it. */
+.infobox.infobox-wrap-left,
+.infobox.infobox-wrap-right {
+  margin-bottom: var(--space-sm);
+  max-width: 100%;
+}
+
 /* The frame's two controls, on one strip at the bottom. **Not the top right
    corner**, which is where the first block inside draws its own `⋯` — the two
    landed within a few pixels of each other and the wrong menu opened. */

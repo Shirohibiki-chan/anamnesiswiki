@@ -823,6 +823,16 @@ export const BLOCK_WIDTH_MIN = 25;
 export const BLOCK_WIDTH_FULL = 100;
 
 /**
+ * What a frame is given when it is asked to wrap and has no width of its own.
+ *
+ * **Wrapping a full-width frame is a menu item that does nothing** — there is
+ * no room beside it for the writing to go — so choosing a side has to make room
+ * as well. Half is the obvious answer and it is one of the widths a drag snaps
+ * to, so the frame lands somewhere she could have dragged it to herself.
+ */
+export const BLOCK_WIDTH_HALF = 50;
+
+/**
  * The widths a drag sticks to: halves, thirds and quarters of the column.
  *
  * **Both behaviours in one, which is what the reference does** — near one of
