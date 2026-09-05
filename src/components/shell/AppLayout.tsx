@@ -25,7 +25,6 @@ import { BlockPanel } from "../blocks/BlockPanel";
 import { LoadWarning } from "./LoadWarning";
 import { RecoveryNotice } from "./RecoveryNotice";
 import { SaveWarning } from "./SaveWarning";
-import { TitleBar } from "./TitleBar";
 import { TopBar } from "./TopBar";
 import "./shell.css";
 
@@ -138,108 +137,103 @@ export function AppLayout() {
   // would be measuring from the wrong left edge.
   return (
     <div className="app-frame">
-      <TitleBar />
-      {/* Everything under the bar. The frame is a column now — title bar, then
-          this — where it used to be the row that is now nested here. */}
-      <div className="app-frame-body">
-        <LeftRail
-          panel={sidebarPanel}
-          onSelectPanel={selectSidebarPanel}
-          onOpenSearch={openSearch}
-          onSwitchProject={() => void handleSwitchProject()}
-        />
-        <div
-          ref={layoutRef}
-          className={[
-            "app-layout",
-            isRightPanelOpen ? "" : "app-layout-properties-collapsed",
-            isResizing ? "app-layout-resizing" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          style={
-            {
-              // The *fitted* widths, not the stored ones: the grid and the two drag
-              // handles have to agree about where a panel's edge is, and on a
-              // window too narrow for all three that edge is not where the stored
-              // number says. Feeding the handles the stored width is what left them
-              // floating in the middle of the page the first time this was built.
-              "--tree-w": `${fitted.tree}px`,
-              "--props-w": `${fitted.properties}px`,
-              // The floor the page holds whatever the panels are dragged to. Fed
-              // from the constant rather than written into the stylesheet so the
-              // number lives with the widths it is in tension with.
-              "--center-min": `${CENTER_MIN_WIDTH}px`,
-            } as React.CSSProperties
-          }
-        >
-          <aside className="app-layout-tree">
-            <TreeSidebar panel={sidebarPanel} onSelectPanel={selectSidebarPanel} />
+      <LeftRail
+        panel={sidebarPanel}
+        onSelectPanel={selectSidebarPanel}
+        onOpenSearch={openSearch}
+        onSwitchProject={() => void handleSwitchProject()}
+      />
+      <div
+        ref={layoutRef}
+        className={[
+          "app-layout",
+          isRightPanelOpen ? "" : "app-layout-properties-collapsed",
+          isResizing ? "app-layout-resizing" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={
+          {
+            // The *fitted* widths, not the stored ones: the grid and the two drag
+            // handles have to agree about where a panel's edge is, and on a
+            // window too narrow for all three that edge is not where the stored
+            // number says. Feeding the handles the stored width is what left them
+            // floating in the middle of the page the first time this was built.
+            "--tree-w": `${fitted.tree}px`,
+            "--props-w": `${fitted.properties}px`,
+            // The floor the page holds whatever the panels are dragged to. Fed
+            // from the constant rather than written into the stylesheet so the
+            // number lives with the widths it is in tension with.
+            "--center-min": `${CENTER_MIN_WIDTH}px`,
+          } as React.CSSProperties
+        }
+      >
+        <aside className="app-layout-tree">
+          <TreeSidebar panel={sidebarPanel} onSelectPanel={selectSidebarPanel} />
+        </aside>
+
+        <div className="app-layout-center">
+          <TopBar
+            isRightPanelOpen={isRightPanelOpen}
+            onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
+          />
+          <LoadWarning />
+          <RecoveryNotice />
+          <SaveWarning />
+          {/* An open template takes the centre panel, and the page underneath
+              stays selected — closing it puts you back exactly where you were.
+              What it does *not* do is outlive a move to a page: going anywhere
+              clears it (the store's applySelection), as does returning to the
+              sidebar's Project tab (TreeSidebar). Both exist because this panel
+              shows one thing while the other two columns show another, and a
+              template that stayed put made a click on a tree row look ignored.
+              Keyed by template id for the same reason PageView is keyed by node
+              id: the tab strip's state resets on a switch without an effect. */}
+          <main className="app-layout-page">
+            {openTemplate ? (
+              <TemplateView key={openTemplate.id} template={openTemplate} />
+            ) : (
+              <PageView key={project?.selectedId ?? "none"} />
+            )}
+          </main>
+        </div>
+
+        {isRightPanelOpen && (
+          <aside className="app-layout-properties">
+            <BlockPanel key={project?.selectedId ?? "none"} />
           </aside>
+        )}
 
-          <div className="app-layout-center">
-            <TopBar
-              isRightPanelOpen={isRightPanelOpen}
-              onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
-            />
-            <LoadWarning />
-            <RecoveryNotice />
-            <SaveWarning />
-            {/* An open template takes the centre panel, and the page underneath
-                stays selected — closing it puts you back exactly where you were.
-                What it does *not* do is outlive a move to a page: going anywhere
-                clears it (the store's applySelection), as does returning to the
-                sidebar's Project tab (TreeSidebar). Both exist because this panel
-                shows one thing while the other two columns show another, and a
-                template that stayed put made a click on a tree row look ignored.
-                Keyed by template id for the same reason PageView is keyed by node
-                id: the tab strip's state resets on a switch without an effect. */}
-            <main className="app-layout-page">
-              {openTemplate ? (
-                <TemplateView key={openTemplate.id} template={openTemplate} />
-              ) : (
-                <PageView key={project?.selectedId ?? "none"} />
-              )}
-            </main>
-          </div>
-
-          {isRightPanelOpen && (
-            <aside className="app-layout-properties">
-              <BlockPanel key={project?.selectedId ?? "none"} />
-            </aside>
-          )}
-
-          {/* Last in the DOM so they sit above both panels without a z-index race,
-              and outside them so neither scrolls away from its own edge. The
-              properties handle isn't rendered at all while that panel is closed —
-              there's no edge there to drag. */}
+        {/* Last in the DOM so they sit above both panels without a z-index race,
+            and outside them so neither scrolls away from its own edge. The
+            properties handle isn't rendered at all while that panel is closed —
+            there's no edge there to drag. */}
+        <ResizeHandle
+          edge="tree"
+          label="Sidebar width"
+          width={widths.tree}
+          min={TREE_MIN_WIDTH}
+          max={maxPanelWidth(layoutSize.width, TREE_MIN_WIDTH)}
+          onResize={dragTo("tree")}
+          onReset={resetPanelWidths}
+          onDragChange={setIsResizing}
+        />
+        {isRightPanelOpen && (
           <ResizeHandle
-            edge="tree"
-            label="Sidebar width"
-            width={widths.tree}
-            min={TREE_MIN_WIDTH}
-            max={maxPanelWidth(layoutSize.width, TREE_MIN_WIDTH)}
-            onResize={dragTo("tree")}
+            edge="properties"
+            label="Properties panel width"
+            width={widths.properties}
+            min={PROPERTIES_MIN_WIDTH}
+            max={maxPanelWidth(layoutSize.width, PROPERTIES_MIN_WIDTH)}
+            onResize={dragTo("properties")}
             onReset={resetPanelWidths}
             onDragChange={setIsResizing}
           />
-          {isRightPanelOpen && (
-            <ResizeHandle
-              edge="properties"
-              label="Properties panel width"
-              width={widths.properties}
-              min={PROPERTIES_MIN_WIDTH}
-              max={maxPanelWidth(layoutSize.width, PROPERTIES_MIN_WIDTH)}
-              onResize={dragTo("properties")}
-              onReset={resetPanelWidths}
-              onDragChange={setIsResizing}
-            />
-          )}
+        )}
 
-          {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
-          {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
-          {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
-        </div>
+        {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
+        {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
+        {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
       </div>
     </div>
   );

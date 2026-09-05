@@ -25,6 +25,23 @@ Kept short on purpose — this file is read most sessions.
   snaps it and Win+arrow still works; both belong to the window rather than to
   the button, so the loss is the hover popup and nothing else.
 
+- **The title bar is mounted at the app root, not inside a screen, and putting
+  it back inside one takes the window's controls off the picker.** It lived in
+  `AppLayout` for a day — which exists only once a project is open — so the start
+  screen had no bar at all, and on a frameless window that means no drag region
+  and no close button: the picker could only be left through the taskbar.
+  Reported 2026-09-05. `App.tsx` is where everything belonging to the window
+  rather than to a project already sat (`useSaveOnExit`, `useShellKeys`), and it
+  is also what keeps the bar from remounting every time she opens or leaves a
+  project.
+
+- **Nothing that fills the window may claim `100vh` any more.** `.app-shell` is
+  the flex column holding the bar and the screen under it, so a child asking for
+  the viewport's height is asking for the window's height *plus* the bar's.
+  `.app-frame`, `.start` and `.startup-loading` all take `flex: 1; min-height: 0`
+  instead, and the picker's covers ran off the bottom of the screen until they
+  did. A new full-window screen has to do the same.
+
 - **`drawsWindowControls` is asked before any of them are drawn, and macOS says
   no.** Its traffic lights are that platform's own convention rather than a
   default nobody chose, and `titleBarStyle: "hidden"` still draws them into the

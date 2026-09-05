@@ -16,6 +16,7 @@
 
 ### Fixes
 
+- **The start screen has a title bar.** It had none at all — the bar was being drawn by the project shell, so the screen you pick a project from didn't get one. With the old Windows bar gone that left nothing to drag the window by and no close button on that screen, so the only way out of it was the taskbar. The bar is drawn for the whole window now, whichever screen you're on.
 - **The line under the title bar runs the whole way across again.** Windows paints its own buttons over the top-right corner of the page, and it was painting over the last 137 pixels of that line — so the rule across the top of the window stopped just short of the right edge. The buttons now sit one pixel higher and the line runs underneath them.
 
 ### Notes

@@ -21,7 +21,11 @@
      the column below it never learns how tall it is allowed to be and the
      grid of covers runs off the bottom of the window instead of paging. */
   grid-template-rows: minmax(0, 1fr);
-  height: 100vh;
+  /* Not `100vh` — this sits under the window's title bar (see `.app-shell` in
+     shell.css), and the viewport's full height here would be the window's plus
+     the bar's, pushing the bottom of the covers off the screen. */
+  flex: 1;
+  min-height: 0;
   /* The containing block for the rail's resize handle, which sits outside the
      rail rather than inside it — a handle inside a scrolling panel scrolls
      away from the edge it is supposed to be the edge of. Same reasoning as
