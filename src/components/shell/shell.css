@@ -2,7 +2,8 @@
    startup loading. See docs/constants-and-theming.md for the token set. */
 
 .startup-loading {
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,22 +365,26 @@
   left: 3px;
 }
 
-.app-frame {
+/* **The window: the title bar, then whichever screen is showing.** The bar is
+   mounted at the app root rather than inside a screen (see App.tsx), so this is
+   what gives it somewhere to sit and hands the rest of the height to the screen
+   below it. Everything that fills the window — the shell, the start screen, the
+   loading state — is a flex child of this and takes `flex: 1` rather than
+   `100vh`, which would be the window's height *plus* the bar's. */
+.app-shell {
   height: 100vh;
   display: flex;
-  /* A column since the title bar arrived: the bar, then everything else. It was
-     the row that `.app-frame-body` is now. */
   flex-direction: column;
-  /* The same ground the grid paints, so a theme's page background runs under
-     the rail instead of stopping at its edge. */
-  background: var(--gradient-bg, none), var(--color-bg);
 }
 
-.app-frame-body {
+.app-frame {
   flex: 1;
   /* Or the grid's own scrolling children push this taller than the window. */
   min-height: 0;
   display: flex;
+  /* The same ground the grid paints, so a theme's page background runs under
+     the rail instead of stopping at its edge. */
+  background: var(--gradient-bg, none), var(--color-bg);
 }
 
 /* **Two groups at the two ends, and the gap between them does the separating.**

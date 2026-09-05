@@ -9,6 +9,7 @@ import { ProjectHistory } from "./components/shell/ProjectHistory";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
 import { ShortcutSheet } from "./components/shell/ShortcutSheet";
 import { StartupRouter } from "./components/shell/StartupRouter";
+import { TitleBar } from "./components/shell/TitleBar";
 import { useDialogFocusTrap } from "./hooks/use-dialog-focus-trap";
 import { useDialogs } from "./hooks/use-dialogs";
 import { useSaveOnExit } from "./hooks/use-save-on-exit";
@@ -47,7 +48,20 @@ function App() {
   const { historyNodeId, closeHistory, isProjectHistoryOpen, closeProjectHistory } = useDialogs();
   return (
     <>
-      <StartupRouter />
+      {/* **Above the router, for the same reason `useSaveOnExit` is.** The title
+          bar belongs to the window, not to a project — and it lived inside
+          AppLayout for a day, which meant the start screen had no title bar at
+          all. On a frameless window that is not a cosmetic gap: there is nothing
+          to drag the window by and no close button, so the picker could only be
+          left through the taskbar. Reported 2026-09-05.
+
+          It also has to stay mounted across the switch between the two screens.
+          Rendering one on each would remount it every time she opens or leaves a
+          project, and the bar is the one element that should never flicker. */}
+      <div className="app-shell">
+        <TitleBar />
+        <StartupRouter />
+      </div>
       {/* Also above the router, and for a reason that cost a hang to find. It
           used to live in AppLayout, which only exists once a project is open —
           so `confirmDestructive` called from the start screen set a pending

@@ -78,3 +78,46 @@ describe("moving the window by its own bar", () => {
     expect(band.titleRight).toBeLessThanOrEqual(band.buttonsLeft);
   });
 });
+
+/**
+ * **The picker gets the same bar, and for a day it got none at all.**
+ *
+ * `TitleBar` was mounted inside `AppLayout`, which only exists once a project is
+ * open — so the start screen had no title bar on a window that no longer has a
+ * system one. That is not a cosmetic gap: there was nothing to drag the window
+ * by and no close button, so the picker could only be left through the taskbar.
+ * Reported 2026-09-05. It is mounted at the app root now (App.tsx), which is
+ * where everything belonging to the window rather than to a project already sat.
+ *
+ * The height assertion is the other half of that move: every screen used to
+ * claim `100vh`, which under a 32px bar is the window's height plus the bar's.
+ */
+describe("the picker's title bar", () => {
+  let app: RunningApp;
+
+  beforeAll(async () => {
+    app = await launchApp({ openWorld: false });
+    await app.window.waitForSelector(".start", { timeout: 15_000 });
+    await app.window.waitForTimeout(500);
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it("is there, and carries the same three buttons", async () => {
+    const band = await titleBand(app.window);
+    expect(band.spans).toBe(true);
+    expect(band.dragging).toBe(true);
+    expect(band.buttons).toBe(3);
+    expect(band.buttonsDrag).toBe(0);
+  });
+
+  it("leaves the screen under it a window's worth of room, not a window plus a bar", async () => {
+    const fit = await app.window.evaluate(() => {
+      const start = document.querySelector(".start")?.getBoundingClientRect();
+      return { bottom: Math.round(start?.bottom ?? 0), inner: window.innerHeight };
+    });
+    expect(fit.bottom).toBeLessThanOrEqual(fit.inner);
+  });
+});
