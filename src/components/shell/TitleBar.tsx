@@ -12,27 +12,78 @@
 // for on 2026-08-21 was a title bar that wears the theme, not the absence of
 // one. This is the bar.
 //
-// **One element, edge to edge, so there is nothing to seam.** The band has one
-// background and one rule under it, and the system's minimise/maximise/close
-// are tinted to that same colour (`readTitleBarColors` in theme-service.ts), so
-// the top of the window finally reads as a single strip.
+// **The buttons are ours as of 2026-09-05, and the reason is worth keeping.**
+// They were the system's for one day, which bought Windows 11's snap layouts —
+// the arrangement grid that appears when you hover the *native* maximise button
+// — at the price of three 46px-wide slabs in a 32px bar, since a caption button
+// takes a colour and a height and offers no other dimension. Put to the user,
+// she did not know the feature existed and could not find it. So it is unmade:
+// `drawsWindowControls` says whether to draw them, and everything they cost —
+// the overlay, `setTitleBarColors`, `readTitleBarColors`, the whole path for
+// telling the shell what colour the page is — went with them. A div is themed
+// for free.
+//
+// **macOS keeps its traffic lights**, which are that platform's own convention
+// rather than a default nobody chose, and which the shell still draws into the
+// page. `drawsWindowControls` is false there and the bar leaves its left end
+// clear for them instead.
 //
 // **The title is centred, and that is a platform answer rather than a taste.**
-// Windows draws its buttons over the top right and macOS draws its traffic
-// lights over the top left, so either end can be occupied depending on where
-// the app is running — and the renderer has no way to ask which. Centre is the
-// one position that is clear on both without branching on a platform this side
-// of the door cannot see.
+// Either end of a title bar can belong to the system depending on where the app
+// is running, and centre is the one position that is clear on both without the
+// renderer having to know which it is.
 //
-// **Nothing interactive lives in here.** The whole band is a drag region and a
-// drag region swallows clicks, so a control placed here would need to opt back
-// out by hand — and the app has somewhere better for every control it has. That
-// is what keeps this file as short as it is; if something ever does belong in
-// the bar, it needs `-webkit-app-region: no-drag` and a note saying why.
+// **Everything else in here is a drag region.** A drag region swallows clicks,
+// so the buttons opt back out in `shell.css` — anything else interactive added
+// to the bar needs the same, and a note saying why it is in the bar at all.
+import { Minus, Square, X } from "lucide-react";
+import { useWindowControls } from "../../hooks/use-window-controls";
+
 export function TitleBar() {
+  const { draws, maximised, minimise, toggleMaximise, close } = useWindowControls();
+
   return (
     <div className="title-bar">
       <span className="title-bar-name">Anamnesis</span>
+      {draws && (
+        <div className="title-bar-controls">
+          <button type="button" className="title-bar-btn" aria-label="Minimise" title="Minimise" onClick={minimise}>
+            <Minus size={14} />
+          </button>
+          <button
+            type="button"
+            className="title-bar-btn"
+            aria-label={maximised ? "Restore down" : "Maximise"}
+            title={maximised ? "Restore down" : "Maximise"}
+            onClick={toggleMaximise}
+          >
+            {/* Two overlapping squares is the restore glyph everywhere it
+                appears, and one square is maximise. Drawn from the same icon at
+                two sizes rather than imported twice — the offset pair is what
+                reads as "put it back", and lucide has no restore of its own. */}
+            {maximised ? (
+              <span className="title-bar-restore">
+                <Square size={9} />
+                <Square size={9} />
+              </span>
+            ) : (
+              <Square size={12} />
+            )}
+          </button>
+          {/* Close is last and turns red on hover, which is the one piece of
+              window-button convention worth keeping from the system's set: it is
+              the button whose mistake costs something. */}
+          <button
+            type="button"
+            className="title-bar-btn title-bar-close"
+            aria-label="Close"
+            title="Close"
+            onClick={close}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

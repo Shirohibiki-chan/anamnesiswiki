@@ -12,61 +12,46 @@ reads by default.
 
 Kept short on purpose — this file is read most sessions.
 
-- **The window's buttons are the system's on purpose, and drawing our own would
-  cost a feature.** Phase 21. `titleBarStyle: "hidden"` plus `titleBarOverlay`
-  hands the page the whole window while leaving the real minimise, maximise and
-  close on top of it, tinted by us. **Windows 11's snap layouts appear on hover
-  over that native maximise button** — a custom bar with three buttons of our
-  own drawing takes a working feature off her machine to gain a colour, which is
-  the trade `docs/plan.md` warned about and the reason this route was taken
-  instead. Do not replace them with our own controls.
+- **The window's buttons are ours, and the feature that was bought by keeping
+  the system's turned out not to be wanted.** Phase 21 used `titleBarOverlay` so
+  Windows kept drawing the real minimise, maximise and close — which preserved
+  Windows 11's snap layouts, the arrangement grid that appears on hovering the
+  *native* maximise button. The price was three 46px-wide slabs in a 32px bar: a
+  caption button takes a colour and a height and offers no other dimension, so
+  there is no making them smaller. **Put to the user on 2026-09-05, she did not
+  know the feature existed and could not find it**, which settles it — that was a
+  trade made on her behalf and it was not hers to want. `TitleBar.tsx` draws three
+  buttons of its own now, 38px wide. Dragging a window to a screen edge still
+  snaps it and Win+arrow still works; both belong to the window rather than to
+  the button, so the loss is the hover popup and nothing else.
 
-- **The colours come from the page, because only the page knows them.** A theme
-  is CSS and a theme she wrote is a file this code has never seen, so
-  `readTitleBarColors` resolves `--color-panel-alt` and `--color-text-secondary`
-  off the document after the theme has landed and hands them across
-  `setTitleBarColors`. **`--color-panel-alt` because that is what `.title-bar` is
-  painted** — the token there and the token here have to move together, or the
-  system's buttons sit in a band they do not match. macOS has no overlay to tint
-  and `setTitleBarOverlay` throws there, so the handler checks the platform once
-  rather than catching per theme change.
+- **`drawsWindowControls` is asked before any of them are drawn, and macOS says
+  no.** Its traffic lights are that platform's own convention rather than a
+  default nobody chose, and `titleBarStyle: "hidden"` still draws them into the
+  page there — ours would be a second set. The Tauri shell answers no as well,
+  since a window with decorations already has three. The bar's title is centred
+  partly so the left end stays clear for the traffic lights.
 
-- **The title bar is one element the full width of the window, and the reason
-  that is written down is that the first version was not.** Phase 21 turned the
-  frame off and then made the four things the app already drew across its top —
-  the rail, the sidebar's header, the bar above the page, and a band invented for
-  the properties panel — into the drag region, reasoning that a strip of chrome
-  did not need adding when a 48px row was already there. Four elements means four
-  backgrounds, seams between them, and window buttons tinted to a colour only one
-  of them is painted. **The user rejected it on sight 2026-09-05 and what she had
-  asked for on 2026-08-21 was a title bar that wears the theme, not the absence
-  of one.** Do not re-derive the cheap version: a bar that is several things is
-  not a bar. `.title-bar` in `shell.css` is the only drag region in the app, and
-  `--window-controls-w` now has exactly one reader — that bar's right padding, so
-  the centred title is centred in the part of the window that is ours.
+- **`requestWindowClose` and `closeWindow` are different calls and swapping them
+  loses unsaved work.** The first is the button a person presses: it lets the
+  `close` listener hold the window and raise `onWindowCloseRequested` so the app
+  can flush. The second is the renderer answering that — it sets `closeApproved`
+  and takes the window, by design, because the handshake is what called it. The
+  bar's X must use the first. This distinction only exists on Electron; Tauri's
+  own `close` already raises its close-requested event, so both map to it there.
 
-- **The overlay paints over the page, so the bar's bottom rule is not the
-  overlay's to draw.** The system fills its whole region with the colour we hand
-  it, buttons and background together — an overlay the full height of the bar
-  therefore covers the bar's 1px border for the 137px the buttons occupy, and the
-  line across the top of the window stops short of the right edge. `OVERLAY_HEIGHT`
-  in `electron/main.js` is `TITLE_BAR_HEIGHT` minus that rule for exactly this
-  reason, and `moves-the-window-by-its-own-bar` asserts the one-pixel difference
-  so it cannot be tidied away as an off-by-one. Measured 2026-09-05.
+- **The whole path for telling the shell what colour the page is went with the
+  overlay.** `setTitleBarColors`, `readTitleBarColors`, the `window:titleBarColors`
+  channel and the theme-store call that drove them are all deleted. A title bar
+  that is a div in the page is themed by the same CSS as everything else and
+  needs none of it. Do not reintroduce any of it to solve a colour problem — if
+  the bar is the wrong colour, that is a stylesheet question now.
 
-- **The buttons' width is the system's and there is no setting for it.** Windows
-  draws them 46px wide each, 137px in total; `titleBarOverlay` takes a colour, a
-  symbol colour and a height, and that is the whole of what we control. Anything
-  wanting smaller or differently shaped controls has to draw its own three
-  buttons, which is the trade the entry above says not to make. Do not go looking
-  for the option — it does not exist.
-
-- **`setTitleBarOverlay` is passed the height every time, and that is deliberate
-  belt-and-braces rather than a known requirement.** It was first suspected of
-  dropping the height on a colours-only call, which would have explained buttons
-  overhanging the bar; it does not — measured 2026-09-05, the overlay held its
-  height across theme changes either way. Passing it costs nothing and keeps the
-  one constant answering for both calls, so it stays.
+- **A control in the bar must not fill the bar's full height.** `.title-bar-controls`
+  stops at `bottom: 1px` because a hover fill over the bar's bottom rule breaks
+  the line across the top of the window for that button's width — loudest on
+  close, whose fill is solid red. Measured 2026-09-05, and it is the same mistake
+  the system overlay made the day before from the other side.
 
 - **Nothing interactive belongs in the title bar, which is what keeps it
   simple.** A drag region swallows clicks, so any control put there has to opt

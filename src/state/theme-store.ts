@@ -26,7 +26,6 @@ import {
   type StopWatching,
 } from "../services/filesystem-service";
 import { pickThemeFile, showFolder } from "../services/dialog-service";
-import { setTitleBarColors } from "../services/host-service";
 import { readPalette, themeFromPalette } from "../services/palette-import";
 import { AUTO_TOKENS, type GradientSlot } from "../constants/theme-tokens";
 import {
@@ -45,7 +44,6 @@ import {
 } from "../services/theme-editor";
 import {
   applyBootBackground,
-  readTitleBarColors,
   applyContentScale,
   applyCustomThemeCss,
   applyFonts,
@@ -438,13 +436,6 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     // After the theme is on the document, not before — it reads the resolved
     // background back out, which is only right once the rules above have landed.
     const bootBg = applyBootBackground();
-    // The window's own bar follows the theme too, and for the same reason and at
-    // the same moment — it is read back off the document once the rules above
-    // have landed. Not awaited: the bar is decoration, and a shell that cannot
-    // tint one (macOS, or the Tauri build) answers by doing nothing.
-    const titleBar = readTitleBarColors();
-    if (titleBar) void setTitleBarColors(titleBar);
-
     if (JSON.stringify(themeFonts) !== JSON.stringify(state.themeFonts)) set({ themeFonts });
 
     cacheAppearance({

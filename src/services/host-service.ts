@@ -180,19 +180,47 @@ export async function showWindow(): Promise<void> {
 }
 
 /**
- * Nothing, on this shell.
+ * The Tauri build keeps its own frame, so the page draws no controls for it.
  *
- * The Tauri build opens with the system's own decorations and has shipped
- * nothing since v0.5.0; the themed bar is Phase 21 and lives on the Electron
- * side. Present so the contract is whole rather than because it does anything —
- * see the note on `setTitleBarColors` in host-contract.ts, which says a shell
- * without a bar of its own is allowed to say nothing.
+ * Not a limitation being worked around — this shell has shipped nothing since
+ * v0.5.0, and a window with decorations already has three buttons. Drawing ours
+ * as well would be two sets.
  */
-export async function setTitleBarColors(colors: { background: string; symbol: string }): Promise<void> {
-  // Named and discarded rather than omitted: the signature is the contract's,
-  // and a shorter one here would only typecheck because this file is not the
-  // one the Electron build compiles against.
-  void colors;
+export async function drawsWindowControls(): Promise<boolean> {
+  return false;
+}
+
+/** Named and implemented even though nothing here draws a button that calls
+ *  them: the signature is the contract's, and the `satisfies` block at the foot
+ *  of this file is what stops this shell quietly losing a capability. */
+export async function minimiseWindow(): Promise<void> {
+  await getCurrentWindow().minimize();
+}
+
+export async function toggleMaximiseWindow(): Promise<void> {
+  await getCurrentWindow().toggleMaximize();
+}
+
+export async function watchWindowMaximised(handler: (maximised: boolean) => void): Promise<() => void> {
+  const window = getCurrentWindow();
+  // Tauri has no maximise event of its own; a resize is what a maximise looks
+  // like from here, and asking the window afterwards is the reliable half.
+  const stop = await window.onResized(() => {
+    void window.isMaximized().then(handler);
+  });
+  handler(await window.isMaximized());
+  return stop;
+}
+
+/**
+ * The close a person asked for. Tauri's own `close` already raises its
+ * close-requested event, so this and `closeWindow` are the same call here — the
+ * two are only distinct on Electron, where one of them is the renderer saying it
+ * has finished saving. Kept separate in the contract because that distinction is
+ * real on the shell that ships.
+ */
+export async function requestWindowClose(): Promise<void> {
+  await getCurrentWindow().close();
 }
 
 /** Closes the window the polite way, letting the host run its own handlers. */
@@ -383,7 +411,11 @@ const conformance = {
   fileInfo,
   watchPath,
   showWindow,
-  setTitleBarColors,
+  drawsWindowControls,
+  minimiseWindow,
+  toggleMaximiseWindow,
+  watchWindowMaximised,
+  requestWindowClose,
   closeWindow,
   destroyWindow,
   onWindowCloseRequested,

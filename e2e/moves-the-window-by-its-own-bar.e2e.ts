@@ -9,13 +9,14 @@
 // fail when the workaround is the problem.
 //
 // So this checks the shape instead. One bar, reaching both edges of the window,
-// tall enough to be a bar, moving the window when dragged — and none of those
-// four panels doing that job any more.
+// tall enough to be a bar, moving the window when dragged, carrying its own
+// three controls — and none of those four panels doing chrome's job any more.
 //
-// **Written to hold on a platform with no overlay at all.** `--window-controls-w`
-// is zero wherever the system still draws its own decorations, so the last
-// assertion is a comparison against what the page reports rather than against a
-// number measured on Windows.
+// **Everything here is read off elements now.** The controls were the system's
+// for a day, which meant measuring them through `--window-controls-w` and
+// `navigator.windowControlsOverlay` and never being able to see them. They are
+// ours, so they can simply be looked at — and clicked, which is what catches the
+// one failure that would otherwise ship silently.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import { openPage, titleBand, waitForWorld } from "./harness/screen";
@@ -54,24 +55,26 @@ describe("moving the window by its own bar", () => {
     expect(band.strays).toEqual([]);
   });
 
-  it("gives the system's buttons the same height as the bar", async () => {
+  it("draws its own three window buttons", async () => {
     const band = await titleBand(app.window);
-    // Null on a shell with no overlay — macOS, or one still drawing its own
-    // decorations. There is nothing to compare there and nothing to get wrong.
-    if (band.overlayHeight === null) return;
-    // **This is the assertion that would have caught the buttons overhanging the
-    // bar**, reported from use 2026-09-05 and invisible to every other check
-    // here, and it is deliberately one pixel short of the bar. The system paints
-    // the overlay opaquely over the page, so a full-height one covers the bar's
-    // bottom rule for the 137px the buttons occupy and the line across the top of
-    // the window stops short of the right edge. `OVERLAY_HEIGHT` in
-    // electron/main.js is the bar minus that rule; both sides are read here so
-    // they cannot drift apart.
-    expect(band.overlayHeight).toBe(band.height - 1);
+    // Minimise, maximise, close. They were the system's for one day, which cost
+    // three 46px slabs in a 32px bar to buy a snap-layout popup the user did not
+    // know existed — see TitleBar.tsx. On a shell that still draws its own
+    // frame there would be none, and this scenario runs on the one that does not.
+    expect(band.buttons).toBe(3);
   });
 
-  it("keeps the title clear of the system's buttons", async () => {
+  it("lets those buttons be clicked rather than dragging the window", async () => {
     const band = await titleBand(app.window);
-    expect(band.titleRight).toBeLessThanOrEqual(band.width - band.controls);
+    // **The failure this catches costs the button entirely.** The bar is a drag
+    // region and a drag region swallows clicks, so a control that does not opt
+    // back out moves the window instead of doing its job — and it does it
+    // silently, looking for all the world like a button that is simply ignored.
+    expect(band.buttonsDrag).toBe(0);
+  });
+
+  it("keeps the title clear of the buttons", async () => {
+    const band = await titleBand(app.window);
+    expect(band.titleRight).toBeLessThanOrEqual(band.buttonsLeft);
   });
 });

@@ -19,7 +19,7 @@
 | What you see | File |
 |---|---|
 | The three-column app frame (left tree / center page / right properties), including panel show/hide state and responsive collapsing on narrow windows | `src/components/shell/AppLayout.tsx` |
-| The window's title bar — one band across the very top, holding the app's name and nothing else. The only drag region in the app | `src/components/shell/TitleBar.tsx` |
+| The window's title bar — one band across the very top, holding the app's name and its own minimise/maximise/close. The only drag region in the app | `src/components/shell/TitleBar.tsx` |
 | The bar above the page, spanning the center panel — back/forward/home, the history and fade-in "Saved" indicators, and the properties-panel toggle. What belongs to the page rather than to the app; the rest moved to the rail in Phase 21 | `src/components/shell/TopBar.tsx` |
 | The rail down the left of the window — Project / Templates / Assets, then search, switch project and settings, each with its word under its icon | `src/components/shell/LeftRail.tsx` |
 | The start screen — brand, the one centred "New project" button, the filter box, and the rail. Rendered before any project is open | `src/components/start/StartScreen.tsx` |

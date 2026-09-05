@@ -24,6 +24,7 @@ const TREE_PROJECT_HEADER = ".tree-project-header";
 const PROPERTIES_HEAD = ".app-layout-properties-head";
 const TITLE_BAR = ".title-bar";
 const TITLE_BAR_NAME = ".title-bar-name";
+const TITLE_BAR_CONTROLS = ".title-bar-controls";
 const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
 const BLOCK_PANEL = ".block-panel";
@@ -129,70 +130,60 @@ export async function sidebarPanelName(window: Page): Promise<string | null> {
 /**
  * The window's title bar, as the page sees it.
  *
- * **It reads the bar and the four panels that used to impersonate one.** Until
- * 2026-09-05 there was no title bar: the rail, the sidebar's header, the bar
- * above the page and an invented band on the properties panel were each made a
- * drag region, which is why `strays` is here — every one of them being an
+ * **It reads the bar, its buttons, and the four panels that used to impersonate
+ * one.** Until 2026-09-05 there was no title bar: the rail, the sidebar's header,
+ * the bar above the page and an invented band on the properties panel were each
+ * made a drag region, which is why `strays` is here — every one of them being an
  * ordinary panel again is half of what replaced them, and it is the half nothing
  * on screen would show.
  *
  * `spans` is the bar reaching both edges of the window, since a title bar with a
- * seam in it is the defect this replaced. `controls` is how much of the
- * right-hand end the system's own buttons are using (`--window-controls-w`,
- * which is zero on any platform or shell that draws its own decorations, so a
- * scenario compares against it rather than assuming a number). `titleRight` is
- * the right edge of the bar's own text, which must stay clear of them.
+ * seam in it is the defect this replaced. `buttons` is how many controls it
+ * draws and `buttonsDrag` whether any of them forgot to opt out of the drag
+ * region — a window button that moves the window instead of closing it is the
+ * failure this file exists to catch. `titleRight` is the right edge of the bar's
+ * own text, which must stay clear of the buttons.
  *
- * **`overlayHeight` is the one measurement that comes from the system rather
- * than from our CSS**, and it is here because of a bug nothing else could see.
- * `setTitleBarOverlay` replaces the whole overlay rather than merging what it is
- * given, so calling it with colours alone silently drops the height back to the
- * platform's default caption height — which the window then wears while the page
- * still draws a 32px bar, and the buttons overhang it. Reported from use
- * 2026-09-05. `navigator.windowControlsOverlay` is the page's own view of what
- * the system reserved, so comparing it against the bar's height catches that
- * without a screenshot. It is `null` wherever there is no overlay at all — macOS,
- * or a shell still drawing its own decorations — and a scenario must skip rather
- * than assume.
+ * **The system's overlay is gone**, so there is nothing here reading
+ * `--window-controls-w` or `navigator.windowControlsOverlay` any more. Those
+ * measured the size of somebody else's buttons; ours are elements, and an
+ * element can simply be looked at.
  */
 export async function titleBand(window: Page): Promise<{
-  controls: number;
+  buttons: number;
+  buttonsDrag: number;
   dragging: boolean;
   height: number;
-  overlayHeight: number | null;
   spans: boolean;
   strays: string[];
   titleRight: number;
+  buttonsLeft: number;
   width: number;
 }> {
   return window.evaluate(
-    ([bar, title, ...former]) => {
-      const probe = document.createElement("div");
-      probe.style.cssText = "position:absolute;visibility:hidden;width:var(--window-controls-w)";
-      document.body.appendChild(probe);
-      const controls = Math.round(probe.getBoundingClientRect().width);
-      probe.remove();
-      const drags = (selector: string) => {
-        const element = document.querySelector(selector);
+    ([bar, title, controls, ...former]) => {
+      const drags = (element: Element | null) => {
         if (!element) return false;
         return getComputedStyle(element).getPropertyValue("-webkit-app-region").trim() === "drag";
       };
       const box = document.querySelector(bar)?.getBoundingClientRect();
       const name = document.querySelector(title)?.getBoundingClientRect();
-      const overlay = (navigator as Navigator & { windowControlsOverlay?: { visible: boolean; getTitlebarAreaRect(): DOMRect } })
-        .windowControlsOverlay;
+      const buttons = [...document.querySelectorAll(`${controls} button`)];
       return {
-        controls,
-        dragging: drags(bar),
+        buttons: buttons.length,
+        buttonsDrag: buttons.filter(drags).length,
+        dragging: drags(document.querySelector(bar)),
         height: Math.round(box?.height ?? 0),
-        overlayHeight: overlay?.visible ? Math.round(overlay.getTitlebarAreaRect().height) : null,
         spans: Math.round(box?.left ?? -1) === 0 && Math.round(box?.width ?? 0) === window.innerWidth,
-        strays: former.filter(drags),
+        strays: former.filter((selector) => drags(document.querySelector(selector))),
         titleRight: Math.round(name?.right ?? 0),
+        buttonsLeft: Math.round(
+          buttons.reduce((near, button) => Math.min(near, button.getBoundingClientRect().left), window.innerWidth),
+        ),
         width: window.innerWidth,
       };
     },
-    [TITLE_BAR, TITLE_BAR_NAME, LEFT_RAIL, TOP_BAR, TREE_PROJECT_HEADER, PROPERTIES_HEAD],
+    [TITLE_BAR, TITLE_BAR_NAME, TITLE_BAR_CONTROLS, LEFT_RAIL, TOP_BAR, TREE_PROJECT_HEADER, PROPERTIES_HEAD],
   );
 }
 

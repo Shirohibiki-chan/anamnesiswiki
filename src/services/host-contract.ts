@@ -106,18 +106,49 @@ export type HostContract = {
   // ---- window
   showWindow(): Promise<void>;
   /**
-   * Paints the window's own title bar in the app's colours.
+   * Whether the page has to draw the window's minimise, maximise and close.
    *
-   * **Only the page knows what these are.** A theme is CSS, and a theme she
-   * wrote herself can put anything in those tokens, so the answer has to be
-   * read off the document after the theme has landed rather than looked up.
+   * **This replaced tinting the system's own buttons on 2026-09-05**, and the
+   * reason was the user rather than the platform: Windows draws those controls
+   * 46px wide and offers a colour and a height and nothing else, which in a 32px
+   * themed bar is three grey slabs. The one thing keeping them bought was Windows
+   * 11's snap layouts — the grid that appears on hovering the native maximise
+   * button — and she did not know it existed. `setTitleBarColors` went with them.
    *
-   * A shell with no title bar of its own — or a platform whose controls are not
-   * ours to tint, which is macOS — does nothing and says nothing. This is
-   * decoration, and a window that opened is worth more than a window that
-   * matches.
+   * False on macOS, whose traffic lights are the platform's convention rather
+   * than a default nobody chose, and false on a shell that still draws its own
+   * frame. The bar asks before drawing anything.
    */
-  setTitleBarColors(colors: { background: string; symbol: string }): Promise<void>;
+  drawsWindowControls(): Promise<boolean>;
+  minimiseWindow(): Promise<void>;
+  /**
+   * Maximises the window, or restores it if it is maximised already.
+   *
+   * One call rather than two, because the button is one button and the window
+   * already knows which state it is in — asking the page to decide is how the
+   * page's idea of that state and the window's come apart.
+   */
+  toggleMaximiseWindow(): Promise<void>;
+  /**
+   * Watches whether the window is maximised, firing once with the state as it
+   * stands and again whenever it changes. Returns the unsubscribe.
+   *
+   * **The button cannot track this by itself.** A window is also maximised by a
+   * double-click on the bar, by Win+Up, by a snap and by a drag to the top of the
+   * screen, and the glyph has to be right after all of them.
+   */
+  watchWindowMaximised(handler: (maximised: boolean) => void): Promise<() => void>;
+  /**
+   * Asks the window to close the way the system's own close button did.
+   *
+   * **Not `closeWindow`, and the difference costs unsaved work if it is got
+   * wrong.** `closeWindow` is the *approved* close the renderer calls once it
+   * has finished flushing — it skips the handshake by design, because the
+   * handshake is what called it. This is the other end: the button a person
+   * presses, which has to raise `onWindowCloseRequested` and let the app save
+   * first. The system's close button always did this; ours has to as well.
+   */
+  requestWindowClose(): Promise<void>;
   closeWindow(): Promise<void>;
   destroyWindow(): Promise<void>;
   onWindowCloseRequested(handler: () => boolean | Promise<boolean>): Promise<() => void>;

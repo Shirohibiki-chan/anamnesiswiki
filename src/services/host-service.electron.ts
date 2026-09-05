@@ -41,7 +41,12 @@ type HostBridge = {
   unwatch(id: number): Promise<void>;
   onWatchEvent(handler: (id: number, changed: string[]) => void): () => void;
   showWindow(): Promise<void>;
-  setTitleBarColors(colors: { background: string; symbol: string }): Promise<void>;
+  drawsWindowControls(): Promise<boolean>;
+  minimiseWindow(): Promise<void>;
+  toggleMaximiseWindow(): Promise<void>;
+  isWindowMaximised(): Promise<boolean>;
+  onMaximisedChanged(handler: (maximised: boolean) => void): () => void;
+  requestWindowClose(): Promise<void>;
   closeWindow(): Promise<void>;
   destroyWindow(): Promise<void>;
   watchClose(wanted: boolean): Promise<void>;
@@ -169,8 +174,36 @@ export function showWindow(): Promise<void> {
   return bridge().showWindow();
 }
 
-export function setTitleBarColors(colors: { background: string; symbol: string }): Promise<void> {
-  return bridge().setTitleBarColors(colors);
+export function drawsWindowControls(): Promise<boolean> {
+  return bridge().drawsWindowControls();
+}
+
+export function minimiseWindow(): Promise<void> {
+  return bridge().minimiseWindow();
+}
+
+export function toggleMaximiseWindow(): Promise<void> {
+  return bridge().toggleMaximiseWindow();
+}
+
+/**
+ * The state now, then every change to it.
+ *
+ * Subscribing before the first read rather than after: a window maximised in the
+ * gap between the two would otherwise leave the button showing the wrong glyph
+ * until the next change, which for a window nobody touches again is forever.
+ */
+export async function watchWindowMaximised(handler: (maximised: boolean) => void): Promise<() => void> {
+  const host = bridge();
+  const stop = host.onMaximisedChanged(handler);
+  handler(await host.isWindowMaximised());
+  return stop;
+}
+
+/** The close a person asked for, which the app may still hold to finish saving —
+ *  see `requestWindowClose` in host-contract.ts for why it is not `closeWindow`. */
+export function requestWindowClose(): Promise<void> {
+  return bridge().requestWindowClose();
 }
 
 export function closeWindow(): Promise<void> {
@@ -340,7 +373,11 @@ const conformance = {
   fileInfo,
   watchPath,
   showWindow,
-  setTitleBarColors,
+  drawsWindowControls,
+  minimiseWindow,
+  toggleMaximiseWindow,
+  watchWindowMaximised,
+  requestWindowClose,
   closeWindow,
   destroyWindow,
   onWindowCloseRequested,

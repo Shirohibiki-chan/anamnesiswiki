@@ -117,27 +117,25 @@ const DEV_URL = process.env.ANAMNESIS_DEV_URL ?? null;
 const HAS_OVERLAY = process.platform === "win32" || process.platform === "linux";
 
 /**
- * How tall the system's window buttons are drawn, matching `--h-title-bar` in
- * `src/index.css`.
+ * Whether the page draws the window's minimise, maximise and close itself.
  *
- * **One constant because `setTitleBarOverlay` replaces the whole overlay, not
- * the keys you pass it.** Calling it with colours alone drops the height back to
- * the platform's default caption height, which is taller than our bar — so the
- * window opened correct and then went wrong a frame later, as soon as the first
- * theme landed and the colours were sent across. Buttons overhanging the bottom
- * of the band, reported 2026-09-05. Every call passes this; if the bar's height
- * changes, both this and the CSS token move together.
+ * **True everywhere but macOS, and the reason is the user rather than the
+ * platform.** Windows and Linux draw caption buttons 46px wide that take a
+ * colour and a height and nothing else — no width, no glyph size — which in a
+ * 32px themed bar reads as three grey slabs. Keeping them bought exactly one
+ * thing: Windows 11's snap layouts, the arrangement grid that appears when you
+ * hover the native maximise button. Put to the user on 2026-09-05, she did not
+ * know the feature existed and could not find it. Buying it at that price was a
+ * bad trade made on her behalf, so it is unmade.
  *
- * **The overlay is one pixel shorter than the bar, and that pixel is the rule
- * under it.** The system paints the overlay region opaquely over the page, so an
- * overlay the full height of the bar covers the bottom border for the 137px the
- * buttons occupy — the line across the top of the window then stops short of the
- * right edge. Measured 2026-09-05: the border row is the bar's last pixel, and
- * leaving it to the page is what makes the rule run the whole way.
+ * **macOS keeps its traffic lights**, which are the platform's own convention
+ * rather than a default nobody chose, and which `titleBarStyle: "hidden"` still
+ * draws into the page there. The bar leaves room at its left end for them.
+ *
+ * Dragging a window to a screen edge still snaps it, and Win+arrow still works;
+ * both belong to the window, not to the button.
  */
-const TITLE_BAR_HEIGHT = 32;
-const TITLE_BAR_RULE = 1;
-const OVERLAY_HEIGHT = TITLE_BAR_HEIGHT - TITLE_BAR_RULE;
+const DRAWS_OWN_CONTROLS = process.platform !== "darwin";
 
 /**
  * What this process knows about each of its windows.
@@ -220,36 +218,17 @@ function createWindow({ startAtPicker = false } = {}) {
     // of the writing.
     minHeight: 632,
     backgroundColor: "#0f0f14",
-    // **The bar is ours to colour and the buttons stay the system's.** Phase 21.
-    // `hidden` hands the page the whole window, and the overlay keeps the real
-    // minimise/maximise/close on top of it, tinted by us. That split is the
-    // entire reason this is safe to turn on: Windows 11's snap layouts appear
-    // on hover over the *native* maximise button, so a bar that drew its own
-    // three buttons would take a working feature off her machine to gain a
-    // colour. The height matches `--h-title-bar` so the controls land inside the
-    // app's own title bar rather than over anything below it.
+    // **The window's controls are the page's now, except on macOS.** `hidden`
+    // hands the page the whole window; with no `titleBarOverlay` alongside it,
+    // Windows and Linux draw no caption buttons at all and `TitleBar.tsx` draws
+    // three of its own — see DRAWS_OWN_CONTROLS for why that trade changed.
+    // macOS still puts its traffic lights in the page under this setting, which
+    // is wanted there.
     //
-    // **What changed on 2026-09-05 is what is underneath them.** The first
-    // version drew no bar at all and let the app's own four top-row panels stand
-    // in for one, which put the buttons over whichever of those they happened to
-    // reach and tinted to a colour only one of them was painted. There is a real
-    // bar there now, one element the full width of the window, and these sit in
-    // it.
-    //
-    // The colours here are only what the window opens with — the renderer sends
-    // the current theme's as soon as it has applied one (`window:titleBarColors`
-    // below), and they match `backgroundColor` so the first frame is not a
-    // flash of something else.
+    // The resize edges, double-click-to-maximise on a drag region, and snapping
+    // by dragging to a screen edge all belong to the window rather than to the
+    // buttons, so none of them are affected by this.
     titleBarStyle: "hidden",
-    ...(HAS_OVERLAY
-      ? { titleBarOverlay: { color: "#0f0f14", symbolColor: "#c9c9d4", height: OVERLAY_HEIGHT } }
-      : {}),
-    // macOS has no overlay to tint; it puts its traffic lights in the page. They
-    // belong in the title bar like everyone else's window buttons, so they sit at
-    // its left end — `y: 8` centres a 16px light in a 32px bar. They used to be
-    // pushed a rail-width in, to clear the rail's own buttons, back when the rail
-    // reached the top of the window; the title bar is above it now and the left
-    // end of that bar is empty. The title is centred partly so this stays true.
     ...(process.platform === "darwin" ? { trafficLightPosition: { x: 12, y: 8 } } : {}),
     show: false,
     // Invisible and off the taskbar for a test run; untouched for a real one.
@@ -297,6 +276,17 @@ function createWindow({ startAtPicker = false } = {}) {
     event.preventDefault();
     window.webContents.send("window:close-requested");
   });
+
+  // **Told, not polled.** A window is maximised by our button, by a double-click
+  // on the bar, by Win+Up, by a snap and by dragging it to the top of the
+  // screen — the page's button has to show the right glyph after all five, and
+  // only the window sees four of them.
+  const sendMaximised = () => {
+    if (window.isDestroyed()) return;
+    window.webContents.send("window:maximised", window.isMaximized());
+  };
+  window.on("maximize", sendMaximised);
+  window.on("unmaximize", sendMaximised);
 
   window.on("closed", () => {
     windows.delete(window);
@@ -451,28 +441,40 @@ handle("window:show", (event) => {
   if (window) reveal(window);
 });
 
-// **A theme change repaints the window's own bar.** Phase 21. The renderer is
-// the only side that knows what the current theme resolves to — a user's own
-// `.css` can put anything in those tokens — so it reads the two colours off the
-// document and sends them here. See `readTitleBarColors` in theme-service.ts.
-handle("window:titleBarColors", (event, colors) => {
-  if (!HAS_OVERLAY) return;
+// **The three window controls, because the page draws them now.** The bar's
+// buttons call these; there is nothing here a page could do for itself, which is
+// exactly what belongs behind the door. `window:drawsControls` is what the page
+// asks before drawing any of them — false on macOS, where the system's traffic
+// lights are still in the page and ours would be a second set.
+handle("window:drawsControls", () => DRAWS_OWN_CONTROLS);
+
+handle("window:minimise", (event) => {
+  windowFrom(event)?.minimize();
+});
+
+// One channel rather than maximise and restore separately: the button is one
+// button and the window already knows which state it is in. Two would let the
+// page's idea of that state and the window's disagree.
+handle("window:toggleMaximise", (event) => {
   const window = windowFrom(event);
-  if (!window || !colors || typeof colors.background !== "string" || typeof colors.symbol !== "string") return;
-  // A colour the platform cannot parse throws, and a theme is not worth losing
-  // the window over — the bar keeps whatever it had, which is a stale tint
-  // rather than a dead app.
-  try {
-    // The height goes with them every time — see TITLE_BAR_HEIGHT. Leaving it
-    // out is not "keep what it has", it is "take the platform's default".
-    window.setTitleBarOverlay({
-      color: colors.background,
-      symbolColor: colors.symbol,
-      height: OVERLAY_HEIGHT,
-    });
-  } catch {
-    // Left as it was.
-  }
+  if (!window) return;
+  if (window.isMaximized()) window.unmaximize();
+  else window.maximize();
+});
+
+// **The page cannot watch this on its own.** A window is maximised by the
+// double-click on the bar, by Win+Up, by a snap, and by dragging it to the top
+// of the screen — none of which go through our button, and all of which have to
+// change the glyph it shows.
+handle("window:isMaximised", (event) => windowFrom(event)?.isMaximized() ?? false);
+
+// **The bar's X, which is not the same call as `window:close`.** This one leaves
+// `closeApproved` alone, so the `close` listener above holds the window and asks
+// the renderer to flush — exactly what the system's own close button triggered
+// before the page started drawing one. `window:close` below is the renderer
+// answering that ask, and going through it here would skip the save.
+handle("window:requestClose", (event) => {
+  windowFrom(event)?.close();
 });
 
 handle("window:close", (event) => {
