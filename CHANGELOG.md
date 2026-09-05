@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-05 — a rail down the left
+
+### Changes
+
+- **The buttons that used to sit above the page are now a rail down the left of the window.** Project, Templates and Assets moved into it out of the strip that used to sit over the sidebar, and search, switching project and settings moved into it out of the bar above the page.
+- **The sidebar now says which panel it is showing.** The rail is icons only, so the words Templates and Assets are written over the panel itself. The tree still heads itself with the world's name, the way it always did.
+- **What stayed above the page is what belongs to the page** — back and forward, the saved and history markers, and the button that shows and hides the properties panel. When pages can sit side by side, that is the row each of them will want its own copy of.
+
+### Notes
+
+- **The search button no longer shows its keyboard shortcut.** It is still on the tooltip when you hover it, but that button was the only place in the app the shortcut was written down — say if you want it somewhere visible again.
+
 ## 2026-09-04 — the writing goes round an infobox
 
 ### Additions
@@ -239,10 +251,3 @@
 - **The blocks in it are the page's own blocks, not copies.** One goes into the infobox and leaves the sidebar, exactly as a block placed loose in the page does. Its `⋯` menu, its title, its colour and its fields all work the way they always have.
 - **The frame keeps its own order.** Drag a block inside an infobox and it moves within that group; the sidebar's order is untouched.
 - **Deleting the frame gives the blocks back.** Hover it, use the handle beside it, Delete — every block it held returns to the sidebar. Nothing in an infobox can be lost by getting rid of the box.
-
-## 2026-08-28 — the fourth pinned project is back
-
-### Fixes
-
-- **The pinned row shows four projects again instead of three.** The width a card aims for was measured against a row that has since given space to the panel beside it and to a scrollbar, so the fourth card needed a wider window than the one you use — and it quietly dropped to three rather than saying anything. It now fits four down to a much narrower window, with room to spare.
-- **On a very wide window you may now see five across** where you saw four. Same rule, just reaching the next step sooner.

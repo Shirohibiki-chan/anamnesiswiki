@@ -2505,6 +2505,26 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ## The three columns
 
+- **The rail is outside `.app-layout`, and making it a fourth column would
+  break two things quietly.** Phase 21. `AppLayout` measures the grid with
+  `useElementSize` and feeds that width to `fitPanelWidths`, `maxPanelWidth` and
+  `planPanelDrag` — a rail inside it would make every one of those readings the
+  rail's width too generous, so the panels would fight for room that is not
+  there. And both `ResizeHandle`s are positioned against the grid rather than
+  living inside the panels they resize, so a column in front of the tree moves
+  the edge they sit on. The frame (`.app-frame`) is a flex row holding the rail
+  and the grid; the grid's geometry is exactly what it was before the rail
+  existed, which is the point.
+
+- **One horizontal rule across the top of the window, drawn by three different
+  elements.** `--h-bar` with `--color-border-strong` on the bar above the page
+  (`.top-bar`), on the tree's own header (`.tree-project-header`) and on the
+  header over the other two panels (`.tree-panel-head`). This used to be the
+  top bar and the sidebar's tab strip; the strip went into the rail in Phase 21
+  and the rule had to be picked up by whatever replaced it. Give any of the
+  three a literal height instead of the token and it steps as it crosses the
+  window — which is what it did before 2026-08-11, and it was noticed.
+
 - **The page in the middle holds a minimum width and the panels give way to
   it**, rather than the panels being capped small enough to be safe. Both are
   `minmax(0, <dragged width>)` in the grid and the centre is

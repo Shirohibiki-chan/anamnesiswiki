@@ -246,8 +246,52 @@
    problem into "the scroll wheel does nothing". `minmax(0, 1fr)` caps the row
    at the container's height so the panels inside have a fixed box to scroll
    within. Don't drop it back to `auto`. */
-.app-layout {
+/* Phase 21: the window is the rail, then the three-column grid beside it. The
+   rail sits outside `.app-layout` rather than being a fourth column in it —
+   the reason is in AppLayout.tsx, above the return. */
+.app-frame {
   height: 100vh;
+  display: flex;
+  /* The same ground the grid paints, so a theme's page background runs under
+     the rail instead of stopping at its edge. */
+  background: var(--gradient-bg, none), var(--color-bg);
+}
+
+/* **Two groups at the two ends, and the gap between them does the separating.**
+   The panel switches choose what the sidebar shows; the errands underneath —
+   search, the project switcher, settings — have nothing to do with whichever
+   page is open. A rule between them would be a fourth horizontal line in a
+   window that already has three.
+
+   **Solid rather than one of the `--gradient-*` slots.** Every existing slot is
+   shaped for something wide and short, and none of them would read the same
+   turned on its side. A rail slot is worth adding when a theme wants one; it is
+   not worth inventing before then. */
+.left-rail {
+  flex-shrink: 0;
+  width: var(--w-rail);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) 0;
+  background: var(--color-panel-alt);
+  /* `--color-border-strong`, the same line the tree's right edge and the bar
+     above the page use. These are the app's frame and should read as structure
+     rather than as another card outline — see the border note in index.css. */
+  border-right: 1px solid var(--color-border-strong);
+}
+
+.left-rail-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.app-layout {
+  flex: 1;
+  min-width: 0;
   display: grid;
   /* Phase 14: both side columns are draggable, so their widths arrive as
      custom properties from AppLayout rather than being written here. The
@@ -433,8 +477,6 @@
   padding: 0 var(--space-xl);
   background: var(--gradient-topbar, none), var(--color-panel-alt);
   border-bottom: 1px solid var(--color-border-strong);
-  /* The box the search button measures itself against, below. */
-  container: top-bar / inline-size;
 }
 
 /* Tighter than `.top-bar-right`'s gap: these three are one control in three
@@ -450,72 +492,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-lg);
-}
-
-/* Wider than the icon buttons beside it on purpose: it carries the shortcut
-   hint, which is the only place in the app that Cmd+K is written down. Not a
-   `.ui-btn` — it's a toolbar control sized to match the 28px icon buttons it
-   sits with, and it would look like a form's submit button at button padding. */
-.top-bar-search-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  height: 1.75rem;
-  padding: 0 var(--space-md);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: transparent;
-  font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.top-bar-search-button:hover {
-  background: var(--color-hover);
-  color: var(--color-text-primary);
-}
-
-/* **The search button gives up its label before the bar runs out of room.**
-   This bar lives in the centre column, and both side panels are draggable, so
-   the width it gets is not a function of the window's — dragging the tree and
-   the properties panel wider squeezes it at any window size. That is why this
-   is a container query and not a media query: what matters is the room this
-   bar actually has, not how wide the screen is.
-
-   Measured at the narrowest the window goes (900×640, both panels at their
-   default widths): 391px of content in a 340px column. The overflow ran out
-   past the column's right edge, and because the properties panel paints after
-   it, the properties toggle — the last control in the bar — ended up
-   underneath the panel it toggles and could not be clicked at all.
-
-   Dropping the word and the shortcut takes the button from 123px to 28px,
-   which is 95px back. The threshold sits a little above where it actually
-   breaks so the save and history indicators, which are 0px wide until
-   something is happening, have somewhere to appear without putting it straight
-   back. The shortcut stays on the button's tooltip either way.
-
-   **This does not cover a centre column squeezed to nothing by dragging.**
-   TREE_MAX_WIDTH and PROPERTIES_MAX_WIDTH add up to 1080, wider than the 900
-   minimum window, so both panels dragged full puts the bar back underneath the
-   panel whatever this rule does. That is the caps' problem, not this one's —
-   see docs/plan.md under Known Bugs. */
-@container top-bar (max-width: 420px) {
-  .top-bar-search-button {
-    width: 1.75rem;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .top-bar-search-label,
-  .top-bar-kbd {
-    display: none;
-  }
-}
-
-.top-bar-kbd {
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
-  color: var(--color-text-muted);
 }
 
 /* --- SaveIndicator --- */

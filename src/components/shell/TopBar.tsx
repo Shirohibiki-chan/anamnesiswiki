@@ -1,5 +1,11 @@
-// Spans the center panel. Search, project switch, settings and the
-// right-panel toggle, all pushed right; the left half is deliberately empty.
+// The strip above the page. Spans the centre panel.
+//
+// **What is left here is what belongs to the page.** Phase 21 moved search, the
+// project switcher and settings out to the rail, along with the sidebar's own
+// tab strip — those are errands about the app. Back and forward, the save and
+// history indicators and the properties toggle stayed, because each is about
+// the page currently being read. When Phase 21.5 splits the centre into panes,
+// this is the bar each pane will want its own copy of; the rail is not.
 //
 // It used to hold the project name, which the sidebar header also shows about
 // 50px away — the doubled name in docs/ui-audit.md defect 6. The sidebar keeps
@@ -9,50 +15,23 @@
 //
 // The clickable breadcrumb trail meanwhile lives on the page itself (see
 // page/PageTitle.tsx), directly above the title it describes.
-import { FolderOpen, PanelRight, Search } from "lucide-react";
-import { useShortcutLabel } from "../../hooks/use-shortcuts";
+import { PanelRight } from "lucide-react";
 import { HistoryIndicator } from "./HistoryIndicator";
 import { NavButtons } from "./NavButtons";
 import { SaveIndicator } from "./SaveIndicator";
-import { SettingsButton } from "./SettingsButton";
 
 type TopBarProps = {
   isRightPanelOpen: boolean;
   onToggleRightPanel: () => void;
-  onSwitchProject: () => void;
-  onOpenSearch: () => void;
 };
 
-export function TopBar({ isRightPanelOpen, onToggleRightPanel, onSwitchProject, onOpenSearch }: TopBarProps) {
-  const searchShortcut = useShortcutLabel("search");
-
+export function TopBar({ isRightPanelOpen, onToggleRightPanel }: TopBarProps) {
   return (
     <header className="top-bar">
       <NavButtons />
       <div className="top-bar-right">
         <HistoryIndicator />
         <SaveIndicator />
-        {/* A visible way in as well as the shortcut — nothing else in the app
-            advertises that Cmd+K exists. */}
-        {/* Both the word and the shortcut hide themselves when the bar is
-            short of room (shell.css), so neither the button's name nor the
-            hint may depend on them being on screen — hence the label and the
-            tooltip, which say the same thing whatever is visible. */}
-        <button
-          type="button"
-          className="top-bar-search-button"
-          aria-label={`Search (${searchShortcut})`}
-          title={`Search (${searchShortcut})`}
-          onClick={onOpenSearch}
-        >
-          <Search size={14} />
-          <span className="top-bar-search-label">Search</span>
-          <kbd className="top-bar-kbd">{searchShortcut}</kbd>
-        </button>
-        <button type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Switch project" onClick={onSwitchProject}>
-          <FolderOpen size={16} />
-        </button>
-        <SettingsButton />
         {/* `.ui-icon-btn` picks the accent colour up from aria-pressed, so the
             toggled-on look isn't a class this has to remember to pass. */}
         <button

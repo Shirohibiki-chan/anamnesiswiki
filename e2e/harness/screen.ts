@@ -17,6 +17,7 @@ const TREE_ROW = ".tree-row";
 const TREE_ROW_NAME = ".tree-row-name";
 const TREE_ROW_TOGGLE = ".tree-row-toggle";
 const TREE_SEARCH_INPUT = ".tree-search-input";
+const SIDEBAR_PANEL_HEAD = ".tree-panel-head";
 const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
 const BLOCK_PANEL = ".block-panel";
@@ -96,6 +97,27 @@ export async function projectName(window: Page): Promise<string> {
 export async function visibleTreeRows(window: Page): Promise<string[]> {
   const names = await window.locator(TREE_ROW_NAME).allInnerTexts();
   return names.map(normalize);
+}
+
+/**
+ * Chooses one of the sidebar's three panels from the rail. Phase 21.
+ *
+ * By the name on the button, which is its `aria-label` — the rail is icons
+ * only, so there is no text to click and the label is the whole contract.
+ */
+export async function openRailPanel(window: Page, label: string): Promise<void> {
+  await window.getByRole("button", { name: label, exact: true }).first().click();
+  await window.waitForTimeout(300);
+}
+
+/**
+ * The name written over the panel the sidebar is showing, or `null` when it is
+ * showing the tree — which heads itself with the world's name instead. Phase 21.
+ */
+export async function sidebarPanelName(window: Page): Promise<string | null> {
+  const head = window.locator(SIDEBAR_PANEL_HEAD);
+  if ((await head.count()) === 0) return null;
+  return normalize(await head.first().innerText());
 }
 
 /**
