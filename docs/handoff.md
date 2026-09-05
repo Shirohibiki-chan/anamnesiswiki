@@ -28,11 +28,40 @@ reads by default.
 
 Kept short on purpose — this file is read most sessions.
 
+- **The window's buttons are the system's on purpose, and drawing our own would
+  cost a feature.** Phase 21. `titleBarStyle: "hidden"` plus `titleBarOverlay`
+  hands the page the whole window while leaving the real minimise, maximise and
+  close on top of it, tinted by us. **Windows 11's snap layouts appear on hover
+  over that native maximise button** — a custom bar with three buttons of our
+  own drawing takes a working feature off her machine to gain a colour, which is
+  the trade `docs/plan.md` warned about and the reason this route was taken
+  instead. Do not replace them with our own controls.
+
+- **The colours come from the page, because only the page knows them.** A theme
+  is CSS and a theme she wrote is a file this code has never seen, so
+  `readTitleBarColors` resolves `--color-panel-alt` and `--color-text-secondary`
+  off the document after the theme has landed and hands them across
+  `setTitleBarColors`. `--color-panel-alt` rather than `--color-bg` because the
+  bar continues the band the rail and the row above the page already draw; the
+  page colour would put a stripe through the middle of it. macOS has no overlay
+  to tint and `setTitleBarOverlay` throws there, so the handler checks the
+  platform once rather than catching per theme change.
+
+- **Everything in the top band is a drag region, and every control in it has to
+  opt back out.** A drag region swallows clicks, so a button left inside one
+  moves the window instead of doing its job — the rule in `shell.css` covers
+  buttons, links and fields, and anything else interactive that lands in the
+  band needs adding to it by hand. **`--window-controls-w` is the other half of
+  this**: the system's buttons are drawn over the top right of the page, and
+  whatever is up there reserves that width or ends up underneath the close
+  button. It is zero wherever the shell still draws its own decorations, which
+  is what makes it safe to apply unconditionally.
+
 ---
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 27 and 29 are done.** The app is shippable and shipping —
+**Phases 0–19, 19.5, 21, 27 and 29 are done.** The app is shippable and shipping —
 v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
@@ -51,6 +80,13 @@ contents list, the icon picker's Recent row, a block handing out a link to
 itself, and the writing wrapping round a frame. Pin to top was dropped, and the
 marker for what could be linked while writing is queued rather than built — both
 in `docs/plan.md`.
+
+**Phase 21 — Shell Rework — closed 2026-09-05**: a rail down the left holding
+Project, Templates and Assets plus search, the project switcher and settings,
+and a title bar that wears the theme while the system keeps drawing its own
+window buttons. The splits it was scoped with are Phase 21.5 and deferred. What
+binds the code from it is in §The three columns below — the rail sitting
+outside the grid, the window's two widths, and the drag-region rule.
 
 Phase 18 closed 2026-08-21 with meters — what still binds the code from it is
 §Sidebar blocks below.

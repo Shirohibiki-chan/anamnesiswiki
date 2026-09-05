@@ -41,6 +41,7 @@ type HostBridge = {
   unwatch(id: number): Promise<void>;
   onWatchEvent(handler: (id: number, changed: string[]) => void): () => void;
   showWindow(): Promise<void>;
+  setTitleBarColors(colors: { background: string; symbol: string }): Promise<void>;
   closeWindow(): Promise<void>;
   destroyWindow(): Promise<void>;
   watchClose(wanted: boolean): Promise<void>;
@@ -166,6 +167,10 @@ export async function watchPath(
 
 export function showWindow(): Promise<void> {
   return bridge().showWindow();
+}
+
+export function setTitleBarColors(colors: { background: string; symbol: string }): Promise<void> {
+  return bridge().setTitleBarColors(colors);
 }
 
 export function closeWindow(): Promise<void> {
@@ -335,6 +340,7 @@ const conformance = {
   fileInfo,
   watchPath,
   showWindow,
+  setTitleBarColors,
   closeWindow,
   destroyWindow,
   onWindowCloseRequested,

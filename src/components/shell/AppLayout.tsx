@@ -200,6 +200,11 @@ export function AppLayout() {
 
         {isRightPanelOpen && (
           <aside className="app-layout-properties">
+            {/* This panel's share of the band across the top of the window —
+                the only one of the four that is not something already there.
+                It is what the system's window buttons are drawn over, and it
+                is a drag region like the rest of the band. See shell.css. */}
+            <div className="app-layout-properties-head" aria-hidden="true" />
             <BlockPanel key={project?.selectedId ?? "none"} />
           </aside>
         )}

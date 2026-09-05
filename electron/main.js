@@ -108,6 +108,15 @@ function reveal(window) {
 const DEV_URL = process.env.ANAMNESIS_DEV_URL ?? null;
 
 /**
+ * Whether this platform draws window controls we are allowed to tint.
+ *
+ * Windows and Linux do; macOS puts its traffic lights in the page instead and
+ * `setTitleBarOverlay` throws there. Checked once rather than caught per call,
+ * so a theme change on a Mac is a no-op instead of an exception in a hot path.
+ */
+const HAS_OVERLAY = process.platform === "win32" || process.platform === "linux";
+
+/**
  * What this process knows about each of its windows.
  *
  * **A second window is an ordinary thing now, so nothing about a window may
@@ -183,6 +192,27 @@ function createWindow({ startAtPicker = false } = {}) {
     minWidth: 948,
     minHeight: 600,
     backgroundColor: "#0f0f14",
+    // **The bar is ours to colour and the buttons stay the system's.** Phase 21.
+    // `hidden` hands the page the whole window, and the overlay keeps the real
+    // minimise/maximise/close on top of it, tinted by us. That split is the
+    // entire reason this is safe to turn on: Windows 11's snap layouts appear
+    // on hover over the *native* maximise button, so a bar that drew its own
+    // three buttons would take a working feature off her machine to gain a
+    // colour. The height matches `--h-bar` so the controls land inside the band
+    // the app already draws across its top rather than over the writing.
+    //
+    // The colours here are only what the window opens with — the renderer sends
+    // the current theme's as soon as it has applied one (`window:titleBarColors`
+    // below), and they match `backgroundColor` so the first frame is not a
+    // flash of something else.
+    titleBarStyle: "hidden",
+    ...(HAS_OVERLAY ? { titleBarOverlay: { color: "#0f0f14", symbolColor: "#c9c9d4", height: 48 } } : {}),
+    // macOS has no overlay to tint; it puts its traffic lights in the page. Left
+    // alone it puts them at the very top-left, which is where the rail's own
+    // buttons are — so they go one rail-width in, which lands them in the same
+    // 48px band as everything else and over the sidebar's header rather than
+    // over a control. 64 is `--w-rail` plus the gutter the band uses.
+    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 64, y: 17 } } : {}),
     show: false,
     // Invisible and off the taskbar for a test run; untouched for a real one.
     ...(OFFSTAGE ? { opacity: 0, skipTaskbar: true } : {}),
@@ -381,6 +411,24 @@ handle("fs:unwatch", (_event, id) => {
 handle("window:show", (event) => {
   const window = windowFrom(event);
   if (window) reveal(window);
+});
+
+// **A theme change repaints the window's own bar.** Phase 21. The renderer is
+// the only side that knows what the current theme resolves to — a user's own
+// `.css` can put anything in those tokens — so it reads the two colours off the
+// document and sends them here. See `readTitleBarColors` in theme-service.ts.
+handle("window:titleBarColors", (event, colors) => {
+  if (!HAS_OVERLAY) return;
+  const window = windowFrom(event);
+  if (!window || !colors || typeof colors.background !== "string" || typeof colors.symbol !== "string") return;
+  // A colour the platform cannot parse throws, and a theme is not worth losing
+  // the window over — the bar keeps whatever it had, which is a stale tint
+  // rather than a dead app.
+  try {
+    window.setTitleBarOverlay({ color: colors.background, symbolColor: colors.symbol });
+  } catch {
+    // Left as it was.
+  }
 });
 
 handle("window:close", (event) => {

@@ -179,6 +179,22 @@ export async function showWindow(): Promise<void> {
   await getCurrentWindow().show();
 }
 
+/**
+ * Nothing, on this shell.
+ *
+ * The Tauri build opens with the system's own decorations and has shipped
+ * nothing since v0.5.0; the themed bar is Phase 21 and lives on the Electron
+ * side. Present so the contract is whole rather than because it does anything —
+ * see the note on `setTitleBarColors` in host-contract.ts, which says a shell
+ * without a bar of its own is allowed to say nothing.
+ */
+export async function setTitleBarColors(colors: { background: string; symbol: string }): Promise<void> {
+  // Named and discarded rather than omitted: the signature is the contract's,
+  // and a shorter one here would only typecheck because this file is not the
+  // one the Electron build compiles against.
+  void colors;
+}
+
 /** Closes the window the polite way, letting the host run its own handlers. */
 export async function closeWindow(): Promise<void> {
   await getCurrentWindow().close();
@@ -367,6 +383,7 @@ const conformance = {
   fileInfo,
   watchPath,
   showWindow,
+  setTitleBarColors,
   closeWindow,
   destroyWindow,
   onWindowCloseRequested,

@@ -72,6 +72,7 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
 
   // ---- window
   showWindow: () => invoke("window:show"),
+  setTitleBarColors: (colors) => invoke("window:titleBarColors", colors),
   closeWindow: () => invoke("window:close"),
   destroyWindow: () => invoke("window:destroy"),
   watchClose: (wanted) => invoke("window:watchClose", wanted),

@@ -105,6 +105,19 @@ export type HostContract = {
 
   // ---- window
   showWindow(): Promise<void>;
+  /**
+   * Paints the window's own title bar in the app's colours.
+   *
+   * **Only the page knows what these are.** A theme is CSS, and a theme she
+   * wrote herself can put anything in those tokens, so the answer has to be
+   * read off the document after the theme has landed rather than looked up.
+   *
+   * A shell with no title bar of its own — or a platform whose controls are not
+   * ours to tint, which is macOS — does nothing and says nothing. This is
+   * decoration, and a window that opened is worth more than a window that
+   * matches.
+   */
+  setTitleBarColors(colors: { background: string; symbol: string }): Promise<void>;
   closeWindow(): Promise<void>;
   destroyWindow(): Promise<void>;
   onWindowCloseRequested(handler: () => boolean | Promise<boolean>): Promise<() => void>;
