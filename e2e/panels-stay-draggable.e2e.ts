@@ -11,7 +11,7 @@
 // the panel it resizes, always, whatever the window has had to do to the
 // widths.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { launchApp, resizeWindow, type RunningApp } from "./harness/launch-app";
+import { launchApp, MIN_WINDOW, resizeWindow, type RunningApp } from "./harness/launch-app";
 import { openPage, waitForWorld } from "./harness/screen";
 
 /** How far a handle may sit from its panel's edge: its own width, centred. */
@@ -55,7 +55,7 @@ describe("dragging the side panels", () => {
   }
 
   it("keeps the page readable when both panels are pulled right out", async () => {
-    await resizeWindow(app, 900, 640);
+    await resizeWindow(app, MIN_WINDOW.width, 640);
     await app.window.waitForTimeout(400);
     await drag(".resize-handle-tree", 880);
     await drag(".resize-handle-properties", 20);

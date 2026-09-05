@@ -168,9 +168,19 @@ function createWindow({ startAtPicker = false } = {}) {
   // `showWindow` in the contract and `revealWindow` in main.tsx.
   const window = new BrowserWindow({
     title: "Anamnesis",
-    width: 1280,
+    // 1328 and 948 are both "what they were, plus the rail" — see the note on
+    // minWidth. The rail is chrome, so leaving these alone would have taken its
+    // width out of the page instead, and the page is the thing being read.
+    width: 1328,
     height: 800,
-    minWidth: 900,
+    // **948 is 900 plus the rail.** Phase 21 put a permanent 48px column down the
+    // left of the window, and the three panels beside it are laid out against
+    // what is left. Holding the old floor would have handed them 852px and
+    // squeezed the tree past the width its rows need — measured, and it
+    // ellipsised the project name and two page names at once. The window gained
+    // a column, so its floor gains that column's width. `--w-rail` in index.css
+    // is the other half of this number; move one and move the other.
+    minWidth: 948,
     minHeight: 600,
     backgroundColor: "#0f0f14",
     show: false,

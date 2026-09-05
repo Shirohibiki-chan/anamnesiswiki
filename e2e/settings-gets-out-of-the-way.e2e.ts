@@ -14,7 +14,7 @@
 // centred for the rest), then, after that was pulled, the dim. Reading the same
 // property either side of the crossing is the guard against a third.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { launchApp, resizeWindow, type RunningApp } from "./harness/launch-app";
+import { launchApp, MIN_WINDOW, resizeWindow, type RunningApp } from "./harness/launch-app";
 import { openPage, openSettings, openSettingsSection, pageTitle, waitForWorld } from "./harness/screen";
 
 const BACKDROP = ".ui-backdrop";
@@ -122,9 +122,9 @@ describe("Settings sits beside the app instead of over it", () => {
   });
 
   it("still docks on a narrow window, giving up width instead of position", async () => {
-    await resizeWindow(app, 900, 700);
+    await resizeWindow(app, MIN_WINDOW.width, 700);
     const box = await modalBox();
-    expect(box.x + box.width).toBe(900);
+    expect(box.x + box.width).toBe(MIN_WINDOW.width);
     // Narrower than it was, and still leaving a usable strip of app beside it.
     expect(box.width).toBeLessThan(704);
     expect(box.x).toBeGreaterThanOrEqual(260);

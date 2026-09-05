@@ -549,7 +549,11 @@
   /* Layout constants that more than one stylesheet needs to agree on. Both of
      these were previously written as literals in two files each, which is the
      kind of thing that stays correct right up until someone changes one. */
-  --h-bar: 48px; /* top bar and the sidebar's tab strip — see tree.css */
+  --h-bar: 48px; /* the bar above the page — see shell.css */
+  /* The rail down the left of the window, Phase 21. Wide enough for a 28px
+     icon button with the same breathing room either side that the bar gives
+     its own controls. */
+  --w-rail: 48px;
   --reading-width: 60rem; /* page body and the empty-banner placeholder */
   /* The writing column's side margin. Not a spacing-scale step — it's the
      other half of --reading-width, and the two have to move together or the

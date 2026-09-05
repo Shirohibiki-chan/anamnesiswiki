@@ -1,5 +1,6 @@
-/* Tree sidebar — top tab strip, project header, search, the tree itself,
-   and its popovers (color picker, template picker, context menu). */
+/* Tree sidebar — project header, search, the tree itself, and its popovers
+   (color picker, template picker, context menu). The tab strip that used to
+   head this moved into the rail in Phase 21; see shell/LeftRail.tsx. */
 
 .tree-sidebar {
   height: 100%;
@@ -7,65 +8,28 @@
   flex-direction: column;
 }
 
-/* `--h-bar` is why this looks over-specified. This strip and the top bar sit
-   side by side and their bottom borders are meant to read as one horizontal
-   rule across the window — but the top bar was a hard 48px and this had no
-   height at all, coming out ~41px from its padding. The result was a rule that
-   visibly stepped down 7px as it crossed into the sidebar, which is most of
-   what "the layout is crazy" meant in the screenshot. Both now take their
-   height from the same token; don't give either one a literal. */
-.tree-sidebar-tabs {
+
+/* **The row at the top of the sidebar, and it is load-bearing twice over.**
+   Phase 21. It replaces the tab strip that used to sit here, and it has to keep
+   two of that strip's jobs. **Its bottom border is half of one horizontal rule
+   across the window** — the bar above the page draws the other half, both at
+   `--h-bar`, and a sidebar without it left the app's top edge stepping down as
+   the eye crossed from the page to the tree. **And it is where the panel is
+   named**, which the strip used to do for free: the rail is icons only, so
+   without this nothing on screen says the word Templates or Assets.
+
+   The Project panel has its own version of this row — `.tree-project-header`,
+   which carries the world's name and its buttons. Same height, same border. */
+.tree-panel-head {
   display: flex;
   align-items: center;
-  gap: var(--space-xl);
   height: var(--h-bar);
   padding: 0 var(--space-lg);
-  /* `--color-border-strong`, matching the top bar it continues — see the
-     border note in index.css. These two are one rule across the window. */
-  border-bottom: 1px solid var(--color-border-strong);
   flex-shrink: 0;
-}
-
-/* Stretched to the strip's full height so the `::after` underline below can sit
-   on its bottom edge, with the label centred explicitly rather than relying on
-   a button's default content centring. */
-.tree-sidebar-tab {
-  position: relative;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  background: none;
-  border: none;
-  padding: 0;
   font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.tree-sidebar-tab:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-/* An `::after`, not a `border-bottom`. A real border made the active tab 2px
-   taller than its neighbours in an `align-items: center` row, so activating a
-   tab nudged its own label up a pixel and Project/Templates/Assets jittered as
-   you switched between them. This is also the mechanism the page tabs and the
-   Settings tabs already use — three tab strips, one underline, at last. */
-.tree-sidebar-tab-active {
   color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-strong);
 }
-
-.tree-sidebar-tab-active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: var(--color-accent-light);
-}
-
 /* --- ProjectHeader --- */
 
 .tree-project-header {
@@ -73,7 +37,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md) var(--space-lg);
+  height: var(--h-bar);
+  padding: 0 var(--space-lg);
+  /* See .tree-panel-head — this is the Project panel's copy of that row. */
+  border-bottom: 1px solid var(--color-border-strong);
   flex-shrink: 0;
 }
 
