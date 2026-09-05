@@ -142,6 +142,19 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
   return { window, electron, world, errors, close };
 }
 
+
+/**
+ * The smallest window the app will open, and the floor `resizeWindow` cannot go
+ * under. `minWidth` / `minHeight` in `electron/main.js`, and it is not a round
+ * number: Phase 21 moved the width to 900 plus the rail.
+ *
+ * **Ask for less than this and the window simply does not shrink**, so
+ * `resizeWindow` waits for a size that never arrives and the scenario dies on a
+ * 30-second timeout with nothing to say. Two scenarios did exactly that when
+ * the floor moved. Use this rather than writing the number again.
+ */
+export const MIN_WINDOW = { width: 948, height: 600 };
+
 /**
  * Resizes the window and waits until the page has actually laid out at the new
  * size.
@@ -150,7 +163,6 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
  * this suite existed — the spectrum's name field being as wide as its card, its
  * end words truncating with no way to read them, and the field-sizing fallback —
  * were all about a panel too narrow for what was in it, and none of them would
- * show at a comfortable 1280. A sweep at one width is a sweep that agrees with
  * whoever's monitor it ran on.
  *
  * Driven from the main process because an Electron window has no viewport for

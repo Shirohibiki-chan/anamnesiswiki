@@ -1,5 +1,21 @@
 # Why The Code Is Like This
 
+- **The window's opening width and its floor both carry the rail's width, and
+  they are not round numbers by accident.** Phase 21: 1328 and 948 in
+  `electron/main.js`, which are 1280 and 900 plus `--w-rail`. The rail is chrome
+  rather than content, so holding the old numbers would have taken its 48px out
+  of the three panels instead — and at the floor that is exactly what happened:
+  the tree was squeezed until the world's name and two page names ellipsised,
+  which `e2e/layout-rules.e2e.ts` catches as `dead-end-truncation` and refuses.
+  **The floor now lives once, as `MIN_WINDOW` in `e2e/harness/launch-app.ts`**,
+  because three scenarios had written 900 into themselves and two of them died
+  on a 30-second timeout when it moved — `resizeWindow` asks for a size the
+  window refuses and then waits for it forever, which reads as a hang rather
+  than as a wrong number. **`layout-rules` also carries the widths in its
+  `ALLOWED` keys** (`"a folder @948"`), so moving a sweep width without renaming
+  the keys turns every allowance into a silent zero and fails screens that never
+  changed.
+
 Constraints and decisions that still govern the code. Every entry here is
 something that would be re-broken by someone who didn't know it — a workaround
 that looks removable, a trade-off that looks like an oversight, a choice made
@@ -2524,6 +2540,22 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   and the rule had to be picked up by whatever replaced it. Give any of the
   three a literal height instead of the token and it steps as it crosses the
   window — which is what it did before 2026-08-11, and it was noticed.
+
+- **The window's opening width and its floor both carry the rail's width, and
+  they are not round numbers by accident.** Phase 21: 1328 and 948 in
+  `electron/main.js`, which are 1280 and 900 plus `--w-rail`. The rail is chrome
+  rather than content, so holding the old numbers would have taken its 48px out
+  of the three panels instead — and at the floor that is exactly what happened:
+  the tree was squeezed until the world's name and two page names ellipsised,
+  which `e2e/layout-rules.e2e.ts` catches as `dead-end-truncation` and refuses.
+  **The floor now lives once, as `MIN_WINDOW` in `e2e/harness/launch-app.ts`**,
+  because three scenarios had written 900 into themselves and two of them died
+  on a 30-second timeout when it moved — `resizeWindow` asks for a size the
+  window refuses and then waits for it forever, which reads as a hang rather
+  than as a wrong number. **`layout-rules` also carries the widths in its
+  `ALLOWED` keys** (`"a folder @948"`), so moving a sweep width without renaming
+  the keys turns every allowance into a silent zero and fails screens that never
+  changed.
 
 - **The page in the middle holds a minimum width and the panels give way to
   it**, rather than the panels being capped small enough to be safe. Both are

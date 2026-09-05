@@ -10,6 +10,7 @@
 
 ### Notes
 
+- **The window opens a little wider than it used to, and won't be dragged quite as narrow.** Both by the width of the rail. The rail is chrome, so leaving the numbers alone would have taken its width out of the page instead — and at the old minimum it did exactly that, squeezing the tree until the world's name and two page names went to "…". The page has the same room it always had.
 - **The search button no longer shows its keyboard shortcut.** It is still on the tooltip when you hover it, but that button was the only place in the app the shortcut was written down — say if you want it somewhere visible again.
 
 ## 2026-09-04 — the writing goes round an infobox

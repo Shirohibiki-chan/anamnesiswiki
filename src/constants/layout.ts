@@ -84,12 +84,17 @@ export const PANEL_MAX_WIDTH = 560;
  * widths would move somebody's panel on its own and never put it back, which
  * is a worse trade than a panel that is temporarily narrower than it says.
  *
- * 420 because the top bar needs 391 to lay out (see the container query in
- * `shell.css`, which is what buys it the last 95 of those) and the rest is the
- * page's own gutters. At the 900px minimum window this leaves 480 for the two
- * panels together, which is both of them at about their own minimums — the
- * point at which the window is simply too small for three columns, and the
- * properties panel's own hide button is the answer rather than a smaller page.
+ * 420 because of the page's own gutters. The bar above it used to be the
+ * binding constraint — it needed 391 to lay out, and a container query in
+ * `shell.css` bought it the last 95 of those by dropping the search button's
+ * label — but Phase 21 moved search, the project switcher and settings out to
+ * the rail, and the button and the query went with them.
+ *
+ * At the 948px minimum window, which is 900 once the rail is taken off the
+ * side, this leaves 480 for the two panels together, which is both of them at
+ * about their own minimums — the point at which the window is simply too small
+ * for three columns, and the properties panel's own hide button is the answer
+ * rather than a smaller page.
  */
 export const CENTER_MIN_WIDTH = 420;
 
