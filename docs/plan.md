@@ -467,13 +467,27 @@ The tree then shows one universe at a time, at the root. Today an AU character i
 
 **Following a link out of the current universe switches to it** rather than refusing to open the page. Blocking would be worse than moving, and silently showing a page from a universe you aren't in is how you edit the wrong Valera.
 
-**Cheap on disk, which is the point.** Each universe stays a directory of its own; the container's JSON just gets a template key marking it a universe. `template-registry.ts` already carries `canHaveChildren` per template, so this is a ninth template plus a root-only rule in the reparent guard (`project-store.ts`) and the drop-target check (`TreePanel.tsx`). Nothing about how a page is read or written changes. Existing projects need a one-time migration that lifts each AU out of the `AUs/` folder and marks it — fold it into the Valeraverse re-import already queued above rather than shipping a separate one-off.
+**Cheap on disk, which is the point.** Each universe stays a directory of its own; the container's JSON just gets a template key marking it a universe. `template-registry.ts` already carries `alwaysDirectory` per template, so this is a fourteenth template plus a root-only rule in the reparent guard (`project-store.ts`) and the drop-target check (`TreePanel.tsx`). Nothing about how a page is read or written changes. (This entry said `canHaveChildren` and "a ninth template" until 2026-09-05; the field was renamed on 2026-08-10 and there have been thirteen templates since 2026-08-28.)
 
 **"Universe" is the word**, chosen 2026-08-08 over "AU": Canon isn't an alternate anything, and one word has to cover both.
 
 **Explicitly not building: base profiles with per-AU overrides.** Proposed and rejected by the user the same day, and worth not re-opening. Overrides only pay off when the variants are mostly identical, and hers diverge on species, appearance, history, relationships and most of the prose — the base profile would be pure indirection. It would also put "am I editing canon or this AU?" in front of every keystroke, and turn a character on disk into a base plus a stack of patches, which cuts against the plain-JSON promise. If cross-universe navigation is ever wanted, the cheap version is a plain "variant of" link between pages, no inheritance.
 
-**Sequenced before the three big views** so Database, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wants somewhere to live, and Phase 21 is what builds the left rail it belongs in. Putting it before that means placing it twice.
+**Sequenced before the three big views** so Database, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wanted somewhere to live, and Phase 21 was what built the shell it belongs in.
+
+### Scoped 2026-09-05
+
+Five decisions, all from the user on 2026-09-05, taken with Phase 21 shipped and the rail actually on screen.
+
+**The switcher goes on the tree panel's own header row**, under the world's name — not in the rail. The rail already holds a *project* switcher, and two buttons side by side both meaning "switch something" is the confusion this avoids; the rail's own rule is that it holds app errands, and a universe is the tree's contents. Obsidian's vault switcher sits in its sidebar's corner and that was the reference for a selector rather than a row, which this keeps. `ProjectHeader.tsx` is the row.
+
+**A project with no universes looks exactly like it does today**, and no switcher appears until there is one. Opt-in rather than a migration that wraps everything in a Canon universe on first open: nobody's tree gets rearranged by opening the app, and the feature costs nothing to anyone who does not want it. The way in is `Turn into a universe` on a top-level page's right-click menu.
+
+**Shared is made by hand**, the same as any other universe, rather than appearing automatically once a second one exists. It sits in its own labelled, collapsible section under whichever universe is selected — the one being worked in reads first.
+
+**"All universes" is the top entry in the switcher**, not a setting. One click rather than a trip to Settings, and it is the only time universes appear as rows in the tree. (The 2026-08-08 entry above says "an all-universes setting"; this is that, placed.)
+
+**No one-off migration for the existing `AUs/` folder.** The right-click action has to exist anyway, so converting the four or five AUs by hand and deleting the empty wrapper is a few clicks against a migration that runs once and then lives in the code forever. Worth knowing when it is done: re-importing Valeraverse (Queued Adjustments) does not produce universes by itself, since the `.lk` file has the `AUs` folder inside it — the conversion is a separate step either way, which is what makes the by-hand route cheap rather than merely cheaper.
 
 ---
 
