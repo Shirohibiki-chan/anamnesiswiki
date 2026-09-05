@@ -554,6 +554,14 @@
      icon button with the same breathing room either side that the bar gives
      its own controls. */
   --w-rail: 48px;
+  /* **How much of the top-right the system's own window buttons are using.**
+     Phase 21. `env(titlebar-area-width)` is the part of the title bar row that
+     is ours; the rest of the window's width is theirs. The fallback makes this
+     zero, which is the right answer everywhere the variable does not exist —
+     a browser, or a shell that still has its own decorations. Anything drawn in
+     the top band reserves this on its right, or it ends up underneath a close
+     button and cannot be clicked. */
+  --window-controls-w: calc(100vw - env(titlebar-area-width, 100vw));
   --reading-width: 60rem; /* page body and the empty-banner placeholder */
   /* The writing column's side margin. Not a spacing-scale step — it's the
      other half of --reading-width, and the two have to move together or the

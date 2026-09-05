@@ -440,28 +440,16 @@ sidebar; the frame has its own menu, colour, width and layout, and the writing
 wraps around it; the insert menu offers what she listed; a page's headings make
 a contents list; and a block hands out a link to itself. Detail is in
 `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
-**Phase 21 is next**, and it is the next one in this file.
+**Phase 21 (Shell Rework) shipped 2026-09-05** — a rail down the left holding
+Project, Templates and Assets plus search, the project switcher and settings;
+and a title bar that takes the theme's colours while leaving the system's own
+window buttons in place, so Windows 11's snap layouts still work. The splits it
+was scoped with are Phase 21.5, deferred. Detail is in `docs/shipped.md`; what
+still binds the code is in `docs/handoff.md`.
+**Phase 22 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 21 — Shell Rework
-
-The look of the window, and the two pieces of it that are not the writing. It still touches `AppLayout.tsx`, but the rewrite that made this phase late went with the splits to Phase 21.5 — what is left is small, visible, and finishable.
-
-**The reference is Obsidian, not LegendKeeper, and this section had it wrong until 2026-09-04.** It was scoped from LK screenshots, and the split that used to sit here was not LK's at all — the user placed it as Obsidian's and reproduced it there to check. LK has no splits. That is worth remembering for the two items still here: neither should be assumed to be LK's without looking either.
-
-**Order: the rail, then the title bar.** The title bar sits beside the rail and is built against it, and the rail is the smaller of the two — `TopBar.tsx` is seventy lines holding nav, search, settings and the panel toggle.
-
-- **Left rail replacing the top bar**, with Project / Templates / Assets moved into it.
-
-- **A title bar that looks like the app**, filed by the user 2026-08-21. The bar across the top of the window is the stock Windows one and the only part of Anamnesis that ignores the theme; on a dark theme the app reads as sitting inside somebody else's chrome. Nobody chose it — the window is created with the default frame in `electron/main.js`, and there is no `frame: false` anywhere. (This used to point at `decorations` in `src-tauri/tauri.conf.json`, which has shipped nothing since v0.5.0.)
-
-  **It belongs to this phase because this phase is already replacing what sits under it.** The top bar goes away here, so a custom title bar built earlier is built against a frame that is about to be deleted, and built twice.
-
-  **The switch is one line and the consequences are not.** Turning the frame off hands us minimise, maximise and close, a drag region, double-click-to-maximise, the resize edges, and — the one that gets missed — Windows 11's snap layouts, which appear on hover over the *native* maximise button and are how a lot of people arrange windows. A custom bar that skips them takes a working feature off her machine to gain a colour. Design that part; the buttons are the easy half.
 
 ---
 

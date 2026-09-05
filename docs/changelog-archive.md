@@ -2,6 +2,15 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-28 — the infobox
+
+### Additions
+
+- **`/infobox` puts a framed group of blocks in the page.** It arrives empty with its own **Add Block**, which offers the same things the sidebar's does — a text block, a picture, tags, an alias, the indexes, any of the meters, or a field the page already has. Everything you put in it is grouped inside one border, which is what tells a reader those blocks belong together.
+- **The blocks in it are the page's own blocks, not copies.** One goes into the infobox and leaves the sidebar, exactly as a block placed loose in the page does. Its `⋯` menu, its title, its colour and its fields all work the way they always have.
+- **The frame keeps its own order.** Drag a block inside an infobox and it moves within that group; the sidebar's order is untouched.
+- **Deleting the frame gives the blocks back.** Hover it, use the handle beside it, Delete — every block it held returns to the sidebar. Nothing in an infobox can be lost by getting rid of the box.
+
 ## 2026-08-28 — the fourth pinned project is back
 
 ### Fixes

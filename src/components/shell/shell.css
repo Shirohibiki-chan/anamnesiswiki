@@ -468,6 +468,66 @@
    and the gap was held for back/forward rather than filled with something
    invented. The breadcrumb never came here: it's on the page itself, directly
    above the title it describes (page/PageTitle.tsx). */
+
+/* **The band across the top of the window is the title bar.** Phase 21. The
+   shell hands the page the whole window (`titleBarStyle: "hidden"`), so nothing
+   moves the window until something says it does — and rather than add a strip
+   of chrome for the purpose, the 48px row the app already draws across its top
+   becomes it. Four elements make up that row: the rail's top, the sidebar's
+   header, the bar above the page, and the properties panel's own band.
+
+   **Every control inside them has to opt back out.** A drag region swallows
+   clicks, so a button left in one is a button that moves the window instead of
+   doing its job. The rule below covers buttons, links and fields; anything else
+   interactive that lands in the band needs adding to it by hand. */
+.left-rail,
+.top-bar,
+.tree-project-header,
+.tree-panel-head,
+.app-layout-properties-head {
+  -webkit-app-region: drag;
+}
+
+.left-rail button,
+.left-rail a,
+.top-bar button,
+.top-bar a,
+.top-bar input,
+.tree-project-header button,
+.tree-project-header a,
+.tree-project-header input,
+.tree-panel-head button,
+.tree-panel-head a {
+  -webkit-app-region: no-drag;
+}
+
+/* **The properties panel's half of the band, and the only one that had to be
+   built rather than reused.** The other three columns already had something
+   48px tall at the top; this panel started at its own first heading. It is a
+   sticky element rather than padding because the panel scrolls — padding would
+   carry the reservation away on the first scroll and slide the panel's contents
+   under the close button.
+
+   It also carries `--window-controls-w`, because the system's buttons are drawn
+   at the top *right* of the window and this is what is under them. */
+.app-layout-properties-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  height: var(--h-bar);
+  padding-right: var(--window-controls-w);
+  background: var(--gradient-props, none), var(--color-panel);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+/* With the panel hidden there is nothing on that side but the bar above the
+   page, so the reservation moves to it — otherwise the properties toggle, which
+   is the last control in that bar, ends up under the close button. That is the
+   same control this app has already lost once, to the old top bar's overflow. */
+.app-layout-properties-collapsed .top-bar {
+  padding-right: calc(var(--space-xl) + var(--window-controls-w));
+}
 .top-bar {
   height: var(--h-bar);
   flex-shrink: 0;

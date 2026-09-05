@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-05 — the window wears the theme
+
+### Changes
+
+- **The bar across the top of the window is the app's now, not Windows'.** It takes the colour of whatever theme you're on and changes with it, including a theme you wrote yourself — so on a dark theme the app stops looking like it's sitting inside somebody else's grey frame.
+- **The minimise, maximise and close buttons are still Windows' own.** That's deliberate rather than lazy: they're what Windows 11's snap layouts appear over when you hover them, and drawing our own three buttons would have taken that off you to gain a colour. They get tinted to match instead.
+- **You can drag the window by the whole strip across its top** — the rail, the row above the page, the sidebar's header, all of it. Anything you can click in that strip still just does its job.
+- **The properties panel gained a header row**, so the line across the top of the window now runs the whole way instead of stopping where that panel starts.
+
+### Notes
+
+- On a Mac the buttons stay where a Mac puts them, shifted in so they don't land on the rail. Nothing changes on that front for you.
+
 ## 2026-09-05 — a rail down the left
 
 ### Changes
@@ -243,12 +256,3 @@
 
 - **Clicking a block or an infobox in the page no longer wraps it in a thick blue band.** That outline was BlockNote's own, hardcoded four pixels of bright blue for its picture blocks, and it landed on ours because they're selected by a single click. It's now the same thin ring the rest of the app uses when something is selected, sitting just outside the frame instead of on top of its border.
 - **A lone block in the page draws the border it was meant to.** A rule that keeps the editor's menus from drawing a white outline was also overriding our own blocks, so the frame around a block in the page has been a shade heavier than intended since it shipped. Nothing looked broken; it just wasn't the line it was written to be.
-
-## 2026-08-28 — the infobox
-
-### Additions
-
-- **`/infobox` puts a framed group of blocks in the page.** It arrives empty with its own **Add Block**, which offers the same things the sidebar's does — a text block, a picture, tags, an alias, the indexes, any of the meters, or a field the page already has. Everything you put in it is grouped inside one border, which is what tells a reader those blocks belong together.
-- **The blocks in it are the page's own blocks, not copies.** One goes into the infobox and leaves the sidebar, exactly as a block placed loose in the page does. Its `⋯` menu, its title, its colour and its fields all work the way they always have.
-- **The frame keeps its own order.** Drag a block inside an infobox and it moves within that group; the sidebar's order is untouched.
-- **Deleting the frame gives the blocks back.** Hover it, use the handle beside it, Delete — every block it held returns to the sidebar. Nothing in an infobox can be lost by getting rid of the box.

@@ -5345,3 +5345,41 @@ the chord is `preventDefault`ed so its colon reaches neither the writing nor
 the picker's focused search box. Arrow keys, Tab and Enter came free —
 `handleSuggestionListKeys` has translated those for every suggestion menu in
 the app since Phase 14.
+
+## Phase 21 — Shell Rework ✅ Shipped 2026-09-05
+
+Two items, both visible every day, and a third that left before the phase started — the splits went to Phase 21.5 (deferred) on 2026-09-04 once the user placed them as Obsidian's rather than as anything LK has. What is below is the section as it was scoped, followed by what each half actually cost.
+
+## Phase 21 — Shell Rework
+
+The look of the window, and the two pieces of it that are not the writing. It still touches `AppLayout.tsx`, but the rewrite that made this phase late went with the splits to Phase 21.5 — what is left is small, visible, and finishable.
+
+**The reference is Obsidian, not LegendKeeper, and this section had it wrong until 2026-09-04.** It was scoped from LK screenshots, and the split that used to sit here was not LK's at all — the user placed it as Obsidian's and reproduced it there to check. LK has no splits. That is worth remembering for the two items still here: neither should be assumed to be LK's without looking either.
+
+**Order: the rail, then the title bar.** The title bar sits beside the rail and is built against it, and the rail is the smaller of the two — `TopBar.tsx` is seventy lines holding nav, search, settings and the panel toggle.
+
+- **Left rail replacing the top bar**, with Project / Templates / Assets moved into it.
+
+- **A title bar that looks like the app**, filed by the user 2026-08-21. The bar across the top of the window is the stock Windows one and the only part of Anamnesis that ignores the theme; on a dark theme the app reads as sitting inside somebody else's chrome. Nobody chose it — the window is created with the default frame in `electron/main.js`, and there is no `frame: false` anywhere. (This used to point at `decorations` in `src-tauri/tauri.conf.json`, which has shipped nothing since v0.5.0.)
+
+  **It belongs to this phase because this phase is already replacing what sits under it.** The top bar goes away here, so a custom title bar built earlier is built against a frame that is about to be deleted, and built twice.
+
+  **The switch is one line and the consequences are not.** Turning the frame off hands us minimise, maximise and close, a drag region, double-click-to-maximise, the resize edges, and — the one that gets missed — Windows 11's snap layouts, which appear on hover over the *native* maximise button and are how a lot of people arrange windows. A custom bar that skips them takes a working feature off her machine to gain a colour. Design that part; the buttons are the easy half.
+
+---
+
+### The rail
+
+`LeftRail.tsx`, and the sidebar's tab strip disappeared into it. Which panel the sidebar shows moved from local state in `TreeSidebar` up to `AppLayout`, because the rail draws the selection and the sidebar draws the panel.
+
+**Two of the strip's jobs had to be picked up rather than deleted, and both were found by looking at the running app rather than by reasoning.** Its bottom border was half of one horizontal rule across the top of the window — without it the app's top edge stepped down as the eye crossed into the sidebar, a defect this repo had already fixed once in August. And it was where the panels were named: an icon rail says nothing, so the sidebar now writes Templates and Assets over the panel itself.
+
+**The window's floor and opening width both moved by the rail's width** — 900 to 948, 1280 to 1328. CI caught why: at the old floor the three panels were being laid out against 852px, and the tree gave way until the world's name and two page names ellipsised, which `layout-rules` refuses. The rail is chrome, so holding those numbers would have paid for it out of the page. Three scenarios had the old floor written into them as a literal; two died on thirty-second timeouts rather than assertions, because `resizeWindow` asks for a size the window now refuses and then waits for it. The floor is `MIN_WINDOW` in the harness now.
+
+### The title bar
+
+**The item the plan called the hard one, and it stopped being hard once the right mechanism turned up.** The warning was that turning the frame off hands us the buttons and loses Windows 11's snap layouts, which appear over the native maximise button. `titleBarStyle: "hidden"` with `titleBarOverlay` does not: the page gets the whole window and the system keeps drawing its own three buttons on top, tinted to our colours. Nothing is lost and the bar still matches the theme.
+
+The colours are read off the document after a theme lands (`readTitleBarColors`) rather than looked up, because a theme she wrote is a `.css` file this code has never seen. The band across the top became the drag region, every control in it opts back out, and `--window-controls-w` reserves whatever the system's buttons are using so nothing ends up under the close button — zero on any shell that still draws its own decorations. The properties panel gained the one piece of the band that did not already exist, which also finished the rule across the top of the window.
+
+**Verified in the running app**: the overlay reported 137px reserved, all four band elements returned `drag`, and the properties band measured 48. The system's buttons are drawn outside the page, so they are not in a page screenshot — that part is measured rather than seen.

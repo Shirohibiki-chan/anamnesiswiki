@@ -18,6 +18,10 @@ const TREE_ROW_NAME = ".tree-row-name";
 const TREE_ROW_TOGGLE = ".tree-row-toggle";
 const TREE_SEARCH_INPUT = ".tree-search-input";
 const SIDEBAR_PANEL_HEAD = ".tree-panel-head";
+const LEFT_RAIL = ".left-rail";
+const TOP_BAR = ".top-bar";
+const TREE_PROJECT_HEADER = ".tree-project-header";
+const PROPERTIES_HEAD = ".app-layout-properties-head";
 const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
 const BLOCK_PANEL = ".block-panel";
@@ -118,6 +122,40 @@ export async function sidebarPanelName(window: Page): Promise<string | null> {
   const head = window.locator(SIDEBAR_PANEL_HEAD);
   if ((await head.count()) === 0) return null;
   return normalize(await head.first().innerText());
+}
+
+/**
+ * The band across the top of the window, as the page sees it. Phase 21.
+ *
+ * `controls` is how much of the right-hand end the system's own window buttons
+ * are using — `--window-controls-w`, which is zero on any platform or shell
+ * that draws its own decorations, so a scenario must compare against it rather
+ * than assume it. `dragging` is which of the band's elements are actually drag
+ * regions, since a band that does not move the window is the whole feature
+ * missing. `rightmost` is the right edge of the last control in the band, which
+ * is the thing that must not end up underneath a close button.
+ */
+export async function titleBand(window: Page): Promise<{
+  controls: number;
+  dragging: string[];
+  rightmost: number;
+  width: number;
+}> {
+  return window.evaluate((selectors) => {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:absolute;visibility:hidden;width:var(--window-controls-w)";
+    document.body.appendChild(probe);
+    const controls = Math.round(probe.getBoundingClientRect().width);
+    probe.remove();
+    const dragging = selectors.filter((selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return false;
+      return getComputedStyle(element).getPropertyValue("-webkit-app-region").trim() === "drag";
+    });
+    const buttons = [...document.querySelectorAll(`${selectors[1]} button`)];
+    const rightmost = buttons.reduce((far, button) => Math.max(far, button.getBoundingClientRect().right), 0);
+    return { controls, dragging, rightmost: Math.round(rightmost), width: window.innerWidth };
+  }, [LEFT_RAIL, TOP_BAR, TREE_PROJECT_HEADER, PROPERTIES_HEAD]);
 }
 
 /**
