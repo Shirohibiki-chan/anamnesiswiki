@@ -2,6 +2,13 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-29 — the ring around a selected block
+
+### Fixes
+
+- **Clicking a block or an infobox in the page no longer wraps it in a thick blue band.** That outline was BlockNote's own, hardcoded four pixels of bright blue for its picture blocks, and it landed on ours because they're selected by a single click. It's now the same thin ring the rest of the app uses when something is selected, sitting just outside the frame instead of on top of its border.
+- **A lone block in the page draws the border it was meant to.** A rule that keeps the editor's menus from drawing a white outline was also overriding our own blocks, so the frame around a block in the page has been a shade heavier than intended since it shipped. Nothing looked broken; it just wasn't the line it was written to be.
+
 ## 2026-08-28 — the infobox
 
 ### Additions

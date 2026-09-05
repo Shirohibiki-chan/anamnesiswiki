@@ -249,12 +249,62 @@
 /* Phase 21: the window is the rail, then the three-column grid beside it. The
    rail sits outside `.app-layout` rather than being a fourth column in it —
    the reason is in AppLayout.tsx, above the return. */
+/* --- TitleBar ---
+   **One band across the top of the window, and it is one element on purpose.**
+   The Phase 21 version had no bar at all: it turned the frame off and promoted
+   the four things already drawn across the app's top into the drag region. Four
+   elements meant four backgrounds, three vertical seams between them and the
+   system's buttons tinted to whichever one they sat over — rejected by the user
+   on sight 2026-09-05. A title bar has to be a bar. This one spans the whole
+   window above everything else, paints one colour, draws one rule under itself,
+   and hands that colour to the system's buttons (`readTitleBarColors`).
+
+   **Centred, because either end of the bar can belong to the platform.** Windows
+   draws its buttons over the top right and macOS its traffic lights over the top
+   left, and the renderer cannot ask which it is running on. The centre is clear
+   on both. `--window-controls-w` still comes off the right so the title is
+   centred in the part of the bar that is ours rather than in the whole window;
+   it resolves to zero wherever the shell keeps its own decorations. */
+.title-bar {
+  flex-shrink: 0;
+  height: var(--h-title-bar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: var(--window-controls-w);
+  background: var(--color-panel-alt);
+  border-bottom: 1px solid var(--color-border-strong);
+  /* The whole band moves the window. Nothing in here is interactive, so unlike
+     the four-element version there is no opt-out list to keep in step — a
+     control added here needs `-webkit-app-region: no-drag` and a note saying
+     why it is in the bar at all. */
+  -webkit-app-region: drag;
+  /* Dragging the window with the pointer over the word should not select it. */
+  user-select: none;
+}
+
+.title-bar-name {
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+}
+
 .app-frame {
   height: 100vh;
   display: flex;
+  /* A column since the title bar arrived: the bar, then everything else. It was
+     the row that `.app-frame-body` is now. */
+  flex-direction: column;
   /* The same ground the grid paints, so a theme's page background runs under
      the rail instead of stopping at its edge. */
   background: var(--gradient-bg, none), var(--color-bg);
+}
+
+.app-frame-body {
+  flex: 1;
+  /* Or the grid's own scrolling children push this taller than the window. */
+  min-height: 0;
+  display: flex;
 }
 
 /* **Two groups at the two ends, and the gap between them does the separating.**
@@ -273,8 +323,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  padding: var(--space-md) 0;
+  padding: var(--space-md) var(--space-xs);
   background: var(--color-panel-alt);
   /* `--color-border-strong`, the same line the tree's right edge and the bar
      above the page use. These are the app's frame and should read as structure
@@ -285,8 +334,46 @@
 .left-rail-group {
   display: flex;
   flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* **Icon over word, and the word is the point.** The rail shipped icon-only at
+   48px and the user could not read it 2026-09-05 — the name of each button was
+   reachable only by hovering for a tooltip, which is a label you have to already
+   suspect is there. Every button carries its own word now and `--w-rail` is
+   whatever holds them.
+
+   Its own rule rather than `.ui-icon-btn`: that class is a fixed square sized to
+   an icon, and this is a column with text under one. What it borrows is the two
+   states, which have to keep matching the rest of the app — hover fill, and the
+   accent on `aria-pressed` that marks the panel you are looking at.
+
+   **Text wraps rather than ellipsising.** `Switch project` is two lines here and
+   that is the intended outcome: a rail whose labels trail off is back to being a
+   rail you have to hover to read. */
+.left-rail-btn {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-2xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+}
+
+.left-rail-btn:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.left-rail-btn[aria-pressed="true"] {
+  color: var(--color-accent-light);
 }
 
 .app-layout {
@@ -469,65 +556,17 @@
    invented. The breadcrumb never came here: it's on the page itself, directly
    above the title it describes (page/PageTitle.tsx). */
 
-/* **The band across the top of the window is the title bar.** Phase 21. The
-   shell hands the page the whole window (`titleBarStyle: "hidden"`), so nothing
-   moves the window until something says it does — and rather than add a strip
-   of chrome for the purpose, the 48px row the app already draws across its top
-   becomes it. Four elements make up that row: the rail's top, the sidebar's
-   header, the bar above the page, and the properties panel's own band.
+/* **Nothing up here is chrome any more.** Until 2026-09-05 this file made the
+   rail, the sidebar's header, the bar above the page and an invented band on the
+   properties panel into one drag region, because the app already drew 48px across
+   its top and a title bar seemed like a strip that did not need adding. It did
+   need adding — see `.title-bar` above. With a real bar over all of this, these
+   four went back to being ordinary panels: no `-webkit-app-region`, no opt-out
+   list for every control that lands in them, and no `--window-controls-w`
+   reservation on the properties panel or the bar above the page, since the
+   system's buttons are no longer drawn over either. The properties panel's band
+   is deleted rather than restyled; it existed only to be sat under. */
 
-   **Every control inside them has to opt back out.** A drag region swallows
-   clicks, so a button left in one is a button that moves the window instead of
-   doing its job. The rule below covers buttons, links and fields; anything else
-   interactive that lands in the band needs adding to it by hand. */
-.left-rail,
-.top-bar,
-.tree-project-header,
-.tree-panel-head,
-.app-layout-properties-head {
-  -webkit-app-region: drag;
-}
-
-.left-rail button,
-.left-rail a,
-.top-bar button,
-.top-bar a,
-.top-bar input,
-.tree-project-header button,
-.tree-project-header a,
-.tree-project-header input,
-.tree-panel-head button,
-.tree-panel-head a {
-  -webkit-app-region: no-drag;
-}
-
-/* **The properties panel's half of the band, and the only one that had to be
-   built rather than reused.** The other three columns already had something
-   48px tall at the top; this panel started at its own first heading. It is a
-   sticky element rather than padding because the panel scrolls — padding would
-   carry the reservation away on the first scroll and slide the panel's contents
-   under the close button.
-
-   It also carries `--window-controls-w`, because the system's buttons are drawn
-   at the top *right* of the window and this is what is under them. */
-.app-layout-properties-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  flex-shrink: 0;
-  height: var(--h-bar);
-  padding-right: var(--window-controls-w);
-  background: var(--gradient-props, none), var(--color-panel);
-  border-bottom: 1px solid var(--color-border-strong);
-}
-
-/* With the panel hidden there is nothing on that side but the bar above the
-   page, so the reservation moves to it — otherwise the properties toggle, which
-   is the last control in that bar, ends up under the close button. That is the
-   same control this app has already lost once, to the old top bar's overflow. */
-.app-layout-properties-collapsed .top-bar {
-  padding-right: calc(var(--space-xl) + var(--window-controls-w));
-}
 .top-bar {
   height: var(--h-bar);
   flex-shrink: 0;

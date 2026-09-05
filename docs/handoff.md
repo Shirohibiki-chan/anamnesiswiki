@@ -1,21 +1,5 @@
 # Why The Code Is Like This
 
-- **The window's opening width and its floor both carry the rail's width, and
-  they are not round numbers by accident.** Phase 21: 1328 and 948 in
-  `electron/main.js`, which are 1280 and 900 plus `--w-rail`. The rail is chrome
-  rather than content, so holding the old numbers would have taken its 48px out
-  of the three panels instead — and at the floor that is exactly what happened:
-  the tree was squeezed until the world's name and two page names ellipsised,
-  which `e2e/layout-rules.e2e.ts` catches as `dead-end-truncation` and refuses.
-  **The floor now lives once, as `MIN_WINDOW` in `e2e/harness/launch-app.ts`**,
-  because three scenarios had written 900 into themselves and two of them died
-  on a 30-second timeout when it moved — `resizeWindow` asks for a size the
-  window refuses and then waits for it forever, which reads as a hang rather
-  than as a wrong number. **`layout-rules` also carries the widths in its
-  `ALLOWED` keys** (`"a folder @948"`), so moving a sweep width without renaming
-  the keys turns every allowance into a silent zero and fails screens that never
-  changed.
-
 Constraints and decisions that still govern the code. Every entry here is
 something that would be re-broken by someone who didn't know it — a workaround
 that looks removable, a trade-off that looks like an oversight, a choice made
@@ -41,21 +25,32 @@ Kept short on purpose — this file is read most sessions.
   is CSS and a theme she wrote is a file this code has never seen, so
   `readTitleBarColors` resolves `--color-panel-alt` and `--color-text-secondary`
   off the document after the theme has landed and hands them across
-  `setTitleBarColors`. `--color-panel-alt` rather than `--color-bg` because the
-  bar continues the band the rail and the row above the page already draw; the
-  page colour would put a stripe through the middle of it. macOS has no overlay
-  to tint and `setTitleBarOverlay` throws there, so the handler checks the
-  platform once rather than catching per theme change.
+  `setTitleBarColors`. **`--color-panel-alt` because that is what `.title-bar` is
+  painted** — the token there and the token here have to move together, or the
+  system's buttons sit in a band they do not match. macOS has no overlay to tint
+  and `setTitleBarOverlay` throws there, so the handler checks the platform once
+  rather than catching per theme change.
 
-- **Everything in the top band is a drag region, and every control in it has to
-  opt back out.** A drag region swallows clicks, so a button left inside one
-  moves the window instead of doing its job — the rule in `shell.css` covers
-  buttons, links and fields, and anything else interactive that lands in the
-  band needs adding to it by hand. **`--window-controls-w` is the other half of
-  this**: the system's buttons are drawn over the top right of the page, and
-  whatever is up there reserves that width or ends up underneath the close
-  button. It is zero wherever the shell still draws its own decorations, which
-  is what makes it safe to apply unconditionally.
+- **The title bar is one element the full width of the window, and the reason
+  that is written down is that the first version was not.** Phase 21 turned the
+  frame off and then made the four things the app already drew across its top —
+  the rail, the sidebar's header, the bar above the page, and a band invented for
+  the properties panel — into the drag region, reasoning that a strip of chrome
+  did not need adding when a 48px row was already there. Four elements means four
+  backgrounds, seams between them, and window buttons tinted to a colour only one
+  of them is painted. **The user rejected it on sight 2026-09-05 and what she had
+  asked for on 2026-08-21 was a title bar that wears the theme, not the absence
+  of one.** Do not re-derive the cheap version: a bar that is several things is
+  not a bar. `.title-bar` in `shell.css` is the only drag region in the app, and
+  `--window-controls-w` now has exactly one reader — that bar's right padding, so
+  the centred title is centred in the part of the window that is ours.
+
+- **Nothing interactive belongs in the title bar, which is what keeps it
+  simple.** A drag region swallows clicks, so any control put there has to opt
+  back out with `-webkit-app-region: no-drag` by hand. The four-element version
+  needed a standing list of those covering buttons, links and fields across half
+  the app; one empty bar needs none. Put a control in there only with a reason,
+  and add the opt-out in the same change.
 
 ---
 
@@ -2564,8 +2559,8 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   rail's width too generous, so the panels would fight for room that is not
   there. And both `ResizeHandle`s are positioned against the grid rather than
   living inside the panels they resize, so a column in front of the tree moves
-  the edge they sit on. The frame (`.app-frame`) is a flex row holding the rail
-  and the grid; the grid's geometry is exactly what it was before the rail
+  the edge they sit on. The frame (`.app-frame`) is a flex column — the title bar,
+  then `.app-frame-body`, which is the row holding the rail and the grid; the grid's geometry is exactly what it was before the rail
   existed, which is the point.
 
 - **One horizontal rule across the top of the window, drawn by three different
@@ -2577,10 +2572,13 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   three a literal height instead of the token and it steps as it crosses the
   window — which is what it did before 2026-08-11, and it was noticed.
 
-- **The window's opening width and its floor both carry the rail's width, and
-  they are not round numbers by accident.** Phase 21: 1328 and 948 in
-  `electron/main.js`, which are 1280 and 900 plus `--w-rail`. The rail is chrome
-  rather than content, so holding the old numbers would have taken its 48px out
+- **The window's opening size and its floor both carry the app's own chrome, and
+  they are not round numbers by accident.** 1364 and 984 in `electron/main.js`
+  are 1280 and 900 plus `--w-rail`, and `minHeight` 632 is 600 plus
+  `--h-title-bar`. Phase 21 set the first pair at 1328/948 against a 48px rail;
+  2026-09-05 moved them when the rail widened to 84px to fit its labels, and
+  added the height when the title bar became a real band. The rail is chrome
+  rather than content, so holding the old numbers would have taken its width out
   of the three panels instead — and at the floor that is exactly what happened:
   the tree was squeezed until the world's name and two page names ellipsised,
   which `e2e/layout-rules.e2e.ts` catches as `dead-end-truncation` and refuses.
@@ -2589,7 +2587,7 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   on a 30-second timeout when it moved — `resizeWindow` asks for a size the
   window refuses and then waits for it forever, which reads as a hang rather
   than as a wrong number. **`layout-rules` also carries the widths in its
-  `ALLOWED` keys** (`"a folder @948"`), so moving a sweep width without renaming
+  `ALLOWED` keys** (`"a folder @984"`), so moving a sweep width without renaming
   the keys turns every allowance into a silent zero and fails screens that never
   changed.
 

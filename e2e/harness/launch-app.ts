@@ -153,7 +153,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
  * 30-second timeout with nothing to say. Two scenarios did exactly that when
  * the floor moved. Use this rather than writing the number again.
  */
-export const MIN_WINDOW = { width: 948, height: 600 };
+export const MIN_WINDOW = { width: 984, height: 632 };
 
 /**
  * Resizes the window and waits until the page has actually laid out at the new

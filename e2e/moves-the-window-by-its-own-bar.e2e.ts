@@ -1,17 +1,21 @@
-// The window's own title bar, once the system stops drawing one. Phase 21.
+// The window's own title bar, once the system stops drawing one.
 //
-// **The shell hands the page the whole window, and three things have to be true
-// after that.** The band across the top has to move the window, or it is a
-// title bar that is not one. Nothing clickable may end up under the system's
-// buttons, which are drawn over the page at the top right and which this app
-// has already lost a control to once. And the properties panel needs its own
-// share of that band, because it is the only column that had nothing 48px tall
-// at the top to reuse.
+// **The first version of this scenario passed while the feature was wrong**, and
+// that is the thing worth knowing before changing it. It asserted that all four
+// of the app's top-row panels were drag regions — which they were, and which was
+// the defect: there was no title bar, only four panels with four backgrounds
+// standing in for one, seams and mismatched window buttons included. The user
+// rejected it on sight 2026-09-05. A test that measures the workaround cannot
+// fail when the workaround is the problem.
+//
+// So this checks the shape instead. One bar, reaching both edges of the window,
+// tall enough to be a bar, moving the window when dragged — and none of those
+// four panels doing that job any more.
 //
 // **Written to hold on a platform with no overlay at all.** `--window-controls-w`
-// is zero wherever the system still draws its own decorations, so every
-// assertion here is a comparison against what the page reports rather than
-// against a number measured on Windows.
+// is zero wherever the system still draws its own decorations, so the last
+// assertion is a comparison against what the page reports rather than against a
+// number measured on Windows.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import { openPage, titleBand, waitForWorld } from "./harness/screen";
@@ -32,15 +36,26 @@ describe("moving the window by its own bar", () => {
     await app?.close();
   });
 
-  it("makes the whole band a drag region", async () => {
+  it("draws one bar across the whole window", async () => {
     const band = await titleBand(app.window);
-    // The rail, the bar above the page, the tree's header and the properties
-    // panel's band — all four, or the window only moves from part of its top.
-    expect(band.dragging).toHaveLength(4);
+    expect(band.spans).toBe(true);
+    expect(band.height).toBeGreaterThanOrEqual(28);
   });
 
-  it("keeps the bar's own controls clear of the system's buttons", async () => {
+  it("moves the window by that bar", async () => {
     const band = await titleBand(app.window);
-    expect(band.rightmost).toBeLessThanOrEqual(band.width - band.controls);
+    expect(band.dragging).toBe(true);
+  });
+
+  it("leaves the panels underneath as panels", async () => {
+    const band = await titleBand(app.window);
+    // The rail, the bar above the page, the tree's header, the properties band —
+    // none of them is chrome now, and the properties band does not exist at all.
+    expect(band.strays).toEqual([]);
+  });
+
+  it("keeps the title clear of the system's buttons", async () => {
+    const band = await titleBand(app.window);
+    expect(band.titleRight).toBeLessThanOrEqual(band.width - band.controls);
   });
 });
