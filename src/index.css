@@ -550,17 +550,28 @@
      these were previously written as literals in two files each, which is the
      kind of thing that stays correct right up until someone changes one. */
   --h-bar: 48px; /* the bar above the page — see shell.css */
-  /* The rail down the left of the window, Phase 21. Wide enough for a 28px
-     icon button with the same breathing room either side that the bar gives
-     its own controls. */
-  --w-rail: 48px;
+  /* The window's own title bar — see `.title-bar` in shell.css. 32px is what
+     Windows draws for its own, which is the height a title bar is expected to
+     be; the app's other band is `--h-bar` and deliberately taller, because that
+     one holds controls and this one holds a word. */
+  --h-title-bar: 32px;
+  /* The rail down the left of the window, Phase 21. **84px is what the labels
+     need**, not a round number — it was 48 while the rail was icons only, and
+     the user could not tell what any of the icons were (2026-09-05). Every
+     button now carries its word underneath, so the rail is as wide as the
+     longest one that has to fit on one line (`Templates`); `Switch project`
+     wraps to two, on purpose. Move this and move `minWidth` in
+     electron/main.js, which is the three panels' floor plus this. */
+  --w-rail: 84px;
   /* **How much of the top-right the system's own window buttons are using.**
      Phase 21. `env(titlebar-area-width)` is the part of the title bar row that
      is ours; the rest of the window's width is theirs. The fallback makes this
      zero, which is the right answer everywhere the variable does not exist —
-     a browser, or a shell that still has its own decorations. Anything drawn in
-     the top band reserves this on its right, or it ends up underneath a close
-     button and cannot be clicked. */
+     a browser, or a shell that still has its own decorations.
+     **One reader as of 2026-09-05: the title bar**, which takes it off its right
+     so the title is centred in the half of the bar that belongs to us. It used
+     to be applied all over the top of the app, back when the app's own panels
+     were standing in for a title bar and the buttons were drawn over them. */
   --window-controls-w: calc(100vw - env(titlebar-area-width, 100vw));
   --reading-width: 60rem; /* page body and the empty-banner placeholder */
   /* The writing column's side margin. Not a spacing-scale step — it's the

@@ -125,8 +125,17 @@ describe("Settings sits beside the app instead of over it", () => {
     await resizeWindow(app, MIN_WINDOW.width, 700);
     const box = await modalBox();
     expect(box.x + box.width).toBe(MIN_WINDOW.width);
-    // Narrower than it was, and still leaving a usable strip of app beside it.
-    expect(box.width).toBeLessThan(704);
+    // **704 is the modal's cap, not a squeeze, and that changed on 2026-09-05.**
+    // `--ui-modal-width` is `min(44rem, max(26rem, 100vw - 17rem))`, so the
+    // dialog gives up width only once the window is under 976px. This assertion
+    // read `toBeLessThan` while the floor was 948 and the modal was genuinely
+    // being squeezed to 676; the floor is 984 now — the rail widened to fit its
+    // labels — and the window is finally wide enough for the dialog's full size.
+    // Below the floor is not reachable: the app will not open a window there.
+    // What is still worth asserting is the part that was never about the
+    // squeeze — it docks to the right edge and leaves a usable strip of app
+    // beside it, which at the floor is 280px.
+    expect(box.width).toBeLessThanOrEqual(704);
     expect(box.x).toBeGreaterThanOrEqual(260);
     await resizeWindow(app, WIDTH, HEIGHT);
   });

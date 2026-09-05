@@ -13,11 +13,17 @@
 // rail is where the choice belongs once there is a rail: a tab strip that only
 // ever sits above one panel is a rail with one column's reach.
 //
-// **Icon-only, so the shortcut has nowhere to be written down but the tooltip.**
-// The search button used to carry a visible `Ctrl+K`, and it was the only place
-// in the app that said so. The label and the title still say it, which is what
-// a screen reader and a hover get; if search turns out to be hard to find, that
-// is the thing to put back rather than the whole bar.
+// **Every button says its own word, and the first version of this rail did not.**
+// It shipped icon-only at 48px wide, with the name of each button reachable only
+// by hovering it, and the user could not tell what any of them were 2026-09-05.
+// A tooltip is not a label: it costs a hover and a wait to read, it is invisible
+// to anyone scanning the rail, and it is the only thing on screen naming the
+// button underneath it. The words are on screen now and the rail is as wide as
+// it has to be to hold them — which is the trade, and it is the right way round.
+//
+// **A word that does not fit wraps rather than truncating.** `Switch project` is
+// two lines at this width and that is fine; an ellipsis in a six-word interface
+// would be hiding the one thing the label exists to say.
 import { FolderOpen, FolderTree, Images, LayoutTemplate, Search } from "lucide-react";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { SettingsButton } from "./SettingsButton";
@@ -30,6 +36,35 @@ const PANELS = [
   { panel: "templates", label: "Templates", Icon: LayoutTemplate },
   { panel: "assets", label: "Assets", Icon: Images },
 ] as const satisfies readonly { panel: SidebarPanel; label: string; Icon: typeof FolderTree }[];
+
+type RailButtonProps = {
+  label: string;
+  /** The full sentence for a screen reader and the tooltip, when the visible
+      word is the short form of it — `Search` under the icon, `Search (Ctrl+K)`
+      for anyone who wants the shortcut. Defaults to the label. */
+  title?: string;
+  Icon: typeof FolderTree;
+  pressed?: boolean;
+  onClick: () => void;
+};
+
+function RailButton({ label, title, Icon, pressed, onClick }: RailButtonProps) {
+  return (
+    <button
+      type="button"
+      className="left-rail-btn"
+      // `.left-rail-btn` takes its accent from aria-pressed, so the selected
+      // look is not a class this has to remember to pass.
+      aria-pressed={pressed}
+      aria-label={title ?? label}
+      title={title ?? label}
+      onClick={onClick}
+    >
+      <Icon size={18} />
+      <span>{label}</span>
+    </button>
+  );
+}
 
 type LeftRailProps = {
   panel: SidebarPanel;
@@ -45,44 +80,22 @@ export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }
     <nav className="left-rail" aria-label="Main">
       <div className="left-rail-group">
         {PANELS.map(({ panel: which, label, Icon }) => (
-          <button
+          <RailButton
             key={which}
-            type="button"
-            className="ui-icon-btn ui-icon-btn-lg left-rail-btn"
-            // `.ui-icon-btn` takes its accent from aria-pressed, so the selected
-            // look is not a class this has to remember to pass.
-            aria-pressed={panel === which}
-            aria-label={label}
-            title={label}
+            label={label}
+            Icon={Icon}
+            pressed={panel === which}
             onClick={() => onSelectPanel(which)}
-          >
-            <Icon size={18} />
-          </button>
+          />
         ))}
       </div>
 
       {/* Pushed to the bottom by the group above growing — the errands sit away
           from the panel switches so the two groups do not read as one list. */}
       <div className="left-rail-group">
-        <button
-          type="button"
-          className="ui-icon-btn ui-icon-btn-lg left-rail-btn"
-          aria-label={`Search (${searchShortcut})`}
-          title={`Search (${searchShortcut})`}
-          onClick={onOpenSearch}
-        >
-          <Search size={18} />
-        </button>
-        <button
-          type="button"
-          className="ui-icon-btn ui-icon-btn-lg left-rail-btn"
-          aria-label="Switch project"
-          title="Switch project"
-          onClick={onSwitchProject}
-        >
-          <FolderOpen size={18} />
-        </button>
-        <SettingsButton />
+        <RailButton label="Search" title={`Search (${searchShortcut})`} Icon={Search} onClick={onOpenSearch} />
+        <RailButton label="Switch project" Icon={FolderOpen} onClick={onSwitchProject} />
+        <SettingsButton className="left-rail-btn" label="Settings" />
       </div>
     </nav>
   );

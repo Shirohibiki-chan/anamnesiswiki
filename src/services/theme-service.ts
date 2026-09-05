@@ -274,9 +274,12 @@ export function applyBootBackground(): string {
  * because a theme may well have put a `color-mix()` in there, and the shell
  * needs something a platform can parse.
  *
- * `--color-panel-alt` because the bar continues the band the app draws across
- * its own top — the rail and the row above the page are both that colour, and a
- * title bar in `--color-bg` would draw a stripe through the middle of it.
+ * **`--color-panel-alt` because that is what `.title-bar` is painted**, and the
+ * whole point of sending these across is that the system's buttons and the band
+ * they sit in are one colour. The two have to be changed together; a bar in one
+ * token with its buttons tinted from another is the mismatch the user picked out
+ * of the first version on 2026-09-05, back when the buttons were drawn over four
+ * different panels and could only ever match one of them.
  */
 export function readTitleBarColors(): { background: string; symbol: string } | null {
   const background = resolveTokenColor("--color-panel-alt");

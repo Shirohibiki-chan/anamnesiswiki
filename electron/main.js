@@ -177,20 +177,25 @@ function createWindow({ startAtPicker = false } = {}) {
   // `showWindow` in the contract and `revealWindow` in main.tsx.
   const window = new BrowserWindow({
     title: "Anamnesis",
-    // 1328 and 948 are both "what they were, plus the rail" — see the note on
+    // 1364 and 984 are both "what they were, plus the rail" — see the note on
     // minWidth. The rail is chrome, so leaving these alone would have taken its
     // width out of the page instead, and the page is the thing being read.
-    width: 1328,
+    width: 1364,
     height: 800,
-    // **948 is 900 plus the rail.** Phase 21 put a permanent 48px column down the
+    // **984 is 900 plus the rail.** Phase 21 put a permanent column down the
     // left of the window, and the three panels beside it are laid out against
-    // what is left. Holding the old floor would have handed them 852px and
-    // squeezed the tree past the width its rows need — measured, and it
-    // ellipsised the project name and two page names at once. The window gained
-    // a column, so its floor gains that column's width. `--w-rail` in index.css
-    // is the other half of this number; move one and move the other.
-    minWidth: 948,
-    minHeight: 600,
+    // what is left. Holding the old floor would have squeezed the tree past the
+    // width its rows need — measured, and it ellipsised the project name and two
+    // page names at once. The window gained a column, so its floor gains that
+    // column's width. `--w-rail` in index.css is the other half of this number;
+    // move one and move the other. It was 948 while the rail was 48px wide and
+    // icon-only; the labels took it to 84 on 2026-09-05.
+    minWidth: 984,
+    // **632 is 600 plus the title bar.** Same reasoning one axis over: the app
+    // draws its own 32px bar across the top now (`--h-title-bar`), and that is
+    // chrome rather than page. Holding 600 would have taken the bar's height out
+    // of the writing.
+    minHeight: 632,
     backgroundColor: "#0f0f14",
     // **The bar is ours to colour and the buttons stay the system's.** Phase 21.
     // `hidden` hands the page the whole window, and the overlay keeps the real
@@ -198,21 +203,29 @@ function createWindow({ startAtPicker = false } = {}) {
     // entire reason this is safe to turn on: Windows 11's snap layouts appear
     // on hover over the *native* maximise button, so a bar that drew its own
     // three buttons would take a working feature off her machine to gain a
-    // colour. The height matches `--h-bar` so the controls land inside the band
-    // the app already draws across its top rather than over the writing.
+    // colour. The height matches `--h-title-bar` so the controls land inside the
+    // app's own title bar rather than over anything below it.
+    //
+    // **What changed on 2026-09-05 is what is underneath them.** The first
+    // version drew no bar at all and let the app's own four top-row panels stand
+    // in for one, which put the buttons over whichever of those they happened to
+    // reach and tinted to a colour only one of them was painted. There is a real
+    // bar there now, one element the full width of the window, and these sit in
+    // it.
     //
     // The colours here are only what the window opens with — the renderer sends
     // the current theme's as soon as it has applied one (`window:titleBarColors`
     // below), and they match `backgroundColor` so the first frame is not a
     // flash of something else.
     titleBarStyle: "hidden",
-    ...(HAS_OVERLAY ? { titleBarOverlay: { color: "#0f0f14", symbolColor: "#c9c9d4", height: 48 } } : {}),
-    // macOS has no overlay to tint; it puts its traffic lights in the page. Left
-    // alone it puts them at the very top-left, which is where the rail's own
-    // buttons are — so they go one rail-width in, which lands them in the same
-    // 48px band as everything else and over the sidebar's header rather than
-    // over a control. 64 is `--w-rail` plus the gutter the band uses.
-    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 64, y: 17 } } : {}),
+    ...(HAS_OVERLAY ? { titleBarOverlay: { color: "#0f0f14", symbolColor: "#c9c9d4", height: 32 } } : {}),
+    // macOS has no overlay to tint; it puts its traffic lights in the page. They
+    // belong in the title bar like everyone else's window buttons, so they sit at
+    // its left end — `y: 8` centres a 16px light in a 32px bar. They used to be
+    // pushed a rail-width in, to clear the rail's own buttons, back when the rail
+    // reached the top of the window; the title bar is above it now and the left
+    // end of that bar is empty. The title is centred partly so this stays true.
+    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 12, y: 8 } } : {}),
     show: false,
     // Invisible and off the taskbar for a test run; untouched for a real one.
     ...(OFFSTAGE ? { opacity: 0, skipTaskbar: true } : {}),

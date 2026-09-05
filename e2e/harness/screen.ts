@@ -22,6 +22,8 @@ const LEFT_RAIL = ".left-rail";
 const TOP_BAR = ".top-bar";
 const TREE_PROJECT_HEADER = ".tree-project-header";
 const PROPERTIES_HEAD = ".app-layout-properties-head";
+const TITLE_BAR = ".title-bar";
+const TITLE_BAR_NAME = ".title-bar-name";
 const PROJECT_NAME = ".tree-project-header-name";
 const BREADCRUMB_ITEM = ".page-title-breadcrumb-item";
 const BLOCK_PANEL = ".block-panel";
@@ -125,37 +127,57 @@ export async function sidebarPanelName(window: Page): Promise<string | null> {
 }
 
 /**
- * The band across the top of the window, as the page sees it. Phase 21.
+ * The window's title bar, as the page sees it.
  *
- * `controls` is how much of the right-hand end the system's own window buttons
- * are using — `--window-controls-w`, which is zero on any platform or shell
- * that draws its own decorations, so a scenario must compare against it rather
- * than assume it. `dragging` is which of the band's elements are actually drag
- * regions, since a band that does not move the window is the whole feature
- * missing. `rightmost` is the right edge of the last control in the band, which
- * is the thing that must not end up underneath a close button.
+ * **It reads the bar and the four panels that used to impersonate one.** Until
+ * 2026-09-05 there was no title bar: the rail, the sidebar's header, the bar
+ * above the page and an invented band on the properties panel were each made a
+ * drag region, which is why `strays` is here — every one of them being an
+ * ordinary panel again is half of what replaced them, and it is the half nothing
+ * on screen would show.
+ *
+ * `spans` is the bar reaching both edges of the window, since a title bar with a
+ * seam in it is the defect this replaced. `controls` is how much of the
+ * right-hand end the system's own buttons are using (`--window-controls-w`,
+ * which is zero on any platform or shell that draws its own decorations, so a
+ * scenario compares against it rather than assuming a number). `titleRight` is
+ * the right edge of the bar's own text, which must stay clear of them.
  */
 export async function titleBand(window: Page): Promise<{
   controls: number;
-  dragging: string[];
-  rightmost: number;
+  dragging: boolean;
+  height: number;
+  spans: boolean;
+  strays: string[];
+  titleRight: number;
   width: number;
 }> {
-  return window.evaluate((selectors) => {
-    const probe = document.createElement("div");
-    probe.style.cssText = "position:absolute;visibility:hidden;width:var(--window-controls-w)";
-    document.body.appendChild(probe);
-    const controls = Math.round(probe.getBoundingClientRect().width);
-    probe.remove();
-    const dragging = selectors.filter((selector) => {
-      const element = document.querySelector(selector);
-      if (!element) return false;
-      return getComputedStyle(element).getPropertyValue("-webkit-app-region").trim() === "drag";
-    });
-    const buttons = [...document.querySelectorAll(`${selectors[1]} button`)];
-    const rightmost = buttons.reduce((far, button) => Math.max(far, button.getBoundingClientRect().right), 0);
-    return { controls, dragging, rightmost: Math.round(rightmost), width: window.innerWidth };
-  }, [LEFT_RAIL, TOP_BAR, TREE_PROJECT_HEADER, PROPERTIES_HEAD]);
+  return window.evaluate(
+    ([bar, title, ...former]) => {
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:absolute;visibility:hidden;width:var(--window-controls-w)";
+      document.body.appendChild(probe);
+      const controls = Math.round(probe.getBoundingClientRect().width);
+      probe.remove();
+      const drags = (selector: string) => {
+        const element = document.querySelector(selector);
+        if (!element) return false;
+        return getComputedStyle(element).getPropertyValue("-webkit-app-region").trim() === "drag";
+      };
+      const box = document.querySelector(bar)?.getBoundingClientRect();
+      const name = document.querySelector(title)?.getBoundingClientRect();
+      return {
+        controls,
+        dragging: drags(bar),
+        height: Math.round(box?.height ?? 0),
+        spans: Math.round(box?.left ?? -1) === 0 && Math.round(box?.width ?? 0) === window.innerWidth,
+        strays: former.filter(drags),
+        titleRight: Math.round(name?.right ?? 0),
+        width: window.innerWidth,
+      };
+    },
+    [TITLE_BAR, TITLE_BAR_NAME, LEFT_RAIL, TOP_BAR, TREE_PROJECT_HEADER, PROPERTIES_HEAD],
+  );
 }
 
 /**

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-05 — an actual title bar
+
+### Changes
+
+- **The window has a real title bar again, and this time it's the app's own.** One band straight across the top, edge to edge, in your theme's colour, with the app's name in the middle of it. Yesterday's version had no bar at all — it switched the window's frame off and let four different parts of the app stand in for one, which is where the mismatched colours, the lines between them and the odd-coloured buttons on the right came from. That's gone.
+- **The minimise, maximise and close buttons sit in that bar and match it.** Still Windows' own buttons, so hovering maximise still gives you the snap layouts, but they're tinted to the one colour the bar is painted rather than to whichever piece of the app they happened to be sitting over.
+- **Every button on the left rail says what it is.** Project, Templates, Assets, Search, Switch project and Settings each have their word under the icon now, instead of only telling you if you hovered and waited. The rail is wider to fit them.
+- **The properties panel's header row is gone again.** It only ever existed to have window buttons sitting on top of it, and they don't any more.
+
+### Notes
+
+- **The window opens a bit wider and a bit taller than yesterday, and won't be dragged quite as small.** The rail grew to fit its labels and the title bar takes a strip off the top, and both of those are frame rather than page — so the numbers move with them and the writing keeps exactly the room it had.
+- On a Mac the round window buttons move up into the title bar too, at its left end.
+
 ## 2026-09-05 — the window wears the theme
 
 ### Changes
@@ -249,10 +263,3 @@
 - **A hidden page's name in the sidebar, and a hidden tab's label, are readable.** Both were dimmed on top of being italic. The italic still says hidden; the dimming is much lighter.
 - **Abyssal's menus are a shade deeper.** Its dropdown background was lighter than every other theme's, light enough that no text colour could sit on it clearly, so it was the one theme where the fix above needed the background to move too.
 - **Links in Daylight are darker.** The teal used for links and the selected page was too pale against white to read comfortably at normal size. Buttons in that theme moved with it.
-
-## 2026-08-29 — the ring around a selected block
-
-### Fixes
-
-- **Clicking a block or an infobox in the page no longer wraps it in a thick blue band.** That outline was BlockNote's own, hardcoded four pixels of bright blue for its picture blocks, and it landed on ours because they're selected by a single click. It's now the same thin ring the rest of the app uses when something is selected, sitting just outside the frame instead of on top of its border.
-- **A lone block in the page draws the border it was meant to.** A rule that keeps the editor's menus from drawing a white outline was also overriding our own blocks, so the frame around a block in the page has been a shade heavier than intended since it shipped. Nothing looked broken; it just wasn't the line it was written to be.

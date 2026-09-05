@@ -19,8 +19,9 @@
 | What you see | File |
 |---|---|
 | The three-column app frame (left tree / center page / right properties), including panel show/hide state and responsive collapsing on narrow windows | `src/components/shell/AppLayout.tsx` |
-| The bar above the page, spanning the center panel — back/forward/home, the history and fade-in "Saved" indicators, and the properties-panel toggle. Part of the window's drag region since Phase 21. What belongs to the page rather than to the app; the rest moved to the rail in Phase 21 | `src/components/shell/TopBar.tsx` |
-| The rail down the left of the window — Project / Templates / Assets, then search, switch project and settings. Icons only, so the sidebar's own header is where the panel is named | `src/components/shell/LeftRail.tsx` |
+| The window's title bar — one band across the very top, holding the app's name and nothing else. The only drag region in the app | `src/components/shell/TitleBar.tsx` |
+| The bar above the page, spanning the center panel — back/forward/home, the history and fade-in "Saved" indicators, and the properties-panel toggle. What belongs to the page rather than to the app; the rest moved to the rail in Phase 21 | `src/components/shell/TopBar.tsx` |
+| The rail down the left of the window — Project / Templates / Assets, then search, switch project and settings, each with its word under its icon | `src/components/shell/LeftRail.tsx` |
 | The start screen — brand, the one centred "New project" button, the filter box, and the rail. Rendered before any project is open | `src/components/start/StartScreen.tsx` |
 | Every project as covers or rows, a page at a time or in one scroll, with the view toggle and the page controls | `src/components/start/ProjectGrid.tsx`, `src/components/start/ProjectTile.tsx` |
 | The start screen's right-hand rail — recently opened, the ways to start something, the cog | `src/components/start/StartRail.tsx` |
