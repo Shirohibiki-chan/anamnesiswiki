@@ -142,11 +142,24 @@ export async function sidebarPanelName(window: Page): Promise<string | null> {
  * which is zero on any platform or shell that draws its own decorations, so a
  * scenario compares against it rather than assuming a number). `titleRight` is
  * the right edge of the bar's own text, which must stay clear of them.
+ *
+ * **`overlayHeight` is the one measurement that comes from the system rather
+ * than from our CSS**, and it is here because of a bug nothing else could see.
+ * `setTitleBarOverlay` replaces the whole overlay rather than merging what it is
+ * given, so calling it with colours alone silently drops the height back to the
+ * platform's default caption height — which the window then wears while the page
+ * still draws a 32px bar, and the buttons overhang it. Reported from use
+ * 2026-09-05. `navigator.windowControlsOverlay` is the page's own view of what
+ * the system reserved, so comparing it against the bar's height catches that
+ * without a screenshot. It is `null` wherever there is no overlay at all — macOS,
+ * or a shell still drawing its own decorations — and a scenario must skip rather
+ * than assume.
  */
 export async function titleBand(window: Page): Promise<{
   controls: number;
   dragging: boolean;
   height: number;
+  overlayHeight: number | null;
   spans: boolean;
   strays: string[];
   titleRight: number;
@@ -166,10 +179,13 @@ export async function titleBand(window: Page): Promise<{
       };
       const box = document.querySelector(bar)?.getBoundingClientRect();
       const name = document.querySelector(title)?.getBoundingClientRect();
+      const overlay = (navigator as Navigator & { windowControlsOverlay?: { visible: boolean; getTitlebarAreaRect(): DOMRect } })
+        .windowControlsOverlay;
       return {
         controls,
         dragging: drags(bar),
         height: Math.round(box?.height ?? 0),
+        overlayHeight: overlay?.visible ? Math.round(overlay.getTitlebarAreaRect().height) : null,
         spans: Math.round(box?.left ?? -1) === 0 && Math.round(box?.width ?? 0) === window.innerWidth,
         strays: former.filter(drags),
         titleRight: Math.round(name?.right ?? 0),

@@ -45,6 +45,29 @@ Kept short on purpose — this file is read most sessions.
   `--window-controls-w` now has exactly one reader — that bar's right padding, so
   the centred title is centred in the part of the window that is ours.
 
+- **The overlay paints over the page, so the bar's bottom rule is not the
+  overlay's to draw.** The system fills its whole region with the colour we hand
+  it, buttons and background together — an overlay the full height of the bar
+  therefore covers the bar's 1px border for the 137px the buttons occupy, and the
+  line across the top of the window stops short of the right edge. `OVERLAY_HEIGHT`
+  in `electron/main.js` is `TITLE_BAR_HEIGHT` minus that rule for exactly this
+  reason, and `moves-the-window-by-its-own-bar` asserts the one-pixel difference
+  so it cannot be tidied away as an off-by-one. Measured 2026-09-05.
+
+- **The buttons' width is the system's and there is no setting for it.** Windows
+  draws them 46px wide each, 137px in total; `titleBarOverlay` takes a colour, a
+  symbol colour and a height, and that is the whole of what we control. Anything
+  wanting smaller or differently shaped controls has to draw its own three
+  buttons, which is the trade the entry above says not to make. Do not go looking
+  for the option — it does not exist.
+
+- **`setTitleBarOverlay` is passed the height every time, and that is deliberate
+  belt-and-braces rather than a known requirement.** It was first suspected of
+  dropping the height on a colours-only call, which would have explained buttons
+  overhanging the bar; it does not — measured 2026-09-05, the overlay held its
+  height across theme changes either way. Passing it costs nothing and keeps the
+  one constant answering for both calls, so it stays.
+
 - **Nothing interactive belongs in the title bar, which is what keeps it
   simple.** A drag region swallows clicks, so any control put there has to opt
   back out with `-webkit-app-region: no-drag` by hand. The four-element version

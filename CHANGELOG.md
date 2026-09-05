@@ -9,8 +9,13 @@
 - **Every button on the left rail says what it is.** Project, Templates, Assets, Search, Switch project and Settings each have their word under the icon now, instead of only telling you if you hovered and waited. The rail is wider to fit them.
 - **The properties panel's header row is gone again.** It only ever existed to have window buttons sitting on top of it, and they don't any more.
 
+### Fixes
+
+- **The line under the title bar runs the whole way across again.** Windows paints its own buttons over the top-right corner of the page, and it was painting over the last 137 pixels of that line — so the rule across the top of the window stopped just short of the right edge. The buttons now sit one pixel higher and the line runs underneath them.
+
 ### Notes
 
+- **The three window buttons are Windows' own size and that can't be changed.** They're 46 pixels wide each whatever we do, because the system draws them — the only things we get to set are their height and their colour. Making them smaller means drawing our own three buttons, which costs the snap layouts that appear when you hover the maximise one. Say the word if you'd rather have that trade.
 - **The window opens a bit wider and a bit taller than yesterday, and won't be dragged quite as small.** The rail grew to fit its labels and the title bar takes a strip off the top, and both of those are frame rather than page — so the numbers move with them and the writing keeps exactly the room it had.
 - On a Mac the round window buttons move up into the title bar too, at its left end.
 

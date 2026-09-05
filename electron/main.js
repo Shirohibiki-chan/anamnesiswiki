@@ -117,6 +117,29 @@ const DEV_URL = process.env.ANAMNESIS_DEV_URL ?? null;
 const HAS_OVERLAY = process.platform === "win32" || process.platform === "linux";
 
 /**
+ * How tall the system's window buttons are drawn, matching `--h-title-bar` in
+ * `src/index.css`.
+ *
+ * **One constant because `setTitleBarOverlay` replaces the whole overlay, not
+ * the keys you pass it.** Calling it with colours alone drops the height back to
+ * the platform's default caption height, which is taller than our bar — so the
+ * window opened correct and then went wrong a frame later, as soon as the first
+ * theme landed and the colours were sent across. Buttons overhanging the bottom
+ * of the band, reported 2026-09-05. Every call passes this; if the bar's height
+ * changes, both this and the CSS token move together.
+ *
+ * **The overlay is one pixel shorter than the bar, and that pixel is the rule
+ * under it.** The system paints the overlay region opaquely over the page, so an
+ * overlay the full height of the bar covers the bottom border for the 137px the
+ * buttons occupy — the line across the top of the window then stops short of the
+ * right edge. Measured 2026-09-05: the border row is the bar's last pixel, and
+ * leaving it to the page is what makes the rule run the whole way.
+ */
+const TITLE_BAR_HEIGHT = 32;
+const TITLE_BAR_RULE = 1;
+const OVERLAY_HEIGHT = TITLE_BAR_HEIGHT - TITLE_BAR_RULE;
+
+/**
  * What this process knows about each of its windows.
  *
  * **A second window is an ordinary thing now, so nothing about a window may
@@ -218,7 +241,9 @@ function createWindow({ startAtPicker = false } = {}) {
     // below), and they match `backgroundColor` so the first frame is not a
     // flash of something else.
     titleBarStyle: "hidden",
-    ...(HAS_OVERLAY ? { titleBarOverlay: { color: "#0f0f14", symbolColor: "#c9c9d4", height: 32 } } : {}),
+    ...(HAS_OVERLAY
+      ? { titleBarOverlay: { color: "#0f0f14", symbolColor: "#c9c9d4", height: OVERLAY_HEIGHT } }
+      : {}),
     // macOS has no overlay to tint; it puts its traffic lights in the page. They
     // belong in the title bar like everyone else's window buttons, so they sit at
     // its left end — `y: 8` centres a 16px light in a 32px bar. They used to be
@@ -438,7 +463,13 @@ handle("window:titleBarColors", (event, colors) => {
   // the window over — the bar keeps whatever it had, which is a stale tint
   // rather than a dead app.
   try {
-    window.setTitleBarOverlay({ color: colors.background, symbolColor: colors.symbol });
+    // The height goes with them every time — see TITLE_BAR_HEIGHT. Leaving it
+    // out is not "keep what it has", it is "take the platform's default".
+    window.setTitleBarOverlay({
+      color: colors.background,
+      symbolColor: colors.symbol,
+      height: OVERLAY_HEIGHT,
+    });
   } catch {
     // Left as it was.
   }

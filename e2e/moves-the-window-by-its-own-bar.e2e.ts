@@ -54,6 +54,22 @@ describe("moving the window by its own bar", () => {
     expect(band.strays).toEqual([]);
   });
 
+  it("gives the system's buttons the same height as the bar", async () => {
+    const band = await titleBand(app.window);
+    // Null on a shell with no overlay — macOS, or one still drawing its own
+    // decorations. There is nothing to compare there and nothing to get wrong.
+    if (band.overlayHeight === null) return;
+    // **This is the assertion that would have caught the buttons overhanging the
+    // bar**, reported from use 2026-09-05 and invisible to every other check
+    // here, and it is deliberately one pixel short of the bar. The system paints
+    // the overlay opaquely over the page, so a full-height one covers the bar's
+    // bottom rule for the 137px the buttons occupy and the line across the top of
+    // the window stops short of the right edge. `OVERLAY_HEIGHT` in
+    // electron/main.js is the bar minus that rule; both sides are read here so
+    // they cannot drift apart.
+    expect(band.overlayHeight).toBe(band.height - 1);
+  });
+
   it("keeps the title clear of the system's buttons", async () => {
     const band = await titleBand(app.window);
     expect(band.titleRight).toBeLessThanOrEqual(band.width - band.controls);
