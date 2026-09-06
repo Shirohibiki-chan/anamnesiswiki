@@ -263,30 +263,6 @@ export function applyBootBackground(): string {
   return bg;
 }
 
-/**
- * The two colours the window's own title bar should be drawn in, or `null` if
- * the document cannot answer yet. Phase 21.
- *
- * **Read off the document rather than out of the theme**, for the same reason
- * `applyBootBackground` is: a theme she wrote herself is a `.css` file this code
- * knows nothing about, and the only reliable answer to "what colour is that
- * now" is to ask the engine. `resolveTokenColor` rather than a raw property read
- * because a theme may well have put a `color-mix()` in there, and the shell
- * needs something a platform can parse.
- *
- * **`--color-panel-alt` because that is what `.title-bar` is painted**, and the
- * whole point of sending these across is that the system's buttons and the band
- * they sit in are one colour. The two have to be changed together; a bar in one
- * token with its buttons tinted from another is the mismatch the user picked out
- * of the first version on 2026-09-05, back when the buttons were drawn over four
- * different panels and could only ever match one of them.
- */
-export function readTitleBarColors(): { background: string; symbol: string } | null {
-  const background = resolveTokenColor("--color-panel-alt");
-  const symbol = resolveTokenColor("--color-text-secondary");
-  if (!background || !symbol) return null;
-  return { background, symbol };
-}
 
 /**
  * What a token *paints as*, which is not the same question as what it's set to.

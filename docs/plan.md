@@ -442,8 +442,8 @@ a contents list; and a block hands out a link to itself. Detail is in
 `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
 **Phase 21 (Shell Rework) shipped 2026-09-05** — a rail down the left holding
 Project, Templates and Assets plus search, the project switcher and settings;
-and a title bar that takes the theme's colours while leaving the system's own
-window buttons in place, so Windows 11's snap layouts still work. The splits it
+and a title bar that takes the theme's colours and draws its own minimise,
+maximise and close. The splits it
 was scoped with are Phase 21.5, deferred. Detail is in `docs/shipped.md`; what
 still binds the code is in `docs/handoff.md`.
 **Phase 22 is next**, and it is the next one in this file.

@@ -72,7 +72,19 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
 
   // ---- window
   showWindow: () => invoke("window:show"),
-  setTitleBarColors: (colors) => invoke("window:titleBarColors", colors),
+  // The window's own controls, which the page draws everywhere but macOS.
+  drawsWindowControls: () => invoke("window:drawsControls"),
+  minimiseWindow: () => invoke("window:minimise"),
+  toggleMaximiseWindow: () => invoke("window:toggleMaximise"),
+  isWindowMaximised: () => invoke("window:isMaximised"),
+  onMaximisedChanged: (handler) => {
+    const listener = (_event, maximised) => handler(maximised);
+    ipcRenderer.on("window:maximised", listener);
+    return () => ipcRenderer.off("window:maximised", listener);
+  },
+  // The polite close a person's click means, as against `closeWindow`, which is
+  // the renderer saying it has finished saving. See host-contract.ts.
+  requestWindowClose: () => invoke("window:requestClose"),
   closeWindow: () => invoke("window:close"),
   destroyWindow: () => invoke("window:destroy"),
   watchClose: (wanted) => invoke("window:watchClose", wanted),
