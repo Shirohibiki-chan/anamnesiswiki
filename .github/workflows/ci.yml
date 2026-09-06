@@ -11,10 +11,27 @@
 # every push.
 name: CI
 
+# **A change that only touches prose runs nothing.** A planning note or a
+# changelog edit cannot break lint, the types, the build or the app, and the
+# app job is twenty runner-minutes — spending them to confirm that `plan.md` is
+# still valid Markdown is the clearest waste in here. Anything that also
+# touches code fails these filters and runs the lot, which is the behaviour to
+# want: `paths-ignore` skips only when *every* changed file matches.
+#
+# Note what is deliberately not ignored: `.github/**`. A change to this file has
+# to run this file.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "**/*.md"
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "**/*.md"
 
 jobs:
   check:
@@ -64,7 +81,34 @@ jobs:
   #
   # Still not the desktop *build* — that is a release-time job. This runs the
   # built page inside the Electron that `pnpm install` already fetched.
+  #
+  # **Split across eight runners, because this job was the entire wait.**
+  # Measured 2026-09-06: `check` finished in 66 seconds and this took 19m42s,
+  # so a pull request took twenty minutes to answer and every one of them was
+  # this. The suite is four times slower here than on a desktop — each scenario
+  # file starts, drives and closes a real Electron window, and a runner is a
+  # slow machine with a virtual screen.
+  #
+  # **Sharding is safe here specifically because every file launches its own
+  # app.** There is no shared world, no shared window and no ordering between
+  # files — `vitest --shard` splits by file, so a shard is just a smaller run of
+  # the same independent things. Anything that ever introduces state shared
+  # *between* scenario files breaks this, and would break running one file on
+  # its own too, which is the more obvious symptom.
+  #
+  # Eight rather than four because the repository is public, so runner minutes
+  # are free and the only real limit is how many jobs run at once. Each shard
+  # builds the page itself; that is twenty seconds against the two and a half
+  # minutes of tests it then runs, and sharing one build through an artifact
+  # would cost more in upload and download than it saved.
   app:
+    strategy:
+      # Every shard reports. Cancelling the others on the first failure would
+      # turn "three scenarios broke" into "one scenario broke", and hide the
+      # other two until the fix for the first was pushed.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7
@@ -84,4 +128,4 @@ jobs:
       # one.** `xvfb-run` supplies a virtual display: the app genuinely starts
       # and genuinely draws, into a framebuffer nobody is looking at. This is
       # the whole reason these tests cannot simply live in `pnpm test`.
-      - run: xvfb-run --auto-servernum pnpm test:app
+      - run: xvfb-run --auto-servernum pnpm test:app --shard=${{ matrix.shard }}/8

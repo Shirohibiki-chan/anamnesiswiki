@@ -4379,6 +4379,15 @@ choices, and both live in `e2e/harness/launch-app.ts`:
   settings file the app reads is one the harness wrote a moment earlier. Remove
   the second and the app reads the real store and opens whichever world she had
   open last — into a suite that creates, renames and deletes pages.
+- **No state may be shared between scenario files, and that is now load-bearing
+  rather than tidy.** `ci.yml` runs the suite across eight runners with
+  `vitest --shard`, which splits *by file* — so any two files that depend on
+  each other, or on running in a particular order, will pass on a desktop and
+  fail on some runner depending on where the split lands. Each file already
+  launches its own app against its own generated world; keep it that way. The
+  cheap check is that every scenario file passes when run on its own, which is
+  the same property and the more obvious symptom.
+
 - **It runs the built page, never a dev server.** A scenario racing a compiler
   can always have its failure blamed on hot reload, and `dist/` is what a
   release actually ships. The build has to be the Electron one; a page built for
