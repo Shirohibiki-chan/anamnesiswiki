@@ -25,7 +25,7 @@ import { BlockPanel } from "../blocks/BlockPanel";
 import { LoadWarning } from "./LoadWarning";
 import { RecoveryNotice } from "./RecoveryNotice";
 import { SaveWarning } from "./SaveWarning";
-import { TopBar } from "./TopBar";
+import { PageControls } from "./PageControls";
 import "./shell.css";
 
 export function AppLayout() {
@@ -173,7 +173,7 @@ export function AppLayout() {
         </aside>
 
         <div className="app-layout-center">
-          <TopBar
+          <PageControls
             isRightPanelOpen={isRightPanelOpen}
             onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
           />

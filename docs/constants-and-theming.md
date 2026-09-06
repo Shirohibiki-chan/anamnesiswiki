@@ -58,9 +58,9 @@ the base tokens — the other six ship as `[data-theme]` blocks over the top (se
 |-------|-----------|---------|
 | `--color-bg` | `#0f0f14` | Page background; the darkest surface |
 | `--color-panel` | `#1a1a22` | Primary panel background (tree sidebar, properties sidebar, modal bodies) |
-| `--color-panel-alt` | `#1f1f28` | Slightly elevated surface — top bar, search input backgrounds, tab strip base |
+| `--color-panel-alt` | `#1f1f28` | Slightly elevated surface — the title bar, the rail, search input backgrounds, tab strip base |
 | `--color-panel-edge` | `#252530` | Highest-contrast surface — color-picker popover background, dropdown menus |
-| `--color-border-strong` | `#383848` | The app's frame — column dividers, the top bar, modal and popover edges |
+| `--color-border-strong` | `#383848` | The app's frame — column dividers, the title bar's rule, the sidebar headers, modal and popover edges |
 | `--color-border` | `#2a2a35` | Containers — cards, inputs, chips, notices. The default |
 | `--color-border-subtle` | `#22222c` | Rules inside a container — tab-strip baselines, dividers |
 | `--color-scrim` | `rgba(0,0,0,0.5)` | Behind every modal |
@@ -440,7 +440,7 @@ Circles, 1px borders and optical nudges (`50%`, `translateY(-50%)`) are not scal
 
 **Elevation** — `--elev-modal` is the app's only shadow, on modals and popovers. Named `--elev-*` and not `--shadow-*` for the same reason the type scale is `--fs-*`: Tailwind owns that namespace.
 
-**Layout** — `--h-bar` (48px) is shared by the top bar and the tree sidebar's tab strip so their bottom borders form one unbroken rule; `--reading-width` (60rem) and `--page-gutter` (2.5rem) are the writing column's cap and side margin, shared by `.page-view` and `.page-banner-empty` — they have to move together or the banner row stops lining up with the text under it.
+**Layout** — `--h-bar` (48px) is shared by the tree sidebar's two headers so their bottom borders form one unbroken rule across the sidebar (it covered the bar above the page too, until that bar was removed on 2026-09-05); `--h-title-bar` (32px) is the window's own bar; `--reading-width` (60rem) and `--page-gutter` (2.5rem) are the writing column's cap and side margin, shared by `.page-view` and `.page-banner-empty` — they have to move together or the banner row stops lining up with the text under it.
 
 ### Borders
 
@@ -448,7 +448,7 @@ Three roles, one width. Before this the app had one colour doing all three jobs 
 
 | Token | Value | Use for |
 |---|---|---|
-| `--color-border-strong` | `#383848` | The frame: the two column dividers, the top bar and sidebar tab strip, modal and popover edges |
+| `--color-border-strong` | `#383848` | The frame: the two column dividers, the title bar and the sidebar headers, modal and popover edges |
 | `--color-border` | `#2a2a35` | Containers: cards, inputs, chips, notices. The default |
 | `--color-border-subtle` | `#22222c` | Rules *inside* a container: tab-strip baselines, the menu heading, the search palette's input |
 

@@ -579,7 +579,10 @@
    that means "off". Don't give these defaults.
 
      --gradient-bg        behind the whole window
-     --gradient-topbar    the top bar
+     --gradient-topbar    unused since 2026-09-05, when the bar above the page
+                          was removed. Kept as a name rather than deleted: a theme
+                          in the wild may set it, and an unknown token is ignored
+                          where a removed one would be a broken theme file.
      --gradient-sidebar   the page tree
      --gradient-page      the writing area (transparent unless set)
      --gradient-props     the properties panel

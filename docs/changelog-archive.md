@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-30 — the writing starts a little smaller
+
+### Changes
+
+- **The text on a page is 15px by default instead of 16.** It's a small step down on purpose, but headings are sized off the body text and come with it, so it buys more room than it sounds like: on a 1150x780 window a four-line callout becomes three, and a paragraph that ran off the bottom of the pane now fits. Nothing else in the app changed size.
+- **The Writing slider still reaches exactly as far in both directions.** Its ends moved to match the new starting point, so the smallest and largest the writing can be are the same sizes they always were.
+- **If you'd already moved that slider, your pages will still get slightly smaller.** The slider is a percentage of the starting size and the starting size is what changed, so whatever you'd set is now 6% smaller than it was. Nudge it up one step if you liked where it was.
+
 ## 2026-08-30 — the quiet text is brighter
 
 ### Fixes

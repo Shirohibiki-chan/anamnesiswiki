@@ -2604,6 +2604,25 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ## The three columns
 
+- **There is no bar above the page, and putting one back undoes a decision
+  rather than filling a gap.** `TopBar` held back/forward/home at one end and the
+  save marker, the undo message and the properties toggle at the other. The user
+  and her partner went over it together on 2026-09-05: it was doing too little
+  for a band of its own. Navigation moved to the foot of the rail (`NavButtons`,
+  which is why the rail has two groups at its bottom), and the rest floats on the
+  page as `.page-controls`. **Back and forward are page history, not undo** —
+  the two got conflated while this was being decided, and she chose explicitly to
+  keep both arrows and leave undo on the keyboard, so do not "tidy" them into an
+  undo button.
+
+- **The Library panel's key is `assets` and that mismatch is deliberate.**
+  Renamed on screen 2026-09-05 at her request, and reordered to sit between
+  Project and Templates. The key names the `assets/` directory on disk, which has
+  not moved — renaming it would put a second name on a real folder for the sake
+  of a label. Three places say the word (the rail's `PANELS`, the sidebar header
+  in `TreeSidebar`, and `switches-panels-from-the-rail`) and none of them is the
+  key.
+
 - **The rail is outside `.app-layout`, and making it a fourth column would
   break two things quietly.** Phase 21. `AppLayout` measures the grid with
   `useElementSize` and feeds that width to `fitPanelWidths`, `maxPanelWidth` and
@@ -2615,14 +2634,15 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   then `.app-frame-body`, which is the row holding the rail and the grid; the grid's geometry is exactly what it was before the rail
   existed, which is the point.
 
-- **One horizontal rule across the top of the window, drawn by three different
-  elements.** `--h-bar` with `--color-border-strong` on the bar above the page
-  (`.top-bar`), on the tree's own header (`.tree-project-header`) and on the
-  header over the other two panels (`.tree-panel-head`). This used to be the
-  top bar and the sidebar's tab strip; the strip went into the rail in Phase 21
-  and the rule had to be picked up by whatever replaced it. Give any of the
-  three a literal height instead of the token and it steps as it crosses the
-  window — which is what it did before 2026-08-11, and it was noticed.
+- **The rule across the top now spans the sidebar only, and that is the shape
+  that was asked for.** `--h-bar` with `--color-border-strong` on the tree's own
+  header (`.tree-project-header`) and on the header over the other two panels
+  (`.tree-panel-head`). There were three elements until 2026-09-05; the third was
+  the bar above the page, and removing that bar is the whole point of the change
+  — the page carries no band, which is what LegendKeeper does and what she
+  pointed at. Give either remaining header a literal height instead of the token
+  and the rule steps as it crosses the sidebar, which is what it did before
+  2026-08-11 and was noticed.
 
 - **The window's opening size and its floor both carry the app's own chrome, and
   they are not round numbers by accident.** 1364 and 984 in `electron/main.js`
@@ -4345,14 +4365,16 @@ Deferred on purpose, not forgotten:
   the window; a handler finds its own with `windowFrom(event)`. Added 2026-08-27
   so the picker can bring an already-open project's window to the front instead
   of refusing to open it.
-- **The top bar has to fit inside the centre column, and the column is not the
-  window.** It is a child of `.app-layout-center`, between two panels a person
-  can drag, so its width is the window's less whatever those two are taking.
-  When its contents outgrow it they run out past the column's right edge and
-  the properties panel paints over them — which is how the properties toggle
-  became unclickable at the app's own minimum window size, fixed 2026-08-26.
-  Anything added to that bar has to earn its width or give some back; the
-  container query in `shell.css` is where that is handled and why.
+- **Anything floating over the page is positioned against the centre column, and
+  the column is not the window.** `.app-layout-center` sits between two panels a
+  person can drag, so its width is the window's less whatever those two are
+  taking. The bar that used to live here was removed 2026-09-05 and
+  `.page-controls` floats in its top right instead — but the constraint it ran
+  into is still live for whatever goes there next: contents that outgrow the
+  column run out past its right edge and the properties panel paints over them,
+  which is how the properties toggle became unclickable at the app's own minimum
+  window size (fixed 2026-08-26, and the reason `layout-rules` sweeps at the
+  floor). Three small controls fit; a fourth needs measuring at 984.
 - **Icon-only controls in the tree are 14–16px**, against a 24px minimum: the
   expand chevron, the colour dot, the ⋯ menu and the +. Counted rather than
   fixed for the same reason — making them bigger changes how a tree row looks,

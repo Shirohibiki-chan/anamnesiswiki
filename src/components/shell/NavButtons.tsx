@@ -1,15 +1,26 @@
-// Back / forward / home, at the left end of the top bar — the half of that bar
-// that was deliberately left empty for them (see TopBar.tsx).
+// Back / forward / home, at the foot of the left rail.
 //
-// All three stay mounted and go disabled rather than disappearing. A control
-// that vanishes when it has nothing to do moves the two beside it, so the
-// button under the pointer changes identity between clicks; and the greyed-out
-// arrow is what tells you the feature exists at all before you've been anywhere.
+// **They were in the bar above the page until 2026-09-05, and that bar is gone.**
+// The user and her partner went over it together: the strip was doing very
+// little and reading as clutter, and these three belong down with the rest of
+// the app's buttons rather than in a band of their own. The reference is
+// LegendKeeper, where the page carries no bar at all.
+//
+// **Back and forward are page navigation, not undo.** Worth stating because the
+// two got conflated when this move was discussed — these walk the pages you have
+// visited, the way a browser does, while undo (Ctrl+Z) reverses edits and has no
+// button anywhere. Asked directly, she chose to keep these three and leave undo
+// on the keyboard.
+//
+// All three stay mounted and go disabled rather than disappearing — see
+// `RailButton`, which carries the reasoning.
+//
 // `Home` rather than `House` so this and the sidebar's home button are the same
-// glyph — they do the same thing from two places.
+// glyph; they do the same thing from two places.
 import { ArrowLeft, ArrowRight, Home } from "lucide-react";
 import { useNavigationActions, useNavigationState } from "../../hooks/use-navigation";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
+import { RailButton } from "./RailButton";
 
 export function NavButtons() {
   const { goBack, goForward, goHome } = useNavigationActions();
@@ -19,40 +30,28 @@ export function NavButtons() {
   const homeShortcut = useShortcutLabel("navigateHome");
 
   return (
-    <div className="top-bar-nav">
-      <button
-        type="button"
-        className="ui-icon-btn ui-icon-btn-lg"
-        aria-label="Back"
-        title={`Back (${backShortcut})`}
-        disabled={!canGoBack}
-        onClick={goBack}
-      >
-        <ArrowLeft size={16} />
-      </button>
-      <button
-        type="button"
-        className="ui-icon-btn ui-icon-btn-lg"
-        aria-label="Forward"
-        title={`Forward (${forwardShortcut})`}
-        disabled={!canGoForward}
-        onClick={goForward}
-      >
-        <ArrowRight size={16} />
-      </button>
-      {/* Disabled rather than hidden when no home is set, for the same reason —
-          and the tooltip says how to set one, since a permanently grey button
-          with no explanation reads as broken rather than as unconfigured. */}
-      <button
-        type="button"
-        className="ui-icon-btn ui-icon-btn-lg"
-        aria-label="Project home"
-        title={hasHome ? `Project home (${homeShortcut})` : "No project home set — right-click a page to set one"}
+    <div className="left-rail-group">
+      <RailButton
+        label="Home"
+        title={`Home (${homeShortcut})`}
+        Icon={Home}
         disabled={!hasHome}
         onClick={goHome}
-      >
-        <Home size={16} />
-      </button>
+      />
+      <RailButton
+        label="Back"
+        title={`Back (${backShortcut})`}
+        Icon={ArrowLeft}
+        disabled={!canGoBack}
+        onClick={goBack}
+      />
+      <RailButton
+        label="Forward"
+        title={`Forward (${forwardShortcut})`}
+        Icon={ArrowRight}
+        disabled={!canGoForward}
+        onClick={goForward}
+      />
     </div>
   );
 }

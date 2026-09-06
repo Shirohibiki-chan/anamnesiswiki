@@ -44,7 +44,8 @@ export function TreeSidebar({ panel, onSelectPanel }: TreeSidebarProps) {
           picture should show the picture. */}
       {panel === "assets" && (
         <>
-          <div className="tree-panel-head">Assets</div>
+          {/* "Library" on screen, `assets` in the code — see PANELS in LeftRail. */}
+          <div className="tree-panel-head">Library</div>
           <AssetsPanel />
         </>
       )}

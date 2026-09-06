@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-05 — the bar above the page is gone
+
+### Changes
+
+- **The strip across the top of the page has been removed.** It held six things and none of them needed a band of their own.
+- **Home, back and forward are at the bottom of the left rail now**, under the other buttons and above Search. Back and forward walk the pages you've visited, the way a browser does — they're not undo. Undo is still Ctrl+Z.
+- **The show/hide button for the properties panel sits on the page itself**, top right, with nothing drawn around it. The "Saved" marker and the "Undid deleting 2 pages" message are up there beside it.
+- **Assets is called Library, and it's moved.** The rail reads Project, Library, Templates now. Nothing on disk changed — your `assets` folder is still called that and still holds the same files.
+
 ## 2026-09-05 — the formatting bar looks like the app
 
 ### Fixes
@@ -265,11 +274,3 @@
 - **The app behind it isn't dimmed any more on those four sections.** It was under a flat 50% black wash, which meant the strip you could see wasn't showing the colour you'd just picked — it was showing that colour at half brightness. Picking colours through it was guesswork.
 - **You can click the app while it's open.** Walk to another page, open a folder, look at a different screen — the window stays where it is instead of closing. Escape and the × still close it.
 - **The other sections are unchanged**, and so is everything on a window narrower than about 1150px, where moving the dialog aside wouldn't leave enough room to see anything.
-
-## 2026-08-30 — the writing starts a little smaller
-
-### Changes
-
-- **The text on a page is 15px by default instead of 16.** It's a small step down on purpose, but headings are sized off the body text and come with it, so it buys more room than it sounds like: on a 1150x780 window a four-line callout becomes three, and a paragraph that ran off the bottom of the pane now fits. Nothing else in the app changed size.
-- **The Writing slider still reaches exactly as far in both directions.** Its ends moved to match the new starting point, so the smallest and largest the writing can be are the same sizes they always were.
-- **If you'd already moved that slider, your pages will still get slightly smaller.** The slider is a percentage of the starting size and the starting size is what changed, so whatever you'd set is now 6% smaller than it was. Nudge it up one step if you liked where it was.

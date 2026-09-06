@@ -7,8 +7,12 @@
 // that highlights a panel the sidebar is not showing — is invisible to a unit
 // test, because neither component is unit tested at all.
 //
-// **It also pins the names.** The rail is icons only, so the sidebar's own
-// header is the only place the words Templates and Assets appear on screen.
+// **It also pins the names, which is worth more since they changed.** The panel
+// reading `Assets` was renamed `Library` on screen 2026-09-05 at the user's
+// request, and its key on disk stayed `assets` — the folder it names has not
+// moved. So the word in the rail, the word in the sidebar's header and the key
+// behind them are deliberately not all the same, and this is what would catch a
+// well-meant rename of the wrong one.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import { openRailPanel, sidebarPanelName, visibleTreeRows, waitForWorld } from "./harness/screen";
@@ -37,9 +41,9 @@ describe("switching panels from the rail", () => {
     expect(await visibleTreeRows(app.window)).toHaveLength(0);
   });
 
-  it("shows the assets, named", async () => {
-    await openRailPanel(app.window, "Assets");
-    expect(await sidebarPanelName(app.window)).toBe("Assets");
+  it("shows the library, named", async () => {
+    await openRailPanel(app.window, "Library");
+    expect(await sidebarPanelName(app.window)).toBe("Library");
   });
 
   it("goes back to the tree", async () => {
