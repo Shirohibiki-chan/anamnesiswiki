@@ -152,7 +152,21 @@ Points worth knowing before writing one:
 ### In CI
 
 `.github/workflows/ci.yml` runs this as its own `app` job on Linux under
-`xvfb-run`, which gives Electron a virtual screen. Under CI on Linux the harness
+`xvfb-run`, which gives Electron a virtual screen. **It is split across eight
+runners with `vitest --shard`, because this job was the whole wait** — measured
+2026-09-06, `check` answered in 66 seconds and this took 19m42s, so every pull
+request took twenty minutes and all of it was here. The suite is about four
+times slower on a runner than on a desktop: each file starts, drives and closes
+a real window, and a runner is a slow machine with a virtual screen. Sharding
+splits by file, which is only safe because every file launches its own app
+against its own world — see `docs/handoff.md` §The app test suite before adding
+anything that two files would share. `fail-fast` is off so every shard reports;
+otherwise the first failure hides the rest.
+
+**A change that only touches prose runs neither job.** `paths-ignore` covers
+`docs/**` and Markdown, and skips only when every changed file matches — so
+anything that also touches code still runs the lot. `.github/**` is deliberately
+not ignored: a change to the workflow has to run the workflow. Under CI on Linux the harness
 also passes `--no-sandbox`, because Chromium's setuid helper is not configured in
 a runner; a run on somebody's own Linux desktop keeps the sandbox.
 
