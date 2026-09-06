@@ -22,8 +22,8 @@
 | The window's title bar — one band across the very top, holding the app's name and its own minimise/maximise/close. The only drag region in the app | `src/components/shell/TitleBar.tsx` |
 | The page's own controls, floating at its top right with no bar around them — the history and fade-in "Saved" indicators, and the properties-panel toggle. Replaced `TopBar.tsx`, removed 2026-09-05 | `src/components/shell/PageControls.tsx` |
 | The rail down the left of the window — Project / Library / Templates at the top, search / switch project / settings at the foot. Each with its word under its icon | `src/components/shell/LeftRail.tsx` |
-| Home, back and forward, in a row at the bottom of the sidebar column | `src/components/shell/NavButtons.tsx` |
-| One icon-over-word button, dimmed when it has nothing to do. Shared by the rail and the sidebar's footer | `src/components/shell/RailButton.tsx` |
+| Home, back and forward — icon-only, in a row at the bottom of the sidebar column | `src/components/shell/NavButtons.tsx` |
+| One icon-over-word button, dimmed when it has nothing to do. The rail's buttons | `src/components/shell/RailButton.tsx` |
 | The start screen — brand, the one centred "New project" button, the filter box, and the rail. Rendered before any project is open | `src/components/start/StartScreen.tsx` |
 | Every project as covers or rows, a page at a time or in one scroll, with the view toggle and the page controls | `src/components/start/ProjectGrid.tsx`, `src/components/start/ProjectTile.tsx` |
 | The start screen's right-hand rail — recently opened, the ways to start something, the cog | `src/components/start/StartRail.tsx` |

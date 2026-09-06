@@ -19,15 +19,29 @@
 // button anywhere. Asked directly, she chose to keep these three and leave undo
 // on the keyboard.
 //
-// All three stay mounted and go disabled rather than disappearing — see
-// `RailButton`, which carries the reasoning.
+// **Icon-only, which is the one place in this app that is allowed.** Asked for
+// 2026-09-05 by a co-writer and passed on by the user, and it does not reopen the
+// rail's labels: a house, a left arrow and a right arrow are glyphs everybody has
+// read a thousand times, where the rail's panel icons stood for Project,
+// Templates and a picture library and stood for them only here. The rule is about
+// icons that need explaining, not about icons.
+//
+// All three stay mounted and go disabled rather than disappearing. A control that
+// vanishes when it has nothing to do moves the two beside it, so the button under
+// the pointer changes identity between clicks — and a greyed-out Back is what
+// says the feature exists before you have been anywhere. **They are dimmed to
+// 0.55 rather than the shared 0.25**: on a freshly opened world all three are
+// disabled at once, and at a quarter opacity the user read the whole group as
+// missing (2026-09-05).
+//
+// The tooltip carries the keyboard shortcut; `aria-label` is the bare word, so
+// the accessible name is the one thing the button is called.
 //
 // `Home` rather than `House` so this and the sidebar's home button are the same
 // glyph; they do the same thing from two places.
 import { ArrowLeft, ArrowRight, Home } from "lucide-react";
 import { useNavigationActions, useNavigationState } from "../../hooks/use-navigation";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
-import { RailButton } from "./RailButton";
 
 export function NavButtons() {
   const { goBack, goForward, goHome } = useNavigationActions();
@@ -38,27 +52,36 @@ export function NavButtons() {
 
   return (
     <div className="tree-sidebar-foot">
-      <RailButton
-        label="Home"
+      <button
+        type="button"
+        className="ui-icon-btn ui-icon-btn-lg tree-sidebar-foot-btn"
+        aria-label="Home"
         title={`Home (${homeShortcut})`}
-        Icon={Home}
         disabled={!hasHome}
         onClick={goHome}
-      />
-      <RailButton
-        label="Back"
+      >
+        <Home size={16} />
+      </button>
+      <button
+        type="button"
+        className="ui-icon-btn ui-icon-btn-lg tree-sidebar-foot-btn"
+        aria-label="Back"
         title={`Back (${backShortcut})`}
-        Icon={ArrowLeft}
         disabled={!canGoBack}
         onClick={goBack}
-      />
-      <RailButton
-        label="Forward"
+      >
+        <ArrowLeft size={16} />
+      </button>
+      <button
+        type="button"
+        className="ui-icon-btn ui-icon-btn-lg tree-sidebar-foot-btn"
+        aria-label="Forward"
         title={`Forward (${forwardShortcut})`}
-        Icon={ArrowRight}
         disabled={!canGoForward}
         onClick={goForward}
-      />
+      >
+        <ArrowRight size={16} />
+      </button>
     </div>
   );
 }

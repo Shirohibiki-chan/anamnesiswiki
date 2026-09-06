@@ -2614,7 +2614,15 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   was wrong**: she asked for the bottom of the left column near settings, and
   settings being in the rail made the rail look like the answer. The column she
   meant is the one she had been looking at. A loosely named piece of furniture
-  means the thing on her screen, not the one whose name fits best. **Back and forward are page history, not undo** —
+  means the thing on her screen, not the one whose name fits best.
+
+- **Those three are icon-only, and that does not reopen the rail's labels.**
+  Asked for 2026-09-05 by a co-writer and passed on by her. The rail carries words
+  because its icons stood for Project, Templates and a picture library and stood
+  for them only here; a house and two arrows are glyphs everybody has already read
+  a thousand times. The rule is about icons that need explaining. Do not
+  generalise it in either direction — putting words back under these, or stripping
+  them off the rail, has each been asked for once and answered. **Back and forward are page history, not undo** —
   the two got conflated while this was being decided, and she chose explicitly to
   keep both arrows and leave undo on the keyboard, so do not "tidy" them into an
   undo button.

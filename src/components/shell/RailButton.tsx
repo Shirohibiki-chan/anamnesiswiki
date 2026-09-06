@@ -1,10 +1,11 @@
 // An icon with its word underneath: the shape every standing button in the
 // app's left edge uses.
 //
-// **Its own file because two columns draw these** — the rail's panel switches
-// and errands (LeftRail), and the page navigation at the foot of the sidebar
-// beside it (NavButtons). The class is not named for the rail for the same
-// reason.
+// **Its own file, and the class is not named for the rail**, because the shape
+// has already been shared once: the sidebar's footer used it while home, back
+// and forward carried words, and dropped it when they went icon-only
+// (2026-09-05). The next thing wanting an icon over a word should take this
+// rather than grow a second copy in its own stylesheet.
 //
 // **Every button says its own word, and the first version of this rail did not.**
 // It shipped icon-only at 48px wide with the name reachable only by hovering for

@@ -20,8 +20,8 @@
    one is the app's frame.
 
    Three across at `flex: 1` so they share the width evenly however wide the
-   column is dragged — at the 180px floor that is 60px each, which holds
-   `Forward` at the label size these use. */
+   column is dragged, which keeps the click targets large now that the buttons
+   are icons with no words under them. */
 .tree-sidebar-foot {
   margin-top: auto;
   flex-shrink: 0;
@@ -31,9 +31,22 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
-.tree-sidebar-foot .icon-word-btn {
+/* Full height of the row and an equal share of its width — the icon stays 16px,
+   the target does not. */
+.tree-sidebar-foot-btn {
   flex: 1;
   min-width: 0;
+  width: auto;
+  height: 1.75rem;
+}
+
+/* **0.55, not the shared 0.25.** All three of these are disabled at once on a
+   world just opened — nowhere to go back to, nowhere forward, and often no home
+   page set — and at a quarter opacity the user read the group as missing rather
+   than as waiting (2026-09-05). The reason they stay on screen disabled is to
+   say the feature is there, which only works if they can be seen. */
+.tree-sidebar-foot-btn:disabled {
+  opacity: 0.55;
 }
 
 
