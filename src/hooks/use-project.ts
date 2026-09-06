@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
 import { buildTemplateTree, listTemplates, type TemplateTreeItem } from "../services/template-library";
-import { convertibleToUniverse, listUniverses, selectedUniverse } from "../services/tree-service";
+import { convertibleToUniverse, listUniverses, selectedUniverse, sharedUniverse } from "../services/tree-service";
 import type { Node } from "../constants/schema";
 
 // Subscribes to the *whole* store: any change anywhere re-renders the caller.
@@ -51,6 +51,7 @@ export function useProjectActions() {
       togglePinned: state.togglePinned,
       setFocus: state.setFocus,
       setSelectedUniverse: state.setSelectedUniverse,
+      setSharedUniverse: state.setSharedUniverse,
       setExpanded: state.setExpanded,
     })),
   );
@@ -67,9 +68,15 @@ export function useProjectActions() {
  * longer names one; the switcher shows the same thing either way, and
  * `selectedUniverse` is where that equivalence is decided.
  *
- * `convertible` is what the add menu offers as "use a page you already have".
+ * `convertible` is what the add menu offers as "use a page you already have",
+ * and `shared` is the one whose pages ride along under whichever is selected.
  */
-export function useUniverses(): { universes: Node[]; current: Node | null; convertible: Node[] } {
+export function useUniverses(): {
+  universes: Node[];
+  current: Node | null;
+  convertible: Node[];
+  shared: Node | null;
+} {
   const universes = useProjectStore(
     useShallow((state) => listUniverses(state.nodes, state.project?.rootOrder ?? [])),
   );
@@ -77,7 +84,38 @@ export function useUniverses(): { universes: Node[]; current: Node | null; conve
     useShallow((state) => convertibleToUniverse(state.nodes, state.project?.rootOrder ?? [])),
   );
   const current = useProjectStore((state) => selectedUniverse(state.nodes, state.project?.selectedUniverseId));
-  return { universes, current, convertible };
+  const shared = useProjectStore((state) => sharedUniverse(state.nodes, state.project?.sharedUniverseId));
+  return { universes, current, convertible, shared };
+}
+
+/**
+ * Just the shared universe's id, for the places that only need to compare
+ * against it. A plain string, so a subscriber re-renders only when the answer
+ * itself changes rather than on every keystroke typed into a page.
+ */
+export function useSharedUniverseId(): string | null {
+  return useProjectStore((state) => sharedUniverse(state.nodes, state.project?.sharedUniverseId)?.id ?? null);
+}
+
+/**
+ * Whether this row is the shared universe being drawn as the section that
+ * rides along under the selected one — rather than as an ordinary universe row
+ * in the all-universes view, which is the same node and must not be styled as
+ * a section.
+ *
+ * **This must stay the same condition `buildTreeData` appends on.** The two
+ * answer one question from opposite ends: that one decides whether to draw the
+ * extra row at all, this one decides whether the row it drew is that one. If
+ * they drift, either a section appears with no styling or an ordinary universe
+ * row is dressed up as a band across the tree.
+ */
+export function useIsSharedSection(nodeId: string): boolean {
+  return useProjectStore((state) => {
+    const shared = sharedUniverse(state.nodes, state.project?.sharedUniverseId);
+    if (!shared || shared.id !== nodeId) return false;
+    const selected = selectedUniverse(state.nodes, state.project?.selectedUniverseId);
+    return Boolean(selected) && selected!.id !== shared.id;
+  });
 }
 
 // One node, by id. Re-renders only when *that* node's object changes — so

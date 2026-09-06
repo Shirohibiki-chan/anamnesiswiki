@@ -8,7 +8,14 @@ import { ChevronDown, ChevronRight, Home, MoreHorizontal, Plus } from "lucide-re
 import { TREE_INDENT } from "../../constants/layout";
 import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { getPaletteHex } from "../../constants/palette";
-import { useIsPinned, useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
+import {
+  useIsPinned,
+  useIsSharedSection,
+  useNode,
+  useProjectActions,
+  useProjectHomeId,
+  useSharedUniverseId,
+} from "../../hooks/use-project";
 import {
   useEffectiveColor,
   useHiddenByAncestor,
@@ -44,6 +51,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     setNodeIcon,
     setNodeHidden,
     setProjectHome,
+    setSharedUniverse,
     setFocus,
     sortChildren,
     saveAsTemplate,
@@ -53,6 +61,8 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
   const isPinned = useIsPinned(node.id);
+  const sharedUniverseId = useSharedUniverseId();
+  const isSharedSection = useIsSharedSection(node.id);
   const { confirmDestructive, openHistory, requestExport, requestTemplateScope } = useDialogs();
   const createPageIn = useCreatePageIn();
   const doubleClickAction = useTreeDoubleClick();
@@ -83,10 +93,23 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // offering to turn one of those into a universe would nest one.
   const universeAction: "make" | "unmake" | null =
     fullNode.parentId !== null ? null : fullNode.templateKey === UNIVERSE_TEMPLATE_KEY ? "unmake" : "make";
+  // Offered on a universe and nowhere else: the pages true in every version of
+  // the world have to live in something that is one.
+  const isUniverse = fullNode.parentId === null && fullNode.templateKey === UNIVERSE_TEMPLATE_KEY;
+  const sharedAction: "set" | "unset" | null = !isUniverse
+    ? null
+    : sharedUniverseId === fullNode.id
+      ? "unset"
+      : "set";
   const { color: effectiveKey, isOwner } = effective;
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const ownHex = getPaletteHex(fullNode.color);
-  const showFolderTint = isContainer && !!effectiveHex;
+  // The shared section is deliberately exempt from the container tint: a band
+  // wearing the universe's colour across the whole row reads as a *selected*
+  // row rather than as a divider, which is the one thing this row must not look
+  // like. Its colour still shows on the pages inside it, where it means what it
+  // always means.
+  const showFolderTint = isContainer && !!effectiveHex && !isSharedSection;
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isProjectHome = homeNodeId === node.id;
   // Dimmed whether it's hidden itself or sitting under something that is —
@@ -279,7 +302,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         // without this the buttons vanish and the name springs back to full
         // width underneath an open menu, including the button the menu is
         // anchored to.
-        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}${openPopover ? " tree-row-active" : ""}`}
+        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}${openPopover ? " tree-row-active" : ""}${isSharedSection ? " tree-row-shared-section" : ""}`}
         style={rowStyle}
         // **Right-clicking a row must not move you onto it.** The menu is about
         // that row; going there is a different intent, and losing the page you
@@ -446,6 +469,8 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             fileManagerName={fileManagerName}
             hasChildren={hasChildren}
             universeAction={universeAction}
+            sharedAction={sharedAction}
+            onToggleShared={() => setSharedUniverse(sharedAction === "unset" ? null : node.id)}
             // The whole conversion is `applyTemplate`'s existing swap: a
             // universe seeds no tabs and no properties, so nothing the page
             // already holds is replaced, and any template field left without a

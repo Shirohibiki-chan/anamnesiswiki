@@ -1,6 +1,6 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Move to /
 // Set color / Earlier versions /
-// Save as template / Turn into a universe / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// Save as template / Turn into a universe / Use as shared universe / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
@@ -22,6 +22,7 @@ import {
   FolderOpen,
   Globe,
   History,
+  Layers,
   Home,
   Palette,
   Smile,
@@ -71,6 +72,13 @@ type ContextMenuProps = {
   universeAction: "make" | "unmake" | null;
   onToggleUniverse: () => void;
   /**
+   * Whether to offer designating this universe as the shared one, undesignating
+   * it, or neither (Phase 22). Only ever set on a universe — the pages true in
+   * every version of the world have to live in something that is one.
+   */
+  sharedAction: "set" | "unset" | null;
+  onToggleShared: () => void;
+  /**
    * Whether this row holds more than one page. Sorting is offered above that
    * rather than above zero: a group of one is already in every order at once,
    * and an item that visibly does nothing is worse than one that isn't there.
@@ -113,6 +121,8 @@ export function ContextMenu({
   hasChildren,
   universeAction,
   onToggleUniverse,
+  sharedAction,
+  onToggleShared,
   canSort,
   onRename,
   onSetIcon,
@@ -219,6 +229,16 @@ export function ContextMenu({
               <Folder size={13} /> Turn back into a folder
             </>
           )}
+        </button>
+      )}
+      {/* Only on a universe, and directly under the item that makes one, since
+          "which of these is the shared one" is the question you have straight
+          after "which of these are universes". Designating a second one moves
+          the designation rather than adding to it — the project holds a single
+          pointer, so two cannot both claim it. */}
+      {!isMultiple && sharedAction && (
+        <button type="button" onClick={() => run(onToggleShared)}>
+          <Layers size={13} /> {sharedAction === "set" ? "Use as shared universe" : "Stop using as shared"}
         </button>
       )}
       {/* Single selection only. Sorting rewrites one group's order, and "sort

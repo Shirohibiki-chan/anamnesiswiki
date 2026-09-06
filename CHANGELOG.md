@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-06 — a universe for the things that are true everywhere
+
+### Additions
+
+- **One universe can be your shared one** — the pages that are true in every version of your world. A species, a map, a magic system, a language. You make it like any other universe and then say it's the shared one, from the universe switcher (**Shared universe**) or by right-clicking it in the tree.
+- **Its pages show under whichever universe you're working in**, in their own labelled section at the bottom of the tree, collapsed until you want them. So shared lore is never something you have to switch away to go and read.
+- **The switcher marks which one it is**, so you don't have to visit each in turn to find out.
+- **The section is deliberately not styled like a page.** It's a rule, a gap, and a small heading — because the one thing that should never be ambiguous is which universe the page you're typing in belongs to.
+- **Nothing is shared until you say so.** A world with no shared universe looks exactly as it did, and picking **None** puts it back.
+
 ## 2026-09-06 — a way to actually make a universe
 
 ### Fixes
@@ -268,21 +278,3 @@
 
 - **A resize is undone by the panel's undo, not by Ctrl+Z in your writing.** The width is stored on the block itself, which is what lets it survive the trip to the sidebar and back — and that puts it on the same undo as everything else about a block.
 - **The space beside a narrow block stays empty for now.** Putting a second thing next to it is columns, which is the next piece of this.
-
-## 2026-09-01 — an icon in the middle of a sentence
-
-### Additions
-
-- **Type `:` and a couple of letters to drop an emoji or an icon into a sentence.** `:sm` and you get a list — `:smile:`, `:smiley:`, `:grinning:` — arrow keys to move, Enter or Tab to take one, the way it works in Discord. A bare colon on its own does nothing, so a colon you meant as punctuation stays punctuation.
-- **Ctrl+`:` opens the full picker instead**, at your cursor: the search box, both tabs, and every icon and emoji there is to scroll through. That's the one for when you don't know what the thing is called. Holding shift for the colon is optional — Ctrl and the colon key does it either way.
-- **They're two halves of the same job.** The first is for when you know the name and don't want to reach for the mouse; the second is for browsing. Neither can do the other's job well, which is why there are two.
-- **An icon you place is still clickable afterwards** — click it and the picker opens on it, so you can change your mind without deleting anything. Emoji go in as ordinary characters, the way they always have, so they copy and export as themselves.
-- **`/icon` works too**, and drops a heart in for you to change afterwards.
-- **A callout's icon is yours to choose.** The tick on a green box and the caution on an amber one are still what you get without doing anything — that convention is worth keeping, and a callout that started blank would need decorating by hand before it said anything at all. But the icon is a button now: click it and pick whatever you like, on any callout, in any colour.
-- **And you can take it off entirely.** The picker has two ways out of a callout's icon: **No icon**, which means no icon and stays that way, and **The usual icon**, which puts back the one its colour implies. They're deliberately two different answers — a callout you cleared shouldn't quietly grow its tick back the next time you open the page.
-
-### Notes
-
-- **The picker's Emoji tab is every emoji now — 1870 of them, up from 129.** It used to be a hand-picked list, which is fine right up until you want one nobody thought to pick. They're in the eight groups an emoji keyboard uses, and searching finds them by name, by keyword, or by the `:word:` people type in chat apps. This is everywhere the picker appears, so a page's icon and a meter's markers get the full set too, not just the writing.
-- **A callout with no icon still has somewhere to click.** An empty square appears in the corner while your pointer is over the callout, the same way the colour dot does, so an icon you removed can be put back.
-- **Icons in your writing don't survive an export to LegendKeeper.** An emoji does — it's a character, so it goes out as itself — but a glyph is a drawing and there's nothing in that format to put it in, so it's dropped rather than exported as the word "sword". Everything else about the page exports as it did.

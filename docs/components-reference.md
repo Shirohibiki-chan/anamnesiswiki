@@ -52,7 +52,7 @@
 |---|---|
 | Left sidebar container — draws whichever of the three panels the rail has chosen, each under a header row of its own. The tab strip that used to head it became the rail in Phase 21; which panel is showing is now state in `AppLayout` | `src/components/tree/TreeSidebar.tsx` |
 | The project name row at the top of the tree with a home icon and "+" button for adding a top-level page | `src/components/tree/ProjectHeader.tsx` |
-| The universe selector under the world's name — which version of the world the tree is showing, and "All universes" | `src/components/tree/UniverseSwitcher.tsx` |
+| The universe selector under the world's name — which version of the world the tree is showing, "All universes", the "+" that makes one, and which universe is the shared one | `src/components/tree/UniverseSwitcher.tsx` |
 | Search / filter input at the top of the tree. Passes through to `createSearchMatcher` in `tree-service.ts`, which owns the `Fuse.js` index per scope. | `src/components/tree/TreeSearch.tsx` |
 | The "what am I searching" menu and the chip that shows a narrowed scope — shared by the tree filter and the Ctrl-K palette, which pass their own scope lists in. Typing a leading `#` sets tag scope and deletes itself from the field. | `src/components/search/SearchScopeMenu.tsx` |
 | The shortcut rail under the tree search — pinned pages as icon tiles, set from the right-click menu. Absent entirely when nothing is pinned. Middle-click a tile to unpin. | `src/components/tree/BookmarksRail.tsx` |

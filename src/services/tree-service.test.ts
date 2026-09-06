@@ -13,6 +13,7 @@ import {
   moveDestinations,
   selectedUniverse,
   selectionRoots,
+  sharedUniverse,
   universeOf,
   sortSiblingIds,
 } from "./tree-service";
@@ -757,6 +758,39 @@ describe("universes", () => {
     it("falls back to all of them when the id names something that stopped being one", () => {
       const turnedBack = { ...nodes, canon: { ...canon, templateKey: FOLDER_TEMPLATE_KEY } };
       expect(selectedUniverse(turnedBack, "canon")).toBeNull();
+    });
+  });
+
+  describe("sharedUniverse and the section it adds", () => {
+    const rootOrder = ["canon", "demonic", "loose"];
+
+    it("falls back to none when the id stopped being a universe", () => {
+      const turnedBack = { ...nodes, demonic: { ...demonic, templateKey: FOLDER_TEMPLATE_KEY } };
+      expect(sharedUniverse(turnedBack, "demonic")).toBeNull();
+    });
+
+    it("rides along under whichever universe is showing", () => {
+      const rows = buildTreeData(nodes, rootOrder, {}, "canon", "demonic");
+      // Canon's own pages first — the one being worked in reads first — and the
+      // shared universe last, holding its own.
+      expect(rows.map((row) => row.id)).toEqual(["characters", "demonic"]);
+    });
+
+    it("does not list it twice in the all-universes view", () => {
+      // Rooted at the project, the shared universe is already a row like every
+      // other universe.
+      const rows = buildTreeData(nodes, rootOrder, {}, null, "demonic");
+      expect(rows.filter((row) => row.id === "demonic")).toHaveLength(1);
+    });
+
+    it("adds nothing when the universe showing is the shared one", () => {
+      const rows = buildTreeData(nodes, rootOrder, {}, "demonic", "demonic");
+      expect(rows.map((row) => row.id)).toEqual([]);
+    });
+
+    it("adds nothing when the id names a page that is gone", () => {
+      const rows = buildTreeData(nodes, rootOrder, {}, "canon", "deleted");
+      expect(rows.map((row) => row.id)).toEqual(["characters"]);
     });
   });
 
