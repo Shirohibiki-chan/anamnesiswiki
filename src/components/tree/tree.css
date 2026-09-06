@@ -8,6 +8,34 @@
   flex-direction: column;
 }
 
+/* **Home, back and forward, in a row at the foot of this column.** They came out
+   of the bar above the page when it was removed (2026-09-05). `margin-top: auto`
+   rather than anything positioned: the panel above scrolls on its own, so this
+   is simply the last child taking the leftover height and sitting on the bottom.
+
+   **The rule above it is the only line this column gains**, and it earns it —
+   the tree scrolls underneath and without a border the last row slides under the
+   buttons with nothing saying where one ends. `--color-border-subtle` rather than
+   `--color-border-strong`: this divides one column's contents, where the strong
+   one is the app's frame.
+
+   Three across at `flex: 1` so they share the width evenly however wide the
+   column is dragged — at the 180px floor that is 60px each, which holds
+   `Forward` at the label size these use. */
+.tree-sidebar-foot {
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--space-2xs);
+  padding: var(--space-xs);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.tree-sidebar-foot .icon-word-btn {
+  flex: 1;
+  min-width: 0;
+}
+
 
 /* **The row at the top of the sidebar, and it is load-bearing twice over.**
    Phase 21. It replaces the tab strip that used to sit here, and it has to keep

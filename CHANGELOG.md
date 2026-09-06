@@ -5,7 +5,7 @@
 ### Changes
 
 - **The strip across the top of the page has been removed.** It held six things and none of them needed a band of their own.
-- **Home, back and forward are at the bottom of the left rail now**, under the other buttons and above Search. Back and forward walk the pages you've visited, the way a browser does — they're not undo. Undo is still Ctrl+Z.
+- **Home, back and forward are in a row at the bottom of the sidebar now** — the wide column with your pages in it, under the tree. Back and forward walk the pages you've visited, the way a browser does — they're not undo. Undo is still Ctrl+Z.
 - **The show/hide button for the properties panel sits on the page itself**, top right, with nothing drawn around it. The "Saved" marker and the "Undid deleting 2 pages" message are up there beside it.
 - **Assets is called Library, and it's moved.** The rail reads Project, Library, Templates now. Nothing on disk changed — your `assets` folder is still called that and still holds the same files.
 

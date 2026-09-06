@@ -1,9 +1,10 @@
-// One button in the left rail: an icon with its word underneath.
+// An icon with its word underneath: the shape every standing button in the
+// app's left edge uses.
 //
-// **Its own file because two components draw these** — the rail's panel
-// switches and errands (LeftRail) and the page navigation that moved down from
-// the bar above the page (NavButtons). Keeping it in LeftRail and importing it
-// from there would be a cycle, since the rail is what renders NavButtons.
+// **Its own file because two columns draw these** — the rail's panel switches
+// and errands (LeftRail), and the page navigation at the foot of the sidebar
+// beside it (NavButtons). The class is not named for the rail for the same
+// reason.
 //
 // **Every button says its own word, and the first version of this rail did not.**
 // It shipped icon-only at 48px wide with the name reachable only by hovering for
@@ -38,8 +39,8 @@ export function RailButton({ label, title, Icon, pressed, disabled, onClick }: R
   return (
     <button
       type="button"
-      className="left-rail-btn"
-      // `.left-rail-btn` takes its accent from aria-pressed, so the selected
+      className="icon-word-btn"
+      // `.icon-word-btn` takes its accent from aria-pressed, so the selected
       // look is not a class this has to remember to pass.
       aria-pressed={pressed}
       aria-label={label}

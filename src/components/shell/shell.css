@@ -417,18 +417,7 @@
   gap: var(--space-xs);
 }
 
-/* **The foot of the rail, holding two groups rather than one.** Home, back and
-   forward moved down here when the bar above the page was removed (2026-09-05);
-   they are about the page being read, where search, the project switcher and
-   settings are errands about the app. Six buttons in one run would lose that
-   distinction, and a rule between them would be another horizontal line in a
-   window that has enough — the gap does the separating, the way it already does
-   between the panel switches and everything under them. */
-.left-rail-foot {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-}
+
 
 /* **Icon over word, and the word is the point.** The rail shipped icon-only at
    48px and the user could not read it 2026-09-05 — the name of each button was
@@ -444,7 +433,7 @@
    **Text wraps rather than ellipsising.** `Switch project` is two lines here and
    that is the intended outcome: a rail whose labels trail off is back to being a
    rail you have to hover to read. */
-.left-rail-btn {
+.icon-word-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -460,23 +449,30 @@
   cursor: pointer;
 }
 
-.left-rail-btn:hover {
+.icon-word-btn:hover {
   background: var(--color-hover);
   color: var(--color-text-primary);
 }
 
-.left-rail-btn[aria-pressed="true"] {
+.icon-word-btn[aria-pressed="true"] {
   color: var(--color-accent-light);
 }
 
-/* Dimmed and inert, never removed — see RailButton for why a control that
-   disappears when it has nothing to do is worse than one that greys out. */
-.left-rail-btn:disabled {
+/* **Dimmed and inert, never removed — but legible, which 0.35 was not.** The
+   reason these stay mounted is that a greyed-out Back is what says the feature
+   exists before you have been anywhere (see RailButton). At 0.35 on this
+   background that argument fails: on a freshly opened world all three of Home,
+   Back and Forward are disabled at once, and the user read the group as missing
+   rather than as waiting — reported 2026-09-05. Disabled has to look unavailable
+   and still look like a button. Same reasoning as the contrast floor in
+   index.css: aim above the minimum, because the minimum is where things stop
+   being readable to her. */
+.icon-word-btn:disabled {
   cursor: default;
-  opacity: 0.35;
+  opacity: 0.55;
 }
 
-.left-rail-btn:disabled:hover {
+.icon-word-btn:disabled:hover {
   background: none;
   color: var(--color-text-secondary);
 }

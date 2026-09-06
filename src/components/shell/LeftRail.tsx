@@ -26,7 +26,6 @@
 // would be hiding the one thing the label exists to say.
 import { FolderOpen, FolderTree, Images, LayoutTemplate, Search } from "lucide-react";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
-import { NavButtons } from "./NavButtons";
 import { RailButton } from "./RailButton";
 import { SettingsButton } from "./SettingsButton";
 
@@ -73,20 +72,19 @@ export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }
         ))}
       </div>
 
-      {/* **Pushed to the bottom, and two groups rather than one.** Home, back and
-          forward came down here when the bar above the page was removed
-          (2026-09-05) — they are about the page being read, where search, the
-          project switcher and settings are errands about the app, and running
-          six buttons together would lose that. The gap between them is what
-          separates them; a rule would be another horizontal line in a window
-          that already has enough. */}
-      <div className="left-rail-foot">
-        <NavButtons />
-        <div className="left-rail-group">
-          <RailButton label="Search" title={`Search (${searchShortcut})`} Icon={Search} onClick={onOpenSearch} />
-          <RailButton label="Switch project" Icon={FolderOpen} onClick={onSwitchProject} />
-          <SettingsButton className="left-rail-btn" label="Settings" />
-        </div>
+      {/* Pushed to the bottom by the group above growing — the errands sit away
+          from the panel switches so the two groups do not read as one list.
+
+          **Home, back and forward are not here**, and briefly were. When the bar
+          above the page was removed (2026-09-05) they landed in this rail, on a
+          reading of "the bottom of the left column, near settings" that took the
+          column to mean the rail because settings is in it. She meant the
+          sidebar — the wide one with the tree — and they are at its foot now.
+          See NavButtons. */}
+      <div className="left-rail-group">
+        <RailButton label="Search" title={`Search (${searchShortcut})`} Icon={Search} onClick={onOpenSearch} />
+        <RailButton label="Switch project" Icon={FolderOpen} onClick={onSwitchProject} />
+        <SettingsButton className="icon-word-btn" label="Settings" />
       </div>
     </nav>
   );

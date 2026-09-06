@@ -1,10 +1,17 @@
-// Back / forward / home, at the foot of the left rail.
+// Back / forward / home, in a row at the foot of the sidebar — the wide column
+// with the tree in it, not the narrow rail beside it.
 //
 // **They were in the bar above the page until 2026-09-05, and that bar is gone.**
 // The user and her partner went over it together: the strip was doing very
-// little and reading as clutter, and these three belong down with the rest of
-// the app's buttons rather than in a band of their own. The reference is
-// LegendKeeper, where the page carries no bar at all.
+// little and reading as clutter, and these three belong at the bottom left with
+// the rest of the app's buttons rather than in a band of their own. The
+// reference is LegendKeeper, where the page carries no bar at all.
+//
+// **They spent an hour in the rail first, which was a misreading worth not
+// repeating.** She asked for the bottom of the left *column*, near settings —
+// and settings lives in the rail, so the rail is where they went. The column she
+// meant is this one. When a piece of this app's furniture is named loosely, the
+// thing she was looking at is what she means.
 //
 // **Back and forward are page navigation, not undo.** Worth stating because the
 // two got conflated when this move was discussed — these walk the pages you have
@@ -30,7 +37,7 @@ export function NavButtons() {
   const homeShortcut = useShortcutLabel("navigateHome");
 
   return (
-    <div className="left-rail-group">
+    <div className="tree-sidebar-foot">
       <RailButton
         label="Home"
         title={`Home (${homeShortcut})`}

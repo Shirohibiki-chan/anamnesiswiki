@@ -2608,9 +2608,13 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   rather than filling a gap.** `TopBar` held back/forward/home at one end and the
   save marker, the undo message and the properties toggle at the other. The user
   and her partner went over it together on 2026-09-05: it was doing too little
-  for a band of its own. Navigation moved to the foot of the rail (`NavButtons`,
-  which is why the rail has two groups at its bottom), and the rest floats on the
-  page as `.page-controls`. **Back and forward are page history, not undo** —
+  for a band of its own. Navigation moved to the foot of the *sidebar* — the wide
+  column with the tree in it (`NavButtons`, `.tree-sidebar-foot`) — and the rest
+  floats on the page as `.page-controls`. **It went into the rail first and that
+  was wrong**: she asked for the bottom of the left column near settings, and
+  settings being in the rail made the rail look like the answer. The column she
+  meant is the one she had been looking at. A loosely named piece of furniture
+  means the thing on her screen, not the one whose name fits best. **Back and forward are page history, not undo** —
   the two got conflated while this was being decided, and she chose explicitly to
   keep both arrows and leave undo on the keyboard, so do not "tidy" them into an
   undo button.
