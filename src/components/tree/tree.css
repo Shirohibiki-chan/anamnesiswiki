@@ -8,6 +8,47 @@
   flex-direction: column;
 }
 
+/* **Home, back and forward, in a row at the foot of this column.** They came out
+   of the bar above the page when it was removed (2026-09-05). `margin-top: auto`
+   rather than anything positioned: the panel above scrolls on its own, so this
+   is simply the last child taking the leftover height and sitting on the bottom.
+
+   **The rule above it is the only line this column gains**, and it earns it —
+   the tree scrolls underneath and without a border the last row slides under the
+   buttons with nothing saying where one ends. `--color-border-subtle` rather than
+   `--color-border-strong`: this divides one column's contents, where the strong
+   one is the app's frame.
+
+   Three across at `flex: 1` so they share the width evenly however wide the
+   column is dragged, which keeps the click targets large now that the buttons
+   are icons with no words under them. */
+.tree-sidebar-foot {
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--space-2xs);
+  padding: var(--space-xs);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* Full height of the row and an equal share of its width — the icon stays 16px,
+   the target does not. */
+.tree-sidebar-foot-btn {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  height: 1.75rem;
+}
+
+/* **0.55, not the shared 0.25.** All three of these are disabled at once on a
+   world just opened — nowhere to go back to, nowhere forward, and often no home
+   page set — and at a quarter opacity the user read the group as missing rather
+   than as waiting (2026-09-05). The reason they stay on screen disabled is to
+   say the feature is there, which only works if they can be seen. */
+.tree-sidebar-foot-btn:disabled {
+  opacity: 0.55;
+}
+
 
 /* **The row at the top of the sidebar, and it is load-bearing twice over.**
    Phase 21. It replaces the tab strip that used to sit here, and it has to keep

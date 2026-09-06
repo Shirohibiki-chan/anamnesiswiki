@@ -9,6 +9,7 @@
 // because you looked at your templates — so it stays out of `project.json`, and
 // it deliberately doesn't persist across launches either: the sidebar is the
 // app's main navigation and it should open showing the tree.
+import { NavButtons } from "../shell/NavButtons";
 import type { SidebarPanel } from "../shell/LeftRail";
 import { AssetsPanel } from "./AssetsPanel";
 import { ProjectHeader } from "./ProjectHeader";
@@ -44,10 +45,16 @@ export function TreeSidebar({ panel, onSelectPanel }: TreeSidebarProps) {
           picture should show the picture. */}
       {panel === "assets" && (
         <>
-          <div className="tree-panel-head">Assets</div>
+          {/* "Library" on screen, `assets` in the code — see PANELS in LeftRail. */}
+          <div className="tree-panel-head">Library</div>
           <AssetsPanel />
         </>
       )}
+      {/* **Outside the panel switch on purpose.** Where you have been is a fact
+          about the app rather than about whichever panel is open, so these stay
+          put as the sidebar changes what it is showing — a row of buttons that
+          appeared and vanished with the panel would be worse than no row. */}
+      <NavButtons />
     </div>
   );
 }

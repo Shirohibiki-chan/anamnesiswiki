@@ -417,6 +417,8 @@
   gap: var(--space-xs);
 }
 
+
+
 /* **Icon over word, and the word is the point.** The rail shipped icon-only at
    48px and the user could not read it 2026-09-05 — the name of each button was
    reachable only by hovering for a tooltip, which is a label you have to already
@@ -431,7 +433,7 @@
    **Text wraps rather than ellipsising.** `Switch project` is two lines here and
    that is the intended outcome: a rail whose labels trail off is back to being a
    rail you have to hover to read. */
-.left-rail-btn {
+.icon-word-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -447,13 +449,32 @@
   cursor: pointer;
 }
 
-.left-rail-btn:hover {
+.icon-word-btn:hover {
   background: var(--color-hover);
   color: var(--color-text-primary);
 }
 
-.left-rail-btn[aria-pressed="true"] {
+.icon-word-btn[aria-pressed="true"] {
   color: var(--color-accent-light);
+}
+
+/* **Dimmed and inert, never removed — but legible, which 0.35 was not.** The
+   reason these stay mounted is that a greyed-out Back is what says the feature
+   exists before you have been anywhere (see RailButton). At 0.35 on this
+   background that argument fails: on a freshly opened world all three of Home,
+   Back and Forward are disabled at once, and the user read the group as missing
+   rather than as waiting — reported 2026-09-05. Disabled has to look unavailable
+   and still look like a button. Same reasoning as the contrast floor in
+   index.css: aim above the minimum, because the minimum is where things stop
+   being readable to her. */
+.icon-word-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.icon-word-btn:disabled:hover {
+  background: none;
+  color: var(--color-text-secondary);
 }
 
 .app-layout {
@@ -536,6 +557,9 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  /* The containing block for `.page-controls`, which floats in this column's top
+     right rather than scrolling away with the writing. */
+  position: relative;
 }
 
 .app-layout-page {
@@ -626,51 +650,37 @@
   outline: none;
 }
 
-/* --- TopBar --- */
+/* --- PageControls ---
+   **The bar across the page is gone as of 2026-09-05, and these are what was
+   worth keeping from it.** `TopBar` held back/forward/home at one end and the
+   save marker, the undo message and the properties toggle at the other; the user
+   and her partner went over it together and it was doing too little for a band
+   of its own. Navigation moved to the foot of the rail; this floats on the page,
+   which is where LegendKeeper puts the same toggle and what she pointed at.
 
-/* `space-between` since Phase 14: navigation on the left, everything about the
-   window on the right. The left side was empty for two phases — the project
-   name used to sit there, and also in the sidebar header about 50px away, which
-   is the doubled name in docs/ui-audit.md defect 6. The sidebar won that one,
-   and the gap was held for back/forward rather than filled with something
-   invented. The breadcrumb never came here: it's on the page itself, directly
-   above the title it describes (page/PageTitle.tsx). */
+   **Positioned against the centre column rather than the scrolling page**, so it
+   holds its corner while the writing moves under it. `.app-layout-center` is the
+   containing block; the page below scrolls on its own.
 
-/* **Nothing up here is chrome any more.** Until 2026-09-05 this file made the
-   rail, the sidebar's header, the bar above the page and an invented band on the
-   properties panel into one drag region, because the app already drew 48px across
-   its top and a title bar seemed like a strip that did not need adding. It did
-   need adding — see `.title-bar` above. With a real bar over all of this, these
-   four went back to being ordinary panels: no `-webkit-app-region`, no opt-out
-   list for every control that lands in them, and no `--window-controls-w`
-   reservation on the properties panel or the bar above the page, since the
-   system's buttons are no longer drawn over either. The properties panel's band
-   is deleted rather than restyled; it existed only to be sat under. */
-
-.top-bar {
-  height: var(--h-bar);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-xl);
-  background: var(--gradient-topbar, none), var(--color-panel-alt);
-  border-bottom: 1px solid var(--color-border-strong);
-}
-
-/* Tighter than `.top-bar-right`'s gap: these three are one control in three
-   parts and read as a cluster, where the right-hand side is a row of unrelated
-   things that each want their own space. */
-.top-bar-nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.top-bar-right {
+   **It sits above the writing without a background**, and that is deliberate:
+   the page's own top margin is deep enough that nothing collides at any width
+   this app opens at, and a plate behind these three would be a bar again by
+   another name. `pointer-events` is off on the wrapper so the empty space beside
+   the buttons does not swallow clicks meant for the page underneath — the
+   buttons themselves turn it back on. */
+.page-controls {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-xl);
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: var(--space-lg);
+  pointer-events: none;
+}
+
+.page-controls > * {
+  pointer-events: auto;
 }
 
 /* --- SaveIndicator --- */

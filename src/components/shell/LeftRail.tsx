@@ -26,45 +26,27 @@
 // would be hiding the one thing the label exists to say.
 import { FolderOpen, FolderTree, Images, LayoutTemplate, Search } from "lucide-react";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
+import { RailButton } from "./RailButton";
 import { SettingsButton } from "./SettingsButton";
 
 /** Which panel the sidebar is showing. Lives in AppLayout; the rail chooses it. */
 export type SidebarPanel = "project" | "templates" | "assets";
 
+/**
+ * **Order and wording are the user's, 2026-09-05.** Library sits between Project
+ * and Templates rather than after them, and the panel that was called Assets is
+ * called Library on screen.
+ *
+ * **The key stays `assets` on purpose.** It names the `assets/` directory on
+ * disk, which has not moved and is not being renamed — the word that changed is
+ * the one a person reads. Renaming the key would put a second name on a real
+ * folder for the sake of a label.
+ */
 const PANELS = [
   { panel: "project", label: "Project", Icon: FolderTree },
+  { panel: "assets", label: "Library", Icon: Images },
   { panel: "templates", label: "Templates", Icon: LayoutTemplate },
-  { panel: "assets", label: "Assets", Icon: Images },
 ] as const satisfies readonly { panel: SidebarPanel; label: string; Icon: typeof FolderTree }[];
-
-type RailButtonProps = {
-  label: string;
-  /** The full sentence for a screen reader and the tooltip, when the visible
-      word is the short form of it — `Search` under the icon, `Search (Ctrl+K)`
-      for anyone who wants the shortcut. Defaults to the label. */
-  title?: string;
-  Icon: typeof FolderTree;
-  pressed?: boolean;
-  onClick: () => void;
-};
-
-function RailButton({ label, title, Icon, pressed, onClick }: RailButtonProps) {
-  return (
-    <button
-      type="button"
-      className="left-rail-btn"
-      // `.left-rail-btn` takes its accent from aria-pressed, so the selected
-      // look is not a class this has to remember to pass.
-      aria-pressed={pressed}
-      aria-label={title ?? label}
-      title={title ?? label}
-      onClick={onClick}
-    >
-      <Icon size={18} />
-      <span>{label}</span>
-    </button>
-  );
-}
 
 type LeftRailProps = {
   panel: SidebarPanel;
@@ -91,11 +73,18 @@ export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }
       </div>
 
       {/* Pushed to the bottom by the group above growing — the errands sit away
-          from the panel switches so the two groups do not read as one list. */}
+          from the panel switches so the two groups do not read as one list.
+
+          **Home, back and forward are not here**, and briefly were. When the bar
+          above the page was removed (2026-09-05) they landed in this rail, on a
+          reading of "the bottom of the left column, near settings" that took the
+          column to mean the rail because settings is in it. She meant the
+          sidebar — the wide one with the tree — and they are at its foot now.
+          See NavButtons. */}
       <div className="left-rail-group">
         <RailButton label="Search" title={`Search (${searchShortcut})`} Icon={Search} onClick={onOpenSearch} />
         <RailButton label="Switch project" Icon={FolderOpen} onClick={onSwitchProject} />
-        <SettingsButton className="left-rail-btn" label="Settings" />
+        <SettingsButton className="icon-word-btn" label="Settings" />
       </div>
     </nav>
   );

@@ -19,7 +19,7 @@ const TREE_ROW_TOGGLE = ".tree-row-toggle";
 const TREE_SEARCH_INPUT = ".tree-search-input";
 const SIDEBAR_PANEL_HEAD = ".tree-panel-head";
 const LEFT_RAIL = ".left-rail";
-const TOP_BAR = ".top-bar";
+const PAGE_CONTROLS = ".page-controls";
 const TREE_PROJECT_HEADER = ".tree-project-header";
 const PROPERTIES_HEAD = ".app-layout-properties-head";
 const TITLE_BAR = ".title-bar";
@@ -130,12 +130,13 @@ export async function sidebarPanelName(window: Page): Promise<string | null> {
 /**
  * The window's title bar, as the page sees it.
  *
- * **It reads the bar, its buttons, and the four panels that used to impersonate
- * one.** Until 2026-09-05 there was no title bar: the rail, the sidebar's header,
- * the bar above the page and an invented band on the properties panel were each
- * made a drag region, which is why `strays` is here — every one of them being an
+ * **It reads the bar, its buttons, and the panels that used to impersonate one.**
+ * Until 2026-09-05 there was no title bar: the rail, the sidebar's header, the
+ * bar above the page and an invented band on the properties panel were each made
+ * a drag region, which is why `strays` is here — every one of them being an
  * ordinary panel again is half of what replaced them, and it is the half nothing
- * on screen would show.
+ * on screen would show. The bar above the page has since been removed outright;
+ * the page's own floating controls stand in its place in that list.
  *
  * `spans` is the bar reaching both edges of the window, since a title bar with a
  * seam in it is the defect this replaced. `buttons` is how many controls it
@@ -183,7 +184,7 @@ export async function titleBand(window: Page): Promise<{
         width: window.innerWidth,
       };
     },
-    [TITLE_BAR, TITLE_BAR_NAME, TITLE_BAR_CONTROLS, LEFT_RAIL, TOP_BAR, TREE_PROJECT_HEADER, PROPERTIES_HEAD],
+    [TITLE_BAR, TITLE_BAR_NAME, TITLE_BAR_CONTROLS, LEFT_RAIL, PAGE_CONTROLS, TREE_PROJECT_HEADER, PROPERTIES_HEAD],
   );
 }
 
@@ -298,12 +299,12 @@ export async function breadcrumb(window: Page): Promise<string[]> {
   return crumbs.map(normalize).filter(Boolean);
 }
 
-/** The top bar's back button. */
+/** The rail's back button, at its foot since the bar above the page was removed. */
 export async function goBack(window: Page): Promise<void> {
   await window.getByRole("button", { name: "Back", exact: true }).click();
 }
 
-/** The top bar's forward button. */
+/** The rail's forward button. */
 export async function goForward(window: Page): Promise<void> {
   await window.getByRole("button", { name: "Forward", exact: true }).click();
 }
@@ -963,6 +964,28 @@ export async function typeAtLineStartInEditor(window: Page, text: string): Promi
 /** Whether the bold/italic strip is on screen right now, floating or fixed. */
 export async function formattingBarShown(window: Page): Promise<boolean> {
   return (await window.locator(FORMATTING_BAR).count()) > 0;
+}
+
+/**
+ * The formatting bar's button groups, in order, as the page has actually laid
+ * them out.
+ *
+ * **`shown` and `rule` are both computed rather than inferred**, because the
+ * thing worth checking is precisely that CSS reached the right answer: a group
+ * whose buttons all hid themselves must leave the layout, and the hairline
+ * between groups must fall only where a *visible* group follows another one.
+ * The bar's contents change with the selection — a picture and a paragraph get
+ * different strips — so a scenario that counted dividers would be right for one
+ * selection and wrong for the next.
+ */
+export async function formattingBarGroups(window: Page): Promise<{ buttons: number; shown: boolean; rule: boolean }[]> {
+  return window.evaluate(() =>
+    [...document.querySelectorAll(".editor-toolbar-group")].map((group) => ({
+      buttons: group.childElementCount,
+      shown: getComputedStyle(group).display !== "none",
+      rule: parseFloat(getComputedStyle(group).borderLeftWidth) > 0,
+    })),
+  );
 }
 
 /**

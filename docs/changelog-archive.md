@@ -2,6 +2,25 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-08-30 — the writing starts a little smaller
+
+### Changes
+
+- **The text on a page is 15px by default instead of 16.** It's a small step down on purpose, but headings are sized off the body text and come with it, so it buys more room than it sounds like: on a 1150x780 window a four-line callout becomes three, and a paragraph that ran off the bottom of the pane now fits. Nothing else in the app changed size.
+- **The Writing slider still reaches exactly as far in both directions.** Its ends moved to match the new starting point, so the smallest and largest the writing can be are the same sizes they always were.
+- **If you'd already moved that slider, your pages will still get slightly smaller.** The slider is a percentage of the starting size and the starting size is what changed, so whatever you'd set is now 6% smaller than it was. Nudge it up one step if you liked where it was.
+
+## 2026-08-30 — the quiet text is brighter
+
+### Fixes
+
+- **Quiet text is brighter in all seven themes.** Hints under fields, dates, counts, the notes in the theme picker, the labels on properties, placeholder text in an empty box — everything that isn't the main body text has come up several steps. The main text hasn't moved; it didn't need to.
+- **The steps are spread out now.** There are four levels of text, and three of them used to be bunched at the dim end, so almost everything that wasn't a heading looked about equally faint. They're evenly spaced.
+- **Menus, dropdowns and chips get the same treatment.** They sit on the lightest surface a theme has, which is exactly where dim text is hardest to read, and it was the one surface nobody had ever checked. It was the worst place in the app for this and now it's held to the same standard as everywhere else.
+- **A hidden page's name in the sidebar, and a hidden tab's label, are readable.** Both were dimmed on top of being italic. The italic still says hidden; the dimming is much lighter.
+- **Abyssal's menus are a shade deeper.** Its dropdown background was lighter than every other theme's, light enough that no text colour could sit on it clearly, so it was the one theme where the fix above needed the background to move too.
+- **Links in Daylight are darker.** The teal used for links and the selected page was too pale against white to read comfortably at normal size. Buttons in that theme moved with it.
+
 ## 2026-08-29 — the ring around a selected block
 
 ### Fixes

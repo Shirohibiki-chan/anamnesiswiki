@@ -133,4 +133,4 @@ An uploaded image file, stored in the project's `assets/` subfolder. Asset ids a
 
 The debounced save-to-disk mechanism. Any change to a node — content edit, rename, property update, color change, tab hide/show — triggers a save after ~300ms of inactivity on that node. Autosave is a plain service (`src/services/autosave.ts`), not a hook, because the debounce timer must survive React re-renders.
 
-The user should see a brief "Saved" indicator in the top bar after a save commits, then it fades. No spinners, no confirmation dialogs.
+The user should see a brief "Saved" indicator at the top right of the page after a save commits, then it fades. No spinners, no confirmation dialogs. (It was in a bar above the page until 2026-09-05; that bar was removed and the marker floats on the page now.)

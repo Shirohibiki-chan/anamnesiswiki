@@ -1270,6 +1270,33 @@ under `acknowledgedWarnings`.
 
 ## Editor & templates
 
+- **The kept-on-screen formatting bar is portaled out of `.bn-root`, so every
+  override written for the editor misses it.** BlockNote themes itself through
+  `--bn-*` custom properties set on that root element, and the fixed bar is moved
+  by `createPortal` into `.editor-toolbar-fixed`, which lives in
+  `.editor-shell-wrapper` — outside it. It therefore inherited none of them and
+  wore the library's own defaults: a `#292c4c` surface belonging to no theme here,
+  outlined in near-white, in a dark blue page. Measured in her running app
+  2026-09-05, where `--color-border` was `#2a3954` and the bar's border computed
+  to `rgb(233, 237, 246)`. **`.editor-toolbar-fixed` is on the token block and on
+  the border-colour rule in `page.css` for that reason** — anything else added for
+  the editor's chrome has to be given to both selectors, or it silently applies to
+  the floating bar only. The floating one never had the problem; it stays inside
+  the root.
+
+- **A hidden formatting-bar button is still an element in the array, which is why
+  the group dividers are boxes rather than separators.** Each of BlockNote's items
+  hides itself by rendering nothing when it does not apply, so the strip for a
+  picture and the strip for a paragraph are different — and inserting a divider
+  between items whenever the group changes draws them beside buttons that are not
+  on screen. That is exactly what shipped for ten minutes: two rules stacked at
+  the left and one trailing off the right. `groupToolbarItems` wraps each group in
+  a div instead, `.editor-toolbar-group:empty` takes an all-hidden group out of
+  the layout, and the hairline is a left border on a group with another *non-empty*
+  one before it. Do not replace this with `:nth-child` or a count — the count is
+  right for one selection and wrong for the next. `keeps-the-formatting-bar`
+  asserts it, and fails if the `:empty` rule is removed.
+
 - **The offer to make a missing page hangs off the change scan, not off the
   `]]` key — and the reason is measured, not stylistic.** Phase 19.5. The
   bracket handler in `wikilink-bracket-confirm.ts` looked like the natural home
@@ -2577,6 +2604,37 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
 
 ## The three columns
 
+- **There is no bar above the page, and putting one back undoes a decision
+  rather than filling a gap.** `TopBar` held back/forward/home at one end and the
+  save marker, the undo message and the properties toggle at the other. The user
+  and her partner went over it together on 2026-09-05: it was doing too little
+  for a band of its own. Navigation moved to the foot of the *sidebar* — the wide
+  column with the tree in it (`NavButtons`, `.tree-sidebar-foot`) — and the rest
+  floats on the page as `.page-controls`. **It went into the rail first and that
+  was wrong**: she asked for the bottom of the left column near settings, and
+  settings being in the rail made the rail look like the answer. The column she
+  meant is the one she had been looking at. A loosely named piece of furniture
+  means the thing on her screen, not the one whose name fits best.
+
+- **Those three are icon-only, and that does not reopen the rail's labels.**
+  Asked for 2026-09-05 by a co-writer and passed on by her. The rail carries words
+  because its icons stood for Project, Templates and a picture library and stood
+  for them only here; a house and two arrows are glyphs everybody has already read
+  a thousand times. The rule is about icons that need explaining. Do not
+  generalise it in either direction — putting words back under these, or stripping
+  them off the rail, has each been asked for once and answered. **Back and forward are page history, not undo** —
+  the two got conflated while this was being decided, and she chose explicitly to
+  keep both arrows and leave undo on the keyboard, so do not "tidy" them into an
+  undo button.
+
+- **The Library panel's key is `assets` and that mismatch is deliberate.**
+  Renamed on screen 2026-09-05 at her request, and reordered to sit between
+  Project and Templates. The key names the `assets/` directory on disk, which has
+  not moved — renaming it would put a second name on a real folder for the sake
+  of a label. Three places say the word (the rail's `PANELS`, the sidebar header
+  in `TreeSidebar`, and `switches-panels-from-the-rail`) and none of them is the
+  key.
+
 - **The rail is outside `.app-layout`, and making it a fourth column would
   break two things quietly.** Phase 21. `AppLayout` measures the grid with
   `useElementSize` and feeds that width to `fitPanelWidths`, `maxPanelWidth` and
@@ -2588,14 +2646,15 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   then `.app-frame-body`, which is the row holding the rail and the grid; the grid's geometry is exactly what it was before the rail
   existed, which is the point.
 
-- **One horizontal rule across the top of the window, drawn by three different
-  elements.** `--h-bar` with `--color-border-strong` on the bar above the page
-  (`.top-bar`), on the tree's own header (`.tree-project-header`) and on the
-  header over the other two panels (`.tree-panel-head`). This used to be the
-  top bar and the sidebar's tab strip; the strip went into the rail in Phase 21
-  and the rule had to be picked up by whatever replaced it. Give any of the
-  three a literal height instead of the token and it steps as it crosses the
-  window — which is what it did before 2026-08-11, and it was noticed.
+- **The rule across the top now spans the sidebar only, and that is the shape
+  that was asked for.** `--h-bar` with `--color-border-strong` on the tree's own
+  header (`.tree-project-header`) and on the header over the other two panels
+  (`.tree-panel-head`). There were three elements until 2026-09-05; the third was
+  the bar above the page, and removing that bar is the whole point of the change
+  — the page carries no band, which is what LegendKeeper does and what she
+  pointed at. Give either remaining header a literal height instead of the token
+  and the rule steps as it crosses the sidebar, which is what it did before
+  2026-08-11 and was noticed.
 
 - **The window's opening size and its floor both carry the app's own chrome, and
   they are not round numbers by accident.** 1364 and 984 in `electron/main.js`
@@ -4318,14 +4377,16 @@ Deferred on purpose, not forgotten:
   the window; a handler finds its own with `windowFrom(event)`. Added 2026-08-27
   so the picker can bring an already-open project's window to the front instead
   of refusing to open it.
-- **The top bar has to fit inside the centre column, and the column is not the
-  window.** It is a child of `.app-layout-center`, between two panels a person
-  can drag, so its width is the window's less whatever those two are taking.
-  When its contents outgrow it they run out past the column's right edge and
-  the properties panel paints over them — which is how the properties toggle
-  became unclickable at the app's own minimum window size, fixed 2026-08-26.
-  Anything added to that bar has to earn its width or give some back; the
-  container query in `shell.css` is where that is handled and why.
+- **Anything floating over the page is positioned against the centre column, and
+  the column is not the window.** `.app-layout-center` sits between two panels a
+  person can drag, so its width is the window's less whatever those two are
+  taking. The bar that used to live here was removed 2026-09-05 and
+  `.page-controls` floats in its top right instead — but the constraint it ran
+  into is still live for whatever goes there next: contents that outgrow the
+  column run out past its right edge and the properties panel paints over them,
+  which is how the properties toggle became unclickable at the app's own minimum
+  window size (fixed 2026-08-26, and the reason `layout-rules` sweeps at the
+  floor). Three small controls fit; a fourth needs measuring at 984.
 - **Icon-only controls in the tree are 14–16px**, against a 24px minimum: the
   expand chevron, the colour dot, the ⋯ menu and the +. Counted rather than
   fixed for the same reason — making them bigger changes how a tree row looks,
