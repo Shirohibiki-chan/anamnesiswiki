@@ -93,6 +93,7 @@ export function buildTreeData(
   rootOrder: string[],
   childOrder: Record<string, string[]> = {},
   focusedId: string | null = null,
+  sharedRootId: string | null = null,
 ): TreeNodeData[] {
   const childrenByParent = new Map<string | null, Node[]>();
   for (const node of Object.values(nodes)) {
@@ -118,7 +119,30 @@ export function buildTreeData(
     }));
   }
 
-  return buildChildren(focusedId && nodes[focusedId] ? focusedId : null);
+  const rootId = focusedId && nodes[focusedId] ? focusedId : null;
+  const rows = buildChildren(rootId);
+
+  // The shared universe rides along under whatever is showing (Phase 22), as
+  // its own row holding its own pages — which is what "a labelled, collapsible
+  // section" already is in a tree, without inventing a second kind of row that
+  // react-arborist would have to be taught about. `TreeItem` draws this one as
+  // a section rather than as a page; see the `isSharedSection` note there.
+  //
+  // Only when a universe is actually showing. In the all-universes view the
+  // shared one is already a row like every other universe, and appending it
+  // would list it twice; rooted at the shared universe itself, its pages are
+  // the tree.
+  if (sharedRootId && rootId && sharedRootId !== rootId && nodes[sharedRootId]) {
+    const shared = nodes[sharedRootId];
+    rows.push({
+      id: shared.id,
+      name: shared.name,
+      templateKey: shared.templateKey,
+      children: buildChildren(shared.id),
+    });
+  }
+
+  return rows;
 }
 
 /**
@@ -178,6 +202,21 @@ export function selectedUniverse(
   const node = nodes[selectedUniverseId];
   if (!node || node.parentId !== null || node.templateKey !== UNIVERSE_TEMPLATE_KEY) return null;
   return node;
+}
+
+/**
+ * The universe holding the pages that are true in every universe, or null.
+ *
+ * Validated the same way `selectedUniverse` is and for the same reason: it can
+ * be deleted or turned back into a folder while it is the designated one, and
+ * a tree that tried to draw a section rooted at a page that is gone would draw
+ * an empty labelled band that nothing can remove.
+ */
+export function sharedUniverse(
+  nodes: Record<string, Node>,
+  sharedUniverseId: string | null | undefined,
+): Node | null {
+  return selectedUniverse(nodes, sharedUniverseId);
 }
 
 /**

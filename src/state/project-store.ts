@@ -332,6 +332,16 @@ export type ProjectStoreState = {
    * not somewhere the new tree can show.
    */
   setSelectedUniverse: (id: string | null) => void;
+  /**
+   * Designate the universe whose pages are true in all of them, or null to
+   * have none (Phase 22).
+   *
+   * Written to `project.json` beside the selection. Not undoable, the same as
+   * `setProjectHome`: it changes what the tree shows rather than what is
+   * written in any page, and an undo stack full of view changes is one you
+   * stop trusting to bring writing back.
+   */
+  setSharedUniverse: (id: string | null) => void;
   // Where you've been in this session. Not part of Project and never written to
   // disk — see services/navigation-service.ts for why. Every navigation goes
   // through `selectNode`, which is the only thing that appends to it; back and
@@ -1285,6 +1295,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (!rootPath || !project) return;
       const nextProject: Project = { ...project, selectedUniverseId: id };
       set({ project: nextProject, focusedId: null });
+      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    },
+
+    setSharedUniverse(id) {
+      const { rootPath, project } = get();
+      if (!rootPath || !project) return;
+      const nextProject: Project = { ...project, sharedUniverseId: id };
+      set({ project: nextProject });
       scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
     },
 

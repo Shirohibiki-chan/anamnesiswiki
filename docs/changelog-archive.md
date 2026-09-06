@@ -2,6 +2,24 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-01 — an icon in the middle of a sentence
+
+### Additions
+
+- **Type `:` and a couple of letters to drop an emoji or an icon into a sentence.** `:sm` and you get a list — `:smile:`, `:smiley:`, `:grinning:` — arrow keys to move, Enter or Tab to take one, the way it works in Discord. A bare colon on its own does nothing, so a colon you meant as punctuation stays punctuation.
+- **Ctrl+`:` opens the full picker instead**, at your cursor: the search box, both tabs, and every icon and emoji there is to scroll through. That's the one for when you don't know what the thing is called. Holding shift for the colon is optional — Ctrl and the colon key does it either way.
+- **They're two halves of the same job.** The first is for when you know the name and don't want to reach for the mouse; the second is for browsing. Neither can do the other's job well, which is why there are two.
+- **An icon you place is still clickable afterwards** — click it and the picker opens on it, so you can change your mind without deleting anything. Emoji go in as ordinary characters, the way they always have, so they copy and export as themselves.
+- **`/icon` works too**, and drops a heart in for you to change afterwards.
+- **A callout's icon is yours to choose.** The tick on a green box and the caution on an amber one are still what you get without doing anything — that convention is worth keeping, and a callout that started blank would need decorating by hand before it said anything at all. But the icon is a button now: click it and pick whatever you like, on any callout, in any colour.
+- **And you can take it off entirely.** The picker has two ways out of a callout's icon: **No icon**, which means no icon and stays that way, and **The usual icon**, which puts back the one its colour implies. They're deliberately two different answers — a callout you cleared shouldn't quietly grow its tick back the next time you open the page.
+
+### Notes
+
+- **The picker's Emoji tab is every emoji now — 1870 of them, up from 129.** It used to be a hand-picked list, which is fine right up until you want one nobody thought to pick. They're in the eight groups an emoji keyboard uses, and searching finds them by name, by keyword, or by the `:word:` people type in chat apps. This is everywhere the picker appears, so a page's icon and a meter's markers get the full set too, not just the writing.
+- **A callout with no icon still has somewhere to click.** An empty square appears in the corner while your pointer is over the callout, the same way the colour dot does, so an icon you removed can be put back.
+- **Icons in your writing don't survive an export to LegendKeeper.** An emoji does — it's a character, so it goes out as itself — but a glyph is a drawing and there's nothing in that format to put it in, so it's dropped rather than exported as the word "sword". Everything else about the page exports as it did.
+
 ## 2026-09-01 — page text is Nunito now
 
 ### Fixes

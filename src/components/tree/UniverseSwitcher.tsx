@@ -23,7 +23,7 @@
 // what a universe is by existing. The right-click item stays; it is now the
 // shortcut rather than the entrance.
 import { useMemo, useState } from "react";
-import { Check, ChevronDown, Layers, Plus, Search } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Layers, Plus, Search } from "lucide-react";
 import { UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { useUniverses, useProjectActions } from "../../hooks/use-project";
 import { useCreateUniverse } from "../../hooks/use-new-page";
@@ -33,11 +33,11 @@ import { TreePopover } from "./TreePopover";
 /** What the top entry says, and what the button reads when nothing is chosen. */
 const ALL_UNIVERSES = "All universes";
 
-type OpenMenu = "switch" | "add" | null;
+type OpenMenu = "switch" | "add" | "shared" | null;
 
 export function UniverseSwitcher() {
-  const { universes, current, convertible } = useUniverses();
-  const { setSelectedUniverse, applyTemplate } = useProjectActions();
+  const { universes, current, convertible, shared } = useUniverses();
+  const { setSelectedUniverse, setSharedUniverse, applyTemplate } = useProjectActions();
   const createUniverse = useCreateUniverse();
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -66,6 +66,11 @@ export function UniverseSwitcher() {
 
   function choose(id: string | null) {
     setSelectedUniverse(id);
+    close();
+  }
+
+  function pickShared(id: string | null) {
+    setSharedUniverse(id);
     close();
   }
 
@@ -129,9 +134,22 @@ export function UniverseSwitcher() {
                   <button key={universe.id} type="button" onClick={() => choose(universe.id)}>
                     <NodeIcon icon={universe.icon} templateKey={universe.templateKey} size={13} />
                     <span className="tree-universe-option-name">{universe.name}</span>
+                    {/* Marked in the list rather than only in the tree, so
+                        "which one is the shared one" is answerable without
+                        switching to each in turn to look. */}
+                    {shared?.id === universe.id && <span className="tree-universe-tag">Shared</span>}
                     {current?.id === universe.id && <Check size={13} className="tree-universe-tick" />}
                   </button>
                 ))}
+                {/* Swaps this popover for the picker rather than closing it,
+                    like Set color and Sort sub-pages do on a row's menu. It is
+                    here as well as on a universe's right-click menu for the
+                    reason the "+" exists: a designation reachable only from a
+                    right-click is one nobody finds. */}
+                <button type="button" className="tree-context-menu-submenu" onClick={() => setOpenMenu("shared")}>
+                  <Layers size={13} /> Shared universe
+                  <ChevronRight size={13} className="tree-context-menu-chevron" />
+                </button>
               </>
             ) : (
               // A one-item menu would look broken. Saying what is missing and
@@ -142,6 +160,36 @@ export function UniverseSwitcher() {
                 an AU.
               </p>
             )}
+          </div>
+        </TreePopover>
+      )}
+
+      {openMenu === "shared" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={close}>
+          <div className="tree-context-menu tree-universe-menu">
+            <button type="button" className="tree-context-menu-back" onClick={() => setOpenMenu("switch")}>
+              <ArrowLeft size={13} /> Shared universe
+            </button>
+            {/* Said in the menu rather than assumed known. "Shared" is a word
+                that could mean shared with other people, which is the one thing
+                this app does not do. */}
+            <p className="tree-universe-empty">
+              One universe can hold the pages that are true in all of them — a species, a map, a language. Its pages
+              show under whichever universe you&rsquo;re in.
+            </p>
+            <button type="button" onClick={() => pickShared(null)}>
+              None
+              {!shared && <Check size={13} className="tree-universe-tick" />}
+            </button>
+            <div className="tree-universe-list">
+              {universes.map((universe) => (
+                <button key={universe.id} type="button" onClick={() => pickShared(universe.id)}>
+                  <NodeIcon icon={universe.icon} templateKey={universe.templateKey} size={13} />
+                  <span className="tree-universe-option-name">{universe.name}</span>
+                  {shared?.id === universe.id && <Check size={13} className="tree-universe-tick" />}
+                </button>
+              ))}
+            </div>
           </div>
         </TreePopover>
       )}

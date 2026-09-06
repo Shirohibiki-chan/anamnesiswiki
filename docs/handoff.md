@@ -225,6 +225,29 @@ is below.
   showing — and the rename prompt that follows would be aimed at a page you
   cannot see, which reads as the button having done nothing.
 
+- **The shared universe is an ordinary tree row, drawn as a section.**
+  `buildTreeData` appends it under whatever is showing rather than the tree
+  learning a second kind of row — a labelled, collapsible section *is* a row
+  with children, and react-arborist would otherwise have to be taught about a
+  thing that is not a node. **The condition it appends on and
+  `useIsSharedSection` must stay the same condition**: one decides whether to
+  draw the extra row, the other whether the row it drew is that one, and if they
+  drift you get either a section with no styling or an ordinary universe row
+  dressed as a band across the tree. It is not appended in the all-universes
+  view (already a row there) or when the shared universe is the one showing
+  (its pages are the tree).
+
+- **The shared section is exempt from the container colour tint**, in `TreeItem`
+  and in the stylesheet. A band wearing the universe's colour across the full
+  row reads as a *selected* row, and the one thing this phase says must never be
+  ambiguous is which universe the page you are typing into belongs to.
+
+- **`sharedUniverseId` is a pointer on the project, not a flag on the node**, so
+  exactly one universe can be it. Two universes both claiming to be shared has
+  no sensible rendering — two always-visible sections, neither of them "the"
+  shared lore — and a pointer cannot express it. Same shape as `homeNodeId`, and
+  read through `sharedUniverse` for the same staleness reason as below.
+
 - **`selectedUniverseId` is read through `selectedUniverse`, never directly.**
   An id that no longer names a root universe — deleted, or turned back into a
   folder — reads as "all universes", never as an empty tree. A tree rooted at a

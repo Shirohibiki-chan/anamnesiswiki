@@ -16,6 +16,7 @@ import {
   isHiddenByAncestor,
   moveDestinations,
   selectedUniverse,
+  sharedUniverse,
   type BreadcrumbTrail,
   type EffectiveColor,
   type MoveDestination,
@@ -81,9 +82,14 @@ export function useTreeData(): {
   const universeNode = selectedUniverse(nodes, project?.selectedUniverseId);
   const treeRootId = focusedId ?? universeNode?.id ?? null;
 
+  // Only while a universe is showing, and never while focused inside one: the
+  // shared section belongs to "which universe am I in", and a focused branch is
+  // a deliberate "show me only this".
+  const sharedId = focusedId ? null : (sharedUniverse(nodes, project?.sharedUniverseId)?.id ?? null);
+
   const treeData = useMemo(
-    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}, treeRootId),
-    [nodes, project?.rootOrder, project?.childOrder, treeRootId],
+    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}, treeRootId, sharedId),
+    [nodes, project?.rootOrder, project?.childOrder, treeRootId, sharedId],
   );
 
   const focusPath = useMemo(() => {

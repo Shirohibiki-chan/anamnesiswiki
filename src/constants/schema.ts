@@ -698,6 +698,24 @@ export type Project = {
    * tree-service.
    */
   selectedUniverseId?: string | null;
+  /**
+   * Which universe holds the pages that are true in all of them — a species, a
+   * map, a magic system, a language (Phase 22).
+   *
+   * **A pointer rather than a flag on the node, so there is exactly one.** Two
+   * universes both claiming to be shared is a state with no sensible rendering
+   * — the tree would carry two always-visible sections and neither would be
+   * "the" shared lore — and a pointer cannot express it. Same shape and same
+   * reasoning as `homeNodeId`.
+   *
+   * Absent means the world has none, which is what every world starts as: it is
+   * made by hand like any other universe and then designated, rather than
+   * appearing on its own once a second universe exists.
+   *
+   * An id that no longer names a root universe reads as absent, for the same
+   * reason `selectedUniverseId` does. See `sharedUniverse` in tree-service.
+   */
+  sharedUniverseId?: string | null;
   createdAt: number;
 };
 

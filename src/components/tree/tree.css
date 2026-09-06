@@ -165,6 +165,58 @@
   white-space: nowrap;
 }
 
+/* The shared universe, drawn as a section rather than as a page row (Phase 22).
+   It is an ordinary tree row underneath — see `buildTreeData` for why it is one
+   — so what makes it read as a band across the tree rather than as another page
+   is here: a rule above it, a little air, and a name in the app's small-caps
+   heading treatment rather than in page type.
+
+   **It must not read as a page you opened by accident.** The one thing the
+   phase says must never be ambiguous is which universe you are typing into, and
+   a shared page that looked like it belonged to the universe above it would be
+   exactly that ambiguity. */
+.tree-row.tree-row-shared-section {
+  margin-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-sm);
+}
+
+/* The left border every row carries for its own colour is suppressed here for
+   the same reason as the tint — see TreeItem. */
+.tree-row.tree-row-shared-section {
+  border-left-color: transparent !important;
+}
+
+.tree-row.tree-row-shared-section .tree-row-name {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* The "Shared" marker beside a universe in the switcher's list. Sized and
+   spaced as a chip so it reads as a label on the row rather than as part of
+   the universe's name. */
+.tree-universe-tag {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px var(--space-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* With both a tag and a tick, only the first may claim the free space. */
+.tree-universe-tag + .tree-universe-tick {
+  margin-left: var(--space-xs);
+}
+
 /* The "use a page you already have" list, capped and scrolling.
    **The cap is the load-bearing part, not the search field above it.** Her own
    world has a long tail of pages at the root, and the first version of this
