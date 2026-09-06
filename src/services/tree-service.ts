@@ -121,6 +121,68 @@ export function buildTreeData(
   return buildChildren(focusedId && nodes[focusedId] ? focusedId : null);
 }
 
+/**
+ * The universes at the project root, in the order the tree draws them
+ * (Phase 22).
+ *
+ * Read from the graph rather than kept as a list on the project, deliberately:
+ * a universe is an ordinary page with a template key, so making, deleting,
+ * duplicating, importing or turning one back into a folder already maintains
+ * this — a second list would be a second thing to keep in step, and the one
+ * that drifts is the one that leaves a switcher offering a universe that is
+ * gone.
+ *
+ * Only the root is looked at, because that is the only place a universe can
+ * be. A stored `universe` key on a nested page — from a hand-edited file, or a
+ * world written by a future version — is not counted and cannot appear in the
+ * switcher.
+ */
+export function listUniverses(nodes: Record<string, Node>, rootOrder: string[]): Node[] {
+  const roots = Object.values(nodes).filter(
+    (node) => node.parentId === null && node.templateKey === UNIVERSE_TEMPLATE_KEY,
+  );
+  return orderSiblings(roots, rootOrder);
+}
+
+/**
+ * The universe the tree is showing, or null for all of them.
+ *
+ * **An id that no longer names a universe reads as null, never as an empty
+ * tree.** A universe can be deleted, or turned back into a folder, while it is
+ * the one selected — and a tree built against an id that isn't there any more
+ * would show nothing at all, with the switcher that could fix it drawn from
+ * the same missing thing. Falling back to every universe at once is the state
+ * the app already knows how to be in.
+ */
+export function selectedUniverse(
+  nodes: Record<string, Node>,
+  selectedUniverseId: string | null | undefined,
+): Node | null {
+  if (!selectedUniverseId) return null;
+  const node = nodes[selectedUniverseId];
+  if (!node || node.parentId !== null || node.templateKey !== UNIVERSE_TEMPLATE_KEY) return null;
+  return node;
+}
+
+/**
+ * The universe `nodeId` belongs to, or null if it is outside every universe.
+ *
+ * Walks to the top and checks what it found, rather than checking the node
+ * itself: a page nine levels down is in whichever universe its chain ends at,
+ * and that is the question every caller has — the tree revealing a search
+ * result, a link followed out of the universe you were in.
+ */
+export function universeOf(nodeId: string, nodes: Record<string, Node>): Node | null {
+  let current: Node | undefined = nodes[nodeId];
+  while (current) {
+    if (current.parentId === null) {
+      return current.templateKey === UNIVERSE_TEMPLATE_KEY ? current : null;
+    }
+    current = nodes[current.parentId];
+  }
+  return null;
+}
+
 // Whether `nodeId` sits anywhere beneath `ancestorId`. Used to decide whether
 // a page being selected is inside the current focus — a page reached from a
 // search result or a wikilink usually isn't, and the tree can't show it while

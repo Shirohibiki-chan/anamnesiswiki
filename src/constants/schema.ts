@@ -677,6 +677,27 @@ export type Project = {
   // renamed until she visits it again, which is the same trade `name` itself
   // already makes for a world whose folder was renamed outside the app.
   selectedName?: string | null;
+  /**
+   * Which universe the tree is showing, or absent/null for all of them
+   * (Phase 22).
+   *
+   * **Absent is the ordinary state and means every universe at once**, which
+   * is also exactly what the tree did before universes existed — so a world
+   * that has never had one, and a world whose owner has not picked one, both
+   * open looking the way they always did. Nothing is migrated and nothing is
+   * rearranged by opening the app.
+   *
+   * In `project.json` rather than app settings because it is a fact about this
+   * world, not a preference about the app: a world handed to someone else
+   * should open on the universe it was left in, and two worlds open in turn
+   * should not fight over one setting.
+   *
+   * An id here that no longer names a universe is treated as absent rather
+   * than as an empty tree — a deleted universe must not be able to leave the
+   * app showing nothing with no way back. See `selectedUniverse` in
+   * tree-service.
+   */
+  selectedUniverseId?: string | null;
   createdAt: number;
 };
 

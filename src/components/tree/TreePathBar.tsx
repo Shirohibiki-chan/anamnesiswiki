@@ -10,13 +10,18 @@ import { ChevronRight, X } from "lucide-react";
 import type { Node } from "../../constants/schema";
 
 type TreePathBarProps = {
-  projectName: string;
-  /** Project root → focused node. The last entry is what the tree is showing. */
+  /**
+   * What the top of the tree is called — the world's name, or the selected
+   * universe's when there is one (Phase 22). It is the first crumb and the way
+   * all the way out, so it has to name the place clicking it actually goes.
+   */
+  rootName: string;
+  /** The top of the tree → focused node. The last entry is what's showing. */
   path: Node[];
   onFocus: (id: string | null) => void;
 };
 
-export function TreePathBar({ projectName, path, onFocus }: TreePathBarProps) {
+export function TreePathBar({ rootName, path, onFocus }: TreePathBarProps) {
   const current = path[path.length - 1];
   if (!current) return null;
 
@@ -27,7 +32,7 @@ export function TreePathBar({ projectName, path, onFocus }: TreePathBarProps) {
           it's labelling off the top of the panel. */}
       <div className="tree-path-bar-crumbs">
         <button type="button" className="tree-path-crumb" onClick={() => onFocus(null)}>
-          {projectName}
+          {rootName}
         </button>
         {path.map((node, index) => {
           const isCurrent = index === path.length - 1;
@@ -54,8 +59,8 @@ export function TreePathBar({ projectName, path, onFocus }: TreePathBarProps) {
       <button
         type="button"
         className="ui-icon-btn ui-icon-btn-sm tree-path-clear"
-        aria-label="Show the whole project"
-        title="Show the whole project"
+        aria-label={`Show all of ${rootName}`}
+        title={`Show all of ${rootName}`}
         onClick={() => onFocus(null)}
       >
         <X size={12} />
