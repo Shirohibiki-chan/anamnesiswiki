@@ -183,6 +183,36 @@ is below.
   item, which reads the *stored* parent rather than the row's depth on screen,
   because the tree will soon be drawing a universe's children at its root.
 
+- **"The top of the tree" is no longer "the project root"** (Phase 22).
+  `useTreeData`'s `treeRootId` is the one answer — the focused node while
+  focused, else the selected universe, else the project — and anything acting
+  on the top of the tree has to use it rather than `null`. The drop handler in
+  `TreePanel` is the standing example: a page dropped at the root of a tree
+  showing one universe belongs *in* that universe, and passing `null` flings it
+  out to the project root, which is the one place the person doing it cannot
+  currently see. The path bar and the header's "+" read the same answer.
+
+- **Focus wins over the universe, and the path bar is trimmed to match.** Focus
+  is a deliberate, temporary "show me only this" on a branch *inside* whatever
+  is showing, so leaving it lands back in the universe rather than at the
+  project. That is why `focusPath` is cut at the universe: a first crumb naming
+  the project would be a button that says one place and goes to another.
+
+- **Navigating to a page outside the selected universe switches to it**, in
+  `applySelection`, beside the focus drop that has always lived there and for
+  the same reason. The tree cannot show a page that is not under what it is
+  rooted at, so the alternatives are the sidebar silently not following a search
+  result or a wikilink, or refusing to open the page at all — and a page shown
+  with no row anywhere is how you end up editing the wrong Valera. A page in no
+  universe sends the tree back to all of them, which is the only view that can
+  show both it and where you came from.
+
+- **`selectedUniverseId` is read through `selectedUniverse`, never directly.**
+  An id that no longer names a root universe — deleted, or turned back into a
+  folder — reads as "all universes", never as an empty tree. A tree rooted at a
+  missing id shows nothing at all, *including* the switcher's own list, so the
+  one control that could fix it is drawn from the same missing thing.
+
 - **A duplicated page's picture is copied on disk before the plan is built.**
   `planDuplicate` takes the new filenames as an argument rather than inventing
   them, because copying a file is I/O and the service does none. A clone must

@@ -73,16 +73,100 @@
 }
 /* --- ProjectHeader --- */
 
+/* A column rather than a row since Phase 22: the world's name is the first
+   line and the universe switcher, when there is one, is the second. With no
+   universes there is only the one line and `min-height` keeps this exactly the
+   height `.tree-panel-head` is in every other panel — a world that has never
+   made a universe is not moved by this existing. */
 .tree-project-header {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: var(--h-bar);
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--h-bar);
   padding: 0 var(--space-lg);
   /* See .tree-panel-head — this is the Project panel's copy of that row. */
   border-bottom: 1px solid var(--color-border-strong);
   flex-shrink: 0;
+}
+
+.tree-project-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--h-bar);
+}
+
+/* --- UniverseSwitcher --- */
+
+.tree-universe-switcher {
+  display: flex;
+  /* Sits under the name and indents to line up with the name's text rather
+     than with the house icon beside it, so the two lines read as one block. */
+  padding: 0 0 var(--space-sm);
+}
+
+.tree-universe-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  /* The world's name above is `--color-text-primary`; this is one step down so
+     the two lines are a title and its subtitle rather than two titles — but
+     `--color-text-secondary`, not the muted token, because it names the thing
+     you are working in and has to be readable at a glance. */
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-universe-button:hover,
+.tree-universe-button[aria-expanded="true"] {
+  border-color: var(--color-border-strong);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+}
+
+.tree-universe-current {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-universe-chevron {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Wide enough that a list of AU names doesn't ellipsis on the first one, and
+   capped so a long one doesn't push the popover off the panel. */
+.tree-universe-menu {
+  min-width: 200px;
+}
+
+.tree-universe-option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Right-aligned so the ticks line up in a column down the edge of the menu
+   rather than trailing each name at a different distance. */
+.tree-universe-tick {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--color-accent-light);
 }
 
 .tree-project-header-name {

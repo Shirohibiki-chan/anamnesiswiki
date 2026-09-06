@@ -8,8 +8,11 @@ import {
   hasChildren,
   isDescendantOf,
   isHiddenByAncestor,
+  listUniverses,
   moveDestinations,
+  selectedUniverse,
   selectionRoots,
+  universeOf,
   sortSiblingIds,
 } from "./tree-service";
 import { FOLDER_TEMPLATE_KEY, type Node } from "../constants/schema";
@@ -684,5 +687,75 @@ describe("moveDestinations", () => {
       null,
       "canon",
     ]);
+  });
+});
+
+// Phase 22. All three read the graph rather than a stored list, so the cases
+// that matter are the ones where the graph and a stored id disagree.
+describe("universes", () => {
+  const canon = node({ id: "canon", name: "Canon", parentId: null, templateKey: "universe" });
+  const demonic = node({ id: "demonic", name: "Demonic AU", parentId: null, templateKey: "universe" });
+  const loose = node({ id: "loose", name: "Notes", parentId: null, templateKey: FOLDER_TEMPLATE_KEY });
+  const characters = node({ id: "characters", name: "Characters", parentId: "canon", templateKey: FOLDER_TEMPLATE_KEY });
+  const valera = node({ id: "valera", name: "Valera", parentId: "characters", templateKey: "character" });
+  const stray = node({ id: "stray", name: "Stray", parentId: "loose", templateKey: "note" });
+  const nodes = byId([canon, demonic, loose, characters, valera, stray]);
+
+  describe("listUniverses", () => {
+    it("lists them in the order the tree draws them", () => {
+      expect(listUniverses(nodes, ["demonic", "loose", "canon"]).map((n) => n.id)).toEqual(["demonic", "canon"]);
+    });
+
+    it("leaves out everything that isn't one", () => {
+      expect(listUniverses(nodes, ["canon", "loose"]).map((n) => n.id)).not.toContain("loose");
+    });
+
+    it("ignores a universe key on a page that isn't at the root", () => {
+      // Only reachable from a hand-edited file or a world written by a later
+      // version. It must not turn up in the switcher, because selecting it
+      // would root the tree somewhere a universe can never be.
+      const nested = byId([canon, node({ id: "inner", name: "Inner", parentId: "canon", templateKey: "universe" })]);
+      expect(listUniverses(nested, ["canon"]).map((n) => n.id)).toEqual(["canon"]);
+    });
+  });
+
+  describe("selectedUniverse", () => {
+    it("finds the one named", () => {
+      expect(selectedUniverse(nodes, "demonic")?.id).toBe("demonic");
+    });
+
+    it("reads absent and null as all of them", () => {
+      expect(selectedUniverse(nodes, undefined)).toBeNull();
+      expect(selectedUniverse(nodes, null)).toBeNull();
+    });
+
+    it("falls back to all of them when the id names nothing", () => {
+      // A deleted universe must not leave the tree rooted at a page that is
+      // gone — that shows nothing at all, including the switcher's own list.
+      expect(selectedUniverse(nodes, "deleted")).toBeNull();
+    });
+
+    it("falls back to all of them when the id names something that stopped being one", () => {
+      const turnedBack = { ...nodes, canon: { ...canon, templateKey: FOLDER_TEMPLATE_KEY } };
+      expect(selectedUniverse(turnedBack, "canon")).toBeNull();
+    });
+  });
+
+  describe("universeOf", () => {
+    it("walks all the way up rather than looking at the page itself", () => {
+      expect(universeOf("valera", nodes)?.id).toBe("canon");
+    });
+
+    it("answers with the universe itself for a universe", () => {
+      expect(universeOf("canon", nodes)?.id).toBe("canon");
+    });
+
+    it("is null for a page whose chain ends outside every universe", () => {
+      expect(universeOf("stray", nodes)).toBeNull();
+    });
+
+    it("is null for a page that isn't there", () => {
+      expect(universeOf("gone", nodes)).toBeNull();
+    });
   });
 });

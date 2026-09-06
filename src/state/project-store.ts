@@ -103,7 +103,13 @@ import {
   planMove,
   type ClonedAssetNames,
 } from "../services/node-edit-service";
-import { isDescendantOf, sortSiblingIds, type SiblingSort } from "../services/tree-service";
+import {
+  isDescendantOf,
+  selectedUniverse,
+  sortSiblingIds,
+  universeOf,
+  type SiblingSort,
+} from "../services/tree-service";
 import {
   addOverride,
   addTemplate,
@@ -315,6 +321,17 @@ export type ProjectStoreState = {
   // no memory of having asked for that, reads as pages having gone missing.
   focusedId: string | null;
   setFocus: (id: string | null) => void;
+  /**
+   * Show one universe's contents at the tree's root, or null for all of them
+   * (Phase 22).
+   *
+   * Written to `project.json`, unlike `setFocus` — this is which version of
+   * the world she is working in, and reopening a world into a different one
+   * than she left it in would be the app losing her place. Focus is dropped
+   * on the way through: a focused branch inside the universe being left is
+   * not somewhere the new tree can show.
+   */
+  setSelectedUniverse: (id: string | null) => void;
   // Where you've been in this session. Not part of Project and never written to
   // disk — see services/navigation-service.ts for why. Every navigation goes
   // through `selectNode`, which is the only thing that appends to it; back and
@@ -1083,7 +1100,25 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
   ): void => {
     const { rootPath, project, nodes, focusedId, pendingRenameId } = get();
     if (!rootPath || !project) return;
-    const nextProject: Project = { ...project, selectedId: id, selectedName: id ? (nodes[id]?.name ?? null) : null };
+    // Landing in another universe switches to it (Phase 22), for the same
+    // reason landing outside the focus drops it: the tree cannot show a page
+    // that isn't under what it is rooted at, so the alternative is the sidebar
+    // silently not following a search result or a wikilink. Refusing to open
+    // the page would be worse still, and showing it with no row anywhere is how
+    // you end up editing the wrong Valera.
+    //
+    // A page that is in *no* universe — a loose top-level page, or one under a
+    // plain folder at the root — sends the tree back to all of them, which is
+    // the only view that can show both it and where you came from.
+    const currentUniverse = selectedUniverse(nodes, project.selectedUniverseId);
+    const targetUniverseId = id ? (universeOf(id, nodes)?.id ?? null) : null;
+    const switchesUniverse = Boolean(currentUniverse) && Boolean(id) && targetUniverseId !== currentUniverse!.id;
+    const nextProject: Project = {
+      ...project,
+      selectedId: id,
+      selectedName: id ? (nodes[id]?.name ?? null) : null,
+      ...(switchesUniverse ? { selectedUniverseId: targetUniverseId } : {}),
+    };
     // Landing outside the focused branch drops the focus. The tree physically
     // can't show a page that isn't under the focused node, so the alternative
     // is the sidebar quietly not following you — which is how a search result
@@ -1245,6 +1280,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // Not undoable and not recorded in navigation history: this changes what
     // the sidebar is showing, not what the project contains or which page is
     // open. Undo is for edits, and Back is for pages.
+    setSelectedUniverse(id) {
+      const { rootPath, project } = get();
+      if (!rootPath || !project) return;
+      const nextProject: Project = { ...project, selectedUniverseId: id };
+      set({ project: nextProject, focusedId: null });
+      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    },
+
     setFocus(id) {
       set({ focusedId: id });
     },

@@ -9,15 +9,17 @@
 import { useState } from "react";
 import { History, Home, Plus, Upload } from "lucide-react";
 import { useDialogs } from "../../hooks/use-dialogs";
-import { useProject, useProjectHomeId } from "../../hooks/use-project";
+import { useProject, useProjectHomeId, useUniverses } from "../../hooks/use-project";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { TreePopover } from "./TreePopover";
+import { UniverseSwitcher } from "./UniverseSwitcher";
 
 export function ProjectHeader() {
   const { project, selectNode } = useProject();
   const { requestExport, openProjectHistory } = useDialogs();
   const createPageIn = useCreatePageIn();
   const homeNodeId = useProjectHomeId();
+  const { current: currentUniverse } = useUniverses();
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   function closePopover() {
@@ -39,29 +41,36 @@ export function ProjectHeader() {
         setAnchorRect(e.currentTarget.getBoundingClientRect());
       }}
     >
-      <div className="tree-project-header-name">
-        {homeNodeId ? (
-          <button
-            type="button"
-            className="tree-project-header-home"
-            title="Go to project home"
-            onClick={() => selectNode(homeNodeId)}
-          >
+      <div className="tree-project-header-row">
+        <div className="tree-project-header-name">
+          {homeNodeId ? (
+            <button
+              type="button"
+              className="tree-project-header-home"
+              title="Go to project home"
+              onClick={() => selectNode(homeNodeId)}
+            >
+              <Home size={12} />
+            </button>
+          ) : (
             <Home size={12} />
-          </button>
-        ) : (
-          <Home size={12} />
-        )}
-        <span>{project?.name}</span>
+          )}
+          <span>{project?.name}</span>
+        </div>
+        {/* "Top level" means the top of the tree as it is currently showing —
+            so inside the selected universe when there is one. A "+" on this row
+            that made a page you then could not see would read as broken. */}
+        <button
+          type="button"
+          className="ui-icon-btn ui-icon-btn-sm"
+          title={currentUniverse ? `Add page in ${currentUniverse.name}` : "Add top-level page"}
+          onClick={() => createPageIn(currentUniverse?.id ?? null)}
+        >
+          <Plus size={12} />
+        </button>
       </div>
-      <button
-        type="button"
-        className="ui-icon-btn ui-icon-btn-sm"
-        title="Add top-level page"
-        onClick={() => createPageIn(null)}
-      >
-        <Plus size={12} />
-      </button>
+      {/* Draws nothing until this world has a universe in it. */}
+      <UniverseSwitcher />
       {anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <div className="tree-context-menu">

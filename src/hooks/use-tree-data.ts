@@ -15,6 +15,7 @@ import {
   hasChildren,
   isHiddenByAncestor,
   moveDestinations,
+  selectedUniverse,
   type BreadcrumbTrail,
   type EffectiveColor,
   type MoveDestination,
@@ -34,7 +35,32 @@ export function useTreeData(): {
   treeData: TreeNodeData[];
   /** The node whose inside the tree is showing, or null for the whole project. */
   focusedNode: Node | null;
-  /** Project root → focused node, for the path bar. Empty when not focused. */
+  /**
+   * What the tree is actually rooted at — the focused node, else the selected
+   * universe, else the project (Phase 22).
+   *
+   * Exposed because "the top of the tree" is no longer the same thing as "the
+   * project root", and anything that acts on the top of the tree has to mean
+   * this one. A drop at the root of a tree showing one universe belongs *in*
+   * that universe; without this it flew out to the project root, which is the
+   * one place the person doing it cannot currently see.
+   */
+  treeRootId: string | null;
+  /**
+   * What to call the top of the tree — the selected universe's name, or the
+   * world's. The path bar's first crumb, and the thing the way-out button
+   * offers to show all of.
+   */
+  treeRootName: string;
+  /**
+   * The top of the tree → focused node, for the path bar. Empty when not
+   * focused.
+   *
+   * Trimmed at the universe when there is one, rather than running all the way
+   * up to the project: leaving the focus lands you back in the universe, so a
+   * first crumb naming the *project* would be a button that says one place and
+   * goes to another.
+   */
   focusPath: Node[];
   getEffectiveColor: (nodeId: string) => EffectiveColor;
   getAncestorChain: (nodeId: string) => Node[];
@@ -47,19 +73,36 @@ export function useTreeData(): {
   // the same condition, so the two can't disagree about what's showing.
   const focusedNode = focusedId ? (nodes[focusedId] ?? null) : null;
 
+  // Focus wins over the universe: focusing a branch is a deliberate, temporary
+  // "show me only this", and it is always a branch *inside* whatever is
+  // showing. The universe is the standing choice underneath it, which is why
+  // leaving the focus lands you back in the universe rather than at the
+  // project root.
+  const universeNode = selectedUniverse(nodes, project?.selectedUniverseId);
+  const treeRootId = focusedId ?? universeNode?.id ?? null;
+
   const treeData = useMemo(
-    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}, focusedId),
-    [nodes, project?.rootOrder, project?.childOrder, focusedId],
+    () => buildTreeData(nodes, project?.rootOrder ?? [], project?.childOrder ?? {}, treeRootId),
+    [nodes, project?.rootOrder, project?.childOrder, treeRootId],
   );
 
-  const focusPath = useMemo(
-    () => (focusedNode ? [...getAncestorChain(focusedNode.id, nodes), focusedNode] : []),
-    [focusedNode, nodes],
-  );
+  const focusPath = useMemo(() => {
+    if (!focusedNode) return [];
+    const chain = [...getAncestorChain(focusedNode.id, nodes), focusedNode];
+    if (!universeNode) return chain;
+    // -1 would mean the focus is outside the selected universe, which the
+    // store's own focus handling should have already dropped. Showing the
+    // whole chain is the safe answer if it ever happens: too much path is
+    // legible, a path with its top silently cut off is not.
+    const at = chain.findIndex((node) => node.id === universeNode.id);
+    return at === -1 ? chain : chain.slice(at + 1);
+  }, [focusedNode, nodes, universeNode]);
 
   return {
     treeData,
     focusedNode,
+    treeRootId,
+    treeRootName: universeNode?.name ?? project?.name ?? "Project",
     focusPath,
     getEffectiveColor: (nodeId: string) => getEffectiveColor(nodeId, nodes),
     getAncestorChain: (nodeId: string) => getAncestorChain(nodeId, nodes),

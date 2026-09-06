@@ -14,8 +14,8 @@ import { TreePathBar } from "./TreePathBar";
 import { TreeSearch } from "./TreeSearch";
 
 export function TreePanel() {
-  const { project, renameNode, moveNodes, setExpanded, selectNode, togglePinned, focusedId, setFocus } = useProject();
-  const { treeData, focusPath, getAncestorChain } = useTreeData();
+  const { project, renameNode, moveNodes, setExpanded, selectNode, togglePinned, setFocus } = useProject();
+  const { treeData, treeRootId, treeRootName, focusPath, getAncestorChain } = useTreeData();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<TreeSearchMode>("all");
@@ -127,7 +127,7 @@ export function TreePanel() {
         onUnpin={togglePinned}
       />
       {focusPath.length > 0 && (
-        <TreePathBar projectName={project?.name ?? "Project"} path={focusPath} onFocus={setFocus} />
+        <TreePathBar rootName={treeRootName} path={focusPath} onFocus={setFocus} />
       )}
       <div className="tree-panel-body" ref={containerRef} onKeyDownCapture={handleEscape}>
 
@@ -176,12 +176,14 @@ export function TreePanel() {
               // here as several ids, and moving them one at a time races on
               // disk (see the store's moveNodes).
               //
-              // `parentId` is null for a drop at the tree's own root, and
-              // while focused that root *is* the focused node — not the
-              // project. Without the fallback, dragging a page to the top of a
-              // focused tree would fling it out to the project root, which is
-              // the one place the person doing it can't currently see.
-              void moveNodes(dragIds, parentId ?? focusedId, index);
+              // `parentId` is null for a drop at the tree's own root, and that
+              // root is not always the project: it is the focused node while
+              // focused, and the selected universe otherwise (Phase 22).
+              // `treeRootId` is the one answer for both. Without the fallback,
+              // dragging a page to the top of the tree would fling it out to
+              // the project root, which is the one place the person doing it
+              // can't currently see.
+              void moveNodes(dragIds, parentId ?? treeRootId, index);
             }}
             onToggle={(id) => setExpanded(id, treeApiRef.current?.isOpen(id) ?? false)}
             // The page view follows the row you last touched, not the topmost

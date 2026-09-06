@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-06 — one universe at a time
+
+### Additions
+
+- **There's a universe switcher under your world's name**, in the sidebar. It only appears once you've made a universe — a world without one looks exactly as it did.
+- **Picking a universe shows only that universe's pages**, at the top of the tree. Canon on its own, Demonic AU on its own. The universe stops being a row you have to open, because its contents *are* the tree now; a character that used to be four levels down under AUs / Demonic AU / Characters is two.
+- **"All universes" is the top of that list**, and it's where you start. One click, no trip to Settings, and it's the only view where universes show up as rows.
+- **The app remembers which one you were in.** It's stored with the world, not with the app, so a world you hand to someone else opens on the universe you left it in.
+- **Going to a page that isn't in the universe you're in takes you there.** A search result, a link, the home button — the sidebar follows you instead of quietly not having a row for the page you're now reading. If the page isn't in any universe, you land back in All universes, which is the only view that can show it.
+- **The "+" beside your world's name makes the page inside the universe you're in**, and says so when you hover it.
+
+### Changes
+
+- **The trail above a focused folder starts at the universe**, not at your world, when you're in one — so the first step of it is the button that takes you back to where clicking it actually goes.
+- **Finding a page by name in the sidebar searches the universe you're in.** The Search button on the left rail still looks across the whole world, and going to one of its results moves you to wherever that page lives.
+
+**What this doesn't do yet:** there's no Shared universe for the pages that are true everywhere — a species, a map, a language. That's the next piece, and until it's built a page like that has to live in one universe or outside all of them.
+
 ## 2026-09-05 — universes, the first piece
 
 ### Additions
@@ -265,20 +283,3 @@
 
 - **Settings is a panel down the right-hand side now, on every section, and it never moves.** It used to slide over to the right on Theme, Colours, Fonts and Snippets and slide back to the middle for everything else, which meant it sat somewhere different depending on which part of it you were in. Now it's always in the same place: full height, against the right edge, with the sidebar and most of your page still visible beside it. The app there stays undimmed and clickable on every section too, so you can walk to another page and watch a theme land on it while you're still picking. Escape and the × close it; clicking the app no longer does, because that would shut the panel every time you went to look at something.
 - **Pages are written in Nunito instead of Quicksand.** Same rounded, friendly shape, but with a taller lowercase and less gap between letters, so a full page of it reads more settled and takes up a touch less room. Only the writing on a page changed — headings and the rest of the app are the same faces as before, and this is the starting point, so if you'd already picked your own face for writing in Settings, nothing moved.
-
-## 2026-08-30 — the font picker
-
-### Additions
-
-- **21 new typefaces**, bringing the library to 119. Nunito, Comfortaa, Fredoka and Righteous by request; Fira Sans, PT Sans and Signika for the Trebuchet MS shape; Atkinson Hyperlegible, which was drawn specifically to be easy to read; Lato and Open Sans; Crimson Text, Noto Serif and Andada Pro for reading; Marcellus SC and Alegreya SC for titles; Handlee, Delius and Neucha at the readable end of handwriting; and Noto Sans Mono, Anonymous Pro and Cousine for code.
-- **The typeface menu is the app's own now, not Windows'.** Category headings are proper headings that stay pinned to the top while their own fonts scroll underneath, so you can always see which group you're in. Every name is still written in its own face.
-- **There's a search box in it.** Type a few letters to jump straight to a face rather than scrolling 119 of them.
-
-### Changes
-
-- **Every slot offers every font.** Monospace used to be reachable only from Code, and Handwriting was hidden from Interface. Both slots now list everything, just in a sensible order — Interface still opens on the sans-serifs, Code still opens on the monospaces.
-
-### Notes
-
-- **Two you asked for aren't here.** Morpheus is free for personal use only and can't be shipped in an app that other people download; the closest thing already in the list is Metamorphous. Trebuchet MS is Microsoft's, and Ubuntu — the usual substitute — ships under a licence the library doesn't accept, so it got three lookalikes instead.
-- **Cinzel was already there**, under Titles.
