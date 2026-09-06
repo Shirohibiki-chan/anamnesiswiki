@@ -26,6 +26,29 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
+- **Typing on a new page should dismiss the template grid by itself.** Asked for
+  2026-09-06. A page created blank shows the "what kind of page is this?" grid
+  with a `Skip this — just start writing` link under it, and that link is
+  currently the only way past it without choosing a template. LegendKeeper lets
+  you click into the editor and start typing, and the offer gets out of the way
+  on its own; she wants that. Deferred by her at the time it was raised, so it
+  is here rather than in a phase.
+
+  **The state it needs already exists, but the grid does not read it yet**, and
+  that gap is most of the work. `hideTemplatePrompt` on the node is the "sent
+  away for good" flag, and today only the sidebar's own prompt honours it
+  (`BlockPanel.tsx`); the centre grid is shown purely on the page being `blank`
+  with no tabs (`isUnanswered` in `PageView.tsx`). So the job is three things,
+  none of them new state: make `isUnanswered` respect the flag, get the editor
+  reachable underneath the grid, and have the first keystroke set it.
+
+  **The one thing to be careful of** is that dismissing it must not become the
+  only way out. `schema.ts`'s note on `hideTemplatePrompt` says why: before the
+  flag existed, the prompt was the single route to giving an existing page a
+  template, which is why Add Block carries one too. A page that dismisses itself
+  the first time somebody leans on the keyboard still has to be able to get a
+  template afterwards.
+
 - **A marker on text that could be linked, while she is writing.** The other
   half of `/link page names`, which shipped in Phase 19.5; this is the half that
   shows what *could* be linked without being asked. It wants a ProseMirror
