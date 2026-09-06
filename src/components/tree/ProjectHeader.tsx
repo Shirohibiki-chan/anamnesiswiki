@@ -69,7 +69,8 @@ export function ProjectHeader() {
           <Plus size={12} />
         </button>
       </div>
-      {/* Draws nothing until this world has a universe in it. */}
+      {/* Always drawn, universes or not — it is how you find out they exist.
+          See UniverseSwitcher.tsx. */}
       <UniverseSwitcher />
       {anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>

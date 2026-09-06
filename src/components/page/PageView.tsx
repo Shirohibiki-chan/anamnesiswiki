@@ -2,11 +2,12 @@
 // title + tab strip + placeholder body, and no selection gets EmptyPageView.
 // See docs/plan.md Phase 4.
 import { useState } from "react";
-import { BLANK_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY } from "../../constants/schema";
+import { BLANK_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
+import { useCreatePageIn } from "../../hooks/use-new-page";
 import { NewPageLanding } from "./NewPageLanding";
 import { PageBanner } from "./PageBanner";
 import { PageTabs } from "./PageTabs";
@@ -33,6 +34,7 @@ export function PageView() {
     deleteTab,
     reorderTabs,
   } = useProject();
+  const createPageIn = useCreatePageIn();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
 
@@ -83,12 +85,30 @@ export function PageView() {
         {isUnanswered ? (
           <NewPageLanding node={node} />
         ) : node.tabs.length === 0 ? (
-          <div className="page-view-no-tabs">
-            <p>This page doesn't have any tabs yet.</p>
-            <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={handleAddTab}>
-              Add a tab
-            </button>
-          </div>
+          // A universe is a container, not a page you write in, so the offer
+          // is a page inside it rather than a tab on it. It still comes
+          // through the page shell rather than FolderView, because the title
+          // above is what asks a universe made a second ago what it is called
+          // — FolderView draws its own name and has no way to be edited.
+          node.templateKey === UNIVERSE_TEMPLATE_KEY ? (
+            <div className="page-view-no-tabs">
+              <p>A universe holds one version of your world. Put pages in it, or drag some in from the tree.</p>
+              <button
+                type="button"
+                className="ui-btn ui-btn-lg ui-btn-secondary"
+                onClick={() => createPageIn(node!.id)}
+              >
+                Add a page
+              </button>
+            </div>
+          ) : (
+            <div className="page-view-no-tabs">
+              <p>This page doesn't have any tabs yet.</p>
+              <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={handleAddTab}>
+                Add a tab
+              </button>
+            </div>
+          )
         ) : (
           <>
             <PageTabs

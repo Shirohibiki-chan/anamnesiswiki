@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildTreeData,
   collapseBreadcrumb,
+  convertibleToUniverse,
   createSearchMatcher,
   getAncestorChain,
   getEffectiveColor,
@@ -716,6 +717,24 @@ describe("universes", () => {
       // would root the tree somewhere a universe can never be.
       const nested = byId([canon, node({ id: "inner", name: "Inner", parentId: "canon", templateKey: "universe" })]);
       expect(listUniverses(nested, ["canon"]).map((n) => n.id)).toEqual(["canon"]);
+    });
+  });
+
+  describe("convertibleToUniverse", () => {
+    it("offers every top-level page that isn't one already", () => {
+      expect(convertibleToUniverse(nodes, ["canon", "demonic", "loose"]).map((n) => n.id)).toEqual(["loose"]);
+    });
+
+    it("offers a top-level page whatever its template is", () => {
+      // Her AUs are folders today, but a world whose versions are Location
+      // pages is an ordinary world rather than one to correct first.
+      const place = node({ id: "place", name: "Elsewhere", parentId: null, templateKey: "location" });
+      const withPlace = byId([canon, place]);
+      expect(convertibleToUniverse(withPlace, ["canon", "place"]).map((n) => n.id)).toEqual(["place"]);
+    });
+
+    it("leaves out everything that isn't at the root", () => {
+      expect(convertibleToUniverse(nodes, ["canon", "loose"]).map((n) => n.id)).not.toContain("characters");
     });
   });
 

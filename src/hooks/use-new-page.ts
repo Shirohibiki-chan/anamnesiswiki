@@ -10,7 +10,7 @@
 // button is rendered once per visible row, where a subscription would re-render
 // every row on every keystroke typed into the editor.
 import { useCallback } from "react";
-import { BLANK_TEMPLATE_KEY, UNTITLED_PAGE_NAME } from "../constants/schema";
+import { BLANK_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY, UNTITLED_PAGE_NAME } from "../constants/schema";
 import { getTemplate } from "../services/template-registry";
 import { useHistoryStore } from "../state/history-store";
 import { useProjectStore } from "../state/project-store";
@@ -39,6 +39,36 @@ export function useCreatePageIn(): (parentId: string | null) => string | null {
     // Opening it is the point: the new page is empty and unnamed, so leaving
     // it sitting in the tree for the user to go and find would mean creating a
     // page and then having to work out which one it was.
+    selectNode(node.id);
+    return node.id;
+  }, []);
+}
+
+/**
+ * Makes a new, empty universe at the root and opens it for naming (Phase 22).
+ *
+ * **The view goes back to all universes first, and that is the whole subtlety
+ * here.** A new universe is a top-level page, so making one from inside another
+ * universe's view would put it somewhere the tree is not currently showing —
+ * and the inline rename that follows would be aimed at a row that isn't
+ * rendered, which reads as the button making nothing at all. Landing on all
+ * universes puts the new one on screen among the others, which is also where
+ * you want to be while deciding what to call it.
+ *
+ * Named "Untitled" like any other new page rather than "New universe": the
+ * rename prompt opens on it immediately, and a name that looks deliberate is
+ * one people leave alone.
+ */
+export function useCreateUniverse(): () => string | null {
+  return useCallback(() => {
+    const { project, addNode, selectNode, requestRename, setSelectedUniverse } = useProjectStore.getState();
+    if (!project) return null;
+
+    setSelectedUniverse(null);
+    const node = addNode({ parentId: null, templateKey: UNIVERSE_TEMPLATE_KEY, name: UNTITLED_PAGE_NAME });
+    // Same order as `useCreatePageIn` and for the same reason — the title asks
+    // "am I being named?" once, at mount.
+    requestRename(node.id);
     selectNode(node.id);
     return node.id;
   }, []);

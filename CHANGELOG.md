@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-06 — a way to actually make a universe
+
+### Fixes
+
+- **The universe bar is always there now, even before you've made one**, and it has a **+** beside it. Yesterday it stayed hidden until a universe existed, which meant the only way to make your first one was a right-click menu item you'd have to already know about — so unless someone told you, universes weren't there at all.
+- **The + gives you both ways in.** "New, empty universe" makes a fresh one and opens it so you can name it straight away. Under that is a list of the top-level pages you already have — click one and it becomes a universe, keeping everything inside it. That second one is the one that matters for a world that already exists: your AUs are folders today, and this turns them into universes without moving a single page.
+- **That list has a search box and scrolls**, the same as "Move to" does. A world with a long tail of pages at the top level would otherwise put them in one column running off the bottom of the screen, where the ones past the edge can't be reached at all.
+- **Opening the switcher in a world with no universes explains what they are** instead of showing a list of nothing.
+- **A universe you open says it's a universe.** It used to show "This page doesn't have any tabs yet" with a button offering to add one — which is what a page says, not a container. It now says what a universe is for and offers to add a page inside it.
+
+### Changes
+
+- **The right-click "Turn into a universe" is still there.** It's the shortcut now rather than the way in.
+
 ## 2026-09-06 — one universe at a time
 
 ### Additions
@@ -272,14 +286,3 @@
 - **The picker's Emoji tab is every emoji now — 1870 of them, up from 129.** It used to be a hand-picked list, which is fine right up until you want one nobody thought to pick. They're in the eight groups an emoji keyboard uses, and searching finds them by name, by keyword, or by the `:word:` people type in chat apps. This is everywhere the picker appears, so a page's icon and a meter's markers get the full set too, not just the writing.
 - **A callout with no icon still has somewhere to click.** An empty square appears in the corner while your pointer is over the callout, the same way the colour dot does, so an icon you removed can be put back.
 - **Icons in your writing don't survive an export to LegendKeeper.** An emoji does — it's a character, so it goes out as itself — but a glyph is a drawing and there's nothing in that format to put it in, so it's dropped rather than exported as the word "sword". Everything else about the page exports as it did.
-
-## 2026-09-01 — page text is Nunito now
-
-### Fixes
-
-- **Menus close when you resize the window instead of floating off on their own.** A dropdown works out where to sit at the moment you open it and then stays put, so making the window bigger while one was open left it stranded in the middle of the screen, attached to nothing — easiest to hit with the typeface menu, but every menu in the app did it. They now close if the window changes size; open it again and it comes up in the right place.
-
-### Changes
-
-- **Settings is a panel down the right-hand side now, on every section, and it never moves.** It used to slide over to the right on Theme, Colours, Fonts and Snippets and slide back to the middle for everything else, which meant it sat somewhere different depending on which part of it you were in. Now it's always in the same place: full height, against the right edge, with the sidebar and most of your page still visible beside it. The app there stays undimmed and clickable on every section too, so you can walk to another page and watch a theme land on it while you're still picking. Escape and the × close it; clicking the app no longer does, because that would shut the panel every time you went to look at something.
-- **Pages are written in Nunito instead of Quicksand.** Same rounded, friendly shape, but with a taller lowercase and less gap between letters, so a full page of it reads more settled and takes up a touch less room. Only the writing on a page changed — headings and the rest of the app are the same faces as before, and this is the starting point, so if you'd already picked your own face for writing in Settings, nothing moved.

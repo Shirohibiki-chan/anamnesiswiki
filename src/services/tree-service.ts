@@ -145,6 +145,22 @@ export function listUniverses(nodes: Record<string, Node>, rootOrder: string[]):
 }
 
 /**
+ * The top-level pages that could become a universe — everything at the root
+ * that isn't one already (Phase 22).
+ *
+ * What the "use a page you already have" half of the add menu offers. Any
+ * top-level page qualifies, not only folders: the right-click item has always
+ * been offered on any top-level row, and a world whose AUs are Location pages
+ * rather than folders is an ordinary world, not a mistake to correct first.
+ */
+export function convertibleToUniverse(nodes: Record<string, Node>, rootOrder: string[]): Node[] {
+  const roots = Object.values(nodes).filter(
+    (node) => node.parentId === null && node.templateKey !== UNIVERSE_TEMPLATE_KEY,
+  );
+  return orderSiblings(roots, rootOrder);
+}
+
+/**
  * The universe the tree is showing, or null for all of them.
  *
  * **An id that no longer names a universe reads as null, never as an empty

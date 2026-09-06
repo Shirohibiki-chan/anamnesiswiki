@@ -22,6 +22,9 @@ const WRITTEN_MS = 1500;
 const UNIVERSE = "Hard Cases";
 const OUTSIDE = "Locations";
 
+/** What the empty one made from the "+" gets called. */
+const NEW_UNIVERSE = "Merfolk AU";
+
 async function reload(app: RunningApp): Promise<void> {
   await app.window.evaluate(() => {
     (window as unknown as { __beforeReload?: boolean }).__beforeReload = true;
@@ -40,17 +43,33 @@ async function runRowMenuItem(app: RunningApp, row: string, label: string): Prom
   await clearTreeSearch(app.window);
 }
 
-/** What the switcher button currently reads, or null when there isn't one. */
-async function switcherLabel(app: RunningApp): Promise<string | null> {
-  const button = app.window.locator(".tree-universe-button");
-  if ((await button.count()) === 0) return null;
-  return (await button.first().innerText()).replace(/\s+/g, " ").trim();
+/** What the switcher button currently reads. */
+async function switcherLabel(app: RunningApp): Promise<string> {
+  return (await app.window.locator(".tree-universe-button").first().innerText()).replace(/\s+/g, " ").trim();
 }
 
 async function chooseUniverse(app: RunningApp, name: string): Promise<void> {
   await app.window.locator(".tree-universe-button").first().click();
   await app.window.locator(".tree-universe-menu").waitFor({ state: "visible", timeout: 10_000 });
   await app.window.locator(".tree-universe-menu button").filter({ hasText: name }).first().click();
+  await app.window.waitForTimeout(WRITTEN_MS);
+}
+
+/** The names the switcher's own list is offering. */
+async function switcherOptions(app: RunningApp): Promise<string[]> {
+  await app.window.locator(".tree-universe-button").first().click();
+  await app.window.locator(".tree-universe-menu").waitFor({ state: "visible", timeout: 10_000 });
+  const labels = await app.window.locator(".tree-universe-menu button").allInnerTexts();
+  await app.window.keyboard.press("Escape");
+  await app.window.locator(".tree-universe-menu").waitFor({ state: "hidden", timeout: 10_000 });
+  return labels.map((label) => label.replace(/\s+/g, " ").trim());
+}
+
+/** Opens the "+" beside the switcher and clicks one of its entries. */
+async function addMenuItem(app: RunningApp, label: string): Promise<void> {
+  await app.window.getByRole("button", { name: "New universe", exact: true }).click();
+  await app.window.locator(".tree-universe-menu").waitFor({ state: "visible", timeout: 10_000 });
+  await app.window.locator(".tree-universe-menu button").filter({ hasText: label }).first().click();
   await app.window.waitForTimeout(WRITTEN_MS);
 }
 
@@ -67,21 +86,80 @@ describe("switching universe", () => {
     await app?.close();
   });
 
-  it("draws no switcher in a world with no universes", async () => {
-    // The feature costs nothing to anyone who does not want it, and this is
-    // where that is either true or not.
-    expect(await switcherLabel(app)).toBeNull();
+  it("is there before the world has any universes", async () => {
+    // It was hidden until one existed for a day, and that made the whole
+    // feature reachable only from a right-click item you had to already know
+    // about. The row is the entrance now — if it is missing here, nobody who
+    // has not been told finds universes at all.
+    expect(await switcherLabel(app)).toBe("All universes");
   });
 
-  it("appears once there is a universe, and changes nothing until one is picked", async () => {
+  it("makes one out of a page you already have, from the + beside it", async () => {
     // Set up the page this scenario navigates back to at the end, while the
     // whole tree is still reachable.
     await runRowMenuItem(app, OUTSIDE, "Set as project home");
-    await runRowMenuItem(app, UNIVERSE, "Turn into a universe");
 
+    await addMenuItem(app, UNIVERSE);
+
+    expect(await switcherOptions(app)).toContain(UNIVERSE);
+    // Making one is opt-in: nothing is rearranged until she picks it.
     expect(await switcherLabel(app)).toBe("All universes");
-    // Making one is opt-in: nothing is rearranged until she chooses.
     expect(await visibleTreeRows(app.window)).toContain(OUTSIDE);
+  });
+
+  it("makes a new empty one, and opens it for naming", async () => {
+    await addMenuItem(app, "New, empty universe");
+
+    // It opens with its title already asking what it is called — a new
+    // universe called "Untitled" that you have to go and find is the failure
+    // this avoids.
+    const field = app.window.locator(".page-title-input");
+    await field.waitFor({ state: "visible", timeout: 10_000 });
+    await field.fill(NEW_UNIVERSE);
+    await field.press("Enter");
+    await app.window.waitForTimeout(WRITTEN_MS);
+
+    expect(await switcherOptions(app)).toContain(NEW_UNIVERSE);
+  });
+
+  it("keeps the list of pages to convert on the screen in a world with a lot of them", async () => {
+    // The bug this guards, reported from her own world with a picture: every
+    // top-level page in one column, running off the bottom of the screen, with
+    // the entries past the edge unreachable — a popover is not the page, and
+    // the window does not scroll to it. Fourteen extra roots is comfortably
+    // past what fits.
+    for (let made = 0; made < 14; made++) {
+      await app.window.getByRole("button", { name: "Add top-level page" }).click();
+      await app.window.locator(".page-title-input").waitFor({ state: "visible", timeout: 10_000 });
+      await app.window.keyboard.press("Escape");
+    }
+    await app.window.waitForTimeout(WRITTEN_MS);
+
+    await app.window.getByRole("button", { name: "New universe", exact: true }).click();
+    const list = app.window.locator(".tree-universe-list");
+    await list.waitFor({ state: "visible", timeout: 10_000 });
+
+    const fits = await list.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return {
+        scrolls: element.scrollHeight > element.clientHeight,
+        withinWindow: box.bottom <= window.innerHeight,
+      };
+    });
+    // Both halves, because either one alone can be true while it is broken: a
+    // list can end on screen because it was cut off, and one can scroll and
+    // still hang off the bottom.
+    expect(fits.scrolls).toBe(true);
+    expect(fits.withinWindow).toBe(true);
+
+    // And typing still narrows it, which is what makes a capped list usable
+    // rather than merely contained.
+    await app.window.locator(".tree-move-search-input").fill(UNIVERSE);
+    expect(await app.window.locator(".tree-universe-list button").count()).toBe(0);
+    await app.window.locator(".tree-move-search-input").fill(OUTSIDE);
+    expect(await app.window.locator(".tree-universe-list button").count()).toBe(1);
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForTimeout(300);
   });
 
   it("shows one universe's contents at the root once one is picked", async () => {
