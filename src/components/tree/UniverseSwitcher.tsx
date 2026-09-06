@@ -23,8 +23,8 @@
 // what a universe is by existing. The right-click item stays; it is now the
 // shortcut rather than the entrance.
 import { useMemo, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Layers, Plus, Search } from "lucide-react";
-import { UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Folder, Layers, Plus, Search } from "lucide-react";
+import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { useUniverses, useProjectActions } from "../../hooks/use-project";
 import { useCreateUniverse } from "../../hooks/use-new-page";
 import { NodeIcon } from "../blocks/IconPicker";
@@ -33,7 +33,7 @@ import { TreePopover } from "./TreePopover";
 /** What the top entry says, and what the button reads when nothing is chosen. */
 const ALL_UNIVERSES = "All universes";
 
-type OpenMenu = "switch" | "add" | "shared" | null;
+type OpenMenu = "switch" | "add" | "shared" | "remove" | null;
 
 export function UniverseSwitcher() {
   const { universes, current, convertible, shared } = useUniverses();
@@ -82,6 +82,15 @@ export function UniverseSwitcher() {
   function convert(nodeId: string) {
     close();
     void applyTemplate(nodeId, UNIVERSE_TEMPLATE_KEY);
+  }
+
+  // The exact inverse of `convert`, and the same single call. Nothing is
+  // deleted and nothing moves: the page stops being a universe and is a folder
+  // at the top level again, still holding everything it held. The store clears
+  // the selected/shared pointers if they named it — see its `applyTemplate`.
+  function unmake(nodeId: string) {
+    close();
+    void applyTemplate(nodeId, FOLDER_TEMPLATE_KEY);
   }
 
   return (
@@ -150,6 +159,15 @@ export function UniverseSwitcher() {
                   <Layers size={13} /> Shared universe
                   <ChevronRight size={13} className="tree-context-menu-chevron" />
                 </button>
+                {/* The other half of the "+", and it belongs in the same place
+                    for the same reason that button does. Removing was reachable
+                    only by right-clicking a universe's row — and that row only
+                    exists in the all-universes view, so from inside a universe
+                    there was no way out of it at all. Reported 2026-09-06. */}
+                <button type="button" className="tree-context-menu-submenu" onClick={() => setOpenMenu("remove")}>
+                  <Folder size={13} /> Remove a universe
+                  <ChevronRight size={13} className="tree-context-menu-chevron" />
+                </button>
               </>
             ) : (
               // A one-item menu would look broken. Saying what is missing and
@@ -187,6 +205,33 @@ export function UniverseSwitcher() {
                   <NodeIcon icon={universe.icon} templateKey={universe.templateKey} size={13} />
                   <span className="tree-universe-option-name">{universe.name}</span>
                   {shared?.id === universe.id && <Check size={13} className="tree-universe-tick" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </TreePopover>
+      )}
+
+      {openMenu === "remove" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={close}>
+          <div className="tree-context-menu tree-universe-menu">
+            <button type="button" className="tree-context-menu-back" onClick={() => setOpenMenu("switch")}>
+              <ArrowLeft size={13} /> Remove a universe
+            </button>
+            {/* Said before the click rather than in a dialog after it.
+                "Remove" reads as destructive, and this is the opposite of
+                destructive — so the sentence that makes it safe has to be on
+                screen at the moment you are choosing, not behind a confirm you
+                would learn to dismiss. */}
+            <p className="tree-universe-empty">
+              It stops being a universe and goes back to being an ordinary folder at the top of your world.{" "}
+              <strong>Every page inside it stays exactly where it is.</strong>
+            </p>
+            <div className="tree-universe-list">
+              {universes.map((universe) => (
+                <button key={universe.id} type="button" onClick={() => unmake(universe.id)}>
+                  <NodeIcon icon={universe.icon} templateKey={universe.templateKey} size={13} />
+                  <span className="tree-universe-option-name">{universe.name}</span>
                 </button>
               ))}
             </div>

@@ -221,6 +221,15 @@ export function planDelete(
     rootOrder: project.rootOrder.filter((n) => !removedIds.has(n)),
     childOrder: nextChildOrder,
     homeNodeId: project.homeNodeId && removedIds.has(project.homeNodeId) ? null : project.homeNodeId,
+    // The two universe pointers, for the same reason as `homeNodeId` (Phase
+    // 22). Both are read through guards that treat a dangling id as "none", so
+    // nothing visibly breaks without this — but a stale id left in
+    // `project.json` is a fact about the world that is no longer true, and the
+    // guard is a safety net rather than a licence to write wrong data.
+    selectedUniverseId:
+      project.selectedUniverseId && removedIds.has(project.selectedUniverseId) ? null : project.selectedUniverseId,
+    sharedUniverseId:
+      project.sharedUniverseId && removedIds.has(project.sharedUniverseId) ? null : project.sharedUniverseId,
     pinnedIds: (project.pinnedIds ?? []).filter((pinnedId) => !removedIds.has(pinnedId)),
     selectedId: selectionGone ? null : project.selectedId,
     // A copy of the same node's name, so it goes stale for the same reason.

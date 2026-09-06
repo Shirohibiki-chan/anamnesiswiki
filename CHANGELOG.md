@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-06 — getting rid of a universe
+
+### Fixes
+
+- **You can remove a universe from the switcher now.** It's under **Remove a universe**, next to the **+** that makes them. Turning one back into a folder has been possible since universes existed, but only by right-clicking the universe's row — and that row only exists in the All universes view, so from inside a universe there was no way out of it at all.
+- **It says what will happen before you click, not after.** Removing keeps every page inside; the thing just goes back to being an ordinary folder at the top of your world. "Remove" sounds destructive and this is the opposite, so the sentence is on screen while you're choosing rather than in a box you'd learn to click through.
+- **Removing the universe you're currently in doesn't strand you.** The tree falls back to All universes rather than showing you an empty sidebar rooted at something that isn't a universe any more.
+
+### Changes
+
+- **Internal, nothing visible: deleting or un-making a universe now clears it from your world's saved settings.** Your world remembers which universe you were in and which one is the shared one. Those were left pointing at pages that had stopped being universes — harmless today, because the app checks before using them, but it meant turning that same page back into a universe later would silently make it your current *and* shared one again.
+
 ## 2026-09-06 — a universe for the things that are true everywhere
 
 ### Additions
@@ -263,18 +275,3 @@
 
 - **Add Block inside an infobox lights up only itself.** The highlight used to run almost the whole way across the frame — and not evenly, since it started a few pixels in on the left and ran off the edge on the right. It is a small rounded button now, as wide as its own words, sitting under whatever the frame is holding. The one in the sidebar still spans its panel, because there it is the last row of a list and reads as one.
 - **The infobox menu no longer ends with a Properties heading over nothing.** That section offers the page's own fields that nothing is showing yet, so on a page where every field is already on screen there was a word at the bottom of the menu with an empty space under it, which reads as a list that failed to load. The heading now appears only when there is something under it.
-
-## 2026-09-02 — blocks you can drag narrower
-
-### Additions
-
-- **A block sitting in your page can be dragged narrower.** Take hold of either edge — a small bar appears there when your pointer is over the block — and pull. The block follows, and the number in the corner tells you how much of the page it is taking while you drag.
-- **It sticks to the useful widths on the way past.** Half the page, a third, two thirds, a quarter, three quarters: come near one and it clicks onto it, so two blocks meant to match end up matching. Anywhere else it is free, and stops wherever you let go.
-- **An infobox resizes exactly the same way**, by the same edges.
-- **The width belongs to the block, not to the page it is on.** Drag a block back out to the sidebar and into the page again and it is still the width you made it. The sidebar itself ignores widths — a block squeezed to half of a narrow column would be unusable, so it fills the column there as it always did.
-- **Two ways back to full width**: double-click either edge, or put the keyboard on it and press Home. The left and right arrows step it 5% at a time, so the whole thing works without a precise mouse drag.
-
-### Notes
-
-- **A resize is undone by the panel's undo, not by Ctrl+Z in your writing.** The width is stored on the block itself, which is what lets it survive the trip to the sidebar and back — and that puts it on the same undo as everything else about a block.
-- **The space beside a narrow block stays empty for now.** Putting a second thing next to it is columns, which is the next piece of this.

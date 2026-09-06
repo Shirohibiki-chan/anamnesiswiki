@@ -242,6 +242,23 @@ is below.
   row reads as a *selected* row, and the one thing this phase says must never be
   ambiguous is which universe the page you are typing into belongs to.
 
+- **A universe that stops being one clears the pointers naming it**, in the
+  store's `applyTemplate` and in `planDelete`. Both pointers are read through
+  guards that treat a dangling id as "none", so leaving them looks fine — and
+  then bites on the day the *same page* is turned back into a universe, which
+  would silently restore it as the one being worked in and the one holding the
+  shared lore. Deleting changes the id's meaning by removing it; un-making
+  changes its meaning while keeping it, which is the case the guard cannot
+  cover. **The guard is a safety net, not a licence to write wrong data.**
+
+- **Every way of managing a universe has to work from inside one.** The tree's
+  row menu is not reachable while that universe is what the tree is rooted at —
+  there is no row, because its *contents* are the tree — so anything offered
+  only there is unreachable from the one place you are most likely to want it.
+  This was true of removing a universe for a day (reported 2026-09-06) and of
+  making one before that. The switcher is the surface that is always present;
+  new universe-level actions belong there, with the row menu as the shortcut.
+
 - **`sharedUniverseId` is a pointer on the project, not a flag on the node**, so
   exactly one universe can be it. Two universes both claiming to be shared has
   no sensible rendering — two always-visible sections, neither of them "the"

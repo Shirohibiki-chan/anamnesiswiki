@@ -7,6 +7,7 @@ import {
   createProject,
   DEFAULT_STATUS_OPTIONS,
   FOLDER_TEMPLATE_KEY,
+  UNIVERSE_TEMPLATE_KEY,
   type Block,
   type BlockKind,
   type CollectionSource,
@@ -1773,6 +1774,30 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         updatedAt: Date.now(),
       };
       const nextNodes = { ...nodesAfter, [nodeId]: updated };
+
+      // A page that stops being a universe stops being *this world's* selected
+      // or shared one (Phase 22). Both are read through guards that already
+      // treat a dangling id as "none", so leaving them would look fine today —
+      // and then bite the day the same page is turned back into a universe,
+      // which would silently restore it as the one being worked in and the one
+      // holding the shared lore. The id never changed; only what it means did.
+      const wasUniverse = existing.templateKey === UNIVERSE_TEMPLATE_KEY;
+      const stillUniverse = templateKey === UNIVERSE_TEMPLATE_KEY;
+      const { project: projectNow } = get();
+      if (wasUniverse && !stillUniverse && projectNow) {
+        const clearedProject: Project = {
+          ...projectNow,
+          ...(projectNow.selectedUniverseId === nodeId ? { selectedUniverseId: null } : {}),
+          ...(projectNow.sharedUniverseId === nodeId ? { sharedUniverseId: null } : {}),
+        };
+        if (clearedProject !== projectNow) {
+          set({ project: clearedProject });
+          scheduleSave(PROJECT_META_SAVE_KEY, () =>
+            fsService.saveProject(rootPathAfter, clearedProject).then(markSaved),
+          );
+        }
+      }
+
       set({ nodes: nextNodes });
 
       // Not a plain save: a template carries whether the node stores itself as
