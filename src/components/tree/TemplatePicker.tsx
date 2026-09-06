@@ -7,7 +7,7 @@
 // then written in, deciding later what it is. A page being made picks from
 // components/page/NewPageLanding.tsx instead, which is the same list laid out
 // for a whole column rather than a popover.
-import { TEMPLATE_KEYS } from "../../constants/schema";
+import { PAGE_TEMPLATE_KEYS } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { useTemplates } from "../../hooks/use-templates";
 
@@ -20,7 +20,7 @@ type TemplatePickerProps = {
 
 export function TemplatePicker({ onSelect, excludeKeys = [] }: TemplatePickerProps) {
   const { getLabel } = useTemplates();
-  const keys = TEMPLATE_KEYS.filter((key) => !excludeKeys.includes(key));
+  const keys = PAGE_TEMPLATE_KEYS.filter((key) => !excludeKeys.includes(key));
 
   return (
     <div className="tree-template-picker">

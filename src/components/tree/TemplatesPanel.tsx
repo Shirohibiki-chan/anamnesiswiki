@@ -35,7 +35,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronRight, FilePlus, GripVertical, RotateCcw, X } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { getTemplateIcon } from "../../constants/icons";
-import { TEMPLATE_KEYS } from "../../constants/schema";
+import { PAGE_TEMPLATE_KEYS } from "../../constants/schema";
 import { useCustomTemplateTree, useProjectActions } from "../../hooks/use-project";
 import { useBuiltInTemplateStates, useOpenTemplateId, useTemplateActions } from "../../hooks/use-template-editing";
 import { useCreatePageFromTemplate } from "../../hooks/use-new-page";
@@ -123,7 +123,7 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
         worlds keep the original.
       </p>
       <ul className="tree-templates-list">
-        {TEMPLATE_KEYS.map((key) => {
+        {PAGE_TEMPLATE_KEYS.map((key) => {
           const state = builtInStates[key];
           return (
             <BuiltInRow

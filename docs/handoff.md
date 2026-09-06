@@ -159,6 +159,30 @@ is below.
   `filesystem-service.ts`'s `planRelocations` for the other half: this plans the
   graph, that plans the paths.
 
+- **A directory-stored node's marker file is named after what the node *is*,
+  and changing that has to be planned as a rename.** `_folder.json` for a
+  folder, `_page.json` for everything else — so a folder given any other
+  template keeps the same directory, the same name and the same parent while
+  the file inside it has to move. `planRelocations` tests for that
+  (`markerFileChanged`) alongside the flat-to-directory conversion it has
+  always tested for. **Without it the bug is silent and it eats work:** the
+  save wrote `_page.json` next to a `_folder.json` nobody removed, `markerFileOf`
+  prefers `_folder.json`, and the world came back with the page as a folder
+  again and everything written to it sitting unread in the file beside it. It
+  had been reachable for as long as a folder could be given a template and was
+  found on 2026-09-05, when Phase 22's `Turn into a universe` — which converts a
+  folder every time — made it happen on the first try.
+
+- **A universe never leaves the root** (Phase 22). `planMove` refuses any plan
+  that would file one inside something and refuses it *whole*, so a mixed
+  selection is not quietly halved; `moveDestinations` offers one nowhere, so the
+  refusal is never a line in a menu you can pick and watch do nothing. Both are
+  the same rule and both are tested — a universe that could nest is a folder,
+  which is the shape it exists to replace. The template key is not in any
+  picker either (`PAGE_TEMPLATE_KEYS`); the way one is made is the right-click
+  item, which reads the *stored* parent rather than the row's depth on screen,
+  because the tree will soon be drawing a universe's children at its root.
+
 - **A duplicated page's picture is copied on disk before the plan is built.**
   `planDuplicate` takes the new filenames as an argument rather than inventing
   them, because copying a file is I/O and the service does none. A clone must

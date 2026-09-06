@@ -17,8 +17,27 @@ export const BLANK_TEMPLATE_KEY = "blank";
 // filename, and an empty one has nowhere to be written.
 export const UNTITLED_PAGE_NAME = "Untitled";
 
+/**
+ * A top-level container for one version of the world — Canon, Demonic AU,
+ * Merfolk AU (Phase 22). It is a template key rather than a field of its own
+ * so a universe stays an ordinary directory of pages on disk; nothing about
+ * how a page inside one is read or written changes.
+ *
+ * **The rules that make it not-a-folder live outside this constant.** A
+ * universe only ever sits at the root — `planMove` refuses to file one inside
+ * anything, and `moveDestinations` offers it nowhere else — and it is not
+ * offered in any template picker, because the way one is made is `Turn into a
+ * universe` on a top-level page's right-click menu. A folder that could sit
+ * anywhere and nest into anything is exactly how the `AUs` wrapper ended up
+ * four levels deep, which is what this replaces.
+ */
+export const UNIVERSE_TEMPLATE_KEY = "universe";
+
 // Canonical order used in the New Page picker. See docs/constants-and-theming.md.
+// `universe` is in this list so it is a real template like any other — the
+// pickers filter it back out themselves rather than it being half-registered.
 export const TEMPLATE_KEYS = [
+  "universe",
   "folder",
   "character",
   "race",
@@ -34,6 +53,18 @@ export const TEMPLATE_KEYS = [
   "note",
   "blank",
 ] as const;
+
+/**
+ * The templates that describe a *page* — every key above except `universe`.
+ *
+ * This is what the New Page screen, the properties panel's picker and the
+ * Templates rail all list. A universe is a container for a version of the
+ * world rather than a kind of page: it has no tabs to start you off and no
+ * shape to customise, and offering it beside Character and Location would
+ * make it a folder with a different name. One is made by turning a top-level
+ * page into one — see UNIVERSE_TEMPLATE_KEY.
+ */
+export const PAGE_TEMPLATE_KEYS = TEMPLATE_KEYS.filter((key) => key !== UNIVERSE_TEMPLATE_KEY);
 
 /**
  * `species` was renamed to `race` on 2026-08-28. The word had to move: a

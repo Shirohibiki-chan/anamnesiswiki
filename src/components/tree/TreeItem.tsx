@@ -6,7 +6,7 @@ import { useState, type CSSProperties } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { ChevronDown, ChevronRight, Home, MoreHorizontal, Plus } from "lucide-react";
 import { TREE_INDENT } from "../../constants/layout";
-import { FOLDER_TEMPLATE_KEY } from "../../constants/schema";
+import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { getPaletteHex } from "../../constants/palette";
 import { useIsPinned, useNode, useProjectActions, useProjectHomeId } from "../../hooks/use-project";
 import {
@@ -36,6 +36,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // typed into the editor.
   const fullNode = useNode(node.id);
   const {
+    applyTemplate,
     duplicateNodes,
     deleteNodes,
     moveNodes,
@@ -70,11 +71,22 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
 
   if (!fullNode) return null;
 
-  const isFolder = fullNode.templateKey === FOLDER_TEMPLATE_KEY;
+  // A universe is a container the same way a folder is, so it wears the same
+  // full-row tint rather than a page's icon-only one. Without this a coloured
+  // folder loses its colour off the row the moment it is turned into one, which
+  // reads as the conversion having thrown something away.
+  const isContainer =
+    fullNode.templateKey === FOLDER_TEMPLATE_KEY || fullNode.templateKey === UNIVERSE_TEMPLATE_KEY;
+  // Read off the *stored* parent, never off the row's depth on screen: once
+  // the tree is showing one universe at a time (Phase 22), the pages inside it
+  // are drawn at the tree's root while still being someone's children, and
+  // offering to turn one of those into a universe would nest one.
+  const universeAction: "make" | "unmake" | null =
+    fullNode.parentId !== null ? null : fullNode.templateKey === UNIVERSE_TEMPLATE_KEY ? "unmake" : "make";
   const { color: effectiveKey, isOwner } = effective;
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
   const ownHex = getPaletteHex(fullNode.color);
-  const showFolderTint = isFolder && !!effectiveHex;
+  const showFolderTint = isContainer && !!effectiveHex;
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isProjectHome = homeNodeId === node.id;
   // Dimmed whether it's hidden itself or sitting under something that is —
@@ -411,7 +423,14 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
       )}
       {openPopover === "move" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
-          <MoveMenu destinations={destinations} onSelect={moveTo} onBack={() => setOpenPopover("menu")} />
+          <MoveMenu
+            destinations={destinations}
+            onSelect={moveTo}
+            nowhereNote={
+              universeAction === "unmake" ? "A universe stays at the top level — it's what makes it one." : undefined
+            }
+            onBack={() => setOpenPopover("menu")}
+          />
         </TreePopover>
       )}
       {openPopover === "menu" && anchorRect && (
@@ -426,6 +445,15 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             selectionCount={selectionCount}
             fileManagerName={fileManagerName}
             hasChildren={hasChildren}
+            universeAction={universeAction}
+            // The whole conversion is `applyTemplate`'s existing swap: a
+            // universe seeds no tabs and no properties, so nothing the page
+            // already holds is replaced, and any template field left without a
+            // home becomes a custom property rather than going quiet. See the
+            // store's applyTemplate and §Template swaps.
+            onToggleUniverse={() =>
+              void applyTemplate(node.id, universeAction === "unmake" ? FOLDER_TEMPLATE_KEY : UNIVERSE_TEMPLATE_KEY)
+            }
             canSort={(node.children?.length ?? 0) > 1}
             onRename={() => void node.edit()}
             onDuplicate={() => void duplicateNodes(targetIds())}

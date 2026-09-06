@@ -9,6 +9,7 @@ import {
   FileText,
   Flag,
   Folder as FolderIcon,
+  Globe,
   MapPin,
   Package,
   PawPrint,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 export const TEMPLATE_ICONS: Record<string, LucideIcon> = {
+  universe: Globe,
   folder: FolderIcon,
   character: User,
   race: PersonStanding,

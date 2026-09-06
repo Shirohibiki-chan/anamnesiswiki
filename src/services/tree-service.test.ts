@@ -639,6 +639,25 @@ describe("moveDestinations", () => {
     expect(found.find((d) => d.id === "au-valera")?.path).toEqual(["AUs"]);
   });
 
+  // Phase 22. `planMove` refuses the move as well; this is the half that keeps
+  // the refusal from being a line in the menu you can pick and watch do
+  // nothing.
+  it("offers a universe nowhere but the project root", () => {
+    const universe = node({ id: "demonic", name: "Demonic AU", parentId: null, templateKey: "universe" });
+    const withUniverse = byId([canon, characters, valera, places, aus, auValera, universe]);
+    const found = moveDestinations(["demonic"], withUniverse, [...rootOrder, "demonic"], childOrder, "Valeraverse");
+    // Empty rather than [null]: it is already at the root, and the root drops
+    // out of its own menu the same way a page's current parent does.
+    expect(found).toEqual([]);
+  });
+
+  it("offers nothing but the root for a selection a universe is caught up in", () => {
+    const universe = node({ id: "demonic", name: "Demonic AU", parentId: null, templateKey: "universe" });
+    const withUniverse = byId([canon, characters, valera, places, aus, auValera, universe]);
+    const found = moveDestinations(["demonic", "valera"], withUniverse, [...rootOrder, "demonic"], childOrder, "Valeraverse");
+    expect(found.map((d) => d.id)).toEqual([null]);
+  });
+
   it("returns nothing when no id names a page", () => {
     expect(moveDestinations(["gone"], nodes, rootOrder, childOrder, "Valeraverse")).toEqual([]);
   });

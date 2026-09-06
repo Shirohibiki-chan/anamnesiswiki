@@ -1528,18 +1528,38 @@ export function planRelocations(
     const wasDirectory = usesDirectoryStorage(before, indexBefore.parentIds);
     const isDirectory = usesDirectoryStorage(after, indexAfter.parentIds);
     const storageShapeChanged = wasDirectory !== isDirectory;
-    if (!ownSegmentChanged && !storageShapeChanged && before.parentId === after.parentId) continue;
+    // A directory-stored node keeps its marker under one of two names —
+    // `_folder.json` for a folder, `_page.json` for everything else — so a
+    // folder becoming any other template renames the file inside a directory
+    // that is otherwise untouched. Nothing above notices that: the name is the
+    // same, the parent is the same, and both sides are directories.
+    //
+    // **The bug this fixes is silent and it reverts her work.** Without it the
+    // save wrote `_page.json` beside a `_folder.json` nobody removed, and
+    // `markerFileOf` reads `_folder.json` first — so the page came back as a
+    // folder the next time the world was opened, with the real content sitting
+    // unread in the file next to it. Reachable since folders could be given a
+    // template at all, and reached immediately by Phase 22's `Turn into a
+    // universe`, which converts a folder every time.
+    const markerFileChanged = wasDirectory && isDirectory && ownMetaFileName(before) !== ownMetaFileName(after);
+    if (!ownSegmentChanged && !storageShapeChanged && !markerFileChanged && before.parentId === after.parentId) {
+      continue;
+    }
 
     // A conversion moves the page file into (or out of) a directory of its own,
     // so both sides are file paths. `applyRelocations` makes the parent
     // directory before every rename, which is what creates `New Note/` here.
-    if (storageShapeChanged) {
+    // A marker rename is the same shape of operation — one file to another —
+    // which is why it shares the branch rather than getting one of its own.
+    if (storageShapeChanged || markerFileChanged) {
       const oldSegments = ownFileUnit(before, indexBefore);
       plan.push({
         oldSegments,
         newSegments: ownFileUnit(after, indexAfter),
         // Going back to flat empties the directory the page file just left.
-        ...(wasDirectory ? { pruneDir: oldSegments.slice(0, -1) } : {}),
+        // A marker rename never does: the directory stays, and it is still
+        // holding this node's children.
+        ...(wasDirectory && !isDirectory ? { pruneDir: oldSegments.slice(0, -1) } : {}),
       });
       continue;
     }

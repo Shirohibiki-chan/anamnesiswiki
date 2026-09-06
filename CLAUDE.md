@@ -156,6 +156,8 @@ Templates live in `src/services/template-registry.ts` as a plain data object —
 
 **Thirteen templates as of 2026-08-28** (2026-08-28 added Country, Creature, Technology, Scene and Quest, and renamed Species to Race). The rename is the one with a tail: pages written before it still say `species` on disk, and `readNodeFile` translates via `LEGACY_TEMPLATE_KEYS` on the way in rather than rewriting anyone's files. Nothing else in the app should know that word. **Race and Creature are a deliberate pair** — a Creature template for animals is what let Race stop meaning biology, which is why "Species" read as the animal one.
 
+**`universe` is a fourteenth key and not a fourteenth template** (Phase 22, 2026-09-05). It is a top-level container for one version of the world, so it has no tabs, no properties and no place in any picker — `PAGE_TEMPLATE_KEYS` is the list every picker uses and it is `TEMPLATE_KEYS` minus this one. It only ever sits at the root; `docs/handoff.md` §Storage has the rule and the marker-file rename that goes with it.
+
 ## LegendKeeper Import/Export
 
 `.lk` files are gzipped JSON with content as ProseMirror JSON. **`docs/lk-format.md` has the full field mapping, the block translation table, and the current template-inference rules** — read it before touching import/export rather than working from memory.

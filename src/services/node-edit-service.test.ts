@@ -148,6 +148,39 @@ describe("planMove", () => {
     expect(plan.project.rootOrder).toEqual(["canon", "sword", "aus"]);
   });
 
+  // Phase 22. A universe is a top-level container for one version of the
+  // world, and a universe filed inside a folder is just a folder — which is
+  // the shape it exists to replace.
+  it("refuses to file a universe inside anything", () => {
+    const { nodes, project } = world();
+    const withUniverse = { ...nodes, canon: { ...nodes.canon, templateKey: "universe" } };
+    expect(planMove(withUniverse, project, ["canon"], "aus", 0, NOW)).toBeNull();
+  });
+
+  it("still lets a universe be reordered at the root", () => {
+    const { nodes, project } = world();
+    const withUniverse = { ...nodes, canon: { ...nodes.canon, templateKey: "universe" } };
+    const plan = planMove(withUniverse, project, ["canon"], null, 1, NOW)!;
+    expect(plan.project.rootOrder).toEqual(["aus", "canon"]);
+  });
+
+  it("refuses the whole drop rather than splitting a selection a universe is in", () => {
+    const { nodes, project } = world();
+    const withUniverse = { ...nodes, canon: { ...nodes.canon, templateKey: "universe" } };
+    // The alternative — move `bob`, leave `canon` — takes a selection the
+    // person dragging it believes is one thing and quietly halves it.
+    expect(planMove(withUniverse, project, ["canon", "bob"], "aus", 0, NOW)).toBeNull();
+  });
+
+  it("lets an ordinary page be dropped into a universe", () => {
+    const { nodes, project } = world();
+    const withUniverse = { ...nodes, canon: { ...nodes.canon, templateKey: "universe" } };
+    // The rule is about where a universe *goes*, not about what it holds —
+    // holding pages is the entire point of one.
+    const plan = planMove(withUniverse, project, ["demonic"], "canon", 0, NOW)!;
+    expect(plan.nodes.demonic.parentId).toBe("canon");
+  });
+
   it("stamps updatedAt on what moved, and leaves everything else alone", () => {
     const { nodes, project } = world();
     const plan = planMove(nodes, project, ["bob"], "aus", 0, NOW)!;
