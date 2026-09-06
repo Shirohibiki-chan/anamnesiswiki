@@ -183,6 +183,18 @@ is below.
   item, which reads the *stored* parent rather than the row's depth on screen,
   because the tree will soon be drawing a universe's children at its root.
 
+- **The universe row is always drawn, and that is a correction, not a
+  preference.** It was hidden until a world had a universe — the reasoning
+  being that the feature should cost nothing to anyone who did not want it —
+  and the user's answer on the day it shipped was that this made the whole
+  thing undiscoverable: with the row hidden, the only way to a first universe
+  was a right-click item you had to already know was there. **Do not make it
+  conditional again.** The "+" beside it is the entrance and offers both halves
+  — a new empty one, and a list of the top-level pages you already have — and
+  the second half is what a world like hers actually needs, since her AUs are
+  folders today and converting is the difference between a click and a manual
+  migration. The right-click item is now the shortcut, not the way in.
+
 - **"The top of the tree" is no longer "the project root"** (Phase 22).
   `useTreeData`'s `treeRootId` is the one answer — the focused node while
   focused, else the selected universe, else the project — and anything acting
@@ -206,6 +218,12 @@ is below.
   with no row anywhere is how you end up editing the wrong Valera. A page in no
   universe sends the tree back to all of them, which is the only view that can
   show both it and where you came from.
+
+- **Making a new universe drops the view back to all universes first**
+  (`useCreateUniverse`). A new universe is a top-level page, so creating one
+  from inside another universe's view files it somewhere the tree is not
+  showing — and the rename prompt that follows would be aimed at a page you
+  cannot see, which reads as the button having done nothing.
 
 - **`selectedUniverseId` is read through `selectedUniverse`, never directly.**
   An id that no longer names a root universe — deleted, or turned back into a

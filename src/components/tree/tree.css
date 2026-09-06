@@ -74,10 +74,12 @@
 /* --- ProjectHeader --- */
 
 /* A column rather than a row since Phase 22: the world's name is the first
-   line and the universe switcher, when there is one, is the second. With no
-   universes there is only the one line and `min-height` keeps this exactly the
-   height `.tree-panel-head` is in every other panel — a world that has never
-   made a universe is not moved by this existing. */
+   line and the universe switcher is the second. The switcher row is always
+   drawn — see UniverseSwitcher.tsx for why it stopped being conditional — so
+   this header is reliably taller than `.tree-panel-head` is in the other
+   panels. That is a fixed difference rather than one that appears and
+   disappears, which is the half that matters: a header that changed height
+   with the state of the world would move the search box under it. */
 .tree-project-header {
   position: relative;
   display: flex;
@@ -101,8 +103,8 @@
 
 .tree-universe-switcher {
   display: flex;
-  /* Sits under the name and indents to line up with the name's text rather
-     than with the house icon beside it, so the two lines read as one block. */
+  align-items: center;
+  gap: var(--space-xs);
   padding: 0 0 var(--space-sm);
 }
 
@@ -110,7 +112,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  width: 100%;
+  /* Takes the row and leaves the "+" its own width, so a long universe name
+     ellipses rather than pushing the way to make a new one off the edge. */
+  flex: 1;
   min-width: 0;
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid transparent;
@@ -159,6 +163,41 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The "use a page you already have" list, capped and scrolling.
+   **The cap is the load-bearing part, not the search field above it.** Her own
+   world has a long tail of pages at the root, and the first version of this
+   listed every one of them in a single column that ran off the bottom of the
+   screen — with the entries past the edge unreachable, because a popover is
+   not the page and the window does not scroll to it. Filtering makes a long
+   list quick to use; only a height makes it possible to use at all.
+   16rem is about ten rows, which is enough to look like a list you scroll
+   rather than one that got cut off. */
+.tree-universe-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+/* The switcher's menu in a world with no universes yet. Sized and spaced like
+   a menu item rather than a heading — it is a sentence, and cramming it into
+   the heading's letter-spaced small caps would make it unreadable. */
+.tree-universe-empty {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  max-width: 240px;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+.tree-universe-empty strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 /* Right-aligned so the ticks line up in a column down the edge of the menu
@@ -776,6 +815,10 @@ button.tree-path-crumb:hover {
   width: 11rem;
 }
 
+/* Shared by the two popovers that pick a page out of a list — the Move to
+   submenu and the universe switcher's "+" menu. Named after the first one for
+   the ordinary reason; renaming it now would churn a component and a scenario
+   that both work. */
 .tree-move-search {
   position: relative;
   display: flex;

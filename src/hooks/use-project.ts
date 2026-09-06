@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
 import { buildTemplateTree, listTemplates, type TemplateTreeItem } from "../services/template-library";
-import { listUniverses, selectedUniverse } from "../services/tree-service";
+import { convertibleToUniverse, listUniverses, selectedUniverse } from "../services/tree-service";
 import type { Node } from "../constants/schema";
 
 // Subscribes to the *whole* store: any change anywhere re-renders the caller.
@@ -66,13 +66,18 @@ export function useProjectActions() {
  * `current` is null both for "all universes" and for a stored id that no
  * longer names one; the switcher shows the same thing either way, and
  * `selectedUniverse` is where that equivalence is decided.
+ *
+ * `convertible` is what the add menu offers as "use a page you already have".
  */
-export function useUniverses(): { universes: Node[]; current: Node | null } {
+export function useUniverses(): { universes: Node[]; current: Node | null; convertible: Node[] } {
   const universes = useProjectStore(
     useShallow((state) => listUniverses(state.nodes, state.project?.rootOrder ?? [])),
   );
+  const convertible = useProjectStore(
+    useShallow((state) => convertibleToUniverse(state.nodes, state.project?.rootOrder ?? [])),
+  );
   const current = useProjectStore((state) => selectedUniverse(state.nodes, state.project?.selectedUniverseId));
-  return { universes, current };
+  return { universes, current, convertible };
 }
 
 // One node, by id. Re-renders only when *that* node's object changes — so
