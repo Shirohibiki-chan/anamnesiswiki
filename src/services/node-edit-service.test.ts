@@ -91,6 +91,46 @@ describe("orderedSiblingIds", () => {
   });
 });
 
+// Phase 22. Both are read through guards that treat a dangling id as "none",
+// so a stale one is invisible until the day it isn't — which makes these the
+// kind of test that only ever fails for a good reason.
+describe("planDelete and the universe pointers", () => {
+  function worldWithUniverse() {
+    const { nodes, project } = world();
+    return {
+      nodes: { ...nodes, canon: { ...nodes.canon, templateKey: "universe" } },
+      project: { ...project, selectedUniverseId: "canon", sharedUniverseId: "canon" },
+    };
+  }
+
+  it("clears the selected universe when it is deleted", () => {
+    const { nodes, project } = worldWithUniverse();
+    const plan = planDelete(nodes, project, ["canon"])!;
+    expect(plan.project.selectedUniverseId).toBeNull();
+  });
+
+  it("clears the shared universe when it is deleted", () => {
+    const { nodes, project } = worldWithUniverse();
+    const plan = planDelete(nodes, project, ["canon"])!;
+    expect(plan.project.sharedUniverseId).toBeNull();
+  });
+
+  it("leaves both alone when something else is deleted", () => {
+    const { nodes, project } = worldWithUniverse();
+    const plan = planDelete(nodes, project, ["aus"])!;
+    expect(plan.project.selectedUniverseId).toBe("canon");
+    expect(plan.project.sharedUniverseId).toBe("canon");
+  });
+
+  it("clears them when the universe goes as part of an ancestor's subtree", () => {
+    // `alice` is inside canon, so deleting canon takes it too — the pointer
+    // has to follow the whole removal set, not just the ids that were asked for.
+    const { nodes, project } = worldWithUniverse();
+    const plan = planDelete(nodes, project, ["canon", "bob"])!;
+    expect(plan.project.selectedUniverseId).toBeNull();
+  });
+});
+
 describe("planMove", () => {
   it("reparents, and puts the page where the drop asked for", () => {
     const { nodes, project } = world();
