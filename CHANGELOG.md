@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-05 — universes, the first piece
+
+### Additions
+
+- **You can turn a top-level page into a universe.** Right-click any page sitting at the top of the tree and pick "Turn into a universe" — Canon, Demonic AU, Merfolk AU, one for each version of the world. Nothing already in it moves, and everything written on that page stays exactly where it was.
+- **A universe can only sit at the top.** You can't drag one into a folder, and "Move to" on one says so instead of offering you somewhere to put it. That's the whole difference between a universe and a folder: a folder can end up anywhere, which is how the AUs folder got four levels deep in the first place.
+- **"Turn back into a folder" is in the same menu**, on anything that's already a universe. Nothing about this is one-way.
+
+### Changes
+
+- **A universe isn't in any of the template lists.** It isn't a kind of page — it has no tabs of its own and nothing to fill in — so the New Page screen, the properties panel's picker and the Templates rail all leave it out. Turning a top-level page into one is the only way to make one.
+
+**What this doesn't do yet:** the tree still shows everything at once. The switcher that puts one universe on screen at a time, the Shared section and the "All universes" view are the next pieces — so for now making one is a label and a rule, not a change to what you're looking at.
+
+### Fixes
+
+- **Turning a folder into anything else used to quietly undo itself.** A folder keeps its own data in a file called `_folder.json` and every other kind of page uses `_page.json`, and changing what a folder was left the old file sitting there. The app reads that one first, so the next time you opened the world the page was a folder again and everything you'd done to it was in the file next to it, unread. This has been possible for as long as folders could be given a template; it's fixed, and the file is renamed properly now.
+
 ## 2026-09-05 — the bar above the page is gone
 
 ### Changes
@@ -264,13 +282,3 @@
 
 - **Two you asked for aren't here.** Morpheus is free for personal use only and can't be shipped in an app that other people download; the closest thing already in the list is Metamorphous. Trebuchet MS is Microsoft's, and Ubuntu — the usual substitute — ships under a licence the library doesn't accept, so it got three lookalikes instead.
 - **Cinzel was already there**, under Titles.
-
-## 2026-08-30 — Settings gets out of the way while you pick colours
-
-### Fixes
-
-- **The Settings window becomes a panel down the right-hand side on Theme, Colours, Fonts and Snippets.** Full height, flush to the edge, instead of a box filling the middle of the window — so the sidebar, the page and most of what you're changing stay in view while you change it.
-- **The font pickers aren't cut off down their left edge any more.** Clicking or tabbing into one drew a highlight around it with the left side sliced flat off, because the panel they sit in was trimming anything that reached past its edge. Older than this change, and it happened at any window size; it just got easier to see.
-- **The app behind it isn't dimmed any more on those four sections.** It was under a flat 50% black wash, which meant the strip you could see wasn't showing the colour you'd just picked — it was showing that colour at half brightness. Picking colours through it was guesswork.
-- **You can click the app while it's open.** Walk to another page, open a folder, look at a different screen — the window stays where it is instead of closing. Escape and the × still close it.
-- **The other sections are unchanged**, and so is everything on a window narrower than about 1150px, where moving the dialog aside wouldn't leave enough room to see anything.

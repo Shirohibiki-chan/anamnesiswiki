@@ -19,7 +19,7 @@
 // See filesystem-service.ts's `planRelocations` for the other half of the
 // story: this plans the *graph*, that plans the *paths*.
 import { orderSiblings, selectionRoots } from "./tree-service";
-import type { Block, Node, Project } from "../constants/schema";
+import { UNIVERSE_TEMPLATE_KEY, type Block, type Node, type Project } from "../constants/schema";
 
 /**
  * The sibling order as the tree is actually showing it right now — the stored
@@ -116,6 +116,15 @@ export type MovePlan = {
  * can span parents, and every old list that mentions a moved id is pruned —
  * a stale entry left behind would pull a page back to an old position the next
  * time it came home.
+ *
+ * **A universe never leaves the root, and the whole move is refused rather
+ * than trimmed** (Phase 22). Dropping one into a folder would make it a folder
+ * — the thing a universe exists to stop being — so there is no version of the
+ * gesture worth honouring. Refusing the plan outright is what a mixed
+ * selection needs too: quietly moving the ordinary pages and leaving the
+ * universe behind splits a selection the person dragging it believes is one
+ * thing. Reordering universes among themselves at the root is untouched, since
+ * that is a move to `null`.
  */
 export function planMove(
   nodes: Record<string, Node>,
@@ -128,6 +137,7 @@ export function planMove(
   const moved = ids.filter((id) => nodes[id]);
   if (moved.length === 0) return null;
   if (newParentId !== null && !nodes[newParentId]) return null;
+  if (newParentId !== null && moved.some((id) => nodes[id].templateKey === UNIVERSE_TEMPLATE_KEY)) return null;
 
   const movingSet = new Set(moved);
   const nextNodes = { ...nodes };

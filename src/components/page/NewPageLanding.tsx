@@ -10,7 +10,7 @@
 // "Blank" isn't in the grid because the page already is blank. It's the skip
 // button underneath, and all it does is give the page somewhere to write —
 // which is the difference between an unanswered question and an answered one.
-import { BLANK_TEMPLATE_KEY, TEMPLATE_KEYS, type Node } from "../../constants/schema";
+import { BLANK_TEMPLATE_KEY, PAGE_TEMPLATE_KEYS, type Node } from "../../constants/schema";
 import { X } from "lucide-react";
 import { getTemplateIcon } from "../../constants/icons";
 import { useCustomTemplates, useProjectActions } from "../../hooks/use-project";
@@ -28,7 +28,7 @@ export function NewPageLanding({ node }: { node: Node }) {
   const { confirmDestructive } = useDialogs();
   const { getLabel } = useTemplates();
 
-  const choices = TEMPLATE_KEYS.filter((key) => key !== BLANK_TEMPLATE_KEY);
+  const choices = PAGE_TEMPLATE_KEYS.filter((key) => key !== BLANK_TEMPLATE_KEY);
 
   // Asked before it happens, unlike most things here — every other button on
   // this screen is a choice you can change by pressing a different one, and

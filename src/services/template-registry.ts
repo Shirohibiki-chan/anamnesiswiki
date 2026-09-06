@@ -111,6 +111,18 @@ function secret(value: string): BlockSeed {
 // independent of this file. Reading LK's shape and writing our own are two
 // different jobs, and they must not be made to share a list.
 export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
+  // Phase 22. No tabs and no properties on purpose: a universe is a container
+  // for one version of the world, not a page about anything, and seeding it
+  // with a scaffold would make it a page you are expected to write in. It is
+  // never offered in a picker — see UNIVERSE_TEMPLATE_KEY in constants/schema
+  // for how one is made and why it can only sit at the root.
+  universe: {
+    key: "universe",
+    label: "Universe",
+    alwaysDirectory: true,
+    tabs: [],
+    properties: [],
+  },
   folder: {
     key: "folder",
     label: "Folder",

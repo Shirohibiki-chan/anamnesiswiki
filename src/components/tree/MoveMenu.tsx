@@ -19,10 +19,17 @@ type MoveMenuProps = {
   destinations: MoveDestination[];
   /** null is the project root. */
   onSelect: (destinationId: string | null) => void;
+  /**
+   * What to say instead of the default when there is nowhere to go, for the
+   * cases where the emptiness is a rule rather than a small world. A universe
+   * is the one that has it (Phase 22): "nowhere else to put this yet" invites
+   * someone to make a folder and try again, and no folder will ever work.
+   */
+  nowhereNote?: string;
   onBack: () => void;
 };
 
-export function MoveMenu({ destinations, onSelect, onBack }: MoveMenuProps) {
+export function MoveMenu({ destinations, onSelect, nowhereNote, onBack }: MoveMenuProps) {
   const [query, setQuery] = useState("");
 
   const matches = useMemo(() => {
@@ -67,7 +74,9 @@ export function MoveMenu({ destinations, onSelect, onBack }: MoveMenuProps) {
           // or a folder that already holds everything — and telling that
           // person their search matched nothing would be a non-sequitur.
           <p className="tree-move-empty">
-            {destinations.length === 0 ? "There's nowhere else to put this yet." : "No pages match that."}
+            {destinations.length === 0
+              ? (nowhereNote ?? "There's nowhere else to put this yet.")
+              : "No pages match that."}
           </p>
         ) : (
           matches.map((destination) => (

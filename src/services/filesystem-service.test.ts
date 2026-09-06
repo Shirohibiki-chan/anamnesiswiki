@@ -171,6 +171,42 @@ describe("planRelocations", () => {
     expect(planRelocations([a], [renamed])).toEqual([{ oldSegments: ["Ruins"], newSegments: ["Old Ruins"] }]);
   });
 
+  // The marker file a directory-stored node keeps its own data in is named
+  // after what the node *is* — `_folder.json` for a folder, `_page.json` for
+  // everything else — so converting a folder renames a file inside a directory
+  // whose name, parent and shape are all unchanged. Nothing else in this
+  // function notices that, and the load prefers `_folder.json`, so the missing
+  // rename silently put the page back as a folder on the next open.
+  it("renames the marker when a folder becomes something else", () => {
+    const folder = node({ id: "a", name: "Canon", parentId: null, templateKey: "folder", createdAt: 1 });
+    const universe = { ...folder, templateKey: "universe" };
+    expect(planRelocations([folder], [universe])).toEqual([
+      { oldSegments: ["Canon", "_folder.json"], newSegments: ["Canon", "_page.json"] },
+    ]);
+  });
+
+  it("renames the marker back the other way too", () => {
+    const universe = node({ id: "a", name: "Canon", parentId: null, templateKey: "universe", createdAt: 1 });
+    const folder = { ...universe, templateKey: "folder" };
+    expect(planRelocations([universe], [folder])).toEqual([
+      { oldSegments: ["Canon", "_page.json"], newSegments: ["Canon", "_folder.json"] },
+    ]);
+  });
+
+  it("does not prune the directory when only the marker changed", () => {
+    const folder = node({ id: "a", name: "Canon", parentId: null, templateKey: "folder", createdAt: 1 });
+    const child = node({ id: "b", name: "Valera", parentId: "a", templateKey: "character", createdAt: 2 });
+    const plan = planRelocations([folder, child], [{ ...folder, templateKey: "universe" }, child]);
+    // The directory stays exactly where it is — it is still holding the
+    // children. Pruning belongs to the flat-file conversion, which empties one.
+    expect(plan.every((item) => item.pruneDir === undefined)).toBe(true);
+  });
+
+  it("keeps a folder that stays a folder out of the plan", () => {
+    const folder = node({ id: "a", name: "Canon", parentId: null, templateKey: "folder", createdAt: 1 });
+    expect(planRelocations([folder], [{ ...folder, color: "amber" }])).toEqual([]);
+  });
+
   it("also relocates the sibling that loses its suffix when the first is renamed", () => {
     const a = dir("a", "Ruins", 1);
     const b = dir("b", "Ruins", 2);

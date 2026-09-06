@@ -1,6 +1,6 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Move to /
 // Set color / Earlier versions /
-// Save as template / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// Save as template / Turn into a universe / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
@@ -17,8 +17,10 @@ import {
   FileStack,
   Eye,
   EyeOff,
+  Folder,
   FolderInput,
   FolderOpen,
+  Globe,
   History,
   Home,
   Palette,
@@ -55,6 +57,19 @@ type ContextMenuProps = {
    * it, which looks exactly like the project having disappeared.
    */
   hasChildren: boolean;
+  /**
+   * Which half of the universe item to show, or null to show neither (Phase
+   * 22).
+   *
+   * "make" on a top-level page, "unmake" on a top-level page that already is
+   * one, null everywhere else — a universe is a top-level container for one
+   * version of the world, so the item has nothing to mean on a row four levels
+   * down. The reverse is offered in the same place rather than being a trip to
+   * the properties panel: a conversion with no visible way back reads as
+   * permanent, and this one isn't.
+   */
+  universeAction: "make" | "unmake" | null;
+  onToggleUniverse: () => void;
   /**
    * Whether this row holds more than one page. Sorting is offered above that
    * rather than above zero: a group of one is already in every order at once,
@@ -96,6 +111,8 @@ export function ContextMenu({
   selectionCount,
   fileManagerName,
   hasChildren,
+  universeAction,
+  onToggleUniverse,
   canSort,
   onRename,
   onSetIcon,
@@ -183,6 +200,25 @@ export function ContextMenu({
       {!isMultiple && (
         <button type="button" onClick={() => run(onSaveAsTemplate)}>
           <FileStack size={13} /> Save as template
+        </button>
+      )}
+      {/* Single selection only, top-level rows only — see `universeAction`.
+          It sits beside Save as template because both answer what this page
+          *is* rather than what is written in it. Turning back gives a folder
+          rather than whatever the page used to be: the pages it collected are
+          the point, and any other kind is a choice for the properties panel's
+          own picker. */}
+      {!isMultiple && universeAction && (
+        <button type="button" onClick={() => run(onToggleUniverse)}>
+          {universeAction === "make" ? (
+            <>
+              <Globe size={13} /> Turn into a universe
+            </>
+          ) : (
+            <>
+              <Folder size={13} /> Turn back into a folder
+            </>
+          )}
         </button>
       )}
       {/* Single selection only. Sorting rewrites one group's order, and "sort

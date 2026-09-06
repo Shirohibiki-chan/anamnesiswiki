@@ -2,7 +2,7 @@
 // into the nested shape react-arborist wants, and computes each node's
 // effective (cascaded) color. See docs/glossary.md §Color Cascade.
 import Fuse from "fuse.js";
-import type { Node } from "../constants/schema";
+import { UNIVERSE_TEMPLATE_KEY, type Node } from "../constants/schema";
 
 export type TreeNodeData = {
   id: string;
@@ -232,6 +232,12 @@ export function moveDestinations(
 
   const destinations: MoveDestination[] = [];
   if (sharedParent !== null) destinations.push({ id: null, name: rootLabel, path: [] });
+
+  // A universe only ever sits at the root (Phase 22), so a selection holding
+  // one has nowhere else to go and the menu says so by being one line long.
+  // `planMove` refuses the move as well — this is the half that keeps the
+  // refusal from being a destination you can pick and watch do nothing.
+  if (moving.some((id) => nodes[id].templateKey === UNIVERSE_TEMPLATE_KEY)) return destinations;
 
   const walk = (parentId: string | null, path: string[]): void => {
     const siblings = orderSiblings(childrenByParent.get(parentId) ?? [], parentId === null ? rootOrder : childOrder?.[parentId]);
