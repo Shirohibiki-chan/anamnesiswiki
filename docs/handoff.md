@@ -1270,6 +1270,33 @@ under `acknowledgedWarnings`.
 
 ## Editor & templates
 
+- **The kept-on-screen formatting bar is portaled out of `.bn-root`, so every
+  override written for the editor misses it.** BlockNote themes itself through
+  `--bn-*` custom properties set on that root element, and the fixed bar is moved
+  by `createPortal` into `.editor-toolbar-fixed`, which lives in
+  `.editor-shell-wrapper` — outside it. It therefore inherited none of them and
+  wore the library's own defaults: a `#292c4c` surface belonging to no theme here,
+  outlined in near-white, in a dark blue page. Measured in her running app
+  2026-09-05, where `--color-border` was `#2a3954` and the bar's border computed
+  to `rgb(233, 237, 246)`. **`.editor-toolbar-fixed` is on the token block and on
+  the border-colour rule in `page.css` for that reason** — anything else added for
+  the editor's chrome has to be given to both selectors, or it silently applies to
+  the floating bar only. The floating one never had the problem; it stays inside
+  the root.
+
+- **A hidden formatting-bar button is still an element in the array, which is why
+  the group dividers are boxes rather than separators.** Each of BlockNote's items
+  hides itself by rendering nothing when it does not apply, so the strip for a
+  picture and the strip for a paragraph are different — and inserting a divider
+  between items whenever the group changes draws them beside buttons that are not
+  on screen. That is exactly what shipped for ten minutes: two rules stacked at
+  the left and one trailing off the right. `groupToolbarItems` wraps each group in
+  a div instead, `.editor-toolbar-group:empty` takes an all-hidden group out of
+  the layout, and the hairline is a left border on a group with another *non-empty*
+  one before it. Do not replace this with `:nth-child` or a count — the count is
+  right for one selection and wrong for the next. `keeps-the-formatting-bar`
+  asserts it, and fails if the `:empty` rule is removed.
+
 - **The offer to make a missing page hangs off the change scan, not off the
   `]]` key — and the reason is measured, not stylistic.** Phase 19.5. The
   bracket handler in `wikilink-bracket-confirm.ts` looked like the natural home

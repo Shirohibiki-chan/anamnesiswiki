@@ -450,7 +450,18 @@
    has equal-or-higher selector specificity than a plain class — so these
    overrides use !important to win regardless of stylesheet order. */
 
-.editor-shell.bn-root {
+/* **`.editor-toolbar-fixed` is on this selector because the bar it holds is
+   portaled *out* of `.bn-root`.** Every `--bn-*` value below is a custom
+   property set on that root, so a toolbar rendered outside it inherits none of
+   them and falls back to the library's own defaults. That is what was on screen:
+   a `#292c4c` slate surface belonging to no theme in this app, outlined in
+   near-white, sitting in a dark blue page. Read out of her running app
+   2026-09-05 — `--color-border` was `#2a3954` and the bar's border computed to
+   `rgb(233, 237, 246)`. It reads as pasted on because it *is* — nothing about it
+   was ever this app's. The floating bar never had the problem, since it stays
+   inside the root; only the kept-on-screen one is portaled. */
+.editor-shell.bn-root,
+.editor-toolbar-fixed {
   --bn-colors-editor-background: transparent !important;
   --bn-colors-editor-text: var(--color-text-primary) !important;
   --bn-colors-menu-background: var(--color-panel-edge) !important;
@@ -490,11 +501,55 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-/* Left-aligned with the writing rather than centred on the strip's own width,
-   which is what the floating one does — a fixed bar is part of the page's
-   layout and should line up with the text under it. */
+/* **Centred, her call 2026-09-05**, replacing the left-alignment this shipped
+   with. The reasoning for that was that a fixed bar is part of the page's layout
+   and should line up with the writing under it — which sounds right and is not
+   what it looks like: the buttons take about two thirds of the strip, so
+   left-aligning them leaves a third of it empty on the right and the bar reads
+   as unfinished rather than as aligned. */
 .editor-toolbar-fixed .bn-toolbar {
-  justify-content: flex-start;
+  justify-content: center;
+  /* The app's own surface, now that the tokens above actually reach it. Its own
+     rule rather than a `--bn-*` value because the library paints this one from a
+     popover preset that assumes it is floating over the page. */
+  background: var(--color-panel-alt) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg);
+  /* No drop shadow: a shadow says "floating above the page", and this one is
+     sitting in the page's own column. The border is what separates it. */
+  box-shadow: none !important;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-sm);
+}
+
+/* **The groups, which is most of what makes it read as designed.** Nine buttons
+   in an undifferentiated row is a row that has to be read every time; the same
+   nine in groups is one that can be aimed at.
+
+   **`:empty` is doing the load-bearing work here.** Which buttons are present
+   changes with what is selected — each one hides itself by rendering nothing, so
+   a paragraph and a picture produce different strips. A divider drawn between
+   *items* therefore lands beside buttons that are not on screen, which is what
+   the first cut did: two rules stacked at the left and one trailing off the
+   right, for the block-type select and the alignment buttons that were absent.
+   A group whose buttons all rendered nothing is genuinely empty, so it leaves
+   the layout, and the rule below asks for another non-empty group *before* this
+   one rather than for a position. That is a question CSS can answer correctly
+   for every selection. */
+.editor-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.editor-toolbar-group:empty {
+  display: none;
+}
+
+.editor-toolbar-group:not(:empty) ~ .editor-toolbar-group:not(:empty) {
+  margin-left: var(--space-2xs);
+  padding-left: var(--space-sm);
+  border-left: 1px solid var(--color-border);
 }
 
 /* --- The `/` menu, and the other shadcn popovers with it ---
@@ -515,7 +570,12 @@
 .bn-root,
 .bn-root *,
 .bn-root *::before,
-.bn-root *::after {
+.bn-root *::after,
+/* The kept-on-screen bar is portaled out of `.bn-root`, so it misses this rule
+   too — and it is the one element where the white outline was still visible. */
+.editor-toolbar-fixed *,
+.editor-toolbar-fixed *::before,
+.editor-toolbar-fixed *::after {
   border-color: var(--color-border) !important;
 }
 

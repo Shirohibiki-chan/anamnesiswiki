@@ -9,7 +9,14 @@
 // and invisible. A unit test would have been perfectly happy with that.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { formattingBarShown, openPage, openSettings, openSettingsSection, waitForWorld } from "./harness/screen";
+import {
+  formattingBarGroups,
+  formattingBarShown,
+  openPage,
+  openSettings,
+  openSettingsSection,
+  waitForWorld,
+} from "./harness/screen";
 
 const PAGE = "Deep Nesting Test";
 
@@ -52,6 +59,31 @@ describe("keeping the formatting bar on screen", () => {
       return Boolean(bar && editor && bar.top < editor.top);
     });
     expect(above).toBe(true);
+  });
+
+  it("separates its buttons into groups, and only between the ones on screen", async () => {
+    // Set to fixed by the test above, so the bar is up. Put a selection in an
+    // ordinary paragraph, which is the strip with every group in it.
+    await app.window.locator('.bn-block-content[data-content-type="paragraph"]').last().click();
+    await app.window.keyboard.press("End");
+    await app.window.keyboard.down("Shift");
+    await app.window.keyboard.press("Home");
+    await app.window.keyboard.up("Shift");
+    await app.window.waitForTimeout(400);
+
+    const groups = await formattingBarGroups(app.window);
+    const visible = groups.filter((group) => group.shown);
+    expect(visible.length).toBeGreaterThan(2);
+
+    // **The failure this catches is a divider beside a button that is not
+    // there.** Each of BlockNote's items hides itself when it does not apply
+    // while staying an entry in the array, so the first cut drew two rules
+    // stacked at the left of the bar and one trailing off the right. A group
+    // that rendered nothing has to leave the layout, and the hairline has to
+    // fall only between groups that are actually on screen.
+    expect(groups.every((group) => group.shown === group.buttons > 0)).toBe(true);
+    expect(visible[0].rule).toBe(false);
+    expect(visible.slice(1).every((group) => group.rule)).toBe(true);
   });
 
   it("survives a reload, being a setting rather than a mood", async () => {

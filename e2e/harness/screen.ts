@@ -966,6 +966,28 @@ export async function formattingBarShown(window: Page): Promise<boolean> {
 }
 
 /**
+ * The formatting bar's button groups, in order, as the page has actually laid
+ * them out.
+ *
+ * **`shown` and `rule` are both computed rather than inferred**, because the
+ * thing worth checking is precisely that CSS reached the right answer: a group
+ * whose buttons all hid themselves must leave the layout, and the hairline
+ * between groups must fall only where a *visible* group follows another one.
+ * The bar's contents change with the selection — a picture and a paragraph get
+ * different strips — so a scenario that counted dividers would be right for one
+ * selection and wrong for the next.
+ */
+export async function formattingBarGroups(window: Page): Promise<{ buttons: number; shown: boolean; rule: boolean }[]> {
+  return window.evaluate(() =>
+    [...document.querySelectorAll(".editor-toolbar-group")].map((group) => ({
+      buttons: group.childElementCount,
+      shown: getComputedStyle(group).display !== "none",
+      rule: parseFloat(getComputedStyle(group).borderLeftWidth) > 0,
+    })),
+  );
+}
+
+/**
  * How many icons are sitting in the open page's writing.
  *
  * A count rather than a list, because an icon has no text to read back — what a

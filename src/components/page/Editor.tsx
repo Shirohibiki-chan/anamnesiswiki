@@ -28,7 +28,7 @@ import {
 import { BlockNoteView } from "@blocknote/shadcn";
 import { PageSlashMenu } from "./PageSlashMenu";
 import "@blocknote/shadcn/style.css";
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { Fragment, isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { selectionHoldsNoText } from "../../services/column-service";
 import { useAssetDropTarget, type InsertAt } from "../../hooks/use-asset-drop";
@@ -84,6 +84,57 @@ function holdsNoText(editor: { getSelection: () => { blocks: { type: string }[] 
   }
 }
 
+/**
+ * Which group of the formatting bar a button belongs to.
+ *
+ * **Matched on the item's key rather than its position, because the strip is not
+ * a fixed list.** Each button hides itself when it does not apply, so a picture
+ * and a paragraph produce different rows — anything counting positions is right
+ * for one selection and wrong for the next. An unrecognised key falls in with
+ * whatever came before it, which is the safe way for a library that may add
+ * buttons: a new one joins a group rather than inventing a stray divider.
+ */
+function toolbarGroup(key: string): string {
+  if (key === "blockTypeSelect") return "type";
+  if (key.startsWith("textAlign")) return "align";
+  if (key.endsWith("StyleButton")) return key === "colorStyleButton" ? "colour" : "marks";
+  if (key.endsWith("BlockButton")) return "indent";
+  if (key === "createLinkButton") return "link";
+  return "file";
+}
+
+/**
+ * The same items, wrapped one group to a box.
+ *
+ * **Boxes rather than separator elements between items, and the difference is
+ * the whole reason this works.** A hidden button is still an entry in the array
+ * — it renders `null` — so inserting a divider whenever the group changes draws
+ * dividers around buttons that are not on screen. That shipped for about ten
+ * minutes and looked exactly like it sounds: two rules stacked at the left of
+ * the bar and one trailing off the right, because the block-type select and the
+ * alignment buttons were absent for that selection.
+ *
+ * A wrapper cannot lie about it. A group whose buttons all rendered `null` is
+ * an empty element, `:empty` takes it out of the layout, and the rule between
+ * groups is a left border on any group with another *non-empty* one before it
+ * — which is a question CSS can answer and a count cannot. See page.css.
+ */
+function groupToolbarItems(items: ReactNode[]): ReactNode[] {
+  const groups: { name: string; items: ReactNode[] }[] = [];
+  for (const item of items) {
+    const key = isValidElement(item) && item.key !== null ? String(item.key).replace(/^\.\$/, "") : "";
+    const name = toolbarGroup(key);
+    const last = groups[groups.length - 1];
+    if (last && last.name === name) last.items.push(item);
+    else groups.push({ name, items: [item] });
+  }
+  return groups.map((group) => (
+    <div key={group.name} className="editor-toolbar-group">
+      {group.items}
+    </div>
+  ));
+}
+
 function PageFormattingToolbar() {
   const editor = useBlockNoteEditor();
   // **Seeded, not just watched.** The hook below only fires when the selection
@@ -115,17 +166,19 @@ function PageFormattingToolbar() {
 
   return (
     <FormattingToolbar>
-      {getFormattingToolbarItems().map((item) =>
-        item.key === "fileDownloadButton" ? (
-          // Both of ours land where the Download button was, so they sit with
-          // the rest of the picture controls rather than at the end of the
-          // strip past the text ones.
-          <Fragment key="fileDownloadButton">
-            <ExpandImageButton />
-            <SaveImageButton />
-          </Fragment>
-        ) : (
-          item
+      {groupToolbarItems(
+        getFormattingToolbarItems().map((item) =>
+          item.key === "fileDownloadButton" ? (
+            // Both of ours land where the Download button was, so they sit with
+            // the rest of the picture controls rather than at the end of the
+            // strip past the text ones.
+            <Fragment key="fileDownloadButton">
+              <ExpandImageButton />
+              <SaveImageButton />
+            </Fragment>
+          ) : (
+            item
+          ),
         ),
       )}
     </FormattingToolbar>
