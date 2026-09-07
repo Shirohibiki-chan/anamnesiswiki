@@ -559,9 +559,47 @@ Obsidian's graph is the thing to beat, so what's wrong with it is the spec. Five
 - **Filters are visible controls, not a query syntax.** Filter by template and by tag using Phase 23's Database filter model rather than inventing a second language for the same job.
 - **Clicking a node must not throw the graph away.** It opens a preview beside the graph; going to the page is a deliberate second action.
 
-Both run on the reference index built in Phase 18, so neither starts from nothing. D3-force is the likely library.
+Both run on the reference index built in Phase 18, so neither starts from nothing.
 
 **Don't ask her to describe what it should look like** — she's said she's picky and has no visual direction in the abstract. Build it against the five points above and let her react to something running.
+
+### Scoped 2026-09-07
+
+The five commitments above are the spec and none of them changed. What was missing underneath them is what the graph reads, what it is drawn with, and where it lives.
+
+**Both graphs are one component fed a different set of pages.** The relationship graph is the global graph over a smaller candidate set — the same nodes, the same edges, the same filters, the same layout maths. Building them as two things would be building one renderer twice, which is the mistake Phase 23 avoided when its "rule source" turned out to be a scope. The scoped one still ships first, because a small set is where legibility is cheap to get right, not because it is a different feature.
+
+**Nothing new is computed to draw it.** `link-index.ts` already holds every edge, and its own header comment says it was written for this — Backlinks, the tag index and the subpage index are one question asked three ways, and the graph is the fourth. Every edge already carries *why* it exists (`prose`, `property`, `manual`) and, where it came from a reference property, that field's label. That is exactly what Obsidian cannot say about a line on its graph, and it is already sitting in the file.
+
+**A node wears its template's icon and its colour from the cascade** — `getTemplateIcon` and `getEffectiveColor`, neither of them touched. **The cascade's cost is real and taken on purpose:** colour is inherited, so a world that has one folder near the root coloured draws as a graph of a single colour. `getEffectiveColor` already reports `isOwner`, so a page that chose its colour can be told from a page that was handed one; if a monochrome graph turns out to be the ordinary case rather than the odd one, that flag is the fix, and it costs nothing to leave until it has been seen.
+
+**The same project has to settle the same way every time, so nothing is left to chance.** d3-force accepts a `randomSource`, and a node's starting position is a stable function of its page id rather than a scatter — between the two there is no randomness left in the simulation. **Positions she pins live in `project.json`**, beside tree order, expanded state and the selected universe. Not in the page's own file: dragging a node is arranging a view, and it must not dirty a page, land in that page's version history, or turn up as a change in the folder she syncs.
+
+**SVG, not canvas.** The theme system is CSS tokens all the way down, including the themes she writes herself, and an SVG node inherits all of it for free where a canvas would need every colour read out and re-drawn by hand. Hit-testing, focus and keyboard navigation come with it. The ceiling is somewhere in the low thousands of nodes, which a 75-page world is nowhere near, and the scope control is what keeps the number down — canvas is a swap behind the same component if a world ever gets there.
+
+**`d3-force` is the one new dependency.** ISC licensed, so it sits under MIT without a question, and it does the maths and nothing else — it draws nothing and knows nothing about the DOM, which is what keeps the renderer ours and the theming above working.
+
+**The filters are Phase 23's, not a second set.** `DatabaseField` already carries template, tag and name as first-class things beside properties, and the comment next to it says it was shaped that way for this phase. Filtering the graph by template and tag is that model pointed at a different renderer, which is the plan's "visible controls, not a query syntax" arriving for free.
+
+**Clicking a node opens the preview a hover already gives** — `preview-service.ts`: name, template, tags and an excerpt — beside the graph rather than over it. Going to the page stays a second, deliberate action.
+
+### Open questions
+
+Three, and they are the ones that change what gets built rather than what it looks like.
+
+1. **Where a page's graph lives.** A panel opening over the page from a button by its name, so every page has one without being set up and it gets the whole window; a block dropped into a page body like the index blocks, so she picks which pages get one and it stays part of the page; or the right-hand panel beside the writing, always there but the narrowest of the three and already holding the properties.
+2. **What counts as a connection.** Only what she wrote — prose mentions, reference properties, manual links; or those plus the tree itself, so a sword nested under its owner is a line too. If the tree counts, its lines can be drawn fainter than the written ones or exactly the same.
+3. **What an edge says.** Every edge labelled where it has a label ("Friends", "Enemies"), which is the most informative and the most cluttered; only the edges touching the node under the cursor or the selected one; or no labels at all, with the kind of connection showing as a different line instead.
+
+**Where the *global* graph is reached from is a question for step 3 and is deliberately not asked yet.** The rail's lower group already holds errands that are not sidebar panels, so it has somewhere to go, but the answer wants the scoped graph running first to argue against.
+
+### Build order
+
+Each step ends with something visible, the same as Phase 23.
+
+1. **A page's relationship graph.** The page in the middle, everything one connection out from it, template icons and the colour cascade, a layout that settles the same way twice, nodes draggable, and a click opening the preview beside it.
+2. **The controls.** Filter by template and by tag off Phase 23's model, a control for how far out it reaches, whatever question 3 settles about labels, and pinned positions remembered between sessions.
+3. **The global graph.** The same component over a whole universe, widened by the same scope vocabulary the databases already use.
 
 ---
 
