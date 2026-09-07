@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
   clearTreeSearch,
+  databaseCellField,
   databaseColumns,
   databaseRowNames,
   openPage,
@@ -79,8 +80,11 @@ describe("one column per property", () => {
     // in the column is blank.
     expect(await databaseRowNames(app.window)).toContain(FIRST);
 
-    const table = await app.window.locator(".database-table").innerText();
-    expect(table).toContain("Captain");
-    expect(table).toContain("Sergeant");
+    // Read out of each row's own cell rather than out of the table's text.
+    // Step 3 made this column editable, so the value lives in an input — and
+    // asking per row is the sharper question anyway: one column is only right
+    // if every row reads its own key through it.
+    expect(await databaseCellField(app.window, LABEL, FIRST).inputValue()).toBe("Captain");
+    expect(await databaseCellField(app.window, LABEL, SECOND).inputValue()).toBe("Sergeant");
   });
 });
