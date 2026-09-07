@@ -1,7 +1,7 @@
 // Page header — breadcrumb trail, template icon (tinted per effective
 // color), and a click-to-rename title. See docs/spec.md §Page view.
 import { useState } from "react";
-import { ChevronRight, EyeOff, Home } from "lucide-react";
+import { ChevronRight, EyeOff, Home, Waypoints } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { IconPicker, NodeIcon } from "../blocks/IconPicker";
 import { TreePopover } from "../tree/TreePopover";
@@ -17,9 +17,15 @@ type PageTitleProps = {
    * re-render for control of whether the input is open.
    */
   startEditing?: boolean;
+  /**
+   * Opens this page’s relationship graph. Absent on a surface with nowhere to
+   * put one — the graph covers the window, so whoever draws the title has to be
+   * the thing that can close it again.
+   */
+  onOpenGraph?: () => void;
 };
 
-export function PageTitle({ node, startEditing = false }: PageTitleProps) {
+export function PageTitle({ node, startEditing = false, onOpenGraph }: PageTitleProps) {
   const projectName = useProjectName();
   const homeNodeId = useProjectHomeId();
   const { renameNode, selectNode, setNodeIcon } = useProjectActions();
@@ -170,6 +176,22 @@ export function PageTitle({ node, startEditing = false }: PageTitleProps) {
           <span className="page-title-hidden-badge">
             <EyeOff size={12} /> {node.hidden ? "Hidden" : "Inside a hidden page"}
           </span>
+        )}
+        {/* **By the name, because the graph is about this page.** The rail
+            holds what belongs to the app and the bar above the page holds what
+            belongs to reading it; a picture of what this page is connected to is
+            neither, and it belongs beside the thing it is a picture of. Last in
+            the row so it never moves when a badge appears. */}
+        {onOpenGraph && (
+          <button
+            type="button"
+            className="page-title-graph-button"
+            title="See what this page is connected to"
+            aria-label="See what this page is connected to"
+            onClick={onOpenGraph}
+          >
+            <Waypoints size={16} />
+          </button>
         )}
       </div>
     </div>

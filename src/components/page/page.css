@@ -270,6 +270,34 @@
   -webkit-text-fill-color: var(--gradient-title-fill, currentColor);
 }
 
+/* The way into this page’s relationship graph. Quiet until reached for: it is
+   not a thing to do to the page, it is a way of looking at it, and a filled
+   button beside the name would read as an action. */
+.page-title-graph-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.page-title-graph-button:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.page-title-graph-button:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
 /* Matches LegendKeeper's own "Home" chip beside the project-home page's
    title — a label, not a button; the way *to* home is the tree's house icon. */
 .page-title-home-badge {

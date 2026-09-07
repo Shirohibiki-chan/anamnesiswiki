@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-05 — the window wears the theme
+
+### Changes
+
+- **The bar across the top of the window is the app's now, not Windows'.** It takes the colour of whatever theme you're on and changes with it, including a theme you wrote yourself — so on a dark theme the app stops looking like it's sitting inside somebody else's grey frame.
+- **The minimise, maximise and close buttons are still Windows' own.** That's deliberate rather than lazy: they're what Windows 11's snap layouts appear over when you hover them, and drawing our own three buttons would have taken that off you to gain a colour. They get tinted to match instead.
+- **You can drag the window by the whole strip across its top** — the rail, the row above the page, the sidebar's header, all of it. Anything you can click in that strip still just does its job.
+- **The properties panel gained a header row**, so the line across the top of the window now runs the whole way instead of stopping where that panel starts.
+
+### Notes
+
+- On a Mac the buttons stay where a Mac puts them, shifted in so they don't land on the rail. Nothing changes on that front for you.
+
 ## 2026-09-05 — a rail down the left
 
 ### Changes
