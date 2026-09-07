@@ -91,10 +91,22 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 21, 22, 27 and 29 are done.** The app is shippable and shipping —
+**Phases 0–19, 19.5, 21, 22, 23, 27 and 29 are done.** The app is shippable and shipping —
 v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
+
+**Phase 23 — Database — closed 2026-09-07**: a page, or a block inside one,
+shown as a table, cards, a board or a list of pages that already exist. Two
+things from it bind the code. **A database is a lens, not a container** — the
+rows are pages that live somewhere already, so removing a view removes a view
+and never a page, and two pages can show overlapping sets with nothing linking
+them; `schema.ts`'s comment on `Node.view` says it and the whole phase rests on
+it. **And `presentDatabase` is the single pipeline** — it takes rows and a view
+and returns the columns, filtering, sorting and grouping, and both a page-level
+database and a Subpage/Tag index block go through it, so the two cannot drift on
+what a Status or a multi-select means. A block's `source`, `tags` and
+`targetIds` still say *which* pages; `block.view` only says how to draw them.
 
 **Phase 19 — Safety Net — closed 2026-08-28**: undo across the right-hand panel
 and a page's tabs, version history in `project.json`, retention in Settings.

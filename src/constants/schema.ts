@@ -706,7 +706,7 @@ export type Node = {
    * never a page, and two pages can show overlapping sets with no link between
    * them. Absent is the ordinary state and means the page renders as a page.
    *
-   * See `docs/plan.md` Phase 23 for why the alternative — a database that owns
+   * See `docs/shipped.md` Phase 23 for why the alternative — a database that owns
    * its rows — was rejected along with the machinery it drags behind it.
    */
   view?: DatabaseView;

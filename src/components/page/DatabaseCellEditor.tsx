@@ -3,7 +3,7 @@
 // **Only the types that read on one line at a column's width.** Long text, refs
 // and pictures still open the page — a refs field is a page picker, not
 // something that fits in a cell — and that line is the rule for placing a type
-// that does not exist yet. See `docs/plan.md` Phase 23.
+// that does not exist yet. See `docs/shipped.md` Phase 23.
 //
 // The input is always there rather than appearing on a click. A cell you have
 // to arm before you can type into it is two interactions for one edit, and the

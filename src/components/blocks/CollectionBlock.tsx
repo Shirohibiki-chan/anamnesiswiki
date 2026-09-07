@@ -93,7 +93,7 @@ export function CollectionBlock({
         // names in Add Block, with layouts and the rest underneath. Manual
         // links and Backlinks are not: a hand-picked list and "pages that
         // mention this one" are not sets a database can describe. Her call
-        // 2026-09-07; see `docs/plan.md` Phase 23.
+        // 2026-09-07; see `docs/shipped.md` Phase 23.
         <DatabaseBlock node={node} block={block} />
       ) : (
         <ul className="block-collection-list">

@@ -5476,3 +5476,100 @@ Five decisions, all from the user on 2026-09-05, taken with Phase 21 shipped and
 **No one-off migration for the existing `AUs/` folder.** The right-click action has to exist anyway, so converting the four or five AUs by hand and deleting the empty wrapper is a few clicks against a migration that runs once and then lives in the code forever. Worth knowing when it is done: re-importing Valeraverse (Queued Adjustments) does not produce universes by itself, since the `.lk` file has the `AUs` folder inside it — the conversion is a separate step either way, which is what makes the by-hand route cheap rather than merely cheaper.
 
 ---
+
+## Phase 23 — Database ✅ Shipped 2026-09-07
+
+Eight PRs in one day, #386 through #393, in the order the phase was scoped in:
+the three open questions answered (#386); a page shown as a table of the pages
+inside it, from `Turn into a table` on the tree's right-click menu (#387);
+columns, filter, sort and group in a bar above it (#388); one column per
+property rather than one per page carrying it (#389); values changed from inside
+the row (#390); cards, a board and a list off the same record (#391); a scope
+letting a database gather rows from beyond the page it sits on (#392); and
+Subpage index and Tag index becoming databases underneath while keeping their
+names (#393).
+
+**Two things came out smaller than they were scoped, and both for the same
+reason** — the filter model built at step 2 turned out to answer more than the
+step it was built for.
+
+The *rule source* was written as an open question about a second way of
+selecting pages, by template, tag and universe. It resolved to a **scope**: the
+filter model already matched on template and tag over any set of pages, so all
+that was ever missing was *which* set — sub-pages, this universe, or everywhere
+— and a rule language would have been the same engine built twice.
+
+The *collection block* question was framed as whether the block and the database
+were one feature. Only two of the four sources are: **Subpage index and Tag
+index are exactly a database**, while Manual links is a list picked by hand and
+Backlinks is "pages that mention this one", and no scope-plus-filter can
+describe either. That correction is what made the question answerable, and her
+call was to keep all four names in Add Block and let the two that can become
+databases underneath — so nothing left a menu she had already learnt.
+
+**What the phase deliberately does not include**, so it is not looked for later:
+filtering, sorting, grouping and column-hiding are page-level and blocks do not
+have those menus yet; numeric filters only match an exact value; and there is no
+and/or nesting in a filter list, which is the query builder the plan rules out
+on purpose. The first of those is in `docs/plan.md` Queued Adjustments.
+
+What follows is the section as it was scoped, with what each step shipped
+written into it.
+## Phase 23 — Database
+
+A filtered table or card view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
+
+**Named Database as of 2026-08-31; it was Collections until then.** The rename came out of naming the image gallery (`docs/ideas.md`): a gallery holds pictures, a database holds pages laid out as cards, and no name is shared — one word stretched over both is exactly Notion's failure. *Collection* was the other candidate and she held it back on purpose, not for a use she has in mind but because it is a valuable word and a feature name spends it everywhere at once. **Nothing user-facing said "collection", so there was nothing to migrate** — a block's heading is its source's name (Manual links, Subpage index, Tag index, Backlinks). The code still says `collection`; that is internal and can follow whenever this phase is built. **One cost, accepted knowingly:** in Notion the word carries typed columns, sorts, formulas and relations, so the name runs slightly ahead of what this phase builds.
+
+### Scoped 2026-09-06
+
+Worked out against Notion, which she brought screenshots of — the database page, the layout switcher, the view settings, the More settings menu — plus its help page on data sources and linked databases, which she pointed at deliberately.
+
+**A database is a view over pages that already exist, not a container that owns them.** This is the load-bearing decision, and most of Notion's complexity is the price of answering it the other way. In Notion a database *owns* its rows — a row's parent is the database — which buys two real things: somewhere for typed columns to be defined, and somewhere for the New button to put a page. The bill is the entire data-source apparatus: linked databases, moving a source from one database to another, access inherited from the original, and a help page to explain the difference between three words. **Neither reason applies here.** Templates already own the schema — the Character template says what properties a character has, across the whole tree rather than inside one database — and the folder already owns the page. A second owner would mean two answers to where a character lives, kept in agreement forever. Two consequences worth stating as promises: **deleting a view never deletes a page**, and two pages can show the same set with different filters without any linking machinery at all.
+
+**Any page can be shown as a database, and the block is the same feature at a smaller size.** `Turn into ▸ Table` on a page's right-click menu, the twin of Phase 22's `Turn into a universe` — an existing page like Characters becomes a table in one click with nothing moved and nothing re-made. The block version is that same view dropped into the middle of a page. Because a view is only a lens, these are one feature at two sizes rather than a fork to decide between.
+
+**All four layouts: table, cards, board, list.** Her call 2026-09-06, asked which to build first and answering all of them.
+
+**Not building, and why.** *Timeline* and *Calendar* want dates, which is the blank that stopped the timeline being built at all — Phase 25 is the answer to "what happened next" and it is sequence-driven for exactly this reason. *Chart* has nothing to count until number properties are common across pages. *Map* has no maps. Notion's "open pages in side peek" is split panes, which is Phase 21.5 and deferred. *Automations* and *AI Autofill* are out — no LLM features in the editor.
+
+**The view settings worth having**, from Notion's own list: layout, property visibility (which columns show), filter, sort, group. Conditional colour is a natural later add rather than part of this, since page colours and the palette already exist. A link to a view has precedent in a block handing out a link to itself (Phase 19.5).
+
+**Sub-items are nearly free, and are the one place this starts ahead of the reference.** Notion bolts nesting onto a flat list; here the tree *is* the data, so a row that expands to show the pages inside it is the shape the app already has.
+
+**A table names one template; a mixed set belongs in cards or a list.** Filters can match more than one template, and a card is a picture and a name, so a mixed set reads fine there. A table is not: a Location has no Species column to fill. So a table view picks one template and gets that template's properties as its columns.
+
+### Settled 2026-09-06
+
+The three questions this section held were asked and answered the same day it was written. Nothing above changed; this is what was missing underneath it.
+
+**Rows come from the page's own sub-pages, and a rule can widen that.** Sub-pages is the default and is what answers where New puts a page — into the page the view is on. A view can then be widened to gather by template, tag or universe from anywhere in the tree, which is what makes a database more than a sub-page list wearing a grid. The two costs named when the question was asked are real and are paid on purpose. **New is only offered while the view is reading sub-pages**, because a rule-widened view genuinely has nowhere to put a page and a New that guesses is worse than a New that isn't there. And a page can leave a view when its tags are edited — that is tags being editable, not a bug to design around, and it is the same surprise the existing Tag index block already carries. **The filter machinery is needed either way**, since filters sit on top of sub-pages in the sub-pages-only answer too, so the rule is a source setting on top of something already being built rather than a second engine beside it.
+
+**Simple values are edited in the row; complicated ones open the page.** Text, number, date, select, multi-select and status get an editor inside the cell. Long text, refs and images open the page instead — they want more room than a cell has, and refs is a page picker rather than a field. This line is what keeps the expensive half of the phase out: an editor for *every* type inside a table, with undo covering all of them, was the part that would have moved the ship date. **The rule for placing a type that doesn't exist yet** is whether it reads on one line at a column's width; if it doesn't, it opens the page.
+
+**One view per page.** A page gets one database view, and its layout, columns, filters, sorts and grouping are changed in place. Several saved views is a shape the app could eventually hold — a page has tabs already — but a tab holds writing today, and teaching it to hold a view is work in the page shell rather than in this phase. **Nothing here forecloses it**: a view is stored as one record, so a list of views later is a list of the same record, and the settings UI is the same panel pointed at a different one.
+
+### Build order
+
+Each step ends with something visible, because the phase is too big for one.
+
+1. ~~**A page shown as a table.**~~ **Shipped 2026-09-06.** `Turn into a table` on the tree's right-click menu, the twin of `Turn into a universe`; sub-pages as rows, the view's template supplying the columns, read-only values, and a row's name opening its page. Flat rather than the `Turn into ▸ Table` submenu it was scoped as, because a submenu holding one item is a click for nothing — it becomes one at step 4. The view sits between the page's name and its tabs, so a page that has writing keeps it.
+2. ~~**The view settings.**~~ **Shipped 2026-09-07.** Columns, filter, sort and group, in one bar above the table. The filter model is the piece Phase 24 borrows, so it holds a page's name, its template and its tags as first-class fields rather than only the table's own columns, and it matches on labels rather than option ids because an option list lives per page. Conditions all apply — there is no and/or nesting, which is the query builder the plan rules out. Grouping is offered only on fields a page has one of, so a page cannot appear under three headings.
+3. ~~**Editing in the row.**~~ **Shipped 2026-09-07.** Text, number, date, select, multi-select and status are edited in the cell; long text, refs and pictures still open the page. Typing into a cell on a page that does not carry the property mints that page's own spec, adds the block that shows it in the page's own panel, and writes the value — one undoable move, planned by `planCellEdit`. Options are matched and created by label and copied from the vocabulary already in use, so a word chosen on a second page is the same option rather than a lookalike.
+4. ~~**The other three layouts.**~~ **Shipped 2026-09-07.** Cards, board and list, drawn off the same record, with the switcher in the settings bar and `Turn into ▸` in the tree menu finally a submenu. A board's cards drag between columns, which writes the grouped-by value through the same `editRowCell` a typed cell uses — so a drag and a keystroke are one kind of edit. Dragging is off when the board is grouped by template, because moving a card would then mean rewriting the page's template rather than setting a value.
+5. **The block version and the rule source.** The same view dropped into a page body, and the widening from sub-pages to a rule.
+   - ~~**The rule source.**~~ **Shipped 2026-09-07.** It turned out to be a *scope*, not a rule: the step 2 filter model already matches on template and tag over any set of pages, so all that was missing was which set — sub-pages, this universe, or the whole world — and a second query language would have been the same engine built twice. New is only offered while the scope is sub-pages, as promised when the question was answered.
+   - ~~**The block version.**~~ **Shipped 2026-09-07**, per the decision below. Subpage index and Tag index draw through the same pipeline a page-level database uses — `presentDatabase` takes rows and a view and returns columns, filtering, sorting and grouping, so a block and a page cannot drift on what a Status means. The block's `source`, `tags` and `targetIds` still say *which* pages; `block.view` only says how to draw them, which is what lets the existing tag picker go on working untouched. A block with no stored view draws as a list, so nothing looked different the day it shipped.
+   - **What is left of it:** blocks have the layout switcher and editable cells, but not the other five menus — filtering, sorting, grouping and hiding columns are still page-only. And a table inside the narrow sidebar is cramped; List and Cards suit that width, a block dragged into the page body has room for a table.
+
+**Sub-items ride with whichever step they fit.** A row that expands to show the pages inside it is nearly free because the tree is already the data, but it is an affordance rather than a step, and it wants the table standing up first.
+
+### The collection block, settled 2026-09-07
+
+**Only two of the four overlap, and the earlier note here was wrong to say otherwise.** It claimed the collection block and a database were the same thing and should merge. They are not. *Subpage index* and *Tag index* are exactly a database — the same rows, with filters, sorts and four layouts on top. *Manual links* is a list picked by hand and *Backlinks* is "pages that mention this one"; neither is a scope-plus-filter, and a database has no way to express them. Correcting that is what made the question answerable.
+
+**Her call: keep all four names, and let those two make databases underneath.** Add Block looks exactly as it does today; picking Subpage index or Tag index yields a database already set to it, gaining the settings and the layouts. Nothing disappears from a menu she has learnt, nothing new has to be chosen between, and the two familiar names simply do more. Blocks already on her pages get the same treatment.
+
+**Why the alternatives lost.** A fifth *Database* entry beside the existing four would mean two menu items that list sub-pages with no principle for choosing between them — the exact "one word stretched over both" failure the Collections→Database rename was avoiding, read backwards. Replacing the two outright makes the tidiest menu and was rejected because it takes away names she already knows and redraws blocks already on her pages.
+
+---
