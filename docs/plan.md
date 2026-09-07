@@ -563,7 +563,7 @@ Asked and answered the same day the section was written.
 
 Each step ends with something visible, the same as Phase 23.
 
-1. **A page's relationship graph.** Opened over the page from a button by its name: the page in the middle, everything one connection out from it, written links and tree links told apart, template icons and the colour cascade, a layout that settles the same way twice, nodes draggable, and a click opening the preview beside it.
+1. ~~**A page’s relationship graph.**~~ **Shipped 2026-09-07.** A button beside the page’s name opens it over the page; the page sits pinned at the centre with everything one connection out around it, wearing its template’s icon and its colour. Written lines are solid and tree lines are dashed. Nodes drag, the background pans, the wheel zooms, and a click opens the hover preview beside the graph with going to the page a second, deliberate click. Two things worth knowing that were not in the scope. **The automatic fit magnifies as well as shrinks** — capped at 1 a graph of eight pages used about a third of a 1440px window and read as a picture that had failed to load. And **a folder has no button**, because `FolderView` draws its own centred landing card and has no name row to put one on; where that button belongs on a folder is a real question rather than an oversight to sweep up.
 2. **The controls.** Filter by template and by tag off Phase 23's model, a control for how far out it reaches, the labels toggle, and pinned positions remembered between sessions.
 3. **The global graph.** The same component over a whole universe, widened by the same scope vocabulary the databases already use.
 

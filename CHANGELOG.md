@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-07 — see what a page is connected to
+
+### Additions
+
+- **Every page has a picture of what it is connected to.** The button beside a page’s name opens it over the page; Escape or the X closes it and puts you back where you were reading.
+- **The page you were on sits in the middle**, with everything one connection away from it around the outside — pages you mentioned while writing, pages that mentioned this one, anything in a reference field like Friends, and anything you linked by hand.
+- **Pages look like they do in your tree**, carrying their template’s icon and their colour, rather than every page being the same grey dot.
+- **Where a page is filed counts as a connection too**, so a sword nested under its owner is joined to it. Those lines are drawn as quiet dashes, because where you filed something and what you wrote about it aren’t the same claim.
+- **Clicking a page shows a card about it beside the graph** — its name, what kind of page it is, its tags and the start of what’s written on it. Going there is a second click on **Open this page**, so a look never costs you the graph.
+- **You can drag pages around and move the picture.** Drag a page to move it, drag the background to move everything, and scroll to zoom.
+- **The same world always looks the same.** The arrangement is worked out the same way every time, so pages stay roughly where you last saw them instead of scattering differently on each visit.
+
+### Notes
+
+- **Positions you drag aren’t kept yet** — they last as long as the graph is open. Remembering them comes with the next piece, along with filters and a control for how far out it reaches.
+- **Folders don’t have the button.** A folder is drawn as its own landing card with no name row to put it on; every other kind of page has it.
+- **Long page names wrap under their circle rather than being cut off**, so a name is always readable in full.
+
 ## 2026-09-07 — Subpage index and Tag index become databases
 
 ### Additions
@@ -250,16 +268,3 @@
 
 - **The window opens a bit wider and a bit taller than yesterday, and won't be dragged quite as small.** The rail grew to fit its labels and the title bar takes a strip off the top, and both of those are frame rather than page — so the numbers move with them and the writing keeps exactly the room it had.
 - On a Mac the round window buttons move up into the title bar too, at its left end.
-
-## 2026-09-05 — the window wears the theme
-
-### Changes
-
-- **The bar across the top of the window is the app's now, not Windows'.** It takes the colour of whatever theme you're on and changes with it, including a theme you wrote yourself — so on a dark theme the app stops looking like it's sitting inside somebody else's grey frame.
-- **The minimise, maximise and close buttons are still Windows' own.** That's deliberate rather than lazy: they're what Windows 11's snap layouts appear over when you hover them, and drawing our own three buttons would have taken that off you to gain a colour. They get tinted to match instead.
-- **You can drag the window by the whole strip across its top** — the rail, the row above the page, the sidebar's header, all of it. Anything you can click in that strip still just does its job.
-- **The properties panel gained a header row**, so the line across the top of the window now runs the whole way instead of stopping where that panel starts.
-
-### Notes
-
-- On a Mac the buttons stay where a Mac puts them, shifted in so they don't land on the rail. Nothing changes on that front for you.

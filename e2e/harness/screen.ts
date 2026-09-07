@@ -46,6 +46,17 @@ const BLOCK_ADD_MENU = ".block-add-menu";
 const BLOCK_MENU = ".block-menu";
 const MENU_HEADING = ".tree-context-menu-heading";
 const BLOCK_TITLE = ".block-title";
+// Phase 24: one page’s relationships, opened over the page. The button that
+// opens it lives on the page title; everything else only exists while it is up.
+const GRAPH_BUTTON = ".page-title-graph-button";
+const GRAPH = ".page-graph";
+const GRAPH_NODE = ".page-graph-node";
+const GRAPH_NODE_NAME = ".page-graph-node-name";
+const GRAPH_NODE_FOCUS = ".page-graph-node-focus";
+const GRAPH_EDGE_TREE = ".page-graph-edge-tree";
+const GRAPH_EDGE_WRITTEN = ".page-graph-edge-written";
+const GRAPH_PREVIEW = ".page-graph-preview";
+const GRAPH_PREVIEW_NAME = ".page-graph-preview-name";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -1304,3 +1315,83 @@ export async function stopShowingAsDatabase(window: Page, rowName: string): Prom
   await openTreeRowMenu(window, rowName);
   await window.locator(TREE_CONTEXT_MENU).first().getByRole("button", { name: "Stop showing as a database" }).click();
 }
+
+/** Opens the graph from the button beside the open page’s name. */
+export async function openPageGraph(window: Page): Promise<void> {
+  await window.locator(GRAPH_BUTTON).first().click();
+  await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Whether the graph is over the page right now. */
+export async function graphIsOpen(window: Page): Promise<boolean> {
+  return (await window.locator(GRAPH).count()) > 0;
+}
+
+/** Closes it with the key, which is the route a scenario should prefer testing. */
+export async function closePageGraph(window: Page): Promise<void> {
+  await window.keyboard.press("Escape");
+  await window.locator(GRAPH).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
+/** Every page drawn on the graph, the focused one included. */
+export async function graphNodeNames(window: Page): Promise<string[]> {
+  const names = await window.locator(`${GRAPH_NODE} ${GRAPH_NODE_NAME}`).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** The page in the middle — the one whose graph this is. */
+export async function graphFocusName(window: Page): Promise<string> {
+  return normalize(await window.locator(`${GRAPH_NODE_FOCUS} ${GRAPH_NODE_NAME}`).first().innerText());
+}
+
+/**
+ * How many lines of each kind are drawn.
+ *
+ * The split is the point rather than the totals: a line she wrote and a line
+ * that is only where the page was filed have to be distinguishable, which is
+ * exactly what a unit test on the model cannot check.
+ */
+export async function graphEdgeCounts(window: Page): Promise<{ written: number; tree: number }> {
+  return {
+    written: await window.locator(GRAPH_EDGE_WRITTEN).count(),
+    tree: await window.locator(GRAPH_EDGE_TREE).count(),
+  };
+}
+
+function graphNode(window: Page, name: string): Locator {
+  return window.locator(GRAPH_NODE).filter({ hasText: name }).first();
+}
+
+/** Clicks a page on the graph, which should open its preview and nothing else. */
+export async function clickGraphNode(window: Page, name: string): Promise<void> {
+  await graphNode(window, name).click();
+}
+
+/** Where a node sits on screen, for asserting a drag moved it. */
+export async function graphNodeCentre(window: Page, name: string): Promise<{ x: number; y: number }> {
+  const box = await graphNode(window, name).boundingBox();
+  if (!box) throw new Error(`No node on the graph called ${name}`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** Drags a node by a number of screen pixels, in steps so the move is seen. */
+export async function dragGraphNode(window: Page, name: string, byX: number, byY: number): Promise<void> {
+  const from = await graphNodeCentre(window, name);
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + byX, from.y + byY, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** The name on the card beside the graph, or null while nothing is selected. */
+export async function graphPreviewName(window: Page): Promise<string | null> {
+  if ((await window.locator(GRAPH_PREVIEW).count()) === 0) return null;
+  return normalize(await window.locator(GRAPH_PREVIEW_NAME).first().innerText());
+}
+
+/** Follows the preview’s way through to the page it describes. */
+export async function openGraphPreviewPage(window: Page): Promise<void> {
+  await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Open this page" }).click();
+  await window.locator(GRAPH).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+

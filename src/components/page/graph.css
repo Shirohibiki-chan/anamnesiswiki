@@ -1,0 +1,296 @@
+/* One page's relationships, drawn over the page. Phase 24, step 1. */
+
+/* The app's own surface rather than the lightbox's near-black. A graph is
+   somewhere you work, not a photo being looked at, and dropping the room to
+   black around it would make every theme she writes stop applying at the one
+   moment the whole picture is made of her colours. */
+.page-graph {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+.page-graph-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.page-graph-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.page-graph-heading-page {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  /* Wraps rather than ellipsising would be the rule for a page's writing, but
+     this is one line of chrome above a full-window picture and a two-line bar
+     would shift the stage under it. The whole name is on the title attribute
+     and on the page underneath. */
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-graph-count {
+  margin-right: auto;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.page-graph-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.page-graph-close:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.page-graph-close:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.page-graph-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.page-graph-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  /* Says the background can be dragged before anyone tries it. */
+  cursor: grab;
+  touch-action: none;
+}
+
+.page-graph-stage:active {
+  cursor: grabbing;
+}
+
+/* The origin of the graph's own coordinates, parked at the middle of the
+   stage. Everything inside is positioned in those coordinates and the whole
+   thing is panned and zoomed by one transform on this element. */
+.page-graph-scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.page-graph-edges {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.page-graph-edge {
+  stroke-linecap: round;
+}
+
+/* Something she wrote: a mention, a reference field, a manual link.
+   A text-grade colour rather than a border one. A border token is tuned to be
+   nearly invisible against its own surface, which is right for a divider and
+   wrong for the thing carrying half the meaning in the picture — on the light
+   theme these had all but disappeared. */
+.page-graph-edge-written {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.75;
+}
+
+/* Where she filed the page. A real relationship and a quieter claim than a
+   written one — her call 2026-09-07, see docs/plan.md Phase 24. Dashed as well
+   as fainter, because a difference carried only by opacity disappears against
+   a light theme. */
+.page-graph-edge-tree {
+  stroke: var(--color-border-strong);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 5;
+  opacity: 0.8;
+}
+
+.page-graph-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  width: 118px;
+  padding: 0;
+  border: none;
+  background: none;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  touch-action: none;
+  /* Falls back to the ordinary border colour for a page with no colour of its
+     own and none inherited — PageGraph sets this per node when there is one. */
+  --graph-node-color: var(--color-border-strong);
+}
+
+.page-graph-node-disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--graph-node-color);
+  border-radius: var(--radius-full);
+  background: var(--color-panel);
+  color: var(--graph-node-color);
+}
+
+.page-graph-node-name {
+  max-width: 100%;
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  text-align: center;
+  /* **Wraps, never ellipsises.** A name cut off with no way to read the rest
+     reads as broken, and a graph has nowhere to go and read it. The layout
+     pays for this instead: GRAPH_COLLIDE_RADIUS keeps enough room between two
+     nodes for a couple of lines of name under each. */
+  overflow-wrap: anywhere;
+}
+
+.page-graph-node:hover .page-graph-node-disc {
+  background: var(--color-hover);
+}
+
+.page-graph-node:focus-visible {
+  outline: none;
+}
+
+.page-graph-node:focus-visible .page-graph-node-disc {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* The page the graph is of. Filled rather than merely bigger: it is the one
+   node that is never a destination, and size alone reads as "important" rather
+   than as "you are here". */
+.page-graph-node-focus .page-graph-node-disc {
+  width: 56px;
+  height: 56px;
+  background: var(--graph-node-color);
+  color: var(--color-on-accent);
+}
+
+.page-graph-node-focus .page-graph-node-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Solid rather than the faint accent it started as: on a dark theme that was
+   nearly invisible, which left the card at the side as the only clue about
+   which page it was describing. */
+.page-graph-node-selected .page-graph-node-disc {
+  box-shadow: 0 0 0 3px var(--color-ring);
+  border-color: var(--color-accent);
+}
+
+.page-graph-node-selected .page-graph-node-name {
+  font-weight: 600;
+}
+
+.page-graph-empty {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-2xl);
+  transform: translateX(-50%);
+  max-width: 46ch;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.page-graph-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+  width: 320px;
+  flex: none;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.page-graph-preview-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-primary);
+}
+
+.page-graph-preview-name {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.page-graph-preview-template {
+  margin: 0;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.page-graph-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-graph-preview-tag {
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-secondary);
+}
+
+.page-graph-preview-excerpt {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--color-text-primary);
+}
+
+.page-graph-preview-source {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}

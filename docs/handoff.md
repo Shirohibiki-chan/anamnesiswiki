@@ -108,6 +108,9 @@ database and a Subpage/Tag index block go through it, so the two cannot drift on
 what a Status or a multi-select means. A block's `source`, `tags` and
 `targetIds` still say *which* pages; `block.view` only says how to draw them.
 
+**Phase 24 — Graphs — step 1 shipped 2026-09-07**: a page’s relationships,
+opened over the page. What binds the code is §The graph below.
+
 **Phase 19 — Safety Net — closed 2026-08-28**: undo across the right-hand panel
 and a page's tabs, version history in `project.json`, retention in Settings.
 **Phase 19.5 — Blocks in the Page — closed 2026-09-04**, and its parts are the
@@ -172,6 +175,44 @@ binding on the code.
 A structural code review, a disk-I/O pass, and a documentation accuracy pass all
 ran on 2026-07-30. What they changed is in `CHANGELOG.md`; what they *concluded*
 is below.
+
+---
+
+## The graph
+
+- **The simulation is ticked to a stop and must not be animated.** `settleGraph`
+  runs d3-force to rest synchronously and then throws it away; there is no
+  timer and nothing redraws after the first paint. Two things depend on that
+  and both would be lost by “making it feel alive”. A layout still moving can
+  be caught half-settled, so the promise that a world looks the same every time
+  it is opened would hold only for people who waited; and an idle animation
+  loop is a core spinning on her machine for a picture that has stopped
+  changing. The seeded `randomSource` is the other half — d3 reaches for
+  `Math.random` when two nodes land on the same point, which is exactly the
+  rare event that makes one opening differ from the next.
+
+- **Nodes are HTML and only the lines are SVG, and that is the plan’s “SVG, not
+  canvas” rather than a departure from it.** The reason for the commitment is
+  that the CSS token themes — hers included — apply for free; an ordinary
+  `<button>` gets more of that than an SVG node would, plus focus, hover, a
+  lucide icon and a wrapping name, with no hit-testing of its own. Both sit
+  inside one transformed scene so they pan and zoom together. Moving the nodes
+  into the SVG would mean re-solving all of that inside `foreignObject`.
+
+- **A dragged node is an override in the view, never an edit of the model.**
+  `useGraphView` keeps a `moved` map keyed by id and the settled layout stays
+  what the simulation produced, so a node put back is put back exactly. It is
+  also why dragging cannot dirty a page: nothing about a graph belongs in a
+  page’s file, and step 2’s pinned positions go in `project.json` beside tree
+  order for the same reason.
+
+- **Every edge comes from `link-index.ts` and the graph adds only the tree.**
+  A new kind of connection belongs in that file, where Backlinks and the index
+  blocks will see it too — adding one here would give the same relationship two
+  answers depending on which surface asked. `graph-service.ts` draws one line
+  per pair and the ranking it picks with mirrors `outgoingEdges`, deliberately:
+  a second, contradictory precedence would make a line’s reason depend on which
+  end you asked from.
 
 ---
 
