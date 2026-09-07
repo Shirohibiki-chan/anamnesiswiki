@@ -4521,6 +4521,11 @@ value is an option id, and the option list lives on the row's own
 draw every page's Status with whichever page defined the column first — the one
 bug here that would look like a styling glitch rather than a data error.
 
+**So filters compare labels, not ids.** Filtering, sorting and grouping all read
+a field through one function (`valuesOn`), which is what keeps them agreeing
+with each other and with the table. A filter storing an option id would match
+the page it was built on and no other, because each page mints its own.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:

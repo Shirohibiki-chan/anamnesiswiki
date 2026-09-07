@@ -487,6 +487,70 @@ export const DATABASE_LAYOUTS = ["table", "cards", "board", "list"] as const;
 export type DatabaseLayout = (typeof DATABASE_LAYOUTS)[number];
 
 /**
+ * What a filter, a sort or a grouping points at (Phase 23, step 2).
+ *
+ * **A page's own fields are not the only things worth filtering on**, and the
+ * three that aren't properties are the three the rest of the app already
+ * arranges by: what template a page is, what tags it carries, what it is
+ * called. A plain string key cannot say that — `"template"` is also a
+ * perfectly good property key — so the kind is carried rather than reserved.
+ *
+ * **Phase 24 is written to reuse this.** Its graph filters by template and by
+ * tag, which are two of these four, so the shape has to hold them as first
+ * class things rather than as properties that happen to be spelled specially.
+ */
+export type DatabaseField =
+  | { kind: "property"; key: string }
+  | { kind: "template" }
+  | { kind: "tag" }
+  | { kind: "name" };
+
+/**
+ * What a filter asks about its field.
+ *
+ * **Two sets, decided by whether the page holds one value or several**, rather
+ * than one set with operators that quietly mean different things. `is` on a
+ * Status is an equality; `is` on a page's tags would have to mean "has", and an
+ * operator that changes meaning per row is how a filter stops being readable.
+ * So a multi-valued field gets `has` / `does not have` and never `is`.
+ */
+export const DATABASE_OPERATORS = [
+  "is",
+  "is-not",
+  "contains",
+  "has",
+  "does-not-have",
+  "is-empty",
+  "is-not-empty",
+] as const;
+
+export type DatabaseOperator = (typeof DATABASE_OPERATORS)[number];
+
+/**
+ * One row of a view's filter list. Every one of them has to match.
+ *
+ * **All of them, not any of them, and that is deliberate for now.** Notion
+ * nests and/or groups, which is a query builder — the thing the plan says not
+ * to build ("filters are visible controls, not a query syntax"). Stacked
+ * conditions that all apply is what a person means by filtering nine times out
+ * of ten, and an `any` toggle can be added to this list later without changing
+ * a stored view.
+ */
+export type DatabaseFilter = {
+  id: string;
+  field: DatabaseField;
+  operator: DatabaseOperator;
+  /** Absent for `is-empty` and `is-not-empty`, which ask about nothing. */
+  value?: string;
+};
+
+/** One rung of a view's sort. Earlier entries win; later ones break ties. */
+export type DatabaseSort = {
+  field: DatabaseField;
+  direction: "asc" | "desc";
+};
+
+/**
  * How a page is drawn when it is being shown as a database (Phase 23).
  *
  * Deliberately one record rather than a list of them: a page gets one view and
@@ -507,6 +571,27 @@ export type DatabaseView = {
    * from, and the table falls back to names alone.
    */
   templateKey?: string;
+  /**
+   * Columns turned off, as property keys. Absent means every column shows.
+   *
+   * Stored as what is *hidden* rather than what is shown, so a property added
+   * to a template later turns up in views that already exist instead of being
+   * invisible until someone goes looking for a settings panel to fix it.
+   */
+  hiddenColumns?: string[];
+  /** Conditions a row has to meet to appear. All of them apply — see above. */
+  filters?: DatabaseFilter[];
+  /** How the rows are ordered. Absent means the order the tree is in. */
+  sorts?: DatabaseSort[];
+  /**
+   * What the rows are grouped under, or absent for one flat list.
+   *
+   * **Only fields a page has exactly one of** — a select, a status, or the
+   * template. Grouping by tags would put a page carrying three of them under
+   * three headings, and a row that appears three times in a count of nine is
+   * worse than not being able to group by tags.
+   */
+  groupBy?: DatabaseField;
 };
 
 export type Node = {
