@@ -474,6 +474,41 @@ export type Block = {
   max?: number;
 };
 
+/**
+ * The layouts a database can be drawn in (Phase 23).
+ *
+ * All four were her call on 2026-09-06, asked which to build first. Only
+ * `table` renders so far — step 1 of the build order in `docs/plan.md` — and
+ * the rest arrive at step 4 off this same record, because a layout is what a
+ * view is drawn *as* rather than a different kind of thing.
+ */
+export const DATABASE_LAYOUTS = ["table", "cards", "board", "list"] as const;
+
+export type DatabaseLayout = (typeof DATABASE_LAYOUTS)[number];
+
+/**
+ * How a page is drawn when it is being shown as a database (Phase 23).
+ *
+ * Deliberately one record rather than a list of them: a page gets one view and
+ * changes it in place. Several saved views is a later shape, and it is a list
+ * of *this*, so nothing here has to be migrated to get there.
+ */
+export type DatabaseView = {
+  layout: DatabaseLayout;
+  /**
+   * Which template supplies the columns.
+   *
+   * **A table names one template on purpose** — a Location has no Species
+   * column to fill, so a mixed set reads as a grid of blanks. It is chosen
+   * when the view is made, from whatever the pages inside are mostly made of,
+   * and rows of other templates still appear with those columns empty rather
+   * than being hidden: a page vanishing from the page it lives inside is worse
+   * than a blank cell. Absent means nothing inside had a template to guess
+   * from, and the table falls back to names alone.
+   */
+  templateKey?: string;
+};
+
 export type Node = {
   id: string;
   parentId: string | null;
@@ -536,6 +571,20 @@ export type Node = {
   // blank new page now starts with. So `createNode` always writes one, and
   // nothing else may default this to `[]` on read.
   blocks?: Block[];
+  /**
+   * This page shown as a database — a table, cards, a board or a list of the
+   * pages inside it (Phase 23).
+   *
+   * **A lens, not a container, and the whole phase rests on that.** The rows
+   * are pages that already exist and already live somewhere; this record says
+   * how to *draw* them and nothing else. So removing it removes a view and
+   * never a page, and two pages can show overlapping sets with no link between
+   * them. Absent is the ordinary state and means the page renders as a page.
+   *
+   * See `docs/plan.md` Phase 23 for why the alternative — a database that owns
+   * its rows — was rejected along with the machinery it drags behind it.
+   */
+  view?: DatabaseView;
   tags: string[];
   color?: string;
   // Held back from anyone the world is shown to, while staying completely

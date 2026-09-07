@@ -22,6 +22,7 @@ import {
   useMoveDestinations,
   type MoveDestination,
 } from "../../hooks/use-tree-data";
+import { useNewDatabaseView } from "../../hooks/use-database";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useSnapshotCount } from "../../hooks/use-page-history";
 import { useCreatePageIn } from "../../hooks/use-new-page";
@@ -52,11 +53,13 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     setNodeHidden,
     setProjectHome,
     setSharedUniverse,
+    setNodeView,
     setFocus,
     sortChildren,
     saveAsTemplate,
     togglePinned,
   } = useProjectActions();
+  const newDatabaseView = useNewDatabaseView();
   const effective = useEffectiveColor(node.id);
   const hiddenByAncestor = useHiddenByAncestor(node.id);
   const homeNodeId = useProjectHomeId();
@@ -471,6 +474,12 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             universeAction={universeAction}
             sharedAction={sharedAction}
             onToggleShared={() => setSharedUniverse(sharedAction === "unset" ? null : node.id)}
+            isDatabase={Boolean(fullNode.view)}
+            // The view is guessed from what is actually inside the page — see
+            // useNewDatabaseView — rather than being an empty table waiting to
+            // be configured. Removing it passes null, and removes nothing else:
+            // the rows were pages that live in the tree, not in the view.
+            onToggleDatabase={() => setNodeView(node.id, fullNode.view ? null : newDatabaseView(node.id))}
             // The whole conversion is `applyTemplate`'s existing swap: a
             // universe seeds no tabs and no properties, so nothing the page
             // already holds is replaced, and any template field left without a

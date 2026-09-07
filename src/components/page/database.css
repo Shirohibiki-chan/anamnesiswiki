@@ -1,0 +1,142 @@
+/* A page drawn as a database. Phase 23, step 1 — table layout only. */
+
+.database-view {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  /* Room underneath as well as above: on a page that has writing, the view
+     sits between the title and the tab strip, and without this the Add a page
+     button reads as part of the tabs rather than as part of the table. */
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-xl);
+}
+
+.database-meta {
+  color: var(--color-text-muted);
+}
+
+.database-empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}
+
+/* The table scrolls sideways inside this, not the page. A grid with fifteen
+   columns is normal and taking the whole page sideways to read one of them is
+   not. */
+.database-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.database-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+.database-table th,
+.database-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-md) var(--space-lg);
+  vertical-align: top;
+  /* Cells wrap. An ellipsis in a grid is a dead end — the value is right
+     there and there is nowhere to go to read the rest of it. A floor and a
+     ceiling instead, so a Summary can't squeeze every other column to nothing
+     and a Status can't sit alone in a column six words wide. */
+  min-width: 7rem;
+  max-width: 22rem;
+  overflow-wrap: anywhere;
+}
+
+.database-table thead th {
+  border-bottom: 1px solid var(--color-border-strong);
+  padding-top: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.database-table tbody tr:last-child th,
+.database-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.database-table tbody tr:hover {
+  background: var(--color-hover);
+}
+
+/* The name column stays first and stays readable — it is the row's identity
+   and the only thing in the row that navigates.
+
+   Wider than the rest on purpose. At the shared floor an ordinary two-word
+   name wrapped to two lines while there was empty table to the right of it,
+   which reads as a broken column rather than as a long name. */
+.database-th-name {
+  min-width: 12rem;
+  font-weight: 400;
+  padding-left: 0;
+}
+
+.database-name {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The identity column does not wrap. A name broken across two lines while
+   there is still table to the right of it reads as a broken column, and the
+   scroller above is the honest answer to a name too long for the space. */
+.database-name-text {
+  white-space: nowrap;
+}
+
+.database-name:hover .database-name-text,
+.database-name:focus-visible .database-name-text {
+  text-decoration: underline;
+}
+
+.database-name svg {
+  flex-shrink: 0;
+  /* Baseline-aligned rather than centred: the icon sits beside a name that
+     may wrap to two lines, and centring it against the block would float it
+     into the gap between them. */
+  transform: translateY(0.15em);
+  color: var(--color-text-muted);
+}
+
+.database-cell-text {
+  color: var(--color-text-secondary);
+}
+
+.database-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.database-chip {
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+  font-size: var(--fs-xs);
+}
+
+.database-add {
+  flex-shrink: 0;
+}

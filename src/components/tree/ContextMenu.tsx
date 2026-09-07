@@ -1,6 +1,6 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Move to /
 // Set color / Earlier versions /
-// Save as template / Turn into a universe / Use as shared universe / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// Save as template / Turn into a universe / Use as shared universe / Turn into a table / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
@@ -15,6 +15,7 @@ import {
   Copy,
   Crosshair,
   FileStack,
+  FileText,
   Eye,
   EyeOff,
   Folder,
@@ -30,6 +31,7 @@ import {
   Pin,
   PinOff,
   Plus,
+  Table,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -79,6 +81,16 @@ type ContextMenuProps = {
   sharedAction: "set" | "unset" | null;
   onToggleShared: () => void;
   /**
+   * Whether this row is being shown as a database, so the item offers to stop
+   * (Phase 23).
+   *
+   * Offered on every row rather than only on containers, because every page
+   * can hold pages — a page with nothing inside it becomes an empty table that
+   * says so, which is a truthful answer rather than a missing menu item.
+   */
+  isDatabase: boolean;
+  onToggleDatabase: () => void;
+  /**
    * Whether this row holds more than one page. Sorting is offered above that
    * rather than above zero: a group of one is already in every order at once,
    * and an item that visibly does nothing is worse than one that isn't there.
@@ -123,6 +135,8 @@ export function ContextMenu({
   onToggleUniverse,
   sharedAction,
   onToggleShared,
+  isDatabase,
+  onToggleDatabase,
   canSort,
   onRename,
   onSetIcon,
@@ -239,6 +253,29 @@ export function ContextMenu({
       {!isMultiple && sharedAction && (
         <button type="button" onClick={() => run(onToggleShared)}>
           <Layers size={13} /> {sharedAction === "set" ? "Use as shared universe" : "Stop using as shared"}
+        </button>
+      )}
+      {/* Single selection only, and in this group because it answers what the
+          page *is* rather than what is written in it — the same question Save
+          as template and Turn into a universe answer.
+
+          The wording of the reverse is deliberate. "Turn back into a page"
+          would describe a conversion, and nothing was converted: the pages
+          below are exactly where they were, and stopping is only putting the
+          lens down. One item rather than a submenu of layouts for now — the
+          other three arrive at step 4, and a submenu holding one thing is a
+          click you have to make for no reason. */}
+      {!isMultiple && (
+        <button type="button" onClick={() => run(onToggleDatabase)}>
+          {isDatabase ? (
+            <>
+              <FileText size={13} /> Stop showing as a table
+            </>
+          ) : (
+            <>
+              <Table size={13} /> Turn into a table
+            </>
+          )}
         </button>
       )}
       {/* Single selection only. Sorting rewrites one group's order, and "sort

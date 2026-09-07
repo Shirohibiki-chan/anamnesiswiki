@@ -59,6 +59,10 @@ const BLOCK_ARRIVAL = ".block-anchor-arrival";
 const EDITOR_INLINE_ICON = ".editor-inline-icon";
 const ICON_PICKER = ".icon-picker";
 const SUGGESTION_MENU = "#bn-suggestion-menu";
+// Phase 23: a page drawn as a database.
+const DATABASE_VIEW = ".database-view";
+const DATABASE_TABLE = ".database-table";
+const DATABASE_ROW_NAME = ".database-name";
 const FORMATTING_BAR = ".bn-formatting-toolbar";
 
 /**
@@ -1123,4 +1127,34 @@ export async function openSettingsSection(window: Page, name: string): Promise<v
 /** Collapses runs of whitespace, the way the browser already has by render time. */
 function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim();
+}
+
+/** Whether the page on screen is being shown as a database. */
+export async function hasDatabase(window: Page): Promise<boolean> {
+  return (await window.locator(DATABASE_VIEW).count()) > 0;
+}
+
+/**
+ * The table's column headings, left to right.
+ *
+ * Read off the header row rather than derived from a template, because the
+ * whole question a table answers is which properties it decided to show — a
+ * scenario that computed the expected list the same way the app does would
+ * agree with a bug.
+ */
+export async function databaseColumns(window: Page): Promise<string[]> {
+  const headings = await window.locator(`${DATABASE_TABLE} thead th`).allInnerTexts();
+  return headings.map((heading) => normalize(heading));
+}
+
+/** The names of the pages the table is showing as rows, in the order drawn. */
+export async function databaseRowNames(window: Page): Promise<string[]> {
+  const names = await window.locator(`${DATABASE_TABLE} ${DATABASE_ROW_NAME}`).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** Clicks a row's name, which is the way from a table into a page. */
+export async function openDatabaseRow(window: Page, name: string): Promise<void> {
+  await window.locator(DATABASE_ROW_NAME).filter({ hasText: name }).first().click();
+  await waitForPageTitle(window, name);
 }
