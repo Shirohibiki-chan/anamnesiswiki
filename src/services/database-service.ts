@@ -92,17 +92,40 @@ export function databaseColumns(
   if (!templateKey) return [];
 
   const columns = defaultPropertyOrder(schemaFor(templateKey), []);
-  const seen = new Set(columns.map((column) => column.key));
+  const seen = new Set(columns.map((column) => column.label.toLowerCase()));
 
   for (const row of rows) {
     if (row.templateKey !== templateKey) continue;
     for (const spec of row.customProperties ?? []) {
-      if (seen.has(spec.key)) continue;
-      seen.add(spec.key);
-      columns.push(spec);
+      const name = spec.label.toLowerCase();
+      if (seen.has(name)) continue;
+      seen.add(name);
+      // **The column's key is the name, not the spec's own key.** A custom
+      // property's key is a uuid minted per page (see the store's
+      // addCustomProperty), so the spec's key would name one page's copy of
+      // Status — nine characters carrying one would have made nine columns,
+      // and a filter or a hidden column would have gone stale the moment the
+      // page that happened to define it first was deleted. Everywhere else in
+      // the app a property is identified by its label; see indexProperties.
+      columns.push({ ...spec, key: name });
     }
   }
   return columns;
+}
+
+/**
+ * The key *this row* stores a column's value under.
+ *
+ * A template's field has the same key on every page of that template, so the
+ * column's key is already right. A custom one does not, so it is found by name
+ * — which is the same answer the property index gives and the reason two pages
+ * can disagree about the uuid and still be showing the same column.
+ */
+function keyOn(row: Node, column: RenderableProperty): string {
+  const own = (row.customProperties ?? []).find(
+    (spec) => spec.key === column.key || spec.label.toLowerCase() === column.label.toLowerCase(),
+  );
+  return own?.key ?? column.key;
 }
 
 /**
@@ -133,7 +156,8 @@ export function databaseCell(
   column: RenderableProperty,
   nodes: Record<string, Node>,
 ): DatabaseCell {
-  const raw = row.properties[column.key];
+  const key = keyOn(row, column);
+  const raw = row.properties[key];
   if (raw === undefined || raw === null || raw === "") return EMPTY;
 
   switch (column.type) {
@@ -157,7 +181,7 @@ export function databaseCell(
         : typeof raw === "string"
           ? [raw]
           : [];
-      const options = optionsOn(row, column.key);
+      const options = optionsOn(row, key);
       const chips = ids
         .map((id) => options.find((option) => option.id === id))
         .filter((option): option is PropertyOption => Boolean(option))
