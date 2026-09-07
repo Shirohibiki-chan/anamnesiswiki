@@ -11,7 +11,9 @@ import {
   filterableFields,
   groupRows,
   groupableFields,
+  isEditableInRow,
   matchesFilter,
+  planCellEdit,
   newDatabaseView,
   operatorsFor,
   suggestColumnTemplate,
@@ -502,5 +504,167 @@ describe("visibleColumns", () => {
 
   it("shows everything when nothing is hidden", () => {
     expect(visibleColumns(columns2, undefined)).toBe(columns2);
+  });
+});
+
+// ---- Editing a cell (step 3) ----
+
+describe("isEditableInRow", () => {
+  it("takes the types that read on one line and leaves the rest to the page", () => {
+    const editable = ["text", "number", "date", "select", "multiselect", "status"] as const;
+    for (const type of editable) {
+      expect(isEditableInRow({ key: "k", label: "L", type })).toBe(true);
+    }
+    for (const type of ["longtext", "refs"] as const) {
+      expect(isEditableInRow({ key: "k", label: "L", type })).toBe(false);
+    }
+  });
+});
+
+describe("planCellEdit", () => {
+  const rank: RenderableProperty = { key: "rank", label: "Rank", type: "text" };
+  const status: RenderableProperty = { key: "status", label: "Status", type: "status" };
+  const kinds: RenderableProperty = { key: "kinds", label: "Kinds", type: "multiselect" };
+  const count: RenderableProperty = { key: "count", label: "Count", type: "number" };
+
+  it("writes into the row's own key when it already has the property", () => {
+    const row = page({
+      customProperties: [{ key: "uuid-a", label: "Rank", type: "text" }],
+      properties: { "uuid-a": "Sergeant" },
+    });
+
+    const patch = planCellEdit(row, rank, { kind: "text", text: "Captain" }, schemaFor, []);
+
+    expect(patch.properties).toEqual({ "uuid-a": "Captain" });
+    // Nothing was created, so nothing else is in the patch.
+    expect(patch.customProperties).toBeUndefined();
+    expect(patch.blocks).toBeUndefined();
+  });
+
+  // The column exists because some *other* page carries the property.
+  it("creates the property, and a block for it, on a page that lacks it", () => {
+    const row = page({ customProperties: [] });
+
+    const patch = planCellEdit(row, rank, { kind: "text", text: "Captain" }, schemaFor, []);
+
+    expect(patch.customProperties).toHaveLength(1);
+    expect(patch.customProperties?.[0].label).toBe("Rank");
+    const key = patch.customProperties![0].key;
+    expect(patch.properties?.[key]).toBe("Captain");
+    // Without the block the page's own panel cannot draw the field, so the
+    // value would be one only the table could see.
+    expect(patch.blocks?.some((block) => block.propertyKey === key)).toBe(true);
+  });
+
+  it("writes a template's own field under the template's key, inventing nothing", () => {
+    const row = page({ templateKey: "character" });
+    const age: RenderableProperty = { key: "age", label: "Age", type: "text" };
+
+    const patch = planCellEdit(row, age, { kind: "text", text: "31" }, schemaFor, []);
+
+    expect(patch.properties).toEqual({ age: "31" });
+    expect(patch.customProperties).toBeUndefined();
+  });
+
+  it("reads an emptied number box as not set rather than as zero", () => {
+    const row = page({ customProperties: [{ key: "uuid-n", label: "Count", type: "number" }], properties: { "uuid-n": 4 } });
+
+    expect(planCellEdit(row, count, { kind: "number", text: "" }, schemaFor, []).properties).toEqual({
+      "uuid-n": undefined,
+    });
+    expect(planCellEdit(row, count, { kind: "number", text: "0" }, schemaFor, []).properties).toEqual({ "uuid-n": 0 });
+    // Half-typed rubbish must not land as NaN on her disk.
+    expect(planCellEdit(row, count, { kind: "number", text: "-" }, schemaFor, []).properties).toEqual({
+      "uuid-n": undefined,
+    });
+  });
+
+  it("stores a status as the row's own id for that word", () => {
+    const row = page({
+      customProperties: [
+        { key: "uuid-s", label: "Status", type: "status", options: [{ id: "mine", label: "Alive", color: "green" }] },
+      ],
+    });
+
+    const patch = planCellEdit(row, status, { kind: "options", labels: ["Alive"] }, schemaFor, []);
+
+    expect(patch.properties).toEqual({ "uuid-s": "mine" });
+  });
+
+  // The heart of it: an option list lives per page, so choosing a word another
+  // page already uses has to arrive as the same option, not a lookalike.
+  it("borrows the id and colour the rest of the world uses for that word", () => {
+    const row = page({ customProperties: [{ key: "uuid-s", label: "Status", type: "status", options: [] }] });
+    const known = [{ id: "shared-alive", label: "Alive", color: "green" }];
+
+    const patch = planCellEdit(row, status, { kind: "options", labels: ["Alive"] }, schemaFor, known);
+
+    expect(patch.properties).toEqual({ "uuid-s": "shared-alive" });
+    expect(patch.customProperties?.[0].options).toEqual([{ id: "shared-alive", label: "Alive", color: "green" }]);
+  });
+
+  it("makes a brand new option when nobody has used that word yet", () => {
+    const row = page({ customProperties: [{ key: "uuid-s", label: "Status", type: "status", options: [] }] });
+
+    const patch = planCellEdit(row, status, { kind: "options", labels: ["Missing"] }, schemaFor, []);
+
+    const options = patch.customProperties?.[0].options ?? [];
+    expect(options).toHaveLength(1);
+    expect(options[0].label).toBe("Missing");
+    expect(patch.properties?.["uuid-s"]).toBe(options[0].id);
+  });
+
+  it("seeds a new property's option list from what the world already says", () => {
+    const row = page({ customProperties: [] });
+    const known = [
+      { id: "a", label: "Alive", color: "green" },
+      { id: "b", label: "Dead", color: "wine" },
+    ];
+
+    const patch = planCellEdit(row, status, { kind: "options", labels: ["Dead"] }, schemaFor, known);
+
+    expect(patch.customProperties?.[0].options).toEqual(known);
+    expect(patch.properties?.[patch.customProperties![0].key]).toBe("b");
+  });
+
+  it("holds several values for a multi-select and one for a status", () => {
+    const row = page({
+      customProperties: [
+        { key: "uuid-k", label: "Kinds", type: "multiselect", options: [] },
+        { key: "uuid-s", label: "Status", type: "status", options: [] },
+      ],
+    });
+
+    const many = planCellEdit(row, kinds, { kind: "options", labels: ["Rogue", "Noble"] }, schemaFor, []);
+    expect(many.properties?.["uuid-k"]).toHaveLength(2);
+
+    const one = planCellEdit(row, status, { kind: "options", labels: ["Alive"] }, schemaFor, []);
+    expect(typeof one.properties?.["uuid-s"]).toBe("string");
+  });
+
+  it("clears a status back to nothing, and a multi-select to an empty list", () => {
+    const row = page({
+      customProperties: [
+        { key: "uuid-s", label: "Status", type: "status", options: [{ id: "x", label: "Alive", color: "green" }] },
+        { key: "uuid-k", label: "Kinds", type: "multiselect", options: [{ id: "y", label: "Rogue", color: "blue" }] },
+      ],
+      properties: { "uuid-s": "x", "uuid-k": ["y"] },
+    });
+
+    expect(planCellEdit(row, status, { kind: "options", labels: [] }, schemaFor, []).properties?.["uuid-s"]).toBeUndefined();
+    expect(planCellEdit(row, kinds, { kind: "options", labels: [] }, schemaFor, []).properties?.["uuid-k"]).toEqual([]);
+  });
+
+  it("keeps the options a page already had when adding another", () => {
+    const row = page({
+      customProperties: [
+        { key: "uuid-k", label: "Kinds", type: "multiselect", options: [{ id: "y", label: "Rogue", color: "blue" }] },
+      ],
+      properties: { "uuid-k": ["y"] },
+    });
+
+    const patch = planCellEdit(row, kinds, { kind: "options", labels: ["Rogue", "Noble"] }, schemaFor, []);
+
+    expect(patch.customProperties?.[0].options?.map((option) => option.label)).toEqual(["Rogue", "Noble"]);
   });
 });

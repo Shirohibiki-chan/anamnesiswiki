@@ -8,6 +8,7 @@
 // by care: removing a view cannot remove a page, and two views over the same
 // pages need no link between them because neither one holds anything.
 import type {
+  CustomPropertySpec,
   DatabaseField,
   DatabaseFilter,
   DatabaseOperator,
@@ -17,7 +18,8 @@ import type {
   PropertyOption,
 } from "../constants/schema";
 import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../constants/schema";
-import { defaultPropertyOrder } from "./block-service";
+import { blocksFor, defaultPropertyOrder, newBlock } from "./block-service";
+import { isChipType } from "./property-service";
 import type { RenderableProperty } from "./property-service";
 import { orderSiblings } from "./tree-service";
 
@@ -473,4 +475,133 @@ export function visibleColumns(columns: RenderableProperty[], hidden: string[] |
   if (!hidden || hidden.length === 0) return columns;
   const off = new Set(hidden);
   return columns.filter((column) => !off.has(column.key));
+}
+
+// ---- Editing a cell (Phase 23, step 3) ----
+
+/**
+ * The types that can be changed from inside a row.
+ *
+ * **The line is whether the value reads on one line at a column's width.** Long
+ * text, refs and pictures want more room than a cell has — refs is a page
+ * picker rather than a field — so those open the page instead. That line is
+ * what kept this phase shippable, and it is the rule for placing a type that
+ * does not exist yet. See `docs/plan.md` Phase 23.
+ */
+export const EDITABLE_IN_ROW: CustomPropertySpec["type"][] = [
+  "text",
+  "number",
+  "date",
+  "select",
+  "multiselect",
+  "status",
+];
+
+export function isEditableInRow(column: RenderableProperty): boolean {
+  return EDITABLE_IN_ROW.includes(column.type);
+}
+
+/** What the cell editor is handing back. */
+export type CellEdit =
+  | { kind: "text"; text: string }
+  | { kind: "number"; text: string }
+  /** Option *labels*, because that is the only thing two pages agree on. */
+  | { kind: "options"; labels: string[] };
+
+/**
+ * The patch that writes one cell, materialising whatever has to exist first.
+ *
+ * **Three things can be missing, and typing into a cell has to create all of
+ * them.** The page may not carry the property at all — the column exists
+ * because some other page does — so the spec is minted here, with a block
+ * beside it so the field also appears in the page's own sidebar rather than
+ * being a value only the table can see. The page may carry the property but not
+ * the option being chosen, because an option list lives per page. And the value
+ * itself may be the page's first.
+ *
+ * **Options are matched and created by label**, and copied from
+ * `knownOptions` — the vocabulary already in use for this name on pages of the
+ * same kind — so choosing Alive on a second character is genuinely the same
+ * option, with the same id and colour, rather than a lookalike. That is the
+ * same promise `addCustomProperty` already makes when a field is added from the
+ * panel.
+ */
+export function planCellEdit(
+  row: Node,
+  column: RenderableProperty,
+  edit: CellEdit,
+  schemaFor: (key: string) => RenderableProperty[],
+  knownOptions: PropertyOption[],
+): Partial<Node> {
+  const fromTemplate = schemaFor(row.templateKey).some(
+    (spec) => spec.key === column.key || spec.label.toLowerCase() === column.label.toLowerCase(),
+  );
+  const existing = (row.customProperties ?? []).find(
+    (spec) => spec.key === column.key || spec.label.toLowerCase() === column.label.toLowerCase(),
+  );
+
+  const key = existing?.key ?? (fromTemplate ? column.key : crypto.randomUUID());
+  const patch: Partial<Node> = {};
+
+  // The spec, and the block that shows it. A field added without a block is a
+  // value the page's own panel cannot draw — see the store's addCustomProperty
+  // for why the two go together.
+  let spec: CustomPropertySpec | undefined = existing;
+  if (!fromTemplate && !existing) {
+    spec = {
+      key,
+      label: column.label,
+      type: column.type,
+      ...(isChipType(column.type) ? { options: knownOptions.map((option) => ({ ...option })) } : {}),
+    };
+    patch.customProperties = [...(row.customProperties ?? []), spec];
+    patch.blocks = [
+      ...blocksFor(row, schemaFor(row.templateKey)),
+      newBlock("property", { propertyKey: key }),
+    ];
+  }
+
+  if (edit.kind === "text") {
+    patch.properties = { ...row.properties, [key]: edit.text };
+    return patch;
+  }
+
+  if (edit.kind === "number") {
+    // An empty box is "not set", not zero — the same distinction NumberProperty
+    // draws, and the reason this is not `Number(text) || 0`.
+    const trimmed = edit.text.trim();
+    const parsed = trimmed === "" ? undefined : Number(trimmed);
+    const value = parsed === undefined || Number.isNaN(parsed) ? undefined : parsed;
+    patch.properties = { ...row.properties, [key]: value };
+    return patch;
+  }
+
+  // Options. Anything chosen that this page has never seen is added to its own
+  // list, taking the id and colour the rest of the world already uses for that
+  // word where there is one.
+  const options = [...(spec?.options ?? [])];
+  const ids: string[] = [];
+  for (const label of edit.labels) {
+    const wanted = label.toLowerCase();
+    let option = options.find((candidate) => candidate.label.toLowerCase() === wanted);
+    if (!option) {
+      const known = knownOptions.find((candidate) => candidate.label.toLowerCase() === wanted);
+      option = known ? { ...known } : { id: crypto.randomUUID(), label, color: "default" };
+      options.push(option);
+    }
+    ids.push(option.id);
+  }
+
+  if (spec) {
+    const nextSpec: CustomPropertySpec = { ...spec, options };
+    patch.customProperties = (patch.customProperties ?? row.customProperties ?? []).map((candidate) =>
+      candidate.key === key ? nextSpec : candidate,
+    );
+  }
+
+  // Single-valued types store one id, or nothing when the value is cleared —
+  // the shape the panel already reads back. See CustomPropertySpec.
+  const value = column.type === "multiselect" ? ids : ids[0];
+  patch.properties = { ...row.properties, [key]: ids.length === 0 && column.type !== "multiselect" ? undefined : value };
+  return patch;
 }

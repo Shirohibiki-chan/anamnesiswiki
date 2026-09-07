@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-07 — typing straight into a table
+
+### Additions
+
+- **You can change a value without leaving the table.** Text, numbers, dates and dropdowns are edited in the row. Click a cell and type; there's no button to press first.
+- **Filling in a cell on a page that doesn't have that property yet gives it one.** The column is there because some other page uses it, so typing into the blank cell adds the property to that page properly — it turns up in that page's own panel too, not only in the table.
+- **Dropdowns offer what your other pages already say.** Picking *Alive* on a second character gets the same option, with the same colour, rather than a lookalike. You can type a new value straight into the picker to make one.
+- **One press of undo puts a cell back**, including when the edit created the property.
+- **A wide table scrolls sideways, and the name column stays put** while the rest slides under it — so you never lose which row you're looking at.
+- **Long text, linked pages and pictures still open the page.** They want more room than a column has, and a cramped editor for them would be worse than a click.
+
+### Fixes
+
+- **Columns stop squeezing each other.** With five or more columns the words were breaking mid-phrase to make everything fit. Every column now has a minimum width and the table scrolls instead.
+
 ## 2026-09-07 — one column per property
 
 ### Fixes
@@ -243,10 +258,3 @@
 - **A block link only means something inside Anamnesis.** Paste one into a chat window and you get a line of text starting `anamnesis://` — your world is a folder on your own computer, so there is no web address it could be instead.
 - **It's in the block's menu rather than a third `#` button beside it.** The strip those buttons sit in is only as wide as two of them; a third covered the left edge of the writing, where a click is meant to put the cursor at the start of a line.
 - **The blocks in the sidebar panel don't offer it.** This is a link to a spot in the writing; drag a block into the page and it gets the item like everything else there.
-
-## 2026-09-04 — dragging a block behaves itself
-
-### Fixes
-
-- **A block being dragged doesn't warp any more.** Dragging one block past another stretched or squashed whatever you were holding — a picture blown up to twice its size, headings shrunk to nothing, a gauge spilling out through the side of its own box. It was the drag library resizing the block to the shape of the gap it was over; it now just moves.
-- **A block inside an infobox can be picked up at all.** The frame's own resize handles run down its inner edges, right over the grip of every block in it, so taking hold of a block usually grabbed the frame and resized it instead. The grip wins where the two overlap.
