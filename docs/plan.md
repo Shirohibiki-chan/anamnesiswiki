@@ -469,48 +469,19 @@ and a title bar that takes the theme's colours and draws its own minimise,
 maximise and close. The splits it
 was scoped with are Phase 21.5, deferred. Detail is in `docs/shipped.md`; what
 still binds the code is in `docs/handoff.md`.
-**Phase 22 is next**, and it is the next one in this file.
+**Phase 22 (Universes) shipped 2026-09-06** — a universe is a top-level
+container for one version of the world, chosen from a switcher under the world's
+name rather than opened as a row in the tree; the tree shows one at a time, so a
+character four levels down under `AUs / Demonic AU / Characters` is two; a
+top-level page can be turned into one and back out again; one universe can be
+marked the shared one, and its pages ride along in their own section under
+whichever universe is selected; and following a link out of the universe you are
+in switches to it rather than refusing. Detail is in `docs/shipped.md`; what
+still binds the code is in `docs/handoff.md`.
+**Phase 23 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 22 — Universes
-
-Decided 2026-08-08. A universe is a top-level container for one version of the world — Canon, Demonic AU, Merfolk AU, Pokemon AU, Timeswap AU — plus a switcher that says which one you're working in.
-
-**A universe is not a row in the tree.** Confirmed by the user 2026-08-08 and it's the load-bearing decision: you change universe from a *selector*, a separate piece of UI, the way Obsidian's vault switcher sits at the bottom of its sidebar rather than as a folder inside it. Obsidian is the reference she pointed at; match that shape.
-
-The tree then shows one universe at a time, at the root. Today an AU character is `AUs / Demonic AU / Characters / Valera Jiang` — four levels of indent before a name, and the `AUs` folder at the top exists only to hold the other folders. In Demonic AU it becomes `Characters / Valera Jiang`. Two levels gone, nothing deleted, and the `AUs` wrapper stops existing.
-
-**Why not just a folder:** a folder can sit anywhere, nest into anything, and means nothing in particular — which is how it got four deep in the first place. Universes can't nest inside each other, can't be dragged into anything, and never appear as a row you can navigate into by accident. Search, collections, graphs and storylines all scope to whatever the selector says, with an "all universes" setting for when she wants the whole project at once.
-
-**Pages true everywhere live in a Shared universe** — a species, a map, a magic system, a language. Decided 2026-08-08 over the alternative of loose pages at the project root. It's always visible alongside whichever universe is selected, so shared lore is never something you have to go and switch to. Keep it visually distinct in the tree; the one thing that must never be ambiguous is which universe the page you're typing into belongs to.
-
-**Following a link out of the current universe switches to it** rather than refusing to open the page. Blocking would be worse than moving, and silently showing a page from a universe you aren't in is how you edit the wrong Valera.
-
-**Cheap on disk, which is the point.** Each universe stays a directory of its own; the container's JSON just gets a template key marking it a universe. `template-registry.ts` already carries `alwaysDirectory` per template, so this is a fourteenth template plus a root-only rule in the reparent guard (`project-store.ts`) and the drop-target check (`TreePanel.tsx`). Nothing about how a page is read or written changes. (This entry said `canHaveChildren` and "a ninth template" until 2026-09-05; the field was renamed on 2026-08-10 and there have been thirteen templates since 2026-08-28.)
-
-**"Universe" is the word**, chosen 2026-08-08 over "AU": Canon isn't an alternate anything, and one word has to cover both.
-
-**Explicitly not building: base profiles with per-AU overrides.** Proposed and rejected by the user the same day, and worth not re-opening. Overrides only pay off when the variants are mostly identical, and hers diverge on species, appearance, history, relationships and most of the prose — the base profile would be pure indirection. It would also put "am I editing canon or this AU?" in front of every keystroke, and turn a character on disk into a base plus a stack of patches, which cuts against the plain-JSON promise. If cross-universe navigation is ever wanted, the cheap version is a plain "variant of" link between pages, no inheritance.
-
-**Sequenced before the three big views** so Database, Graphs and Storylines are born universe-aware instead of retrofitted — a storyline in particular belongs to exactly one universe. Staying at 22 rather than moving earlier, per the user leaving the call here 2026-08-08: the selector wanted somewhere to live, and Phase 21 was what built the shell it belongs in.
-
-### Scoped 2026-09-05
-
-Five decisions, all from the user on 2026-09-05, taken with Phase 21 shipped and the rail actually on screen.
-
-**The switcher goes on the tree panel's own header row**, under the world's name — not in the rail. The rail already holds a *project* switcher, and two buttons side by side both meaning "switch something" is the confusion this avoids; the rail's own rule is that it holds app errands, and a universe is the tree's contents. Obsidian's vault switcher sits in its sidebar's corner and that was the reference for a selector rather than a row, which this keeps. `ProjectHeader.tsx` is the row.
-
-**A project with no universes keeps the tree it has**, and nothing is rearranged by opening the app — no migration that wraps everything in a Canon universe on first open. **The switcher row is drawn even when there are none, and this half was reversed on 2026-09-06, the day it shipped.** It was hidden until a universe existed, on the reasoning that the feature should cost nothing to anyone who did not want it; the user's answer was that it made universes undiscoverable, since the only way to a first one was a right-click item you had to already know was there. A row reading "All universes" with a `+` beside it is now the entrance, and it teaches what a universe is by existing. The `+` offers both ways in: a new empty universe, and a list of the top-level pages already in the world to convert — the second being what a world like hers needs, since its AUs are folders today. `Turn into a universe` on a top-level page's right-click menu stays as the shortcut.
-
-**Shared is made by hand**, the same as any other universe, rather than appearing automatically once a second one exists. It sits in its own labelled, collapsible section under whichever universe is selected — the one being worked in reads first.
-
-**"All universes" is the top entry in the switcher**, not a setting. One click rather than a trip to Settings, and it is the only time universes appear as rows in the tree. (The 2026-08-08 entry above says "an all-universes setting"; this is that, placed.)
-
-**No one-off migration for the existing `AUs/` folder.** The right-click action has to exist anyway, so converting the four or five AUs by hand and deleting the empty wrapper is a few clicks against a migration that runs once and then lives in the code forever. Worth knowing when it is done: re-importing Valeraverse (Queued Adjustments) does not produce universes by itself, since the `.lk` file has the `AUs` folder inside it — the conversion is a separate step either way, which is what makes the by-hand route cheap rather than merely cheaper.
 
 ---
 
@@ -519,6 +490,32 @@ Five decisions, all from the user on 2026-09-05, taken with Phase 21 shipped and
 A filtered table or card view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
 
 **Named Database as of 2026-08-31; it was Collections until then.** The rename came out of naming the image gallery (`docs/ideas.md`): a gallery holds pictures, a database holds pages laid out as cards, and no name is shared — one word stretched over both is exactly Notion's failure. *Collection* was the other candidate and she held it back on purpose, not for a use she has in mind but because it is a valuable word and a feature name spends it everywhere at once. **Nothing user-facing said "collection", so there was nothing to migrate** — a block's heading is its source's name (Manual links, Subpage index, Tag index, Backlinks). The code still says `collection`; that is internal and can follow whenever this phase is built. **One cost, accepted knowingly:** in Notion the word carries typed columns, sorts, formulas and relations, so the name runs slightly ahead of what this phase builds.
+
+### Scoped 2026-09-06
+
+Worked out against Notion, which she brought screenshots of — the database page, the layout switcher, the view settings, the More settings menu — plus its help page on data sources and linked databases, which she pointed at deliberately.
+
+**A database is a view over pages that already exist, not a container that owns them.** This is the load-bearing decision, and most of Notion's complexity is the price of answering it the other way. In Notion a database *owns* its rows — a row's parent is the database — which buys two real things: somewhere for typed columns to be defined, and somewhere for the New button to put a page. The bill is the entire data-source apparatus: linked databases, moving a source from one database to another, access inherited from the original, and a help page to explain the difference between three words. **Neither reason applies here.** Templates already own the schema — the Character template says what properties a character has, across the whole tree rather than inside one database — and the folder already owns the page. A second owner would mean two answers to where a character lives, kept in agreement forever. Two consequences worth stating as promises: **deleting a view never deletes a page**, and two pages can show the same set with different filters without any linking machinery at all.
+
+**Any page can be shown as a database, and the block is the same feature at a smaller size.** `Turn into ▸ Table` on a page's right-click menu, the twin of Phase 22's `Turn into a universe` — an existing page like Characters becomes a table in one click with nothing moved and nothing re-made. The block version is that same view dropped into the middle of a page. Because a view is only a lens, these are one feature at two sizes rather than a fork to decide between.
+
+**All four layouts: table, cards, board, list.** Her call 2026-09-06, asked which to build first and answering all of them.
+
+**Not building, and why.** *Timeline* and *Calendar* want dates, which is the blank that stopped the timeline being built at all — Phase 25 is the answer to "what happened next" and it is sequence-driven for exactly this reason. *Chart* has nothing to count until number properties are common across pages. *Map* has no maps. Notion's "open pages in side peek" is split panes, which is Phase 21.5 and deferred. *Automations* and *AI Autofill* are out — no LLM features in the editor.
+
+**The view settings worth having**, from Notion's own list: layout, property visibility (which columns show), filter, sort, group. Conditional colour is a natural later add rather than part of this, since page colours and the palette already exist. A link to a view has precedent in a block handing out a link to itself (Phase 19.5).
+
+**Sub-items are nearly free, and are the one place this starts ahead of the reference.** Notion bolts nesting onto a flat list; here the tree *is* the data, so a row that expands to show the pages inside it is the shape the app already has.
+
+**A table names one template; a mixed set belongs in cards or a list.** Filters can match more than one template, and a card is a picture and a name, so a mixed set reads fine there. A table is not: a Location has no Species column to fill. So a table view picks one template and gets that template's properties as its columns.
+
+### Still open — build nothing past these
+
+1. **Where the rows come from.** (a) The page's own sub-pages, with filters on top. (b) A rule — template, tag, universe — gathering pages from anywhere. (c) Both. The cost of a rule is that New has no obvious home and a page can silently drop out of a view when a tag is edited; the cost of sub-pages only is that a database can never gather what is scattered.
+2. **Whether a value can be changed from inside a row**, or only by opening the page. Editing in place is the expensive half of the phase: every property type needs an editor inside a cell, and undo has to cover it.
+3. **One view per page, or several saved views.** A page already has tabs, so several is a shape the app can hold — but a tab holds writing today and would have to learn to hold a view.
+
+**Answering one of these is not an answer to the others.** They were asked together on 2026-09-06 and only the layouts question came back.
 
 ---
 
