@@ -44,6 +44,7 @@ export function useProjectActions() {
       setNodeColor: state.setNodeColor,
       setNodeIcon: state.setNodeIcon,
       setNodeView: state.setNodeView,
+      editRowCell: state.editRowCell,
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
       openBlockLink: state.openBlockLink,

@@ -1197,3 +1197,14 @@ export async function databaseGroupLabels(window: Page): Promise<string[]> {
   const labels = await window.locator(DATABASE_GROUP_LABEL).allInnerTexts();
   return labels.map((label) => normalize(label));
 }
+
+/**
+ * One editable cell of a database, by its column and its row.
+ *
+ * Found by the label the cell carries for a screen reader — "Rank for Kalla
+ * Reyes" — which is the same thing that makes the grid usable without a mouse,
+ * so a scenario that could not find it would be reporting a real problem.
+ */
+export function databaseCellField(window: Page, columnLabel: string, rowName: string): Locator {
+  return window.getByLabel(`${columnLabel} for ${rowName}`);
+}

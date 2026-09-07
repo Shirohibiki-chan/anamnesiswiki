@@ -4527,6 +4527,14 @@ one column per page and left every filter and hidden column pointing at whoever
 defined it first. `databaseColumns` names a custom column by its lowercased
 label, and `keyOn` finds the row's own key for it when reading a value.
 
+**Editing a cell can have to create three things.** `planCellEdit` is the one
+place that knows it: the page may not carry the property (the column exists
+because another page does), it may not carry the option being chosen (option
+lists are per page), and the value may be its first. A property minted there
+gets a block beside it, or the page's own panel cannot draw the field and the
+value is one only the table can see. All of it lands as a single patch so one
+press of undo takes the whole thing back.
+
 **So filters compare labels, not ids.** Filtering, sorting and grouping all read
 a field through one function (`valuesOn`), which is what keeps them agreeing
 with each other and with the table. A filter storing an option id would match

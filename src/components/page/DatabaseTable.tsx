@@ -8,13 +8,21 @@
 // covering all of them, was the expensive half.
 import type { Node } from "../../constants/schema";
 import { getPaletteHex } from "../../constants/palette";
-import { useDatabase, type DatabaseCell } from "../../hooks/use-database";
+import { isEditableInRow, useDatabase, type DatabaseCell } from "../../hooks/use-database";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { useProject } from "../../hooks/use-project";
 import type { RenderableProperty } from "../../services/property-service";
 import { NodeIcon } from "../blocks/IconPicker";
+import { DatabaseCellEditor } from "./DatabaseCellEditor";
 import { DatabaseToolbar } from "./DatabaseToolbar";
 import "./database.css";
+
+// Kept beside each other because they are one decision: how much room a column
+// is allowed to be squeezed into before the table stops fitting and scrolls.
+// The name column gets more because it is the row's identity and the only part
+// of the row that navigates. Matches the floors in database.css.
+const COLUMN_FLOOR_REM = 11;
+const NAME_FLOOR_REM = 14;
 
 export function DatabaseTable({ node }: { node: Node }) {
   const { rows, allRows, columns, groups, cell } = useDatabase(node);
@@ -35,7 +43,14 @@ export function DatabaseTable({ node }: { node: Node }) {
         // Its own scroller rather than the page's: a table wide enough to
         // scroll must not take the writing underneath it sideways as well.
         <div className="database-scroll">
-          <table className="database-table">
+          {/* Every column gets a floor, so a table wide enough to need it
+              scrolls sideways in its own scroller instead of squeezing every
+              column until the words break mid-phrase. Inline because it
+              depends on how many columns there are, which CSS cannot see. */}
+          <table
+            className="database-table"
+            style={{ minWidth: `${COLUMN_FLOOR_REM * columns.length + NAME_FLOOR_REM}rem` }}
+          >
             <thead>
               <tr>
                 <th scope="col" className="database-th-name">
@@ -72,14 +87,14 @@ export function DatabaseTable({ node }: { node: Node }) {
                     </th>
                   </tr>
                   {group.rows.map((row) => (
-                    <Row key={row.id} row={row} columns={columns} cell={cell} />
+                    <Row key={row.id} row={row} columns={columns} cell={cell} node={node} />
                   ))}
                 </tbody>
               ))
             ) : (
               <tbody>
                 {rows.map((row) => (
-                  <Row key={row.id} row={row} columns={columns} cell={cell} />
+                  <Row key={row.id} row={row} columns={columns} cell={cell} node={node} />
                 ))}
               </tbody>
             )}
@@ -101,10 +116,13 @@ function Row({
   row,
   columns,
   cell,
+  node,
 }: {
   row: Node;
   columns: RenderableProperty[];
   cell: (row: Node, column: RenderableProperty) => DatabaseCell;
+  /** The page the table is on — the cell editor reads its view for the option list. */
+  node: Node;
 }) {
   const { selectNode } = useProject();
 
@@ -121,8 +139,12 @@ function Row({
         </button>
       </th>
       {columns.map((column) => (
-        <td key={column.key}>
-          <Cell value={cell(row, column)} />
+        <td key={column.key} data-editable={isEditableInRow(column) ? "" : undefined}>
+          {isEditableInRow(column) ? (
+            <DatabaseCellEditor row={row} column={column} value={cell(row, column)} node={node} />
+          ) : (
+            <Cell value={cell(row, column)} />
+          )}
         </td>
       ))}
     </tr>

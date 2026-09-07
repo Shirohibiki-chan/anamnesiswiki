@@ -67,6 +67,8 @@ import {
   withTabRenamed,
   withTabsReordered,
 } from "../services/tab-service";
+import { planCellEdit, type CellEdit } from "../services/database-service";
+import type { RenderableProperty } from "../services/property-service";
 import { getDefaultTabs, getPropertySchema, getTemplate } from "../services/template-registry";
 import {
   blockImage,
@@ -695,6 +697,17 @@ export type ProjectStoreState = {
    * Undoable as one step like any other page-shaped change.
    */
   setNodeView: (nodeId: string, view: DatabaseView | null) => void;
+  /**
+   * Writes one cell of a database, from inside the row (Phase 23, step 3).
+   *
+   * Its own action rather than `updateNodeProperty` because a cell can be typed
+   * into on a page that does not carry the property at all — the column exists
+   * because *some* page does — so the spec, the block that shows it in the
+   * page's own panel, the option being chosen and the value may all have to be
+   * created in one step. `planCellEdit` works out which; this records it as one
+   * undoable move, merged per cell so typing a sentence reverses as a sentence.
+   */
+  editRowCell: (nodeId: string, column: RenderableProperty, edit: CellEdit) => void;
   selectNode: (id: string | null, tabId?: string) => void;
   /**
    * Follow a link to one block: the page, the tab it turns out to be in, and
@@ -3228,6 +3241,23 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         `recolouring ${countLabel(targets.length, "page")}`,
         () => apply((id) => previousColors.get(id)),
         () => apply(() => color),
+      );
+    },
+
+    editRowCell(nodeId, column, edit) {
+      const { nodes } = get();
+      const row = nodes[nodeId];
+      if (!row) return;
+
+      const known = isChipType(column.type)
+        ? knownOptionsFor(nodes, row.templateKey, column.label)
+        : [];
+
+      patchNode(
+        `changing ${column.label}`,
+        nodeId,
+        planCellEdit(row, column, edit, getPropertySchema, known),
+        `cell:${nodeId}:${column.key}`,
       );
     },
 

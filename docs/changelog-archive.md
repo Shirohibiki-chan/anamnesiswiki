@@ -2,6 +2,13 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-04 — dragging a block behaves itself
+
+### Fixes
+
+- **A block being dragged doesn't warp any more.** Dragging one block past another stretched or squashed whatever you were holding — a picture blown up to twice its size, headings shrunk to nothing, a gauge spilling out through the side of its own box. It was the drag library resizing the block to the shape of the gap it was over; it now just moves.
+- **A block inside an infobox can be picked up at all.** The frame's own resize handles run down its inner edges, right over the grip of every block in it, so taking hold of a block usually grabbed the frame and resized it instead. The grip wins where the two overlap.
+
 ## 2026-09-04 — linking the names you've already written
 
 ### Additions

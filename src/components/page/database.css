@@ -71,6 +71,23 @@
   background: var(--color-hover);
 }
 
+/* The pinned column paints an opaque background to hide what slides under it,
+   which would otherwise swallow the row's hover. Layering the translucent
+   hover back over that opaque colour keeps the whole row lighting up as one. */
+.database-table tbody tr:hover .database-th-name {
+  background:
+    linear-gradient(var(--color-hover), var(--color-hover)),
+    var(--color-bg);
+}
+
+/* A seam down the pinned column, so the rows sliding under it read as going
+   somewhere rather than as being cut off. Always drawn: CSS cannot ask whether
+   the table is currently scrolled, and the subtle border is quiet enough to
+   pass for a column rule on a table that fits. */
+.database-th-name {
+  box-shadow: 1px 0 0 var(--color-border-subtle);
+}
+
 /* The name column stays first and stays readable — it is the row's identity
    and the only thing in the row that navigates.
 
@@ -78,6 +95,13 @@
    name wrapped to two lines while there was empty table to the right of it,
    which reads as a broken column rather than as a long name. */
 .database-th-name {
+  /* Pinned, now that a wide table scrolls sideways. Losing the name is losing
+     which row you are looking at, which makes every other column meaningless —
+     so it stays put and the rest slides under it. */
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-bg);
   /* A share as well as a floor. The floor alone loses whenever the other
      columns' own minimums already fill the table — which is most of the time,
      because a Friends column full of long page names has a wide minimum — and
@@ -357,4 +381,78 @@
   color: var(--color-text-muted);
   font-size: var(--fs-xs);
   font-weight: 400;
+}
+
+/* ---- Editing a cell (step 3) ---- */
+
+/* A cell you can type into looks like the text it holds until you go near it.
+   A grid of framed boxes reads as a form to fill in, which is the opposite of
+   what a table of pages you already wrote is for. */
+.database-cell-input {
+  width: 100%;
+  padding: var(--space-2xs) var(--space-sm);
+  margin: calc(var(--space-2xs) * -1) calc(var(--space-sm) * -1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.database-cell-input:hover {
+  border-color: var(--color-border);
+}
+
+.database-cell-input:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+}
+
+/* Chrome draws a spinner on a number input and it lands on top of the value in
+   a column this narrow. The keypad and the validation are what were wanted. */
+.database-cell-input[type="number"]::-webkit-inner-spin-button,
+.database-cell-input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.database-cell-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-2xs) var(--space-sm);
+  margin: calc(var(--space-2xs) * -1) calc(var(--space-sm) * -1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.database-cell-chips:hover {
+  border-color: var(--color-border);
+}
+
+.database-cell-chips:focus-visible {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+/* An empty cell that is also a button needs something to aim at, or the column
+   reads as one you cannot change. */
+.database-cell-blank {
+  color: var(--color-text-placeholder);
+  font-size: var(--fs-sm);
+}
+
+.database-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
 }

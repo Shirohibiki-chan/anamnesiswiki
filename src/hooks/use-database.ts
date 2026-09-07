@@ -25,6 +25,7 @@ export type { DatabaseCell, DatabaseGroup } from "../services/database-service";
 // reach into services. The same reason `use-tree-data` re-exports the tree's
 // search modes.
 export {
+  isEditableInRow,
   fieldId,
   fieldLabel,
   filterableFields,
