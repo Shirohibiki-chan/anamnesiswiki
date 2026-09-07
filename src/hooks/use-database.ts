@@ -9,6 +9,7 @@ import {
   databaseColumns,
   databaseRows,
   fieldChoices,
+  scopeHasNoUniverse,
   groupRows,
   newDatabaseView,
   visibleColumns,
@@ -80,7 +81,7 @@ export function useDatabase(node: Node | undefined): {
     if (!node?.view) return empty;
 
     const view = node.view;
-    const allRows = databaseRows(nodes, project?.childOrder, node.id);
+    const allRows = databaseRows(nodes, project?.childOrder, node.id, view.scope);
     const allColumns = databaseColumns(allRows, view.templateKey, getPropertySchema);
 
     // Filters and sorts read every column, not only the shown ones. Hiding a
@@ -130,4 +131,17 @@ export function useUpdateDatabaseView(): (node: Node, patch: Partial<DatabaseVie
     },
     [setNodeView],
   );
+}
+
+/**
+ * Whether this view is scoped to a universe on a page that is not in one.
+ *
+ * Its own hook because the answer needs the node graph and the component only
+ * wants a yes or no — and because an empty table with no explanation is the
+ * shape a bug takes.
+ */
+export function useDatabaseScopeGap(node: Node | undefined): boolean {
+  const { nodes } = useProject();
+  if (!node?.view) return false;
+  return scopeHasNoUniverse(nodes, node.id, node.view.scope);
 }

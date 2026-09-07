@@ -551,6 +551,26 @@ export type DatabaseSort = {
 };
 
 /**
+ * How wide a database casts its net for rows (Phase 23, step 5).
+ *
+ * **This is the whole of what "a rule" turned out to be.** The plan's open
+ * question offered sub-pages or a rule gathering by template, tag and universe
+ * — and the filter model built at step 2 already matches on template and tag,
+ * over any set of pages. So the only thing missing was *which* set, and adding
+ * a second query language for the rest would have been building the same engine
+ * twice. A scope picks the candidates; the filters narrow them.
+ *
+ * `subpages` is the default and stays it. The two costs written down when the
+ * question was asked are paid here: **New is only offered while the scope is
+ * `subpages`**, because a widened view has nowhere honest to put a new page,
+ * and a page can leave a widened view when its tags are edited, which is tags
+ * being editable rather than a fault.
+ */
+export const DATABASE_SCOPES = ["subpages", "universe", "everywhere"] as const;
+
+export type DatabaseScope = (typeof DATABASE_SCOPES)[number];
+
+/**
  * How a page is drawn when it is being shown as a database (Phase 23).
  *
  * Deliberately one record rather than a list of them: a page gets one view and
@@ -571,6 +591,11 @@ export type DatabaseView = {
    * from, and the table falls back to names alone.
    */
   templateKey?: string;
+  /**
+   * Where the rows are gathered from. Absent means `subpages`, which is what
+   * every view made before this existed was doing.
+   */
+  scope?: DatabaseScope;
   /**
    * Columns turned off, as property keys. Absent means every column shows.
    *
