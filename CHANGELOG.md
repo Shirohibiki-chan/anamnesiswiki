@@ -24,6 +24,7 @@
 - **The kind of callout you want is now a thing you pick.** The slash menu offers **Info**, **Success**, **Warning**, **Danger**, **Quote** and **Secret**. The middle three arrive already coloured and already carrying their mark — a green tick, an amber triangle, a red alert — so the boxes you asked for are one gesture away instead of something you had to assemble.
 - **Every callout wears an icon now**, its own kind's, until you pick a different one. No callout is blank unless you deliberately take its icon off.
 - **Changing a callout's colour no longer changes its icon.** It used to: four colour families each stood for something, so recolouring a box swapped the mark on it, and any other colour left it wearing nothing. Nothing on screen ever said so, which made it look like some boxes had icons and some didn't for no reason. A Warning you recolour purple is a purple box that still says warning.
+- **The icon is easier to hit than it looks.** The mark is 15 pixels; the button around it is 24, which is the size everything else clickable in the app has to be.
 - **Picking your own icon, or removing it, works exactly as before** — including "The usual icon", which now means the one its kind wears.
 
 ## 2026-09-06 — the icon beside the writing, and a scrollbar that stopped flashing
