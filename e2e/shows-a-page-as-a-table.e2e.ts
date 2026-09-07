@@ -20,8 +20,8 @@ import {
   openDatabaseRow,
   openPage,
   pageTitle,
-  searchTree,
-  treeRow,
+  stopShowingAsDatabase,
+  turnIntoDatabase,
   waitForWorld,
 } from "./harness/screen";
 
@@ -37,14 +37,13 @@ async function reload(app: RunningApp): Promise<void> {
   await waitForWorld(app.window);
 }
 
-async function openRowMenu(app: RunningApp, name: string): Promise<void> {
-  await searchTree(app.window, name);
-  await treeRow(app.window, name).first().click({ button: "right" });
-  await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
+async function showAsTable(app: RunningApp, name: string): Promise<void> {
+  await turnIntoDatabase(app.window, name);
+  await app.window.waitForTimeout(WRITTEN_MS);
 }
 
-async function clickMenuItem(app: RunningApp, label: string): Promise<void> {
-  await app.window.getByRole("button", { name: label }).click();
+async function stopShowing(app: RunningApp, name: string): Promise<void> {
+  await stopShowingAsDatabase(app.window, name);
   await app.window.waitForTimeout(WRITTEN_MS);
 }
 
@@ -81,8 +80,7 @@ describe("showing a page as a table", () => {
     await openPage(app.window, SECTION);
     expect(await hasDatabase(app.window)).toBe(false);
 
-    await openRowMenu(app, SECTION);
-    await clickMenuItem(app, "Turn into a table");
+    await showAsTable(app, SECTION);
     await clearTreeSearch(app.window);
     await openPage(app.window, SECTION);
 
@@ -120,8 +118,7 @@ describe("showing a page as a table", () => {
     const before = await pagesInside(app, SECTION);
     expect(before.length).toBeGreaterThan(0);
 
-    await openRowMenu(app, SECTION);
-    await clickMenuItem(app, "Stop showing as a table");
+    await stopShowing(app, SECTION);
     await clearTreeSearch(app.window);
     await openPage(app.window, SECTION);
 
@@ -130,8 +127,7 @@ describe("showing a page as a table", () => {
     // Shown as a table again purely to count what survived — the rows are the
     // pages, so the table is the cheapest way to read the folder's contents
     // back out through the app rather than off the disk.
-    await openRowMenu(app, SECTION);
-    await clickMenuItem(app, "Turn into a table");
+    await showAsTable(app, SECTION);
     await clearTreeSearch(app.window);
 
     expect(await pagesInside(app, SECTION)).toEqual(before);

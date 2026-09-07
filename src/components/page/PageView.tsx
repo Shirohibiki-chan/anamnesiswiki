@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { BLANK_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
-import { DatabaseTable } from "./DatabaseTable";
+import { PageDatabase } from "./PageDatabase";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
@@ -92,7 +92,7 @@ export function PageView() {
             belongs between the name and the writing — and a panel that sat
             somewhere different depending on what the page held would be the
             thing that reads as chaos. */}
-        {node.view && <DatabaseTable node={node} />}
+        {node.view && <PageDatabase node={node} />}
         {node.view && node.tabs.length === 0 ? null : isUnanswered ? (
           <NewPageLanding node={node} />
         ) : node.tabs.length === 0 ? (

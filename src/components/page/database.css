@@ -366,16 +366,6 @@
   padding-top: var(--space-md);
 }
 
-.database-group-label {
-  display: inline-block;
-  padding: var(--space-2xs) var(--space-md);
-  border-radius: var(--radius-sm);
-  background: var(--color-hover);
-  color: var(--color-text-primary);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
 .database-group-count {
   margin-left: var(--space-md);
   color: var(--color-text-muted);
@@ -455,4 +445,235 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
+}
+
+/* ---- The other three layouts (step 4) ---- */
+
+.database-menu-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+}
+
+.database-layout-item {
+  line-height: 1.35;
+}
+
+/* A heading shared by cards, board and list. The table draws its own inside
+   the grid, because there a section heading is a row. */
+.database-group-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin: 0 0 var(--space-md);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+}
+
+/* ---- Cards ---- */
+
+.database-card-groups,
+.database-list-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  width: 100%;
+}
+
+.database-cards {
+  display: grid;
+  /* Fills the width it is given rather than a fixed column count — the panel
+     is resizable and the properties panel comes and goes. */
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.database-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.database-card:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-hover);
+}
+
+.database-card-picture {
+  width: 100%;
+  height: 7rem;
+  margin-bottom: var(--space-2xs);
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.database-card-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-primary);
+  font-size: var(--fs-md);
+}
+
+.database-card-name svg {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.database-card-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.database-card-label {
+  color: var(--color-text-muted);
+}
+
+/* ---- Board ---- */
+
+.database-board {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: var(--space-md);
+}
+
+.database-board-column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 15rem;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+}
+
+/* Where the card would land. A board that gives no answer to "will it go here"
+   until you let go is one you have to try twice. */
+.database-board-column[data-over] {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+}
+
+.database-board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-height: 3rem;
+}
+
+.database-board-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel-alt);
+}
+
+.database-board-card[draggable="true"] {
+  cursor: grab;
+}
+
+.database-board-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.database-card-open {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.database-card-open:hover .database-card-name,
+.database-card-open:focus-visible .database-card-name {
+  text-decoration: underline;
+}
+
+/* ---- List ---- */
+
+.database-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.database-list-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.database-list-row:hover {
+  background: var(--color-hover);
+}
+
+.database-list-row svg {
+  flex-shrink: 0;
+  transform: translateY(0.15em);
+  color: var(--color-text-muted);
+}
+
+.database-list-name {
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* The values trail after the name and give way first — the name is what the
+   line is for. */
+.database-list-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-md);
+  min-width: 0;
+  margin-left: auto;
+  color: var(--color-text-muted);
+}
+
+/* A summary is a paragraph, and a card holding the whole of one is a card you
+   scroll past rather than scan. Clipped to a few lines here only — the card
+   opens the page, so the rest of it is one click away rather than lost, which
+   is the difference between this and an ellipsis with nowhere to go. */
+.database-card .database-cell-text,
+.database-board-card .database-cell-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }

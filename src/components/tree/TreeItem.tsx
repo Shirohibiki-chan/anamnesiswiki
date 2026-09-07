@@ -23,6 +23,7 @@ import {
   type MoveDestination,
 } from "../../hooks/use-tree-data";
 import { useNewDatabaseView } from "../../hooks/use-database";
+import { DatabaseLayoutSubmenu } from "./DatabaseLayoutSubmenu";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useSnapshotCount } from "../../hooks/use-page-history";
 import { useCreatePageIn } from "../../hooks/use-new-page";
@@ -36,7 +37,7 @@ import { MoveMenu } from "./MoveMenu";
 import { SortMenu } from "./SortMenu";
 import { TreePopover } from "./TreePopover";
 
-type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | null;
+type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
@@ -432,6 +433,20 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "database" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <DatabaseLayoutSubmenu
+            onSelect={(layout) => {
+              // The guess at which template supplies the columns is made
+              // against the pages inside, so it is the same answer whichever
+              // layout was picked — only the drawing differs.
+              setNodeView(node.id, { ...newDatabaseView(node.id), layout });
+              closePopover();
+            }}
+            onBack={() => setOpenPopover("menu")}
+          />
+        </TreePopover>
+      )}
       {openPopover === "sort" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <SortMenu
@@ -480,6 +495,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             // be configured. Removing it passes null, and removes nothing else:
             // the rows were pages that live in the tree, not in the view.
             onToggleDatabase={() => setNodeView(node.id, fullNode.view ? null : newDatabaseView(node.id))}
+            onPickLayout={() => setOpenPopover("database")}
             // The whole conversion is `applyTemplate`'s existing swap: a
             // universe seeds no tabs and no properties, so nothing the page
             // already holds is replaced, and any template field left without a

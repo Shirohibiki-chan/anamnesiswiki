@@ -19,8 +19,7 @@ import {
   databaseColumns,
   databaseRowNames,
   openPage,
-  searchTree,
-  treeRow,
+  turnIntoDatabase,
   waitForWorld,
 } from "./harness/screen";
 
@@ -62,10 +61,7 @@ describe("one column per property", () => {
     await addProperty(app, FIRST, LABEL, "Captain");
     await addProperty(app, SECOND, LABEL, "Sergeant");
 
-    await searchTree(app.window, "Characters");
-    await treeRow(app.window, "Characters").first().click({ button: "right" });
-    await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
-    await app.window.getByRole("button", { name: "Turn into a table" }).click();
+    await turnIntoDatabase(app.window, "Characters");
     await app.window.waitForTimeout(WRITTEN_MS);
     await clearTreeSearch(app.window);
     await openPage(app.window, "Characters");
