@@ -70,6 +70,16 @@ Kept short on purpose — this file is read most sessions.
   close, whose fill is solid red. Measured 2026-09-05, and it is the same mistake
   the system overlay made the day before from the other side.
 
+- **Furniture must not borrow a text colour.** The scrollbar thumb's hover
+  read `--color-text-muted`, which was quiet until 2026-08-30, when the
+  contrast floor lifted every theme's muted text to something legible at 11px.
+  A scrollbar is not text, so the effect was a near-white bar flashing down the
+  edge of the tree on Midnight and a near-black one on Daylight, and neither
+  showed up in the change that caused it. Text tokens carry a floor they have
+  to clear; furniture carries none. A hover on a scrollbar, a divider or a
+  border steps along the border scale — `--color-border` to
+  `--color-border-strong` — and never onto a text token.
+
 - **Nothing interactive belongs in the title bar, which is what keeps it
   simple.** A drag region swallows clicks, so any control put there has to opt
   back out with `-webkit-app-region: no-drag` by hand. The four-element version
