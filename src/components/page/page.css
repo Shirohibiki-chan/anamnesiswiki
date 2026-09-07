@@ -833,31 +833,6 @@
   background: var(--color-hover);
 }
 
-/* A callout wearing no icon still has somewhere to click to give it one — an
-   empty square that only shows itself while the pointer is over the callout,
-   the same manner as the colour dot in the opposite corner. Sized to match the
-   icon it would hold, so nothing shifts when one lands in it. */
-.editor-callout-icon-empty {
-  /* Taken out of the flow entirely, into the padding's top-left corner — the
-     mirror of the colour dot opposite. In the row layout an empty slot that
-     still took part would indent every uncoloured callout's text by 15px for
-     nothing, and revealing it on hover would shove the sentence sideways as
-     the pointer arrived. It clears the writing because the body starts a full
-     `--space-xl` in. */
-  position: absolute;
-  top: var(--space-sm);
-  left: var(--space-sm);
-  width: 15px;
-  height: 15px;
-  border: 1px dashed var(--color-border);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.editor-callout:hover .editor-callout-icon-empty {
-  opacity: 1;
-}
-
 /* An icon sitting in a line of writing. `middle` rather than the baseline
    because a 16px square hung off a text baseline sits low enough to look
    dropped, and the small negative margin keeps the line height it is in from
@@ -881,14 +856,58 @@
   background: var(--color-hover);
 }
 
-/* Hidden until the pointer is over the callout, so a page being read is a page
-   of callouts rather than a page of buttons. It stays put once its swatches are
-   open, or picking a colour would mean chasing the thing you clicked. */
-.editor-callout-color {
+/* **Both hover controls live in one corner**, added 2026-09-06 when the second
+   one arrived. A callout with no icon used to offer an invisible 15px square
+   where the icon would have gone, which is a way back that nobody could find —
+   "take the icon off and you can't put one back" is how it read. The corner is
+   where the colour dot already taught people to look, so the icon button goes
+   beside it. */
+.editor-callout-tools {
   position: absolute;
   top: var(--space-sm);
   right: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
   line-height: 0;
+}
+
+/* Hidden until the pointer is over the callout, so a page being read is a page
+   of callouts rather than a page of buttons. It stays put once its swatches are
+   open, or picking a colour would mean chasing the thing you clicked.
+
+   Still positioned, because the swatches hang off it — it just anchors inside
+   the pair now rather than against the block. */
+.editor-callout-color {
+  position: relative;
+  line-height: 0;
+}
+
+/* The way back to an icon, and the only one — so it is a button with something
+   in it rather than the dashed ghost this replaced. Same manners as the dot
+   beside it: nothing on screen until the pointer is over the callout. */
+.editor-callout-icon-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.editor-callout-icon-add:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.editor-callout:hover .editor-callout-icon-add,
+.editor-callout-icon-add:focus-visible {
+  opacity: 1;
 }
 
 .editor-callout-color-dot {

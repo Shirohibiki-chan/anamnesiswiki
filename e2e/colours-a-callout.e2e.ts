@@ -46,7 +46,6 @@ describe("colouring a callout", () => {
     // And it is wearing its type's icon rather than nothing, which is what an
     // uncoloured callout used to wear.
     expect(await icon().count()).toBe(1);
-    expect(await callout().locator(".editor-callout-icon-empty").count()).toBe(0);
     const before = await iconDrawing();
     expect(before).not.toBe("");
 
@@ -101,7 +100,29 @@ describe("colouring a callout", () => {
     const made = app.window.locator(".editor-callout-colored").first();
     await made.waitFor({ state: "visible", timeout: 10_000 });
     expect(await made.locator(".editor-callout-icon").count()).toBe(1);
-    expect(await made.locator(".editor-callout-icon-empty").count()).toBe(0);
     expect(await made.locator(".editor-callout-icon svg").count()).toBe(1);
+  });
+
+  it("takes the icon off and puts one back", async () => {
+    // **Reported 2026-09-06**: taking the icon off looked like a one-way door.
+    // It never was — the way back was an invisible 15px square in the corner,
+    // which is the same thing from where she was sitting. The way back is a
+    // button you can see now, and this is what proves it stays one.
+    await callout().hover();
+    await icon().click();
+    await app.window.getByRole("button", { name: "No icon" }).click();
+    await app.window.waitForTimeout(600);
+    expect(await icon().count()).toBe(0);
+
+    await callout().hover();
+    const back = callout().getByRole("button", { name: "Add an icon" });
+    await back.waitFor({ state: "visible", timeout: 5_000 });
+    await back.click();
+    await app.window.locator(".icon-picker").waitFor({ state: "visible", timeout: 5_000 });
+    await app.window.locator(".icon-picker-grid button").first().click();
+    await app.window.waitForTimeout(600);
+
+    expect(await icon().count()).toBe(1);
+    expect(await icon().locator("svg").count()).toBe(1);
   });
 });
