@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-06 — the icon beside the writing, and a scrollbar that stopped flashing
+
+### Fixes
+
+- **A callout's icon sits beside the writing now**, centred down the left side of the box. It used to sit on a line of its own above the text, which is not what a callout looks like anywhere.
+- **And the empty line above your first word is gone.** A callout with no colour has no icon — icons come from the four colour conventions — so the ordinary case was an *invisible* slot holding a line open for nothing. That space read as a mistake, because it was one.
+- **The little dashed square for adding an icon moved into the corner**, opposite the colour dot. It appears when your pointer is over the callout, the same as before, but now nothing shifts sideways when it does.
+- **Scrollbars don't flash near-white when the pointer crosses them.** The hover colour was borrowed from quiet text, and on 30 August quiet text got lighter in every theme so it would be readable. Nobody thought about the scrollbar. It steps up from your border colour now — and on Daylight it was going nearly black, which is fixed by the same change.
+
 ## 2026-09-06 — getting rid of a universe
 
 ### Fixes

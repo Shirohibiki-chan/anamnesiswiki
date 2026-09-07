@@ -1086,8 +1086,19 @@ body,
   border-radius: var(--radius-sm);
 }
 
+/* Hover moves one step up the border scale rather than to the text colour.
+   This read `--color-text-muted` from the day it was written, which was quiet
+   while muted grey was #6a6a78 and stopped being so on 2026-08-30, when the
+   contrast floor lifted every theme's muted text to something legible at 11px
+   — #acb5c6 on Midnight, #57575e on Daylight. A scrollbar is furniture, so
+   the effect was a near-white bar flashing down the edge of the tree every
+   time the mouse crossed it, and the same in reverse on the light theme.
+   Reported 2026-09-06. `--color-border-strong` is the step above the thumb's
+   own colour and every theme defines it, custom ones included — it is one of
+   the tokens the theme editor names. Don't point this at a text token again:
+   text has a contrast floor to clear and furniture does not. */
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-border-strong);
 }
 
 /* The little square where a vertical and a horizontal scrollbar meet, and the

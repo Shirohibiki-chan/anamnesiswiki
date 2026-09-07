@@ -759,9 +759,20 @@
   cursor: text;
 }
 
+/* **The icon sits beside the writing, not above it.** This was a column until
+   2026-09-06, which put the icon on a line of its own — and because an
+   uncoloured callout derives no icon (see constants/callout-colors.ts), the
+   ordinary case was an *invisible* 15px slot holding a line open above the
+   first word. Reported from use: the space read as a mistake, and the only way
+   to find out what was in it was to hover it. A row costs nothing when there
+   is no icon, because the empty slot no longer takes part in the layout at
+   all. Secret keeps the column below — its label is a chip that belongs above
+   the text rather than beside it. */
 .editor-callout {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-md);
   border-radius: var(--radius-md);
   border-left: 3px solid transparent;
   padding: var(--space-lg) var(--space-xl);
@@ -793,10 +804,14 @@
   color: var(--color-text-primary);
 }
 
+/* **Centred down the left side of the box, not aligned to the first line.**
+   Her call 2026-09-06, and it is the opposite of what the references do: a
+   callout here is usually a sentence or two, and against a two-line box an
+   icon pinned to the first line reads as hanging off the top corner. `center`
+   on the row is what does it — this rule only has to not fight it. */
 .editor-callout-icon {
-  align-self: flex-start;
+  flex: none;
   display: flex;
-  margin-bottom: var(--space-sm);
   color: var(--callout-accent);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -811,6 +826,15 @@
    the same manner as the colour dot in the opposite corner. Sized to match the
    icon it would hold, so nothing shifts when one lands in it. */
 .editor-callout-icon-empty {
+  /* Taken out of the flow entirely, into the padding's top-left corner — the
+     mirror of the colour dot opposite. In the row layout an empty slot that
+     still took part would indent every uncoloured callout's text by 15px for
+     nothing, and revealing it on hover would shove the sentence sideways as
+     the pointer arrived. It clears the writing because the body starts a full
+     `--space-xl` in. */
+  position: absolute;
+  top: var(--space-sm);
+  left: var(--space-sm);
   width: 15px;
   height: 15px;
   border: 1px dashed var(--color-border);
@@ -984,6 +1008,12 @@
 }
 
 .editor-callout-secret {
+  /* The one that stays a column: its label is a chip announcing what the block
+     is, and a chip reading 🔒 SECRET beside the writing would be a caption, not
+     a warning. `align-items` goes back with it: centred is right for one icon
+     beside a sentence and wrong for a chip over a paragraph. */
+  flex-direction: column;
+  align-items: flex-start;
   border-left-color: var(--color-callout-secret);
   background: var(--gradient-callout, none), var(--color-callout-secret-bg);
   color: var(--color-callout-secret-text);
