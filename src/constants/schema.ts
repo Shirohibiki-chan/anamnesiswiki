@@ -440,6 +440,21 @@ export type Block = {
   // source; `tags` is which tags the "tags" source looks for. Both absent for
   // the sources that compute their own list.
   source?: CollectionSource;
+  /**
+   * How a `collection` block whose source is `subpages` or `tags` is drawn
+   * (Phase 23, step 5).
+   *
+   * **The source stays the source.** `source`, `tags` and `targetIds` still say
+   * which pages the block is about; this only says how to draw them, and adds
+   * the columns, filters, sorts, grouping and layouts a page-level database
+   * has. Keeping them apart is what lets the existing tag picker go on working
+   * untouched — two places holding "which tags" is how they drift.
+   *
+   * Absent means it has never been changed, and the block draws as a list, so
+   * a sidebar full of index blocks looks exactly as it did the day before this
+   * shipped. See `defaultBlockView`.
+   */
+  view?: DatabaseView;
   targetIds?: string[];
   tags?: string[];
   // `meter` only. The shape every reading in the block is drawn in, and the

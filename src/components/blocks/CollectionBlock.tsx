@@ -7,9 +7,11 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import type { Block, Node } from "../../constants/schema";
+import { isDatabaseBlock } from "../../hooks/use-database";
 import { useCollection } from "../../hooks/use-link-index";
 import { NodeIcon } from "./IconPicker";
 import { TreePopover } from "../tree/TreePopover";
+import { DatabaseBlock } from "./DatabaseBlock";
 
 // What an empty collection says. Each source is empty for a different reason,
 // and a single "Nothing here" is exactly the dead end that sent her digging
@@ -86,6 +88,13 @@ export function CollectionBlock({
 
       {rows.length === 0 ? (
         <p className="block-collection-empty">{EMPTY[source]}</p>
+      ) : isDatabaseBlock(block) ? (
+        // Subpage index and Tag index are databases now — same rows, same
+        // names in Add Block, with layouts and the rest underneath. Manual
+        // links and Backlinks are not: a hand-picked list and "pages that
+        // mention this one" are not sets a database can describe. Her call
+        // 2026-09-07; see `docs/plan.md` Phase 23.
+        <DatabaseBlock node={node} block={block} />
       ) : (
         <ul className="block-collection-list">
           {rows.map((row) => (

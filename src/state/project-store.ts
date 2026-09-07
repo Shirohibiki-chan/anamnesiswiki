@@ -481,6 +481,15 @@ export type ProjectStoreState = {
   editMeters: (nodeId: string, blockId: string, patches: Record<string, Partial<MeterEntry>>) => void;
   // Phase 18b's collection settings.
   setBlockSource: (nodeId: string, blockId: string, source: CollectionSource) => void;
+  /**
+   * How an index block draws what it lists (Phase 23, step 5).
+   *
+   * Beside `setBlockSource` rather than folded into it, because they answer
+   * different questions: the source is which pages, this is how to show them.
+   * Keeping them apart is what lets the tag picker go on writing `tags` while
+   * this writes layouts and sorts, with neither overwriting the other.
+   */
+  setBlockView: (nodeId: string, blockId: string, view: DatabaseView) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
   setBlockTags: (nodeId: string, blockId: string, tags: string[]) => void;
   setNodeAliases: (nodeId: string, aliases: string[]) => void;
@@ -2233,6 +2242,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
             : block,
         ),
         "changing what a collection lists",
+      );
+    },
+
+    setBlockView(nodeId, blockId, view) {
+      editBlocks(
+        nodeId,
+        (blocks) => blocks.map((block) => (block.id === blockId ? withField(block, "view", view) : block)),
+        "changing how a block is laid out",
       );
     },
 

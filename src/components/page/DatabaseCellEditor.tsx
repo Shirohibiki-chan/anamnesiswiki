@@ -12,8 +12,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { getPaletteHex } from "../../constants/palette";
-import { useDatabase, type DatabaseCell } from "../../hooks/use-database";
-import { useProjectActions } from "../../hooks/use-project";
+import type { DatabaseCell, DatabaseSurface } from "../../hooks/use-database";
 import type { RenderableProperty } from "../../services/property-service";
 import { TreePopover } from "../tree/TreePopover";
 
@@ -21,21 +20,30 @@ export function DatabaseCellEditor({
   row,
   column,
   value,
-  node,
+  data,
 }: {
   row: Node;
   column: RenderableProperty;
   value: DatabaseCell;
-  node: Node;
+  data: DatabaseSurface;
 }) {
   if (column.type === "select" || column.type === "status" || column.type === "multiselect") {
-    return <OptionCell row={row} column={column} value={value} node={node} />;
+    return <OptionCell row={row} column={column} value={value} data={data} />;
   }
-  return <TextCell row={row} column={column} value={value} />;
+  return <TextCell row={row} column={column} value={value} data={data} />;
 }
 
-function TextCell({ row, column, value }: { row: Node; column: RenderableProperty; value: DatabaseCell }) {
-  const { editRowCell } = useProjectActions();
+function TextCell({
+  row,
+  column,
+  value,
+  data,
+}: {
+  row: Node;
+  column: RenderableProperty;
+  value: DatabaseCell;
+  data: DatabaseSurface;
+}) {
   const text = value.kind === "text" ? value.text : "";
 
   return (
@@ -47,7 +55,7 @@ function TextCell({ row, column, value }: { row: Node; column: RenderablePropert
       aria-label={`${column.label} for ${row.name}`}
       value={text}
       onChange={(event) =>
-        editRowCell(row.id, column, {
+        data.onEdit?.(row.id, column, {
           kind: column.type === "number" ? "number" : "text",
           text: event.target.value,
         })
@@ -60,17 +68,16 @@ function OptionCell({
   row,
   column,
   value,
-  node,
+  data,
 }: {
   row: Node;
   column: RenderableProperty;
   value: DatabaseCell;
-  node: Node;
+  data: DatabaseSurface;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [query, setQuery] = useState("");
-  const { editRowCell } = useProjectActions();
-  const { choicesFor } = useDatabase(node);
+  const { choicesFor } = data;
 
   const chosen = value.kind === "chips" ? value.chips.map((chip) => chip.label) : [];
   const multiple = column.type === "multiselect";
@@ -84,7 +91,7 @@ function OptionCell({
   const isNew = trimmed.length > 0 && !choices.some((choice) => choice.toLowerCase() === trimmed.toLowerCase());
 
   function write(labels: string[]) {
-    editRowCell(row.id, column, { kind: "options", labels });
+    data.onEdit?.(row.id, column, { kind: "options", labels });
   }
 
   function toggle(label: string) {

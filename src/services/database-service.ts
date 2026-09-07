@@ -640,3 +640,52 @@ export function planCellEdit(
   patch.properties = { ...row.properties, [key]: ids.length === 0 && column.type !== "multiselect" ? undefined : value };
   return patch;
 }
+
+/**
+ * Everything a database draws, given the rows it is drawing.
+ *
+ * **Split out so a block can use it.** A page-level database gets its rows from
+ * `databaseRows`; a Subpage index or Tag index block gets them from the
+ * collection logic that block has always used. Both then want the same columns,
+ * the same filtering, sorting and grouping — and having two copies of that is
+ * how a block and a page start disagreeing about what a Status means.
+ */
+export function presentDatabase(
+  allRows: Node[],
+  view: DatabaseView,
+  nodes: Record<string, Node>,
+  schemaFor: (key: string) => RenderableProperty[],
+  templateLabel: (key: string) => string,
+): {
+  rows: Node[];
+  columns: RenderableProperty[];
+  allColumns: RenderableProperty[];
+  groups: DatabaseGroup[] | null;
+} {
+  const allColumns = databaseColumns(allRows, view.templateKey, schemaFor);
+
+  // Filters and sorts read every column, not only the shown ones. Hiding a
+  // column is about what is on screen; a view sorted by a column she then
+  // turned off should stay in the order she asked for.
+  const filtered = applyFilters(allRows, view.filters, allColumns, nodes, templateLabel);
+  const rows = applySorts(filtered, view.sorts, allColumns, nodes, templateLabel);
+
+  return {
+    rows,
+    columns: visibleColumns(allColumns, view.hiddenColumns),
+    allColumns,
+    groups: groupRows(rows, view.groupBy, allColumns, nodes, templateLabel),
+  };
+}
+
+/**
+ * The view an index block draws with before anybody has changed anything.
+ *
+ * **List, so nothing looks different on the day this ships.** A Subpage index
+ * has always been a list of names; turning it into a database is meant to give
+ * it settings it never had, not to rearrange her sidebar. Everything else is a
+ * choice she makes afterwards.
+ */
+export function defaultBlockView(rows: Node[]): DatabaseView {
+  return { layout: "list", templateKey: suggestColumnTemplate(rows) };
+}

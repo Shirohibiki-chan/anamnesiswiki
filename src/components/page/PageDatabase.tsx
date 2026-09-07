@@ -10,18 +10,17 @@
 import type { Node } from "../../constants/schema";
 import { useDatabase, useDatabaseScopeGap } from "../../hooks/use-database";
 import { useCreatePageIn } from "../../hooks/use-new-page";
-import { DatabaseBoard } from "./DatabaseBoard";
-import { DatabaseCards } from "./DatabaseCards";
-import { DatabaseList } from "./DatabaseList";
-import { DatabaseTable } from "./DatabaseTable";
+import { useProjectActions } from "../../hooks/use-project";
+import { DatabaseLayouts } from "./DatabaseLayouts";
 import { DatabaseToolbar } from "./DatabaseToolbar";
 import "./database.css";
 
 export function PageDatabase({ node }: { node: Node }) {
-  const { rows, allRows } = useDatabase(node);
+  const surface = useDatabase(node);
+  const { rows, allRows } = surface;
+  const { editRowCell } = useProjectActions();
   const createPageIn = useCreatePageIn();
 
-  const layout = node.view?.layout ?? "table";
   const scope = node.view?.scope ?? "subpages";
   const noUniverse = useDatabaseScopeGap(node);
 
@@ -48,14 +47,8 @@ export function PageDatabase({ node }: { node: Node }) {
         // in front of a folder holding forty pages is the app telling her a
         // lie about her own world; this says where they went.
         <p className="database-empty">No page here matches the filters.</p>
-      ) : layout === "cards" ? (
-        <DatabaseCards node={node} />
-      ) : layout === "board" ? (
-        <DatabaseBoard node={node} />
-      ) : layout === "list" ? (
-        <DatabaseList node={node} />
       ) : (
-        <DatabaseTable node={node} />
+        <DatabaseLayouts data={{ ...surface, onEdit: editRowCell }} allColumns={surface.allColumns} />
       )}
 
       {/* Kept whether or not there is anything to show, because a folder that
