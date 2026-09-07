@@ -91,7 +91,7 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 21, 27 and 29 are done.** The app is shippable and shipping —
+**Phases 0–19, 19.5, 21, 22, 27 and 29 are done.** The app is shippable and shipping —
 v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
@@ -110,6 +110,14 @@ contents list, the icon picker's Recent row, a block handing out a link to
 itself, and the writing wrapping round a frame. Pin to top was dropped, and the
 marker for what could be linked while writing is queued rather than built — both
 in `docs/plan.md`.
+
+**Phase 22 — Universes — closed 2026-09-06**: a top-level container for one
+version of the world, chosen from a switcher under the world's name rather than
+opened as a row, with a shared universe riding along under whichever is
+selected. What binds the code from it is the root-only rule in the reparent
+guard and the drop-target check, and that `universe` is a template key rather
+than a template — `CLAUDE.md` §Templates has that one, since every picker has to
+know to leave it out.
 
 **Phase 21 — Shell Rework — closed 2026-09-05**: a rail down the left holding
 Project, Templates and Assets plus search, the project switcher and settings,
