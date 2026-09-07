@@ -172,37 +172,61 @@ describe("an icon in the writing", () => {
     expect(await inlineIcon().locator("svg").count()).toBe(1);
   });
 
-  it("takes a callout's icon off without putting the colour's own back", async () => {
+  /**
+   * Opens the icon picker on a callout that has none.
+   *
+   * **Two shapes of this control are in flight at once**, which is why this is
+   * a helper rather than a locator: the change that stopped the colour choosing
+   * the icon leaves an empty slot in the box, and the one stacked on top of it
+   * replaces that with an `Add an icon` button in the corner. Both are the same
+   * gesture from where she is sitting, and this scenario is about the icon
+   * staying off rather than about which control puts it back.
+   */
+  const openIconPicker = async (callout: ReturnType<typeof app.window.locator>) => {
+    await callout.hover();
+    const button = callout.getByRole("button", { name: "Add an icon" });
+    if (await button.count()) await button.click();
+    else await callout.locator(".editor-callout-icon").first().click();
+    await app.window.locator(".icon-picker").waitFor({ state: "visible", timeout: 10_000 });
+  };
+
+  it("takes a callout's icon off, and the colour does not put one back", async () => {
     const callout = app.window.locator(".editor-callout").first();
     await callout.waitFor({ state: "visible", timeout: 20_000 });
 
-    // Amber first, so there is a derived icon to argue with.
+    // Amber, which used to mean caution and used to draw a triangle on its own.
+    // It does not any more — the colour is only a colour — so this is here to
+    // prove exactly that: colouring the box changes nothing about its icon.
     await callout.hover();
     await app.window.getByLabel("Colour of this callout").first().click();
     await app.window.getByLabel("Amber", { exact: true }).first().click();
     await app.window.waitForTimeout(600);
-    await app.window.getByLabel("Caution").first().waitFor({ state: "visible", timeout: 5_000 });
+    expect(await callout.locator(".editor-callout-icon svg").count()).toBe(1);
 
-    await app.window.getByLabel("Caution").first().click();
+    await callout.hover();
+    await callout.locator(".editor-callout-icon").first().click();
     await app.window.locator(".icon-picker").waitFor({ state: "visible", timeout: 10_000 });
     await app.window.getByRole("button", { name: "No icon" }).click();
     await app.window.waitForTimeout(600);
 
     // Gone, and it stays gone: the whole reason "no icon" is stored as a value
     // of its own rather than as an empty prop.
-    expect(await app.window.getByLabel("Caution").count()).toBe(0);
+    expect(await callout.locator(".editor-callout-icon svg").count()).toBe(0);
     await reload();
     await callout.waitFor({ state: "visible", timeout: 20_000 });
-    expect(await app.window.getByLabel("Caution").count()).toBe(0);
+    expect(await callout.locator(".editor-callout-icon svg").count()).toBe(0);
     expect(await app.window.locator(".editor-callout-colored").count()).toBe(1);
   });
 
-  it("puts the colour's own icon back when asked for it", async () => {
-    await app.window.locator(".editor-callout-icon").first().click();
-    await app.window.locator(".icon-picker").waitFor({ state: "visible", timeout: 10_000 });
+  it("puts the type's own icon back when asked for it", async () => {
+    const callout = app.window.locator(".editor-callout").first();
+    await openIconPicker(callout);
     await app.window.getByRole("button", { name: "The usual icon" }).click();
     await app.window.waitForTimeout(600);
 
-    await app.window.getByLabel("Caution").first().waitFor({ state: "visible", timeout: 5_000 });
+    // The type's, not the colour's — the box is still amber and that has
+    // nothing to do with what it now wears.
+    await callout.locator(".editor-callout-icon svg").first().waitFor({ state: "visible", timeout: 5_000 });
+    expect(await app.window.locator(".editor-callout-colored").count()).toBe(1);
   });
 });

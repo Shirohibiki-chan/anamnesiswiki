@@ -811,7 +811,19 @@
    on the row is what does it — this rule only has to not fight it. */
 .editor-callout-icon {
   flex: none;
+  /* **A 24px box around a 15px mark**, because it is a button and the layout
+     sweep counts anything smaller as a target too small to hit — see
+     `tiny-target` in e2e/harness/layout.ts. It used to be 15px square and only
+     showed up on a coloured callout, which is rare enough that the sweep never
+     met one; every callout wears one now, so it met three per page at once. */
   display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  /* The glyph sits where a 15px one would, rather than 4px further in: the
+     padding is hit area, not indent. */
+  margin-left: calc((24px - 15px) / -2);
   color: var(--callout-accent);
   border-radius: var(--radius-sm);
   cursor: pointer;
