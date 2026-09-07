@@ -26,6 +26,29 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
+- **A database block has the layouts but not the menus.** What Phase 23 left
+  behind, and the only piece of it worth queuing. A page shown as a database
+  gets six controls — layout, columns, filter, sort, group and scope; a Subpage
+  index or Tag index block inside a page gets the layout switcher and editable
+  cells, and the other four are page-only. **Nothing is missing from the engine:**
+  `presentDatabase` already takes rows and a view and hands back everything
+  filtered, sorted and grouped, and `block.view` is the same record the
+  page-level one stores. What is missing is those menus being reachable from a
+  block's own bar.
+
+  **It was left for width, not for effort.** The controls were built as a bar
+  above a full-page table, and a block in the narrow sidebar has nowhere to put
+  six menus — List and Cards suit that column, and a table wants the page body.
+  So the job is as much deciding what a block's bar shows at its width as it is
+  wiring the menus up, which is why it did not ride along with the rest.
+
+- **A number can only be filtered for an exact value.** `is` and `is-not` on a
+  number property compare the text of it, so there is no "more than 40" — which
+  is most of what a person wants a number filter for. The operator list in
+  `schema.ts` is where it goes, and the comment there already explains why the
+  operators are split by how many values a field holds, which is the rule a
+  `greater than` has to fit into.
+
 - **Typing on a new page should dismiss the template grid by itself.** Asked for
   2026-09-06. A page created blank shows the "what kind of page is this?" grid
   with a `Skip this — just start writing` link under it, and that link is
@@ -485,65 +508,6 @@ About dialog and the app's default typefaces. Neither blocks anything.
 
 ---
 
-## Phase 23 — Database
-
-A filtered table or card view over pages, by template or tag. Cheapest of the "big views" and the most useful day to day, which is why it leads them.
-
-**Named Database as of 2026-08-31; it was Collections until then.** The rename came out of naming the image gallery (`docs/ideas.md`): a gallery holds pictures, a database holds pages laid out as cards, and no name is shared — one word stretched over both is exactly Notion's failure. *Collection* was the other candidate and she held it back on purpose, not for a use she has in mind but because it is a valuable word and a feature name spends it everywhere at once. **Nothing user-facing said "collection", so there was nothing to migrate** — a block's heading is its source's name (Manual links, Subpage index, Tag index, Backlinks). The code still says `collection`; that is internal and can follow whenever this phase is built. **One cost, accepted knowingly:** in Notion the word carries typed columns, sorts, formulas and relations, so the name runs slightly ahead of what this phase builds.
-
-### Scoped 2026-09-06
-
-Worked out against Notion, which she brought screenshots of — the database page, the layout switcher, the view settings, the More settings menu — plus its help page on data sources and linked databases, which she pointed at deliberately.
-
-**A database is a view over pages that already exist, not a container that owns them.** This is the load-bearing decision, and most of Notion's complexity is the price of answering it the other way. In Notion a database *owns* its rows — a row's parent is the database — which buys two real things: somewhere for typed columns to be defined, and somewhere for the New button to put a page. The bill is the entire data-source apparatus: linked databases, moving a source from one database to another, access inherited from the original, and a help page to explain the difference between three words. **Neither reason applies here.** Templates already own the schema — the Character template says what properties a character has, across the whole tree rather than inside one database — and the folder already owns the page. A second owner would mean two answers to where a character lives, kept in agreement forever. Two consequences worth stating as promises: **deleting a view never deletes a page**, and two pages can show the same set with different filters without any linking machinery at all.
-
-**Any page can be shown as a database, and the block is the same feature at a smaller size.** `Turn into ▸ Table` on a page's right-click menu, the twin of Phase 22's `Turn into a universe` — an existing page like Characters becomes a table in one click with nothing moved and nothing re-made. The block version is that same view dropped into the middle of a page. Because a view is only a lens, these are one feature at two sizes rather than a fork to decide between.
-
-**All four layouts: table, cards, board, list.** Her call 2026-09-06, asked which to build first and answering all of them.
-
-**Not building, and why.** *Timeline* and *Calendar* want dates, which is the blank that stopped the timeline being built at all — Phase 25 is the answer to "what happened next" and it is sequence-driven for exactly this reason. *Chart* has nothing to count until number properties are common across pages. *Map* has no maps. Notion's "open pages in side peek" is split panes, which is Phase 21.5 and deferred. *Automations* and *AI Autofill* are out — no LLM features in the editor.
-
-**The view settings worth having**, from Notion's own list: layout, property visibility (which columns show), filter, sort, group. Conditional colour is a natural later add rather than part of this, since page colours and the palette already exist. A link to a view has precedent in a block handing out a link to itself (Phase 19.5).
-
-**Sub-items are nearly free, and are the one place this starts ahead of the reference.** Notion bolts nesting onto a flat list; here the tree *is* the data, so a row that expands to show the pages inside it is the shape the app already has.
-
-**A table names one template; a mixed set belongs in cards or a list.** Filters can match more than one template, and a card is a picture and a name, so a mixed set reads fine there. A table is not: a Location has no Species column to fill. So a table view picks one template and gets that template's properties as its columns.
-
-### Settled 2026-09-06
-
-The three questions this section held were asked and answered the same day it was written. Nothing above changed; this is what was missing underneath it.
-
-**Rows come from the page's own sub-pages, and a rule can widen that.** Sub-pages is the default and is what answers where New puts a page — into the page the view is on. A view can then be widened to gather by template, tag or universe from anywhere in the tree, which is what makes a database more than a sub-page list wearing a grid. The two costs named when the question was asked are real and are paid on purpose. **New is only offered while the view is reading sub-pages**, because a rule-widened view genuinely has nowhere to put a page and a New that guesses is worse than a New that isn't there. And a page can leave a view when its tags are edited — that is tags being editable, not a bug to design around, and it is the same surprise the existing Tag index block already carries. **The filter machinery is needed either way**, since filters sit on top of sub-pages in the sub-pages-only answer too, so the rule is a source setting on top of something already being built rather than a second engine beside it.
-
-**Simple values are edited in the row; complicated ones open the page.** Text, number, date, select, multi-select and status get an editor inside the cell. Long text, refs and images open the page instead — they want more room than a cell has, and refs is a page picker rather than a field. This line is what keeps the expensive half of the phase out: an editor for *every* type inside a table, with undo covering all of them, was the part that would have moved the ship date. **The rule for placing a type that doesn't exist yet** is whether it reads on one line at a column's width; if it doesn't, it opens the page.
-
-**One view per page.** A page gets one database view, and its layout, columns, filters, sorts and grouping are changed in place. Several saved views is a shape the app could eventually hold — a page has tabs already — but a tab holds writing today, and teaching it to hold a view is work in the page shell rather than in this phase. **Nothing here forecloses it**: a view is stored as one record, so a list of views later is a list of the same record, and the settings UI is the same panel pointed at a different one.
-
-### Build order
-
-Each step ends with something visible, because the phase is too big for one.
-
-1. ~~**A page shown as a table.**~~ **Shipped 2026-09-06.** `Turn into a table` on the tree's right-click menu, the twin of `Turn into a universe`; sub-pages as rows, the view's template supplying the columns, read-only values, and a row's name opening its page. Flat rather than the `Turn into ▸ Table` submenu it was scoped as, because a submenu holding one item is a click for nothing — it becomes one at step 4. The view sits between the page's name and its tabs, so a page that has writing keeps it.
-2. ~~**The view settings.**~~ **Shipped 2026-09-07.** Columns, filter, sort and group, in one bar above the table. The filter model is the piece Phase 24 borrows, so it holds a page's name, its template and its tags as first-class fields rather than only the table's own columns, and it matches on labels rather than option ids because an option list lives per page. Conditions all apply — there is no and/or nesting, which is the query builder the plan rules out. Grouping is offered only on fields a page has one of, so a page cannot appear under three headings.
-3. ~~**Editing in the row.**~~ **Shipped 2026-09-07.** Text, number, date, select, multi-select and status are edited in the cell; long text, refs and pictures still open the page. Typing into a cell on a page that does not carry the property mints that page's own spec, adds the block that shows it in the page's own panel, and writes the value — one undoable move, planned by `planCellEdit`. Options are matched and created by label and copied from the vocabulary already in use, so a word chosen on a second page is the same option rather than a lookalike.
-4. ~~**The other three layouts.**~~ **Shipped 2026-09-07.** Cards, board and list, drawn off the same record, with the switcher in the settings bar and `Turn into ▸` in the tree menu finally a submenu. A board's cards drag between columns, which writes the grouped-by value through the same `editRowCell` a typed cell uses — so a drag and a keystroke are one kind of edit. Dragging is off when the board is grouped by template, because moving a card would then mean rewriting the page's template rather than setting a value.
-5. **The block version and the rule source.** The same view dropped into a page body, and the widening from sub-pages to a rule.
-   - ~~**The rule source.**~~ **Shipped 2026-09-07.** It turned out to be a *scope*, not a rule: the step 2 filter model already matches on template and tag over any set of pages, so all that was missing was which set — sub-pages, this universe, or the whole world — and a second query language would have been the same engine built twice. New is only offered while the scope is sub-pages, as promised when the question was answered.
-   - ~~**The block version.**~~ **Shipped 2026-09-07**, per the decision below. Subpage index and Tag index draw through the same pipeline a page-level database uses — `presentDatabase` takes rows and a view and returns columns, filtering, sorting and grouping, so a block and a page cannot drift on what a Status means. The block's `source`, `tags` and `targetIds` still say *which* pages; `block.view` only says how to draw them, which is what lets the existing tag picker go on working untouched. A block with no stored view draws as a list, so nothing looked different the day it shipped.
-   - **What is left of it:** blocks have the layout switcher and editable cells, but not the other five menus — filtering, sorting, grouping and hiding columns are still page-only. And a table inside the narrow sidebar is cramped; List and Cards suit that width, a block dragged into the page body has room for a table.
-
-**Sub-items ride with whichever step they fit.** A row that expands to show the pages inside it is nearly free because the tree is already the data, but it is an affordance rather than a step, and it wants the table standing up first.
-
-### The collection block, settled 2026-09-07
-
-**Only two of the four overlap, and the earlier note here was wrong to say otherwise.** It claimed the collection block and a database were the same thing and should merge. They are not. *Subpage index* and *Tag index* are exactly a database — the same rows, with filters, sorts and four layouts on top. *Manual links* is a list picked by hand and *Backlinks* is "pages that mention this one"; neither is a scope-plus-filter, and a database has no way to express them. Correcting that is what made the question answerable.
-
-**Her call: keep all four names, and let those two make databases underneath.** Add Block looks exactly as it does today; picking Subpage index or Tag index yields a database already set to it, gaining the settings and the layouts. Nothing disappears from a menu she has learnt, nothing new has to be chosen between, and the two familiar names simply do more. Blocks already on her pages get the same treatment.
-
-**Why the alternatives lost.** A fifth *Database* entry beside the existing four would mean two menu items that list sub-pages with no principle for choosing between them — the exact "one word stretched over both" failure the Collections→Database rename was avoiding, read backwards. Replacing the two outright makes the tidiest menu and was rejected because it takes away names she already knows and redraws blocks already on her pages.
-
----
-
 ## Phase 24 — Graphs
 
 Both, per the user's decision 2026-07-31, and in this order:
@@ -583,22 +547,24 @@ The five commitments above are the spec and none of them changed. What was missi
 
 **Clicking a node opens the preview a hover already gives** — `preview-service.ts`: name, template, tags and an excerpt — beside the graph rather than over it. Going to the page stays a second, deliberate action.
 
-### Open questions
+### Settled 2026-09-07
 
-Three, and they are the ones that change what gets built rather than what it looks like.
+Asked and answered the same day the section was written.
 
-1. **Where a page's graph lives.** A panel opening over the page from a button by its name, so every page has one without being set up and it gets the whole window; a block dropped into a page body like the index blocks, so she picks which pages get one and it stays part of the page; or the right-hand panel beside the writing, always there but the narrowest of the three and already holding the properties.
-2. **What counts as a connection.** Only what she wrote — prose mentions, reference properties, manual links; or those plus the tree itself, so a sword nested under its owner is a line too. If the tree counts, its lines can be drawn fainter than the written ones or exactly the same.
-3. **What an edge says.** Every edge labelled where it has a label ("Friends", "Enemies"), which is the most informative and the most cluttered; only the edges touching the node under the cursor or the selected one; or no labels at all, with the kind of connection showing as a different line instead.
+**A page's graph opens over the page.** A button by the page's name, and closing it puts her back where she was reading — so every page has one without being set up for it, and the graph gets the whole window rather than a column. **A block version is the obvious second size and is not being built yet**, which is the shape Phase 23 reached from the other end: the page-level thing first, the block once it exists and can be dropped somewhere smaller. The choice was made without much feeling behind it, so it is worth putting again once there is something running to look at rather than treating it as fixed.
 
-**Where the *global* graph is reached from is a question for step 3 and is deliberately not asked yet.** The rail's lower group already holds errands that are not sidebar panels, so it has somewhere to go, but the answer wants the scoped graph running first to argue against.
+**The tree counts as a connection, drawn fainter than the written ones.** A sword nested under its owner is a real relationship, and leaving it out would draw a picture the app knows to be incomplete. Fainter rather than identical because the two are not the same claim — one is something she wrote down and one is where she filed the page — and a graph that cannot tell them apart is back to Obsidian's every-line-is-a-line. **This is the point where the graph and Phase 23 part company:** a database's scope reads sub-pages as *rows*, and here the same relationship is an *edge*, so the two share the index underneath and nothing above it.
+
+**Whether an edge is labelled is hers to switch, and both answers ship rather than one.** A toggle in the graph's own controls: labels on every edge that has one, or labels only on the edges touching the node under the cursor or the one selected. Asked to choose, she asked for both — the informative picture and the quiet one are wanted at different moments, and picking one would have been picking which moment she was allowed. **The quiet one is the default**, on the plain grounds that a graph opened to find something is easier to read before it is covered in words. **The toggle is an app preference, not part of the project** — beside the sidebar widths and the double-click setting, because which of the two pictures she likes is a habit that follows her between worlds rather than a fact about one of them. Pinned positions stay per-project for the opposite reason.
+
+**Where the *global* graph is reached from is a question for step 3, and deliberately still open.** The rail's lower group already holds errands that are not sidebar panels, so it has somewhere to go, but the answer wants the scoped graph running first to argue against.
 
 ### Build order
 
 Each step ends with something visible, the same as Phase 23.
 
-1. **A page's relationship graph.** The page in the middle, everything one connection out from it, template icons and the colour cascade, a layout that settles the same way twice, nodes draggable, and a click opening the preview beside it.
-2. **The controls.** Filter by template and by tag off Phase 23's model, a control for how far out it reaches, whatever question 3 settles about labels, and pinned positions remembered between sessions.
+1. **A page's relationship graph.** Opened over the page from a button by its name: the page in the middle, everything one connection out from it, written links and tree links told apart, template icons and the colour cascade, a layout that settles the same way twice, nodes draggable, and a click opening the preview beside it.
+2. **The controls.** Filter by template and by tag off Phase 23's model, a control for how far out it reaches, the labels toggle, and pinned positions remembered between sessions.
 3. **The global graph.** The same component over a whole universe, widened by the same scope vocabulary the databases already use.
 
 ---

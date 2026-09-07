@@ -4,7 +4,7 @@
 // **Everything here reads and nothing here owns.** A database is a lens over
 // pages that already exist, so this file derives its whole answer from the
 // node graph on every call and stores nothing of its own — which is what makes
-// the two promises in `docs/plan.md` Phase 23 true by construction rather than
+// the two promises in `docs/shipped.md` Phase 23 true by construction rather than
 // by care: removing a view cannot remove a page, and two views over the same
 // pages need no link between them because neither one holds anything.
 import type {
@@ -521,7 +521,7 @@ export function visibleColumns(columns: RenderableProperty[], hidden: string[] |
  * text, refs and pictures want more room than a cell has — refs is a page
  * picker rather than a field — so those open the page instead. That line is
  * what kept this phase shippable, and it is the rule for placing a type that
- * does not exist yet. See `docs/plan.md` Phase 23.
+ * does not exist yet. See `docs/shipped.md` Phase 23.
  */
 export const EDITABLE_IN_ROW: CustomPropertySpec["type"][] = [
   "text",

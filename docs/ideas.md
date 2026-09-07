@@ -371,7 +371,7 @@ Asked for by the user 2026-08-31. Wanted, unscheduled. Most of the shape below w
 
 **"Collection" was the other candidate and she held it back deliberately.** Not for a use she has in mind — she has not decided one, and said so — but because it is a valuable word and a feature name spends it everywhere at once. **Reserved, not earmarked**, and nothing here should be read as a plan for it.
 
-**One caveat on *database*, recorded rather than argued.** In Notion the word carries typed columns, sorts, filters, formulas, rollups and relations; ours is pages gathered by a rule, with filtering planned. The name is a promise slightly ahead of the feature, which is a cost she accepted knowingly against her audience already speaking the word fluently. Phase 23 in `plan.md` carries the name.
+**One caveat on *database*, recorded rather than argued.** In Notion the word carries typed columns, sorts, filters, formulas, rollups and relations; ours is pages gathered by a rule, with filtering planned. The name is a promise slightly ahead of the feature, which is a cost she accepted knowingly against her audience already speaking the word fluently. Phase 23 in `shipped.md` carries the name.
 
 **The asset library is the wrong home for this, and not narrowly.** The case is one gallery per character — the botmaker whose folder presets are in `plan.md` uploads each bot's pictures into a folder of that bot's own. A folder in our library is a flat label, a picture carries exactly one, and the sidebar dropdown holding them was already being stress-tested at fifty. One folder per character feeds the character count straight into that dropdown, and files a character's pictures somewhere other than the character — two places to keep in step.
 

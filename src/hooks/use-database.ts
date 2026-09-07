@@ -201,6 +201,6 @@ export function useBlockDatabase(
 export function isDatabaseBlock(block: Block): boolean {
   // Manual links is a list picked by hand and Backlinks is "pages that mention
   // this one" — neither is a set a database can describe, so neither becomes
-  // one. Her call 2026-09-07; see `docs/plan.md` Phase 23.
+  // one. Her call 2026-09-07; see `docs/shipped.md` Phase 23.
   return block.kind === "collection" && (block.source === "subpages" || block.source === "tags");
 }

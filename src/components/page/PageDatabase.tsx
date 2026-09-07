@@ -60,7 +60,7 @@ export function PageDatabase({ node }: { node: Node }) {
           from all over, so "inside this page" is not where the row would come
           from, and a New that quietly filed it here anyway would be a button
           that lies. This was settled when the scope question was answered; see
-          `docs/plan.md` Phase 23. */}
+          `docs/shipped.md` Phase 23. */}
       {scope === "subpages" && (
         <button type="button" className="ui-btn ui-btn-secondary database-add" onClick={() => createPageIn(node.id)}>
           Add a page

@@ -4,7 +4,7 @@
 // when the point is to see what is in the folder rather than to compare
 // columns. It is the closest of the four to what the app already had in a
 // Subpage index block — which is the observation behind the one decision left
-// in `docs/plan.md` Phase 23, about whether that block and this are one thing.
+// in `docs/shipped.md` Phase 23, about whether that block and this are one thing.
 import type { Node } from "../../constants/schema";
 import type { DatabaseCell, DatabaseSurface } from "../../hooks/use-database";
 import { useProject } from "../../hooks/use-project";
