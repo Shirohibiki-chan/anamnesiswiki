@@ -6,14 +6,14 @@
 // columns are showing, so the Columns menu trims a card the same way it trims
 // a table.
 import type { Node } from "../../constants/schema";
-import { useDatabase } from "../../hooks/use-database";
+import type { DatabaseCell, DatabaseSurface } from "../../hooks/use-database";
 import { useProject } from "../../hooks/use-project";
 import type { RenderableProperty } from "../../services/property-service";
 import { NodeIcon } from "../blocks/IconPicker";
 import { DatabaseChip, DatabasePicture, DatabaseValue } from "./DatabaseValue";
 
-export function DatabaseCards({ node }: { node: Node }) {
-  const { rows, columns, groups, cell } = useDatabase(node);
+export function DatabaseCards({ data }: { data: DatabaseSurface }) {
+  const { rows, columns, groups, cell } = data;
 
   if (!groups) return <Grid rows={rows} columns={columns} cell={cell} />;
 
@@ -39,7 +39,7 @@ function Grid({
 }: {
   rows: Node[];
   columns: RenderableProperty[];
-  cell: (row: Node, column: RenderableProperty) => ReturnType<ReturnType<typeof useDatabase>["cell"]>;
+  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
 }) {
   return (
     <div className="database-cards">
@@ -57,7 +57,7 @@ function Card({
 }: {
   row: Node;
   columns: RenderableProperty[];
-  cell: (row: Node, column: RenderableProperty) => ReturnType<ReturnType<typeof useDatabase>["cell"]>;
+  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
 }) {
   const { selectNode } = useProject();
 

@@ -6,7 +6,7 @@
 // looking rather than filling in, so they read the same values and do not
 // offer to change them — see PageDatabase.
 import type { Node } from "../../constants/schema";
-import { isEditableInRow, useDatabase, type DatabaseCell } from "../../hooks/use-database";
+import { isEditableInRow, type DatabaseCell, type DatabaseSurface } from "../../hooks/use-database";
 import { useProject } from "../../hooks/use-project";
 import type { RenderableProperty } from "../../services/property-service";
 import { NodeIcon } from "../blocks/IconPicker";
@@ -19,9 +19,14 @@ import { DatabaseChip, DatabaseValue } from "./DatabaseValue";
 // of the row that navigates. Matches the floors in database.css.
 const COLUMN_FLOOR_REM = 11;
 const NAME_FLOOR_REM = 14;
+// Narrower again inside a sidebar block, which is a third of a page wide. The
+// page's floors there would push almost every table into sideways scrolling,
+// and a column of wrapped words beats a scrollbar in a panel that narrow.
+const DENSE_FLOOR_REM = 6;
+const DENSE_NAME_REM = 7;
 
-export function DatabaseTable({ node }: { node: Node }) {
-  const { rows, columns, groups, cell } = useDatabase(node);
+export function DatabaseTable({ data, dense }: { data: DatabaseSurface; dense?: boolean }) {
+  const { rows, columns, groups, cell } = data;
 
   return (
     // Its own scroller rather than the page's: a table wide enough to scroll
@@ -33,7 +38,7 @@ export function DatabaseTable({ node }: { node: Node }) {
           columns there are, which CSS cannot see. */}
       <table
         className="database-table"
-        style={{ minWidth: `${COLUMN_FLOOR_REM * columns.length + NAME_FLOOR_REM}rem` }}
+        style={{ minWidth: `${(dense ? DENSE_FLOOR_REM : COLUMN_FLOOR_REM) * columns.length + (dense ? DENSE_NAME_REM : NAME_FLOOR_REM)}rem` }}
       >
         <thead>
           <tr>
@@ -61,14 +66,14 @@ export function DatabaseTable({ node }: { node: Node }) {
                 </th>
               </tr>
               {group.rows.map((row) => (
-                <Row key={row.id} row={row} columns={columns} cell={cell} node={node} />
+                <Row key={row.id} row={row} columns={columns} cell={cell} data={data} />
               ))}
             </tbody>
           ))
         ) : (
           <tbody>
             {rows.map((row) => (
-              <Row key={row.id} row={row} columns={columns} cell={cell} node={node} />
+              <Row key={row.id} row={row} columns={columns} cell={cell} data={data} />
             ))}
           </tbody>
         )}
@@ -81,13 +86,13 @@ function Row({
   row,
   columns,
   cell,
-  node,
+  data,
 }: {
   row: Node;
   columns: RenderableProperty[];
   cell: (row: Node, column: RenderableProperty) => DatabaseCell;
-  /** The page the table is on — the cell editor reads its view for the option list. */
-  node: Node;
+  /** Passed through to the cell editor, which needs the option list and the writer. */
+  data: DatabaseSurface;
 }) {
   const { selectNode } = useProject();
 
@@ -104,9 +109,9 @@ function Row({
         </button>
       </th>
       {columns.map((column) => (
-        <td key={column.key} data-editable={isEditableInRow(column) ? "" : undefined}>
-          {isEditableInRow(column) ? (
-            <DatabaseCellEditor row={row} column={column} value={cell(row, column)} node={node} />
+        <td key={column.key} data-editable={isEditableInRow(column) && data.onEdit ? "" : undefined}>
+          {isEditableInRow(column) && data.onEdit ? (
+            <DatabaseCellEditor row={row} column={column} value={cell(row, column)} data={data} />
           ) : (
             <DatabaseValue value={cell(row, column)} />
           )}

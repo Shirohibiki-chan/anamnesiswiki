@@ -11,23 +11,26 @@
 // draws; it just says why it will not be dragged.
 import { useState } from "react";
 import type { DatabaseField, Node } from "../../constants/schema";
-import { useDatabase } from "../../hooks/use-database";
-import { useProject, useProjectActions } from "../../hooks/use-project";
+import type { DatabaseCell, DatabaseSurface } from "../../hooks/use-database";
+import { useProject } from "../../hooks/use-project";
 import type { RenderableProperty } from "../../services/property-service";
 import { NodeIcon } from "../blocks/IconPicker";
 import { DatabaseChip, DatabasePicture, DatabaseValue } from "./DatabaseValue";
 
-export function DatabaseBoard({ node }: { node: Node }) {
-  const { columns, groups, allColumns, cell } = useDatabase(node);
-  const { editRowCell } = useProjectActions();
+export function DatabaseBoard({ data, allColumns }: { data: DatabaseSurface; allColumns: RenderableProperty[] }) {
+  const { columns, groups, cell, view, onEdit } = data;
   const [over, setOver] = useState<string | null>(null);
 
-  const groupBy: DatabaseField | undefined = node.view?.groupBy;
+  const groupBy: DatabaseField | undefined = view.groupBy;
   // The column the board is grouped by, when that is a property this can
   // actually write to. `template` gives nothing back here, which is what turns
   // dragging off.
+  // Also nothing to write with on a surface that only shows values, which is
+  // what turns dragging off there as well.
   const groupColumn =
-    groupBy?.kind === "property" ? allColumns.find((column) => column.key === groupBy.key) : undefined;
+    onEdit && groupBy?.kind === "property"
+      ? allColumns.find((column) => column.key === groupBy.key)
+      : undefined;
 
   if (!groups) {
     // Only reachable if a stored view has a layout of board and no grouping —
@@ -37,10 +40,10 @@ export function DatabaseBoard({ node }: { node: Node }) {
 
   function drop(groupLabel: string, rowId: string) {
     setOver(null);
-    if (!groupColumn) return;
+    if (!groupColumn || !onEdit) return;
     // The "no value" column clears it, which is the only way to take something
     // off a board without opening the page.
-    editRowCell(rowId, groupColumn, { kind: "options", labels: groupLabel ? [groupLabel] : [] });
+    onEdit(rowId, groupColumn, { kind: "options", labels: groupLabel ? [groupLabel] : [] });
   }
 
   return (
@@ -96,7 +99,7 @@ function BoardCard({
 }: {
   row: Node;
   columns: RenderableProperty[];
-  cell: (row: Node, column: RenderableProperty) => ReturnType<ReturnType<typeof useDatabase>["cell"]>;
+  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
   draggable: boolean;
 }) {
   const { selectNode } = useProject();

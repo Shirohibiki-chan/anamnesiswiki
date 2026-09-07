@@ -6,14 +6,14 @@
 // Subpage index block — which is the observation behind the one decision left
 // in `docs/plan.md` Phase 23, about whether that block and this are one thing.
 import type { Node } from "../../constants/schema";
-import { useDatabase } from "../../hooks/use-database";
+import type { DatabaseCell, DatabaseSurface } from "../../hooks/use-database";
 import { useProject } from "../../hooks/use-project";
 import type { RenderableProperty } from "../../services/property-service";
 import { NodeIcon } from "../blocks/IconPicker";
 import { DatabaseChip, DatabaseValue } from "./DatabaseValue";
 
-export function DatabaseList({ node }: { node: Node }) {
-  const { rows, columns, groups, cell } = useDatabase(node);
+export function DatabaseList({ data }: { data: DatabaseSurface }) {
+  const { rows, columns, groups, cell } = data;
 
   if (!groups) return <Lines rows={rows} columns={columns} cell={cell} />;
 
@@ -39,7 +39,7 @@ function Lines({
 }: {
   rows: Node[];
   columns: RenderableProperty[];
-  cell: (row: Node, column: RenderableProperty) => ReturnType<ReturnType<typeof useDatabase>["cell"]>;
+  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
 }) {
   const { selectNode } = useProject();
 

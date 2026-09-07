@@ -1,26 +1,44 @@
 // The only import path components have into database-service.ts. See
 // CLAUDE.md's layer order — components never import services directly.
 import { useCallback, useMemo } from "react";
-import type { DatabaseView, Node } from "../constants/schema";
+import type { Block, DatabaseField, DatabaseView, Node } from "../constants/schema";
+import type { CellEdit } from "../services/database-service";
 import {
-  applyFilters,
-  applySorts,
   databaseCell,
-  databaseColumns,
   databaseRows,
+  defaultBlockView,
   fieldChoices,
-  scopeHasNoUniverse,
-  groupRows,
   newDatabaseView,
-  visibleColumns,
+  presentDatabase,
+  scopeHasNoUniverse,
   type DatabaseCell,
   type DatabaseGroup,
 } from "../services/database-service";
 import type { RenderableProperty } from "../services/property-service";
 import { getPropertySchema, getTemplate } from "../services/template-registry";
+import { useCollection } from "./use-link-index";
 import { useProject, useProjectActions } from "./use-project";
 
 export type { DatabaseCell, DatabaseGroup } from "../services/database-service";
+
+/**
+ * Everything a layout needs to draw, and nothing about where it came from.
+ *
+ * The four layout components take this rather than a node, so the same
+ * components draw a page-level database and an index block — the only
+ * difference between the two is which hook filled this in.
+ */
+export type DatabaseSurface = {
+  rows: Node[];
+  columns: RenderableProperty[];
+  groups: DatabaseGroup[] | null;
+  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
+  choicesFor: (field: DatabaseField) => string[];
+  /** The view being drawn, for the layout and the board's grouping. */
+  view: DatabaseView;
+  /** Absent on a surface that only shows values. */
+  onEdit?: (rowId: string, column: RenderableProperty, edit: CellEdit) => void;
+};
 
 // Re-exported because the settings menus need them and a component may not
 // reach into services. The same reason `use-tree-data` re-exports the tree's
@@ -57,14 +75,9 @@ function templateLabel(key: string): string {
  * pages with a dozen columns would allocate two thousand cell objects on every
  * keystroke anywhere in the project, to draw the few dozen actually on screen.
  */
-export function useDatabase(node: Node | undefined): {
-  rows: Node[];
+export function useDatabase(node: Node | undefined): Omit<DatabaseSurface, "onEdit"> & {
   allRows: Node[];
-  columns: RenderableProperty[];
   allColumns: RenderableProperty[];
-  groups: DatabaseGroup[] | null;
-  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
-  choicesFor: (field: Parameters<typeof fieldChoices>[1]) => string[];
 } {
   const { project, nodes } = useProject();
 
@@ -75,6 +88,7 @@ export function useDatabase(node: Node | undefined): {
       columns: [],
       allColumns: [],
       groups: null,
+      view: { layout: "table" } as DatabaseView,
       cell: () => ({ kind: "empty" }) as DatabaseCell,
       choicesFor: () => [],
     };
@@ -82,23 +96,15 @@ export function useDatabase(node: Node | undefined): {
 
     const view = node.view;
     const allRows = databaseRows(nodes, project?.childOrder, node.id, view.scope);
-    const allColumns = databaseColumns(allRows, view.templateKey, getPropertySchema);
-
-    // Filters and sorts read every column, not only the shown ones. Hiding a
-    // column is about what is on screen; a view sorted by a column she then
-    // turned off should stay in the order she asked for.
-    const filtered = applyFilters(allRows, view.filters, allColumns, nodes, templateLabel);
-    const rows = applySorts(filtered, view.sorts, allColumns, nodes, templateLabel);
+    const shown = presentDatabase(allRows, view, nodes, getPropertySchema, templateLabel);
 
     return {
-      rows,
+      ...shown,
       allRows,
-      columns: visibleColumns(allColumns, view.hiddenColumns),
-      allColumns,
-      groups: groupRows(rows, view.groupBy, allColumns, nodes, templateLabel),
+      view,
       cell: (row: Node, column: RenderableProperty) => databaseCell(row, column, nodes),
-      choicesFor: (field: Parameters<typeof fieldChoices>[1]) =>
-        fieldChoices(allRows, field, allColumns, nodes, templateLabel),
+      choicesFor: (field: DatabaseField) =>
+        fieldChoices(allRows, field, shown.allColumns, nodes, templateLabel),
     };
   }, [node, nodes, project?.childOrder]);
 }
@@ -144,4 +150,57 @@ export function useDatabaseScopeGap(node: Node | undefined): boolean {
   const { nodes } = useProject();
   if (!node?.view) return false;
   return scopeHasNoUniverse(nodes, node.id, node.view.scope);
+}
+
+/**
+ * The database an index block draws.
+ *
+ * **Its rows come from the block's own source, not from a scope.** A Subpage
+ * index has always listed the host page's children and a Tag index the pages
+ * carrying its tags; that stays exactly as it was, in `useCollection`. What is
+ * new is everything after the rows — columns, filters, sorts, grouping and the
+ * four layouts — which is the same pipeline a page-level database uses, so the
+ * two cannot drift apart in what they think a Status means.
+ *
+ * A block that has never been changed has no stored view and draws as a list,
+ * which is what it always looked like.
+ */
+export function useBlockDatabase(
+  host: Node | undefined,
+  block: Block,
+): {
+  view: DatabaseView;
+  rows: Node[];
+  allRows: Node[];
+  columns: RenderableProperty[];
+  allColumns: RenderableProperty[];
+  groups: DatabaseGroup[] | null;
+  cell: (row: Node, column: RenderableProperty) => DatabaseCell;
+  choicesFor: (field: DatabaseField) => string[];
+} {
+  const { nodes } = useProject();
+  const collected = useCollection(nodes, host, block);
+
+  return useMemo(() => {
+    const allRows = collected.map((row) => row.node);
+    const view = block.view ?? defaultBlockView(allRows);
+    const shown = presentDatabase(allRows, view, nodes, getPropertySchema, templateLabel);
+
+    return {
+      view,
+      allRows,
+      ...shown,
+      cell: (row: Node, column: RenderableProperty) => databaseCell(row, column, nodes),
+      choicesFor: (field: DatabaseField) =>
+        fieldChoices(allRows, field, shown.allColumns, nodes, templateLabel),
+    };
+  }, [collected, block, nodes]);
+}
+
+/** Whether this block draws through the database pipeline at all. */
+export function isDatabaseBlock(block: Block): boolean {
+  // Manual links is a list picked by hand and Backlinks is "pages that mention
+  // this one" — neither is a set a database can describe, so neither becomes
+  // one. Her call 2026-09-07; see `docs/plan.md` Phase 23.
+  return block.kind === "collection" && (block.source === "subpages" || block.source === "tags");
 }

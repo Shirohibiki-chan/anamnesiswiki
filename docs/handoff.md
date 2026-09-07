@@ -4527,6 +4527,19 @@ one column per page and left every filter and hidden column pointing at whoever
 defined it first. `databaseColumns` names a custom column by its lowercased
 label, and `keyOn` finds the row's own key for it when reading a value.
 
+**One pipeline draws every database.** `presentDatabase` takes rows and a view
+and returns the columns, the filtered and sorted rows and the groups; the four
+layout components take that bundle (`DatabaseSurface`) and nothing about where
+it came from. A page-level database feeds it `databaseRows`; a Subpage index or
+Tag index block feeds it `useCollection`'s rows. Keep it that way — two copies
+of the filtering is how a block and a page start disagreeing about what a Status
+means.
+
+**An index block's source and its view are separate on purpose.** `source`,
+`tags` and `targetIds` say which pages; `block.view` says how to draw them. Never
+write a tag filter into an index block's view: two places holding "which tags"
+is how they drift, and the tag picker already owns that question.
+
 **A "rule" is a scope, not a query.** Phase 23's open question offered
 sub-pages or a rule gathering by template, tag and universe. The filter model
 built at step 2 already matches on template and tag over any set of pages, so

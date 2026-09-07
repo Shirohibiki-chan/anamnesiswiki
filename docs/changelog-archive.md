@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-05 — a rail down the left
+
+### Changes
+
+- **The buttons that used to sit above the page are now a rail down the left of the window.** Project, Templates and Assets moved into it out of the strip that used to sit over the sidebar, and search, switching project and settings moved into it out of the bar above the page.
+- **The sidebar now says which panel it is showing.** The rail is icons only, so the words Templates and Assets are written over the panel itself. The tree still heads itself with the world's name, the way it always did.
+- **What stayed above the page is what belongs to the page** — back and forward, the saved and history markers, and the button that shows and hides the properties panel. When pages can sit side by side, that is the row each of them will want its own copy of.
+
+### Notes
+
+- **The window opens a little wider than it used to, and won't be dragged quite as narrow.** Both by the width of the rail. The rail is chrome, so leaving the numbers alone would have taken its width out of the page instead — and at the old minimum it did exactly that, squeezing the tree until the world's name and two page names went to "…". The page has the same room it always had.
+- **The search button no longer shows its keyboard shortcut.** It is still on the tooltip when you hover it, but that button was the only place in the app the shortcut was written down — say if you want it somewhere visible again.
+
 ## 2026-09-04 — the writing goes round an infobox
 
 ### Additions

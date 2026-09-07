@@ -677,3 +677,49 @@
   line-clamp: 3;
   overflow: hidden;
 }
+
+/* ---- A database inside a block (step 5) ---- */
+
+.block-database {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+/* The layouts were drawn for the middle of a page. In a sidebar block they
+   have to give way rather than force the panel wider. */
+.block-database .database-cards {
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+}
+
+.block-database .database-card-picture {
+  height: 5rem;
+}
+
+.block-database .database-board-column {
+  flex-basis: 11rem;
+}
+
+.block-database .database-list-row {
+  padding-inline: var(--space-sm);
+}
+
+/* The layout control sits on one line with its chevron, rather than letting the
+   uppercase label push it onto a second. */
+.block-database .block-collection-source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+/* Inside a block, a Summary column wraps to one word a line and makes a row
+   ten lines tall. Clipped like a card's, for the same reason: the row opens
+   the page, so the rest is a click away rather than lost. */
+.block-database .database-cell-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
