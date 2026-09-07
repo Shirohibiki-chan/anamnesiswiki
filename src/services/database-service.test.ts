@@ -115,16 +115,42 @@ describe("databaseColumns", () => {
     expect(columns.map((column) => column.key)).toEqual(["age", "friends"]);
   });
 
-  it("takes a repeated key once, from the first row that has it", () => {
+  it("takes a repeated name once, wearing the spelling the first row used", () => {
     const rows = [
-      page({ customProperties: [{ key: "rank", label: "Rank", type: "text" }] }),
-      page({ customProperties: [{ key: "rank", label: "Ranking", type: "number" }] }),
+      page({ customProperties: [{ key: "uuid-a", label: "Rank", type: "text" }] }),
+      page({ customProperties: [{ key: "uuid-b", label: "rank", type: "number" }] }),
+    ];
+
+    const columns = databaseColumns(rows, "character", schemaFor);
+    const rank = columns.filter((column) => column.label.toLowerCase() === "rank");
+
+    expect(rank).toHaveLength(1);
+    expect(rank[0].label).toBe("Rank");
+    // Two spellings of one name are one property everywhere else in the app,
+    // so two differently-spelled ones are not two columns here either.
+    expect(rank[0].type).toBe("text");
+  });
+
+  it("names a custom column by its label, so nothing points at one page's copy", () => {
+    const rows = [page({ customProperties: [{ key: "uuid-a", label: "Rank", type: "text" }] })];
+    const [rank] = databaseColumns(rows, "character", schemaFor).filter((column) => column.label === "Rank");
+    expect(rank.key).toBe("rank");
+  });
+
+  // The bug this was written for: a custom property's `key` is a uuid minted
+  // per page (see the store's addCustomProperty), so nine characters each
+  // carrying a Status produced nine columns all called Status. Everywhere else
+  // in the app a property is identified by its label — see indexProperties.
+  it("takes one column per name, however many pages define it", () => {
+    const rows = [
+      page({ customProperties: [{ key: "uuid-a", label: "Status", type: "status", options: [] }] }),
+      page({ customProperties: [{ key: "uuid-b", label: "Status", type: "status", options: [] }] }),
+      page({ customProperties: [{ key: "uuid-c", label: "status", type: "status", options: [] }] }),
     ];
 
     const columns = databaseColumns(rows, "character", schemaFor);
 
-    expect(columns.filter((column) => column.key === "rank")).toHaveLength(1);
-    expect(columns.find((column) => column.key === "rank")?.label).toBe("Rank");
+    expect(columns.filter((column) => column.label.toLowerCase() === "status")).toHaveLength(1);
   });
 
   it("has no columns when nothing named a template", () => {
@@ -134,6 +160,20 @@ describe("databaseColumns", () => {
 
 describe("databaseCell", () => {
   const text: RenderableProperty = { key: "age", label: "Age", type: "text" };
+
+  // The other half of one-column-per-name: the column is named once, but each
+  // row stores that value under its own key, so the cell has to look it up per
+  // row or every page but the first draws blank.
+  it("finds a value through each row's own key for the column", () => {
+    const rows = [
+      page({ name: "A", customProperties: [{ key: "uuid-a", label: "Rank", type: "text" }], properties: { "uuid-a": "First" } }),
+      page({ name: "B", customProperties: [{ key: "uuid-b", label: "Rank", type: "text" }], properties: { "uuid-b": "Second" } }),
+    ];
+    const [rank] = databaseColumns(rows, "character", schemaFor).filter((column) => column.label === "Rank");
+
+    expect(databaseCell(rows[0], rank, {})).toEqual({ kind: "text", text: "First" });
+    expect(databaseCell(rows[1], rank, {})).toEqual({ kind: "text", text: "Second" });
+  });
 
   it("reads plain text, and calls whitespace empty", () => {
     expect(databaseCell(page({ properties: { age: "31" } }), text, {})).toEqual({ kind: "text", text: "31" });

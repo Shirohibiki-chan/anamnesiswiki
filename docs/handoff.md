@@ -4521,6 +4521,12 @@ value is an option id, and the option list lives on the row's own
 draw every page's Status with whichever page defined the column first — the one
 bug here that would look like a styling glitch rather than a data error.
 
+**A column is named by its label, not by a spec's key.** The same reason: a
+custom property's `key` is a uuid minted per page, so keying columns by it made
+one column per page and left every filter and hidden column pointing at whoever
+defined it first. `databaseColumns` names a custom column by its lowercased
+label, and `keyOn` finds the row's own key for it when reading a value.
+
 **So filters compare labels, not ids.** Filtering, sorting and grouping all read
 a field through one function (`valuesOn`), which is what keeps them agreeing
 with each other and with the table. A filter storing an option id would match

@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-04 — linking the names you've already written
+
+### Additions
+
+- **`/link page names` turns the page names in your writing into links.** It reads the page you're on, finds every place another page's name is written as plain text, and shows you the list before it touches anything.
+- **You pick what gets linked.** One row per page, with the sentences it found the name in, all ticked to start with — untick anything that's a coincidence rather than a reference. Cancel and nothing at all is written.
+- **One undo takes the whole lot back**, however many links it made.
+- **It won't link the wrong thing.** Whole words only, so a page called *Art* doesn't claim the middle of *particular*; a name two pages share is skipped rather than guessed at; the longer name wins where two overlap; nicknames count; and a page never links to itself.
+- **Your wording is kept.** If the sentence says the page's name exactly, the link follows the page if you rename it later. If it says a nickname, or says it in lower case, the link keeps what you wrote instead of quietly retitling your sentence.
+
+### Notes
+
+- **The other half of this — a marker on text that *could* be linked, while you're writing — isn't built.** It turned out to be the harder half rather than the easy one; the list in the dialog covers most of what it was for, since it shows you what could be linked and closing it changes nothing.
+
 ## 2026-09-04 — a contents list, and the icons you used last
 
 ### Additions
