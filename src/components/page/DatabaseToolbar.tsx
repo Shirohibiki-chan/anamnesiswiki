@@ -82,6 +82,11 @@ export function DatabaseToolbar({ node }: { node: Node }) {
             : `${rows.length} pages`
           : `${rows.length} of ${allRows.length} pages`}
         {view.templateKey && <> · {getLabel(view.templateKey)}</>}
+        {/* A widened view has to advertise itself. Without this, a table
+            showing pages from all over the world looks exactly like a table
+            showing what is inside the page you are on. */}
+        {view.scope === "universe" && <> · this universe</>}
+        {view.scope === "everywhere" && <> · everywhere</>}
       </div>
 
       <div className="database-tools">

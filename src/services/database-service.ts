@@ -10,6 +10,7 @@
 import type {
   CustomPropertySpec,
   DatabaseField,
+  DatabaseScope,
   DatabaseFilter,
   DatabaseOperator,
   DatabaseSort,
@@ -21,7 +22,7 @@ import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../constants/schema"
 import { blocksFor, defaultPropertyOrder, newBlock } from "./block-service";
 import { isChipType } from "./property-service";
 import type { RenderableProperty } from "./property-service";
-import { orderSiblings } from "./tree-service";
+import { isDescendantOf, orderSiblings, universeOf } from "./tree-service";
 
 /**
  * The rows: the pages inside this one, in the order the tree shows them.
@@ -36,9 +37,43 @@ export function databaseRows(
   nodes: Record<string, Node>,
   childOrder: Record<string, string[]> | undefined,
   nodeId: string,
+  scope: DatabaseScope = "subpages",
 ): Node[] {
-  const children = Object.values(nodes).filter((node) => node.parentId === nodeId);
-  return orderSiblings(children, childOrder?.[nodeId]);
+  if (scope === "subpages") {
+    const children = Object.values(nodes).filter((node) => node.parentId === nodeId);
+    return orderSiblings(children, childOrder?.[nodeId]);
+  }
+
+  // Widened. The page the view is on is never one of its own rows — a folder
+  // listing itself is a loop with nothing to say — and neither is a universe,
+  // which is a container for a version of the world rather than a page in it.
+  const universe = scope === "universe" ? universeOf(nodeId, nodes) : null;
+  const candidates = Object.values(nodes).filter((node) => {
+    if (node.id === nodeId) return false;
+    if (node.templateKey === UNIVERSE_TEMPLATE_KEY) return false;
+    if (!universe) return true;
+    return node.id === universe.id ? false : isDescendantOf(node.id, universe.id, nodes);
+  });
+
+  // **Sorted by name, not left in map order.** A widened view has no tree order
+  // to inherit — the pages come from all over — and `Object.values` is
+  // insertion order, which is the order they were read off the disk and means
+  // nothing to anyone. A sort on the view replaces this; without one, at least
+  // it is findable.
+  return [...candidates].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+}
+
+/**
+ * A view scoped to a universe, on a page that is not in one, has nothing to
+ * gather — worth knowing so the UI can say so rather than drawing an empty
+ * table that looks like a bug.
+ */
+export function scopeHasNoUniverse(
+  nodes: Record<string, Node>,
+  nodeId: string,
+  scope: DatabaseScope | undefined,
+): boolean {
+  return scope === "universe" && universeOf(nodeId, nodes) === null;
 }
 
 /**

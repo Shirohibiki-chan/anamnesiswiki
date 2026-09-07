@@ -14,6 +14,7 @@ import {
   isEditableInRow,
   matchesFilter,
   planCellEdit,
+  scopeHasNoUniverse,
   newDatabaseView,
   operatorsFor,
   suggestColumnTemplate,
@@ -666,5 +667,91 @@ describe("planCellEdit", () => {
     const patch = planCellEdit(row, kinds, { kind: "options", labels: ["Rogue", "Noble"] }, schemaFor, []);
 
     expect(patch.customProperties?.[0].options?.map((option) => option.label)).toEqual(["Rogue", "Noble"]);
+  });
+});
+
+// ---- Where the rows come from (step 5) ----
+
+describe("databaseRows scope", () => {
+  /** A world with a universe, a folder in it, pages inside that, and a page outside. */
+  function world() {
+    const universe = page({ name: "Prime", templateKey: "universe" });
+    const folder = page({ parentId: universe.id, name: "Characters", templateKey: "folder" });
+    const inside = page({ parentId: folder.id, name: "Valera" });
+    const elsewhereInUniverse = page({ parentId: universe.id, name: "Kestrel" });
+    const otherUniverse = page({ name: "Fork", templateKey: "universe" });
+    const outside = page({ parentId: otherUniverse.id, name: "Someone Else" });
+    return {
+      folder,
+      nodes: graph(universe, folder, inside, elsewhereInUniverse, otherUniverse, outside),
+    };
+  }
+
+  it("takes only the children by default", () => {
+    const { folder, nodes } = world();
+    expect(databaseRows(nodes, undefined, folder.id).map((row) => row.name)).toEqual(["Valera"]);
+  });
+
+  it("takes everything in the universe when scoped to it", () => {
+    const { folder, nodes } = world();
+    const names = databaseRows(nodes, undefined, folder.id, "universe").map((row) => row.name);
+
+    expect(names).toContain("Valera");
+    expect(names).toContain("Kestrel");
+    // The other universe is a different version of the world, which is the
+    // entire point of universes.
+    expect(names).not.toContain("Someone Else");
+  });
+
+  it("takes the whole world when scoped to everywhere", () => {
+    const { folder, nodes } = world();
+    const names = databaseRows(nodes, undefined, folder.id, "everywhere").map((row) => row.name);
+
+    expect(names).toContain("Valera");
+    expect(names).toContain("Someone Else");
+  });
+
+  it("never lists the page the view is on, nor a universe", () => {
+    const { folder, nodes } = world();
+
+    for (const scope of ["universe", "everywhere"] as const) {
+      const names = databaseRows(nodes, undefined, folder.id, scope).map((row) => row.name);
+      expect(names).not.toContain("Characters");
+      expect(names).not.toContain("Prime");
+      expect(names).not.toContain("Fork");
+    }
+  });
+
+  // A widened view has no tree order to inherit, and insertion order is the
+  // order things came off the disk, which means nothing to anybody.
+  it("puts a widened set in name order rather than in map order", () => {
+    const folder = page({ name: "Folder", templateKey: "folder" });
+    const nodes = graph(folder, page({ name: "Zara" }), page({ name: "adan" }), page({ name: "Mira" }));
+
+    expect(databaseRows(nodes, undefined, folder.id, "everywhere").map((row) => row.name)).toEqual([
+      "adan",
+      "Mira",
+      "Zara",
+    ]);
+  });
+});
+
+describe("scopeHasNoUniverse", () => {
+  it("spots a view looking in a universe from a page that is not in one", () => {
+    const loose = page({ name: "Loose", templateKey: "folder" });
+    expect(scopeHasNoUniverse(graph(loose), loose.id, "universe")).toBe(true);
+  });
+
+  it("is false for the scopes that do not need one", () => {
+    const loose = page({ name: "Loose", templateKey: "folder" });
+    expect(scopeHasNoUniverse(graph(loose), loose.id, "subpages")).toBe(false);
+    expect(scopeHasNoUniverse(graph(loose), loose.id, "everywhere")).toBe(false);
+    expect(scopeHasNoUniverse(graph(loose), loose.id, undefined)).toBe(false);
+  });
+
+  it("is false when the page really is in a universe", () => {
+    const universe = page({ name: "Prime", templateKey: "universe" });
+    const inside = page({ parentId: universe.id, name: "Characters", templateKey: "folder" });
+    expect(scopeHasNoUniverse(graph(universe, inside), inside.id, "universe")).toBe(false);
   });
 });

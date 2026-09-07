@@ -2,6 +2,18 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-04 — the writing goes round an infobox
+
+### Additions
+
+- **An infobox can sit to one side with your writing flowing around it.** Its `⋯` menu has **Wrap left** and **Wrap right** beside Full width and Align centre — pick a side and the paragraphs after it fill the space beside it instead of starting below it.
+- **Picking a side gives it half the page** if it was the full width, since there would be nothing to wrap around otherwise. A frame you have already made narrower keeps the width you gave it, and you can still drag its edges afterwards.
+- **Picking the same side again puts it back** on a line of its own. Align centre and Full width also switch wrapping off, since a frame cannot be in two places.
+
+### Notes
+
+- **This was written down as impossible, and it wasn't.** The docs said the editor could not float a block, three times, and nobody had tried it. Asked why the reference manages it, the answer turned out to be that ours manages it too.
+
 ## 2026-09-04 — links to a spot on a page
 
 ### Additions
