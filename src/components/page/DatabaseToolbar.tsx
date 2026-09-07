@@ -7,7 +7,7 @@
 // a different place per page is the thing that reads as chaos. They are always
 // here; a menu with nothing to offer says so inside itself.
 import { useState } from "react";
-import { ArrowDownUp, Columns3, Filter, Group } from "lucide-react";
+import { ArrowDownUp, Columns3, Filter, Group, LayoutGrid } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { useDatabase } from "../../hooks/use-database";
 import { useTemplates } from "../../hooks/use-templates";
@@ -15,9 +15,19 @@ import { TreePopover } from "../tree/TreePopover";
 import { DatabaseColumnsMenu } from "./DatabaseColumnsMenu";
 import { DatabaseFilterMenu } from "./DatabaseFilterMenu";
 import { DatabaseGroupMenu } from "./DatabaseGroupMenu";
+import { DatabaseLayoutMenu } from "./DatabaseLayoutMenu";
 import { DatabaseSortMenu } from "./DatabaseSortMenu";
 
-type Menu = "columns" | "filter" | "sort" | "group";
+type Menu = "layout" | "columns" | "filter" | "sort" | "group";
+
+// The button wears the layout's own name rather than the word "Layout", so the
+// bar says what you are looking at as well as offering to change it.
+const LAYOUT_NAMES: Record<string, string> = {
+  table: "Table",
+  cards: "Cards",
+  board: "Board",
+  list: "List",
+};
 
 export function DatabaseToolbar({ node }: { node: Node }) {
   const [open, setOpen] = useState<{ menu: Menu; rect: DOMRect } | null>(null);
@@ -75,6 +85,9 @@ export function DatabaseToolbar({ node }: { node: Node }) {
       </div>
 
       <div className="database-tools">
+        {/* First, because it is the question you answer before the others —
+            which shape is this, and then how is it filled in. */}
+        {button("layout", LAYOUT_NAMES[view.layout] ?? "Table", <LayoutGrid size={13} />, 0)}
         {button("columns", "Columns", <Columns3 size={13} />, hiddenCount)}
         {button("filter", "Filter", <Filter size={13} />, filterCount)}
         {button("sort", "Sort", <ArrowDownUp size={13} />, sortCount)}
@@ -83,6 +96,7 @@ export function DatabaseToolbar({ node }: { node: Node }) {
 
       {open && (
         <TreePopover anchorRect={open.rect} onClose={() => setOpen(null)} className="database-menu">
+          {open.menu === "layout" && <DatabaseLayoutMenu node={node} />}
           {open.menu === "columns" && <DatabaseColumnsMenu node={node} />}
           {open.menu === "filter" && <DatabaseFilterMenu node={node} />}
           {open.menu === "sort" && <DatabaseSortMenu node={node} />}

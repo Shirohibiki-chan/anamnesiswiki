@@ -15,8 +15,7 @@ import {
   databaseCellField,
   openPage,
   panelBlockTitles,
-  searchTree,
-  treeRow,
+  turnIntoDatabase,
   waitForWorld,
 } from "./harness/screen";
 
@@ -58,10 +57,7 @@ describe("editing a value in the row", () => {
 
     await addProperty(app, HAS_IT, LABEL, "Captain");
 
-    await searchTree(app.window, SECTION);
-    await treeRow(app.window, SECTION).first().click({ button: "right" });
-    await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
-    await app.window.getByRole("button", { name: "Turn into a table" }).click();
+    await turnIntoDatabase(app.window, SECTION);
     await app.window.waitForTimeout(WRITTEN_MS);
     await clearTreeSearch(app.window);
     await openPage(app.window, SECTION);

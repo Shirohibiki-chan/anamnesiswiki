@@ -21,8 +21,7 @@ import {
   flipDatabaseSort,
   openDatabaseMenu,
   openPage,
-  searchTree,
-  treeRow,
+  turnIntoDatabase,
   waitForWorld,
 } from "./harness/screen";
 
@@ -39,10 +38,7 @@ async function reload(app: RunningApp): Promise<void> {
 }
 
 async function turnIntoTable(app: RunningApp, name: string): Promise<void> {
-  await searchTree(app.window, name);
-  await treeRow(app.window, name).first().click({ button: "right" });
-  await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
-  await app.window.getByRole("button", { name: "Turn into a table" }).click();
+  await turnIntoDatabase(app.window, name);
   await app.window.waitForTimeout(WRITTEN_MS);
   await clearTreeSearch(app.window);
   await openPage(app.window, name);

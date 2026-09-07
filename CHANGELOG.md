@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-07 — cards, a board and a list
+
+### Additions
+
+- **A database can be drawn four ways now**, and switching between them is a menu rather than a conversion — nothing is lost either way round, because all four are the same view drawn differently. The button on the left of the settings bar says which one you're looking at.
+- **Cards.** A picture and a name each, with whichever columns are showing underneath. This is the one a mixed folder reads best in — a Location among the characters looks like a Location rather than a row of blanks.
+- **A board, and you can drag cards between its columns.** Dropping a card somewhere sets the value it's grouped by, exactly as though you'd typed it into the table, and one undo takes it back. Dropping into the *No …* column clears it.
+- **A list.** A name a line with its values trailing after, for when you just want to see what's in the folder.
+- **Turn into ▸** in the right-click menu now offers all four, instead of only Table.
+- **Choosing Board picks a sensible grouping for you** if you haven't set one — a dropdown or a status rather than the template, since a folder of characters grouped by template is a single column.
+
+### Fixes
+
+- **Pictures on cards actually load.** They were showing a broken-image icon.
+- **A long summary no longer makes a card enormous.** It's clipped to a few lines on cards and boards; the card opens the page, so the rest is one click away.
+
 ## 2026-09-07 — typing straight into a table
 
 ### Additions
@@ -243,18 +259,3 @@
 ### Notes
 
 - **This was written down as impossible, and it wasn't.** The docs said the editor could not float a block, three times, and nobody had tried it. Asked why the reference manages it, the answer turned out to be that ours manages it too.
-
-## 2026-09-04 — links to a spot on a page
-
-### Additions
-
-- **Every block in your writing can hand you a link to itself.** Hover a paragraph, a heading, a picture, a stat panel — anything sitting in the page — open its menu on the handle beside it, and the first item is **Copy link to this block**. The block lights up for a moment to say that's the one your link points at.
-- **Paste it into your writing and it becomes a link.** It reads as the page's name with a small `#` on it, so you can tell at a glance that it goes to a spot on that page rather than to the top of it.
-- **Following one takes you there and shows you where "there" is.** The page opens on whichever tab the block is in, scrolls to it, and marks it for a couple of seconds so you can see which of the paragraphs you came for. The mark fades on its own; there is nothing to dismiss.
-- **The link keeps working while you write.** It points at the block itself rather than at the words in it, so rewording a heading, moving the block down the page, or moving it into another tab all leave every link to it intact. If you delete the block, the link still opens the page.
-
-### Notes
-
-- **A block link only means something inside Anamnesis.** Paste one into a chat window and you get a line of text starting `anamnesis://` — your world is a folder on your own computer, so there is no web address it could be instead.
-- **It's in the block's menu rather than a third `#` button beside it.** The strip those buttons sit in is only as wide as two of them; a third covered the left edge of the writing, where a click is meant to put the cursor at the start of a line.
-- **The blocks in the sidebar panel don't offer it.** This is a link to a spot in the writing; drag a block into the page and it gets the item like everything else there.

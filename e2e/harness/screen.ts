@@ -64,10 +64,17 @@ const DATABASE_VIEW = ".database-view";
 const DATABASE_TABLE = ".database-table";
 const DATABASE_ROW_NAME = ".database-name";
 const DATABASE_META = ".database-meta";
-const DATABASE_GROUP_LABEL = ".database-group-label";
+// Every layout draws a section heading with the same chip, so one selector
+// covers the table's heading rows and the boards', cards' and lists' headings.
+const DATABASE_GROUP_LABEL = ".database-group-heading .database-chip, .database-group-row .database-chip";
 const DATABASE_TOOL = ".database-tool";
 const DATABASE_MENU = ".database-menu";
 const DATABASE_DIRECTION = ".database-direction";
+const TREE_CONTEXT_MENU = ".tree-context-menu";
+const DATABASE_CARD = ".database-card";
+const DATABASE_BOARD_COLUMN = ".database-board-column";
+const DATABASE_LIST_ROW = ".database-list-row";
+const DATABASE_LAYOUT_ITEM = ".database-layout-item";
 const FORMATTING_BAR = ".bn-formatting-toolbar";
 
 /**
@@ -1207,4 +1214,93 @@ export async function databaseGroupLabels(window: Page): Promise<string[]> {
  */
 export function databaseCellField(window: Page, columnLabel: string, rowName: string): Locator {
   return window.getByLabel(`${columnLabel} for ${rowName}`);
+}
+
+/** Switches a database to one of its four layouts, by the name in the menu. */
+export async function pickDatabaseLayout(window: Page, name: string): Promise<void> {
+  await openDatabaseMenu(window, "layout");
+  await window.locator(DATABASE_LAYOUT_ITEM).filter({ hasText: name }).first().click();
+  await window.keyboard.press("Escape");
+  await window.locator(DATABASE_MENU).first().waitFor({ state: "hidden", timeout: WAIT_MS });
+}
+
+/** The names on a cards layout, in the order drawn. */
+export async function databaseCardNames(window: Page): Promise<string[]> {
+  const names = await window.locator(`${DATABASE_CARD} .database-card-name`).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** The names on a list layout, in the order drawn. */
+export async function databaseListNames(window: Page): Promise<string[]> {
+  const names = await window.locator(`${DATABASE_LIST_ROW} .database-list-name`).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** A board's column headings, in the order drawn. */
+export async function databaseBoardColumns(window: Page): Promise<string[]> {
+  const labels = await window.locator(`${DATABASE_BOARD_COLUMN} .database-group-heading .database-chip`).allInnerTexts();
+  return labels.map((label) => normalize(label));
+}
+
+/** The names of the cards sitting in one of a board's columns. */
+export async function databaseBoardCards(window: Page, columnLabel: string): Promise<string[]> {
+  const column = window.locator(DATABASE_BOARD_COLUMN).filter({ hasText: columnLabel }).first();
+  const names = await column.locator(".database-card-name").allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/**
+ * Drags a board card into another column.
+ *
+ * **Dispatched rather than mimed with the mouse.** HTML5 drag and drop is not
+ * driven by plain mouse events, so moving the pointer across the screen would
+ * prove nothing about whether a real drag lands — the events and the
+ * `DataTransfer` they carry are the actual contract between the card and the
+ * column.
+ */
+export async function dragDatabaseCard(window: Page, cardName: string, intoColumn: string): Promise<void> {
+  const card = window.locator(".database-board-card").filter({ hasText: cardName }).first();
+  const column = window.locator(DATABASE_BOARD_COLUMN).filter({ hasText: intoColumn }).first();
+
+  const dataTransfer = await window.evaluateHandle(() => new DataTransfer());
+  await card.dispatchEvent("dragstart", { dataTransfer });
+  await column.dispatchEvent("dragover", { dataTransfer });
+  await column.dispatchEvent("drop", { dataTransfer });
+}
+
+/** Right-clicks a tree row and returns once its menu is up. */
+export async function openTreeRowMenu(window: Page, rowName: string): Promise<void> {
+  await searchTree(window, rowName);
+  await treeRow(window, rowName).first().click({ button: "right" });
+  await window.locator(TREE_CONTEXT_MENU).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** The labels the open row menu is offering, so a missing item is a real absence. */
+export async function treeMenuItems(window: Page): Promise<string[]> {
+  const labels = await window.locator(`${TREE_CONTEXT_MENU} button`).allInnerTexts();
+  return labels.map((label) => normalize(label));
+}
+
+/**
+ * Shows a page as a database, in one of the four layouts.
+ *
+ * Here rather than in each scenario because the route changed shape once
+ * already: it was a flat "Turn into a table" while Table was the only layout
+ * and became a submenu at step 4, which broke every scenario that knew the old
+ * wording. One place to change is the whole reason this file exists.
+ */
+export async function turnIntoDatabase(window: Page, rowName: string, layout = "Table"): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  // Scoped to the menu, because the layout names are not unique on screen: the
+  // toolbar above an open database wears the name of the layout it is showing,
+  // so a bare "Table" matches two things the moment one is open behind the tree.
+  const menu = window.locator(TREE_CONTEXT_MENU).first();
+  await menu.getByRole("button", { name: "Turn into", exact: true }).click();
+  await menu.getByRole("button", { name: layout, exact: true }).click();
+}
+
+/** Puts a database back to being an ordinary page. */
+export async function stopShowingAsDatabase(window: Page, rowName: string): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  await window.locator(TREE_CONTEXT_MENU).first().getByRole("button", { name: "Stop showing as a database" }).click();
 }

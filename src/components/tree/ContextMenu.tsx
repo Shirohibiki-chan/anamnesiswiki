@@ -1,6 +1,6 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Move to /
 // Set color / Earlier versions /
-// Save as template / Turn into a universe / Use as shared universe / Turn into a table / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// Save as template / Turn into a universe / Use as shared universe / Turn into ▸ / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
 // from readers / Set as project home / Show in the file manager / Export /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
@@ -90,6 +90,8 @@ type ContextMenuProps = {
    */
   isDatabase: boolean;
   onToggleDatabase: () => void;
+  /** Opens the layout submenu — only reached on a page that is not one yet. */
+  onPickLayout: () => void;
   /**
    * Whether this row holds more than one page. Sorting is offered above that
    * rather than above zero: a group of one is already in every order at once,
@@ -137,6 +139,7 @@ export function ContextMenu({
   onToggleShared,
   isDatabase,
   onToggleDatabase,
+  onPickLayout,
   canSort,
   onRename,
   onSetIcon,
@@ -265,19 +268,20 @@ export function ContextMenu({
           lens down. One item rather than a submenu of layouts for now — the
           other three arrive at step 4, and a submenu holding one thing is a
           click you have to make for no reason. */}
-      {!isMultiple && (
-        <button type="button" onClick={() => run(onToggleDatabase)}>
-          {isDatabase ? (
-            <>
-              <FileText size={13} /> Stop showing as a table
-            </>
-          ) : (
-            <>
-              <Table size={13} /> Turn into a table
-            </>
-          )}
-        </button>
-      )}
+      {!isMultiple &&
+        (isDatabase ? (
+          <button type="button" onClick={() => run(onToggleDatabase)}>
+            <FileText size={13} /> Stop showing as a database
+          </button>
+        ) : (
+          // A submenu now that there are four layouts to pick from. It was one
+          // flat item while Table was the only one, because a submenu holding
+          // one thing is a click for nothing.
+          <button type="button" className="tree-context-menu-submenu" onClick={onPickLayout}>
+            <Table size={13} /> Turn into
+            <ChevronRight size={13} className="tree-context-menu-chevron" />
+          </button>
+        ))}
       {/* Single selection only. Sorting rewrites one group's order, and "sort
           the sub-pages of these three" is three separate reorderings sharing a
           menu click — nothing on screen would show which one went wrong. */}
