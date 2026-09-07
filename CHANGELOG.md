@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-06 — the coloured edge on a callout
+
+### Fixes
+
+- **A callout's left edge takes its colour now**, and it never has. Whatever you set, the stripe down the side stayed the same grey as every other border in the app — Info was meant to be blue, Quote warm stone, Secret violet, and a callout you had coloured yourself was meant to match the colour you picked. None of them ever showed.
+- **What was doing it:** a rule that repaints every border inside the editor to your border grey, which started reaching the callouts when the page's blocks moved inside the editor. Their own edge lost that argument silently from that day.
+- **The edge is a lighter version of the colour rather than the colour itself.** Sitting against a fill mixed from the same colour, the plain one reads as the side of the box instead of as a colour — and the dark end of the palette, the navies and wines and pines, disappeared into it completely. On the light theme it goes darker instead, which is the same fix pointing the other way.
+- **The button that adds an icon is a full-sized target** now, the same as everything else you can click.
+
 ## 2026-09-06 — putting a callout's icon back
 
 ### Fixes
@@ -234,23 +243,3 @@
 ### Notes
 
 - **Copying a block out of a page and pasting it elsewhere still loses it**, and that's a separate gap now written down: the editor puts the clipboard together as plain HTML and these blocks have no way to read themselves back out of it, so what you paste arrives without them. Nothing is lost from the page you copied *from* — the block goes back to its sidebar, untouched.
-
-## 2026-09-04 — the infobox gets its own menu
-
-### Additions
-
-- **An infobox has its own `⋯` now**, on the strip at the bottom beside its Add Block. Right-clicking the frame itself opens the same menu. (Right-clicking a block inside still opens that block's menu, as before.)
-- **Colour.** The same swatches a sidebar block and a callout use. It lands on the frame's border and tints what's behind the blocks, so a group of stats can be told apart from a group of quotes at a glance.
-- **Auto-adapt or fixed width.** Auto-adapt makes the frame as wide as whatever is in it; fixed keeps the width you dragged it to. It won't shrink past a quarter of the page or grow past the whole of it, so a frame holding one short tag doesn't come out the width of the word.
-- **Dragging an edge switches a frame back to fixed**, at the width you dragged it to — the handle always does something rather than springing back.
-- **Full width and Align centre.** Centre only shows up when the frame is narrower than the page, which is the only time it means anything; the same item then reads *Align left* to put it back.
-- **Duplicate**, which copies the frame *and* the blocks in it. The copy is separate: writing in one doesn't change the other.
-- **Remove infobox**, in the app's own words, saying what it does — the frame goes and the blocks in it go back to the sidebar. (The Delete on the editor's own hover handle does the same thing and always did; it just never said so.)
-
-### Changes
-
-- **An empty infobox says what it's for** rather than only naming itself: a picture, some stats, a few of the page's fields.
-
-### Notes
-
-- **Two things from the reference's version of this menu aren't built yet**, both because they need a decision rather than an afternoon: text wrapping around a frame (Wrap left / Wrap right), and Pin to top, which has never been pinned down past its name.
