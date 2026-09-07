@@ -509,13 +509,29 @@ Worked out against Notion, which she brought screenshots of — the database pag
 
 **A table names one template; a mixed set belongs in cards or a list.** Filters can match more than one template, and a card is a picture and a name, so a mixed set reads fine there. A table is not: a Location has no Species column to fill. So a table view picks one template and gets that template's properties as its columns.
 
-### Still open — build nothing past these
+### Settled 2026-09-06
 
-1. **Where the rows come from.** (a) The page's own sub-pages, with filters on top. (b) A rule — template, tag, universe — gathering pages from anywhere. (c) Both. The cost of a rule is that New has no obvious home and a page can silently drop out of a view when a tag is edited; the cost of sub-pages only is that a database can never gather what is scattered.
-2. **Whether a value can be changed from inside a row**, or only by opening the page. Editing in place is the expensive half of the phase: every property type needs an editor inside a cell, and undo has to cover it.
-3. **One view per page, or several saved views.** A page already has tabs, so several is a shape the app can hold — but a tab holds writing today and would have to learn to hold a view.
+The three questions this section held were asked and answered the same day it was written. Nothing above changed; this is what was missing underneath it.
 
-**Answering one of these is not an answer to the others.** They were asked together on 2026-09-06 and only the layouts question came back.
+**Rows come from the page's own sub-pages, and a rule can widen that.** Sub-pages is the default and is what answers where New puts a page — into the page the view is on. A view can then be widened to gather by template, tag or universe from anywhere in the tree, which is what makes a database more than a sub-page list wearing a grid. The two costs named when the question was asked are real and are paid on purpose. **New is only offered while the view is reading sub-pages**, because a rule-widened view genuinely has nowhere to put a page and a New that guesses is worse than a New that isn't there. And a page can leave a view when its tags are edited — that is tags being editable, not a bug to design around, and it is the same surprise the existing Tag index block already carries. **The filter machinery is needed either way**, since filters sit on top of sub-pages in the sub-pages-only answer too, so the rule is a source setting on top of something already being built rather than a second engine beside it.
+
+**Simple values are edited in the row; complicated ones open the page.** Text, number, date, select, multi-select and status get an editor inside the cell. Long text, refs and images open the page instead — they want more room than a cell has, and refs is a page picker rather than a field. This line is what keeps the expensive half of the phase out: an editor for *every* type inside a table, with undo covering all of them, was the part that would have moved the ship date. **The rule for placing a type that doesn't exist yet** is whether it reads on one line at a column's width; if it doesn't, it opens the page.
+
+**One view per page.** A page gets one database view, and its layout, columns, filters, sorts and grouping are changed in place. Several saved views is a shape the app could eventually hold — a page has tabs already — but a tab holds writing today, and teaching it to hold a view is work in the page shell rather than in this phase. **Nothing here forecloses it**: a view is stored as one record, so a list of views later is a list of the same record, and the settings UI is the same panel pointed at a different one.
+
+### Build order
+
+Each step ends with something visible, because the phase is too big for one.
+
+1. **A page shown as a table.** `Turn into ▸ Table` on the tree's right-click menu, the twin of `Turn into a universe`. Sub-pages are the rows, the template named by the view supplies the columns, values are read-only and clicking a row opens the page. This is the whole spine — view record, row gathering, column derivation — and it ends with a table she can look at.
+2. **The view settings.** Which columns show, filter, sort, group, in one panel off the view. Filter is the piece Phase 24 is written to borrow, so it gets the more careful design.
+3. **Editing in the row**, for the six types on the near side of the line, undo included.
+4. **The other three layouts** — cards, board, list — drawn off the same view record, since a layout is what a view is rendered *as* rather than a different kind of thing.
+5. **The block version and the rule source.** The same view dropped into a page body, and the widening from sub-pages to a rule.
+
+**Sub-items ride with whichever step they fit.** A row that expands to show the pages inside it is nearly free because the tree is already the data, but it is an affordance rather than a step, and it wants the table standing up first.
+
+**One decision left, and it belongs to step 5 rather than here.** The collection block already lists pages from four sources (Manual links, Subpage index, Tag index, Backlinks), and a database block set to the list layout is that block. Two blocks that both list pages from a source is the exact failure the rename went out of its way to avoid, read backwards — so they should almost certainly become one. What makes it a question rather than a consequence is that merging them changes the Add Block menu she uses today, and that is hers to approve. **Nothing before step 5 depends on the answer**, but the view record should be shaped so it *can* hold the four existing sources, so this doesn't become a migration.
 
 ---
 
