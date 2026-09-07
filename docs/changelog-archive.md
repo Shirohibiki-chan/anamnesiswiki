@@ -2,6 +2,26 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-04 — the infobox gets its own menu
+
+### Additions
+
+- **An infobox has its own `⋯` now**, on the strip at the bottom beside its Add Block. Right-clicking the frame itself opens the same menu. (Right-clicking a block inside still opens that block's menu, as before.)
+- **Colour.** The same swatches a sidebar block and a callout use. It lands on the frame's border and tints what's behind the blocks, so a group of stats can be told apart from a group of quotes at a glance.
+- **Auto-adapt or fixed width.** Auto-adapt makes the frame as wide as whatever is in it; fixed keeps the width you dragged it to. It won't shrink past a quarter of the page or grow past the whole of it, so a frame holding one short tag doesn't come out the width of the word.
+- **Dragging an edge switches a frame back to fixed**, at the width you dragged it to — the handle always does something rather than springing back.
+- **Full width and Align centre.** Centre only shows up when the frame is narrower than the page, which is the only time it means anything; the same item then reads *Align left* to put it back.
+- **Duplicate**, which copies the frame *and* the blocks in it. The copy is separate: writing in one doesn't change the other.
+- **Remove infobox**, in the app's own words, saying what it does — the frame goes and the blocks in it go back to the sidebar. (The Delete on the editor's own hover handle does the same thing and always did; it just never said so.)
+
+### Changes
+
+- **An empty infobox says what it's for** rather than only naming itself: a picture, some stats, a few of the page's fields.
+
+### Notes
+
+- **Two things from the reference's version of this menu aren't built yet**, both because they need a decision rather than an afternoon: text wrapping around a frame (Wrap left / Wrap right), and Pin to top, which has never been pinned down past its name.
+
 ## 2026-09-03 — a picture block holds its own picture
 
 ### Additions

@@ -798,7 +798,18 @@
    WebKitGTK is the one to watch — a version too old to know it drops the whole
    declaration, so the fallback below is a real fallback and not decoration. */
 .editor-callout.editor-callout-colored {
-  border-left-color: var(--callout-accent);
+  /* **The bar is a lighter version of the colour, not the colour.** Asked for
+     2026-09-06: against a fill mixed from the same accent, the raw palette hex
+     reads as an edge of the box rather than as a colour of its own, and the
+     dark end of the palette — navy, wine, pine — disappears into it entirely.
+     Mixing toward `--color-text-primary` rather than toward white is what makes
+     that one expression work in both directions: on a dark theme it lightens,
+     and on Daylight, where the same problem runs the other way, it darkens.
+
+     The plain declaration below it is the WebKitGTK fallback, not a leftover —
+     an engine too old for `color-mix` drops that line and keeps this one. */
+  border-left-color: var(--callout-accent) !important;
+  border-left-color: color-mix(in srgb, var(--callout-accent) 70%, var(--color-text-primary)) !important;
   background: var(--color-panel-alt);
   background: var(--gradient-callout, none), color-mix(in srgb, var(--callout-accent) 12%, transparent);
   color: var(--color-text-primary);
@@ -890,6 +901,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 24px around a 12px mark, for the reason the icon itself carries one — the
+     layout sweep counts anything smaller as a target too small to hit. */
+  min-width: 24px;
+  min-height: 24px;
   padding: 1px;
   border: none;
   border-radius: var(--radius-sm);
@@ -994,13 +1009,23 @@
    Info or a Secret, so replacing the tint would collapse the three into one
    and take the only colour-coding the callouts have. Keep it as a layer. */
 .editor-callout-info {
-  border-left-color: var(--color-callout-info);
+  /* `!important` because `.bn-root *` sets every descendant's border colour
+     to `--color-border` with one of its own — see the rule above
+     `.bn-block-content`. **Every callout's coloured edge lost that fight from
+     the day the blocks moved inside the editor**, which is why all three read
+     as the same grey line whatever they were; reported 2026-09-06. */
+  border-left-color: var(--color-callout-info) !important;
   background: var(--gradient-callout, none), var(--color-callout-info-bg);
   color: var(--color-callout-info-text);
 }
 
 .editor-callout-quote {
-  border-left-color: var(--color-callout-quote);
+  /* `!important` because `.bn-root *` sets every descendant's border colour
+     to `--color-border` with one of its own — see the rule above
+     `.bn-block-content`. **Every callout's coloured edge lost that fight from
+     the day the blocks moved inside the editor**, which is why all three read
+     as the same grey line whatever they were; reported 2026-09-06. */
+  border-left-color: var(--color-callout-quote) !important;
   background: var(--gradient-callout, none), var(--color-callout-quote-bg);
   color: var(--color-callout-quote-text);
   font-style: italic;
@@ -1031,6 +1056,8 @@
   width: 100%;
   margin: var(--space-xs) 0;
   border-left: 3px solid var(--color-callout-quote);
+  /* Same fight, same reason — see `.editor-callout-quote`. */
+  border-left-color: var(--color-callout-quote) !important;
   border-radius: var(--radius-md);
   background: var(--gradient-callout, none), var(--color-callout-quote-bg);
   color: var(--color-callout-quote-text);
@@ -1045,7 +1072,12 @@
      beside a sentence and wrong for a chip over a paragraph. */
   flex-direction: column;
   align-items: flex-start;
-  border-left-color: var(--color-callout-secret);
+  /* `!important` because `.bn-root *` sets every descendant's border colour
+     to `--color-border` with one of its own — see the rule above
+     `.bn-block-content`. **Every callout's coloured edge lost that fight from
+     the day the blocks moved inside the editor**, which is why all three read
+     as the same grey line whatever they were; reported 2026-09-06. */
+  border-left-color: var(--color-callout-secret) !important;
   background: var(--gradient-callout, none), var(--color-callout-secret-bg);
   color: var(--color-callout-secret-text);
 }
