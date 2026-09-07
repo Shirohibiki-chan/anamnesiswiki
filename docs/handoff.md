@@ -4503,6 +4503,24 @@ selectors of their own — the app has almost no test hooks in its markup, so
 driving it means CSS class names, and scattering those across scenario files
 means an ordinary refactor breaks each one separately and mysteriously.
 
+## Databases are lenses
+
+Phase 23. `node.view` says a page is drawn as a database; `database-service.ts`
+derives the rows and columns from the node graph on every call and stores
+nothing of its own.
+
+**Keep it that way.** The moment a view owns a row, there are two answers to
+where a page lives and they have to be kept in agreement forever — which is the
+machinery Notion carries and the reason this app doesn't. Two things must stay
+true whatever gets built on top: removing a view removes only the view, and two
+views over the same pages need nothing linking them.
+
+**Options are per page, not per column.** A `select`/`status`/`multiselect`
+value is an option id, and the option list lives on the row's own
+`customProperties`. Resolving a cell against the column's options instead would
+draw every page's Status with whichever page defined the column first — the one
+bug here that would look like a styling glitch rather than a data error.
+
 ## Known gaps
 
 Deferred on purpose, not forgotten:

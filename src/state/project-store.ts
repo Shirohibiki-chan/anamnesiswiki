@@ -12,6 +12,7 @@ import {
   type BlockKind,
   type CollectionSource,
   type CustomPropertySpec,
+  type DatabaseView,
   type MeterStyle,
   type MeterEntry,
   type MeterFace,
@@ -686,6 +687,14 @@ export type ProjectStoreState = {
   // be recorded as one undoable step across a whole multi-selection.
   setNodeColor: (ids: string[], color: string | undefined) => void;
   setNodeHidden: (ids: string[], hidden: boolean) => void;
+  /**
+   * Show this page as a database, or stop showing it as one (Phase 23).
+   *
+   * `null` removes the view, and that is the *whole* of what it removes — the
+   * pages that were its rows are untouched, because they were never inside it.
+   * Undoable as one step like any other page-shaped change.
+   */
+  setNodeView: (nodeId: string, view: DatabaseView | null) => void;
   selectNode: (id: string | null, tabId?: string) => void;
   /**
    * Follow a link to one block: the page, the tab it turns out to be in, and
@@ -3219,6 +3228,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         `recolouring ${countLabel(targets.length, "page")}`,
         () => apply((id) => previousColors.get(id)),
         () => apply(() => color),
+      );
+    },
+
+    setNodeView(nodeId, view) {
+      patchNode(
+        view ? "showing a page as a database" : "putting a database back to a page",
+        nodeId,
+        { view: view ?? undefined },
       );
     },
 

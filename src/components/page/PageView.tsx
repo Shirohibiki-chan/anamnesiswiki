@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { BLANK_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
+import { DatabaseTable } from "./DatabaseTable";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
@@ -54,7 +55,11 @@ export function PageView() {
   }
 
   if (!node) return <EmptyPageView />;
-  if (node.templateKey === FOLDER_TEMPLATE_KEY) return <FolderView node={node} />;
+  // A folder being shown as a database comes through the page shell instead,
+  // for the same reason a universe does: the title above is editable and
+  // FolderView's own centred name is not. The view is a lens over the page, so
+  // whatever the page had underneath — tabs, writing — is still drawn below it.
+  if (node.templateKey === FOLDER_TEMPLATE_KEY && !node.view) return <FolderView node={node} />;
 
   const activeTab = node.tabs.find((tab) => tab.id === activeTabId) ?? node.tabs[0];
 
@@ -82,7 +87,13 @@ export function PageView() {
             click-to-edit and stays out of the way. See the store's
             pendingRenameId for why that distinction is the whole fix. */}
         <PageTitle node={node} startEditing={pendingRenameId === node.id} />
-        {isUnanswered ? (
+        {/* Above the tabs rather than inside one, and always in the same
+            place. A view is something the page is being shown *as*, so it
+            belongs between the name and the writing — and a panel that sat
+            somewhere different depending on what the page held would be the
+            thing that reads as chaos. */}
+        {node.view && <DatabaseTable node={node} />}
+        {node.view && node.tabs.length === 0 ? null : isUnanswered ? (
           <NewPageLanding node={node} />
         ) : node.tabs.length === 0 ? (
           // A universe is a container, not a page you write in, so the offer

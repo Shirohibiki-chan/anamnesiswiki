@@ -43,6 +43,7 @@ export function useProjectActions() {
       applyCustomTemplate: state.applyCustomTemplate,
       setNodeColor: state.setNodeColor,
       setNodeIcon: state.setNodeIcon,
+      setNodeView: state.setNodeView,
       setNodeHidden: state.setNodeHidden,
       selectNode: state.selectNode,
       openBlockLink: state.openBlockLink,

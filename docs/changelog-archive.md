@@ -2,6 +2,16 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-04 — a copied block becomes a block of its own
+
+### Fixes
+
+- **A block in the writing can no longer end up as two windows onto one thing.** Blocks in a page are shown by pointing at them, so a duplicated pointer meant two boxes drawing the same block — typing in one changed the other. Anything that ends up pointing twice now quietly gets its own copy of the block instead.
+
+### Notes
+
+- **Copying a block out of a page and pasting it elsewhere still loses it**, and that's a separate gap now written down: the editor puts the clipboard together as plain HTML and these blocks have no way to read themselves back out of it, so what you paste arrives without them. Nothing is lost from the page you copied *from* — the block goes back to its sidebar, untouched.
+
 ## 2026-09-04 — the infobox gets its own menu
 
 ### Additions
