@@ -4,7 +4,7 @@
 
 One line per file. **Deliberately not an inventory of their contents** — the previous version of this section transcribed palette hexes, every `TEMPLATE_KEYS` entry and a list of `limits.ts` values, and all three drifted out of date while the rest of this document stayed current. What belongs here is what a file is *for* and any rule that spans more than one file; the values live in the file.
 
-- **`callout-colors.ts`** — what a coloured callout means and the icon that says so. Colour and type are separate axes; only colour is here.
+- **`callout-colors.ts`** — the icon each callout type wears when it has not been given one, and the six kinds the slash menu offers. Colour and type are separate axes, and as of 2026-09-06 the colour has nothing to do with the icon.
 - **`code-languages.ts`** — the languages a code block offers, in dropdown order. A deliberate subset of the 48 `@blocknote/code-block` ships.
 - **`collection-sources.ts`** — where a collection block gets its pages (Manual links, Subpage index, Tag index, Backlinks). In constants because the block's heading, the source picker and Add Block all name them and must not disagree.
 - **`default-project-template.ts`** — the one project template that ships, so "Start from a template" works on a machine nobody has sent a file to.
@@ -320,7 +320,7 @@ Three things about that are deliberate:
 
 - **The tint is mixed, not stored.** Every callout token comes in threes (line, fill, text), and picking three colours to colour one box is not a feature. `color-mix(in srgb, var(--callout-accent) 12%, transparent)` also lands correctly on a light theme and a dark one from one value.
 - **`color-mix` is the newest thing in the stylesheet** (Safari 16.2 / Chrome 111 / Firefox 113), and the Linux build's WebKitGTK is the engine to watch — one too old to know it drops the whole declaration. The rule sets a flat `--color-panel-alt` background first for exactly that reason; it is a fallback, not decoration.
-- **Colour and type are different axes.** Colouring a callout never changes what it *is* — `calloutSecret` is still the block a publish must strip whatever colour it wears, which is why it keeps its lock chip and never takes the colour-derived icon. The four conventional hues (green/amber/red/blue) get an icon from `src/constants/callout-colors.ts`; every other colour just recolours the box, and a hex she mixed herself never gets one because there is no name to read a meaning off.
+- **Colour and type are different axes.** Colouring a callout never changes what it *is* — `calloutSecret` is still the block a publish must strip whatever colour it wears, which is why it keeps its lock chip and draws no icon of its own. **The colour used to choose the icon and no longer does (2026-09-06).** Four conventional hues each implied one — green a tick, amber a caution — which put an icon on some boxes and none on others for a reason nothing on screen explained, and swapped the mark on a box when it was recoloured. Every callout now wears its *type's* icon until one is picked (`CALLOUT_TYPE_ICONS`), and the four conventions are entries in the slash menu instead (`CALLOUT_KINDS`) — a Warning is an Info callout created with amber and a triangle already written onto its two props, so recolouring it keeps the triangle.
 
 ### BlockNote editor theming (Phase 5)
 

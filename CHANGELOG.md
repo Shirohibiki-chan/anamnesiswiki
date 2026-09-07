@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-06 — every callout has an icon, and picking the kind picks it
+
+### Changes
+
+- **The kind of callout you want is now a thing you pick.** The slash menu offers **Info**, **Success**, **Warning**, **Danger**, **Quote** and **Secret**. The middle three arrive already coloured and already carrying their mark — a green tick, an amber triangle, a red alert — so the boxes you asked for are one gesture away instead of something you had to assemble.
+- **Every callout wears an icon now**, its own kind's, until you pick a different one. No callout is blank unless you deliberately take its icon off.
+- **Changing a callout's colour no longer changes its icon.** It used to: four colour families each stood for something, so recolouring a box swapped the mark on it, and any other colour left it wearing nothing. Nothing on screen ever said so, which made it look like some boxes had icons and some didn't for no reason. A Warning you recolour purple is a purple box that still says warning.
+- **The icon is easier to hit than it looks.** The mark is 15 pixels; the button around it is 24, which is the size everything else clickable in the app has to be.
+- **Picking your own icon, or removing it, works exactly as before** — including "The usual icon", which now means the one its kind wears.
+
 ## 2026-09-06 — the icon beside the writing, and a scrollbar that stopped flashing
 
 ### Fixes
@@ -252,35 +262,3 @@
 - **Every page you already have opens exactly as it was.** The first picture block on a page holds the page's picture unless you say otherwise, which is what every page with a portrait already looked like — nothing on disk was rewritten to make this work.
 - **Removing the block that holds the page's picture doesn't throw the picture away.** If there's another picture block on the page it takes over, and the page's picture becomes whatever that one is showing; if there isn't, the portrait stays on the page for the next picture block you add.
 - **The Assets tab counts these.** A photo held only by a picture block in the writing is in use, so it won't turn up in the list of pictures nothing is pointing at. Duplicating a page, saving one as a template and pouring a template into a page all give the copy its own files, the same as the portrait and the cover have always done.
-
-## 2026-09-02 — columns
-
-### Additions
-
-- **Two lanes of writing, side by side.** Type `/columns` (or `/two columns`) and the page splits into two lanes you can write in independently — a portrait or a stat block on one side, prose on the other. `/three columns` gives three.
-- **Everything works inside a lane.** They hold ordinary writing, so headings, callouts, pictures, links, the `/` menu and a block dragged in from the sidebar all behave exactly as they do anywhere else on the page.
-- **The line between two lanes is draggable.** Take hold of it and pull to give one lane more room; it sticks to a half, a third, two thirds and the quarters on the way past, and is free between them. The arrow keys move it too, five percent a press, if you'd rather not drag.
-- **A lane can't be squeezed to nothing** — it stops at about a sixth of the row, which is roughly where a line of text stops being readable.
-- **A row keeps its own shape.** Anything that isn't a column can't sit in a row pretending to be one: press Enter in the wrong place, or drag a block in, and it lands on the page under the row instead of turning into a fifth lane.
-- **Removing a column keeps what you wrote in it.** The × under a lane hands its writing to the lane beside it; if that leaves a single column, the row comes apart and everything lands back on the page. Nothing disappears.
-- **Add a column, or take the row apart.** Two buttons under a row you're pointing at: one more lane, or Ungroup, which turns the whole thing back into ordinary paragraphs with every word kept.
-
-### Fixes
-
-- **Ctrl+A works again on a page with columns on it.** A row anywhere on the page stopped select-all selecting anything at all — the cursor jumped to the end instead, so the Backspace after it took out one character rather than the page. Ctrl+A then Backspace now clears the lot, columns included.
-- **Columns don't have stray vertical lines through them any more.** The editor draws a faint line beside anything indented, and a column is indented twice over — so every lane had one line at its edge and another beside its writing. They're gone inside a row, and the writing in a lane now starts exactly where the rest of the page's writing does instead of a couple of dozen pixels in.
-- **The formatting bar doesn't turn into an empty strip any more.** Selecting a row of columns — or any block that holds no writing of its own — hides every button in the bar, and the empty box was left sitting there with its border and shadow, reading as something half-loaded. It now keeps its place, at its usual height, and says *Select some writing to format it*. The small blue mark that came with it was the row's selection ring drawn around an invisible marker; it goes around the whole row instead.
-- **The `/` menu stopped stacking up headings.** Typing a few letters left the headings of everything you'd filtered past still on screen — `/colum` showed BASIC BLOCKS and three PAGE BLOCKS above the two things that actually matched. The menu is drawn by the app now instead of by the editor library, so it also looks like the rest of the app's menus.
-
-### Notes
-
-- **Ours rather than the ready-made one.** BlockNote sells columns as a separate package that would mean either paying for it or relicensing the whole app, so this is built against its ordinary block API instead. Same feature, no strings.
-- **A row you drag stays that way.** The widths are stored with the page, so they're still there when you reopen it.
-- **The controls on a row are plain for now** — a × under each lane, and two small buttons under the row. They only appear for the lane you're pointing at, and they're placed to stay out of each other's way rather than designed; that comes later.
-
-## 2026-09-02 — the infobox's Add Block, tidied up
-
-### Fixes
-
-- **Add Block inside an infobox lights up only itself.** The highlight used to run almost the whole way across the frame — and not evenly, since it started a few pixels in on the left and ran off the edge on the right. It is a small rounded button now, as wide as its own words, sitting under whatever the frame is holding. The one in the sidebar still spans its panel, because there it is the last row of a list and reads as one.
-- **The infobox menu no longer ends with a Properties heading over nothing.** That section offers the page's own fields that nothing is showing yet, so on a page where every field is already on screen there was a word at the bottom of the menu with an empty space under it, which reads as a list that failed to load. The heading now appears only when there is something under it.
