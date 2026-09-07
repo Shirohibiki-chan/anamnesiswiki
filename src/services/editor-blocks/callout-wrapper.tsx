@@ -16,6 +16,7 @@
 // no longer does; see `constants/callout-colors.ts` for why that was wrong and
 // why all three states still live in one prop with a sentinel.
 import { useContext, useRef, useState } from "react";
+import { SmilePlus } from "lucide-react";
 import { CALLOUT_ICON_NONE, resolveCalloutIcon } from "../../constants/callout-colors";
 import { getPaletteHex } from "../../constants/palette";
 import { CalloutColorButton } from "./callout-color-button";
@@ -38,6 +39,13 @@ export function CalloutWrapper({ variant, color, onColor, icon, onIcon, contentR
   const Picker = useContext(IconPickContext);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const slot = useRef<HTMLSpanElement>(null);
+  const add = useRef<HTMLButtonElement>(null);
+
+  /** Opens the picker under whichever control was pressed. */
+  const openPicker = (anchor: HTMLElement | null) => {
+    if (!Picker) return;
+    setRect(anchor?.getBoundingClientRect() ?? null);
+  };
 
   // **The lock stays on a Secret whatever colour it is wearing.** A red Secret
   // is still the block a publish has to strip, and the label is the only thing
@@ -50,28 +58,26 @@ export function CalloutWrapper({ variant, color, onColor, icon, onIcon, contentR
       style={hex ? { ["--callout-accent" as string]: hex } : undefined}
     >
       {variant === "secret" && <span className="editor-callout-secret-label">🔒 SECRET</span>}
-      {variant !== "secret" && (
-        // **The slot is there even when nothing is in it**, faint until the
-        // pointer is over the callout — the same manner as the colour dot. A
-        // callout that has had its icon taken off would otherwise have nowhere
-        // left to click to put one back.
+      {variant !== "secret" && chosen && (
+        // The icon itself, and the way to change it. There is no invisible
+        // stand-in when the callout has none — that was a 15px ghost in the
+        // corner, and "take the icon off and you cannot put one back" is how it
+        // read from outside. `Add an icon` in the corner controls is the way
+        // back now, and it is a button you can actually see.
         <span
           ref={slot}
-          className={`editor-callout-icon${chosen ? "" : " editor-callout-icon-empty"}`}
+          className="editor-callout-icon"
           role={Picker ? "button" : undefined}
           tabIndex={-1}
           contentEditable={false}
           aria-label="Icon on this callout"
           title="Icon on this callout"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            if (!Picker) return;
-            setRect(slot.current?.getBoundingClientRect() ?? null);
-          }}
+          onClick={() => openPicker(slot.current)}
         >
           {/* One path for both the type's icon and one she picked — they are
               the same kind of value now, which is the point of the rewrite. */}
-          {chosen && <StoredIcon icon={chosen.name} size={15} />}
+          <StoredIcon icon={chosen.name} size={15} />
         </span>
       )}
       {Picker && rect && (
@@ -83,7 +89,7 @@ export function CalloutWrapper({ variant, color, onColor, icon, onIcon, contentR
           // which is the truth of it, and is what "The usual icon" goes back to.
           value={icon === CALLOUT_ICON_NONE ? undefined : icon || undefined}
           onPick={(picked) => {
-            // Cleared means *no icon*, not back to the colour's own — those are
+            // Cleared means *no icon*, not back to the type's own — those are
             // two different answers and this is the one the clear button makes.
             onIcon(picked ?? CALLOUT_ICON_NONE);
             setRect(null);
@@ -93,7 +99,25 @@ export function CalloutWrapper({ variant, color, onColor, icon, onIcon, contentR
         />
       )}
       <div className="editor-callout-body" ref={contentRef} />
-      <CalloutColorButton value={color} onPick={onColor} />
+      {/* Both hover controls in one corner, so the colour dot people already
+          know teaches where the icon lives too. */}
+      <span className="editor-callout-tools">
+        {variant !== "secret" && !chosen && (
+          <button
+            ref={add}
+            type="button"
+            className="editor-callout-icon-add"
+            aria-label="Add an icon"
+            title="Add an icon"
+            contentEditable={false}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => openPicker(add.current)}
+          >
+            <SmilePlus size={12} />
+          </button>
+        )}
+        <CalloutColorButton value={color} onPick={onColor} />
+      </span>
     </div>
   );
 }

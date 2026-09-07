@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-06 — putting a callout's icon back
+
+### Fixes
+
+- **Taking a callout's icon off is no longer a one-way door.** When a callout has no icon, an **Add an icon** button appears in its top corner next to the colour dot — the place you already look to change a callout.
+- **It was technically possible before and that is not a defence.** The way back was an invisible 15-pixel square in the corner of the box that only showed itself while your pointer was over it. If you didn't know it was there, taking the icon off looked permanent.
+- **The ghost square is gone entirely.** A callout with no icon now has nothing invisible in it at all.
+
 ## 2026-09-06 — every callout has an icon, and picking the kind picks it
 
 ### Changes
@@ -246,18 +254,3 @@
 ### Notes
 
 - **Two things from the reference's version of this menu aren't built yet**, both because they need a decision rather than an afternoon: text wrapping around a frame (Wrap left / Wrap right), and Pin to top, which has never been pinned down past its name.
-
-## 2026-09-03 — a picture block holds its own picture
-
-### Additions
-
-- **Every picture block holds its own picture now.** Put two on a page and they're two photographs, not the same one drawn twice. Before this, every picture block was a window onto the page's own portrait — so a picture dropped into a block in the middle of the writing quietly became the portrait as well, and a second picture block showed whatever the first one did.
-- **One of them is the page's picture, and you pick which.** The block's `⋯` menu says *The page's picture* on the one that has it, and offers *Use as the page's picture* on any other. That's the picture the tree row, the hover preview and the LegendKeeper export use.
-- **Picking a different one swaps the two pictures over** rather than overwriting anything, so choosing wrong and choosing again costs you nothing.
-- **Duplicating a picture block gives you the picture with it**, instead of an empty frame beside a full one.
-
-### Notes
-
-- **Every page you already have opens exactly as it was.** The first picture block on a page holds the page's picture unless you say otherwise, which is what every page with a portrait already looked like — nothing on disk was rewritten to make this work.
-- **Removing the block that holds the page's picture doesn't throw the picture away.** If there's another picture block on the page it takes over, and the page's picture becomes whatever that one is showing; if there isn't, the portrait stays on the page for the next picture block you add.
-- **The Assets tab counts these.** A photo held only by a picture block in the writing is in use, so it won't turn up in the list of pictures nothing is pointing at. Duplicating a page, saving one as a template and pouring a template into a page all give the copy its own files, the same as the portrait and the cover have always done.
