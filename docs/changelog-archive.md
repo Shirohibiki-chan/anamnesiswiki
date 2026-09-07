@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-04 — a contents list, and the icons you used last
+
+### Additions
+
+- **A contents list you can drop into a page.** Type `/contents` and you get a list of that page's headings, in order, indented by their level. Click one to jump to it.
+- **It's never out of date**, because it isn't a copy — it reads the page every time it's drawn. Rename a heading and the list says the new name; write a new one and it appears; delete one and it's gone.
+- **The icon picker keeps the last eight icons you picked** across the top, so the ones a world actually uses are two clicks away instead of a search. They're remembered across projects and across restarts, and the row steps aside while you're searching.
+
 ## 2026-09-04 — a copied block becomes a block of its own
 
 ### Fixes

@@ -78,7 +78,12 @@
    name wrapped to two lines while there was empty table to the right of it,
    which reads as a broken column rather than as a long name. */
 .database-th-name {
-  min-width: 12rem;
+  /* A share as well as a floor. The floor alone loses whenever the other
+     columns' own minimums already fill the table — which is most of the time,
+     because a Friends column full of long page names has a wide minimum — and
+     the identity column is the one worth spending width on. */
+  width: 24%;
+  min-width: 14rem;
   font-weight: 400;
   padding-left: 0;
 }
@@ -98,11 +103,12 @@
   cursor: pointer;
 }
 
-/* The identity column does not wrap. A name broken across two lines while
-   there is still table to the right of it reads as a broken column, and the
-   scroller above is the honest answer to a name too long for the space. */
+/* Wraps only when it has to. Flat `nowrap` was the first answer and it clipped
+   a genuinely long name against the edge of the table with no way to read the
+   rest of it, which is worse than the problem it fixed. The floor on the column
+   below is what keeps an ordinary two-word name on one line. */
 .database-name-text {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .database-name:hover .database-name-text,
@@ -139,4 +145,216 @@
 
 .database-add {
   flex-shrink: 0;
+}
+
+/* ---- The settings bar and its menus (step 2) ---- */
+
+.database-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.database-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+.database-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.database-tool:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+/* A setting that is doing something looks different from one that isn't, so a
+   view that is hiding rows says so without being opened. */
+.database-tool[data-on] {
+  border-color: var(--color-accent-faint-border);
+  color: var(--color-text-primary);
+}
+
+.database-tool-count {
+  min-width: 1.1rem;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-full);
+  background: var(--color-accent-faint);
+  color: var(--color-accent-foreground);
+  font-size: var(--fs-2xs);
+  text-align: center;
+}
+
+.database-menu {
+  min-width: 17rem;
+  max-width: 26rem;
+}
+
+.database-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.database-menu-head {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.database-menu-note,
+.database-menu-empty {
+  margin: 0;
+  padding: var(--space-2xs) 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+.database-menu-empty {
+  padding: var(--space-md);
+}
+
+.database-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xs) 0;
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.database-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.database-menu-item:hover {
+  background: var(--color-hover);
+}
+
+.database-menu-item[data-on] {
+  background: var(--color-accent-faint);
+}
+
+.database-menu-add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  align-self: flex-start;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-accent-foreground);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.database-menu-add:hover {
+  background: var(--color-hover);
+}
+
+.database-filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Matches the box `.appearance-select` draws in Settings rather than sharing
+   it: that rule lives in shell.css, and a page component reaching into the
+   shell's stylesheet for a control is the kind of dependency that is invisible
+   until someone tidies the other file. */
+.database-select {
+  min-width: 0;
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.database-direction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.database-direction:hover {
+  border-color: var(--color-border-strong);
+}
+
+/* ---- Grouped sections ---- */
+
+.database-group-row th {
+  padding-top: var(--space-xl);
+  padding-left: 0;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+/* The first section's heading sits right under the column headings, where the
+   extra space above would open a gap that reads as the table having ended. */
+.database-table tbody:first-of-type .database-group-row th {
+  padding-top: var(--space-md);
+}
+
+.database-group-label {
+  display: inline-block;
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.database-group-count {
+  margin-left: var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 400;
 }

@@ -63,6 +63,11 @@ const SUGGESTION_MENU = "#bn-suggestion-menu";
 const DATABASE_VIEW = ".database-view";
 const DATABASE_TABLE = ".database-table";
 const DATABASE_ROW_NAME = ".database-name";
+const DATABASE_META = ".database-meta";
+const DATABASE_GROUP_LABEL = ".database-group-label";
+const DATABASE_TOOL = ".database-tool";
+const DATABASE_MENU = ".database-menu";
+const DATABASE_DIRECTION = ".database-direction";
 const FORMATTING_BAR = ".bn-formatting-toolbar";
 
 /**
@@ -1157,4 +1162,38 @@ export async function databaseRowNames(window: Page): Promise<string[]> {
 export async function openDatabaseRow(window: Page, name: string): Promise<void> {
   await window.locator(DATABASE_ROW_NAME).filter({ hasText: name }).first().click();
   await waitForPageTitle(window, name);
+}
+
+/**
+ * The line above the table saying how many pages it is showing.
+ *
+ * Worth reading rather than counting rows, because it is the only thing that
+ * distinguishes a filter hiding six pages from a folder that holds three.
+ */
+export async function databaseCount(window: Page): Promise<string> {
+  return normalize(await window.locator(DATABASE_META).innerText());
+}
+
+/**
+ * Opens one of the settings menus above a table: "columns", "filter", "sort"
+ * or "group".
+ *
+ * By attribute rather than by the button's name, because a setting that is
+ * doing something wears a count — the Filter button is called "Filter 1" the
+ * moment it has a filter on it — and the label is uppercased by CSS besides.
+ */
+export async function openDatabaseMenu(window: Page, tool: string): Promise<void> {
+  await window.locator(`${DATABASE_TOOL}[data-tool="${tool}"]`).click();
+  await window.locator(DATABASE_MENU).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Turns a database's first sort round, A–Z to Z–A or back. */
+export async function flipDatabaseSort(window: Page): Promise<void> {
+  await window.locator(DATABASE_DIRECTION).first().click();
+}
+
+/** The section headings a grouped table is showing, in the order drawn. */
+export async function databaseGroupLabels(window: Page): Promise<string[]> {
+  const labels = await window.locator(DATABASE_GROUP_LABEL).allInnerTexts();
+  return labels.map((label) => normalize(label));
 }

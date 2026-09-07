@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { createNode, type CustomPropertySpec, type Node } from "../constants/schema";
 import {
+  applyFilters,
+  applySorts,
   databaseCell,
   databaseColumns,
   databaseRows,
+  fieldChoices,
+  fieldId,
+  filterableFields,
+  groupRows,
+  groupableFields,
+  matchesFilter,
   newDatabaseView,
+  operatorsFor,
   suggestColumnTemplate,
+  visibleColumns,
 } from "./database-service";
 import type { RenderableProperty } from "./property-service";
 
@@ -208,5 +218,249 @@ describe("newDatabaseView", () => {
       layout: "table",
       templateKey: "location",
     });
+  });
+});
+
+// ---- View settings (step 2) ----
+
+const label = (key: string) => (key === "character" ? "Character" : key === "location" ? "Location" : key);
+
+const statusColumn: RenderableProperty = { key: "status", label: "Status", type: "status" };
+const kindsColumn: RenderableProperty = { key: "kinds", label: "Kinds", type: "multiselect" };
+const ageColumn: RenderableProperty = { key: "age", label: "Age", type: "number" };
+const columns2 = [statusColumn, kindsColumn, ageColumn];
+
+/**
+ * A page carrying a status whose option list is its own, the way the app stores
+ * it — the option id is minted per page, so two pages saying the same word hold
+ * different ids. That is the thing the matching has to survive.
+ */
+let optionSeq = 0;
+function withStatus(name: string, value: string, patch: Partial<Node> = {}): Node {
+  const id = `opt-${(optionSeq += 1)}`;
+  return page({
+    name,
+    customProperties: [
+      { key: "status", label: "Status", type: "status", options: [{ id, label: value, color: "green" }] },
+    ],
+    properties: { status: id },
+    ...patch,
+  });
+}
+
+describe("operatorsFor", () => {
+  it("offers has / does not have on a field a page can hold several of", () => {
+    expect(operatorsFor({ kind: "property", key: "kinds" }, columns2)).toEqual([
+      "has",
+      "does-not-have",
+      "is-empty",
+      "is-not-empty",
+    ]);
+    expect(operatorsFor({ kind: "tag" }, columns2)).toContain("has");
+  });
+
+  it("offers is / is not / contains on a field with one value", () => {
+    expect(operatorsFor({ kind: "property", key: "status" }, columns2)).toEqual([
+      "is",
+      "is-not",
+      "contains",
+      "is-empty",
+      "is-not-empty",
+    ]);
+    expect(operatorsFor({ kind: "template" }, columns2)).toContain("is");
+  });
+});
+
+describe("filterableFields and groupableFields", () => {
+  it("filters by more than the columns — name, template and tags come first", () => {
+    const fields = filterableFields(columns2).map(fieldId);
+    expect(fields.slice(0, 3)).toEqual(["name", "template", "tag"]);
+    expect(fields).toContain("property:status");
+  });
+
+  // Grouping by tags would list a page carrying three of them three times.
+  it("groups only by fields a page has exactly one of", () => {
+    const fields = groupableFields(columns2).map(fieldId);
+    expect(fields).toEqual(["template", "property:status"]);
+    expect(fields).not.toContain("tag");
+    expect(fields).not.toContain("property:kinds");
+  });
+});
+
+describe("matchesFilter", () => {
+  const alive = withStatus("Valera", "Alive");
+  const field = { kind: "property", key: "status" } as const;
+
+  it("matches an option by its label, not by an id another page minted", () => {
+    // The two pages agree on the word and disagree on the id, which is exactly
+    // what the app stores — an option list lives per page. Matching on the id
+    // would find one of these and not the other.
+    const other = withStatus("Kestrel", "Alive");
+    expect(other.customProperties?.[0].options?.[0].id).not.toBe(alive.customProperties?.[0].options?.[0].id);
+
+    const filter = { id: "f", field, operator: "is" as const, value: "Alive" };
+    expect(matchesFilter(alive, filter, columns2, {}, label)).toBe(true);
+    expect(matchesFilter(other, filter, columns2, {}, label)).toBe(true);
+    expect(matchesFilter(withStatus("Rhone", "Dead"), filter, columns2, {}, label)).toBe(false);
+  });
+
+  it("is case-insensitive, because two spellings of a word are one answer", () => {
+    const filter = { id: "f", field, operator: "is" as const, value: "alive" };
+    expect(matchesFilter(alive, filter, columns2, {}, label)).toBe(true);
+  });
+
+  it("reads is-not as true for a page with no value at all", () => {
+    const blank = page({ name: "Nobody" });
+    const filter = { id: "f", field, operator: "is-not" as const, value: "Alive" };
+    expect(matchesFilter(blank, filter, columns2, {}, label)).toBe(true);
+  });
+
+  it("asks about presence without a value", () => {
+    const blank = page({ name: "Nobody" });
+    expect(matchesFilter(blank, { id: "f", field, operator: "is-empty" }, columns2, {}, label)).toBe(true);
+    expect(matchesFilter(alive, { id: "f", field, operator: "is-empty" }, columns2, {}, label)).toBe(false);
+    expect(matchesFilter(alive, { id: "f", field, operator: "is-not-empty" }, columns2, {}, label)).toBe(true);
+  });
+
+  // A filter half-built must not empty the table while she is still picking.
+  it("matches everything while no value has been chosen yet", () => {
+    const filter = { id: "f", field, operator: "is" as const };
+    expect(matchesFilter(alive, filter, columns2, {}, label)).toBe(true);
+    expect(matchesFilter(page({ name: "Nobody" }), filter, columns2, {}, label)).toBe(true);
+  });
+
+  it("filters on the template and on tags, which are not columns", () => {
+    const row = page({ templateKey: "location", tags: ["port", "ruined"] });
+    expect(
+      matchesFilter(row, { id: "f", field: { kind: "template" }, operator: "is", value: "Location" }, columns2, {}, label),
+    ).toBe(true);
+    expect(
+      matchesFilter(row, { id: "f", field: { kind: "tag" }, operator: "has", value: "ruined" }, columns2, {}, label),
+    ).toBe(true);
+    expect(
+      matchesFilter(row, { id: "f", field: { kind: "tag" }, operator: "does-not-have", value: "ruined" }, columns2, {}, label),
+    ).toBe(false);
+  });
+
+  it("matches part of a name with contains", () => {
+    const row = page({ name: "Verity Jiang" });
+    const filter = { id: "f", field: { kind: "name" } as const, operator: "contains" as const, value: "jia" };
+    expect(matchesFilter(row, filter, columns2, {}, label)).toBe(true);
+  });
+});
+
+describe("applyFilters", () => {
+  it("requires every filter to hold, not any of them", () => {
+    const rows = [
+      withStatus("Valera", "Alive", { tags: ["noble"] }),
+      withStatus("Kestrel", "Alive", { tags: ["rogue"] }),
+      withStatus("Rhone", "Dead", { tags: ["noble"] }),
+    ];
+    const filters = [
+      { id: "a", field: { kind: "property", key: "status" } as const, operator: "is" as const, value: "Alive" },
+      { id: "b", field: { kind: "tag" } as const, operator: "has" as const, value: "noble" },
+    ];
+
+    expect(applyFilters(rows, filters, columns2, {}, label).map((row) => row.name)).toEqual(["Valera"]);
+  });
+
+  it("leaves the rows alone when there is nothing to apply", () => {
+    const rows = [page({ name: "A" })];
+    expect(applyFilters(rows, undefined, columns2, {}, label)).toBe(rows);
+  });
+});
+
+describe("applySorts", () => {
+  it("sorts text without minding case", () => {
+    const rows = [page({ name: "banana" }), page({ name: "Apple" }), page({ name: "cherry" })];
+    const sorted = applySorts(rows, [{ field: { kind: "name" }, direction: "asc" }], columns2, {}, label);
+    expect(sorted.map((row) => row.name)).toEqual(["Apple", "banana", "cherry"]);
+  });
+
+  it("sorts numbers as numbers, not as text", () => {
+    const rows = [
+      page({ name: "nine", customProperties: [{ key: "age", label: "Age", type: "number" }], properties: { age: 9 } }),
+      page({ name: "ten", customProperties: [{ key: "age", label: "Age", type: "number" }], properties: { age: 10 } }),
+    ];
+    const sorted = applySorts(rows, [{ field: { kind: "property", key: "age" }, direction: "asc" }], columns2, {}, label);
+    expect(sorted.map((row) => row.name)).toEqual(["nine", "ten"]);
+  });
+
+  // Reversing a sort should turn the list over, not bring the blanks to the top.
+  it("puts blanks last whichever way it is pointing", () => {
+    const rows = [page({ name: "blank" }), withStatus("Alive one", "Alive"), withStatus("Dead one", "Dead")];
+    const field = { kind: "property", key: "status" } as const;
+
+    expect(applySorts(rows, [{ field, direction: "asc" }], columns2, {}, label).map((row) => row.name)).toEqual([
+      "Alive one",
+      "Dead one",
+      "blank",
+    ]);
+    expect(applySorts(rows, [{ field, direction: "desc" }], columns2, {}, label).map((row) => row.name)).toEqual([
+      "Dead one",
+      "Alive one",
+      "blank",
+    ]);
+  });
+
+  it("uses the second rung to break a tie on the first", () => {
+    const rows = [
+      withStatus("Zara", "Alive"),
+      withStatus("Adan", "Alive"),
+      withStatus("Mira", "Dead"),
+    ];
+    const sorted = applySorts(
+      rows,
+      [
+        { field: { kind: "property", key: "status" }, direction: "asc" },
+        { field: { kind: "name" }, direction: "asc" },
+      ],
+      columns2,
+      {},
+      label,
+    );
+    expect(sorted.map((row) => row.name)).toEqual(["Adan", "Zara", "Mira"]);
+  });
+
+  it("does not disturb the tree's order when nothing is sorted", () => {
+    const rows = [page({ name: "C" }), page({ name: "A" })];
+    expect(applySorts(rows, [], columns2, {}, label).map((row) => row.name)).toEqual(["C", "A"]);
+  });
+});
+
+describe("groupRows", () => {
+  it("gathers rows alphabetically and puts the ones with no value last", () => {
+    const rows = [withStatus("Rhone", "Dead"), page({ name: "Nobody" }), withStatus("Valera", "Alive")];
+
+    const groups = groupRows(rows, { kind: "property", key: "status" }, columns2, {}, label);
+
+    expect(groups?.map((group) => group.label)).toEqual(["Alive", "Dead", "No Status"]);
+    expect(groups?.[2].rows.map((row) => row.name)).toEqual(["Nobody"]);
+  });
+
+  it("leaves out the empty section when every row has a value", () => {
+    const rows = [withStatus("Valera", "Alive")];
+    expect(groupRows(rows, { kind: "property", key: "status" }, columns2, {}, label)).toHaveLength(1);
+  });
+
+  it("is null when nothing is grouped, which is how the table knows to draw one list", () => {
+    expect(groupRows([page()], undefined, columns2, {}, label)).toBeNull();
+  });
+});
+
+describe("fieldChoices", () => {
+  it("offers what the rows actually hold, once each and in order", () => {
+    const rows = [withStatus("a", "Dead"), withStatus("b", "Alive"), withStatus("c", "Alive")];
+    expect(fieldChoices(rows, { kind: "property", key: "status" }, columns2, {}, label)).toEqual(["Alive", "Dead"]);
+  });
+});
+
+describe("visibleColumns", () => {
+  it("drops the ones turned off and keeps the rest in order", () => {
+    expect(visibleColumns(columns2, ["kinds"]).map((column) => column.key)).toEqual(["status", "age"]);
+  });
+
+  it("shows everything when nothing is hidden", () => {
+    expect(visibleColumns(columns2, undefined)).toBe(columns2);
   });
 });

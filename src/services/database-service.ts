@@ -7,7 +7,15 @@
 // the two promises in `docs/plan.md` Phase 23 true by construction rather than
 // by care: removing a view cannot remove a page, and two views over the same
 // pages need no link between them because neither one holds anything.
-import type { DatabaseView, Node, PropertyOption } from "../constants/schema";
+import type {
+  DatabaseField,
+  DatabaseFilter,
+  DatabaseOperator,
+  DatabaseSort,
+  DatabaseView,
+  Node,
+  PropertyOption,
+} from "../constants/schema";
 import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../constants/schema";
 import { defaultPropertyOrder } from "./block-service";
 import type { RenderableProperty } from "./property-service";
@@ -171,4 +179,274 @@ function optionsOn(row: Node, key: string): PropertyOption[] {
 /** A new view over these rows, with its columns already guessed. */
 export function newDatabaseView(rows: Node[]): DatabaseView {
   return { layout: "table", templateKey: suggestColumnTemplate(rows) };
+}
+
+// ---- View settings (Phase 23, step 2) ----
+//
+// **Filters, sorts and groups all read a field the same way**, through
+// `valuesOn` below, which is what keeps them agreeing with each other and with
+// the table. A sort that read a Status differently from the filter that hid
+// half the rows would be a bug nobody could see.
+
+/** A field flattened to a string, for comparing two of them and for React keys. */
+export function fieldId(field: DatabaseField): string {
+  return field.kind === "property" ? `property:${field.key}` : field.kind;
+}
+
+export function sameField(a: DatabaseField, b: DatabaseField): boolean {
+  return fieldId(a) === fieldId(b);
+}
+
+/**
+ * What one field holds on one row: nothing, or a list of labelled values.
+ *
+ * **Labels, not ids, and that is the load-bearing detail.** A select's option
+ * ids are minted per page, so a filter storing an id would match the page it
+ * was built from and nothing else. Comparing on the label is also what a
+ * person means — two pages both saying "Alive" are the same answer however
+ * their option lists were made.
+ */
+function valuesOn(
+  row: Node,
+  field: DatabaseField,
+  columns: RenderableProperty[],
+  nodes: Record<string, Node>,
+  templateLabel: (key: string) => string,
+): { label: string; color?: string }[] {
+  switch (field.kind) {
+    case "name":
+      return row.name ? [{ label: row.name }] : [];
+    case "template":
+      return [{ label: templateLabel(row.templateKey) }];
+    case "tag":
+      return (row.tags ?? []).map((tag) => ({ label: tag }));
+    case "property": {
+      const column = columns.find((candidate) => candidate.key === field.key);
+      if (!column) return [];
+      const cell = databaseCell(row, column, nodes);
+      if (cell.kind === "empty") return [];
+      if (cell.kind === "text") return [{ label: cell.text }];
+      return cell.chips.map((chip) => ({ label: chip.label, color: chip.color }));
+    }
+  }
+}
+
+/** Whether a page can hold several of these at once, which decides its operators. */
+export function isMultiValued(field: DatabaseField, columns: RenderableProperty[]): boolean {
+  if (field.kind === "tag") return true;
+  if (field.kind !== "property") return false;
+  const type = columns.find((column) => column.key === field.key)?.type;
+  return type === "multiselect" || type === "refs";
+}
+
+/** The operators worth offering on a field. See DATABASE_OPERATORS for why there are two sets. */
+export function operatorsFor(field: DatabaseField, columns: RenderableProperty[]): DatabaseOperator[] {
+  if (isMultiValued(field, columns)) return ["has", "does-not-have", "is-empty", "is-not-empty"];
+  return ["is", "is-not", "contains", "is-empty", "is-not-empty"];
+}
+
+/** Whether an operator asks about a value at all. */
+export function takesValue(operator: DatabaseOperator): boolean {
+  return operator !== "is-empty" && operator !== "is-not-empty";
+}
+
+export const OPERATOR_LABELS: Record<DatabaseOperator, string> = {
+  is: "is",
+  "is-not": "is not",
+  contains: "contains",
+  has: "has",
+  "does-not-have": "does not have",
+  "is-empty": "is empty",
+  "is-not-empty": "is not empty",
+};
+
+/** Everything a view can filter or sort by: its columns, plus the three the app arranges by anyway. */
+export function filterableFields(columns: RenderableProperty[]): DatabaseField[] {
+  return [
+    { kind: "name" },
+    { kind: "template" },
+    { kind: "tag" },
+    ...columns.map((column): DatabaseField => ({ kind: "property", key: column.key })),
+  ];
+}
+
+/**
+ * What a view can be grouped by — the fields a page has exactly one of.
+ *
+ * Tags and multi-selects are absent on purpose: a page carrying three of them
+ * would appear under three headings, so a count of nine rows would list twelve.
+ */
+export function groupableFields(columns: RenderableProperty[]): DatabaseField[] {
+  return [
+    { kind: "template" },
+    ...columns
+      .filter((column) => column.type === "select" || column.type === "status")
+      .map((column): DatabaseField => ({ kind: "property", key: column.key })),
+  ];
+}
+
+export function fieldLabel(field: DatabaseField, columns: RenderableProperty[]): string {
+  switch (field.kind) {
+    case "name":
+      return "Name";
+    case "template":
+      return "Template";
+    case "tag":
+      return "Tags";
+    case "property":
+      return columns.find((column) => column.key === field.key)?.label ?? field.key;
+  }
+}
+
+/**
+ * The values a field actually has across these rows, for the filter's value picker.
+ *
+ * Read off the rows rather than off a template's declared options, so the list
+ * offers what is in front of her — including a value only two pages use, which
+ * is exactly the one worth filtering to.
+ */
+export function fieldChoices(
+  rows: Node[],
+  field: DatabaseField,
+  columns: RenderableProperty[],
+  nodes: Record<string, Node>,
+  templateLabel: (key: string) => string,
+): string[] {
+  const seen = new Map<string, string>();
+  for (const row of rows) {
+    for (const value of valuesOn(row, field, columns, nodes, templateLabel)) {
+      const key = value.label.toLowerCase();
+      if (!seen.has(key)) seen.set(key, value.label);
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+
+export function matchesFilter(
+  row: Node,
+  filter: DatabaseFilter,
+  columns: RenderableProperty[],
+  nodes: Record<string, Node>,
+  templateLabel: (key: string) => string,
+): boolean {
+  const values = valuesOn(row, filter.field, columns, nodes, templateLabel);
+
+  if (filter.operator === "is-empty") return values.length === 0;
+  if (filter.operator === "is-not-empty") return values.length > 0;
+
+  // A filter with nothing chosen yet is still being built, and hiding every
+  // row while she picks would make the list flash empty between two clicks.
+  const wanted = (filter.value ?? "").trim().toLowerCase();
+  if (!wanted) return true;
+
+  const labels = values.map((value) => value.label.toLowerCase());
+  switch (filter.operator) {
+    case "is":
+    case "has":
+      return labels.some((label) => label === wanted);
+    case "is-not":
+    case "does-not-have":
+      return !labels.some((label) => label === wanted);
+    case "contains":
+      return labels.some((label) => label.includes(wanted));
+    default:
+      return true;
+  }
+}
+
+export function applyFilters(
+  rows: Node[],
+  filters: DatabaseFilter[] | undefined,
+  columns: RenderableProperty[],
+  nodes: Record<string, Node>,
+  templateLabel: (key: string) => string,
+): Node[] {
+  if (!filters || filters.length === 0) return rows;
+  return rows.filter((row) => filters.every((filter) => matchesFilter(row, filter, columns, nodes, templateLabel)));
+}
+
+/**
+ * Orders rows by the view's sorts, falling back to the tree's own order.
+ *
+ * **Empty sorts last in both directions.** Reversing a sort should turn the
+ * list over, not bring forty blank rows to the top — the blanks are the least
+ * interesting thing in the column whichever way it is pointing.
+ */
+export function applySorts(
+  rows: Node[],
+  sorts: DatabaseSort[] | undefined,
+  columns: RenderableProperty[],
+  nodes: Record<string, Node>,
+  templateLabel: (key: string) => string,
+): Node[] {
+  if (!sorts || sorts.length === 0) return rows;
+
+  const numeric = new Set(columns.filter((column) => column.type === "number").map((column) => column.key));
+
+  return [...rows].sort((a, b) => {
+    for (const sort of sorts) {
+      const left = valuesOn(a, sort.field, columns, nodes, templateLabel);
+      const right = valuesOn(b, sort.field, columns, nodes, templateLabel);
+      if (left.length === 0 && right.length === 0) continue;
+      if (left.length === 0) return 1;
+      if (right.length === 0) return -1;
+
+      const isNumber = sort.field.kind === "property" && numeric.has(sort.field.key);
+      const compared = isNumber
+        ? Number(left[0].label) - Number(right[0].label)
+        : left[0].label.localeCompare(right[0].label, undefined, { sensitivity: "base" });
+      if (compared !== 0) return sort.direction === "desc" ? -compared : compared;
+    }
+    return 0;
+  });
+}
+
+export type DatabaseGroup = {
+  /** The value's label, lowercased, or "" for the rows that have none. */
+  key: string;
+  label: string;
+  color?: string;
+  rows: Node[];
+};
+
+/**
+ * Splits rows into sections under a field's values.
+ *
+ * Alphabetical, with the rows that have no value last under a heading that says
+ * so rather than under a blank one — a section with no name reads as a
+ * rendering fault rather than as an answer.
+ */
+export function groupRows(
+  rows: Node[],
+  groupBy: DatabaseField | undefined,
+  columns: RenderableProperty[],
+  nodes: Record<string, Node>,
+  templateLabel: (key: string) => string,
+): DatabaseGroup[] | null {
+  if (!groupBy) return null;
+
+  const groups = new Map<string, DatabaseGroup>();
+  const none: DatabaseGroup = { key: "", label: `No ${fieldLabel(groupBy, columns)}`, rows: [] };
+
+  for (const row of rows) {
+    const [value] = valuesOn(row, groupBy, columns, nodes, templateLabel);
+    if (!value) {
+      none.rows.push(row);
+      continue;
+    }
+    const key = value.label.toLowerCase();
+    const existing = groups.get(key);
+    if (existing) existing.rows.push(row);
+    else groups.set(key, { key, label: value.label, color: value.color, rows: [row] });
+  }
+
+  const ordered = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+  return none.rows.length > 0 ? [...ordered, none] : ordered;
+}
+
+/** The columns left after the ones she has turned off. */
+export function visibleColumns(columns: RenderableProperty[], hidden: string[] | undefined): RenderableProperty[] {
+  if (!hidden || hidden.length === 0) return columns;
+  const off = new Set(hidden);
+  return columns.filter((column) => !off.has(column.key));
 }
