@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-08 — changes made right after opening a page now stick
+
+### Fixes
+
+- **Setting a page as a shortcut could be lost when you restarted.** It appeared in the strip above the tree straight away and was gone the next time the app opened. The same went for removing one.
+- **Anything else changed in the moment after opening a page could be lost the same way** — the home page, an arrangement restored from an earlier version, a graph's layout, and the order of pages after a move, a delete or a duplicate.
+- **The cause was one thing, and it is fixed in one place.** Opening a page schedules a save of the file that holds your page order, your shortcuts and which folders are open. That save was writing the file as it looked when you opened the page, so anything you changed in the next third of a second was written over. It now writes the file as it actually is at the moment it saves, so nothing can be overtaken.
+
+### Notes
+
+- **Nothing you have on disk needs fixing** — this only ever affected a change made within a few hundred milliseconds of opening a page, and only until you made another change to the same file. Anything currently in your world is what it says it is.
+- Found through the graph's **Put it back** the day before, which is simply the easiest way to hit it: that button sits inches from the page you just opened.
+
 ## 2026-09-07 — steering the graph, and it remembers how you left it
 
 ### Additions
@@ -255,14 +268,3 @@
 - **Home, back and forward are in a row at the bottom of the sidebar now** — the wide column with your pages in it, under the tree. Icons only, no words: a house and two arrows don't need explaining the way the rail's do. Back and forward walk the pages you've visited, the way a browser does — they're not undo. Undo is still Ctrl+Z.
 - **The show/hide button for the properties panel sits on the page itself**, top right, with nothing drawn around it. The "Saved" marker and the "Undid deleting 2 pages" message are up there beside it.
 - **Assets is called Library, and it's moved.** The rail reads Project, Library, Templates now. Nothing on disk changed — your `assets` folder is still called that and still holds the same files.
-
-## 2026-09-05 — the formatting bar looks like the app
-
-### Fixes
-
-- **The formatting bar was never wearing your theme, and now it is.** The strip with bold and italic in it — the one set to stay at the top of the page — was drawing itself in the editor library's own colours: a purple-grey panel that appears in no theme here, outlined in near-white. It wasn't a styling choice anyone made; the bar gets moved out of the editor to sit above the page, and every colour the app hands the editor was being left behind when it moved. It uses the same surface and the same border as every other panel now.
-
-### Changes
-
-- **Its buttons are centred instead of pushed to the left.** They take about two thirds of the strip, so left-aligning them left a third of it empty and the bar read as unfinished.
-- **The buttons are grouped, with a hairline between each group** — the block type, then bold and its neighbours, then alignment, then colour, then indent, then the link button. Nine buttons in one undivided row is a row you have to read every time.

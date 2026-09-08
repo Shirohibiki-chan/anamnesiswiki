@@ -58,6 +58,9 @@ const GRAPH_EDGE_WRITTEN = ".page-graph-edge-written";
 const GRAPH_PREVIEW = ".page-graph-preview";
 const GRAPH_PREVIEW_NAME = ".page-graph-preview-name";
 const GRAPH_EDGE_LABEL = ".page-graph-edge-label";
+// The shortcuts strip above the tree, and one tile in it.
+const BOOKMARKS_RAIL = ".bookmarks-rail";
+const BOOKMARK_TILE = ".bookmark-tile";
 // Phase 24 step 2: the controls above the graph, and the filter menu.
 const GRAPH_TOOL = ".graph-tool";
 const GRAPH_COUNT = ".graph-count";
@@ -1483,4 +1486,38 @@ export async function canPutGraphBack(window: Page): Promise<boolean> {
 /** Lays the graph out again, forgetting everything that was dragged. */
 export async function putGraphBack(window: Page): Promise<void> {
   await window.locator(`${GRAPH_TOOL}[data-tool="put-back"]`).click();
+}
+
+/** Sets a page as a shortcut from its row menu. */
+export async function pinRowAsShortcut(window: Page, rowName: string): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  await window.locator(TREE_CONTEXT_MENU).first().getByRole("button", { name: "Set as shortcut" }).click();
+}
+
+/** The pages in the shortcuts strip, in the order it draws them. */
+export async function shortcutNames(window: Page): Promise<string[]> {
+  if ((await window.locator(BOOKMARKS_RAIL).count()) === 0) return [];
+  const labels = await window.locator(`${BOOKMARKS_RAIL} ${BOOKMARK_TILE}`).evaluateAll((tiles) =>
+    tiles.map((tile) => tile.getAttribute("aria-label") ?? ""),
+  );
+  return labels.map((label) => normalize(label));
+}
+
+/**
+ * Opens a shortcut and removes it **in one tick of the page's own clock**.
+ *
+ * The point is the timing, not the gesture. Opening a page schedules a
+ * debounced write of `project.json`; removing the shortcut writes it
+ * immediately. Doing both from one `evaluate` puts the second inside the
+ * first's 300ms window every time, on any machine — which is the only way to
+ * ask about the race deliberately rather than hope a slow runner reproduces it.
+ * A middle click is what the tile takes for "remove"; see BookmarksRail.
+ */
+export async function openAndUnpinShortcutTogether(window: Page, name: string): Promise<void> {
+  await window.evaluate((pageName) => {
+    const tile = document.querySelector<HTMLElement>(`.bookmark-tile[aria-label="${pageName}"]`);
+    if (!tile) throw new Error(`No shortcut called ${pageName}`);
+    tile.click();
+    tile.dispatchEvent(new MouseEvent("auxclick", { button: 1, bubbles: true, cancelable: true }));
+  }, name);
 }

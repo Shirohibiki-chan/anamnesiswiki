@@ -2,6 +2,17 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-05 — the formatting bar looks like the app
+
+### Fixes
+
+- **The formatting bar was never wearing your theme, and now it is.** The strip with bold and italic in it — the one set to stay at the top of the page — was drawing itself in the editor library's own colours: a purple-grey panel that appears in no theme here, outlined in near-white. It wasn't a styling choice anyone made; the bar gets moved out of the editor to sit above the page, and every colour the app hands the editor was being left behind when it moved. It uses the same surface and the same border as every other panel now.
+
+### Changes
+
+- **Its buttons are centred instead of pushed to the left.** They take about two thirds of the strip, so left-aligning them left a third of it empty and the bar read as unfinished.
+- **The buttons are grouped, with a hairline between each group** — the block type, then bold and its neighbours, then alignment, then colour, then indent, then the link button. Nine buttons in one undivided row is a row you have to read every time.
+
 ## 2026-09-05 — an actual title bar
 
 ### Changes
