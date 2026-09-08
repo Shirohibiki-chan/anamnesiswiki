@@ -6,17 +6,18 @@
 // other controls sideways. A row of controls that sits somewhere different
 // depending on what the page holds is the thing that reads as chaos.
 import { Filter, Undo2 } from "lucide-react";
-import { GRAPH_DEPTHS, type GraphDepth } from "../../constants/graph";
+import { GRAPH_REACHES, GRAPH_REACH_EVERYTHING, type GraphReach } from "../../constants/graph";
 import type { DatabaseField, DatabaseFilter } from "../../constants/schema";
 import { GRAPH_EDGE_LABELS, type GraphEdgeLabels } from "../../services/preferences-service";
 import { TreePopover } from "../tree/TreePopover";
 import { GraphFilterMenu } from "./GraphFilterMenu";
 import { useState } from "react";
 
-const DEPTH_LABELS: Record<GraphDepth, string> = {
+const REACH_LABELS: Record<GraphReach, string> = {
   1: "1 connection out",
   2: "2 connections out",
   3: "3 connections out",
+  [GRAPH_REACH_EVERYTHING]: "Everything",
 };
 
 const LABEL_MODES: Record<GraphEdgeLabels, string> = {
@@ -28,8 +29,10 @@ type GraphToolbarProps = {
   /** How many pages are drawn, and how many the reach found before filtering. */
   drawn: number;
   reached: number;
-  depth: GraphDepth;
-  onDepth: (depth: GraphDepth) => void;
+  reach: GraphReach;
+  onReach: (reach: GraphReach) => void;
+  /** Hops need a centre to be counted from; a whole universe has none. */
+  reachDisabled?: boolean;
   labels: GraphEdgeLabels;
   onLabels: (mode: GraphEdgeLabels) => void;
   filters: DatabaseFilter[];
@@ -43,8 +46,9 @@ type GraphToolbarProps = {
 export function GraphToolbar({
   drawn,
   reached,
-  depth,
-  onDepth,
+  reach,
+  onReach,
+  reachDisabled = false,
   labels,
   onLabels,
   filters,
@@ -74,12 +78,17 @@ export function GraphToolbar({
         <select
           className="graph-select"
           aria-label="How far out to reach"
-          value={depth}
-          onChange={(event) => onDepth(Number(event.target.value) as GraphDepth)}
+          value={reach}
+          disabled={reachDisabled}
+          title={reachDisabled ? "This graph has no page at its centre to count connections from" : undefined}
+          onChange={(event) => {
+            const chosen = event.target.value;
+            onReach(chosen === GRAPH_REACH_EVERYTHING ? GRAPH_REACH_EVERYTHING : (Number(chosen) as GraphReach));
+          }}
         >
-          {GRAPH_DEPTHS.map((option) => (
+          {GRAPH_REACHES.map((option) => (
             <option key={option} value={option}>
-              {DEPTH_LABELS[option]}
+              {REACH_LABELS[option]}
             </option>
           ))}
         </select>

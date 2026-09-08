@@ -8,10 +8,10 @@
 // what makes "one connection out" and "two" the same code with a different
 // number, and what lets the ordering be asserted in a test instead of eyeballed
 // on a canvas.
-import { GRAPH_RING_RADIUS } from "../constants/graph";
-import type { DatabaseField, DatabaseOperator, Node } from "../constants/schema";
+import { GRAPH_RING_RADIUS, GRAPH_WORLD_PIN_PREFIX } from "../constants/graph";
+import { UNIVERSE_TEMPLATE_KEY, type DatabaseField, type DatabaseOperator, type Node } from "../constants/schema";
 import { outgoingEdges, type LinkIndex, type MentionKind } from "./link-index";
-import { getEffectiveColor } from "./tree-service";
+import { getEffectiveColor, isDescendantOf } from "./tree-service";
 
 /**
  * Why a line is on the graph.
@@ -136,6 +136,27 @@ export function seedPosition(id: string, depth: number): { x: number; y: number 
 }
 
 /**
+ * A starting point on a disc rather than on a ring, for a graph with no hops.
+ *
+ * **Rings are the wrong shape once every page is at the same distance.** A
+ * whole universe seeded by `seedPosition` starts as one crowded circle, and
+ * the simulation spends its whole run pushing that apart instead of finding the
+ * clusters — which is both slower and a worse picture. A disc that already
+ * holds them starts the run near the answer.
+ *
+ * The square root is what keeps the density even. Radius drawn straight from a
+ * uniform number crowds the middle, because the area near the edge of a disc is
+ * larger than the area near its centre; taking the root spreads the same
+ * numbers over equal area. It grows with the count for the plain reason that
+ * three hundred pages need more room than thirty.
+ */
+export function seedScatter(id: string, count: number): { x: number; y: number } {
+  const angle = hashUnit(id) * Math.PI * 2;
+  const radius = Math.sqrt(hashUnit(`${id}~radius`)) * GRAPH_RING_RADIUS * Math.sqrt(Math.max(count, 1));
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+}
+
+/**
  * A random source that is not random between two runs — mulberry32, seeded.
  *
  * d3-force reaches for `Math.random` in one place: nudging two nodes that have
@@ -153,6 +174,59 @@ export function seededRandom(seed: string): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/**
+ * The lines and the drawable nodes for a set of pages that has already been
+ * decided. Phase 24, step 3.
+ *
+ * **Split out because the two graphs differ only in how that set is chosen.**
+ * One walks outward from a page; the other takes a universe whole. Everything
+ * after that — which line survives between a pair, what a node wears, the order
+ * things come out in — is identical, and was identical when it was written
+ * once, so this is where it stays written once.
+ *
+ * `place` is the only other difference: hops around a centre want rings, and a
+ * flat set wants a disc.
+ */
+function assemble(
+  reached: Map<string, number>,
+  nodes: Record<string, Node>,
+  index: LinkIndex,
+  place: (id: string, depth: number) => { x: number; y: number },
+): GraphModel {
+  const best = new Map<string, GraphEdge>();
+  for (const id of reached.keys()) {
+    const node = nodes[id];
+    if (!node) continue;
+    for (const edge of edgesTouching(node, nodes, index)) {
+      if (edge.sourceId === edge.targetId) continue;
+      if (!reached.has(edge.sourceId) || !reached.has(edge.targetId)) continue;
+      const key = pairKey(edge.sourceId, edge.targetId);
+      const standing = best.get(key);
+      if (standing && KIND_RANK[standing.kind] <= KIND_RANK[edge.kind]) continue;
+      best.set(key, { id: key, ...edge });
+    }
+  }
+
+  const graphNodes: GraphNode[] = [];
+  for (const [id, hop] of reached) {
+    const node = nodes[id];
+    if (!node) continue;
+    const { color, isOwner } = getEffectiveColor(id, nodes);
+    graphNodes.push({
+      id,
+      name: node.name,
+      templateKey: node.templateKey,
+      icon: node.icon,
+      color,
+      ownsColor: isOwner,
+      depth: hop,
+      ...place(id, hop),
+    });
+  }
+
+  return { nodes: graphNodes, edges: [...best.values()] };
 }
 
 /**
@@ -205,38 +279,46 @@ export function graphAround(
     frontier = next;
   }
 
-  const best = new Map<string, GraphEdge>();
-  for (const id of reached.keys()) {
+  return assemble(reached, nodes, index, seedPosition);
+}
+
+/**
+ * A graph of a set of pages given outright, rather than walked to. Phase 24,
+ * step 3.
+ *
+ * **Every page in the set is drawn, including the ones joined to nothing.** A
+ * walk can only ever reach what something points at, so a page nobody has
+ * linked yet would be invisible on its own world's graph — which is exactly
+ * backwards, since being unconnected is the most useful thing a picture of a
+ * whole world can tell you about a page.
+ *
+ * `focusId` is optional and is the difference between the two doors. Opened
+ * from a page, that page stays the centre and keeps its own look while
+ * everything around it widens out; opened from the rail there is no such page,
+ * nothing is pinned, and the shape settles wherever it likes. A focus outside
+ * the set is still drawn, because it is where she is.
+ */
+export function graphOfPages(
+  pageIds: string[],
+  focusId: string | null,
+  nodes: Record<string, Node>,
+  index: LinkIndex,
+  keep: (node: Node) => boolean = () => true,
+): GraphModel {
+  const reached = new Map<string, number>();
+  if (focusId && nodes[focusId]) reached.set(focusId, 0);
+
+  for (const id of pageIds) {
+    if (reached.has(id)) continue;
     const node = nodes[id];
-    if (!node) continue;
-    for (const edge of edgesTouching(node, nodes, index)) {
-      if (edge.sourceId === edge.targetId) continue;
-      if (!reached.has(edge.sourceId) || !reached.has(edge.targetId)) continue;
-      const key = pairKey(edge.sourceId, edge.targetId);
-      const standing = best.get(key);
-      if (standing && KIND_RANK[standing.kind] <= KIND_RANK[edge.kind]) continue;
-      best.set(key, { id: key, ...edge });
-    }
+    if (!node || !keep(node)) continue;
+    reached.set(id, 1);
   }
 
-  const graphNodes: GraphNode[] = [];
-  for (const [id, hop] of reached) {
-    const node = nodes[id];
-    if (!node) continue;
-    const { color, isOwner } = getEffectiveColor(id, nodes);
-    graphNodes.push({
-      id,
-      name: node.name,
-      templateKey: node.templateKey,
-      icon: node.icon,
-      color,
-      ownsColor: isOwner,
-      depth: hop,
-      ...seedPosition(id, hop),
-    });
-  }
-
-  return { nodes: graphNodes, edges: [...best.values()] };
+  const count = reached.size;
+  return assemble(reached, nodes, index, (id, depth) =>
+    depth === 0 ? { x: 0, y: 0 } : seedScatter(id, count),
+  );
 }
 
 /**
@@ -264,4 +346,49 @@ export const GRAPH_FILTER_FIELDS: DatabaseField[] = [{ kind: "template" }, { kin
  */
 export function graphOperatorsFor(field: DatabaseField): DatabaseOperator[] {
   return field.kind === "tag" ? ["has", "does-not-have", "is-empty", "is-not-empty"] : ["is", "is-not"];
+}
+
+/**
+ * Every page a whole-universe graph draws, in a stable order. Phase 24, step 3.
+ *
+ * **The same reading of "this universe" the database's scope already has** —
+ * `databaseRows` filters exactly this way, and the plan asked for the graph to
+ * be widened by the vocabulary that existed rather than a new one. So a
+ * universe means the pages beneath it and not the shared universe riding
+ * alongside, even though the tree draws the two together: a picture of Canon
+ * that quietly included the shared pages would be a picture of something the
+ * scope has no name for.
+ *
+ * `universeId` of null means every universe at once, which is the state a world
+ * with no universes is permanently in and the one "All universes" selects.
+ *
+ * **Universes themselves are never drawn.** A universe is a container for a
+ * version of the world rather than a page in it, and one circle joined to
+ * seventy others by nothing but being above them says nothing and hides the
+ * shape underneath.
+ *
+ * Sorted by name for the reason `databaseRows` gives: `Object.values` is the
+ * order things came off the disk, which means nothing to anyone, and a stable
+ * order is half of the layout being repeatable.
+ */
+export function pagesInUniverse(nodes: Record<string, Node>, universeId: string | null): Node[] {
+  const pages = Object.values(nodes).filter((node) => {
+    if (node.templateKey === UNIVERSE_TEMPLATE_KEY) return false;
+    if (!universeId) return true;
+    return isDescendantOf(node.id, universeId, nodes);
+  });
+  return pages.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+}
+
+/**
+ * Which stored arrangement a graph reads and writes. Phase 24, step 3.
+ *
+ * A page's graph is keyed by that page, so widening the reach keeps whatever
+ * she has already tidied rather than starting again at every step. A graph with
+ * no centre is keyed by its universe instead, under a prefix — see
+ * `GRAPH_WORLD_PIN_PREFIX` for why the two kinds of key cannot collide.
+ */
+export function graphPinKey(focusId: string | null, universeId: string | null): string {
+  if (focusId) return focusId;
+  return `${GRAPH_WORLD_PIN_PREFIX}${universeId ?? "all"}`;
 }

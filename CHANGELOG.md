@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-08 — the whole world as a graph
+
+### Additions
+
+- **A Graph button in the rail, under Search, draws your whole universe at once.** Every page in it, however it is joined up — and pages that are joined to nothing are drawn too, which is the thing a picture of a whole world is most useful for saying.
+- **A page's own graph can be widened all the way.** Reach has a fourth setting, *Everything*, and choosing it gives the same picture with the page you were on still marked in the middle. The rail's button and the page's are two ways into one thing, not two features.
+- **It draws whichever universe you are in.** Opened from the rail, that is whichever the switcher says; opened from a page, it is the universe that page lives in, even if the tree is showing a different one. With All universes selected it draws the whole world.
+- **A whole-universe graph remembers its own arrangement**, kept apart from every page's, so tidying it leaves each page's graph exactly as you left it.
+
+### Adjustments
+
+- **Zoomed far enough out, the names stop being drawn.** A whole world does not fit on a screen at a size names can be read at, and unreadable ones sit exactly where the shape you are looking at should be. Hovering a page still shows its name, and clicking one still names it in full in the card beside the graph.
+- **The graph now says which world it is of by name**, rather than calling it "this world".
+
 ## 2026-09-08 — changes made right after opening a page now stick
 
 ### Fixes
@@ -259,12 +273,3 @@
 ### Fixes
 
 - **Turning a folder into anything else used to quietly undo itself.** A folder keeps its own data in a file called `_folder.json` and every other kind of page uses `_page.json`, and changing what a folder was left the old file sitting there. The app reads that one first, so the next time you opened the world the page was a folder again and everything you'd done to it was in the file next to it, unread. This has been possible for as long as folders could be given a template; it's fixed, and the file is renamed properly now.
-
-## 2026-09-05 — the bar above the page is gone
-
-### Changes
-
-- **The strip across the top of the page has been removed.** It held six things and none of them needed a band of their own.
-- **Home, back and forward are in a row at the bottom of the sidebar now** — the wide column with your pages in it, under the tree. Icons only, no words: a house and two arrows don't need explaining the way the rail's do. Back and forward walk the pages you've visited, the way a browser does — they're not undo. Undo is still Ctrl+Z.
-- **The show/hide button for the properties panel sits on the page itself**, top right, with nothing drawn around it. The "Saved" marker and the "Undid deleting 2 pages" message are up there beside it.
-- **Assets is called Library, and it's moved.** The rail reads Project, Library, Templates now. Nothing on disk changed — your `assets` folder is still called that and still holds the same files.

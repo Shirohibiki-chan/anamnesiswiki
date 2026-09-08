@@ -758,7 +758,7 @@ export type ProjectStoreState = {
    * it, so putting an arrangement back leaves `project.json` as it would have
    * been had she never dragged anything.
    */
-  setGraphPins: (focusId: string, pins: Record<string, { x: number; y: number }>) => void;
+  setGraphPins: (graphKey: string, pins: Record<string, { x: number; y: number }>) => void;
   /**
    * Puts the tree's arrangement back to an earlier copy of `project.json`
    * (Phase 19) — the order, the home page, the pins, the expanded folders.
@@ -3497,12 +3497,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
      * spends itself undoing a drag instead. The graph offers to put its own
      * arrangement back, which is the reverse she would actually want.
      */
-    setGraphPins(focusId, pins) {
+    setGraphPins(graphKey, pins) {
       const { rootPath, project } = get();
       if (!rootPath || !project) return;
       const rest = { ...(project.graphPins ?? {}) };
-      if (Object.keys(pins).length === 0) delete rest[focusId];
-      else rest[focusId] = pins;
+      if (Object.keys(pins).length === 0) delete rest[graphKey];
+      else rest[graphKey] = pins;
       // The key goes away entirely once the last graph is unarranged, rather
       // than being left as an empty object nobody can tell from a bug.
       const nextProject: Project = { ...project };
