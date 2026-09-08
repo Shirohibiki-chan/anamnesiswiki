@@ -57,6 +57,13 @@ const GRAPH_EDGE_TREE = ".page-graph-edge-tree";
 const GRAPH_EDGE_WRITTEN = ".page-graph-edge-written";
 const GRAPH_PREVIEW = ".page-graph-preview";
 const GRAPH_PREVIEW_NAME = ".page-graph-preview-name";
+const GRAPH_EDGE_LABEL = ".page-graph-edge-label";
+// Phase 24 step 2: the controls above the graph, and the filter menu.
+const GRAPH_TOOL = ".graph-tool";
+const GRAPH_COUNT = ".graph-count";
+const GRAPH_MENU = ".graph-menu";
+const GRAPH_MENU_ADD = ".graph-menu-add";
+const GRAPH_FILTER_ROW = ".graph-filter-row";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -1383,6 +1390,26 @@ export async function dragGraphNode(window: Page, name: string, byX: number, byY
   await window.mouse.up();
 }
 
+/**
+ * The pages on the graph, ordered left to right.
+ *
+ * **Order rather than coordinates, because the picture rescales.** The graph
+ * fits itself to the window, so moving one node changes the zoom and shifts
+ * every other node on screen — a scenario comparing pixel positions across a
+ * reload is measuring the fit, not the arrangement. Which page is furthest
+ * right survives any amount of scaling.
+ */
+export async function graphNodesLeftToRight(window: Page): Promise<string[]> {
+  const nodes = window.locator(GRAPH_NODE);
+  const placed: { name: string; x: number }[] = [];
+  for (const node of await nodes.all()) {
+    const box = await node.boundingBox();
+    const name = await node.locator(GRAPH_NODE_NAME).innerText();
+    if (box) placed.push({ name: normalize(name), x: box.x });
+  }
+  return placed.sort((a, b) => a.x - b.x).map((entry) => entry.name);
+}
+
 /** The name on the card beside the graph, or null while nothing is selected. */
 export async function graphPreviewName(window: Page): Promise<string | null> {
   if ((await window.locator(GRAPH_PREVIEW).count()) === 0) return null;
@@ -1395,3 +1422,65 @@ export async function openGraphPreviewPage(window: Page): Promise<void> {
   await window.locator(GRAPH).waitFor({ state: "detached", timeout: WAIT_MS });
 }
 
+/** How many pages the graph says it is drawing, as the bar words it. */
+export async function graphCount(window: Page): Promise<string> {
+  return normalize(await window.locator(GRAPH_COUNT).first().innerText());
+}
+
+/** Sets how far out the graph reaches, in connections. */
+export async function setGraphReach(window: Page, connections: number): Promise<void> {
+  await window.getByLabel("How far out to reach").selectOption(String(connections));
+}
+
+/** Chooses when a line says what it is — "selected" or "all". */
+export async function setGraphLabels(window: Page, mode: "selected" | "all"): Promise<void> {
+  await window.getByLabel("When to write what a line is").selectOption(mode);
+}
+
+/** The names written along lines right now, which is what the mode above decides. */
+export async function graphEdgeLabels(window: Page): Promise<string[]> {
+  // textContent rather than innerText: these are SVG <text> nodes, which have
+  // no innerText at all, so allInnerTexts hands back a list of undefined.
+  return (await window.locator(GRAPH_EDGE_LABEL).allTextContents()).map((text) => normalize(text));
+}
+
+/** Opens the graph's filter menu and returns once it is up. */
+export async function openGraphFilters(window: Page): Promise<void> {
+  await window.locator(`${GRAPH_TOOL}[data-tool="filter"]`).click();
+  await window.locator(GRAPH_MENU).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * Adds one condition to the open filter menu.
+ *
+ * Takes the words on screen rather than the model's own keys — a scenario
+ * should fail when the visible wording changes, which is the thing she reads.
+ */
+export async function addGraphFilter(
+  window: Page,
+  field: string,
+  operator: string,
+  value?: string,
+): Promise<void> {
+  await window.locator(GRAPH_MENU_ADD).click();
+  const row = window.locator(`${GRAPH_MENU} ${GRAPH_FILTER_ROW}`).last();
+  await row.getByLabel("What to filter on").selectOption({ label: field });
+  await row.getByLabel("How to compare it").selectOption({ label: operator });
+  if (value !== undefined) await row.getByLabel("What to look for").selectOption({ label: value });
+}
+
+/** Closes whichever graph menu is open, without closing the graph. */
+export async function closeGraphMenu(window: Page): Promise<void> {
+  await window.locator(GRAPH_MENU).first().press("Escape");
+  await window.locator(GRAPH_MENU).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
+/** Whether the graph is offering to lay itself out again. */
+export async function canPutGraphBack(window: Page): Promise<boolean> {
+  return window.locator(`${GRAPH_TOOL}[data-tool="put-back"]`).isEnabled();
+}
+
+/** Lays the graph out again, forgetting everything that was dragged. */
+export async function putGraphBack(window: Page): Promise<void> {
+  await window.locator(`${GRAPH_TOOL}[data-tool="put-back"]`).click();
+}

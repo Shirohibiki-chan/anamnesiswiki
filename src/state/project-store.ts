@@ -752,6 +752,14 @@ export type ProjectStoreState = {
   setProjectHome: (id: string | null) => void;
   togglePinned: (id: string) => void;
   /**
+   * Where nodes sit on one page's graph. Phase 24, step 2.
+   *
+   * An empty map removes that graph's entry rather than storing nothing under
+   * it, so putting an arrangement back leaves `project.json` as it would have
+   * been had she never dragged anything.
+   */
+  setGraphPins: (focusId: string, pins: Record<string, { x: number; y: number }>) => void;
+  /**
    * Puts the tree's arrangement back to an earlier copy of `project.json`
    * (Phase 19) — the order, the home page, the pins, the expanded folders.
    *
@@ -3449,6 +3457,37 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // findable by muscle memory — putting each new pin first would shuffle
     // every tile along one every time, which costs the whole row to gain a
     // position for one page.
+    /**
+     * **Not recorded for undo, on purpose.** Ctrl+Z is for writing and for the
+     * tree; a graph is a way of looking at those, and putting "moved a circle"
+     * into the same stack means the keystroke she reaches for after a bad edit
+     * spends itself undoing a drag instead. The graph offers to put its own
+     * arrangement back, which is the reverse she would actually want.
+     */
+    setGraphPins(focusId, pins) {
+      const { rootPath, project } = get();
+      if (!rootPath || !project) return;
+      const rest = { ...(project.graphPins ?? {}) };
+      if (Object.keys(pins).length === 0) delete rest[focusId];
+      else rest[focusId] = pins;
+      // The key goes away entirely once the last graph is unarranged, rather
+      // than being left as an empty object nobody can tell from a bug.
+      const nextProject: Project = { ...project };
+      if (Object.keys(rest).length === 0) delete nextProject.graphPins;
+      else nextProject.graphPins = rest;
+      set({ project: nextProject });
+      // **The same debounce slot selection and expanded state use, not `track`,
+      // and this is a correctness fix rather than a throttle.** `scheduleSave`
+      // replaces whatever is pending under the key; `track` queues beside it.
+      // Every one of these writes the whole of `project.json`, so a navigation
+      // a moment earlier has a save in flight holding the file as it was — and
+      // it lands *after* an immediate write and puts back what that write
+      // removed. Measured 2026-09-07: putting an arrangement back right after
+      // opening the page cleared it on screen and left it on disk, so it
+      // returned on the next reload.
+      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    },
+
     togglePinned(id) {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project || !nodes[id]) return;

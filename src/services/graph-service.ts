@@ -9,7 +9,7 @@
 // number, and what lets the ordering be asserted in a test instead of eyeballed
 // on a canvas.
 import { GRAPH_RING_RADIUS } from "../constants/graph";
-import type { Node } from "../constants/schema";
+import type { DatabaseField, DatabaseOperator, Node } from "../constants/schema";
 import { outgoingEdges, type LinkIndex, type MentionKind } from "./link-index";
 import { getEffectiveColor } from "./tree-service";
 
@@ -166,12 +166,22 @@ export function seededRandom(seed: string): () => number {
  * Everything here iterates maps built in tree order, so the arrays come out the
  * same on every call — which is half of the layout being deterministic, before
  * the simulation is asked to be the other half.
+ *
+ * **`keep` filters during the walk rather than after it**, and the difference
+ * shows the moment the depth is more than one: filtering afterwards would leave
+ * a page that was only reachable *through* a hidden page floating with no line
+ * to anything. Everything drawn is reachable through pages that are also drawn,
+ * which is the only reading of a filtered graph that stays a graph.
+ *
+ * **The focused page is never filtered out.** Its graph is what she asked for;
+ * hiding it would answer a different question with an empty window.
  */
 export function graphAround(
   focusId: string,
   nodes: Record<string, Node>,
   index: LinkIndex,
   depth: number,
+  keep: (node: Node) => boolean = () => true,
 ): GraphModel {
   if (!nodes[focusId]) return { nodes: [], edges: [] };
 
@@ -186,6 +196,8 @@ export function graphAround(
       for (const edge of edgesTouching(node, nodes, index)) {
         const other = edge.sourceId === id ? edge.targetId : edge.sourceId;
         if (other === id || reached.has(other)) continue;
+        const candidate = nodes[other];
+        if (!candidate || !keep(candidate)) continue;
         reached.set(other, hop);
         next.push(other);
       }
@@ -225,4 +237,31 @@ export function graphAround(
   }
 
   return { nodes: graphNodes, edges: [...best.values()] };
+}
+
+/**
+ * What a graph can be filtered on. Phase 24, step 2.
+ *
+ * **Two fields, not the database's five.** A graph filters on what a page *is*
+ * — its template and its tags — because that is what a circle on a picture can
+ * be recognised by. Name and the per-template properties are left out on
+ * purpose: filtering a graph down to pages whose Summary contains a word is a
+ * search, and the app already has one.
+ *
+ * The type is Phase 23's, as the plan promised, so `matchesFilter` does the
+ * work and there is no second language for the same job.
+ */
+export const GRAPH_FILTER_FIELDS: DatabaseField[] = [{ kind: "template" }, { kind: "tag" }];
+
+/**
+ * The operators worth offering for a graph filter.
+ *
+ * Narrower than `operatorsFor`, which is right for a table and wrong here.
+ * Every page has exactly one template, so *is empty* on it can never be true
+ * and *contains* is asking to match part of a word in a list of thirteen fixed
+ * names. Tags keep the empty pair, where "a page with no tags at all" is a real
+ * and useful thing to look for.
+ */
+export function graphOperatorsFor(field: DatabaseField): DatabaseOperator[] {
+  return field.kind === "tag" ? ["has", "does-not-have", "is-empty", "is-not-empty"] : ["is", "is-not"];
 }

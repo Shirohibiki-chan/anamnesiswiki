@@ -18,6 +18,7 @@ import {
   type ProjectSort,
   type ProjectView,
   type FormattingBarMode,
+  type GraphEdgeLabels,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -34,6 +35,7 @@ export type PreferencesStoreState = {
   setHistoryInterval: (minutes: HistoryIntervalMinutes) => void;
   setHistoryKeepDays: (days: HistoryKeepDays) => void;
   setHistoryPerPage: (count: HistoryPerPage) => void;
+  setGraphEdgeLabels: (mode: GraphEdgeLabels) => void;
   /** Keeps a colour mixed in the system picker, for use anywhere else. */
   saveColor: (color: string) => void;
   forgetColor: (color: string) => void;
@@ -115,6 +117,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setHistoryPerPage(count) {
       apply({ ...get().preferences, historyPerPage: count });
+    },
+
+    setGraphEdgeLabels(mode) {
+      apply({ ...get().preferences, graphEdgeLabels: mode });
     },
 
     saveColor(color) {

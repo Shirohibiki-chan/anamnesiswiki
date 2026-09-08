@@ -104,6 +104,24 @@ describe("withSavedColor", () => {
   });
 });
 
+describe("parsePreferences and the graph", () => {
+  it("defaults to the quiet label mode", () => {
+    expect(parsePreferences({}).graphEdgeLabels).toBe("selected");
+  });
+
+  it("keeps either mode it recognises", () => {
+    expect(parsePreferences({ graphEdgeLabels: "all" }).graphEdgeLabels).toBe("all");
+    expect(parsePreferences({ graphEdgeLabels: "selected" }).graphEdgeLabels).toBe("selected");
+  });
+
+  // A hand-edited word no control can show would otherwise be obeyed by a
+  // picker displaying something else — the same reason listPageSize checks
+  // membership rather than a range.
+  it("falls back on a word it does not know", () => {
+    expect(parsePreferences({ graphEdgeLabels: "hover" }).graphEdgeLabels).toBe("selected");
+  });
+});
+
 describe("parsePreferences and saved colours", () => {
   it("keeps the hexes and drops anything else", () => {
     expect(parsePreferences({ savedColors: ["#ff5577", "red", 7, "#22AA88"] }).savedColors).toEqual([

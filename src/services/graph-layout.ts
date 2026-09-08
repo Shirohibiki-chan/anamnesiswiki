@@ -33,6 +33,9 @@ import { seededRandom } from "./graph-service";
 
 type SimNode = SimulationNodeDatum & { id: string };
 
+/** Where nodes have been dragged to on this graph, by page id. */
+export type GraphPins = Record<string, { x: number; y: number }>;
+
 /**
  * How strongly everything is pulled back toward the middle.
  *
@@ -50,19 +53,31 @@ const CENTERING_STRENGTH = 0.045;
  * the page whose graph this is, so it belongs in the middle whatever the shape
  * around it — and pinning one node is also what stops the whole picture sliding
  * a little further each time a neighbour is added.
+ *
+ * **A node she has moved is pinned too, not merely placed there afterwards**
+ * (Phase 24, step 2). Fixing it before the run is what lets everything else
+ * settle *around* it; dropping the positions in after the fact would leave the
+ * rest arranged as though the node were still where the simulation put it, so
+ * the first thing she arranged would be the thing everything overlapped. A pin
+ * on the focus wins over the origin — if she has dragged the page itself, that
+ * is where she wants it.
  */
-export function settleGraph(model: GraphModel): GraphModel {
+export function settleGraph(model: GraphModel, pins: GraphPins = {}): GraphModel {
   if (model.nodes.length === 0) return model;
 
   const focusId = model.nodes[0].id;
-  const simNodes: SimNode[] = model.nodes.map((node) => ({
-    id: node.id,
-    x: node.x,
-    y: node.y,
-    // d3 keeps a position it is given and only invents one for a node whose x
-    // is missing, so the seeded ring in graph-service survives into the run.
-    ...(node.depth === 0 ? { fx: 0, fy: 0 } : {}),
-  }));
+  const simNodes: SimNode[] = model.nodes.map((node) => {
+    const pin = pins[node.id];
+    if (pin) return { id: node.id, x: pin.x, y: pin.y, fx: pin.x, fy: pin.y };
+    return {
+      id: node.id,
+      x: node.x,
+      y: node.y,
+      // d3 keeps a position it is given and only invents one for a node whose x
+      // is missing, so the seeded ring in graph-service survives into the run.
+      ...(node.depth === 0 ? { fx: 0, fy: 0 } : {}),
+    };
+  });
 
   const simLinks: SimulationLinkDatum<SimNode>[] = model.edges.map((edge) => ({
     source: edge.sourceId,

@@ -108,8 +108,9 @@ database and a Subpage/Tag index block go through it, so the two cannot drift on
 what a Status or a multi-select means. A block's `source`, `tags` and
 `targetIds` still say *which* pages; `block.view` only says how to draw them.
 
-**Phase 24 — Graphs — step 1 shipped 2026-09-07**: a page’s relationships,
-opened over the page. What binds the code is §The graph below.
+**Phase 24 — Graphs — steps 1 and 2 shipped 2026-09-07**: a page’s
+relationships, opened over the page, with reach, filters, line names and an
+arrangement that is remembered. What binds the code is §The graph below.
 
 **Phase 19 — Safety Net — closed 2026-08-28**: undo across the right-hand panel
 and a page's tabs, version history in `project.json`, retention in Settings.
@@ -206,6 +207,19 @@ is below.
   page’s file, and step 2’s pinned positions go in `project.json` beside tree
   order for the same reason.
 
+- **A write to `project.json` that must not be lost goes through
+  `scheduleSave(PROJECT_META_SAVE_KEY, …)`, not `track`.** Found 2026-09-07 by
+  the graph's *Put it back*, which cleared an arrangement on screen and left it
+  on the disk, so it returned on the next reload. Every one of these calls
+  writes the *whole* file, and selection and expanded state are written through
+  a 300ms debounce holding the project as it was when the navigation happened —
+  so an immediate `track` write issued a moment later is overtaken by a stale
+  save that puts back exactly what it removed. `scheduleSave` replaces whatever
+  is pending under the key, which is why it is the right door. **`applyPins`,
+  which writes the pinned-shortcut list, still uses `track` and has the same
+  hazard** — toggling a shortcut within a few hundred milliseconds of opening a
+  page should lose it, and nothing has been changed there yet.
+
 - **Every edge comes from `link-index.ts` and the graph adds only the tree.**
   A new kind of connection belongs in that file, where Backlinks and the index
   blocks will see it too — adding one here would give the same relationship two
@@ -213,6 +227,22 @@ is below.
   per pair and the ranking it picks with mirrors `outgoingEdges`, deliberately:
   a second, contradictory precedence would make a line’s reason depend on which
   end you asked from.
+
+- **The graph's filters run during the walk, not over its result.** A page that
+  fails a condition is not stepped *through*, so nothing is drawn that is only
+  reachable by way of something hidden. Filtering the finished model instead
+  would leave pages floating with no line to anything the moment the reach is
+  more than one — which is the difference between a graph and a list, and is
+  why `graphAround` takes a predicate rather than the caller filtering after.
+
+- **The settled layout is not recomputed when a node is dragged, and that is
+  load-bearing.** `usePageGraph` freezes the stored arrangement against a
+  structure key, so pins act as *fixed points* the next time the graph is
+  worked out — but a drop only moves the node under the hand. Feeding a fresh
+  pin straight back into `settleGraph` re-solves the forces around it and jumps
+  every other node the instant she lets go. Putting an arrangement back
+  therefore needs the generation counter as well as clearing the pins: without
+  it nothing moves, because nothing asked for a new layout.
 
 ---
 

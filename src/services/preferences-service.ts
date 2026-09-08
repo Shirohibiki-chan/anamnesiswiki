@@ -179,6 +179,23 @@ export type HistoryPerPage = (typeof HISTORY_PER_PAGE)[number];
  * *look* at to find out what a button does, and it moves under the pointer
  * while you reach for it.
  */
+/**
+ * Whether the graph writes the reason on every line it can, or only on the
+ * lines touching the page under the cursor (Phase 24, step 2).
+ *
+ * **Both ship because she asked for both**, put the choice as one or the other
+ * on 2026-09-07. The informative picture and the quiet one are wanted at
+ * different moments and choosing between them would have been choosing which
+ * moment she was allowed.
+ *
+ * **A preference rather than part of a project**, beside the panel widths: which
+ * of the two she likes is a habit that follows her between worlds, not a fact
+ * about any one of them. Pinned positions are per-project for the opposite
+ * reason — see `Project.graphPins`.
+ */
+export const GRAPH_EDGE_LABELS = ["selected", "all"] as const;
+export type GraphEdgeLabels = (typeof GRAPH_EDGE_LABELS)[number];
+
 export const FORMATTING_BAR_MODES = ["floating", "fixed"] as const;
 export type FormattingBarMode = (typeof FORMATTING_BAR_MODES)[number];
 
@@ -220,6 +237,8 @@ export type Preferences = {
   historyIntervalMinutes: HistoryIntervalMinutes;
   historyKeepDays: HistoryKeepDays;
   historyPerPage: HistoryPerPage;
+  /** See GRAPH_EDGE_LABELS. Defaults to the quiet one. */
+  graphEdgeLabels: GraphEdgeLabels;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -236,6 +255,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   historyIntervalMinutes: (SNAPSHOT_INTERVAL_MS / 60_000) as HistoryIntervalMinutes,
   historyKeepDays: (SNAPSHOT_MAX_AGE_MS / (24 * 60 * 60_000)) as HistoryKeepDays,
   historyPerPage: SNAPSHOT_MAX_PER_NODE as HistoryPerPage,
+  // The quiet one, on the plain grounds that a graph opened to find something
+  // is easier to read before it is covered in words.
+  graphEdgeLabels: "selected",
 };
 
 /**
@@ -293,6 +315,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const historyIntervalMinutes = source.historyIntervalMinutes;
   const historyKeepDays = source.historyKeepDays;
   const historyPerPage = source.historyPerPage;
+  const graphEdgeLabels = source.graphEdgeLabels;
   return {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
@@ -346,5 +369,8 @@ export function parsePreferences(raw: unknown): Preferences {
     historyPerPage: HISTORY_PER_PAGE.includes(historyPerPage as HistoryPerPage)
       ? (historyPerPage as HistoryPerPage)
       : DEFAULT_PREFERENCES.historyPerPage,
+    graphEdgeLabels: GRAPH_EDGE_LABELS.includes(graphEdgeLabels as GraphEdgeLabels)
+      ? (graphEdgeLabels as GraphEdgeLabels)
+      : DEFAULT_PREFERENCES.graphEdgeLabels,
   };
 }

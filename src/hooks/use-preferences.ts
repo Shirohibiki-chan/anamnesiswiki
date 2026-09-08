@@ -11,6 +11,7 @@ import type {
   ProjectSort,
   ProjectView,
   FormattingBarMode,
+  GraphEdgeLabels,
   TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -117,8 +118,14 @@ export function usePreferenceActions() {
       setHistoryInterval: state.setHistoryInterval,
       setHistoryKeepDays: state.setHistoryKeepDays,
       setHistoryPerPage: state.setHistoryPerPage,
+      setGraphEdgeLabels: state.setGraphEdgeLabels,
     })),
   );
+}
+
+/** Whether the graph writes the reason on every line, or only the ones in play. */
+export function useGraphEdgeLabels(): GraphEdgeLabels {
+  return usePreferencesStore((state) => state.preferences.graphEdgeLabels);
 }
 
 /** Reads the saved preferences at startup. See StartupRouter. */
