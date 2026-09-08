@@ -773,6 +773,9 @@ export type ProjectStoreState = {
 
 // Debounce key for project.json metadata writes (selection, expanded state)
 // that aren't node edits but shouldn't hammer disk on every click either.
+// One key for all of them on purpose: they write the same file, so the newest
+// should replace whatever is waiting rather than queue behind it.
+// `scheduleProjectSave` is the only thing that should use it.
 const PROJECT_META_SAVE_KEY = "__project_meta__";
 
 export const useProjectStore = create<ProjectStoreState>((set, get) => {
@@ -812,6 +815,38 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
   // for why ordering matters even though none of this is awaited.
   const track = (work: () => Promise<unknown>): void => {
     void enqueueWrite(work).then(markSaved).catch(recordSaveError);
+  };
+
+  /**
+   * A debounced write of `project.json` that saves what the project **is when
+   * it fires**, not what it was when it was asked for.
+   *
+   * **That distinction is the whole point of this function.** Every call that
+   * writes `project.json` writes the entire file, and the ones that come
+   * through here — selection, expanded state, the name cached beside the
+   * selection — are the ones fired most often, so one is very frequently in
+   * flight. While these captured their own snapshot, any *immediate* write
+   * issued in the 300ms after a navigation was overtaken by the pending one and
+   * quietly undone: a pinned shortcut, the home page, a restored arrangement, a
+   * graph's layout, the ordering after a move. It looked done, because the
+   * screen reads memory; the disk held the older file, so it came back on the
+   * next load.
+   *
+   * Found 2026-09-07 through the graph's *Put it back*, which is only the
+   * easiest one to hit — that button sits inches from the page just opened.
+   * Reading the store at fire time makes the race impossible rather than
+   * unlikely: whenever this lands, it writes the state everything else has
+   * already agreed on.
+   *
+   * A world closed or swapped while this was waiting is skipped — that world
+   * does its own saving, and this one's project does not belong in its file.
+   */
+  const scheduleProjectSave = (rootPath: string): void => {
+    scheduleSave(PROJECT_META_SAVE_KEY, () => {
+      const { rootPath: rootNow, project: projectNow } = get();
+      if (rootNow !== rootPath || !projectNow) return;
+      return fsService.saveProject(rootPath, projectNow).then(markSaved);
+    });
   };
 
   // Set and written together, always. The library is one file, so there's no
@@ -1194,7 +1229,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       navHistory,
       ...(leavesFocus ? { focusedId: null } : {}),
     });
-    scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+    scheduleProjectSave(rootPath);
   };
 
   // The write half of setProjectHome, split out so undo and redo can set an
@@ -1335,7 +1370,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (!rootPath || !project) return;
       const nextProject: Project = { ...project, selectedUniverseId: id };
       set({ project: nextProject, focusedId: null });
-      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+      scheduleProjectSave(rootPath);
     },
 
     setSharedUniverse(id) {
@@ -1343,7 +1378,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (!rootPath || !project) return;
       const nextProject: Project = { ...project, sharedUniverseId: id };
       set({ project: nextProject });
-      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+      scheduleProjectSave(rootPath);
     },
 
     setFocus(id) {
@@ -1831,9 +1866,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         };
         if (clearedProject !== projectNow) {
           set({ project: clearedProject });
-          scheduleSave(PROJECT_META_SAVE_KEY, () =>
-            fsService.saveProject(rootPathAfter, clearedProject).then(markSaved),
-          );
+          scheduleProjectSave(rootPathAfter);
         }
       }
 
@@ -2699,7 +2732,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (project && project.selectedId === id) {
         const nextProject: Project = { ...project, selectedName: name };
         set({ project: nextProject });
-        scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPathAfter, nextProject).then(markSaved));
+        scheduleProjectSave(rootPathAfter);
       }
 
       // A rename is its own inverse, so both halves are the ordinary action —
@@ -3476,16 +3509,12 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (Object.keys(rest).length === 0) delete nextProject.graphPins;
       else nextProject.graphPins = rest;
       set({ project: nextProject });
-      // **The same debounce slot selection and expanded state use, not `track`,
-      // and this is a correctness fix rather than a throttle.** `scheduleSave`
-      // replaces whatever is pending under the key; `track` queues beside it.
-      // Every one of these writes the whole of `project.json`, so a navigation
-      // a moment earlier has a save in flight holding the file as it was — and
-      // it lands *after* an immediate write and puts back what that write
-      // removed. Measured 2026-09-07: putting an arrangement back right after
-      // opening the page cleared it on screen and left it on disk, so it
-      // returned on the next reload.
-      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+      // Written immediately rather than debounced: letting go of a node is a
+      // deliberate, occasional act, not a keystroke. This was briefly routed
+      // through the debounce to dodge the stale-snapshot race described on
+      // `scheduleProjectSave`; that race is fixed at its source now, so this is
+      // back to the ordinary door every other project write uses.
+      track(() => fsService.saveProject(rootPath, nextProject));
     },
 
     togglePinned(id) {
@@ -3547,7 +3576,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         : project.expandedIds.filter((expandedId) => expandedId !== id);
       const nextProject: Project = { ...project, expandedIds };
       set({ project: nextProject });
-      scheduleSave(PROJECT_META_SAVE_KEY, () => fsService.saveProject(rootPath, nextProject).then(markSaved));
+      scheduleProjectSave(rootPath);
     },
   };
 });

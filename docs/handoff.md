@@ -207,18 +207,28 @@ is below.
   page’s file, and step 2’s pinned positions go in `project.json` beside tree
   order for the same reason.
 
-- **A write to `project.json` that must not be lost goes through
-  `scheduleSave(PROJECT_META_SAVE_KEY, …)`, not `track`.** Found 2026-09-07 by
-  the graph's *Put it back*, which cleared an arrangement on screen and left it
-  on the disk, so it returned on the next reload. Every one of these calls
-  writes the *whole* file, and selection and expanded state are written through
-  a 300ms debounce holding the project as it was when the navigation happened —
-  so an immediate `track` write issued a moment later is overtaken by a stale
-  save that puts back exactly what it removed. `scheduleSave` replaces whatever
-  is pending under the key, which is why it is the right door. **`applyPins`,
-  which writes the pinned-shortcut list, still uses `track` and has the same
-  hazard** — toggling a shortcut within a few hundred milliseconds of opening a
-  page should lose it, and nothing has been changed there yet.
+- **Every debounced write of `project.json` goes through
+  `scheduleProjectSave`, which reads the store when it fires rather than
+  capturing a snapshot when it is asked for.** This is a correctness rule, not a
+  tidiness one, and it is easy to undo by accident — the obvious way to write
+  one of these is to close over the `nextProject` you have in hand, which is
+  exactly what was wrong.
+
+  Every call that writes `project.json` writes the *whole* file. Selection and
+  expanded state go through a 300ms debounce and fire constantly, so one is
+  nearly always in flight; while they captured their own snapshot, anything
+  written *immediately* in that window was overtaken by the pending save and
+  quietly undone. It looked done, because the screen reads memory — the disk
+  held the older file, so it came back on the next load. Measured 2026-09-08:
+  with the snapshot restored, setting a shortcut and reloading loses it, and so
+  does removing one in the moment a page is opened.
+
+  Found 2026-09-07 through the graph's *Put it back*, which is only the easiest
+  one to reach. The same window covered the pinned shortcuts, the home page, a
+  restored arrangement, and the ordering written after a move, a delete or a
+  duplicate. `e2e/keeps-a-change-made-just-after-navigating.e2e.ts` is the guard,
+  and it drives both halves from one `evaluate` so the race is deliberate rather
+  than left to a slow machine.
 
 - **Every edge comes from `link-index.ts` and the graph adds only the tree.**
   A new kind of connection belongs in that file, where Backlinks and the index
