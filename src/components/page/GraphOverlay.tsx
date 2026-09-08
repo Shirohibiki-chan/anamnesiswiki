@@ -11,7 +11,7 @@
 // **Opened over the page rather than living in it.** Her call 2026-09-07: every
 // page has one without being set up for it, and the graph gets the whole window
 // instead of a column. A block version is the obvious second size and is not
-// built — see `docs/plan.md` Phase 24.
+// built — see `docs/shipped.md` Phase 24.
 //
 // **Lines are SVG and nodes are HTML, which is one decision and not two.** The
 // plan's commitment is SVG over canvas, and the reason is that the CSS token
@@ -81,8 +81,14 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const [generation, setGeneration] = useState(0);
 
   const { universeId, universeName } = useGraphScope(focusId);
-  const pinKey = graphPinKey(focusId, universeId);
-  const pins = useGraphPins(focusId, universeId);
+  /**
+   * A whole-universe graph is arranged as a universe, whichever door it came
+   * through — so widening this page's graph all the way reads and writes the
+   * same arrangement the rail's button does. See `graphPinKey`.
+   */
+  const arrangedAs = reach === GRAPH_REACH_EVERYTHING ? null : focusId;
+  const pinKey = graphPinKey(arrangedAs, universeId);
+  const pins = useGraphPins(arrangedAs, universeId);
   const labels = useGraphEdgeLabels();
   const { setGraphEdgeLabels } = usePreferenceActions();
   const { selectNode, setGraphPins } = useProjectActions();
@@ -345,7 +351,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
             )}
 
             {/* Going to the page is a second, deliberate action — clicking a
-                node must not throw the graph away. See docs/plan.md Phase 24. */}
+                node must not throw the graph away. See docs/shipped.md Phase 24. */}
             <button type="button" className="ui-btn ui-btn-secondary" onClick={openSelected}>
               Open this page
             </button>

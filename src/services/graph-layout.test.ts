@@ -36,15 +36,40 @@ describe("settleGraph", () => {
   });
 
   // The whole reason the simulation is seeded and ticked to a stop rather than
-  // animated — see docs/plan.md Phase 24.
+  // animated — see docs/shipped.md Phase 24.
   it("puts every node in the same place on a second run", () => {
     const model = star(8);
     expect(settleGraph(model)).toEqual(settleGraph(model));
   });
 
-  it("keeps the focused page at the centre", () => {
-    const settled = settleGraph(star(8));
+  it("keeps the named centre at the origin", () => {
+    const settled = settleGraph(star(8), {}, { centreId: "focus" });
     expect(settled.nodes[0]).toMatchObject({ id: "focus", x: 0, y: 0 });
+  });
+
+  // A whole universe has no page that belongs in the middle, and pinning one of
+  // seventy there would bend the shape around an arbitrary choice.
+  it("pins nothing when it is given no centre", () => {
+    const settled = settleGraph(star(8));
+    expect(settled.nodes.some((node) => node.x !== 0 || node.y !== 0)).toBe(true);
+    expect(settled.nodes[0]).not.toMatchObject({ x: 0, y: 0 });
+  });
+
+  /**
+   * **The seed usually changes nothing, and that is the honest shape of it.**
+   * d3 reaches for the random source in one place only — nudging two nodes that
+   * have landed on exactly the same point — so on a graph where that never
+   * happens, which is nearly all of them, two different seeds settle
+   * identically. It is there for the rare case, so that the rare case is not
+   * the thing that differs between one opening and the next.
+   *
+   * What is asserted here is therefore stability, not sensitivity: the same
+   * input settles the same way, seed or no seed.
+   */
+  it("settles the same way for a repeated seed", () => {
+    const model = star(8);
+    expect(settleGraph(model, {}, { seed: "one" })).toEqual(settleGraph(model, {}, { seed: "one" }));
+    expect(settleGraph(model)).toEqual(settleGraph(model));
   });
 
   it("does not stack two pages on top of each other", () => {

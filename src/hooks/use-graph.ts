@@ -2,7 +2,7 @@
 // graph-layout.ts. See CLAUDE.md's layer order — components never import
 // services directly.
 import { useMemo, useState } from "react";
-import { GRAPH_REACH_EVERYTHING, type GraphReach } from "../constants/graph";
+import { GRAPH_REACH_EVERYTHING, GRAPH_WORLD_PIN_PREFIX, type GraphReach } from "../constants/graph";
 import type { DatabaseField, DatabaseFilter, Node } from "../constants/schema";
 import { fieldChoices, matchesFilter } from "../services/database-service";
 import { settleGraph, type GraphPins } from "../services/graph-layout";
@@ -138,13 +138,32 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
       .filter((node): node is Node => Boolean(node));
   }, [scopedIds, focusId, nodes, index, reach]);
 
+  /**
+   * What the layout's noise is drawn from, and it is the *graph* rather than the
+   * page it was opened from.
+   *
+   * This is what makes widening a page's graph to everything and opening the
+   * world's from the rail come out identical rather than merely equivalent. Both
+   * are a picture of the same universe, so both settle from the same seed with
+   * nothing pinned at the origin.
+   */
+  const seed = everything ? `${GRAPH_WORLD_PIN_PREFIX}${universeId ?? "all"}` : (focusId ?? "");
+
   const model = useMemo(() => {
     const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
-    if (scopedIds) return settleGraph(graphOfPages(scopedIds, focusId, nodes, index, keep), frozen.pins);
+    if (scopedIds) {
+      // No centre: a universe has no one page that belongs in the middle, and
+      // pinning one of seventy there would bend the shape around that choice.
+      return settleGraph(graphOfPages(scopedIds, focusId, nodes, index, keep), frozen.pins, { seed });
+    }
     if (!focusId) return EMPTY;
-    return settleGraph(graphAround(focusId, nodes, index, reach as number, keep), frozen.pins);
-    // `structure` stands in for focusId, reach, generation and the filters, so
-    // an identical filter list rebuilt by a re-render does not re-settle.
+    return settleGraph(graphAround(focusId, nodes, index, reach as number, keep), frozen.pins, {
+      centreId: focusId,
+      seed,
+    });
+    // `structure` stands in for focusId, reach, generation, the filters and the
+    // seed, so an identical filter list rebuilt by a re-render does not
+    // re-settle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structure, scopedIds, nodes, index, frozen, getLabel]);
 

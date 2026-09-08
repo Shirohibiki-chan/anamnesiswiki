@@ -2,6 +2,24 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-05 — universes, the first piece
+
+### Additions
+
+- **You can turn a top-level page into a universe.** Right-click any page sitting at the top of the tree and pick "Turn into a universe" — Canon, Demonic AU, Merfolk AU, one for each version of the world. Nothing already in it moves, and everything written on that page stays exactly where it was.
+- **A universe can only sit at the top.** You can't drag one into a folder, and "Move to" on one says so instead of offering you somewhere to put it. That's the whole difference between a universe and a folder: a folder can end up anywhere, which is how the AUs folder got four levels deep in the first place.
+- **"Turn back into a folder" is in the same menu**, on anything that's already a universe. Nothing about this is one-way.
+
+### Changes
+
+- **A universe isn't in any of the template lists.** It isn't a kind of page — it has no tabs of its own and nothing to fill in — so the New Page screen, the properties panel's picker and the Templates rail all leave it out. Turning a top-level page into one is the only way to make one.
+
+**What this doesn't do yet:** the tree still shows everything at once. The switcher that puts one universe on screen at a time, the Shared section and the "All universes" view are the next pieces — so for now making one is a label and a rule, not a change to what you're looking at.
+
+### Fixes
+
+- **Turning a folder into anything else used to quietly undo itself.** A folder keeps its own data in a file called `_folder.json` and every other kind of page uses `_page.json`, and changing what a folder was left the old file sitting there. The app reads that one first, so the next time you opened the world the page was a folder again and everything you'd done to it was in the file next to it, unread. This has been possible for as long as folders could be given a template; it's fixed, and the file is renamed properly now.
+
 ## 2026-09-05 — the bar above the page is gone
 
 ### Changes

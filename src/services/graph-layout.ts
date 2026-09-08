@@ -49,10 +49,18 @@ const CENTERING_STRENGTH = 0.045;
 /**
  * The same model, with every node moved to where the forces put it.
  *
- * **The focus is pinned to the origin** rather than merely started there. It is
- * the page whose graph this is, so it belongs in the middle whatever the shape
- * around it — and pinning one node is also what stops the whole picture sliding
- * a little further each time a neighbour is added.
+ * **`centreId` is pinned to the origin**, and is given only by a graph that has
+ * a centre — one page's neighbourhood, where that page belongs in the middle
+ * whatever the shape around it, and where pinning one node is also what stops
+ * the picture sliding a little further each time a neighbour is added. A graph
+ * of a whole universe gives none: it has no such page, and pinning one of
+ * seventy at the origin would bend the shape around an arbitrary choice.
+ *
+ * **`seed` is what the noise is drawn from, and it is not the first node.** It
+ * used to be, which quietly meant the two doors into a whole-universe graph
+ * disagreed — the same pages, in the same order, jiggled differently because
+ * one of them had a focus sitting at the front of the list. It is given by the
+ * caller now, and both doors give the same one.
  *
  * **A node she has moved is pinned too, not merely placed there afterwards**
  * (Phase 24, step 2). Fixing it before the run is what lets everything else
@@ -62,10 +70,14 @@ const CENTERING_STRENGTH = 0.045;
  * on the focus wins over the origin — if she has dragged the page itself, that
  * is where she wants it.
  */
-export function settleGraph(model: GraphModel, pins: GraphPins = {}): GraphModel {
+export function settleGraph(
+  model: GraphModel,
+  pins: GraphPins = {},
+  options: { centreId?: string | null; seed?: string } = {},
+): GraphModel {
   if (model.nodes.length === 0) return model;
 
-  const focusId = model.nodes[0].id;
+  const { centreId = null, seed } = options;
   const simNodes: SimNode[] = model.nodes.map((node) => {
     const pin = pins[node.id];
     if (pin) return { id: node.id, x: pin.x, y: pin.y, fx: pin.x, fy: pin.y };
@@ -75,7 +87,7 @@ export function settleGraph(model: GraphModel, pins: GraphPins = {}): GraphModel
       y: node.y,
       // d3 keeps a position it is given and only invents one for a node whose x
       // is missing, so the seeded ring in graph-service survives into the run.
-      ...(node.depth === 0 ? { fx: 0, fy: 0 } : {}),
+      ...(node.id === centreId ? { fx: 0, fy: 0 } : {}),
     };
   });
 
@@ -85,7 +97,7 @@ export function settleGraph(model: GraphModel, pins: GraphPins = {}): GraphModel
   }));
 
   const simulation = forceSimulation<SimNode>(simNodes)
-    .randomSource(seededRandom(focusId))
+    .randomSource(seededRandom(seed ?? centreId ?? model.nodes[0].id))
     .force(
       "link",
       forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
