@@ -2,6 +2,7 @@ import { AssetPickerDialog } from "./components/shell/AssetPickerDialog";
 import { AutoLinkDialog } from "./components/shell/AutoLinkDialog";
 import { NewPageLinkDialog } from "./components/shell/NewPageLinkDialog";
 import { ConfirmDialog } from "./components/shell/ConfirmDialog";
+import { GraphOverlay } from "./components/page/GraphOverlay";
 import { Lightbox } from "./components/shell/Lightbox";
 import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { PageHistory } from "./components/shell/PageHistory";
@@ -84,6 +85,12 @@ function App() {
           and it portals like the three above, so it belongs at the root for
           the same reason they do. */}
       <Lightbox />
+      {/* The graph, opened from the button beside a page name and from the
+          rail — two places with no props path between them, which is the same
+          reason the lightbox above is here rather than inside a screen. It
+          portals and covers the window, so it belongs to the app rather than to
+          whatever is under it. */}
+      <GraphOverlay />
       {/* The picture library. Opened from the properties panel and the page
           cover so far, and the list will grow — which is the reason it sits up
           here with the others rather than beside either one of them. */}

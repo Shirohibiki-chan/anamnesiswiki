@@ -2,12 +2,14 @@
 // graph-layout.ts. See CLAUDE.md's layer order — components never import
 // services directly.
 import { useMemo, useState } from "react";
+import { GRAPH_REACH_EVERYTHING, type GraphReach } from "../constants/graph";
 import type { DatabaseField, DatabaseFilter, Node } from "../constants/schema";
 import { fieldChoices, matchesFilter } from "../services/database-service";
 import { settleGraph, type GraphPins } from "../services/graph-layout";
-import { graphAround, type GraphModel } from "../services/graph-service";
+import { graphAround, graphOfPages, graphPinKey, pagesInUniverse, type GraphModel } from "../services/graph-service";
 import { linkIndex } from "../services/link-index";
 import { buildNodePreview, type NodePreview } from "../services/preview-service";
+import { selectedUniverse, universeOf } from "../services/tree-service";
 import { useProject } from "./use-project";
 import { useTemplates } from "./use-templates";
 
@@ -20,9 +22,10 @@ export type { GraphPins } from "../services/graph-layout";
 const EMPTY: GraphModel = { nodes: [], edges: [] };
 
 export type PageGraphOptions = {
+  /** The page the graph is centred on, or null for a graph of the whole thing. */
   focusId: string | null;
-  /** How many connections out to reach. */
-  depth: number;
+  /** How far out to reach, or everything in the universe at once. */
+  reach: GraphReach;
   /** Conditions a page has to meet to be walked through and drawn. */
   filters: DatabaseFilter[];
   /** Where she has already dragged nodes on this graph. */
@@ -40,9 +43,9 @@ export type PageGraphOptions = {
 export type PageGraph = {
   /** What to draw: filtered, and settled with her arrangement as fixed points. */
   model: GraphModel;
-  /** Every page the walk reaches with no filters applied. */
-  reach: Node[];
-  /** The values a field actually takes across `reach`, for the value picker. */
+  /** Every page in range with no filters applied. */
+  reached: Node[];
+  /** The values a field actually takes across `reached`, for the value picker. */
   choicesFor: (field: DatabaseField) => string[];
   /**
    * Changes when the question does — a different page, reach, filter, or a
@@ -53,23 +56,46 @@ export type PageGraph = {
 };
 
 /**
- * The settled graph around one page.
+ * Which universe a graph is of, and what it is called.
  *
- * **Two walks, and the unfiltered one earns its keep.** It is what the bar
+ * **Read from the focused page rather than from the switcher when there is
+ * one.** A page's graph is a picture of that page's surroundings, and reaching
+ * "everything" from a page in the Demonic AU means everything in the Demonic AU
+ * — even if the tree happens to be showing Canon, which it can be after a link
+ * has been followed across. With no focused page there is nothing to read it
+ * from, so the switcher is the answer, and "All universes" means the world.
+ */
+export function useGraphScope(focusId: string | null): { universeId: string | null; universeName: string | null } {
+  const { nodes, project } = useProject();
+  return useMemo(() => {
+    const universe = focusId
+      ? universeOf(focusId, nodes)
+      : selectedUniverse(nodes, project?.selectedUniverseId);
+    return { universeId: universe?.id ?? null, universeName: universe?.name ?? null };
+  }, [focusId, nodes, project?.selectedUniverseId]);
+}
+
+/**
+ * The settled graph, around one page or over a whole universe.
+ *
+ * **Two passes, and the unfiltered one earns its keep.** It is what the bar
  * counts against ("6 of 14 pages") and what the filter menu offers as choices,
  * and both have to describe the pages that are *there* rather than the ones a
  * filter has already left standing — a value picker listing only what survives
  * the current filter could never be used to widen it. `linkIndex` is cached
  * against the store's record, so the expensive half is done once.
  */
-export function usePageGraph({ focusId, depth, filters, pins, generation }: PageGraphOptions): PageGraph {
+export function usePageGraph({ focusId, reach, filters, pins, generation }: PageGraphOptions): PageGraph {
   const { nodes } = useProject();
   const { getLabel } = useTemplates();
+  const { universeId } = useGraphScope(focusId);
+
+  const everything = reach === GRAPH_REACH_EVERYTHING;
 
   // The shape of the question, as one value a memo can be keyed on. Pins are
   // deliberately absent: they change on every drop, and re-running the
   // simulation then would jump every other node the instant one was let go of.
-  const structure = `${focusId ?? ""}|${depth}|${generation}|${JSON.stringify(filters)}`;
+  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${JSON.stringify(filters)}`;
 
   /**
    * The arrangement as it stood when this graph was last worked out.
@@ -85,31 +111,52 @@ export function usePageGraph({ focusId, depth, filters, pins, generation }: Page
 
   const index = useMemo(() => linkIndex(nodes), [nodes]);
 
-  const reach = useMemo(() => {
+  /**
+   * The pages a whole-universe graph is over, before any filter.
+   *
+   * Held apart from the model so the count and the value picker do not pay for
+   * a second gathering pass — and so the walk below is skipped entirely when
+   * the answer is "all of them", which for a world of any size is the
+   * difference between a walk and a filter.
+   */
+  const scopedIds = useMemo(
+    () => (everything ? pagesInUniverse(nodes, universeId).map((node) => node.id) : null),
+    [everything, nodes, universeId],
+  );
+
+  const reached = useMemo(() => {
+    if (scopedIds) {
+      const focus = focusId ? nodes[focusId] : undefined;
+      const pages = scopedIds.map((id) => nodes[id]).filter((node): node is Node => Boolean(node));
+      // A page opened from outside the universe it is scoped to is still on its
+      // own graph — it is where she is.
+      return focus && !scopedIds.includes(focus.id) ? [focus, ...pages] : pages;
+    }
     if (!focusId) return [];
-    return graphAround(focusId, nodes, index, depth)
+    return graphAround(focusId, nodes, index, reach as number)
       .nodes.map((drawn) => nodes[drawn.id])
       .filter((node): node is Node => Boolean(node));
-  }, [focusId, nodes, index, depth]);
+  }, [scopedIds, focusId, nodes, index, reach]);
 
   const model = useMemo(() => {
-    if (!focusId) return EMPTY;
     const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
-    return settleGraph(graphAround(focusId, nodes, index, depth, keep), frozen.pins);
-    // `structure` stands in for focusId, depth, generation and the filters, so
+    if (scopedIds) return settleGraph(graphOfPages(scopedIds, focusId, nodes, index, keep), frozen.pins);
+    if (!focusId) return EMPTY;
+    return settleGraph(graphAround(focusId, nodes, index, reach as number, keep), frozen.pins);
+    // `structure` stands in for focusId, reach, generation and the filters, so
     // an identical filter list rebuilt by a re-render does not re-settle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, nodes, index, frozen, getLabel]);
+  }, [structure, scopedIds, nodes, index, frozen, getLabel]);
 
   // Columns are empty on purpose: a graph filters on what a page *is* rather
   // than on a table's columns, and `template` and `tag` are answered from the
   // page itself. See DatabaseField, which carries both as first-class kinds.
   const choicesFor = useMemo(
-    () => (field: DatabaseField) => fieldChoices(reach, field, [], nodes, getLabel),
-    [reach, nodes, getLabel],
+    () => (field: DatabaseField) => fieldChoices(reached, field, [], nodes, getLabel),
+    [reached, nodes, getLabel],
   );
 
-  return { model, reach, choicesFor, key: structure };
+  return { model, reached, choicesFor, key: structure };
 }
 
 /**
@@ -128,9 +175,9 @@ export function useGraphPreview(nodeId: string | null): NodePreview | null {
   }, [nodes, nodeId]);
 }
 
-/** Where she has dragged nodes on this page's graph, or nothing yet. */
-export function useGraphPins(focusId: string | null): GraphPins {
+/** Where she has dragged nodes on this graph, or nothing yet. */
+export function useGraphPins(focusId: string | null, universeId: string | null): GraphPins {
   const { project } = useProject();
   const stored = project?.graphPins;
-  return useMemo(() => (focusId ? (stored?.[focusId] ?? {}) : {}), [stored, focusId]);
+  return useMemo(() => stored?.[graphPinKey(focusId, universeId)] ?? {}, [stored, focusId, universeId]);
 }

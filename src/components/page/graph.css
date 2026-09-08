@@ -473,3 +473,28 @@
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
+
+/* **A whole world's worth of names, at the size a whole world fits in, is not
+   text — it is texture.** Zoomed far enough out that a name would be six pixels
+   tall, the thing being read is the shape: the clusters, what is joined to
+   what, which pages sit alone. Three hundred unreadable labels stand exactly
+   where that shape should be. See GRAPH_NAME_ZOOM, which is where the number
+   lives.
+
+   **Not even the selected one, which it was until it was looked at.** Keeping
+   an exception for the node being pointed at sounded careful and drew a smear:
+   a name is clamped to two lines at its own font size, so at a fifth of that
+   size it is four stripes of grey in the middle of the picture, unreadable and
+   looking like a rendering fault rather than a word. Nothing is lost by
+   dropping it — the card beside the graph names what is selected, in full and
+   at a readable size, and hovering still raises the node's own tooltip. */
+.page-graph-scene-small .page-graph-node-name {
+  display: none;
+}
+
+/* Lifted above its neighbours so a name that has just reappeared is not drawn
+   underneath the disc of whatever is next to it. */
+.page-graph-node-inplay,
+.page-graph-node-selected {
+  z-index: 1;
+}

@@ -24,7 +24,8 @@
 // **A word that does not fit wraps rather than truncating.** `Switch project` is
 // two lines at this width and that is fine; an ellipsis in a six-word interface
 // would be hiding the one thing the label exists to say.
-import { FolderOpen, FolderTree, Images, LayoutTemplate, Search } from "lucide-react";
+import { FolderOpen, FolderTree, Images, LayoutTemplate, Search, Waypoints } from "lucide-react";
+import { useGraphOverlayActions } from "../../hooks/use-graph-overlay";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { RailButton } from "./RailButton";
 import { SettingsButton } from "./SettingsButton";
@@ -57,6 +58,7 @@ type LeftRailProps = {
 
 export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }: LeftRailProps) {
   const searchShortcut = useShortcutLabel("search");
+  const { openWorldGraph } = useGraphOverlayActions();
 
   return (
     <nav className="left-rail" aria-label="Main">
@@ -83,6 +85,21 @@ export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }
           See NavButtons. */}
       <div className="left-rail-group">
         <RailButton label="Search" title={`Search (${searchShortcut})`} Icon={Search} onClick={onOpenSearch} />
+        {/* **An errand, not a fourth panel.** The group above chooses what the
+            sidebar beside it shows; a graph is not a sidebar, it covers the
+            window. It belongs here with Search for the same reason Search does
+            — something you go and do, from wherever you happen to be, that has
+            nothing to do with the page currently open.
+
+            Next to Search rather than at the foot of the group: both are ways
+            of finding a page you cannot name the location of, and the two below
+            are about leaving. Her call on where it goes, 2026-09-08. */}
+        <RailButton
+          label="Graph"
+          title="See the whole universe as a graph"
+          Icon={Waypoints}
+          onClick={openWorldGraph}
+        />
         <RailButton label="Switch project" Icon={FolderOpen} onClick={onSwitchProject} />
         <SettingsButton className="icon-word-btn" label="Settings" />
       </div>

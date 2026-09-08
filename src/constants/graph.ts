@@ -96,3 +96,47 @@ export const GRAPH_DEFAULT_DEPTH = 1;
 export const GRAPH_DEPTHS = [1, 2, 3] as const;
 
 export type GraphDepth = (typeof GRAPH_DEPTHS)[number];
+
+/**
+ * Reaching past counting hops altogether — every page in the universe at once.
+ *
+ * **The global graph is this value, not a separate feature.** Both graphs were
+ * scoped as one component fed a different set of pages, and the reach control
+ * is where "which set" was already being asked; a fourth step on it is the
+ * whole of the difference. The rail's button is a second door to the same
+ * place rather than a second implementation of it — her call 2026-09-08.
+ */
+export const GRAPH_REACH_EVERYTHING = "everything";
+
+export const GRAPH_REACHES = [1, 2, 3, GRAPH_REACH_EVERYTHING] as const;
+
+export type GraphReach = (typeof GRAPH_REACHES)[number];
+
+/**
+ * Below this zoom, a node's name is not drawn.
+ *
+ * A whole world does not fit on a screen at a size names can be read at, and
+ * the honest options are illegible text or none. None wins: at this scale the
+ * shape is the thing being read — the clusters, what is joined to what — and
+ * three hundred labels at six pixels are visual noise standing where that shape
+ * should be.
+ *
+ * **No exception for the node being pointed at or selected**, which there was
+ * until it was looked at running. A name is clamped to two lines at its own
+ * size, so at a fifth of that it draws as a few stripes of grey in the middle
+ * of the picture — unreadable, and reading as a rendering fault rather than as
+ * a word. Nothing is lost by dropping it: the card beside the graph names what
+ * is selected in full, and hovering still raises the node's own tooltip.
+ */
+export const GRAPH_NAME_ZOOM = 0.5;
+
+/**
+ * The prefix for a whole-universe graph's stored arrangement.
+ *
+ * `Project.graphPins` is keyed by the page a graph is centred on, and this
+ * graph is centred on nothing. A universe id under a prefix keeps the two kinds
+ * of key from ever colliding — page ids are UUIDs, so nothing containing a
+ * colon can be one — and gives each universe its own arrangement, which is what
+ * anyone who arranges one would expect of the next.
+ */
+export const GRAPH_WORLD_PIN_PREFIX = "universe:";

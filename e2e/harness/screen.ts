@@ -67,6 +67,11 @@ const GRAPH_COUNT = ".graph-count";
 const GRAPH_MENU = ".graph-menu";
 const GRAPH_MENU_ADD = ".graph-menu-add";
 const GRAPH_FILTER_ROW = ".graph-filter-row";
+// Phase 24 step 3: the rail button, and the graph heading that says which of
+// the two graphs is up.
+const GRAPH_HEADING = ".page-graph-heading";
+const GRAPH_SCENE = ".page-graph-scene";
+const GRAPH_STAGE = ".page-graph-stage";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -1332,6 +1337,26 @@ export async function openPageGraph(window: Page): Promise<void> {
   await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
 }
 
+/**
+ * Opens the whole-universe graph from the rail, which is the other of the two
+ * doors — see docs/plan.md Phase 24 step 3.
+ */
+export async function openWorldGraph(window: Page): Promise<void> {
+  await window.locator(LEFT_RAIL).getByRole("button", { name: "Graph", exact: true }).click();
+  await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** What the graph calls itself, which says which of the two is up. */
+export async function graphHeading(window: Page): Promise<string> {
+  return normalize(await window.locator(GRAPH_HEADING).first().innerText());
+}
+
+/** Whether the picture is far enough out that names are being held back. */
+export async function graphNamesAreQuiet(window: Page): Promise<boolean> {
+  const scene = window.locator(GRAPH_SCENE).first();
+  return (await scene.getAttribute("class"))?.includes("page-graph-scene-small") ?? false;
+}
+
 /** Whether the graph is over the page right now. */
 export async function graphIsOpen(window: Page): Promise<boolean> {
   return (await window.locator(GRAPH).count()) > 0;
@@ -1343,10 +1368,57 @@ export async function closePageGraph(window: Page): Promise<void> {
   await window.locator(GRAPH).waitFor({ state: "detached", timeout: WAIT_MS });
 }
 
-/** Every page drawn on the graph, the focused one included. */
+/**
+ * Every page drawn on the graph, the focused one included.
+ *
+ * **Read off the node's own title rather than the label under it**, because
+ * past a certain zoom that label is not drawn at all — see GRAPH_NAME_ZOOM. The
+ * title is what the node carries whether or not its name is currently written
+ * out, and it is what a hover shows, so this answers "which pages are on the
+ * graph" at every zoom rather than only at the readable ones.
+ *
+ * **It is not that the text would come back empty.** An element that is not
+ * rendered returns its `textContent` from `innerText`, by the HTML spec, so
+ * reading the label would keep working and quietly stop meaning what it says.
+ * That is the more dangerous of the two failures, and it is why the question
+ * "is it written on screen" belongs to `graphWrittenNames`, which asks about
+ * boxes rather than about text.
+ */
 export async function graphNodeNames(window: Page): Promise<string[]> {
-  const names = await window.locator(`${GRAPH_NODE} ${GRAPH_NODE_NAME}`).allInnerTexts();
-  return names.map((name) => normalize(name));
+  const titles = await window.locator(GRAPH_NODE).evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute("title") ?? ""),
+  );
+  return titles.map((name) => normalize(name));
+}
+
+/**
+ * Zooms the graph out by rolling the wheel over it, which is the only route to
+ * the far-out picture — the fit never starts below the size names are readable
+ * at, and a world would have to be several times the test world's before it
+ * did. One notch is deliberately small (see GRAPH_ZOOM_SENSITIVITY), so this
+ * takes a number of them.
+ */
+export async function zoomGraphOut(window: Page, notches = 4): Promise<void> {
+  const stage = window.locator(GRAPH_STAGE).first();
+  const box = await stage.boundingBox();
+  if (!box) throw new Error("The graph has no stage to zoom");
+  await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, 300);
+}
+
+/**
+ * The names actually drawn on screen, which is none once it is zoomed far out.
+ *
+ * **Asks whether the element has a box, not what text it holds.** `innerText`
+ * on something with `display: none` returns its `textContent` rather than
+ * nothing, so a check written on the text would report every name as present
+ * while the screen showed none of them.
+ */
+export async function graphWrittenNames(window: Page): Promise<string[]> {
+  const names = await window.locator(`${GRAPH_NODE} ${GRAPH_NODE_NAME}`).evaluateAll((labels) =>
+    labels.filter((label) => label.getClientRects().length > 0).map((label) => label.textContent ?? ""),
+  );
+  return names.map((name) => normalize(name)).filter(Boolean);
 }
 
 /** The page in the middle — the one whose graph this is. */
@@ -1431,8 +1503,13 @@ export async function graphCount(window: Page): Promise<string> {
 }
 
 /** Sets how far out the graph reaches, in connections. */
-export async function setGraphReach(window: Page, connections: number): Promise<void> {
+export async function setGraphReach(window: Page, connections: number | "everything"): Promise<void> {
   await window.getByLabel("How far out to reach").selectOption(String(connections));
+}
+
+/** Whether the reach control can be used at all — it cannot with no centre. */
+export async function graphReachEnabled(window: Page): Promise<boolean> {
+  return window.getByLabel("How far out to reach").isEnabled();
 }
 
 /** Chooses when a line says what it is — "selected" or "all". */

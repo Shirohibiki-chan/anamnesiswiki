@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { createNode, createTab, type Node } from "../constants/schema";
 import { linkIndex } from "./link-index";
-import { graphAround, graphOperatorsFor, seedPosition, seededRandom, GRAPH_FILTER_FIELDS } from "./graph-service";
+import {
+  graphAround,
+  graphOfPages,
+  graphOperatorsFor,
+  graphPinKey,
+  pagesInUniverse,
+  seedPosition,
+  seedScatter,
+  seededRandom,
+  GRAPH_FILTER_FIELDS,
+} from "./graph-service";
 
 function page(name: string, patch: Partial<Node> = {}): Node {
   return { ...createNode({ parentId: null, templateKey: "character", name }), ...patch };
@@ -235,5 +245,153 @@ describe("graphOperatorsFor", () => {
     for (const field of GRAPH_FILTER_FIELDS) {
       expect(graphOperatorsFor(field).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("pagesInUniverse", () => {
+  function world() {
+    const canon = page("Canon", { templateKey: "universe" });
+    const demonic = page("Demonic AU", { templateKey: "universe" });
+    const valera = page("Valera", { parentId: canon.id });
+    const characters = page("Characters", { templateKey: "folder", parentId: canon.id });
+    const sword = page("Her Sword", { parentId: characters.id });
+    const dark = page("Dark Valera", { parentId: demonic.id });
+    const loose = page("Loose Note");
+    return { canon, demonic, valera, characters, sword, dark, loose };
+  }
+
+  function inUniverse(all: Node[], universeId: string | null) {
+    return pagesInUniverse(Object.fromEntries(all.map((n) => [n.id, n])), universeId).map((n) => n.name);
+  }
+
+  it("takes everything beneath the universe, however deep", () => {
+    const w = world();
+    expect(inUniverse(Object.values(w), w.canon.id)).toEqual(["Characters", "Her Sword", "Valera"]);
+  });
+
+  // A universe is a container for a version of the world, not a page in it, so
+  // one circle joined to seventy others hides the shape underneath.
+  it("never draws a universe itself", () => {
+    const w = world();
+    expect(inUniverse(Object.values(w), null)).not.toContain("Canon");
+    expect(inUniverse(Object.values(w), null)).not.toContain("Demonic AU");
+  });
+
+  it("takes the whole world when no universe is chosen", () => {
+    const w = world();
+    expect(inUniverse(Object.values(w), null)).toEqual([
+      "Characters",
+      "Dark Valera",
+      "Her Sword",
+      "Loose Note",
+      "Valera",
+    ]);
+  });
+
+  it("leaves out another universe's pages", () => {
+    const w = world();
+    expect(inUniverse(Object.values(w), w.canon.id)).not.toContain("Dark Valera");
+  });
+
+  it("comes out in the same order every time", () => {
+    const w = world();
+    expect(inUniverse(Object.values(w), null)).toEqual(inUniverse(Object.values(w), null));
+  });
+});
+
+describe("graphOfPages", () => {
+  function build(all: Node[], ids: string[], focusId: string | null = null, keep?: (node: Node) => boolean) {
+    const record = Object.fromEntries(all.map((n) => [n.id, n]));
+    return graphOfPages(ids, focusId, record, linkIndex(record), keep);
+  }
+
+  // The whole reason the world graph is not a walk: a page nobody has linked is
+  // the most useful thing a picture of a world can point at.
+  it("draws a page that is joined to nothing", () => {
+    const valera = page("Valera");
+    const loner = page("Loose Note");
+    const model = build([valera, loner], [valera.id, loner.id]);
+    expect(model.nodes.map((n) => n.name).sort()).toEqual(["Loose Note", "Valera"]);
+    expect(model.edges).toHaveLength(0);
+  });
+
+  it("still draws the lines between the pages it was given", () => {
+    const valera = page("Valera");
+    const sampo = page("Sampo");
+    const nodes = [{ ...valera, tabs: tabWith([mention(sampo.id)]) }, sampo];
+    expect(build(nodes, [valera.id, sampo.id]).edges).toHaveLength(1);
+  });
+
+  it("has no centre when it is given no focus", () => {
+    const valera = page("Valera");
+    const sampo = page("Sampo");
+    const model = build([valera, sampo], [valera.id, sampo.id]);
+    expect(model.nodes.every((node) => node.depth === 1)).toBe(true);
+  });
+
+  it("keeps the focused page at the centre when it is given one", () => {
+    const valera = page("Valera");
+    const sampo = page("Sampo");
+    const model = build([valera, sampo], [valera.id, sampo.id], valera.id);
+    expect(model.nodes[0]).toMatchObject({ name: "Valera", depth: 0 });
+    expect(model.nodes[0]).toMatchObject({ x: 0, y: 0 });
+  });
+
+  // Opened from a page reached across a universe boundary, that page is still
+  // where she is.
+  it("draws a focused page that is not in the set", () => {
+    const valera = page("Valera");
+    const stranger = page("Stranger");
+    const model = build([valera, stranger], [stranger.id], valera.id);
+    expect(model.nodes.map((n) => n.name)).toEqual(["Valera", "Stranger"]);
+  });
+
+  it("leaves out a page a filter rejects, but never the focus", () => {
+    const valera = page("Valera");
+    const sampo = page("Sampo");
+    const model = build([valera, sampo], [valera.id, sampo.id], valera.id, (node) => node.name !== "Valera" && node.name !== "Sampo");
+    expect(model.nodes.map((n) => n.name)).toEqual(["Valera"]);
+  });
+
+  it("comes out identical when asked twice", () => {
+    const valera = page("Valera");
+    const sampo = page("Sampo");
+    const ids = [valera.id, sampo.id];
+    expect(build([valera, sampo], ids)).toEqual(build([valera, sampo], ids));
+  });
+});
+
+describe("graphPinKey", () => {
+  it("keys a page's graph by that page, so widening the reach keeps the tidying", () => {
+    expect(graphPinKey("valera", "canon")).toBe("valera");
+  });
+
+  it("keys a graph with no centre by its universe", () => {
+    expect(graphPinKey(null, "canon")).toBe("universe:canon");
+  });
+
+  it("has a key for the whole world too", () => {
+    expect(graphPinKey(null, null)).toBe("universe:all");
+  });
+
+  // Page ids are UUIDs, so nothing that is one can contain a colon.
+  it("cannot collide with a page's own key", () => {
+    expect(graphPinKey(null, "canon")).not.toBe(graphPinKey("canon", null));
+  });
+});
+
+describe("seedScatter", () => {
+  it("gives one page the same starting point every time", () => {
+    expect(seedScatter("valera", 50)).toEqual(seedScatter("valera", 50));
+  });
+
+  it("spreads further as there are more pages to place", () => {
+    const small = seedScatter("valera", 10);
+    const large = seedScatter("valera", 400);
+    expect(Math.hypot(large.x, large.y)).toBeGreaterThan(Math.hypot(small.x, small.y));
+  });
+
+  it("puts two pages in different places", () => {
+    expect(seedScatter("valera", 50)).not.toEqual(seedScatter("sampo", 50));
   });
 });

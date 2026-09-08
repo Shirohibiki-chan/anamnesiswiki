@@ -91,10 +91,28 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 21, 22, 23, 27 and 29 are done.** The app is shippable and shipping —
+**Phases 0–19, 19.5, 21, 22, 23, 24, 27 and 29 are done.** The app is shippable and shipping —
 v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
+
+**Phase 24 — Graphs — closed 2026-09-08**: a page's relationships drawn over
+the page, and the whole universe drawn from the rail. Four things from it bind
+the code. **The two graphs are one component fed a different set of pages** —
+`graphAround` walks out from a page, `graphOfPages` takes a set outright, and
+`assemble` is the half they share; a change to what a node wears or which line
+survives between a pair belongs there and not in either caller. **The layout is
+run to a stop and never animated**, with a seeded random source, because "the
+same project looks the same every time" would otherwise hold only for whoever
+waited — and an idle animation loop is a core spinning to redraw a picture that
+has stopped moving. **A pinned node is a fixed point in the simulation rather
+than a position applied afterwards**, so the rest settles around what she
+arranged; but the layout is deliberately *not* recomputed when pins change,
+which is why putting an arrangement back needs the generation counter as well as
+the empty pins. And **`Project.graphPins` is keyed by graph, not by page** —
+a page's own id for its graph, `universe:<id>` for one with no centre. One
+position per page would mean tidying one graph quietly rearranging every other
+one that page appears on.
 
 **Phase 23 — Database — closed 2026-09-07**: a page, or a block inside one,
 shown as a table, cards, a board or a list of pages that already exist. Two

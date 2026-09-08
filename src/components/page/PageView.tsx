@@ -13,7 +13,7 @@ import { NewPageLanding } from "./NewPageLanding";
 import { PageBanner } from "./PageBanner";
 import { PageTabs } from "./PageTabs";
 import { PageTitle } from "./PageTitle";
-import { PageGraph } from "./PageGraph";
+import { useGraphOverlayActions } from "../../hooks/use-graph-overlay";
 import "./page.css";
 
 // Rendered with `key={node.id}` by AppLayout, so activeTabId's initial value
@@ -37,10 +37,7 @@ export function PageView() {
     reorderTabs,
   } = useProject();
   const createPageIn = useCreatePageIn();
-  // Local rather than a store: it is opened from one button and closed by
-  // itself, and PageView is keyed by node id, so walking to another page puts
-  // the graph away without anything having to remember to.
-  const [graphOpen, setGraphOpen] = useState(false);
+  const { openPageGraph } = useGraphOverlayActions();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
 
@@ -94,7 +91,7 @@ export function PageView() {
         <PageTitle
           node={node}
           startEditing={pendingRenameId === node.id}
-          onOpenGraph={() => setGraphOpen(true)}
+          onOpenGraph={() => openPageGraph(node.id)}
         />
         {/* Above the tabs rather than inside one, and always in the same
             place. A view is something the page is being shown *as*, so it
@@ -160,7 +157,6 @@ export function PageView() {
           </>
         )}
       </div>
-      {graphOpen && <PageGraph node={node} onClose={() => setGraphOpen(false)} />}
     </div>
   );
 }
