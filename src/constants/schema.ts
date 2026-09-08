@@ -830,6 +830,26 @@ export type Project = {
   // put it. Deleting a pinned page unpins it (see project-store's deleteNodes)
   // so this never points at a node that's gone.
   pinnedIds?: string[];
+  /**
+   * Where she has moved pages on a graph, by the page whose graph it is
+   * (Phase 24, step 2).
+   *
+   * **Per graph rather than per page, and that is the whole of the design.** A
+   * page turns up on every graph its neighbours have, so one position per page
+   * would mean arranging Valera’s graph quietly rearranged five others she has
+   * never opened. Keyed by the focused page first, so a graph she has arranged
+   * comes back as she left it and every other one is untouched.
+   *
+   * **In `project.json` rather than in a page’s own file**, beside tree order
+   * and expanded state, because dragging a node is arranging a view: it must
+   * not dirty a page, enter that page’s version history, or show up as a change
+   * to the page in the folder she syncs.
+   *
+   * Absent is the ordinary state. A pin naming a page that has been deleted is
+   * simply never matched to anything and costs a few bytes — pruning it would
+   * mean walking every graph on every delete to save nothing worth saving.
+   */
+  graphPins?: Record<string, Record<string, { x: number; y: number }>>;
   // The picture the start screen's grid shows for this world, in `assets/` —
   // Phase 27, "covers you set yourself". Absent means "no cover set", the same
   // reading a world saved before this existed gets, and both draw the

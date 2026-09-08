@@ -101,3 +101,37 @@ describe("graphBounds", () => {
     });
   });
 });
+
+describe("settleGraph with an arrangement", () => {
+  // Phase 24 step 2. A pin is a fixed point in the simulation rather than a
+  // position applied afterwards — everything else has to settle *around* what
+  // she moved, or the first thing she arranged is the thing everything overlaps.
+  it("leaves a pinned node exactly where it was put", () => {
+    const settled = settleGraph(star(6), { "page-2": { x: 400, y: -250 } });
+    expect(settled.nodes.find((node) => node.id === "page-2")).toMatchObject({ x: 400, y: -250 });
+  });
+
+  it("moves the others out of the way of it", () => {
+    const pins = { "page-2": { x: 400, y: -250 } };
+    const settled = settleGraph(star(6), pins);
+    for (const node of settled.nodes) {
+      if (node.id === "page-2") continue;
+      expect(Math.hypot(node.x - 400, node.y + 250)).toBeGreaterThan(GRAPH_NODE_RADIUS * 2);
+    }
+  });
+
+  it("lets a pin on the focused page beat the centre", () => {
+    const settled = settleGraph(star(4), { focus: { x: 120, y: 90 } });
+    expect(settled.nodes[0]).toMatchObject({ id: "focus", x: 120, y: 90 });
+  });
+
+  it("ignores a pin naming a page that is not on this graph", () => {
+    const model = star(4);
+    expect(settleGraph(model, { "not-here": { x: 10, y: 10 } })).toEqual(settleGraph(model));
+  });
+
+  it("still comes out the same twice", () => {
+    const pins = { "page-1": { x: -300, y: 120 } };
+    expect(settleGraph(star(7), pins)).toEqual(settleGraph(star(7), pins));
+  });
+});

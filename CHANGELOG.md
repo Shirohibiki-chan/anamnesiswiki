@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-07 — steering the graph, and it remembers how you left it
+
+### Additions
+
+- **You can move pages around a graph and they stay where you put them.** Drag a page, and next time you open that graph it is where you left it — including after closing the app. Each page's graph remembers its own arrangement, so tidying one leaves every other one exactly as it was.
+- **Put it back** lays a graph out again from scratch and forgets everything you moved on it. It sits in the bar and is greyed out until there is something to undo.
+- **Reach** chooses how far out the graph looks: one connection, two, or three. One is the default, and it stays that way each time you open a graph.
+- **Filter by what a page is** — its template, or its tags. The same filters the database views use, so there is nothing new to learn. The bar counts what is left against what there was, so a filter hiding everything never looks like a page connected to nothing.
+- **Lines** chooses when a line writes what it is. *Names when pointed at* only labels the lines touching whatever you are hovering; *Names always* labels every line that has a name. This is a preference, so it follows you between worlds.
+
+### Fixes
+
+- **Clearing a graph's arrangement right after opening a page could quietly fail.** It looked cleared on screen, but the file on disk still held it, so it came back the next time the app started. A save left over from opening the page was landing on top and putting it back.
+- **The graph's filter menu could not be clicked.** It drew in the right place, but every click went through it to the graph behind.
+- **The close button no longer drops onto a second line** when the window is at its narrowest and the controls wrap.
+
+### Notes
+
+- **The reach and the filters are forgotten when you close the graph**, on purpose — a graph reopened days later still hiding half of what it is connected to, with nothing on screen saying why, would look broken. What you moved is kept; what you were asking is not.
+- **A filtered-out page takes its lines with it**, so at two or three connections out, anything only reachable through it goes too. The filter menu says so.
+- **Only reference fields have a name to write on a line** — Friends, Enemies, and so on. A mention you wrote in a sentence, a link you added by hand, and a page nested inside another have no name to give, so most lines stay bare in either mode.
+
 ## 2026-09-07 — see what a page is connected to
 
 ### Additions
@@ -244,27 +266,3 @@
 
 - **Its buttons are centred instead of pushed to the left.** They take about two thirds of the strip, so left-aligning them left a third of it empty and the bar read as unfinished.
 - **The buttons are grouped, with a hairline between each group** — the block type, then bold and its neighbours, then alignment, then colour, then indent, then the link button. Nine buttons in one undivided row is a row you have to read every time.
-
-## 2026-09-05 — an actual title bar
-
-### Changes
-
-- **The window has a real title bar again, and this time it's the app's own.** One band straight across the top, edge to edge, in your theme's colour, with the app's name in the middle of it. Yesterday's version had no bar at all — it switched the window's frame off and let four different parts of the app stand in for one, which is where the mismatched colours, the lines between them and the odd-coloured buttons on the right came from. That's gone.
-- **The minimise, maximise and close buttons sit in that bar and match it.** Still Windows' own buttons, so hovering maximise still gives you the snap layouts, but they're tinted to the one colour the bar is painted rather than to whichever piece of the app they happened to be sitting over.
-- **Every button on the left rail says what it is.** Project, Templates, Assets, Search, Switch project and Settings each have their word under the icon now, instead of only telling you if you hovered and waited. The rail is wider to fit them.
-- **The properties panel's header row is gone again.** It only ever existed to have window buttons sitting on top of it, and they don't any more.
-
-### Changes
-
-- **The window's minimise, maximise and close are the app's own now.** They were Windows' until today, and Windows draws them at a fixed 46 pixels wide with no say in it, which is why they looked like three grey slabs dropped into the bar. Ours are slimmer, take the theme, and the close one goes red when you're about to press it.
-- **What that costs is snap layouts** — the little grid of window arrangements that appeared if you hovered the old maximise button and waited. Dragging a window to the edge of the screen still snaps it, and Win+arrow still works. It was the only thing keeping the old buttons and you said you'd never found it.
-
-### Fixes
-
-- **The start screen has a title bar.** It had none at all — the bar was being drawn by the project shell, so the screen you pick a project from didn't get one. With the old Windows bar gone that left nothing to drag the window by and no close button on that screen, so the only way out of it was the taskbar. The bar is drawn for the whole window now, whichever screen you're on.
-- **The line under the title bar runs the whole way across again.** Windows paints its own buttons over the top-right corner of the page, and it was painting over the last 137 pixels of that line — so the rule across the top of the window stopped just short of the right edge. The buttons now sit one pixel higher and the line runs underneath them.
-
-### Notes
-
-- **The window opens a bit wider and a bit taller than yesterday, and won't be dragged quite as small.** The rail grew to fit its labels and the title bar takes a strip off the top, and both of those are frame rather than page — so the numbers move with them and the writing keeps exactly the room it had.
-- On a Mac the round window buttons move up into the title bar too, at its left end.

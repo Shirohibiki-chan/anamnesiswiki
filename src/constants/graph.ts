@@ -83,3 +83,16 @@ export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
  * The control that changes this is step 2 — see `docs/plan.md` Phase 24.
  */
 export const GRAPH_DEFAULT_DEPTH = 1;
+
+/**
+ * How far out the graph can be asked to reach, in connections.
+ *
+ * Three is the ceiling rather than an arbitrary stop: on a world of any size a
+ * fourth hop is most of the world, which is the whole-project view rather than
+ * one page's relationships. The default stays 1 — see GRAPH_DEFAULT_DEPTH, and
+ * the plan's note that two hops rendered at once is the hairball this is
+ * written against.
+ */
+export const GRAPH_DEPTHS = [1, 2, 3] as const;
+
+export type GraphDepth = (typeof GRAPH_DEPTHS)[number];

@@ -22,37 +22,59 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-export function useGraphView(model: GraphModel) {
+export type GraphViewOptions = {
+  /**
+   * Changes when the question changes — a different page, reach or filter.
+   *
+   * Deliberately not the model's identity: the model is also rebuilt when a
+   * page anywhere in the world is edited, and throwing away her panning and
+   * her selection because someone typed a letter on another page would be a
+   * view that resets itself at random.
+   */
+  resetKey: string;
+  /** Called on letting go of a node, with everything moved so far. */
+  onArrange: (moved: Record<string, Point>) => void;
+};
+
+export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphViewOptions) {
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [zoomFactor, setZoomFactor] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** The node under the pointer, which is what the quiet label mode follows. */
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   /**
    * Nodes she has dragged somewhere, by id.
    *
    * An override rather than an edit of the model: the settled layout stays what
    * the simulation produced, so a node put back is put back exactly and nothing
-   * about a drag has to be undone. Keeping these between sessions is step 2 —
-   * see `docs/plan.md` Phase 24.
+   * about a drag has to be undone.
+   *
+   * **It also outlives the drop rather than being folded back into the model.**
+   * Letting go writes the position to `project.json`, but the layout is not
+   * recomputed from it — doing that would re-solve the forces around the newly
+   * fixed node and jump every other one the instant she let go. The stored
+   * arrangement becomes fixed points the *next* time this graph is worked out.
    */
   const [moved, setMoved] = useState<Record<string, Point>>({});
 
   /**
-   * Everything about *this* graph forgotten when a different one arrives.
+   * Everything about *this* graph forgotten when a different question is asked.
    *
    * React's documented alternative to an effect that syncs state: adjust during
    * render, keyed on the value that changed. PageView.tsx does the same thing
-   * with `pendingFocus` and says so. An effect here would set four pieces of
+   * with `pendingFocus` and says so. An effect here would set five pieces of
    * state after paint, which is a frame of the new graph drawn with the old
    * one's panning still applied.
    */
-  const [appliedModel, setAppliedModel] = useState(model);
-  if (model !== appliedModel) {
-    setAppliedModel(model);
+  const [appliedKey, setAppliedKey] = useState(resetKey);
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey);
     setPan({ x: 0, y: 0 });
     setMoved({});
     setSelectedId(null);
+    setHoveredId(null);
     setZoomFactor(1);
   }
 
@@ -159,17 +181,26 @@ export function useGraphView(model: GraphModel) {
     [zoom],
   );
 
-  const endNodeDrag = useCallback((event: React.PointerEvent<HTMLElement>, node: GraphNode) => {
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    // A press that never travelled was a click, and a click opens the preview.
-    // Deciding it here rather than in an onClick is what stops the end of a
-    // drag also counting as one.
-    if (drag && !drag.moved) setSelectedId(node.id);
-  }, []);
+  const endNodeDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>, node: GraphNode) => {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      // A press that never travelled was a click, and a click opens the
+      // preview. Deciding it here rather than in an onClick is what stops the
+      // end of a drag also counting as one.
+      if (drag && !drag.moved) {
+        setSelectedId(node.id);
+        return;
+      }
+      // Written on letting go, never during the drag: a position saved per
+      // pointer move is sixty writes a second to a file on her disk.
+      if (drag) onArrange(moved);
+    },
+    [moved, onArrange],
+  );
 
   const startPan = useCallback((event: React.PointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
@@ -206,6 +237,11 @@ export function useGraphView(model: GraphModel) {
     );
   }, []);
 
+  const hover = useCallback((id: string | null) => setHoveredId(id), []);
+
+  /** Forgets this session's drags. The stored arrangement is the caller's to clear. */
+  const forgetArrangement = useCallback(() => setMoved({}), []);
+
   return {
     stageRef,
     nodes,
@@ -214,6 +250,10 @@ export function useGraphView(model: GraphModel) {
     zoom,
     sceneTransform,
     selectedId,
+    hoveredId,
+    hover,
+    forgetArrangement,
+    hasMoved: Object.keys(moved).length > 0,
     select: setSelectedId,
     startNodeDrag,
     moveNodeDrag,

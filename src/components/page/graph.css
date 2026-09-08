@@ -16,8 +16,17 @@
 .page-graph-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  /* Wraps rather than overflowing at the window's narrowest. The bar getting
+     taller on a small window is a layout answering its width; it is not the
+     "moves depending on state" failure, which is about the same window showing
+     the same thing in two places. */
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-lg);
   padding: var(--space-md) var(--space-lg);
+  /* Room kept on the right for the close button, which is taken out of the
+     flow below so that a wrapping bar cannot drop it onto a second line. */
+  padding-right: 3.25rem;
+  position: relative;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-panel);
 }
@@ -26,6 +35,11 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
+  /* Gives way before the controls do: the page's name is also on the page
+     underneath and on its title attribute, and the controls are the only place
+     their own state is written down. */
+  min-width: 0;
+  flex-shrink: 1;
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
 }
@@ -44,13 +58,161 @@
   white-space: nowrap;
 }
 
-.page-graph-count {
-  margin-right: auto;
-  font-size: var(--fs-sm);
+/* The controls, pushed to the right so the page's name keeps the left. */
+.graph-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.graph-count {
   color: var(--color-text-secondary);
 }
 
+.graph-tool-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* Deliberately the database's shape and sizes without being its class. The two
+   should look alike, and they do; sharing the selector would mean a restyle of
+   one silently restyling the other, which is how a feature acquires a defect it
+   has no code of its own to explain. */
+.graph-select {
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.graph-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.graph-tool:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.graph-tool:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Present and unavailable rather than absent. A button that arrived the first
+   time a node was dragged would shove the other controls sideways at the exact
+   moment her attention was on the graph. */
+.graph-tool:disabled {
+  color: var(--color-text-placeholder);
+  cursor: default;
+}
+
+/* A setting that is doing something looks different from one that isn't, so a
+   graph that is hiding pages says so without being opened. */
+.graph-tool[data-on] {
+  border-color: var(--color-accent-faint-border);
+  color: var(--color-text-primary);
+}
+
+.graph-tool-count {
+  min-width: 1.1rem;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-full);
+  background: var(--color-accent-faint);
+  color: var(--color-accent-foreground);
+  font-size: var(--fs-2xs);
+  text-align: center;
+}
+
+/* **Above the graph, or it cannot be clicked at all.** TreePopover portals to
+   the body at z-index 30, which is plenty everywhere else in the app and is
+   underneath this overlay at 1100 — the menu drew perfectly and every click on
+   it landed on the stage behind. Scoped to the graph rather than raising the
+   popover everywhere, which would put every menu in the app over the lightbox
+   too. */
+.tree-popover.graph-menu {
+  z-index: 1200;
+}
+
+.graph-menu {
+  min-width: 19rem;
+  max-width: 26rem;
+}
+
+.graph-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.graph-menu-note {
+  margin: 0;
+  padding: var(--space-2xs) 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+.graph-menu-add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  align-self: flex-start;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-accent-foreground);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.graph-menu-add:hover {
+  background: var(--color-hover);
+}
+
+.graph-filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.graph-filter-row .graph-select {
+  flex: 1;
+}
+
+/* **Out of the flow, pinned to the top right.** In the row it wrapped with
+   everything else at the narrowest window the app allows, landing alone on a
+   second line under the controls — which reads as a stray button rather than as
+   the way out. Its corner is the one place it is always looked for. */
 .page-graph-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -134,6 +296,23 @@
   stroke-width: 1.25;
   stroke-dasharray: 4 5;
   opacity: 0.8;
+}
+
+/* What a line is, where it knows — the field's own name, from a reference
+   property. Drawn with its own colour laid over a thick stroke of the page's
+   background, which is the standard way to keep small text legible over
+   whatever it happens to cross; there is nowhere on a graph to put a solid
+   plate behind a word without hiding the line it belongs to. */
+.page-graph-edge-label {
+  fill: var(--color-text-secondary);
+  stroke: var(--color-background);
+  stroke-width: 4;
+  paint-order: stroke;
+  font-size: 11px;
+  font-family: inherit;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
 }
 
 .page-graph-node {

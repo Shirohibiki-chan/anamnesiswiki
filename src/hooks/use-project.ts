@@ -52,6 +52,7 @@ export function useProjectActions() {
       clearPendingAnchor: state.clearPendingAnchor,
       setProjectHome: state.setProjectHome,
       togglePinned: state.togglePinned,
+      setGraphPins: state.setGraphPins,
       setFocus: state.setFocus,
       setSelectedUniverse: state.setSelectedUniverse,
       setSharedUniverse: state.setSharedUniverse,

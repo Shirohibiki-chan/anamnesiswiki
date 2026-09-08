@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createNode, createTab, type Node } from "../constants/schema";
 import { linkIndex } from "./link-index";
-import { graphAround, seedPosition, seededRandom } from "./graph-service";
+import { graphAround, graphOperatorsFor, seedPosition, seededRandom, GRAPH_FILTER_FIELDS } from "./graph-service";
 
 function page(name: string, patch: Partial<Node> = {}): Node {
   return { ...createNode({ parentId: null, templateKey: "character", name }), ...patch };
@@ -15,9 +15,9 @@ function mention(nodeId: string) {
   return { type: "paragraph", content: [{ type: "mention", props: { nodeId, label: "x" } }] };
 }
 
-function graph(nodes: Node[], focusId: string, depth = 1) {
+function graph(nodes: Node[], focusId: string, depth = 1, keep?: (node: Node) => boolean) {
   const record = Object.fromEntries(nodes.map((node) => [node.id, node]));
-  return graphAround(focusId, record, linkIndex(record), depth);
+  return graphAround(focusId, record, linkIndex(record), depth, keep);
 }
 
 function names(model: ReturnType<typeof graph>) {
@@ -178,6 +178,62 @@ describe("seededRandom", () => {
       const value = next();
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThan(1);
+    }
+  });
+});
+
+describe("graphAround with a filter", () => {
+  // Phase 24 step 2. The filter model is Phase 23's; what this checks is that
+  // it is applied *during* the walk, which is the part a graph needs and a
+  // table does not.
+  function chain() {
+    const valera = page("Valera");
+    const sampo = page("Sampo", { templateKey: "location" });
+    const kafka = page("Kafka");
+    return [
+      { ...valera, tabs: tabWith([mention(sampo.id)]) },
+      { ...sampo, tabs: tabWith([mention(kafka.id)]) },
+      kafka,
+    ];
+  }
+
+  it("leaves out a page the filter rejects", () => {
+    const nodes = chain();
+    const kept = graph(nodes, nodes[0].id, 1, (node) => node.templateKey === "character");
+    expect(names(kept)).toEqual(["Valera"]);
+  });
+
+  // The whole reason it filters during the walk: Kafka passes the filter, but
+  // the only way to it was through a page that did not, so drawing it would put
+  // a circle on the picture with no line to anything.
+  it("does not reach a page whose only route runs through a rejected one", () => {
+    const nodes = chain();
+    const kept = graph(nodes, nodes[0].id, 2, (node) => node.templateKey === "character");
+    expect(names(kept)).toEqual(["Valera"]);
+    expect(names(graph(nodes, nodes[0].id, 2))).toContain("Kafka");
+  });
+
+  it("keeps the focused page even when it fails the filter itself", () => {
+    const nodes = chain();
+    const kept = graph(nodes, nodes[0].id, 1, () => false);
+    expect(names(kept)).toEqual(["Valera"]);
+  });
+});
+
+describe("graphOperatorsFor", () => {
+  // A page always has exactly one template, so "is empty" on it can never be
+  // true and would sit in the list hiding everything when picked.
+  it("offers a template only the two that can be true", () => {
+    expect(graphOperatorsFor({ kind: "template" })).toEqual(["is", "is-not"]);
+  });
+
+  it("offers tags the many-valued set, including the empty pair", () => {
+    expect(graphOperatorsFor({ kind: "tag" })).toEqual(["has", "does-not-have", "is-empty", "is-not-empty"]);
+  });
+
+  it("offers something for every field a graph can filter on", () => {
+    for (const field of GRAPH_FILTER_FIELDS) {
+      expect(graphOperatorsFor(field).length).toBeGreaterThan(0);
     }
   });
 });
