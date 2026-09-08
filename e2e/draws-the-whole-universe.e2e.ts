@@ -23,12 +23,14 @@ import {
   graphNodeNames,
   graphWrittenNames,
   graphNodeCentre,
+  graphNodePlacement,
   graphReachEnabled,
   openPage,
   openPageGraph,
   openWorldGraph,
   setGraphReach,
   waitForWorld,
+  zoomGraphIn,
   zoomGraphOut,
 } from "./harness/screen";
 
@@ -117,23 +119,33 @@ describe("the graph of a whole universe", () => {
    * fit never starts below that size, and this world is not big enough to make
    * it. The rule is about how far out she can go, not about how a world opens.
    */
+  /**
+   * **Asserted as a change under zooming, not as a state on opening.** How far
+   * out a graph starts is whatever fits the window it opened into, so a version
+   * of this that expected names to be written the moment it opened was really
+   * asking how big the screen was — it held on this machine and would not have
+   * on a narrower one. Zooming out then in is the rule itself, and it says the
+   * same thing on any window.
+   */
   it("stops writing the names once it is zoomed far enough out", async () => {
     await openWorldGraph(app.window);
-
-    expect(await graphNamesAreQuiet(app.window)).toBe(false);
-    const written = (await graphWrittenNames(app.window)).length;
-    expect(written).toBeGreaterThan(20);
+    const drawn = (await graphNodeNames(app.window)).length;
 
     // Selected first, because that is the case the rule used to make an
     // exception for — and the exception drew an unreadable smear where the
     // name should have been.
     await clickGraphNode(app.window, (await graphNodeNames(app.window))[2]);
-    await zoomGraphOut(app.window);
+    await zoomGraphOut(app.window, 8);
 
     expect(await graphNamesAreQuiet(app.window)).toBe(true);
     expect((await graphWrittenNames(app.window)).length).toBe(0);
     // The pages are all still drawn; only their writing went quiet.
-    expect((await graphNodeNames(app.window)).length).toBe(written);
+    expect((await graphNodeNames(app.window)).length).toBe(drawn);
+
+    await zoomGraphIn(app.window, 12);
+
+    expect(await graphNamesAreQuiet(app.window)).toBe(false);
+    expect((await graphWrittenNames(app.window)).length).toBeGreaterThan(0);
 
     await closePageGraph(app.window);
   });
@@ -193,29 +205,27 @@ describe("the graph of a whole universe", () => {
   it("comes back arranged the way it was left", async () => {
     await openWorldGraph(app.window);
     const [, second] = await graphNodeNames(app.window);
-    const settled = await graphNodeCentre(app.window, second);
+    const settled = await graphNodePlacement(app.window, second);
     await dragGraphNode(app.window, second, 180, 120);
-    const dropped = await graphNodeCentre(app.window, second);
+    const dropped = await graphNodePlacement(app.window, second);
     await app.window.waitForTimeout(WRITTEN_MS);
     await closePageGraph(app.window);
 
     // The drag actually moved it, so the comparison below has something to say.
-    expect(Math.abs(dropped.x - settled.x)).toBeGreaterThan(100);
+    expect(Math.hypot(dropped.x - settled.x, dropped.y - settled.y)).toBeGreaterThan(0.15);
 
     await openWorldGraph(app.window);
-    const reopened = await graphNodeCentre(app.window, second);
+    const reopened = await graphNodePlacement(app.window, second);
     await closePageGraph(app.window);
 
-    // **Nearer to where it was dropped than to where it started, rather than
-    // within so many pixels of either.** A position is stored in the graph own
-    // coordinates and the picture is scaled to fit the window, so moving a node
-    // outward grows what has to fit and everything is redrawn a little smaller
-    // — the arrangement comes back exactly while every screen pixel shifts. A
-    // fixed margin measures that rescale rather than the thing being asked
-    // about; this comparison cannot, because both distances are taken from the
-    // same drawing.
-    const toDrop = Math.hypot(reopened.x - dropped.x, reopened.y - dropped.y);
-    const toStart = Math.hypot(reopened.x - settled.x, reopened.y - settled.y);
-    expect(toDrop).toBeLessThan(toStart / 2);
+    // **Measured against the rest of the graph rather than against the screen.**
+    // See graphNodePlacement: the picture rescales when a node is moved outward,
+    // so a comparison in pixels is partly a measurement of the window it was run
+    // in — which is how the first version of this passed locally and failed on a
+    // CI runner. The tolerance is loose because the other nodes settle a little
+    // around a newly pinned one; it is still a fraction of the distance to where
+    // the simulation had put this node, which is what the second line says.
+    expect(Math.hypot(reopened.x - dropped.x, reopened.y - dropped.y)).toBeLessThan(0.08);
+    expect(Math.hypot(reopened.x - settled.x, reopened.y - settled.y)).toBeGreaterThan(0.15);
   });
 });

@@ -1399,11 +1399,19 @@ export async function graphNodeNames(window: Page): Promise<string[]> {
  * takes a number of them.
  */
 export async function zoomGraphOut(window: Page, notches = 4): Promise<void> {
-  const stage = window.locator(GRAPH_STAGE).first();
-  const box = await stage.boundingBox();
+  await wheelOverGraph(window, notches, 300);
+}
+
+/** The other way. Same notches, same reason they are small. */
+export async function zoomGraphIn(window: Page, notches = 4): Promise<void> {
+  await wheelOverGraph(window, notches, -300);
+}
+
+async function wheelOverGraph(window: Page, notches: number, delta: number): Promise<void> {
+  const box = await window.locator(GRAPH_STAGE).first().boundingBox();
   if (!box) throw new Error("The graph has no stage to zoom");
   await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, 300);
+  for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, delta);
 }
 
 /**
@@ -1454,6 +1462,45 @@ export async function graphNodeCentre(window: Page, name: string): Promise<{ x: 
   const box = await graphNode(window, name).boundingBox();
   if (!box) throw new Error(`No node on the graph called ${name}`);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/**
+ * Where a node sits, as a fraction of the box the *other* nodes occupy.
+ *
+ * **Screen pixels cannot answer "did it stay where I put it".** The graph
+ * scales to fit its window, so moving a node outward grows what has to fit and
+ * every coordinate on screen shifts — by a little on a large window and a lot
+ * on a small one, which is how a comparison written in pixels passes here and
+ * fails on a CI runner with a different screen. Everything in this frame is
+ * divided by the same rescale, so it falls out.
+ *
+ * The frame deliberately excludes the node being asked about: it would
+ * otherwise help define the box it is being measured against, and a node
+ * dragged to the edge would report the same fraction wherever it went. The rest
+ * of the graph does re-settle a little around a newly pinned node, so this is a
+ * good ruler rather than a perfect one — compare with a tolerance.
+ */
+export async function graphNodePlacement(window: Page, name: string): Promise<{ x: number; y: number }> {
+  const placement = await window.locator(GRAPH_NODE).evaluateAll((nodes, wanted) => {
+    const boxes = nodes.map((node) => ({
+      title: node.getAttribute("title") ?? "",
+      rect: node.getBoundingClientRect(),
+    }));
+    const target = boxes.find((box) => box.title === wanted);
+    const others = boxes.filter((box) => box.title !== wanted);
+    if (!target || others.length === 0) return null;
+    const left = Math.min(...others.map((box) => box.rect.left));
+    const right = Math.max(...others.map((box) => box.rect.right));
+    const top = Math.min(...others.map((box) => box.rect.top));
+    const bottom = Math.max(...others.map((box) => box.rect.bottom));
+    if (right - left === 0 || bottom - top === 0) return null;
+    return {
+      x: (target.rect.left + target.rect.width / 2 - left) / (right - left),
+      y: (target.rect.top + target.rect.height / 2 - top) / (bottom - top),
+    };
+  }, name);
+  if (!placement) throw new Error(`No node on the graph called ${name}`);
+  return placement;
 }
 
 /** Drags a node by a number of screen pixels, in steps so the move is seen. */
