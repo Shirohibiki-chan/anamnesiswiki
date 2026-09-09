@@ -27,7 +27,13 @@ import { Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } fr
 import { getPaletteHex } from "../../constants/palette";
 import { STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
 import type { Node } from "../../constants/schema";
-import { useStoryline, useStorylineActions, type ConnectRefusal, type DrawnNote } from "../../hooks/use-storyline";
+import {
+  useStoryline,
+  useStorylineActions,
+  useStorylineIsUntidy,
+  type ConnectRefusal,
+  type DrawnNote,
+} from "../../hooks/use-storyline";
 import { useStorylineView } from "../../hooks/use-storyline-view";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { NodeIcon } from "../blocks/IconPicker";
@@ -48,6 +54,7 @@ const REFUSALS: Record<ConnectRefusal, string> = {
 
 export function PageStoryline({ node }: { node: Node }) {
   const model = useStoryline(node.id);
+  const untidy = useStorylineIsUntidy(node.id);
   const actions = useStorylineActions();
   const { addSceneToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
   const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline } = actions;
@@ -222,7 +229,7 @@ export function PageStoryline({ node }: { node: Node }) {
             type="button"
             className="ui-btn ui-btn-secondary"
             onClick={() => tidyStoryline(node.id)}
-            disabled={!model.untidy}
+            disabled={!untidy}
             // **The key comes from the binding, never from a string here.**
             // Undo is Ctrl+Shift+Z rather than Ctrl+Z — her call, 2026-08-27,
             // because Ctrl+Z belongs to whatever is being written — and it is
@@ -230,7 +237,7 @@ export function PageStoryline({ node }: { node: Node }) {
             // it. This tooltip said the wrong key until an app-suite scenario
             // pressed the one it advertised and nothing happened.
             title={
-              model.untidy
+              untidy
                 ? `Line the scenes up in order. ${undoKey} puts your arrangement back.`
                 : "Already lined up"
             }

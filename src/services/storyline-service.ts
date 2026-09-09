@@ -317,6 +317,18 @@ const WIKILINK = /\[\[([^\][\n]+)\]\]/g;
  * sentence somebody typed, and the alternative is a picker in a textarea.
  */
 export function noteSegments(text: string, nodes: Record<string, Node>): NoteSegment[] {
+  return segmentsAgainst(text, linkTargets(nodes));
+}
+
+/**
+ * Every name and alias in the world, to the page it means — or to null where
+ * two pages answer to it.
+ *
+ * **Built once per canvas rather than once per note.** It walks every page in
+ * the world, which is cheap on its own and not cheap done six times on every
+ * redraw; `storylineModel` builds it and hands it down.
+ */
+export function linkTargets(nodes: Record<string, Node>): Map<string, string | null> {
   const byName = new Map<string, string | null>();
   for (const node of Object.values(nodes)) {
     for (const name of [node.name, ...(node.aliases ?? [])]) {
@@ -327,7 +339,10 @@ export function noteSegments(text: string, nodes: Record<string, Node>): NoteSeg
       byName.set(key, seen === undefined || seen === node.id ? node.id : null);
     }
   }
+  return byName;
+}
 
+function segmentsAgainst(text: string, byName: Map<string, string | null>): NoteSegment[] {
   const segments: NoteSegment[] = [];
   let at = 0;
   for (const match of text.matchAll(WIKILINK)) {
@@ -621,8 +636,6 @@ export type StorylineModel = {
   bands: StorylineBand[];
   /** Canvas nodes whose page is gone — counted, never drawn. See below. */
   orphans: number;
-  /** Whether *Tidy up* would move anything, so the button can go quiet. */
-  untidy: boolean;
 };
 
 /**
@@ -636,6 +649,7 @@ export type StorylineModel = {
  * same trade `Project.graphPins` makes.
  */
 export function storylineModel(storyline: Storyline, nodes: Record<string, Node>): StorylineModel {
+  const targets = linkTargets(nodes);
   const scenes: DrawnScene[] = [];
   const alive = new Set<string>();
   for (const node of storyline.nodes) {
@@ -656,10 +670,9 @@ export function storylineModel(storyline: Storyline, nodes: Record<string, Node>
     // Resolved here rather than in the component, so a page renamed anywhere in
     // the world redraws every note that mentions it without the canvas file
     // being touched — the same join the scenes get, for the same reason.
-    notes: storyline.notes.map((note) => ({ ...note, segments: noteSegments(note.text, nodes) })),
+    notes: storyline.notes.map((note) => ({ ...note, segments: segmentsAgainst(note.text, targets) })),
     bands: storyline.bands,
     orphans: storyline.nodes.length - scenes.length,
-    untidy: needsTidying(storyline),
   };
 }
 

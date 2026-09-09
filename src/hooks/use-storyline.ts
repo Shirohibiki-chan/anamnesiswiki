@@ -6,7 +6,12 @@
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { STORYLINE_TEMPLATE_KEY } from "../constants/schema";
-import { createStoryline, storylineModel, type StorylineModel } from "../services/storyline-service";
+import {
+  createStoryline,
+  needsTidying,
+  storylineModel,
+  type StorylineModel,
+} from "../services/storyline-service";
 import { useProjectStore } from "../state/project-store";
 
 export type {
@@ -22,7 +27,7 @@ export function isStorylinePage(templateKey: string): boolean {
   return templateKey === STORYLINE_TEMPLATE_KEY;
 }
 
-const EMPTY: StorylineModel = { scenes: [], edges: [], notes: [], bands: [], orphans: 0, untidy: false };
+const EMPTY: StorylineModel = { scenes: [], edges: [], notes: [], bands: [], orphans: 0 };
 
 /**
  * One storyline's canvas, with every scene dressed in the page it stands for.
@@ -39,6 +44,20 @@ export function useStoryline(storylineId: string | null): StorylineModel {
     if (!storylineId) return EMPTY;
     return storylineModel(storyline ?? createStoryline(), nodes);
   }, [storylineId, storyline, nodes]);
+}
+
+/**
+ * Whether *Tidy up* would move anything.
+ *
+ * **Its own hook, keyed on the canvas alone rather than folded into the model.**
+ * Working it out means laying the whole thing out and comparing — and the model
+ * is rebuilt whenever any page in the world changes, so inside it that ran on
+ * every keystroke typed anywhere. Nothing about a page's name can make a canvas
+ * untidy, so this only has to be asked when the canvas itself moves.
+ */
+export function useStorylineIsUntidy(storylineId: string | null): boolean {
+  const storyline = useProjectStore((state) => (storylineId ? state.storylines[storylineId] : undefined));
+  return useMemo(() => (storyline ? needsTidying(storyline) : false), [storyline]);
 }
 
 export function useStorylineActions() {
