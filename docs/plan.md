@@ -347,6 +347,19 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
+- **A note or a labelled stretch put outside the scenes is on the canvas and off
+  the screen.** Found 2026-09-09 while placing the example world's canvas. The
+  view fits itself to the *scenes* — `sceneBounds` in `use-storyline-view.ts`
+  takes the scene positions and nothing else — so a note dropped to the right of
+  the last scene, or a band drawn round empty space, is outside the fitted box
+  when the page opens and stays invisible until somebody drags the view. Adding
+  one by hand is fine, because the canvas is where she put it and she is looking
+  at it; the case that bites is a canvas *opened* later, and the example world's
+  note had to be moved inside the scenes to look right. The fix is to fit to the
+  notes and bands as well — the reason it does not already is that the fit is
+  also the thing a drag re-centres against, and widening it means a band being
+  resized would move the picture underneath the hand doing it.
+
 - **A project that refuses to open can say nothing at all.** Reported from use
   2026-08-21: clicking Valeraverse on the start screen did nothing visible, and
   the world stayed shut. The likely trigger was a stale open-claim — a

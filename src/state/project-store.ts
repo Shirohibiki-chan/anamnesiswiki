@@ -50,7 +50,9 @@ import {
   type SceneRefusal,
 } from "../services/storyline-service";
 import { TEMPLATES_FILE } from "../constants/paths";
+import { EXAMPLE_WORLD_NAME } from "../constants/example-world";
 import type { ProjectTemplateFile } from "../constants/project-template";
+import { buildExampleWorld } from "../services/example-world";
 import * as fsService from "../services/filesystem-service";
 import { acknowledge, parseAcknowledgements, unacknowledged } from "../services/acknowledgements";
 import { getAcknowledgedWarnings, setAcknowledgedWarnings } from "../services/app-settings-service";
@@ -189,6 +191,14 @@ import { useHistoryStore } from "./history-store";
 // Starter top-level folders for a brand-new project, matching the user's
 // actual LK structure (see docs/plan.md Phase 2).
 const STARTER_FOLDERS = ["Canon", "AUs", "Characters", "Locations", "Factions", "Worldbuilding"];
+
+/**
+ * How many copies of the example world one folder may hold before the app says
+ * no. Not a rule about tidiness — it is the stop on the loop that looks for a
+ * free name, so a folder full of them ends in a sentence rather than counting
+ * forever.
+ */
+const EXAMPLE_COPY_LIMIT = 20;
 
 export type CreateProjectResult = { ok: true; rootPath: string } | { ok: false; error: string };
 
@@ -401,6 +411,17 @@ export type ProjectStoreState = {
     name: string,
     template: ProjectTemplateFile,
   ) => Promise<CreateProjectResult>;
+  /**
+   * The example world, made and opened (Phase 26).
+   *
+   * **No name comes in, unlike the three beside it**, and that is the whole
+   * difference: the other paths are somebody making *their* project, where the
+   * name is the first decision they make. This one is the app handing them a
+   * world to look at, so it names itself and they rename it if they keep it. A
+   * second copy is numbered rather than refused — running out of a folder name
+   * is not a reason to say no to reading the example again.
+   */
+  createExampleProject: (parentDir: string) => Promise<CreateProjectResult>;
   importLkProject: (
     parentDir: string,
     name: string,
@@ -1633,6 +1654,73 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // One shared path index for the whole write, the way the LK import does
       // it — a template is a couple of dozen nodes, but they all land at once.
       await fsService.saveNodes(rootPath, nodes, nodes);
+      markSaved();
+
+      return { ok: true, rootPath };
+    },
+
+    // Phase 26's fourth way in, and the one nobody names. It writes a world
+    // that was built in the app rather than read off disk — the LK import's
+    // write path with none of its fetching, since an example world's pictures,
+    // if it ever has any, ship with the app rather than living on a server.
+    //
+    // The canvases go down after the pages, because `saveStoryline` resolves a
+    // storyline's directory from the tree it is handed and the whole graph is
+    // already in hand by then.
+    async createExampleProject(parentDir) {
+      const { nodes, rootOrder, childOrder, expandedIds, homeNodeId, storylines } = buildExampleWorld();
+
+      // A free name rather than a refusal: somebody who has read the example
+      // once, deleted nothing, and wants it again is doing a reasonable thing,
+      // and "a folder with that name already exists" is an answer about our
+      // filing rather than about their request.
+      let name = EXAMPLE_WORLD_NAME;
+      let rootPath = await joinPath(parentDir, fsService.sanitizeSegment(name));
+      for (let copy = 2; copy <= EXAMPLE_COPY_LIMIT && (await fsService.pathExists(rootPath)); copy += 1) {
+        name = `${EXAMPLE_WORLD_NAME} ${copy}`;
+        rootPath = await joinPath(parentDir, fsService.sanitizeSegment(name));
+      }
+      if (await fsService.pathExists(rootPath)) {
+        return { ok: false, error: "There are already a lot of copies of the example world. Rename or delete one and try again." };
+      }
+
+      // Cleared before the state swap, for the reason the two paths above spell
+      // out: a world that arrives written is not a stack of things somebody
+      // did, and the first undo in it must not start dismantling Saltmere.
+      useHistoryStore.getState().clear();
+      // Open on the page that says what this is, rather than on nothing. The
+      // other three paths make a world somebody is about to write, where an
+      // empty screen is the invitation; this one is a world somebody is about
+      // to read, and it has a first page for the same reason a book does.
+      const home = nodes.find((node) => node.id === homeNodeId) ?? null;
+      const project: Project = {
+        ...createProject({ name, rootOrder, expandedIds }),
+        childOrder,
+        homeNodeId,
+        selectedId: home?.id ?? null,
+        selectedName: home?.name ?? null,
+      };
+      const nodesRecord = Object.fromEntries(nodes.map((node) => [node.id, node]));
+      set({
+        rootPath,
+        project,
+        nodes: nodesRecord,
+        contentRevisions: {},
+        isLoaded: true,
+        // The canvases go into state as well as onto disk. Everything else here
+        // is a page and pages are in `nodes`; a storyline's canvas is its own
+        // file, so a world made in memory that only wrote them would draw an
+        // empty canvas until the next time the project was opened.
+        storylines: Object.fromEntries(storylines.map((entry) => [entry.pageId, entry.storyline])),
+        navHistory: visit(EMPTY_NAV_HISTORY, home?.id ?? null),
+      });
+
+      await fsService.saveProject(rootPath, project);
+      await fsService.saveNodes(rootPath, nodes, nodes);
+      for (const { pageId, storyline } of storylines) {
+        const page = nodesRecord[pageId];
+        if (page) await fsService.saveStoryline(rootPath, page, nodes, storyline);
+      }
       markSaved();
 
       return { ok: true, rootPath };

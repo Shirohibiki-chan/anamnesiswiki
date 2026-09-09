@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-09 — a world you can open and look around
+
+### Additions
+
+- **The example world.** A fourth way in on the start screen, under **Add a Project**: *The example world* makes Saltmere — a harbour town the sea is leaving, four people, one guild, and one night that went wrong. It's for anyone opening this app who hasn't watched it get built, and it opens on a page saying what it is.
+- **It's a real project, not a locked demo.** Opening it copies a world onto your disk like any other: rename it, write in it, delete it. Nothing you do to it touches anything else.
+- **Asking for it again gives you another copy** rather than refusing because the name is taken — the second one is *Saltmere Example 2*.
+- **It's small, and it's meant to be read in about ten minutes.** A folder of characters with one properly written and one barely started, a page that lists the places inside it as a table, a guild holding the thing it's fighting over, and a storyline with four scenes that fork and come back together — with a note, a labelled stretch, and every name in the writing a real link.
+
+### Notes
+
+- **This is the first half of Phase 26.** The other half is a short tour of the app itself, which is what teaches where things are — nothing in the example world describes the app on purpose, so it can't go out of date when a later change moves something.
+
 ## 2026-09-09 — storylines: pages you already have, and who's in a scene
 
 ### Additions
@@ -264,15 +277,3 @@
 - **And the empty line above your first word is gone.** A callout with no colour has no icon — icons come from the four colour conventions — so the ordinary case was an *invisible* slot holding a line open for nothing. That space read as a mistake, because it was one.
 - **The little dashed square for adding an icon moved into the corner**, opposite the colour dot. It appears when your pointer is over the callout, the same as before, but now nothing shifts sideways when it does.
 - **Scrollbars don't flash near-white when the pointer crosses them.** The hover colour was borrowed from quiet text, and on 30 August quiet text got lighter in every theme so it would be readable. Nobody thought about the scrollbar. It steps up from your border colour now — and on Daylight it was going nearly black, which is fixed by the same change.
-
-## 2026-09-06 — getting rid of a universe
-
-### Fixes
-
-- **You can remove a universe from the switcher now.** It's under **Remove a universe**, next to the **+** that makes them. Turning one back into a folder has been possible since universes existed, but only by right-clicking the universe's row — and that row only exists in the All universes view, so from inside a universe there was no way out of it at all.
-- **It says what will happen before you click, not after.** Removing keeps every page inside; the thing just goes back to being an ordinary folder at the top of your world. "Remove" sounds destructive and this is the opposite, so the sentence is on screen while you're choosing rather than in a box you'd learn to click through.
-- **Removing the universe you're currently in doesn't strand you.** The tree falls back to All universes rather than showing you an empty sidebar rooted at something that isn't a universe any more.
-
-### Changes
-
-- **Internal, nothing visible: deleting or un-making a universe now clears it from your world's saved settings.** Your world remembers which universe you were in and which one is the shared one. Those were left pointing at pages that had stopped being universes — harmless today, because the app checks before using them, but it meant turning that same page back into a universe later would silently make it your current *and* shared one again.

@@ -2,6 +2,18 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — getting rid of a universe
+
+### Fixes
+
+- **You can remove a universe from the switcher now.** It's under **Remove a universe**, next to the **+** that makes them. Turning one back into a folder has been possible since universes existed, but only by right-clicking the universe's row — and that row only exists in the All universes view, so from inside a universe there was no way out of it at all.
+- **It says what will happen before you click, not after.** Removing keeps every page inside; the thing just goes back to being an ordinary folder at the top of your world. "Remove" sounds destructive and this is the opposite, so the sentence is on screen while you're choosing rather than in a box you'd learn to click through.
+- **Removing the universe you're currently in doesn't strand you.** The tree falls back to All universes rather than showing you an empty sidebar rooted at something that isn't a universe any more.
+
+### Changes
+
+- **Internal, nothing visible: deleting or un-making a universe now clears it from your world's saved settings.** Your world remembers which universe you were in and which one is the shared one. Those were left pointing at pages that had stopped being universes — harmless today, because the app checks before using them, but it meant turning that same page back into a universe later would silently make it your current *and* shared one again.
+
 ## 2026-09-06 — a universe for the things that are true everywhere
 
 ### Additions

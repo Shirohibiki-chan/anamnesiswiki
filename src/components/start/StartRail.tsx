@@ -60,6 +60,7 @@ type StartRailProps = {
   disabled: boolean;
   onOpen: (project: ListedWorld) => void;
   onStartFromTemplate: () => void;
+  onOpenExample: () => void;
   onOpenFolder: () => void;
   onImport: () => void;
   /** Which version was clicked, so Settings can open on that one specifically. */
@@ -76,6 +77,7 @@ export function StartRail({
   disabled,
   onOpen,
   onStartFromTemplate,
+  onOpenExample,
   onOpenFolder,
   onImport,
   onOpenReleases,
@@ -114,6 +116,16 @@ export function StartRail({
         <button type="button" className="start-item" onClick={onImport} disabled={disabled}>
           <b>Import</b>
           <span>Bring in a project from a .lk file.</span>
+        </button>
+        {/* Last of the four, and the one place it is allowed to sit. It is here
+            for somebody who has just installed the app and has nothing to open
+            — but she has this screen every day and never needs it, so it does
+            not take the loud slot from the entry she actually uses. The empty
+            library says its name where that matters, since a first run is
+            exactly when the grid beside this has nothing in it. */}
+        <button type="button" className="start-item" onClick={onOpenExample} disabled={disabled}>
+          <b>The example world</b>
+          <span>A small world, already written. Yours to poke at or delete.</span>
         </button>
       </div>
 
