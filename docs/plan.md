@@ -514,32 +514,15 @@ Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer
 
 **The distinction that drives the design:** a timeline is date-locked and linear; a storyline is sequence-driven and date-optional. Nodes connect by what leads to what, not by year. Dates are the reason the timeline never got built — a blank the user can't fill and won't guess at stops the writing. Storylines have no such field. Where a date happens to be known it's just another property on the page.
 
-**Three steps.** Step 1 is done; what it delivered is in `docs/shipped.md` and what still binds the code is in `docs/handoff.md` §Storylines. The two below are what's left.
+**Three steps, and step 3 is what remains.** What steps 1 and 2 delivered is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md` §Storylines.
 
 ### Step 1 — the canvas — closed 2026-09-09
 
 A Storyline page whose body is a zoomable, pannable canvas; scenes that are real pages inside it; directed lines drawn by dragging from one scene to another; a DAG rather than a tree, so threads fork and rejoin; authored positions saved beside the scenes and restored exactly. Detail in `docs/shipped.md`.
 
-### Step 2 — loose notes, and saying what a stretch of it is
+### Step 2 — loose notes and labelled stretches — closed 2026-09-09
 
-**Loose notes can be dropped anywhere on the canvas.** Asked for 2026-08-10, and
-it's the one place a storyline borrows from a whiteboard. Her case is a branch
-that stops: a thread ends and the story continues somewhere else, and without
-somewhere to say so the reader just finds a dead end. **A note holds links, not
-only text** — `continued in [[Demonic AU — Valera's Fall]]` is the whole point,
-and it costs nearly nothing because wikilinks already exist and Phase 22 already
-decided that following one into another universe switches to it. That turns a
-dangling branch into an exit rather than a note-to-self. Notes are annotations,
-not nodes: no edges, no page behind them, never counted as part of the sequence.
-**Her framing was other people reading it**, which is also the argument for
-labelling clusters ("Act 2") — for someone who didn't write the thing, an
-unlabelled fork and a fork that stops look identical.
-
-**And a tidy-up she presses**, never behaviour that just happens. Step 1
-deliberately has no layout at all, which is right for a canvas she has arranged
-and unhelpful for one where she has just added nine scenes in a row: a button
-that lines the sequence up is the version of "lay it out" that cannot undo work
-she did on purpose.
+Notes dropped anywhere on the canvas, holding wikilinks so a branch that stops becomes an exit; bands labelling a stretch ("Act 2") that carry the scenes standing on them; and a *Tidy up* she presses. Detail in `docs/shipped.md`.
 
 ### Step 3 — a scene that already has a page, and who is in it
 

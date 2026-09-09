@@ -97,10 +97,11 @@ v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
 
-**Phase 25 — Storylines — step 1 shipped 2026-09-09**: a Storyline page whose
-body is a canvas, scenes that are real pages inside it, and directed lines she
-draws herself between them. Two steps remain and are in `docs/plan.md`. What
-binds the code is §Storylines below.
+**Phase 25 — Storylines — steps 1 and 2 shipped 2026-09-09**: a Storyline page
+whose body is a canvas, scenes that are real pages inside it, directed lines she
+draws herself, plus loose notes holding wikilinks, labelled stretches that carry
+the scenes standing on them, and a *Tidy up* she presses. Step 3 remains and is
+in `docs/plan.md`. What binds the code is §Storylines below.
 
 **Phase 24 — Graphs — closed 2026-09-08**: a page's relationships drawn over
 the page, and the whole universe drawn from the rail. Four things from it bind
@@ -220,7 +221,7 @@ is below.
 
 ## Storylines
 
-Phase 25, step 1. Five things bind the code.
+Phase 25, steps 1 and 2. What binds the code:
 
 - **A storyline is an ordinary page, and its scenes are ordinary pages inside
   it.** `storyline` is a template key with no tabs and no properties, offered in
@@ -257,6 +258,48 @@ Phase 25, step 1. Five things bind the code.
   losing an arrangement to a mistake that was itself undone. `restoreNodes`
   rewrites the canvas file for the same reason: a deleted storyline's directory
   takes `_storyline.json` with it, and nothing else would put it back.
+
+- **A note and a band are annotations, and nothing in the code may quietly
+  promote them.** No edges, no page behind them, never counted among the scenes,
+  and `tidyUp` leaves both exactly where they are. The band is the one under
+  pressure: it looks like a container, it carries the scenes standing on it when
+  dragged, and it still owns nothing — `scenesOnBand` asks the question
+  *geometrically, once, at the moment it is picked up*, and the answer is never
+  stored. Storing it would make a band the folder-shaped object `CLAUDE.md`
+  §Data on disk says not to reach for, and would need a rule for every scene
+  dragged in or out afterwards.
+
+- **A band's carried scenes are decided before the drag and handed through
+  it.** Asking again on letting go asks about the band's *new* position, so a
+  scene it slid over halfway would join the move and land somewhere nobody put
+  it. `moveStorylineBand` takes the list rather than working it out.
+
+- **A note's links are resolved when it is drawn, not stored as ids** — the
+  opposite of what the editor's mentions do, and right for this one. A note is a
+  sentence somebody typed into a textarea; the alternative is a picker inside
+  it. The cost is that renaming a page breaks the note's link, and that is why
+  an unresolved name is *marked* rather than drawn as prose: a broken exit that
+  looks like ordinary words is one nobody ever finds. Ambiguous names resolve to
+  nothing, the same rule `linkableNames` follows.
+
+- **`tidyUp` columns by the longest path in, never the shortest.** A scene
+  reached both directly and the long way round belongs after the long way;
+  placing it by the shortest route draws an edge running backwards past three
+  columns, which reads as the arrow being wrong rather than the layout being
+  loose. The settling loop is bounded by the node count so a hand-edited file
+  with a cycle in it draws something odd instead of hanging.
+
+- **Tidying is the one move on this canvas that is recorded for undo.** Every
+  other position change is not, deliberately — a drag moves one scene and is
+  reversed by dragging it back. This moves all of them at once and no gesture
+  puts an arrangement back by hand, so Ctrl+Shift+Z has to cover it.
+
+- **Undo is Ctrl+Shift+Z, and a label saying so must come from
+  `useShortcutLabel`.** Ctrl+Z belongs to whatever is being written — her call,
+  2026-08-27 — and the binding is rebindable. The *Tidy up* tooltip hardcoded
+  "Ctrl+Z" and advertised a key that does nothing; it was found by an app-suite
+  scenario pressing the key the tooltip named. Anything in the app that names a
+  shortcut goes through that hook.
 
 - **The fit is floored well above the wheel's own limit** (`STORYLINE_MIN_FIT_ZOOM`).
   Five scenes in the page column fitted to 47%, where a scene's name is a row of

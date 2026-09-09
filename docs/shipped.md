@@ -5703,3 +5703,30 @@ The canvas: a Storyline page, scenes on it that are real pages, and directed lin
 **Three things are deliberately not in this step**, and all three are step 2 or 3 rather than gaps: loose notes on the canvas, cluster labels, and pointing a node at a page that already exists. A tidy-up button is also step 2 — step 1 has no layout at all on purpose, which is right for an arranged canvas and unhelpful the moment nine scenes have been added in a row.
 
 ---
+
+## Phase 25 — Storylines, step 2 ✅ Shipped 2026-09-09
+
+Loose notes, labelled stretches, and a tidy-up she presses. Step 3 is in `docs/plan.md`; what still binds the code is `docs/handoff.md` §Storylines.
+
+**What it delivered.** A note is a slip of text dropped below the scenes, holding `[[wikilinks]]` that resolve against the whole world — a branch that stops becomes an exit rather than a dead end, which is the case that was asked for on 2026-08-10. A band is a dashed, named frame drawn behind the scenes, placed around everything so she pulls it in to the stretch she meant, and dragging one carries every scene standing on it. *Tidy up* lays the sequence out in columns by longest path, only when pressed, and reverses with Ctrl+Shift+Z. Both annotations are stored in the same `_storyline.json` as the scenes and come back with them.
+
+**Why a band carries its scenes and still owns nothing.** Anyone dragging a labelled region expects the things on it to come along, and the alternative — a band that slides out from under its own act — is the version nobody uses twice. But storing membership would make a band a container, which is the folder-shaped object `CLAUDE.md` warns against, and would need a rule for every scene later dragged in or out. `scenesOnBand` asks geometrically, once, at pick-up, and the answer is handed through the drag rather than kept.
+
+**Why a note's links resolve at draw time.** The editor's mentions store a node id; a note stores the text she typed. That is the right trade for a sentence in a textarea — the alternative is a picker inside it — and the cost is that renaming a page breaks the link. Which is exactly why an unresolved name is drawn *marked* rather than as ordinary prose: a broken exit that looks like words is one nobody finds.
+
+**Four defects found by looking at the running app**, all on 2026-09-09, none of which would have failed an assertion as first written:
+
+- **Every new note and band landed on top of the scenes.** They were placed at the middle of the view, which is where the story is. Notes now go below the sequence in a column and bands frame it.
+- **Notes cascaded 28px diagonally, so the second one covered the first** — including its links, which then could not be clicked at all. Caught by a scenario that could not reach a link it could see. They cascade downward by a note's height now.
+- **A band's label was invisible.** `opacity` on the band took the label down with it; a translucent fill dims the ground and leaves the name at full strength.
+- **The zoom readout sat underneath the selection strip**, because it was positioned against the section rather than the stage.
+
+Plus one caught by the suite rather than by eye: **the *Tidy up* tooltip advertised Ctrl+Z**, which does nothing — the app's undo is Ctrl+Shift+Z, her call of 2026-08-27, and it is rebindable. It reads from `useShortcutLabel` now. The scenario found it by pressing the key the tooltip named.
+
+**One contrast measurement.** A note's wikilink is `--color-accent-light` on the note's tinted ground: 10:1 on Midnight, 4.55:1 on Daylight — over the AA floor and inside the band she has said reads as too faint. Answered with weight rather than a per-theme colour nobody would keep in step.
+
+**Verified.** `storyline-service.test.ts` grew from 23 to 53 unit tests — notes, wikilink resolution including aliases, ambiguity and unclosed brackets, bands and what stands on them, and tidying's longest-path rule, its idempotence, and its refusal to hang on a hand-edited cycle. `e2e/a-storyline-notes-and-tidying.e2e.ts` adds 11 scenarios driving the real app, including a restart that proves the annotations reached disk. Full app suite green.
+
+**The band-drag scenario is worth reading before writing another like it.** Its first version compared scene positions on screen and could not have failed whatever the code did: a band carries every scene standing on it, so the picture *translates*, and the canvas fits itself to the scenes and re-centres — every scene lands back on the same pixel. It measures against the notes now, which never move with a band and are deliberately not part of what the canvas fits to.
+
+---

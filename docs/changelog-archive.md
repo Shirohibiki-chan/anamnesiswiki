@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — a way to actually make a universe
+
+### Fixes
+
+- **The universe bar is always there now, even before you've made one**, and it has a **+** beside it. Yesterday it stayed hidden until a universe existed, which meant the only way to make your first one was a right-click menu item you'd have to already know about — so unless someone told you, universes weren't there at all.
+- **The + gives you both ways in.** "New, empty universe" makes a fresh one and opens it so you can name it straight away. Under that is a list of the top-level pages you already have — click one and it becomes a universe, keeping everything inside it. That second one is the one that matters for a world that already exists: your AUs are folders today, and this turns them into universes without moving a single page.
+- **That list has a search box and scrolls**, the same as "Move to" does. A world with a long tail of pages at the top level would otherwise put them in one column running off the bottom of the screen, where the ones past the edge can't be reached at all.
+- **Opening the switcher in a world with no universes explains what they are** instead of showing a list of nothing.
+- **A universe you open says it's a universe.** It used to show "This page doesn't have any tabs yet" with a button offering to add one — which is what a page says, not a container. It now says what a universe is for and offers to add a page inside it.
+
+### Changes
+
+- **The right-click "Turn into a universe" is still there.** It's the shortcut now rather than the way in.
+
 ## 2026-09-06 — one universe at a time
 
 ### Additions

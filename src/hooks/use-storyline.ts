@@ -9,14 +9,20 @@ import { STORYLINE_TEMPLATE_KEY } from "../constants/schema";
 import { createStoryline, storylineModel, type StorylineModel } from "../services/storyline-service";
 import { useProjectStore } from "../state/project-store";
 
-export type { ConnectRefusal, DrawnScene, StorylineModel } from "../services/storyline-service";
+export type {
+  ConnectRefusal,
+  DrawnNote,
+  DrawnScene,
+  NoteSegment,
+  StorylineModel,
+} from "../services/storyline-service";
 
 /** Whether this page is one whose body is a canvas. */
 export function isStorylinePage(templateKey: string): boolean {
   return templateKey === STORYLINE_TEMPLATE_KEY;
 }
 
-const EMPTY: StorylineModel = { scenes: [], edges: [], orphans: 0 };
+const EMPTY: StorylineModel = { scenes: [], edges: [], notes: [], bands: [], orphans: 0, untidy: false };
 
 /**
  * One storyline's canvas, with every scene dressed in the page it stands for.
@@ -43,6 +49,16 @@ export function useStorylineActions() {
       connectStorylineNodes: state.connectStorylineNodes,
       disconnectStorylineEdge: state.disconnectStorylineEdge,
       removeStorylineNode: state.removeStorylineNode,
+      addStorylineNote: state.addStorylineNote,
+      setStorylineNoteText: state.setStorylineNoteText,
+      moveStorylineNote: state.moveStorylineNote,
+      removeStorylineNote: state.removeStorylineNote,
+      addStorylineBand: state.addStorylineBand,
+      setStorylineBandLabel: state.setStorylineBandLabel,
+      moveStorylineBand: state.moveStorylineBand,
+      resizeStorylineBand: state.resizeStorylineBand,
+      removeStorylineBand: state.removeStorylineBand,
+      tidyStoryline: state.tidyStoryline,
       selectNode: state.selectNode,
     })),
   );
