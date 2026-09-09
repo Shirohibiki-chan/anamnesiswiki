@@ -527,19 +527,87 @@ with and for anyone who installs a release — the audience Phase 1.5 (Publish)
 serves read-only, and the one person outside this project who has already
 installed a build and had to debug it himself.
 
-**Last is the right place, not a parking space.** Phase 21 rewrites the app
-shell and Phase 22 changes what sits at the root of the tree, so a tutorial
-written before either describes an app that no longer exists. A tutorial that
-points at the wrong thing is worse than none — someone following it concludes
-the app is broken, not the instructions. Wait for the surfaces to stop moving.
+**Last was the right place, not a parking space.** Phase 21 rewrote the app
+shell and Phase 22 changed what sits at the root of the tree, so a tutorial
+written before either would describe an app that no longer exists. Both have
+shipped; the surfaces this points at have stopped moving, which is what
+unblocked it.
 
-**Nothing is designed here yet, on purpose.** Whether it's an interactive
-overlay, a sample project that opens on first launch, or a page inside the app
-is a decision for whoever picks this up, with her. The one constraint that's
-already fixed: whether someone has seen it is a local setting like every other
-(`app-settings-service.ts`) — there is no "did they finish onboarding" to
-report anywhere — nobody wants onboarding analytics, which is the one promise
-that outlived the retired policy section (`CLAUDE.md` → Two Promises).
+**The shape was settled 2026-09-09: an example world *and* a short tour.**
+Three were on the table — a world someone can open, highlights over the real
+app, and a Help section of ordinary pages — and the first two were chosen
+together. They teach different things and neither covers the other's half:
+
+- **The example world teaches what a world is made of** — that a character is a
+  page, that a page holds other pages, what a storyline looks like once someone
+  has actually drawn one. Nothing in it may describe the interface.
+- **The tour teaches where things are** — the rail, the tree, the page, the
+  panel on the right. Nothing in it may explain worldbuilding.
+
+**That division is a maintenance rule, not a matter of taste.** The tour is the
+half that breaks when the app moves, so keeping "the icon second from the top"
+out of the example world's prose keeps everything fragile in one place, small
+enough to re-check after a phase that moves a panel.
+
+### Step 1 — A world you can open
+
+**An example world is not a project template, and the difference is
+load-bearing.** A `.antpl` describes a shape and structurally refuses to carry
+anybody's writing (`constants/project-template.ts`); the example world is almost
+nothing *but* writing. So this is a fourth way a project gets made, beside
+`createProjectAt`'s six stub folders, `createProjectFromTemplate` and
+`importLkProject` (`project-store.ts`) — it writes a node graph built in the app
+rather than read off disk, which is the LK import's write path with none of its
+fetching.
+
+**Opening it makes a real project.** A copy on disk: named, renameable,
+writable, deletable. Someone who starts writing in it and keeps it has done a
+normal thing, not made a mess of a demo. Opening it a second time makes a second
+one rather than refusing, which the name-collision check in all three existing
+paths would currently do; a numbered name is the cheap answer.
+
+**Small enough to read in ten minutes, and somebody else's world.** This ships
+to strangers, so the Valeraverse stays out of it. Enough to cover what is hard
+to guess at from an empty project: a home page, a folder of characters with one
+of them properly written, a place, a storyline with a few scenes joined up, a
+page showing its own sub-pages as a database, tags, and enough `[[wikilinks]]`
+that backlinks and the graph have something to draw.
+
+**Pictures cost installer bytes** and travel by the asset path a project
+template deliberately refuses. A couple at most, or none — decided against the
+size of the release rather than by how bare a page looks in isolation.
+
+### Step 2 — A short tour
+
+Three or four highlights over the real app: the rail, the tree, the page, the
+panel on the right. A way out on every step.
+
+**It runs once a project is open, not on the start screen** — the things it
+points at do not exist until then. It must not assume *which* project: the first
+one somebody opens may be the example world, an import, or six empty folders, so
+no step may depend on a particular page being there.
+
+**A step whose anchor is missing skips itself.** A collapsed panel, or an
+element that moves in a later phase, must not leave a highlight pointing at the
+corner of the screen. That is the exact failure this phase was held back to
+avoid, and it outlives the phase as a rule.
+
+**Plain positioning, checked on WebKitGTK.** Linux gets the oldest of the three
+engines and there is a real person on it. A fixed overlay over measured
+rectangles is the safe build; anchor positioning and cutout tricks are not worth
+a tutorial that renders wrong for the person who most needs one.
+
+**Whether someone has seen it is a local setting like every other**
+(`app-settings-service.ts`) — one key, and no completion reported anywhere.
+Nobody wants onboarding analytics, which is the one promise that outlived the
+retired policy section (`CLAUDE.md` → Two Promises).
+
+### Step 3 — A door that stays open
+
+Both halves need to be reachable after the first day, or whoever skips on day
+one never sees either again: taking the tour again, and opening the example
+world, both offered from Settings. Cheap on its own, and it is also how either
+half gets tested without clearing app settings by hand.
 
 ---
 
