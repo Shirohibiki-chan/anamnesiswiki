@@ -179,19 +179,22 @@
 .storyline-node {
   position: absolute;
   width: 168px;
-  height: 64px;
+  height: 84px;
   /* Falls back to the ordinary border colour for a scene whose page has no
      colour of its own — PageStoryline sets this per scene when there is one. */
   --storyline-node-color: var(--color-border-strong);
 }
 
 .storyline-node-body {
+  position: relative;
   display: flex;
-  align-items: center;
+  /* Top-aligned since step 3: the cast row is pinned to the bottom of the card,
+     so a centred name would drift into it on a two-line title. */
+  align-items: flex-start;
   gap: var(--space-sm);
   width: 100%;
   height: 100%;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md) 22px;
   border: 2px solid var(--storyline-node-color);
   border-radius: var(--radius-md);
   background: var(--color-panel);
@@ -273,6 +276,134 @@
 }
 
 .storyline-node-handle:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* ---- Step 3: putting an existing page on, and who is in a scene ---- */
+
+.storyline-picker-anchor {
+  position: relative;
+}
+
+/* Hangs under its own button rather than in the middle of the window: it is a
+   search attached to one control, not a decision the whole app is waiting on. */
+.storyline-picker {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--space-xs));
+  z-index: 20;
+  width: 20rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  box-shadow: var(--elev-modal);
+}
+
+.storyline-picker-empty {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.storyline-picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.storyline-picker-row:hover {
+  background: var(--color-hover);
+}
+
+.storyline-picker-row:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
+/* Wraps rather than ellipsising — a page you cannot read the name of is a page
+   you cannot pick. The popover is wide enough that two lines is the worst case. */
+.storyline-picker-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Who is in the scene, along the bottom of the card. Always drawn, so the card
+   is one height — see STORYLINE_NODE_HEIGHT. */
+.storyline-node-cast {
+  position: absolute;
+  left: var(--space-md);
+  right: var(--space-sm);
+  bottom: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+}
+
+.storyline-cast-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+}
+
+.storyline-cast-more {
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* The same cast in the strip, with room for names. */
+.storyline-selection-cast {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  min-width: 0;
+  /* Takes the slack, so the buttons stay at the right edge. */
+  margin-right: auto;
+}
+
+.storyline-cast-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-panel-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.storyline-cast-chip:hover {
+  border-color: var(--color-accent-light);
+  color: var(--color-text-primary);
+}
+
+.storyline-cast-chip:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
@@ -509,14 +640,26 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  /* The first button takes the slack when the selection has no cast to show. */
   padding: var(--space-sm) var(--space-md);
   border-top: 1px solid var(--color-border);
   background: var(--color-panel);
 }
 
+.storyline-selection > .ui-btn:first-of-type {
+  margin-left: auto;
+}
+
+.storyline-selection-cast ~ .ui-btn:first-of-type {
+  margin-left: 0;
+}
+
 .storyline-selection-name {
   min-width: 0;
-  flex: 1;
+  /* Does not grow: the cast sits beside the name it belongs to, and the gap
+     before the buttons is pushed by the cast instead — otherwise the two
+     halves of "what is selected" end up at opposite ends of the strip. */
+  flex: 0 1 auto;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--color-text-primary);

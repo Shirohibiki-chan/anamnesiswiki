@@ -11,6 +11,7 @@ import { linkIndex } from "../services/link-index";
 import { buildNodePreview, type NodePreview } from "../services/preview-service";
 import { selectedUniverse, universeOf } from "../services/tree-service";
 import { useProject } from "./use-project";
+import { useStorylines } from "./use-storyline";
 import { useTemplates } from "./use-templates";
 
 // Re-exported so components reach the graph's services through this one door,
@@ -109,7 +110,10 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
   const [frozen, setFrozen] = useState({ structure, pins });
   if (frozen.structure !== structure) setFrozen({ structure, pins });
 
-  const index = useMemo(() => linkIndex(nodes), [nodes]);
+  // The canvases are part of what "connected" means since Phase 25 step 3, so
+  // a graph draws a line from a storyline to every scene on it.
+  const storylines = useStorylines();
+  const index = useMemo(() => linkIndex(nodes, storylines), [nodes, storylines]);
 
   /**
    * The pages a whole-universe graph is over, before any filter.

@@ -5730,3 +5730,26 @@ Plus one caught by the suite rather than by eye: **the *Tidy up* tooltip adverti
 **The band-drag scenario is worth reading before writing another like it.** Its first version compared scene positions on screen and could not have failed whatever the code did: a band carries every scene standing on it, so the picture *translates*, and the canvas fits itself to the scenes and re-centres — every scene lands back on the same pixel. It measures against the notes now, which never move with a band and are deliberately not part of what the canvas fits to.
 
 ---
+
+## Phase 25 — Storylines, step 3 ✅ Shipped 2026-09-09 — phase closed
+
+Pointing a scene at a page that already exists, and showing who is in one. What still binds the code is `docs/handoff.md` §Storylines.
+
+**What it delivered.** *Put a page on it* opens a search beside the button; picking a page adds a canvas node holding that page's id, and nothing is created. The box stays open and keeps focus after a pick, so several pages go on without reopening it. Pages from another universe are not offered. Each scene card carries a row of small icons for whatever its page points at, and the selection strip names them with a way through to each. And a page that is a scene on a storyline now says so where its connections are counted.
+
+**Why the connection went into `link-index.ts` rather than beside it.** The relationship lives in `_storyline.json`, so neither page's own file records it — which made it tempting to surface separately. §The graph's standing rule says otherwise, and this is the case that proved the rule right: Backlinks, the collection blocks and the graph would otherwise have given three different answers to "what is this page connected to". `linkIndex` gained the canvases as a second argument, and they are part of its cache key, because dragging a scene changes the index without changing a single page.
+
+**Why the cast is not filtered by template.** "Who's in it" suggests people, and a template filter was the obvious implementation. It is wrong: a location and an item are in a scene as much as a person is, and the reference index already knows everything a scene points at however it was pointed. Filtering would also have meant a storyline holding an opinion about which of the fourteen templates count as characters.
+
+**Two defects found by driving the real app**, neither of which a unit test could have reached:
+
+- **The picker had no way to close by clicking away.** Its only exit was Escape while the box still had focus, so clicking a result and then clicking the button again *closed* it instead of reopening — and everything typed after that went nowhere. Fixed with an outside-`pointerdown` handler, which is what every other popover in the app already does.
+- **The selection strip put the cast at the far right, beside the buttons**, because the name was the flexing element. The cast belongs next to the name it describes.
+
+**Verified.** `storyline-service.test.ts` grew from 53 to 67 unit tests — the universe rule in all four of its cases, what the picker offers and caps, alias matching, and a scene's cast including the two ways it can be empty. `link-index.test.ts` gained four: that a canvas change rebuilds the index when no page did, that one page twice on a canvas is one connection, and that a canvas whose storyline page is gone contributes nothing. `e2e/a-storyline-existing-pages.e2e.ts` adds 9 scenarios, including one that opens the added page's *own graph* and finds the storyline drawn on it — the connection read from the other end.
+
+**One scenario is worth reading before writing another like it.** "Puts two pages on without reopening the box" is deliberately one test rather than two. Split in half it read better and tested less: the tree search in between left focus in the sidebar, so the second name was typed there, and the assertion failed against an app that was behaving correctly.
+
+**What the phase did not build**, and both are decisions rather than leftovers. A band works out what is standing on it at the moment it is picked up and never records it, so a band dragged away and back does not adopt scenes that moved onto it in between — the alternative makes it a container. And drag-to-connect only reaches scenes currently on screen, which is inherent to the gesture rather than a limit worth engineering around.
+
+---

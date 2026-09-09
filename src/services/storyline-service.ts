@@ -10,6 +10,9 @@
 // happened next" has to have an answer, and a cycle is the state where it does
 // not. `connect` refuses one rather than drawing it and leaving the reader to
 // notice.
+import { UNIVERSE_TEMPLATE_KEY } from "../constants/schema";
+import { cachedOutgoingEdges } from "./link-index";
+import { universeOf } from "./tree-service";
 import type {
   Node,
   Storyline,
@@ -618,12 +621,121 @@ export function needsTidying(storyline: Storyline): boolean {
   );
 }
 
+// ---- Pointing a scene at a page that already exists (step 3) ----
+
+/** Why a page cannot be put on this canvas, or null when it can. */
+export type SceneRefusal = "itself" | "already-here" | "another-universe";
+
+/**
+ * Whether a page can stand as a scene on this storyline.
+ *
+ * **A storyline belongs to exactly one universe** (Phase 22) — a fork in
+ * reality has its own sequence of events by definition. Step 1 got that for
+ * free, because a scene was always a page created inside the storyline; the
+ * moment a scene can point at a page somewhere else, the rule has to be said
+ * out loud.
+ *
+ * **A page in no universe is allowed**, and so is one in the shared universe —
+ * the section Phase 22 built for the things true in every version of the world.
+ * A species or a map turning up in a scene is not a fork in reality. What is
+ * refused is a page belonging to a *different* universe, which is a different
+ * version of events.
+ */
+export function sceneRefusal(
+  pageId: string,
+  storylineId: string,
+  storyline: Storyline,
+  nodes: Record<string, Node>,
+  sharedUniverseId: string | null | undefined,
+): SceneRefusal | null {
+  if (pageId === storylineId) return "itself";
+  if (storyline.nodes.some((node) => node.pageId === pageId)) return "already-here";
+
+  const home = universeOf(storylineId, nodes);
+  const theirs = universeOf(pageId, nodes);
+  // Same universe, or either one lives outside universes entirely.
+  if (!home || !theirs || home.id === theirs.id) return null;
+  // The shared universe rides along under whichever universe is selected, so
+  // its pages are true in this storyline's version of the world too.
+  if (sharedUniverseId && theirs.id === sharedUniverseId) return null;
+  return "another-universe";
+}
+
+/**
+ * The pages that could be put on this canvas, matching a search.
+ *
+ * Refused pages are left out rather than listed and disabled: a picker that
+ * offers a page from another universe and then declines it is a menu item that
+ * does nothing, and the reason would have to be explained in a tooltip nobody
+ * opens. What is *not* filtered out is the folder — a folder can hold pages and
+ * be one, and deciding it cannot be a scene is not this function's call.
+ *
+ * **Nothing at all until something is typed**, and that rule lives here rather
+ * than in the picker: offering every page in the world the moment it opens is
+ * seventy-five rows to scroll before the first keystroke, and a second caller
+ * would have no reason to know it had to add the guard itself.
+ */
+export function sceneCandidates(
+  query: string,
+  storylineId: string,
+  storyline: Storyline,
+  nodes: Record<string, Node>,
+  sharedUniverseId: string | null | undefined,
+  limit: number,
+): Node[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return [];
+  const matches: Node[] = [];
+  for (const node of Object.values(nodes)) {
+    if (node.templateKey === UNIVERSE_TEMPLATE_KEY) continue;
+    if (sceneRefusal(node.id, storylineId, storyline, nodes, sharedUniverseId)) continue;
+    if (!nameMatches(node, trimmed)) continue;
+    matches.push(node);
+  }
+  return matches.sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit);
+}
+
+/** A page answers to its name and to any alias, the way it does everywhere else. */
+function nameMatches(node: Node, query: string): boolean {
+  if (node.name.toLowerCase().includes(query)) return true;
+  return (node.aliases ?? []).some((alias) => alias.toLowerCase().includes(query));
+}
+
+/**
+ * The pages one scene's page points at — who and what is in the scene.
+ *
+ * **Read from the reference index rather than from a field of its own**, which
+ * is the whole reason Phase 18 built one: a scene page that names Valera in its
+ * prose, lists her in a Participants field, or links her from a block is saying
+ * the same thing three ways, and a storyline should not have to know which.
+ * Anything it points at counts — a location and an item are in a scene as much
+ * as a person is — so this is deliberately not filtered by template.
+ *
+ * In the order `outgoingEdges` gives, which is prose first: the names actually
+ * written in the scene come before the ones filled into a field.
+ */
+export function sceneCast(pageId: string, nodes: Record<string, Node>, storylineId: string): Node[] {
+  const page = nodes[pageId];
+  if (!page) return [];
+  const cast: Node[] = [];
+  for (const targetId of cachedOutgoingEdges(page).keys()) {
+    // The storyline itself is not in its own scene, and neither is a page that
+    // has since been deleted.
+    if (targetId === storylineId) continue;
+    const target = nodes[targetId];
+    if (target) cast.push(target);
+  }
+  return cast;
+}
+
 /** A scene on the canvas with the page it stands for resolved. */
 export type DrawnScene = StorylineNode & {
   name: string;
   templateKey: string;
   icon?: string;
   color?: string;
+  /** Who and what is in this scene, from the reference index. See `sceneCast`. */
+  cast: Node[];
 };
 
 /** A note with its links already resolved against the world. */
@@ -648,7 +760,11 @@ export type StorylineModel = {
  * a mistake that was itself undone. Costing a few bytes to survive that is the
  * same trade `Project.graphPins` makes.
  */
-export function storylineModel(storyline: Storyline, nodes: Record<string, Node>): StorylineModel {
+export function storylineModel(
+  storyline: Storyline,
+  nodes: Record<string, Node>,
+  storylineId: string,
+): StorylineModel {
   const targets = linkTargets(nodes);
   const scenes: DrawnScene[] = [];
   const alive = new Set<string>();
@@ -662,6 +778,7 @@ export function storylineModel(storyline: Storyline, nodes: Record<string, Node>
       templateKey: page.templateKey,
       icon: page.icon,
       color: page.color,
+      cast: sceneCast(node.pageId, nodes, storylineId),
     });
   }
   return {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-09 — storylines: pages you already have, and who's in a scene
+
+### Additions
+
+- **Put a page you already have on a storyline.** *Put a page on it* opens a search; pick a page and it goes on the canvas as a scene, pointing at the page rather than copying it. Nothing new is made, and the page keeps living where it lives. Half the scenes in a real storyline are events you've already written, so this is the other half of adding one.
+- **The box stays open after you pick.** Type the next name straight away — putting five pages on doesn't mean opening it five times. Click anywhere else, or press Escape, to put it away.
+- **It won't offer a page from another universe.** A storyline is one version of events, so a page belonging to a different universe isn't in the list. Pages in the shared universe, and pages that aren't in any universe, are offered as normal.
+- **A scene card shows who's in it.** Small icons along the bottom for whatever that scene's page points at — characters, places, things — read from the same reference index Backlinks uses, so it doesn't matter whether you named them in the writing, filled them into a field, or linked them from a block. Select a scene and the strip along the bottom names them, and each one takes you to its page.
+- **A page now knows it's on a storyline.** Being a scene counts as a connection, so the storyline turns up on that page's graph alongside everything else that points at it.
+
+### Notes
+
+- **This finishes storylines** (Phase 25). What the three parts built is in `docs/shipped.md`.
+- A card is a little taller than it was, to make room for the row of who's in the scene. The row is drawn whether or not anyone is in it, so cards stay one size and nothing shifts as you write.
+
 ## 2026-09-09 — storylines: notes, labels, and tidying up
 
 ### Additions
@@ -261,13 +276,3 @@
 ### Changes
 
 - **Internal, nothing visible: deleting or un-making a universe now clears it from your world's saved settings.** Your world remembers which universe you were in and which one is the shared one. Those were left pointing at pages that had stopped being universes — harmless today, because the app checks before using them, but it meant turning that same page back into a universe later would silently make it your current *and* shared one again.
-
-## 2026-09-06 — a universe for the things that are true everywhere
-
-### Additions
-
-- **One universe can be your shared one** — the pages that are true in every version of your world. A species, a map, a magic system, a language. You make it like any other universe and then say it's the shared one, from the universe switcher (**Shared universe**) or by right-clicking it in the tree.
-- **Its pages show under whichever universe you're working in**, in their own labelled section at the bottom of the tree, collapsed until you want them. So shared lore is never something you have to switch away to go and read.
-- **The switcher marks which one it is**, so you don't have to visit each in turn to find out.
-- **The section is deliberately not styled like a page.** It's a rule, a gap, and a small heading — because the one thing that should never be ambiguous is which universe the page you're typing in belongs to.
-- **Nothing is shared until you say so.** A world with no shared universe looks exactly as it did, and picking **None** puts it back.

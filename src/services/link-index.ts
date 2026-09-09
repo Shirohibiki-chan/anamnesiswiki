@@ -4,7 +4,7 @@
 // are the same question asked three ways, and Phase 24's graphs need exactly
 // this data. Computed inside a component instead, it would be built twice and
 // the two copies would disagree.
-import { type BlockNoteDocument, type Node } from "../constants/schema";
+import { type BlockNoteDocument, type Node, type Storyline } from "../constants/schema";
 import { getPropertySchema } from "./template-registry";
 
 // Same loose shape search-service walks: BlockNoteDocument is `unknown[]` on
@@ -19,7 +19,15 @@ type BlockNoteBlock = { content?: unknown; children?: unknown };
  * say *why* a page is in the list is the exact failure that sent her hunting
  * through the reference's settings menus — see docs/plan.md Phase 18b.
  */
-export type MentionKind = "prose" | "property" | "manual";
+/**
+ * `storyline` is Phase 25 step 3, and it is the one kind that does not come
+ * from the pointing page's own file — a storyline's canvas lives in
+ * `_storyline.json`, so a scene standing for a page is a connection neither
+ * page records. Putting it here rather than surfacing it beside the others is
+ * the rule §The graph states: a new kind of connection belongs in this file,
+ * where Backlinks, the index blocks and the graph all see it at once.
+ */
+export type MentionKind = "prose" | "property" | "manual" | "storyline";
 
 export type Mention = {
   /** The page doing the pointing. */
@@ -106,8 +114,20 @@ export function outgoingEdges(node: Node): Map<string, { kind: MentionKind; labe
 // the record's identity so the store's next immutable update evicts it, held
 // weakly so a closed project isn't kept alive by it, and with a per-node inner
 // cache so the pages that didn't change are not re-walked.
-const indexCache = new WeakMap<Record<string, Node>, LinkIndex>();
+const indexCache = new WeakMap<Record<string, Node>, { index: LinkIndex; storylines: Record<string, Storyline> }>();
 const edgeCache = new WeakMap<Node, Map<string, { kind: MentionKind; label?: string }>>();
+
+/**
+ * `outgoingEdges` with the per-page cache in front of it.
+ *
+ * Exported for `sceneCast`, which asks this of every scene on a canvas every
+ * time the canvas is drawn — and the canvas is redrawn whenever any page in the
+ * world changes. Uncached that is a walk of every scene's prose per keystroke;
+ * cached, only the page that actually changed is re-walked.
+ */
+export function cachedOutgoingEdges(node: Node): Map<string, { kind: MentionKind; label?: string }> {
+  return edgesFor(node);
+}
 
 function edgesFor(node: Node): Map<string, { kind: MentionKind; label?: string }> {
   const cached = edgeCache.get(node);
@@ -124,9 +144,14 @@ function edgesFor(node: Node): Map<string, { kind: MentionKind; label?: string }
  * order — so every list this produces is stable between renders rather than
  * reshuffling as the map is rebuilt.
  */
-export function linkIndex(nodes: Record<string, Node>): LinkIndex {
+export function linkIndex(nodes: Record<string, Node>, storylines: Record<string, Storyline>): LinkIndex {
   const cached = indexCache.get(nodes);
-  if (cached) return cached;
+  // **The canvases are part of the answer, so they are part of the cache
+  // key.** `nodes` alone was enough until a storyline could point at a page:
+  // dragging a scene onto the canvas changes the index without changing a
+  // single page, and an index keyed on pages only would keep handing back the
+  // answer from before it.
+  if (cached && cached.storylines === storylines) return cached.index;
 
   const mentionsOf = new Map<string, Mention[]>();
   const childrenOf = new Map<string, string[]>();
@@ -156,8 +181,25 @@ export function linkIndex(nodes: Record<string, Node>): LinkIndex {
     }
   }
 
+  // Every scene on every canvas, as a connection from the storyline page to the
+  // page the scene stands for. Deduplicated, because one page may legitimately
+  // appear twice on one storyline — a scene revisited from another thread —
+  // and that is one relationship, not two rows in her Backlinks.
+  for (const [storylineId, storyline] of Object.entries(storylines)) {
+    if (!nodes[storylineId]) continue;
+    const seen = new Set<string>();
+    for (const scene of storyline.nodes) {
+      if (scene.pageId === storylineId || seen.has(scene.pageId)) continue;
+      if (!nodes[scene.pageId]) continue;
+      seen.add(scene.pageId);
+      const list = mentionsOf.get(scene.pageId) ?? [];
+      list.push({ fromId: storylineId, kind: "storyline" });
+      mentionsOf.set(scene.pageId, list);
+    }
+  }
+
   const index = { mentionsOf, childrenOf, taggedWith };
-  indexCache.set(nodes, index);
+  indexCache.set(nodes, { index, storylines });
   return index;
 }
 

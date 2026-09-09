@@ -28,7 +28,11 @@ A page whose body is a canvas of **scenes** joined in narrative order (Phase 25)
 
 ## Scene
 
-Two meanings, and they are the same thing seen from two places. **The Scene *template*** is one of the fourteen kinds a page can be. **A scene *on a storyline*** is a card on the canvas standing for such a page: it holds an id and a position, and reads its name and icon off the page live. Taking a scene off a canvas removes the card and never the page — the same distinction a database view makes between a row and a page.
+Two meanings, and they are the same thing seen from two places. **The Scene *template*** is one of the fourteen kinds a page can be. **A scene *on a storyline*** is a card on the canvas standing for a page: it holds an id and a position, and reads its name and icon off the page live. The page is either one the canvas made (*Add a scene*) or one that already existed (*Put a page on it*) — both are first-class, and the second is never a copy. Taking a scene off a canvas removes the card and never the page, the same distinction a database view makes between a row and a page.
+
+## Cast (of a scene)
+
+Whatever a scene's page points at — characters, places, things — read from the reference index rather than from a field of its own, so it does not matter whether they were named in the writing, filled into a property or linked from a block. Deliberately not filtered by template: a location is in a scene as much as a person is.
 
 ## Note (on a storyline)
 

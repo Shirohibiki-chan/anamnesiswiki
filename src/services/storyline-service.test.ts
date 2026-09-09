@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createNode, type Node, type Storyline } from "../constants/schema";
+import { createNode, createTab, type Node, type Storyline } from "../constants/schema";
 import {
   addBand,
   addNote,
@@ -19,6 +19,9 @@ import {
   removeNode,
   removeNote,
   resizeBand,
+  sceneCandidates,
+  sceneCast,
+  sceneRefusal,
   scenesOnBand,
   setBandLabel,
   setNoteText,
@@ -186,7 +189,7 @@ describe("disconnect", () => {
 describe("storylineModel", () => {
   it("dresses each scene in its page's name and icon", () => {
     const { storyline, nodes } = canvasOf(2);
-    const model = storylineModel(storyline, nodes);
+    const model = storylineModel(storyline, nodes, "the-storyline");
     expect(model.scenes.map((scene) => scene.name)).toEqual(["Scene 1", "Scene 2"]);
     expect(model.scenes[0].templateKey).toBe("scene");
   });
@@ -195,7 +198,7 @@ describe("storylineModel", () => {
     const { storyline, nodes } = canvasOf(2);
     const joined = join(storyline, 0, 1);
     delete nodes[storyline.nodes[1].pageId];
-    const model = storylineModel(joined, nodes);
+    const model = storylineModel(joined, nodes, "the-storyline");
     expect(model.scenes).toHaveLength(1);
     expect(model.edges).toHaveLength(0);
     expect(model.orphans).toBe(1);
@@ -204,7 +207,7 @@ describe("storylineModel", () => {
   it("leaves the stored canvas alone, so undoing the delete puts it back", () => {
     const { storyline, nodes } = canvasOf(2);
     delete nodes[storyline.nodes[1].pageId];
-    storylineModel(storyline, nodes);
+    storylineModel(storyline, nodes, "the-storyline");
     expect(storyline.nodes).toHaveLength(2);
   });
 });
@@ -249,7 +252,7 @@ describe("notes", () => {
   it("is never counted among the scenes", () => {
     const { storyline, nodes } = canvasOf(2);
     const withNote = addNote(storyline, { x: 0, y: 0 }, "an aside");
-    expect(storylineModel(withNote, nodes).scenes).toHaveLength(2);
+    expect(storylineModel(withNote, nodes, "the-storyline").scenes).toHaveLength(2);
   });
 
   it("has no lines, so removing a scene cannot touch it", () => {
@@ -495,5 +498,141 @@ describe("readStoryline, with annotations", () => {
     });
     expect(read.notes).toHaveLength(1);
     expect(read.bands).toHaveLength(1);
+  });
+});
+
+describe("putting an existing page on a canvas", () => {
+  /** A world with two universes and a shared one, which is what the rule is about. */
+  function world() {
+    const canon = { ...createNode({ parentId: null, templateKey: "universe", name: "Canon" }) };
+    const demonic = { ...createNode({ parentId: null, templateKey: "universe", name: "Demonic AU" }) };
+    const shared = { ...createNode({ parentId: null, templateKey: "universe", name: "Shared" }) };
+    const storyline = { ...createNode({ parentId: canon.id, templateKey: "storyline", name: "The Fall" }) };
+    const inCanon = { ...createNode({ parentId: canon.id, templateKey: "scene", name: "The Duel" }) };
+    const inDemonic = { ...createNode({ parentId: demonic.id, templateKey: "scene", name: "The Other Duel" }) };
+    const inShared = { ...createNode({ parentId: shared.id, templateKey: "race", name: "Merfolk" }) };
+    const rootless = { ...createNode({ parentId: null, templateKey: "note", name: "Loose Page" }) };
+    const nodes = Object.fromEntries(
+      [canon, demonic, shared, storyline, inCanon, inDemonic, inShared, rootless].map((n) => [n.id, n]),
+    );
+    return { nodes, canon, demonic, shared, storyline, inCanon, inDemonic, inShared, rootless };
+  }
+
+  it("takes a page from the storyline's own universe", () => {
+    const w = world();
+    expect(sceneRefusal(w.inCanon.id, w.storyline.id, createStoryline(), w.nodes, w.shared.id)).toBeNull();
+  });
+
+  it("refuses a page from a different universe, because a storyline is one version of events", () => {
+    const w = world();
+    expect(sceneRefusal(w.inDemonic.id, w.storyline.id, createStoryline(), w.nodes, w.shared.id)).toBe(
+      "another-universe",
+    );
+  });
+
+  it("takes a page from the shared universe, which is true in every version", () => {
+    const w = world();
+    expect(sceneRefusal(w.inShared.id, w.storyline.id, createStoryline(), w.nodes, w.shared.id)).toBeNull();
+  });
+
+  it("takes a page that is in no universe at all", () => {
+    const w = world();
+    expect(sceneRefusal(w.rootless.id, w.storyline.id, createStoryline(), w.nodes, w.shared.id)).toBeNull();
+  });
+
+  it("refuses the storyline itself", () => {
+    const w = world();
+    expect(sceneRefusal(w.storyline.id, w.storyline.id, createStoryline(), w.nodes, null)).toBe("itself");
+  });
+
+  it("refuses a page already on the canvas", () => {
+    const w = world();
+    const storyline = addSceneNode(createStoryline(), w.inCanon.id, { x: 0, y: 0 });
+    expect(sceneRefusal(w.inCanon.id, w.storyline.id, storyline, w.nodes, null)).toBe("already-here");
+  });
+
+  it("offers nothing until something is typed", () => {
+    const w = world();
+    expect(sceneCandidates("", w.storyline.id, createStoryline(), w.nodes, w.shared.id, 8)).toEqual([]);
+    expect(sceneCandidates("   ", w.storyline.id, createStoryline(), w.nodes, w.shared.id, 8)).toEqual([]);
+  });
+
+  it("leaves out what it would refuse rather than offering it and declining", () => {
+    const w = world();
+    const names = sceneCandidates("duel", w.storyline.id, createStoryline(), w.nodes, w.shared.id, 8).map(
+      (node) => node.name,
+    );
+    expect(names).toEqual(["The Duel"]);
+  });
+
+  it("never offers a universe", () => {
+    const w = world();
+    const names = sceneCandidates("a", w.storyline.id, createStoryline(), w.nodes, w.shared.id, 8).map(
+      (node) => node.name,
+    );
+    expect(names).not.toContain("Canon");
+    expect(names).not.toContain("Shared");
+  });
+
+  it("finds a page by an alias, the way the rest of the app does", () => {
+    const w = world();
+    w.nodes[w.inCanon.id] = { ...w.inCanon, aliases: ["Swordfight"] };
+    const names = sceneCandidates("swordf", w.storyline.id, createStoryline(), w.nodes, w.shared.id, 8).map(
+      (node) => node.name,
+    );
+    expect(names).toEqual(["The Duel"]);
+  });
+
+  it("caps how many it offers", () => {
+    const w = world();
+    for (let index = 0; index < 20; index += 1) {
+      const extra = createNode({ parentId: w.canon.id, templateKey: "scene", name: `Scene ${index}` });
+      w.nodes[extra.id] = extra;
+    }
+    expect(sceneCandidates("scene", w.storyline.id, createStoryline(), w.nodes, w.shared.id, 8)).toHaveLength(8);
+  });
+});
+
+describe("sceneCast", () => {
+  it("lists whatever the scene's page points at", () => {
+    const valera = createNode({ parentId: null, templateKey: "character", name: "Valera" });
+    const scene = createNode({
+      parentId: null,
+      templateKey: "scene",
+      name: "The Duel",
+      tabs: [
+        createTab({
+          id: "t",
+          label: "Scene",
+          content: [{ type: "paragraph", content: [{ type: "mention", props: { nodeId: valera.id } }] }],
+        }),
+      ],
+    });
+    const nodes = { [valera.id]: valera, [scene.id]: scene };
+    expect(sceneCast(scene.id, nodes, "storyline-id").map((n) => n.name)).toEqual(["Valera"]);
+  });
+
+  it("leaves out the storyline the scene is on", () => {
+    const storyline = createNode({ parentId: null, templateKey: "storyline", name: "The Fall" });
+    const scene = createNode({
+      parentId: storyline.id,
+      templateKey: "scene",
+      name: "The Duel",
+      tabs: [
+        createTab({
+          id: "t",
+          label: "Scene",
+          content: [{ type: "paragraph", content: [{ type: "mention", props: { nodeId: storyline.id } }] }],
+        }),
+      ],
+    });
+    const nodes = { [storyline.id]: storyline, [scene.id]: scene };
+    expect(sceneCast(scene.id, nodes, storyline.id)).toEqual([]);
+  });
+
+  it("is empty for a scene that names nobody, and for a page that is gone", () => {
+    const scene = createNode({ parentId: null, templateKey: "scene", name: "Quiet" });
+    expect(sceneCast(scene.id, { [scene.id]: scene }, "s")).toEqual([]);
+    expect(sceneCast("missing", {}, "s")).toEqual([]);
   });
 });

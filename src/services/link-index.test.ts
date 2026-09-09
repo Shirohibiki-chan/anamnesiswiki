@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createNode, createTab, type Node } from "../constants/schema";
+import { createNode, createTab, type Node, type Storyline } from "../constants/schema";
 import { linkIndex, outgoingEdges, pagesWithAnyTag } from "./link-index";
 
 function page(name: string, patch: Partial<Node> = {}): Node {
@@ -14,8 +14,8 @@ function mention(nodeId: string, label = "x") {
   return { type: "paragraph", content: [{ type: "mention", props: { nodeId, label } }] };
 }
 
-function indexOf(nodes: Node[]) {
-  return linkIndex(Object.fromEntries(nodes.map((n) => [n.id, n])));
+function indexOf(nodes: Node[], storylines: Record<string, Storyline> = {}) {
+  return linkIndex(Object.fromEntries(nodes.map((n) => [n.id, n])), storylines);
 }
 
 describe("outgoingEdges", () => {
@@ -107,9 +107,66 @@ describe("linkIndex", () => {
     expect(indexOf([a, b]).taggedWith.get("seafaring")).toEqual([a.id, b.id]);
   });
 
-  it("returns the same index object for the same nodes map", () => {
+  it("returns the same index object for the same pages and the same canvases", () => {
     const nodes = { a: page("A") };
-    expect(linkIndex(nodes)).toBe(linkIndex(nodes));
+    // Both arguments have to be the same *object*, not merely equal — the
+    // cache is identity-keyed, which is what makes the store's next immutable
+    // update evict it.
+    const storylines = {};
+    expect(linkIndex(nodes, storylines)).toBe(linkIndex(nodes, storylines));
+  });
+
+  it("builds again when a canvas changes but no page did", () => {
+    const scene = page("A Scene");
+    const storyline = page("The Storyline");
+    const nodes = { [scene.id]: scene, [storyline.id]: storyline };
+
+    const before = linkIndex(nodes, {});
+    expect(before.mentionsOf.get(scene.id) ?? []).toHaveLength(0);
+
+    // Dragging a scene onto a canvas changes what is connected to what without
+    // touching a single page. An index keyed on the pages alone would keep
+    // handing back the answer from before it.
+    const after = linkIndex(nodes, {
+      [storyline.id]: {
+        version: 1,
+        nodes: [{ id: "n1", pageId: scene.id, x: 0, y: 0 }],
+        edges: [],
+        notes: [],
+        bands: [],
+      },
+    });
+    expect(after).not.toBe(before);
+    expect(after.mentionsOf.get(scene.id)).toEqual([{ fromId: storyline.id, kind: "storyline" }]);
+  });
+
+  it("counts a page twice on one canvas as one connection", () => {
+    const scene = page("A Scene");
+    const storyline = page("The Storyline");
+    const nodes = { [scene.id]: scene, [storyline.id]: storyline };
+    const index = linkIndex(nodes, {
+      [storyline.id]: {
+        version: 1,
+        // The same page, revisited from another thread — one relationship.
+        nodes: [
+          { id: "n1", pageId: scene.id, x: 0, y: 0 },
+          { id: "n2", pageId: scene.id, x: 300, y: 0 },
+        ],
+        edges: [],
+        notes: [],
+        bands: [],
+      },
+    });
+    expect(index.mentionsOf.get(scene.id)).toHaveLength(1);
+  });
+
+  it("ignores a canvas whose storyline page has been deleted", () => {
+    const scene = page("A Scene");
+    const nodes = { [scene.id]: scene };
+    const index = linkIndex(nodes, {
+      gone: { version: 1, nodes: [{ id: "n1", pageId: scene.id, x: 0, y: 0 }], edges: [], notes: [], bands: [] },
+    });
+    expect(index.mentionsOf.get(scene.id) ?? []).toHaveLength(0);
   });
 });
 

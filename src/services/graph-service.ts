@@ -35,7 +35,11 @@ export type GraphEdgeKind = MentionKind | "tree";
  * second, contradictory precedence here would mean a line's reason depended on
  * which end of it you asked from.
  */
-const KIND_RANK: Record<GraphEdgeKind, number> = { prose: 0, property: 1, manual: 2, tree: 3 };
+// `storyline` sits between the written kinds and the tree: it is a deliberate
+// placement rather than something filed, but it is made *outside* both pages,
+// so anything either page actually says about the other is the better reason
+// to show on the line.
+const KIND_RANK: Record<GraphEdgeKind, number> = { prose: 0, property: 1, manual: 2, storyline: 3, tree: 4 };
 
 export type GraphNode = {
   id: string;

@@ -91,17 +91,18 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 21, 22, 23, 24, 27 and 29 are done, and Phase 25 is
-under way.** The app is shippable and shipping —
+**Phases 0–19, 19.5, 21, 22, 23, 24, 25, 27 and 29 are done.** The app is shippable and shipping —
 v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
 
-**Phase 25 — Storylines — steps 1 and 2 shipped 2026-09-09**: a Storyline page
-whose body is a canvas, scenes that are real pages inside it, directed lines she
-draws herself, plus loose notes holding wikilinks, labelled stretches that carry
-the scenes standing on them, and a *Tidy up* she presses. Step 3 remains and is
-in `docs/plan.md`. What binds the code is §Storylines below.
+**Phase 25 — Storylines — closed 2026-09-09**: a Storyline page whose body is a
+canvas, scenes that are real pages, directed lines she draws herself, loose
+notes holding wikilinks, labelled stretches that carry the scenes standing on
+them, a *Tidy up* she presses, and scenes that can point at pages she already
+has. What binds the code is §Storylines below — and one rule from it reaches
+outside the feature: **a scene standing for a page is a connection like any
+other, so `linkIndex` takes the canvases and caches on them.**
 
 **Phase 24 — Graphs — closed 2026-09-08**: a page's relationships drawn over
 the page, and the whole universe drawn from the rail. Four things from it bind
@@ -221,7 +222,7 @@ is below.
 
 ## Storylines
 
-Phase 25, steps 1 and 2. What binds the code:
+Phase 25, closed 2026-09-09. What binds the code:
 
 - **A storyline is an ordinary page, and its scenes are ordinary pages inside
   it.** `storyline` is a template key with no tabs and no properties, offered in
@@ -258,6 +259,44 @@ Phase 25, steps 1 and 2. What binds the code:
   losing an arrangement to a mistake that was itself undone. `restoreNodes`
   rewrites the canvas file for the same reason: a deleted storyline's directory
   takes `_storyline.json` with it, and nothing else would put it back.
+
+- **A scene standing for a page is a connection, and it lives in
+  `link-index.ts` like every other kind.** That is §The graph's rule, and this
+  is the case that tested it: the relationship is recorded in
+  `_storyline.json`, so *neither* page's file mentions it, and surfacing it
+  beside the index rather than inside it would have given Backlinks, the
+  collection blocks and the graph three different answers about what a page is
+  connected to. `linkIndex` takes the canvases as a second argument for that
+  reason, and **they are part of its cache key** — dragging a scene onto a
+  canvas changes the index without changing a single page, and an index keyed
+  on pages alone kept handing back the answer from before.
+
+- **A page put on a canvas is never copied.** `addExistingPageToStoryline` adds
+  a canvas node holding that page's id and nothing else. The alternative — a
+  new page seeded from the old one — would look identical on screen and leave
+  her world with two Greyharbours, which is the failure the app-suite scenario
+  checks the tree for rather than trusting the canvas.
+
+- **A storyline is one version of events, so a page from another universe
+  cannot be a scene on it** (`sceneRefusal`). A page in *no* universe is fine,
+  and so is one in the shared universe — that section exists for the things
+  true in every version of the world, and a species turning up in a scene is
+  not a fork in reality. The picker leaves refused pages out rather than
+  offering and declining them, because a row that does nothing needs a
+  tooltip nobody opens to explain itself.
+
+- **A scene's cast comes from the reference index, not from a field of its
+  own.** A scene page that names Valera in its prose, lists her in a
+  Participants field and links her from a block is saying one thing three ways.
+  It is deliberately not filtered by template: a location and an item are in a
+  scene as much as a person is. `cachedOutgoingEdges` exists for this — the
+  cast is asked of every scene on every redraw, and the canvas redraws whenever
+  any page in the world changes.
+
+- **The cast row on a card is drawn whether or not anybody is in the scene.**
+  That is what keeps `STORYLINE_NODE_HEIGHT` one number: a card that grew the
+  first time a name was written into its page would move every other card on
+  the canvas.
 
 - **A note and a band are annotations, and nothing in the code may quietly
   promote them.** No edges, no page behind them, never counted among the scenes,
