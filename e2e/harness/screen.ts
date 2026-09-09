@@ -72,6 +72,17 @@ const GRAPH_FILTER_ROW = ".graph-filter-row";
 const GRAPH_HEADING = ".page-graph-heading";
 const GRAPH_SCENE = ".page-graph-scene";
 const GRAPH_STAGE = ".page-graph-stage";
+// Phase 25: the storyline canvas, and the grid a blank page offers templates
+// from — which is how a page becomes a storyline.
+const NEW_PAGE_GRID = ".new-page-landing-grid";
+const STORYLINE = ".storyline";
+const STORYLINE_NODE = ".storyline-node";
+const STORYLINE_NODE_BODY = ".storyline-node-body";
+const STORYLINE_NODE_NAME = ".storyline-node-name";
+const STORYLINE_HANDLE = ".storyline-node-handle";
+const STORYLINE_EDGE = ".storyline-edge";
+const STORYLINE_SELECTION = ".storyline-selection";
+const STORYLINE_REFUSAL = ".storyline-refusal";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -1704,4 +1715,133 @@ export async function openAndUnpinShortcutTogether(window: Page, name: string): 
     tile.click();
     tile.dispatchEvent(new MouseEvent("auxclick", { button: 1, bubbles: true, cancelable: true }));
   }, name);
+}
+
+// ---- Phase 25: the storyline canvas, drawn in the page whose body it is ----
+
+/**
+ * Turns the open page into a storyline, from the template grid a blank page
+ * shows. The grid is only there while the page has no tabs, which is what a
+ * page made a moment ago is.
+ */
+export async function makeStoryline(window: Page): Promise<void> {
+  await window.locator(NEW_PAGE_GRID).getByRole("button", { name: "Storyline", exact: true }).click();
+  await window.locator(STORYLINE).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Whether the open page is drawing a canvas. */
+export async function storylineIsShown(window: Page): Promise<boolean> {
+  return (await window.locator(STORYLINE).count()) > 0;
+}
+
+/** Adds a scene, which makes a page for it inside the storyline. */
+export async function addStorylineScene(window: Page): Promise<void> {
+  const before = await window.locator(STORYLINE_NODE).count();
+  await window.locator(STORYLINE).getByRole("button", { name: "Add a scene" }).click();
+  await window
+    .locator(STORYLINE_NODE)
+    .nth(before)
+    .waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * The scenes on the canvas, ordered left to right.
+ *
+ * **Order rather than coordinates, because the picture rescales.** The canvas
+ * fits itself to the window, so adding a scene changes the zoom and shifts
+ * every other card on screen — a scenario comparing pixel positions across a
+ * reload is measuring the fit, not the arrangement. Which scene is furthest
+ * right survives any amount of scaling, which is the same call
+ * `graphNodesLeftToRight` makes and for the same reason.
+ */
+export async function storylineScenesLeftToRight(window: Page): Promise<string[]> {
+  const placed: { name: string; x: number }[] = [];
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const box = await node.boundingBox();
+    const name = await node.locator(STORYLINE_NODE_NAME).innerText();
+    if (box) placed.push({ name: normalize(name), x: box.x });
+  }
+  return placed.sort((a, b) => a.x - b.x).map((entry) => entry.name);
+}
+
+/**
+ * The scenes on the canvas as their own ids, ordered left to right.
+ *
+ * **Ids rather than names, because every scene starts life called "Untitled".**
+ * A scenario asking whether a drag moved anything cannot tell three identical
+ * names apart, which is how the first version of the drag assertion passed
+ * against a canvas that had not moved at all. The id is stored on the canvas,
+ * so it also survives a reload — which is what makes it the right thing to
+ * compare an arrangement against before and after a restart.
+ */
+export async function storylineSceneOrder(window: Page): Promise<string[]> {
+  const placed: { id: string; x: number }[] = [];
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const box = await node.boundingBox();
+    const id = await node.locator(STORYLINE_NODE_BODY).getAttribute("data-scene-id");
+    if (box && id) placed.push({ id, x: box.x });
+  }
+  return placed.sort((a, b) => a.x - b.x).map((entry) => entry.id);
+}
+
+/** How many lines are drawn between scenes. */
+export async function storylineEdgeCount(window: Page): Promise<number> {
+  return await window.locator(STORYLINE_EDGE).count();
+}
+
+/** The middle of one scene's card, in window pixels. */
+async function storylineSceneCentre(window: Page, index: number): Promise<{ x: number; y: number }> {
+  const box = await window.locator(STORYLINE_NODE).nth(index).boundingBox();
+  if (!box) throw new Error(`No scene at index ${index}`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/**
+ * Draws a line from one scene to another by dragging the first one's handle
+ * onto the second's card — the gesture, not a shortcut through the store.
+ */
+export async function joinStorylineScenes(window: Page, from: number, to: number): Promise<void> {
+  const handle = await window.locator(STORYLINE_HANDLE).nth(from).boundingBox();
+  if (!handle) throw new Error(`No handle on the scene at index ${from}`);
+  const target = await storylineSceneCentre(window, to);
+  await window.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+  await window.mouse.down();
+  await window.mouse.move(target.x, target.y, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** Drags a scene by a number of screen pixels, in steps so the move is seen. */
+export async function dragStorylineScene(
+  window: Page,
+  index: number,
+  byX: number,
+  byY: number,
+): Promise<void> {
+  const from = await storylineSceneCentre(window, index);
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + byX, from.y + byY, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** Clicks a scene's card, which selects it and shows what can be done with it. */
+export async function selectStorylineScene(window: Page, index: number): Promise<void> {
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).click();
+  await window.locator(STORYLINE_SELECTION).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** What the canvas said when it would not draw a line, or null while it is quiet. */
+export async function storylineRefusal(window: Page): Promise<string | null> {
+  if ((await window.locator(STORYLINE_REFUSAL).count()) === 0) return null;
+  return normalize(await window.locator(STORYLINE_REFUSAL).first().innerText());
+}
+
+/** Takes the selected scene off the canvas, leaving its page in the tree. */
+export async function takeSceneOffCanvas(window: Page): Promise<void> {
+  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Take off the canvas" }).click();
+}
+
+/** Follows the selected scene through to its page. */
+export async function openSelectedScene(window: Page): Promise<void> {
+  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Open this scene" }).click();
 }

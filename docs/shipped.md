@@ -5684,3 +5684,22 @@ Each step ends with something visible, the same as Phase 23.
 **One thing is deliberately not kept and is a decision rather than a gap:** the reach and the filters last only while a graph is open. An arrangement is something she made and losing it would lose work; a filter is a question being asked now, and a graph reopened three days later still hiding half of what it is connected to, with nothing on screen saying why, is the setting that reads as broken.
 
 ---
+
+## Phase 25 — Storylines, step 1 ✅ Shipped 2026-09-09
+
+The canvas: a Storyline page, scenes on it that are real pages, and directed lines she draws between them. Steps 2 and 3 are in `docs/plan.md`; what still binds the code is `docs/handoff.md` §Storylines.
+
+**What it delivered.** `storyline` is a fifteenth template key and a real template, offered in the New Page grid beside Scene and Quest — no tabs, no properties, a directory even when empty. Its page renders `PageStoryline` where a database view renders, between the name and the writing, with a Fill the window mode rather than a second surface. *Add a scene* makes a Scene page as a child of the storyline through the ordinary `addNode`, so it is in the tree, undoable, and openable from anywhere; the card on the canvas holds only an id and a position, and reads its name, icon and colour off the page live. A drag from a scene's handle onto another scene draws a directed line. Positions and lines are written to `_storyline.json` inside the storyline page's own directory.
+
+**Why a template key rather than a view on a page.** Phase 23's `Node.view` is a *lens* — the rows are pages that live somewhere already and the record says only how to draw them. A storyline owns something a lens does not: where each scene sits and what leads to what is authored data with no other home. The parallel that decided it is `universe`, and the difference from it: a universe is a container you convert a page into, so it has no place in a picker; a storyline is a thing you sit down and make, so it does.
+
+**Two defects found by looking at the running app rather than by a test**, both on 2026-09-09, and neither would have failed an assertion:
+
+- **Every scene landed on the same point.** `nextPlacement` existed, was tested, and the store called `centreOfView()` instead — so three scenes added in a row stacked, with only the last one clickable. The app suite caught it as five unrelated timeouts ("subtree intercepts pointer events"), which is the shape a placement bug takes when it reaches the DOM.
+- **The picture fitted itself to 47%, and the arrowheads were underneath the cards.** Five scenes in the page column fitted to a size where a name is a row of six-pixel marks, and a line drawn centre-to-centre puts its arrow inside the card it points at — losing the one thing a storyline's lines are for. Fixed with a fit floor (`STORYLINE_MIN_FIT_ZOOM`) and by trimming both ends of every line to the card's rectangle (`meetsCard`). The cards also gained a shadow: on Daylight a white panel on an off-white ground was defined entirely by a `#c9c9c4` border, at roughly 1.5:1.
+
+**Verified.** `storyline-service.test.ts` — 23 unit tests over placement, the DAG rule, removal and the reader that has to survive a hand-edited file. `e2e/a-storyline-canvas.e2e.ts` — seven scenarios driving the real app: the canvas draws in the page, every scene added is findable in the tree, a second line between one pair is refused with a reason, a line that would close a loop the long way round is refused, an arrangement survives a restart, a scene opens its page, and taking a scene off the canvas leaves that page in the tree. The restart assertion compares scene ids rather than names — the first version compared names, and every scene is called "Untitled", so it passed against a canvas that had not moved at all.
+
+**Three things are deliberately not in this step**, and all three are step 2 or 3 rather than gaps: loose notes on the canvas, cluster labels, and pointing a node at a page that already exists. A tidy-up button is also step 2 — step 1 has no layout at all on purpose, which is right for an arranged canvas and unhelpful the moment nine scenes have been added in a row.
+
+---

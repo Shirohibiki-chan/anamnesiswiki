@@ -1,0 +1,364 @@
+/* A storyline's canvas, in the page whose body it is. Phase 25, step 1.
+
+   Every colour here is a token, so a theme she writes applies to the canvas
+   the way it applies to everything else — the same commitment the graph makes,
+   and the reason the scenes are ordinary elements rather than SVG. */
+
+.storyline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Tall enough to arrange something in without swallowing the page. The page
+     column scrolls; this does not grow with the number of scenes, because a
+     canvas that got taller as the story got longer would push everything under
+     it off the screen. Expand is how you get the rest of the monitor. */
+  height: 32rem;
+  margin-bottom: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  overflow: hidden;
+}
+
+/* Filling the window is a mode of the same element, not a second surface: the
+   scenes, the panning and the selection all carry across because none of them
+   are remounted. */
+.storyline-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  height: auto;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--color-background);
+}
+
+.storyline-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.storyline-count {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.storyline-bar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.storyline-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.storyline-icon-btn:hover {
+  border-color: var(--color-border);
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.storyline-icon-btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.storyline-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  /* Says the background can be dragged before anyone tries it. */
+  cursor: grab;
+  touch-action: none;
+}
+
+.storyline-stage:active {
+  cursor: grabbing;
+}
+
+/* The origin of the canvas's own coordinates, parked at the middle of the
+   stage. Everything inside is positioned in those coordinates and the whole
+   thing is panned and zoomed by one transform on this element. */
+.storyline-scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+/* The lines take pointer events (one can be removed) but the SVG box around
+   them must not, or it would swallow every click meant for the canvas behind
+   it — including the drag that pans. */
+.storyline-edges {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.storyline-edge {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Wide, transparent, and underneath: a two-pixel line is otherwise very nearly
+   impossible to hit with a mouse. */
+.storyline-edge-hit {
+  stroke: transparent;
+  stroke-width: 14;
+}
+
+/* A text-grade colour rather than a border one, and the *secondary* text
+   colour rather than the muted one. A border token is tuned to be nearly
+   invisible against its own surface, which is right for a divider and wrong
+   for the thing carrying the sequence — the graph learned that on the light
+   theme. This goes a step further than the graph did because a storyline's
+   lines are the whole point of the picture rather than one of several kinds of
+   relationship in it, so they are drawn well above the readable floor. */
+.storyline-edge-line {
+  stroke: var(--color-text-secondary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.storyline-edge:hover .storyline-edge-line {
+  stroke: var(--color-text-primary);
+}
+
+.storyline-edge-selected .storyline-edge-line {
+  stroke: var(--color-accent-light);
+  stroke-width: 2.5;
+}
+
+.storyline-edge:focus-visible {
+  outline: none;
+}
+
+.storyline-edge:focus-visible .storyline-edge-line {
+  stroke: var(--color-accent-light);
+}
+
+.storyline-arrowhead {
+  fill: var(--color-text-secondary);
+}
+
+.storyline-edge:hover .storyline-arrowhead,
+.storyline-edge-selected .storyline-arrowhead {
+  fill: var(--color-accent-light);
+}
+
+/* The line following the pointer while a join is being drawn. Dashed so it
+   reads as a thing in progress rather than as a line that has been made. */
+.storyline-edge-drawing {
+  stroke: var(--color-accent-light);
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+}
+
+.storyline-node {
+  position: absolute;
+  width: 168px;
+  height: 64px;
+  /* Falls back to the ordinary border colour for a scene whose page has no
+     colour of its own — PageStoryline sets this per scene when there is one. */
+  --storyline-node-color: var(--color-border-strong);
+}
+
+.storyline-node-body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  height: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--storyline-node-color);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  touch-action: none;
+  /* A card lifted off the canvas rather than only outlined on it. On the dark
+     themes the border does the work on its own; on Daylight the panel is white
+     on an off-white ground and the border is `#c9c9c4`, so a scene was defined
+     by a line at about 1.5:1 and read as barely there. A shadow is the one
+     device that says "above the surface" in both, since it is drawn from black
+     rather than from a token that has to be right in seven themes. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+.storyline-node-body:hover {
+  background: var(--color-hover);
+}
+
+.storyline-node-body:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.storyline-node-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--storyline-node-color);
+}
+
+/* **Wraps, never ellipsises**, and the card is sized for two lines of it. A
+   name cut off with no way to read the rest reads as broken, and a canvas has
+   nowhere to go and read it. */
+.storyline-node-name {
+  font-size: var(--fs-sm);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.storyline-node-selected .storyline-node-body {
+  border-color: var(--color-accent-light);
+  /* The lift is kept and the ring added, rather than replacing it — a selected
+     card that flattened onto the canvas would read as going backwards. */
+  box-shadow:
+    0 0 0 3px var(--color-accent-faint),
+    0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+/* Hangs off the right edge, which is the side a line leaves from — a storyline
+   is read left to right, so the handle sits where the next scene will be. */
+.storyline-node-handle {
+  position: absolute;
+  right: -11px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-panel);
+  color: var(--color-text-secondary);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.storyline-node-handle:hover {
+  border-color: var(--color-accent-light);
+  background: var(--color-accent-faint);
+  color: var(--color-accent-foreground);
+}
+
+.storyline-node-handle:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.storyline-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: 34rem;
+  margin: 0;
+  padding: 0 var(--space-lg);
+  transform: translate(-50%, -50%);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Sits over the canvas rather than in the bar, so saying why a line was
+   refused does not make the toolbar taller and shift the picture under it. */
+.storyline-refusal {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  transform: translateX(-50%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-panel);
+  box-shadow: var(--elev-modal);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.storyline-refusal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.storyline-refusal-close:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+/* What can be done with the selected scene. A fixed strip along the bottom of
+   the canvas rather than a popover beside the card: a panel that appeared in a
+   different place depending on where the scene happened to sit is the thing
+   that reads as the app moving under her. */
+.storyline-selection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.storyline-selection-name {
+  min-width: 0;
+  flex: 1;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.storyline-zoom {
+  position: absolute;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}

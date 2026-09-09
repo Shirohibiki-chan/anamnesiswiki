@@ -2,9 +2,15 @@
 // title + tab strip + placeholder body, and no selection gets EmptyPageView.
 // See docs/plan.md Phase 4.
 import { useState } from "react";
-import { BLANK_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
+import {
+  BLANK_TEMPLATE_KEY,
+  FOLDER_TEMPLATE_KEY,
+  STORYLINE_TEMPLATE_KEY,
+  UNIVERSE_TEMPLATE_KEY,
+} from "../../constants/schema";
 import { useProject } from "../../hooks/use-project";
 import { PageDatabase } from "./PageDatabase";
+import { PageStoryline } from "./PageStoryline";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
@@ -65,6 +71,12 @@ export function PageView() {
 
   const activeTab = node.tabs.find((tab) => tab.id === activeTabId) ?? node.tabs[0];
 
+  // A storyline has no tabs of its own — the canvas is its body, and what gets
+  // written goes on the scenes, which are ordinary pages. So the "this page
+  // has no tabs yet" offer below would be the wrong prompt on the one page
+  // where having none is the point.
+  const isStoryline = node.templateKey === STORYLINE_TEMPLATE_KEY;
+
   // A page nobody has answered anything about yet: created blank, and nothing
   // written in it since. Both halves matter — a blank page *with* tabs is one
   // that deliberately skipped the templates and is being written in, and
@@ -99,7 +111,14 @@ export function PageView() {
             somewhere different depending on what the page held would be the
             thing that reads as chaos. */}
         {node.view && <PageDatabase node={node} />}
-        {node.view && node.tabs.length === 0 ? null : isUnanswered ? (
+        {/* A storyline's canvas sits exactly where a database view does, and
+            for the same reason: it is what the page is being shown *as*, so it
+            belongs between the name and the writing and always in the same
+            place. A page whose body appeared somewhere different depending on
+            what kind of page it was is the thing that reads as the app moving
+            under her. */}
+        {isStoryline && <PageStoryline node={node} />}
+        {isStoryline || (node.view && node.tabs.length === 0) ? null : isUnanswered ? (
           <NewPageLanding node={node} />
         ) : node.tabs.length === 0 ? (
           // A universe is a container, not a page you write in, so the offer

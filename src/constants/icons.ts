@@ -9,6 +9,7 @@ import {
   FileText,
   Flag,
   Folder as FolderIcon,
+  GitBranch,
   Globe,
   MapPin,
   Package,
@@ -22,6 +23,7 @@ import {
 
 export const TEMPLATE_ICONS: Record<string, LucideIcon> = {
   universe: Globe,
+  storyline: GitBranch,
   folder: FolderIcon,
   character: User,
   race: PersonStanding,

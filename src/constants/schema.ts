@@ -33,11 +33,41 @@ export const UNTITLED_PAGE_NAME = "Untitled";
  */
 export const UNIVERSE_TEMPLATE_KEY = "universe";
 
+/**
+ * A page whose body is a canvas of scenes joined in narrative order
+ * (Phase 25).
+ *
+ * **A template key, and unlike `universe` a real one in every picker.** A
+ * universe is a container for a version of the world and is made by turning a
+ * page into one; a storyline is a thing you sit down and make, anywhere in the
+ * tree, the same way you make a Character. So it is offered beside them.
+ *
+ * **It is still a page and holds pages the ordinary way.** The scenes on the
+ * canvas are its children on disk — a scene is a page you write in, not a card
+ * with a title — so nothing here is a second, folder-shaped kind of object.
+ * What the canvas adds is *where each one sits and what leads to what*, and
+ * that is the one thing a tree cannot say.
+ *
+ * The canvas itself is not in this node's file. See `STORYLINE_FILE`.
+ */
+export const STORYLINE_TEMPLATE_KEY = "storyline";
+
+/**
+ * What a scene added from a storyline's canvas is made as (Phase 25).
+ *
+ * The Scene template already existed and is the right one — its tabs are the
+ * ones a scene wants. Named here rather than written as a bare string at the
+ * one call site so the canvas and the picker can never disagree about what a
+ * scene is.
+ */
+export const SCENE_TEMPLATE_KEY = "scene";
+
 // Canonical order used in the New Page picker. See docs/constants-and-theming.md.
 // `universe` is in this list so it is a real template like any other — the
 // pickers filter it back out themselves rather than it being half-registered.
 export const TEMPLATE_KEYS = [
   "universe",
+  "storyline",
   "folder",
   "character",
   "race",
@@ -1023,3 +1053,66 @@ export function createProject(input: {
     createdAt: Date.now(),
   };
 }
+
+// ---- Storylines (Phase 25) ----
+
+/**
+ * One scene on a storyline's canvas.
+ *
+ * **`pageId` is the whole of what a scene node holds besides its position.**
+ * The name, the icon, the colour and every word of the scene are the page's,
+ * read live — a copy kept here would be a second answer to "what is this
+ * called" that goes stale the moment the page is renamed, which is the bug
+ * every card-with-a-title design ships with.
+ *
+ * `id` is the node's own rather than the page's, deliberately: pointing two
+ * nodes at one page is legitimate (a scene revisited from another thread) and
+ * a canvas keyed by page id could not express it.
+ */
+export type StorylineNode = {
+  id: string;
+  pageId: string;
+  /**
+   * Where she put it, in canvas units, as the *centre* of the node.
+   *
+   * **Authored, never computed.** There is no simulation behind a storyline
+   * and there must not be: a force layout exists to choose positions for you,
+   * and the one promise this canvas makes is that a scene stays where it was
+   * put. Tidying up is a button she presses — see `docs/plan.md` Phase 25.
+   */
+  x: number;
+  y: number;
+};
+
+/**
+ * "This leads to that." Directed, because narrative order is the only thing a
+ * storyline's lines mean.
+ *
+ * A node may have several parents and several children — a storyline is a DAG,
+ * not a tree, since threads fork and rejoin at a shared event. Cycles are
+ * refused when an edge is added (`wouldCycle`), so "what happened next" always
+ * has an answer.
+ */
+export type StorylineEdge = {
+  id: string;
+  fromId: string;
+  toId: string;
+};
+
+/**
+ * A storyline page's canvas, stored in `_storyline.json` inside that page's
+ * own directory.
+ *
+ * **Its own file rather than a field on the page, and that is the same
+ * reasoning `Project.graphPins` follows.** Dragging a scene an inch is
+ * arranging a view: it must not dirty the storyline page, enter its version
+ * history, or show up as an edit in the folder she syncs. Keeping it beside
+ * the scene pages rather than inside one of them is the other half — an edge
+ * written onto the two pages it joins means a reparent rewrites two files, and
+ * a failure halfway leaves the canvas half-connected.
+ */
+export type Storyline = {
+  version: 1;
+  nodes: StorylineNode[];
+  edges: StorylineEdge[];
+};

@@ -123,6 +123,22 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     tabs: [],
     properties: [],
   },
+  // Phase 25. No tabs and no properties, like the universe above and for a
+  // related reason: the canvas *is* the page's body, and a scaffold of prose
+  // sections underneath it would be a second place to write the same arc. What
+  // goes in a storyline goes on its scenes, which are ordinary pages with the
+  // Scene template's own tabs.
+  //
+  // A directory even when empty, and here that is load-bearing rather than
+  // tidy: the canvas lives in `_storyline.json` *inside* this page's
+  // directory, and a flat `Name.json` has no inside to put it in.
+  storyline: {
+    key: "storyline",
+    label: "Storyline",
+    alwaysDirectory: true,
+    tabs: [],
+    properties: [],
+  },
   folder: {
     key: "folder",
     label: "Folder",

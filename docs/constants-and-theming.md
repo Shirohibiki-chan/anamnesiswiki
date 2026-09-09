@@ -17,10 +17,11 @@ One line per file. **Deliberately not an inventory of their contents** — the p
 - **`links.ts`** — the only web addresses the app knows. All of them are this repository and none is fetched; they are handed to the system browser. The updater's endpoint is not here — it lives in `src-tauri/tauri.conf.json`.
 - **`meter-styles.ts`** — the shapes a meter block draws in, with the names and icons the UI uses.
 - **`palette.ts`** — the node-colouring palette. Data, not UI tokens, and **must stay in sync with the `--color-palette-*` custom properties in `src/index.css`**. `getPaletteHex(key)` resolves one; the default entry has no hex and clears the colour.
-- **`paths.ts`** — on-disk filenames (`project.json`, `_folder.json`, `_page.json`, the dot-files under `assets/`) plus `ASSET_REF_PREFIX`, the scheme a stored picture reference uses.
+- **`paths.ts`** — on-disk filenames (`project.json`, `_folder.json`, `_page.json`, `_storyline.json`, the dot-files under `assets/`) plus `ASSET_REF_PREFIX`, the scheme a stored picture reference uses.
 - **`project-template.ts`** — the `.antpl` file: a project's shape in one file somebody can send you. **Not the same thing as `TemplateLibrary` in `schema.ts`** — that is a page copied, this is a project's shape.
 - **`property-suggestions.ts`** — suggested property names per template, offered as chips in the Add property form. Suggestions, never a schema.
 - **`schema.ts`** — canonical `Node` / `Tab` / `Project` shapes, `TEMPLATE_KEYS`, and the `createNode` / `createTab` factories. `BlockNoteDocument` stays a loose `unknown[]` on purpose: constants may never import from `services/`. See `docs/spec.md` §Data model.
+- **`storyline.ts`** — the storyline canvas's numbers: card size, zoom range and the fit's floor. **Deliberately separate from `graph.ts`, which it resembles** — a graph is explored and a storyline is composed, and one set of numbers serving both would mean every tuning of one silently retuning the other.
 - **`settings.ts`** — the settings rail: which sections exist, in what order, and what each says about itself. Adding a section is an entry here *and* one in `SettingsModal.tsx`'s `PANELS` map, which a test checks are in step.
 - **`shortcuts.ts`** — app-level keyboard shortcuts, plus `EDITOR_RESERVED_BINDINGS`, the combinations BlockNote already owns. Anything added here must stay clear of that list.
 - **`theme-tokens.ts`** — what the theme editor is allowed to edit: twenty colours in five groups plus the gradient slots, deliberately a subset of the token system.

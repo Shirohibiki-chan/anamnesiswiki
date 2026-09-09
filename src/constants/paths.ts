@@ -7,6 +7,36 @@ export const FOLDER_META_FILE = "_folder.json";
 // makes its directory's identity independent of its current name, so a
 // rename can never orphan its children on the next project load.
 export const PAGE_META_FILE = "_page.json";
+
+/**
+ * A storyline page's canvas, inside that page's own directory beside
+ * `_page.json` and the scene pages themselves (Phase 25).
+ *
+ * **A file of its own rather than a key in `_page.json`.** Where a scene sits
+ * is a view being arranged, and arranging a view must not dirty the page, land
+ * in its version history, or read as an edit to whoever syncs the folder.
+ * `Project.graphPins` makes the same call for the same reason.
+ *
+ * **And one file rather than an edge written onto each page it joins.**
+ * Reparenting a scene would otherwise rewrite two page files, and a failure
+ * between them leaves a canvas half-connected — a lost line with nothing on
+ * screen saying so.
+ *
+ * Underscored rather than dotted, matching `_page.json` beside it: it is this
+ * node's own data, not an app-level file like `.templates.json`. The load walk
+ * skips it at every level and `markerFileOf` never mistakes it for a marker,
+ * so a directory holding one is still a page, or a folder, exactly as before.
+ *
+ * **A page that stops being a storyline keeps its file, deliberately.** It is
+ * inert — only a page the app draws a canvas for ever has one read back — and
+ * leaving it is what makes turning the page back into a storyline give the
+ * arrangement back rather than an empty canvas over scenes that are all still
+ * sitting there as child pages. This is the opposite call to the one Phase 22
+ * makes for a universe that stops being one, and the difference is what the
+ * leftover *means*: a pointer naming a page that is no longer a universe would
+ * be read as true, while this is only read when it is asked for by name.
+ */
+export const STORYLINE_FILE = "_storyline.json";
 export const ASSETS_DIR = "assets";
 
 /**
