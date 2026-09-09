@@ -19,6 +19,56 @@ export const STORYLINE_NODE_HEIGHT = 64;
 export const STORYLINE_NEW_NODE_GAP = 240;
 
 /**
+ * A note's width when it is dropped, in canvas units.
+ *
+ * A note is text, so it grows downward as it is written and is never given a
+ * height — the card is as tall as the sentence in it. The width is authored
+ * because a wrap point is a design decision about a canvas, not something a
+ * measurement can answer.
+ */
+export const STORYLINE_NOTE_WIDTH = 220;
+
+/**
+ * How far each new band is stepped along from the last, so a second one is not
+ * exactly on top of the first.
+ *
+ * Small, because a band is a big empty outline and two of them offset a little
+ * are still both readable.
+ */
+export const STORYLINE_ANNOTATION_CASCADE = 28;
+
+/**
+ * How far *down* each new note goes from the one before it.
+ *
+ * **A column, not a diagonal.** Notes were cascaded by 28px in both directions
+ * first, which for a card that is three lines tall means the second note covers
+ * the first — including its links, which then cannot be clicked at all. Found
+ * 2026-09-09 by an app-suite scenario that could not reach a link it could see.
+ * Taller than a typical note, so a run of them reads as a list.
+ */
+export const STORYLINE_NOTE_ROW = 110;
+
+/** How far clear of the scenes a new note or band is placed. */
+export const STORYLINE_ANNOTATION_GAP = 56;
+
+/** A band's size when it is dropped, before she pulls it over the scenes. */
+export const STORYLINE_NEW_BAND_WIDTH = 620;
+export const STORYLINE_NEW_BAND_HEIGHT = 320;
+
+/**
+ * The smallest a band can be dragged to.
+ *
+ * Not zero, and not a refusal either: a band pulled past its own corner would
+ * be stored inside out, and `scenesOnBand` would then answer "nothing is on it"
+ * for a band drawn around six scenes.
+ */
+export const STORYLINE_MIN_BAND_SIZE = 80;
+
+/** How far apart *Tidy up* puts the columns and the rows. */
+export const STORYLINE_TIDY_COLUMN_GAP = 260;
+export const STORYLINE_TIDY_ROW_GAP = 120;
+
+/**
  * Empty margin left around the scenes when the canvas is fitted to the window.
  *
  * Small, because the canvas sits in the page column rather than filling a

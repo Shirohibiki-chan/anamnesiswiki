@@ -83,6 +83,15 @@ const STORYLINE_HANDLE = ".storyline-node-handle";
 const STORYLINE_EDGE = ".storyline-edge";
 const STORYLINE_SELECTION = ".storyline-selection";
 const STORYLINE_REFUSAL = ".storyline-refusal";
+// Phase 25 step 2: the annotations.
+const STORYLINE_NOTE = ".storyline-note";
+const STORYLINE_NOTE_INPUT = ".storyline-note-input";
+const STORYLINE_NOTE_LINK = ".storyline-note-link";
+const STORYLINE_NOTE_BROKEN = ".storyline-note-broken";
+const STORYLINE_BAND = ".storyline-band";
+const STORYLINE_BAND_LABEL = ".storyline-band-label";
+const STORYLINE_BAND_INPUT = ".storyline-band-input";
+const STORYLINE_STAGE = ".storyline-stage";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -1844,4 +1853,106 @@ export async function takeSceneOffCanvas(window: Page): Promise<void> {
 /** Follows the selected scene through to its page. */
 export async function openSelectedScene(window: Page): Promise<void> {
   await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Open this scene" }).click();
+}
+
+// ---- Phase 25 step 2: notes, labelled stretches, and tidying up ----
+
+/** Adds a note, which opens straight into typing. */
+export async function addStorylineNote(window: Page, text: string): Promise<void> {
+  const before = await window.locator(STORYLINE_NOTE).count();
+  await window.locator(STORYLINE).getByRole("button", { name: "Add a note" }).click();
+  await window.locator(STORYLINE_NOTE_INPUT).waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.type(text);
+  // Committed by leaving it, which is the gesture the canvas is built around.
+  await window.locator(STORYLINE_STAGE).click({ position: { x: 12, y: 12 } });
+  await window.locator(STORYLINE_NOTE).nth(before).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** What every note on the canvas says, as one string each. */
+export async function storylineNoteTexts(window: Page): Promise<string[]> {
+  const texts = await window.locator(STORYLINE_NOTE).allInnerTexts();
+  return texts.map((text) => normalize(text));
+}
+
+/** The page names inside notes that resolved to a real page. */
+export async function storylineNoteLinks(window: Page): Promise<string[]> {
+  const names = await window.locator(STORYLINE_NOTE_LINK).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** The bracketed names that pointed at nothing. */
+export async function storylineBrokenLinks(window: Page): Promise<string[]> {
+  const names = await window.locator(STORYLINE_NOTE_BROKEN).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** Follows a note's link through to the page it names. */
+export async function followStorylineNoteLink(window: Page, name: string): Promise<void> {
+  await window.locator(STORYLINE_NOTE_LINK).filter({ hasText: name }).first().click();
+}
+
+/** Adds a labelled stretch, which also opens straight into typing. */
+export async function addStorylineBand(window: Page, label: string): Promise<void> {
+  await window.locator(STORYLINE).getByRole("button", { name: "Label a stretch" }).click();
+  await window.locator(STORYLINE_BAND_INPUT).waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.type(label);
+  await window.keyboard.press("Enter");
+  await window.locator(STORYLINE_BAND_LABEL).filter({ hasText: label }).first().waitFor({ timeout: WAIT_MS });
+}
+
+/** What every labelled stretch is called. */
+export async function storylineBandLabels(window: Page): Promise<string[]> {
+  const labels = await window.locator(STORYLINE_BAND_LABEL).allInnerTexts();
+  return labels.map((label) => normalize(label));
+}
+
+/** Drags a labelled stretch by a number of screen pixels. */
+export async function dragStorylineBand(window: Page, index: number, byX: number, byY: number): Promise<void> {
+  const box = await window.locator(STORYLINE_BAND).nth(index).boundingBox();
+  if (!box) throw new Error(`No band at index ${index}`);
+  // Grabbed near the bottom edge, clear of the label and of any scene standing
+  // on it — a press that lands on a card drags the card instead.
+  const from = { x: box.x + box.width / 2, y: box.y + box.height - 12 };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + byX, from.y + byY, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** Where every note sits on screen, in the order the canvas draws them. */
+export async function storylineNotePlacements(window: Page): Promise<{ x: number; y: number }[]> {
+  const placed: { x: number; y: number }[] = [];
+  for (const note of await window.locator(STORYLINE_NOTE).all()) {
+    const box = await note.boundingBox();
+    if (box) placed.push({ x: Math.round(box.x), y: Math.round(box.y) });
+  }
+  return placed;
+}
+
+/** Lines the scenes up. */
+export async function tidyStoryline(window: Page): Promise<void> {
+  await window.locator(STORYLINE).getByRole("button", { name: "Tidy up" }).click();
+}
+
+/** Whether *Tidy up* still has anything to do. */
+export async function canTidyStoryline(window: Page): Promise<boolean> {
+  return await window.locator(STORYLINE).getByRole("button", { name: "Tidy up" }).isEnabled();
+}
+
+/**
+ * Where every scene sits on screen, by its id.
+ *
+ * **Rounded hard, because the canvas rescales.** A tidy-up changes the fit, so
+ * two positions taken either side of one are never equal to the pixel; what a
+ * scenario is actually asking is whether things line up with each other, and
+ * that survives the scaling.
+ */
+export async function storylineScenePlacements(window: Page): Promise<Record<string, { x: number; y: number }>> {
+  const placed: Record<string, { x: number; y: number }> = {};
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const box = await node.boundingBox();
+    const id = await node.locator(STORYLINE_NODE_BODY).getAttribute("data-scene-id");
+    if (box && id) placed[id] = { x: Math.round(box.x), y: Math.round(box.y) };
+  }
+  return placed;
 }

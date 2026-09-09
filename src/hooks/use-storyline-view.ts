@@ -16,14 +16,15 @@ import {
   STORYLINE_FIT_PADDING,
   STORYLINE_MAX_FIT_ZOOM,
   STORYLINE_MAX_ZOOM,
+  STORYLINE_MIN_BAND_SIZE,
   STORYLINE_MIN_FIT_ZOOM,
   STORYLINE_MIN_ZOOM,
   STORYLINE_NODE_HEIGHT,
   STORYLINE_NODE_WIDTH,
   STORYLINE_ZOOM_SENSITIVITY,
 } from "../constants/storyline";
-import type { StorylineEdge } from "../constants/schema";
-import type { DrawnScene, StorylineModel } from "../services/storyline-service";
+import type { StorylineBand, StorylineEdge } from "../constants/schema";
+import { scenesOnBand, type DrawnNote, type DrawnScene, type StorylineModel } from "../services/storyline-service";
 
 type Point = { x: number; y: number };
 
@@ -107,15 +108,35 @@ export type StorylineViewOptions = {
   onArrange: (moved: Record<string, Point>) => void;
   /** Called when a line is dragged from one scene and dropped on another. */
   onConnect: (fromId: string, toId: string) => void;
+  /** Called on letting go of a note, with where it ended up. */
+  onMoveNote: (noteId: string, to: Point) => void;
+  /**
+   * Called on letting go of a band, with where it ended up and the scenes that
+   * were standing on it when it was picked up — never re-asked at the drop,
+   * where the band is somewhere else and the answer would be a different set.
+   */
+  onMoveBand: (bandId: string, to: Point, carried: string[]) => void;
+  /** Called on letting go of a band's corner. */
+  onResizeBand: (bandId: string, size: { width: number; height: number }) => void;
 };
 
 export function useStorylineView(model: StorylineModel, options: StorylineViewOptions) {
-  const { resetKey, onArrange, onConnect } = options;
+  const { resetKey, onArrange, onConnect, onMoveNote, onMoveBand, onResizeBand } = options;
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [zoomFactor, setZoomFactor] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  /**
+   * The note or band being worked on, if any.
+   *
+   * One piece of state holding either, rather than two — a canvas where a note
+   * and a band could both look selected at once would have two "remove this"
+   * buttons in the bar and no way to tell which was about to fire.
+   */
+  const [selectedAnnotation, setSelectedAnnotation] = useState<
+    { kind: "note" | "band"; id: string } | null
+  >(null);
 
   /**
    * Where a scene has been dragged to *during this gesture only*.
@@ -134,6 +155,16 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
    */
   const [linking, setLinking] = useState<{ fromId: string; to: Point } | null>(null);
 
+  /**
+   * The band being pulled bigger right now, and how big it is at this instant.
+   *
+   * Separate from `dragging`, which holds positions — a resize changes a band's
+   * size and not where its corner sits, and folding both into one map would
+   * mean every reader of it having to ask which kind of change it was looking
+   * at.
+   */
+  const [resizing, setResizing] = useState<{ id: string; size: { width: number; height: number } } | null>(null);
+
   // React's documented alternative to an effect that syncs state: adjust during
   // render, keyed on the value that changed. An effect here would set five
   // pieces of state after paint — one frame of the new canvas drawn with the
@@ -144,8 +175,10 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     setPan({ x: 0, y: 0 });
     setDragging({});
     setLinking(null);
+    setResizing(null);
     setSelectedId(null);
     setSelectedEdgeId(null);
+    setSelectedAnnotation(null);
     setZoomFactor(1);
   }
 
@@ -233,6 +266,23 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
   );
   const panRef = useRef<{ fromX: number; fromY: number; atX: number; atY: number; moved: boolean } | null>(null);
   const linkRef = useRef<{ fromId: string; stage: DOMRect } | null>(null);
+  const noteRef = useRef<{ id: string; fromX: number; fromY: number; atX: number; atY: number; moved: boolean } | null>(
+    null,
+  );
+  const bandRef = useRef<{
+    id: string;
+    fromX: number;
+    fromY: number;
+    atX: number;
+    atY: number;
+    moved: boolean;
+    carried: string[];
+    /** Where each carried scene was when the band was picked up. */
+    carriedAt: Map<string, Point>;
+  } | null>(null);
+  const resizeRef = useRef<{ id: string; fromX: number; fromY: number; atWidth: number; atHeight: number } | null>(
+    null,
+  );
 
   const startSceneDrag = useCallback((event: React.PointerEvent<HTMLElement>, scene: DrawnScene) => {
     // Without this the press also starts a pan, and the canvas slides out from
@@ -278,6 +328,7 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       if (drag && !drag.moved) {
         setSelectedId(scene.id);
         setSelectedEdgeId(null);
+        setSelectedAnnotation(null);
         return;
       }
       if (!drag) return;
@@ -367,6 +418,7 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     if (drag && !drag.moved) {
       setSelectedId(null);
       setSelectedEdgeId(null);
+      setSelectedAnnotation(null);
     }
   }, []);
 
@@ -376,15 +428,215 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     );
   }, []);
 
+  /**
+   * The notes and bands, moved by whatever gesture is in flight.
+   *
+   * They share the one `dragging` map with the scenes, which is what lets a
+   * band drag move a band and six scenes in one gesture without a second map to
+   * keep in step.
+   */
+  const notes = useMemo<DrawnNote[]>(
+    () => model.notes.map((note) => ({ ...note, ...(dragging[note.id] ?? {}) })),
+    [model.notes, dragging],
+  );
+
+  const bands = useMemo<StorylineBand[]>(
+    () =>
+      model.bands.map((band) => ({
+        ...band,
+        ...(dragging[band.id] ?? {}),
+        ...(resizing && resizing.id === band.id ? resizing.size : {}),
+      })),
+    [model.bands, dragging, resizing],
+  );
+
+  const startNoteDrag = useCallback((event: React.PointerEvent<HTMLElement>, note: DrawnNote) => {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    noteRef.current = {
+      id: note.id,
+      fromX: event.clientX,
+      fromY: event.clientY,
+      atX: note.x,
+      atY: note.y,
+      moved: false,
+    };
+  }, []);
+
+  const moveNoteDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const drag = noteRef.current;
+      if (!drag) return;
+      const dx = event.clientX - drag.fromX;
+      const dy = event.clientY - drag.fromY;
+      if (!drag.moved && Math.hypot(dx, dy) < STORYLINE_DRAG_THRESHOLD) return;
+      drag.moved = true;
+      setDragging({ [drag.id]: { x: Math.round(drag.atX + dx / zoom), y: Math.round(drag.atY + dy / zoom) } });
+    },
+    [zoom],
+  );
+
+  const endNoteDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>, note: DrawnNote) => {
+      const drag = noteRef.current;
+      noteRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (!drag) return;
+      if (!drag.moved) {
+        setSelectedAnnotation({ kind: "note", id: note.id });
+        setSelectedId(null);
+        setSelectedEdgeId(null);
+        return;
+      }
+      const at = dragging[drag.id];
+      if (at) onMoveNote(drag.id, at);
+      setDragging({});
+    },
+    [dragging, onMoveNote],
+  );
+
+  /**
+   * Picking up a band, and with it everything standing on it.
+   *
+   * **Which scenes those are is decided here, once, before anything moves.**
+   * Asking again while the drag is in flight would ask about the band's current
+   * position, so a scene the band slid over halfway through would join the move
+   * and arrive somewhere nobody put it.
+   */
+  const startBandDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>, band: StorylineBand) => {
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      const carried = scenesOnBand(scenes, band);
+      bandRef.current = {
+        id: band.id,
+        fromX: event.clientX,
+        fromY: event.clientY,
+        atX: band.x,
+        atY: band.y,
+        moved: false,
+        carried,
+        carriedAt: new Map(
+          carried.map((id) => {
+            const scene = scenes.find((entry) => entry.id === id)!;
+            return [id, { x: scene.x, y: scene.y }];
+          }),
+        ),
+      };
+    },
+    [scenes],
+  );
+
+  const moveBandDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const drag = bandRef.current;
+      if (!drag) return;
+      const dx = event.clientX - drag.fromX;
+      const dy = event.clientY - drag.fromY;
+      if (!drag.moved && Math.hypot(dx, dy) < STORYLINE_DRAG_THRESHOLD) return;
+      drag.moved = true;
+      const byX = Math.round(dx / zoom);
+      const byY = Math.round(dy / zoom);
+      const next: Record<string, Point> = { [drag.id]: { x: drag.atX + byX, y: drag.atY + byY } };
+      for (const [id, at] of drag.carriedAt) next[id] = { x: at.x + byX, y: at.y + byY };
+      setDragging(next);
+    },
+    [zoom],
+  );
+
+  const endBandDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>, band: StorylineBand) => {
+      const drag = bandRef.current;
+      bandRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (!drag) return;
+      if (!drag.moved) {
+        setSelectedAnnotation({ kind: "band", id: band.id });
+        setSelectedId(null);
+        setSelectedEdgeId(null);
+        return;
+      }
+      const at = dragging[drag.id];
+      if (at) onMoveBand(drag.id, at, drag.carried);
+      setDragging({});
+    },
+    [dragging, onMoveBand],
+  );
+
+  const startBandResize = useCallback((event: React.PointerEvent<HTMLElement>, band: StorylineBand) => {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    resizeRef.current = {
+      id: band.id,
+      fromX: event.clientX,
+      fromY: event.clientY,
+      atWidth: band.width,
+      atHeight: band.height,
+    };
+    setResizing({ id: band.id, size: { width: band.width, height: band.height } });
+  }, []);
+
+  const moveBandResize = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const drag = resizeRef.current;
+      if (!drag) return;
+      setResizing({
+        id: drag.id,
+        size: {
+          width: Math.max(STORYLINE_MIN_BAND_SIZE, Math.round(drag.atWidth + (event.clientX - drag.fromX) / zoom)),
+          height: Math.max(STORYLINE_MIN_BAND_SIZE, Math.round(drag.atHeight + (event.clientY - drag.fromY) / zoom)),
+        },
+      });
+    },
+    [zoom],
+  );
+
+  const endBandResize = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const drag = resizeRef.current;
+      resizeRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (drag && resizing && resizing.id === drag.id) onResizeBand(drag.id, resizing.size);
+      setResizing(null);
+    },
+    [resizing, onResizeBand],
+  );
+
+  const selectAnnotation = useCallback((selection: { kind: "note" | "band"; id: string } | null) => {
+    setSelectedAnnotation(selection);
+    setSelectedId(null);
+    setSelectedEdgeId(null);
+  }, []);
+
   const selectEdge = useCallback((edgeId: string | null) => {
     setSelectedEdgeId(edgeId);
     setSelectedId(null);
+    setSelectedAnnotation(null);
   }, []);
 
   return {
     stageRef,
     scenes,
     edges,
+    notes,
+    bands,
+    selectedAnnotation,
+    selectAnnotation,
+    startNoteDrag,
+    moveNoteDrag,
+    endNoteDrag,
+    startBandDrag,
+    moveBandDrag,
+    endBandDrag,
+    startBandResize,
+    moveBandResize,
+    endBandResize,
     bounds,
     zoom,
     sceneTransform,

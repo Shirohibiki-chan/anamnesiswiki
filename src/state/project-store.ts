@@ -26,13 +26,25 @@ import {
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
 import { SCENE_TEMPLATE_KEY, UNTITLED_PAGE_NAME } from "../constants/schema";
 import {
+  addBand,
+  addNote,
   addSceneNode,
+  bandPlacement,
   connect,
   createStoryline,
   disconnect,
+  moveBand,
   moveNodes,
+  moveNote,
   nextPlacement,
+  notePlacement,
+  removeBand,
   removeNode,
+  removeNote,
+  resizeBand,
+  setBandLabel,
+  setNoteText,
+  tidyUp,
   type ConnectRefusal,
 } from "../services/storyline-service";
 import { TEMPLATES_FILE } from "../constants/paths";
@@ -794,6 +806,23 @@ export type ProjectStoreState = {
   connectStorylineNodes: (storylineId: string, fromId: string, toId: string) => ConnectRefusal | null;
   disconnectStorylineEdge: (storylineId: string, edgeId: string) => void;
   removeStorylineNode: (storylineId: string, nodeId: string) => void;
+  /** The annotations — notes and labelled stretches (Phase 25, step 2). */
+  addStorylineNote: (storylineId: string) => string;
+  setStorylineNoteText: (storylineId: string, noteId: string, text: string) => void;
+  moveStorylineNote: (storylineId: string, noteId: string, to: { x: number; y: number }) => void;
+  removeStorylineNote: (storylineId: string, noteId: string) => void;
+  addStorylineBand: (storylineId: string) => string;
+  setStorylineBandLabel: (storylineId: string, bandId: string, label: string) => void;
+  /** `carried` is the scenes standing on the band, worked out before the drag. */
+  moveStorylineBand: (
+    storylineId: string,
+    bandId: string,
+    to: { x: number; y: number },
+    carried: string[],
+  ) => void;
+  resizeStorylineBand: (storylineId: string, bandId: string, size: { width: number; height: number }) => void;
+  removeStorylineBand: (storylineId: string, bandId: string) => void;
+  tidyStoryline: (storylineId: string) => void;
   /**
    * Puts the tree's arrangement back to an earlier copy of `project.json`
    * (Phase 19) — the order, the home page, the pins, the expanded folders.
@@ -3745,6 +3774,134 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       applyStoryline(storylineId, after);
       record(
         "taking a scene off the canvas",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+    },
+
+    /**
+     * Puts a note on the canvas (Phase 25, step 2).
+     *
+     * **No page is made, and that is the difference from a scene.** A note is
+     * an annotation — no edges, nothing behind it, never counted in the
+     * sequence — so nothing here goes near `addNode`.
+     */
+    addStorylineNote(storylineId) {
+      const before = storylineOf(storylineId);
+      const after = addNote(before, notePlacement(before));
+      applyStoryline(storylineId, after);
+      record(
+        "adding a note",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+      return after.notes[after.notes.length - 1].id;
+    },
+
+    /**
+     * Rewrites a note.
+     *
+     * Called once when she is done rather than per keystroke — the component
+     * holds the draft while it is being typed. A canvas file written on every
+     * letter is sixty writes a second to her disk, which is the same reason a
+     * drag only writes on letting go.
+     */
+    setStorylineNoteText(storylineId, noteId, text) {
+      const before = storylineOf(storylineId);
+      const after = setNoteText(before, noteId, text);
+      applyStoryline(storylineId, after);
+      record(
+        "writing a note",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+    },
+
+    /** Not recorded for undo — arranging, like a scene's drag. */
+    moveStorylineNote(storylineId, noteId, to) {
+      applyStoryline(storylineId, moveNote(storylineOf(storylineId), noteId, to));
+    },
+
+    removeStorylineNote(storylineId, noteId) {
+      const before = storylineOf(storylineId);
+      const after = removeNote(before, noteId);
+      if (after.notes.length === before.notes.length) return;
+      applyStoryline(storylineId, after);
+      record(
+        "removing a note",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+    },
+
+    addStorylineBand(storylineId) {
+      const before = storylineOf(storylineId);
+      const after = addBand(before, bandPlacement(before));
+      applyStoryline(storylineId, after);
+      record(
+        "adding a label",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+      return after.bands[after.bands.length - 1].id;
+    },
+
+    setStorylineBandLabel(storylineId, bandId, label) {
+      const before = storylineOf(storylineId);
+      const after = setBandLabel(before, bandId, label);
+      applyStoryline(storylineId, after);
+      record(
+        "naming a stretch of the storyline",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+    },
+
+    /**
+     * Moves a band and the scenes standing on it.
+     *
+     * **Which scenes those are is decided by the caller, before the drag
+     * starts, and handed in.** Asking again on letting go would ask about the
+     * band's *new* position — which is somewhere else entirely — so the answer
+     * would be a different set of scenes than the ones that appeared to move
+     * under the hand.
+     */
+    moveStorylineBand(storylineId, bandId, to, carried) {
+      applyStoryline(storylineId, moveBand(storylineOf(storylineId), bandId, to, carried));
+    },
+
+    resizeStorylineBand(storylineId, bandId, size) {
+      applyStoryline(storylineId, resizeBand(storylineOf(storylineId), bandId, size));
+    },
+
+    removeStorylineBand(storylineId, bandId) {
+      const before = storylineOf(storylineId);
+      const after = removeBand(before, bandId);
+      if (after.bands.length === before.bands.length) return;
+      applyStoryline(storylineId, after);
+      record(
+        "removing a label",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+    },
+
+    /**
+     * Lines the sequence up.
+     *
+     * **Recorded for undo, unlike every other move on this canvas**, and the
+     * difference is what it costs to be wrong about: a drag moves one scene and
+     * is reversed by dragging it back, while this moves all of them at once and
+     * there is no gesture that puts an arrangement back by hand. It is the one
+     * button here that can lose real work, so Ctrl+Z has to cover it.
+     */
+    tidyStoryline(storylineId) {
+      const before = storylineOf(storylineId);
+      const after = tidyUp(before);
+      if (after === before) return;
+      applyStoryline(storylineId, after);
+      record(
+        "tidying up the storyline",
         () => applyStoryline(storylineId, before),
         () => applyStoryline(storylineId, after),
       );

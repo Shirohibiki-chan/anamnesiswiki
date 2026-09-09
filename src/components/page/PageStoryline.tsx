@@ -1,5 +1,5 @@
-// A storyline's canvas: scenes in narrative order, where she put them.
-// Phase 25, step 1.
+// A storyline's canvas: scenes in narrative order, where she put them, with
+// the notes and labels that say what a reader cannot see. Phase 25, steps 1–2.
 //
 // **Drawn in the page rather than opened over it, which is the opposite call
 // Phase 24 made for the graph, on purpose.** A graph is a lens — a temporary
@@ -10,19 +10,32 @@
 // for when the arrangement wants the whole monitor, and it is a mode of this
 // same component rather than a second surface.
 //
-// **Lines are SVG and scenes are HTML**, the same one decision the graph makes:
-// the CSS token themes — hers included — apply to an ordinary element for free,
-// while a line is what SVG is for. Both sit inside one transformed scene so
-// they pan and zoom together.
+// **Lines are SVG and everything else is HTML**, the same one decision the
+// graph makes: the CSS token themes — hers included — apply to an ordinary
+// element for free, while a line is what SVG is for. All of it sits inside one
+// transformed scene, so it pans and zooms together.
+//
+// **Three kinds of thing sit on this canvas and only one of them is the
+// story.** A scene is a page. A note and a band are annotations: no edges, no
+// page behind them, never counted in the sequence. Keeping that distinction
+// legible on screen — different shapes, different words on the buttons — is
+// most of what the markup below is doing.
 //
 // All of the behaviour is in hooks/use-storyline-view.ts; this renders.
 import { useCallback, useEffect, useState } from "react";
-import { Link2, Maximize2, Minimize2, Plus, Trash2, X } from "lucide-react";
+import { Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } from "lucide-react";
 import { getPaletteHex } from "../../constants/palette";
 import { STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
 import type { Node } from "../../constants/schema";
-import { useStoryline, useStorylineActions, type ConnectRefusal } from "../../hooks/use-storyline";
+import {
+  useStoryline,
+  useStorylineActions,
+  useStorylineIsUntidy,
+  type ConnectRefusal,
+  type DrawnNote,
+} from "../../hooks/use-storyline";
 import { useStorylineView } from "../../hooks/use-storyline-view";
+import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { NodeIcon } from "../blocks/IconPicker";
 import "./storyline.css";
 
@@ -41,10 +54,25 @@ const REFUSALS: Record<ConnectRefusal, string> = {
 
 export function PageStoryline({ node }: { node: Node }) {
   const model = useStoryline(node.id);
-  const { addSceneToStoryline, moveStorylineNodes, connectStorylineNodes } = useStorylineActions();
-  const { disconnectStorylineEdge, removeStorylineNode, selectNode } = useStorylineActions();
+  const untidy = useStorylineIsUntidy(node.id);
+  const actions = useStorylineActions();
+  const { addSceneToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
+  const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline } = actions;
+  const { addStorylineNote, setStorylineNoteText, moveStorylineNote, removeStorylineNote } = actions;
+  const { addStorylineBand, setStorylineBandLabel, moveStorylineBand } = actions;
+  const { resizeStorylineBand, removeStorylineBand } = actions;
+
+  const undoKey = useShortcutLabel("undo");
   const [expanded, setExpanded] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  /**
+   * The annotation being typed into, and the draft it currently holds.
+   *
+   * **The draft lives here rather than in the canvas file**, so typing is not
+   * one write to her disk per letter. It is committed on blur — the same moment
+   * a drag commits, and for the same reason.
+   */
+  const [editing, setEditing] = useState<{ kind: "note" | "band"; id: string; draft: string } | null>(null);
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => moveStorylineNodes(node.id, moved),
@@ -59,13 +87,40 @@ export function PageStoryline({ node }: { node: Node }) {
     [connectStorylineNodes, node.id],
   );
 
-  const view = useStorylineView(model, { resetKey: node.id, onArrange, onConnect });
-  const { stageRef, scenes, edges, bounds, sceneTransform, linking, zoom } = view;
-  const { selectedId, selectedEdgeId, select, selectEdge } = view;
+  const onMoveNote = useCallback(
+    (noteId: string, to: { x: number; y: number }) => moveStorylineNote(node.id, noteId, to),
+    [moveStorylineNote, node.id],
+  );
+
+  const onMoveBand = useCallback(
+    (bandId: string, to: { x: number; y: number }, carried: string[]) =>
+      moveStorylineBand(node.id, bandId, to, carried),
+    [moveStorylineBand, node.id],
+  );
+
+  const onResizeBand = useCallback(
+    (bandId: string, size: { width: number; height: number }) => resizeStorylineBand(node.id, bandId, size),
+    [resizeStorylineBand, node.id],
+  );
+
+  const view = useStorylineView(model, {
+    resetKey: node.id,
+    onArrange,
+    onConnect,
+    onMoveNote,
+    onMoveBand,
+    onResizeBand,
+  });
+  const { stageRef, scenes, edges, notes, bands, bounds, sceneTransform, linking, zoom } = view;
+  const { selectedId, selectedEdgeId, selectedAnnotation, select, selectEdge, selectAnnotation } = view;
   const { startSceneDrag, moveSceneDrag, endSceneDrag, startLink, moveLink, endLink } = view;
+  const { startNoteDrag, moveNoteDrag, endNoteDrag } = view;
+  const { startBandDrag, moveBandDrag, endBandDrag, startBandResize, moveBandResize, endBandResize } = view;
   const { startPan, movePan, endPan, handleWheel } = view;
 
-  const selected = scenes.find((scene) => scene.id === selectedId);
+  const selectedScene = scenes.find((scene) => scene.id === selectedId);
+  const selectedNote = selectedAnnotation?.kind === "note" ? notes.find((n) => n.id === selectedAnnotation.id) : undefined;
+  const selectedBand = selectedAnnotation?.kind === "band" ? bands.find((b) => b.id === selectedAnnotation.id) : undefined;
 
   // The explanation goes away on its own — it is a reply to a gesture, not a
   // state of the canvas, and one still sitting there three minutes later reads
@@ -78,15 +133,16 @@ export function PageStoryline({ node }: { node: Node }) {
 
   // Escape leaves the expanded canvas, matching every other full-window surface
   // in the app. Only bound while expanded, so it never eats the key from
-  // something else on an ordinary page.
+  // something else on an ordinary page — and never while she is mid-sentence in
+  // a note, where Escape means "stop editing this" instead.
   useEffect(() => {
-    if (!expanded) return;
+    if (!expanded || editing) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") setExpanded(false);
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [expanded]);
+  }, [expanded, editing]);
 
   function addScene() {
     // Deliberately not opened afterwards. Adding three scenes in a row is the
@@ -95,15 +151,68 @@ export function PageStoryline({ node }: { node: Node }) {
     if (!addSceneToStoryline(node.id)) setRefusal("Couldn't make a page for that scene.");
   }
 
+  function addNote() {
+    const id = addStorylineNote(node.id);
+    // Straight into typing: a note with nothing in it says nothing, and the
+    // whole reason for one is the sentence about to go in it.
+    setEditing({ kind: "note", id, draft: "" });
+    selectAnnotation({ kind: "note", id });
+  }
+
+  function addBand() {
+    const id = addStorylineBand(node.id);
+    setEditing({ kind: "band", id, draft: "" });
+    selectAnnotation({ kind: "band", id });
+  }
+
+  /** Writes the draft away and stops editing. Called on blur and on Escape. */
+  function commitEdit() {
+    if (!editing) return;
+    if (editing.kind === "note") setStorylineNoteText(node.id, editing.id, editing.draft);
+    else setStorylineBandLabel(node.id, editing.id, editing.draft);
+    setEditing(null);
+  }
+
+  /** A note's text with its links drawn as links. */
+  function noteBody(note: DrawnNote) {
+    return note.segments.map((segment, index) =>
+      segment.kind === "text" ? (
+        <span key={index}>{segment.text}</span>
+      ) : segment.kind === "link" ? (
+        <button
+          key={index}
+          type="button"
+          className="storyline-note-link"
+          // A press must not also start dragging the note it sits in.
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => selectNode(segment.nodeId)}
+        >
+          {segment.text}
+        </button>
+      ) : (
+        // Kept and marked rather than drawn as prose: an exit that stopped
+        // working is the one thing about a note worth being able to see.
+        <span key={index} className="storyline-note-broken" title="No page by that name">
+          {segment.text}
+        </span>
+      ),
+    );
+  }
+
   return (
-    <section
-      className={`storyline${expanded ? " storyline-expanded" : ""}`}
-      aria-label={`Storyline: ${node.name}`}
-    >
+    <section className={`storyline${expanded ? " storyline-expanded" : ""}`} aria-label={`Storyline: ${node.name}`}>
       <div className="storyline-bar">
         <button type="button" className="ui-btn ui-btn-secondary" onClick={addScene}>
           <Plus size={15} />
           Add a scene
+        </button>
+        <button type="button" className="ui-btn ui-btn-secondary" onClick={addNote}>
+          <StickyNote size={15} />
+          Add a note
+        </button>
+        <button type="button" className="ui-btn ui-btn-secondary" onClick={addBand}>
+          <SquareDashed size={15} />
+          Label a stretch
         </button>
 
         <span className="storyline-count">
@@ -113,19 +222,29 @@ export function PageStoryline({ node }: { node: Node }) {
         </span>
 
         <div className="storyline-bar-end">
-          {selectedEdgeId && (
-            <button
-              type="button"
-              className="ui-btn ui-btn-secondary"
-              onClick={() => {
-                disconnectStorylineEdge(node.id, selectedEdgeId);
-                selectEdge(null);
-              }}
-            >
-              <Trash2 size={15} />
-              Remove this line
-            </button>
-          )}
+          {/* Disabled rather than hidden once there is nothing to tidy: a button
+              that vanishes when it has done its job reads as the app losing a
+              control, and this row must not change height. */}
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary"
+            onClick={() => tidyStoryline(node.id)}
+            disabled={!untidy}
+            // **The key comes from the binding, never from a string here.**
+            // Undo is Ctrl+Shift+Z rather than Ctrl+Z — her call, 2026-08-27,
+            // because Ctrl+Z belongs to whatever is being written — and it is
+            // rebindable, so a hardcoded label goes stale the day she changes
+            // it. This tooltip said the wrong key until an app-suite scenario
+            // pressed the one it advertised and nothing happened.
+            title={
+              untidy
+                ? `Line the scenes up in order. ${undoKey} puts your arrangement back.`
+                : "Already lined up"
+            }
+          >
+            <Wand2 size={15} />
+            Tidy up
+          </button>
           <button
             type="button"
             className="storyline-icon-btn"
@@ -148,6 +267,57 @@ export function PageStoryline({ node }: { node: Node }) {
         onWheel={handleWheel}
       >
         <div className="storyline-scene" style={{ transform: sceneTransform }}>
+          {/* Behind everything, because a band is the ground the scenes stand
+              on. It is still not a container — see `scenesOnBand`. */}
+          {bands.map((band) => {
+            const isEditing = editing?.kind === "band" && editing.id === band.id;
+            return (
+              <div
+                key={band.id}
+                className={`storyline-band${band.id === selectedBand?.id ? " storyline-band-selected" : ""}`}
+                style={{ left: band.x, top: band.y, width: band.width, height: band.height }}
+                onPointerDown={(event) => startBandDrag(event, band)}
+                onPointerMove={moveBandDrag}
+                onPointerUp={(event) => endBandDrag(event, band)}
+                onPointerCancel={(event) => endBandDrag(event, band)}
+              >
+                {isEditing ? (
+                  <input
+                    className="storyline-band-input"
+                    value={editing.draft}
+                    autoFocus
+                    placeholder="Act 1"
+                    aria-label="What this stretch is called"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
+                    onBlur={commitEdit}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
+                    }}
+                  />
+                ) : (
+                  <span
+                    className="storyline-band-label"
+                    onDoubleClick={() => setEditing({ kind: "band", id: band.id, draft: band.label })}
+                  >
+                    {band.label || "Double-click to name this stretch"}
+                  </span>
+                )}
+
+                {/* Bottom-right, where a resize handle goes everywhere else. */}
+                <button
+                  type="button"
+                  className="storyline-band-corner"
+                  aria-label={`Resize ${band.label || "this stretch"}`}
+                  onPointerDown={(event) => startBandResize(event, band)}
+                  onPointerMove={moveBandResize}
+                  onPointerUp={endBandResize}
+                  onPointerCancel={endBandResize}
+                />
+              </div>
+            );
+          })}
+
           <svg
             className="storyline-edges"
             style={{ left: bounds.minX, top: bounds.minY, width: bounds.width, height: bounds.height }}
@@ -275,52 +445,167 @@ export function PageStoryline({ node }: { node: Node }) {
               </div>
             );
           })}
+
+          {/* In front of the scenes: a note is an aside about what is under it,
+              and one hidden behind a card would be an aside nobody can read. */}
+          {notes.map((note) => {
+            const isEditing = editing?.kind === "note" && editing.id === note.id;
+            return (
+              <div
+                key={note.id}
+                className={`storyline-note${note.id === selectedNote?.id ? " storyline-note-selected" : ""}`}
+                style={{ left: note.x, top: note.y, width: note.width }}
+                onPointerDown={(event) => startNoteDrag(event, note)}
+                onPointerMove={moveNoteDrag}
+                onPointerUp={(event) => endNoteDrag(event, note)}
+                onPointerCancel={(event) => endNoteDrag(event, note)}
+                onDoubleClick={() => setEditing({ kind: "note", id: note.id, draft: note.text })}
+              >
+                {isEditing ? (
+                  <textarea
+                    className="storyline-note-input"
+                    value={editing.draft}
+                    autoFocus
+                    rows={3}
+                    aria-label="What this note says"
+                    placeholder="Continued in [[another page]]"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
+                    onBlur={commitEdit}
+                    // Escape commits and leaves rather than throwing the
+                    // sentence away — a note is writing, and the app does not
+                    // discard writing on a keystroke anywhere else either.
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") event.currentTarget.blur();
+                    }}
+                  />
+                ) : (
+                  <p className="storyline-note-text">
+                    {note.text ? noteBody(note) : <span className="storyline-note-empty">Double-click to write</span>}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {model.scenes.length === 0 && (
+        {model.scenes.length === 0 && model.notes.length === 0 && model.bands.length === 0 && (
           <p className="storyline-empty">
             Nothing on this storyline yet. Add a scene — it becomes a page inside this one, and you write in it
-            like any other. Drag from a scene's handle to the one it leads to.
+            like any other. Drag from a scene&rsquo;s handle to the one it leads to.
           </p>
         )}
 
         {refusal && (
           <p className="storyline-refusal" role="status">
             {refusal}
-            <button type="button" className="storyline-refusal-close" aria-label="Dismiss" onClick={() => setRefusal(null)}>
-              <X size={13} />
-            </button>
           </p>
         )}
+
+        {/* Read out rather than shown as a number to act on: how far in she is
+            zoomed is not something to fix. Inside the stage, so the selection
+            strip cannot be drawn over it. */}
+        <span className="storyline-zoom" aria-live="off">
+          {Math.round(zoom * 100)}%
+        </span>
       </div>
 
-      {selected && (
+      {/* One strip, in one place, whatever is selected. A panel that appeared
+          beside whichever thing was clicked would sit somewhere different every
+          time, which is the thing that reads as the app moving underneath. */}
+      {(selectedScene || selectedNote || selectedBand || selectedEdgeId) && (
         <div className="storyline-selection">
-          <span className="storyline-selection-name">{selected.name}</span>
-          <button type="button" className="ui-btn ui-btn-secondary" onClick={() => selectNode(selected.pageId)}>
-            Open this scene
-          </button>
-          {/* Says "off the canvas", never "delete": the page keeps existing,
-              in the tree, with everything written in it. */}
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={() => {
-              removeStorylineNode(node.id, selected.id);
-              select(null);
-            }}
-          >
-            Take off the canvas
-          </button>
+          <span className="storyline-selection-name">
+            {selectedScene?.name ??
+              (selectedNote ? "Note" : undefined) ??
+              (selectedBand ? selectedBand.label || "Unnamed stretch" : undefined) ??
+              "Line between two scenes"}
+          </span>
+
+          {selectedScene && (
+            <>
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => selectNode(selectedScene.pageId)}
+              >
+                Open this scene
+              </button>
+              {/* Says "off the canvas", never "delete": the page keeps
+                  existing, in the tree, with everything written in it. */}
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => {
+                  removeStorylineNode(node.id, selectedScene.id);
+                  select(null);
+                }}
+              >
+                Take off the canvas
+              </button>
+            </>
+          )}
+
+          {selectedNote && (
+            <>
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => setEditing({ kind: "note", id: selectedNote.id, draft: selectedNote.text })}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => {
+                  removeStorylineNote(node.id, selectedNote.id);
+                  selectAnnotation(null);
+                }}
+              >
+                Remove this note
+              </button>
+            </>
+          )}
+
+          {selectedBand && (
+            <>
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => setEditing({ kind: "band", id: selectedBand.id, draft: selectedBand.label })}
+              >
+                Rename
+              </button>
+              {/* The scenes are not "in" it, so removing it removes a label. */}
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => {
+                  removeStorylineBand(node.id, selectedBand.id);
+                  selectAnnotation(null);
+                }}
+              >
+                Remove this label
+              </button>
+            </>
+          )}
+
+          {selectedEdgeId && !selectedScene && !selectedNote && !selectedBand && (
+            <button
+              type="button"
+              className="ui-btn ui-btn-secondary"
+              onClick={() => {
+                disconnectStorylineEdge(node.id, selectedEdgeId);
+                selectEdge(null);
+              }}
+            >
+              Remove this line
+            </button>
+          )}
         </div>
       )}
 
-      {/* Read out rather than shown as a number: how far in she is zoomed is
-          not something to fix, and a percentage sitting in the corner of a
-          canvas is a readout nobody acts on. */}
-      <span className="storyline-zoom" aria-live="off">
-        {Math.round(zoom * 100)}%
-      </span>
     </section>
   );
 }

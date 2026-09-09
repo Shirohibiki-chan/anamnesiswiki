@@ -1100,6 +1100,56 @@ export type StorylineEdge = {
 };
 
 /**
+ * Something written on the canvas that is not part of the sequence
+ * (Phase 25, step 2).
+ *
+ * **An annotation, not a node**, and every part of that is deliberate: no
+ * edges, no page behind it, and never counted among the scenes. Her case is a
+ * branch that stops — a thread ends and the story carries on somewhere else,
+ * and without somewhere to say so the reader finds a dead end.
+ *
+ * **The text holds wikilinks**, which is the whole point rather than a nicety:
+ * `continued in [[Demonic AU — Valera's Fall]]` turns a dangling branch into an
+ * exit. Written as plain text with `[[ ]]` in it rather than as editor content,
+ * because a note is a sentence on a canvas and a BlockNote document is a page's
+ * worth of machinery — `noteSegments` resolves the names when it is drawn, so a
+ * page renamed afterwards is a link that stops resolving rather than a link
+ * that quietly points at the wrong page.
+ */
+export type StorylineNote = {
+  id: string;
+  /** Top-left, unlike a scene — a note is sized by its text, not by a fixed card. */
+  x: number;
+  y: number;
+  width: number;
+  text: string;
+};
+
+/**
+ * A labelled stretch of the storyline — "Act 2" (Phase 25, step 2).
+ *
+ * **For the person who did not write the thing.** An unlabelled fork and a fork
+ * that stops look identical to a reader, and a band is how she says which is
+ * which without adding a scene that is not a scene.
+ *
+ * Drawn behind everything and **dragging one carries the scenes standing on
+ * it**. It is still not a container: it owns nothing, nothing is filed inside
+ * it, and a scene knows nothing about which band it happens to sit on — the
+ * question is asked geometrically, at the moment of the drag, and never stored.
+ * A band that owned its scenes would be the folder-shaped object `CLAUDE.md`
+ * says not to reach for.
+ */
+export type StorylineBand = {
+  id: string;
+  /** Top-left, and a band is the one thing on the canvas with a real size. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label: string;
+};
+
+/**
  * A storyline page's canvas, stored in `_storyline.json` inside that page's
  * own directory.
  *
@@ -1115,4 +1165,11 @@ export type Storyline = {
   version: 1;
   nodes: StorylineNode[];
   edges: StorylineEdge[];
+  /**
+   * The annotations. Required in memory and absent from every canvas written
+   * before step 2 — `readStoryline` is the only way one is read back and it
+   * fills both in, so nothing downstream has to know they were once optional.
+   */
+  notes: StorylineNote[];
+  bands: StorylineBand[];
 };

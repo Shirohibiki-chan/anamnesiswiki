@@ -6,17 +6,28 @@
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { STORYLINE_TEMPLATE_KEY } from "../constants/schema";
-import { createStoryline, storylineModel, type StorylineModel } from "../services/storyline-service";
+import {
+  createStoryline,
+  needsTidying,
+  storylineModel,
+  type StorylineModel,
+} from "../services/storyline-service";
 import { useProjectStore } from "../state/project-store";
 
-export type { ConnectRefusal, DrawnScene, StorylineModel } from "../services/storyline-service";
+export type {
+  ConnectRefusal,
+  DrawnNote,
+  DrawnScene,
+  NoteSegment,
+  StorylineModel,
+} from "../services/storyline-service";
 
 /** Whether this page is one whose body is a canvas. */
 export function isStorylinePage(templateKey: string): boolean {
   return templateKey === STORYLINE_TEMPLATE_KEY;
 }
 
-const EMPTY: StorylineModel = { scenes: [], edges: [], orphans: 0 };
+const EMPTY: StorylineModel = { scenes: [], edges: [], notes: [], bands: [], orphans: 0 };
 
 /**
  * One storyline's canvas, with every scene dressed in the page it stands for.
@@ -35,6 +46,20 @@ export function useStoryline(storylineId: string | null): StorylineModel {
   }, [storylineId, storyline, nodes]);
 }
 
+/**
+ * Whether *Tidy up* would move anything.
+ *
+ * **Its own hook, keyed on the canvas alone rather than folded into the model.**
+ * Working it out means laying the whole thing out and comparing — and the model
+ * is rebuilt whenever any page in the world changes, so inside it that ran on
+ * every keystroke typed anywhere. Nothing about a page's name can make a canvas
+ * untidy, so this only has to be asked when the canvas itself moves.
+ */
+export function useStorylineIsUntidy(storylineId: string | null): boolean {
+  const storyline = useProjectStore((state) => (storylineId ? state.storylines[storylineId] : undefined));
+  return useMemo(() => (storyline ? needsTidying(storyline) : false), [storyline]);
+}
+
 export function useStorylineActions() {
   return useProjectStore(
     useShallow((state) => ({
@@ -43,6 +68,16 @@ export function useStorylineActions() {
       connectStorylineNodes: state.connectStorylineNodes,
       disconnectStorylineEdge: state.disconnectStorylineEdge,
       removeStorylineNode: state.removeStorylineNode,
+      addStorylineNote: state.addStorylineNote,
+      setStorylineNoteText: state.setStorylineNoteText,
+      moveStorylineNote: state.moveStorylineNote,
+      removeStorylineNote: state.removeStorylineNote,
+      addStorylineBand: state.addStorylineBand,
+      setStorylineBandLabel: state.setStorylineBandLabel,
+      moveStorylineBand: state.moveStorylineBand,
+      resizeStorylineBand: state.resizeStorylineBand,
+      removeStorylineBand: state.removeStorylineBand,
+      tidyStoryline: state.tidyStoryline,
       selectNode: state.selectNode,
     })),
   );

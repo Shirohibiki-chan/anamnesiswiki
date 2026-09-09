@@ -277,6 +277,195 @@
   outline-offset: 2px;
 }
 
+/* ---- Notes and bands: what is written on the canvas but is not the story ----
+
+   Both are deliberately unlike a scene card. A scene is a solid panel with a
+   border and a lift; a note is a soft tinted slip and a band is a dashed
+   outline with no fill worth the name. Someone glancing at the canvas has to be
+   able to say which marks are the sequence and which are the commentary, and
+   shape is what carries that at a distance where words are not readable. */
+
+.storyline-note {
+  position: absolute;
+  padding: var(--space-sm) var(--space-md);
+  /* **The Quote callout's colours, borrowed rather than invented.** On the
+     dark themes `--color-panel-alt` was near enough to a scene's panel to pass
+     for one, and on Daylight it was `#f4f4f2` against white cards — a note and
+     a scene were the same object at a glance, which is the one thing this
+     canvas cannot afford. Quote is the app's existing "an aside, in someone
+     else's voice" register, it is themed in all seven, and it means a note
+     never has to be a colour I picked. */
+  border: 1px solid var(--color-callout-quote);
+  border-left-width: 3px;
+  /* Only one corner squared off, the way a real slip of paper is torn — the
+     cheapest way to say "not a card" at a zoom where words are unreadable. */
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 2px;
+  background: var(--color-callout-quote-bg);
+  cursor: grab;
+  touch-action: none;
+}
+
+.storyline-note:active {
+  cursor: grabbing;
+}
+
+.storyline-note-selected {
+  border-color: var(--color-accent-light);
+  box-shadow: 0 0 0 3px var(--color-accent-faint);
+}
+
+.storyline-note-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--color-callout-quote-text);
+  /* Wraps and keeps wrapping. A note is a sentence, and a sentence cut off
+     with no way to read the rest is the thing that reads as broken. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.storyline-note-empty {
+  color: var(--color-text-placeholder);
+  font-style: italic;
+}
+
+/* A wikilink inside a note. Drawn as text that is clearly a link rather than as
+   a button, since it sits mid-sentence — but it is a real button underneath,
+   because it goes somewhere. */
+.storyline-note-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--color-accent-light);
+  /* **Bold as well as coloured**, and that is a contrast decision rather than
+     a stylistic one. Measured 2026-09-09: on Daylight the link is `#0f766e`
+     over the note's tinted ground, which comes to 4.55:1 — over the AA floor
+     and only just, which is exactly the band she has said reads as too faint.
+     Every other theme is comfortable (Midnight measures about 10:1), so the
+     answer is weight rather than a per-theme colour nobody would keep in step. */
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.storyline-note-link:hover {
+  color: var(--color-text-primary);
+}
+
+.storyline-note-link:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* A name nothing answers to. Marked rather than drawn as prose: an exit that
+   stopped working is worth being able to see, and a dotted underline says
+   "this was meant to go somewhere" without shouting. */
+.storyline-note-broken {
+  color: var(--color-text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
+.storyline-note-input {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-callout-quote-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.storyline-note-input:focus {
+  outline: none;
+}
+
+/* The ground a stretch of the storyline stands on. Dashed and barely filled:
+   it has to read as an annotation *behind* the scenes rather than as a panel
+   they are inside, because nothing is actually inside it. */
+.storyline-band {
+  position: absolute;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  /* **Tinted, never faded.** `opacity` on the box took the label down with it,
+     and a stretch of the storyline whose name is the faintest thing on screen
+     is a label that does not do its job. A translucent fill dims the ground
+     and leaves what is written on it at full strength. */
+  background: color-mix(in oklab, var(--color-panel-alt) 55%, transparent);
+  cursor: grab;
+  touch-action: none;
+}
+
+.storyline-band:active {
+  cursor: grabbing;
+}
+
+.storyline-band-selected {
+  border-color: var(--color-accent-light);
+  background: color-mix(in oklab, var(--color-accent-faint) 60%, transparent);
+}
+
+/* Top-left, outside the scenes' own rows, so a label never lands on top of a
+   card sitting near the band's edge. */
+.storyline-band-label {
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-sm);
+  max-width: calc(100% - var(--space-3xl));
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.storyline-band-input {
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-sm);
+  width: calc(100% - var(--space-3xl));
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.storyline-band-input:focus {
+  outline: none;
+}
+
+.storyline-band-corner {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  background: var(--color-panel);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.storyline-band-corner:hover,
+.storyline-band-corner:focus-visible {
+  border-color: var(--color-accent-light);
+  background: var(--color-accent-faint);
+  outline: none;
+}
+
 .storyline-empty {
   position: absolute;
   left: 50%;
@@ -312,25 +501,6 @@
   color: var(--color-text-primary);
 }
 
-.storyline-refusal-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-full);
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.storyline-refusal-close:hover {
-  background: var(--color-hover);
-  color: var(--color-text-primary);
-}
-
 /* What can be done with the selected scene. A fixed strip along the bottom of
    the canvas rather than a popover beside the card: a panel that appeared in a
    different place depending on where the scene happened to sit is the thing
@@ -353,6 +523,9 @@
   overflow-wrap: anywhere;
 }
 
+/* Inside the stage rather than the section, so the selection strip below can
+   never be drawn over the top of it — which is exactly what happened while it
+   was positioned against the section. */
 .storyline-zoom {
   position: absolute;
   right: var(--space-sm);

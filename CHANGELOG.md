@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-09 — storylines: notes, labels, and tidying up
+
+### Additions
+
+- **Loose notes, dropped anywhere on a storyline's canvas.** A note is for the thing the picture can't say — a thread that stops here and carries on somewhere else. Add a note and it opens straight into typing; double-click one to change it later.
+- **Notes hold links.** Write `[[Greyharbour]]` in a note and it becomes a link to that page, so a branch that ends becomes an exit rather than a dead end. Aliases work the same way they do everywhere else, and a name two pages both answer to isn't guessed at.
+- **A name nothing answers to is marked rather than quietly drawn as words.** If you rename the page a note pointed at, the note shows you the link is broken instead of looking finished.
+- **Label a stretch of the storyline — "Act 2".** It's drawn behind the scenes as a dashed frame with a name on it, and it starts drawn around everything so you pull it in to the stretch you actually meant. **Dragging one carries the scenes standing on it**, so moving an act moves the act.
+- **Tidy up.** One button that lines the scenes up in order — one column per step, forks side by side, and a scene that can be reached the long way round sits after the long way rather than jumping back. It only ever runs when you press it, and Ctrl+Shift+Z puts your own arrangement back.
+
+### Notes
+
+- **Notes and labels are not part of the story, on purpose.** Neither one has lines, neither has a page behind it, and neither is counted in the scene tally. Removing a label removes a label — the scenes it was drawn around stay exactly where they are.
+- **Tidying leaves your notes and labels where you put them.** They're anchored to a thought about a place on the canvas and there's no honest way to guess where that thought went.
+- **What's left of storylines:** pointing a scene at a page that already exists (right now every scene added makes a new page), and showing who's in a scene. That's the last part — `docs/plan.md` has it.
+
 ## 2026-09-09 — storylines, the canvas
 
 ### Additions
@@ -255,17 +271,3 @@
 - **The switcher marks which one it is**, so you don't have to visit each in turn to find out.
 - **The section is deliberately not styled like a page.** It's a rule, a gap, and a small heading — because the one thing that should never be ambiguous is which universe the page you're typing in belongs to.
 - **Nothing is shared until you say so.** A world with no shared universe looks exactly as it did, and picking **None** puts it back.
-
-## 2026-09-06 — a way to actually make a universe
-
-### Fixes
-
-- **The universe bar is always there now, even before you've made one**, and it has a **+** beside it. Yesterday it stayed hidden until a universe existed, which meant the only way to make your first one was a right-click menu item you'd have to already know about — so unless someone told you, universes weren't there at all.
-- **The + gives you both ways in.** "New, empty universe" makes a fresh one and opens it so you can name it straight away. Under that is a list of the top-level pages you already have — click one and it becomes a universe, keeping everything inside it. That second one is the one that matters for a world that already exists: your AUs are folders today, and this turns them into universes without moving a single page.
-- **That list has a search box and scrolls**, the same as "Move to" does. A world with a long tail of pages at the top level would otherwise put them in one column running off the bottom of the screen, where the ones past the edge can't be reached at all.
-- **Opening the switcher in a world with no universes explains what they are** instead of showing a list of nothing.
-- **A universe you open says it's a universe.** It used to show "This page doesn't have any tabs yet" with a button offering to add one — which is what a page says, not a container. It now says what a universe is for and offers to add a page inside it.
-
-### Changes
-
-- **The right-click "Turn into a universe" is still there.** It's the shortcut now rather than the way in.

@@ -30,6 +30,14 @@ A page whose body is a canvas of **scenes** joined in narrative order (Phase 25)
 
 Two meanings, and they are the same thing seen from two places. **The Scene *template*** is one of the fourteen kinds a page can be. **A scene *on a storyline*** is a card on the canvas standing for such a page: it holds an id and a position, and reads its name and icon off the page live. Taking a scene off a canvas removes the card and never the page — the same distinction a database view makes between a row and a page.
 
+## Note (on a storyline)
+
+A slip of text dropped anywhere on a storyline's canvas (Phase 25). **An annotation, not a node**: no lines, no page behind it, never counted among the scenes. It holds `[[wikilinks]]`, which is the whole point — a thread that ends becomes an exit to wherever the story carries on, rather than a dead end the reader just runs into. Not to be confused with the **Note template**, which is an ordinary kind of page.
+
+## Band (a labelled stretch)
+
+A named, dashed frame drawn behind a stretch of a storyline — "Act 2" (Phase 25). Like a note it is an annotation and owns nothing; unlike a note, dragging one carries the scenes standing on it, which is asked geometrically at the moment it is picked up and never stored. Called a *band* in the code and "a labelled stretch" on screen.
+
 ## Tree
 
 The hierarchy of nodes visible in the left sidebar. The tree structure is mirrored on disk — every folder in the tree is a real folder in the project directory, every page is a JSON file inside its parent folder. Reparenting a node in the tree = moving the file on disk.
