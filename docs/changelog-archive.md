@@ -2,6 +2,24 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — one universe at a time
+
+### Additions
+
+- **There's a universe switcher under your world's name**, in the sidebar. It only appears once you've made a universe — a world without one looks exactly as it did.
+- **Picking a universe shows only that universe's pages**, at the top of the tree. Canon on its own, Demonic AU on its own. The universe stops being a row you have to open, because its contents *are* the tree now; a character that used to be four levels down under AUs / Demonic AU / Characters is two.
+- **"All universes" is the top of that list**, and it's where you start. One click, no trip to Settings, and it's the only view where universes show up as rows.
+- **The app remembers which one you were in.** It's stored with the world, not with the app, so a world you hand to someone else opens on the universe you left it in.
+- **Going to a page that isn't in the universe you're in takes you there.** A search result, a link, the home button — the sidebar follows you instead of quietly not having a row for the page you're now reading. If the page isn't in any universe, you land back in All universes, which is the only view that can show it.
+- **The "+" beside your world's name makes the page inside the universe you're in**, and says so when you hover it.
+
+### Changes
+
+- **The trail above a focused folder starts at the universe**, not at your world, when you're in one — so the first step of it is the button that takes you back to where clicking it actually goes.
+- **Finding a page by name in the sidebar searches the universe you're in.** The Search button on the left rail still looks across the whole world, and going to one of its results moves you to wherever that page lives.
+
+**What this doesn't do yet:** there's no Shared universe for the pages that are true everywhere — a species, a map, a language. That's the next piece, and until it's built a page like that has to live in one universe or outside all of them.
+
 ## 2026-09-05 — universes, the first piece
 
 ### Additions

@@ -22,6 +22,14 @@ A non-folder node — anything with content. Character, Location, Faction, Item,
 
 A node whose only job is to hold other nodes. Folders don't have tabs or properties (other than color and tags). An empty folder is still a real folder — it isn't visually demoted or auto-removed — because a user may be preparing a container for future content (e.g. the "Meta" folder in the user's Valeraverse export sits empty pending future documentation).
 
+## Storyline
+
+A page whose body is a canvas of **scenes** joined in narrative order (Phase 25). Sequence-driven and date-optional, which is the whole difference from a timeline: nodes connect by what leads to what, never by year, so nothing stops because a date isn't known. It is a directed acyclic graph rather than a tree — a thread forks and rejoins at a shared event, so a scene may have several leading into it — and it is the one shape in the app the sidebar's tree cannot express.
+
+## Scene
+
+Two meanings, and they are the same thing seen from two places. **The Scene *template*** is one of the fourteen kinds a page can be. **A scene *on a storyline*** is a card on the canvas standing for such a page: it holds an id and a position, and reads its name and icon off the page live. Taking a scene off a canvas removes the card and never the page — the same distinction a database view makes between a row and a page.
+
 ## Tree
 
 The hierarchy of nodes visible in the left sidebar. The tree structure is mirrored on disk — every folder in the tree is a real folder in the project directory, every page is a JSON file inside its parent folder. Reparenting a node in the tree = moving the file on disk.

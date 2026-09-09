@@ -19,10 +19,22 @@ import {
   createTemplateLibrary,
   type Node,
   type Project,
+  type Storyline,
   type TemplateLibrary,
   type Tab,
 } from "../constants/schema";
 import { IMPORT_IMAGE_CONCURRENCY } from "../constants/limits";
+import { SCENE_TEMPLATE_KEY, UNTITLED_PAGE_NAME } from "../constants/schema";
+import {
+  addSceneNode,
+  connect,
+  createStoryline,
+  disconnect,
+  moveNodes,
+  nextPlacement,
+  removeNode,
+  type ConnectRefusal,
+} from "../services/storyline-service";
 import { TEMPLATES_FILE } from "../constants/paths";
 import type { ProjectTemplateFile } from "../constants/project-template";
 import * as fsService from "../services/filesystem-service";
@@ -582,6 +594,18 @@ export type ProjectStoreState = {
    */
   assetFolders: AssetFolders;
   /**
+   * Every storyline canvas in the world, by the id of the storyline page it
+   * belongs to (Phase 25). Absent for a storyline nobody has put a scene on,
+   * which is what a page created a second ago reads as.
+   *
+   * Held here rather than read when a storyline is opened for the same reason
+   * the asset folders are: it is *edited* here, and a scene dropped has to
+   * redraw the moment the hand lets go. Loaded whole with the world — see
+   * `WalkContext.storylines` for why reading them on the way past is cheaper
+   * than finding the page's directory a second time later.
+   */
+  storylines: Record<string, Storyline>;
+  /**
    * What each picture is called, keyed by filename. A label, never the file's
    * own name — see constants/paths.ts ASSET_NAMES_FILE for why that isn't a
    * shortcut worth taking. Held here rather than read on demand for the same
@@ -760,6 +784,17 @@ export type ProjectStoreState = {
    */
   setGraphPins: (graphKey: string, pins: Record<string, { x: number; y: number }>) => void;
   /**
+   * The storyline canvas (Phase 25). Every one of these takes the id of the
+   * *storyline page*, not of a scene — a canvas belongs to the page whose body
+   * it is, and there is exactly one per storyline.
+   */
+  addSceneToStoryline: (storylineId: string) => string | null;
+  moveStorylineNodes: (storylineId: string, moved: Record<string, { x: number; y: number }>) => void;
+  /** Null when the line was drawn, or why it was not. */
+  connectStorylineNodes: (storylineId: string, fromId: string, toId: string) => ConnectRefusal | null;
+  disconnectStorylineEdge: (storylineId: string, edgeId: string) => void;
+  removeStorylineNode: (storylineId: string, nodeId: string) => void;
+  /**
    * Puts the tree's arrangement back to an earlier copy of `project.json`
    * (Phase 19) — the order, the home page, the pins, the expanded folders.
    *
@@ -847,6 +882,37 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
       if (rootNow !== rootPath || !projectNow) return;
       return fsService.saveProject(rootPath, projectNow).then(markSaved);
     });
+  };
+
+  /**
+   * A storyline page's canvas, or an empty one for a storyline nobody has put
+   * anything on yet.
+   *
+   * Read through here rather than off `storylines[id]` directly, so absent and
+   * empty are one case everywhere — a storyline created a second ago has no
+   * file on disk, and every caller treating that as a special case is a
+   * separate chance to get it wrong.
+   */
+  const storylineOf = (storylineId: string): Storyline =>
+    get().storylines[storylineId] ?? createStoryline();
+
+  /**
+   * Set and written together, always — the same pairing `applyTemplates` and
+   * `applyAssetFolders` make above, and here it matters more: this file is the
+   * only record of an arrangement that took real time to make, and a call site
+   * that forgets the write loses it silently, on the next load, long after the
+   * session that made it.
+   *
+   * Written immediately rather than debounced, like `setGraphPins`: every
+   * caller is a completed gesture — a scene dropped, a line drawn, a scene
+   * taken off — not a keystroke.
+   */
+  const applyStoryline = (storylineId: string, storyline: Storyline): void => {
+    const { rootPath, nodes, storylines } = get();
+    const page = nodes[storylineId];
+    if (!rootPath || !page) return;
+    set({ storylines: { ...storylines, [storylineId]: storyline } });
+    track(() => fsService.saveStoryline(rootPath, page, Object.values(get().nodes), storyline));
   };
 
   // Set and written together, always. The library is one file, so there's no
@@ -1153,6 +1219,20 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     }
     await enqueueWrite(() => fsService.saveProject(rootPath, nextProject));
 
+    // A restored storyline page comes back with its directory, its scenes and
+    // its `_page.json` — but not with `_storyline.json`, which went with the
+    // directory when it was deleted and is not part of what a node's file
+    // holds. Writing it again here is what makes undoing the delete of a whole
+    // storyline give the arrangement back too, rather than only on screen
+    // until the next reload. Absent for every page that is not one, which is
+    // nearly all of them.
+    const canvases = get().storylines;
+    for (const node of restored) {
+      const storyline = canvases[node.id];
+      if (!storyline) continue;
+      await enqueueWrite(() => fsService.saveStoryline(rootPath, node, Object.values(nextNodes), storyline));
+    }
+
     set({ nodes: nextNodes, project: nextProject });
     markSaved();
   };
@@ -1276,6 +1356,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     assetNames: createAssetNames(),
     removedAssets: createRemovedAssets(),
     assetSources: createAssetSources(),
+    storylines: {},
     skippedFiles: [],
     loadWasIncomplete: false,
     saveErrors: [],
@@ -1346,6 +1427,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         assetNames,
         removedAssets,
         assetSources,
+        storylines: result.storylines,
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
         isLoaded: true,
@@ -1436,6 +1518,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         assetNames: createAssetNames(),
         removedAssets: createRemovedAssets(),
         assetSources: createAssetSources(),
+        storylines: {},
         skippedFiles: [],
         loadWasIncomplete: false,
         navHistory: EMPTY_NAV_HISTORY,
@@ -1637,6 +1720,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         assetNames: createAssetNames(),
         removedAssets: createRemovedAssets(),
         assetSources: createAssetSources(),
+        storylines: {},
         skippedFiles: [],
         loadWasIncomplete: false,
         saveErrors: [],
@@ -3563,6 +3647,106 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         label,
         () => restoreOrdering(orderingBefore),
         () => restoreOrdering(orderingAfter),
+      );
+    },
+
+    /**
+     * Puts a new scene on a storyline's canvas (Phase 25).
+     *
+     * **Makes a real page for it, as a child of the storyline.** A scene is
+     * somewhere she writes, not a card with a title on it — so this goes
+     * through `addNode` like every other way of making a page, and the page
+     * lands in the tree, in the storyline's own directory, undoable, and
+     * openable from anywhere. The canvas node only says where it sits.
+     *
+     * Undoing that page-creation leaves this canvas node pointing at nothing,
+     * which is drawn as nothing and written away as nothing — and redoing puts
+     * the page back with its position intact. See `storylineModel`.
+     */
+    addSceneToStoryline(storylineId) {
+      const { nodes } = get();
+      if (!nodes[storylineId]) return null;
+      // **Where it goes is worked out from the canvas, not from where the view
+      // happens to be scrolled.** Both were tried: putting it in the middle of
+      // the window means three scenes added in a row land on the same point,
+      // stacked, with only the last one clickable — which is what shipped for
+      // about ten minutes on 2026-09-09. To the right of everything is where
+      // the next scene belongs anyway, since a storyline reads left to right,
+      // and the canvas refits so the new one is on screen either way.
+      const at = nextPlacement(storylineOf(storylineId));
+      const page = get().addNode({
+        parentId: storylineId,
+        templateKey: SCENE_TEMPLATE_KEY,
+        name: UNTITLED_PAGE_NAME,
+      });
+      applyStoryline(storylineId, addSceneNode(storylineOf(storylineId), page.id, at));
+      return page.id;
+    },
+
+    /**
+     * Where scenes ended up after a drag. Called once on letting go, never per
+     * pointer move — a position written on every frame is sixty writes a second
+     * to a file on her disk.
+     *
+     * **Not recorded for undo**, the same call `setGraphPins` makes and for the
+     * same reason: Ctrl+Z is for writing and for the tree, and a keystroke
+     * reached for after a bad edit must not spend itself undoing a nudge.
+     */
+    moveStorylineNodes(storylineId, moved) {
+      const next = moveNodes(storylineOf(storylineId), moved);
+      if (next === storylineOf(storylineId)) return;
+      applyStoryline(storylineId, next);
+    },
+
+    /**
+     * Joins two scenes in narrative order, or says why it would not.
+     *
+     * Recorded for undo, unlike a drag: a line is a claim about the story
+     * rather than an arrangement of the picture, and it is the one thing on
+     * this canvas that a mis-drop can assert wrongly.
+     */
+    connectStorylineNodes(storylineId, fromId, toId) {
+      const before = storylineOf(storylineId);
+      const { storyline, refused } = connect(before, fromId, toId);
+      if (refused) return refused;
+      applyStoryline(storylineId, storyline);
+      record(
+        "joining two scenes",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, storyline),
+      );
+      return null;
+    },
+
+    disconnectStorylineEdge(storylineId, edgeId) {
+      const before = storylineOf(storylineId);
+      const after = disconnect(before, edgeId);
+      if (after.edges.length === before.edges.length) return;
+      applyStoryline(storylineId, after);
+      record(
+        "removing a line",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+    },
+
+    /**
+     * Takes a scene off the canvas, leaving the page it stood for alone.
+     *
+     * The page keeps existing, in the tree, with everything written in it —
+     * exactly as removing a row from a database view removes a view's row and
+     * never a page. Deleting the page is a separate act, done from the tree,
+     * and it takes the canvas node with it by making it stand for nothing.
+     */
+    removeStorylineNode(storylineId, nodeId) {
+      const before = storylineOf(storylineId);
+      const after = removeNode(before, nodeId);
+      if (after.nodes.length === before.nodes.length) return;
+      applyStoryline(storylineId, after);
+      record(
+        "taking a scene off the canvas",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
       );
     },
 

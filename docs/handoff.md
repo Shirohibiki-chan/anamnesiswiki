@@ -91,10 +91,16 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 21, 22, 23, 24, 27 and 29 are done.** The app is shippable and shipping —
+**Phases 0–19, 19.5, 21, 22, 23, 24, 27 and 29 are done, and Phase 25 is
+under way.** The app is shippable and shipping —
 v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
 the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
 piece delivered.
+
+**Phase 25 — Storylines — step 1 shipped 2026-09-09**: a Storyline page whose
+body is a canvas, scenes that are real pages inside it, and directed lines she
+draws herself between them. Two steps remain and are in `docs/plan.md`. What
+binds the code is §Storylines below.
 
 **Phase 24 — Graphs — closed 2026-09-08**: a page's relationships drawn over
 the page, and the whole universe drawn from the rail. Four things from it bind
@@ -209,6 +215,57 @@ binding on the code.
 A structural code review, a disk-I/O pass, and a documentation accuracy pass all
 ran on 2026-07-30. What they changed is in `CHANGELOG.md`; what they *concluded*
 is below.
+
+---
+
+## Storylines
+
+Phase 25, step 1. Five things bind the code.
+
+- **A storyline is an ordinary page, and its scenes are ordinary pages inside
+  it.** `storyline` is a template key with no tabs and no properties, offered in
+  every picker — unlike `universe`, which is a key and not a template. That
+  difference is deliberate: a universe is a container you convert a page into,
+  and a storyline is a thing you sit down and make. **Nothing here is a second,
+  folder-shaped kind of object**, which is the rule `CLAUDE.md` §Data on disk
+  states and the one a canvas feature is most likely to break — the temptation
+  is a "scene" that is a card with a title, and a card with a title is not
+  somewhere she can write.
+
+- **The canvas is `_storyline.json`, its own file inside the storyline page's
+  directory, and it must not become a field on the page.** Dragging a scene an
+  inch is arranging a view: it must not dirty the page, enter its version
+  history, or read as an edit to whoever syncs the folder — the same call
+  `Project.graphPins` makes and for the same reasons. It is also *one* file
+  rather than an edge written onto each page it joins: reparenting would
+  otherwise rewrite two page files, and a failure between them leaves a canvas
+  half-connected. `saveStoryline` deliberately does not snapshot, because a
+  nudge must never push a real draft off the end of the retention list.
+
+- **There is no layout and there must not be one.** The graph settles a
+  simulation and treats a drag as an override on top of it; here the position is
+  the only thing there ever was. A force layout exists to choose positions for
+  you, which is exactly the thing this canvas promises not to do — a tidy-up is
+  a button she presses (step 2), never behaviour that happens. `useStorylineView`
+  is `use-graph-view`'s shape with that half removed, and the `dragging` map does
+  not outlive the drop because there is no computed layout for it to override.
+
+- **A scene node whose page is gone is dropped at draw time and never written
+  away.** `storylineModel` filters it out; the stored file keeps it. Deleting a
+  page is undoable in this app, and a canvas that pruned itself the moment a
+  scene was deleted would put the page back with no position and no lines —
+  losing an arrangement to a mistake that was itself undone. `restoreNodes`
+  rewrites the canvas file for the same reason: a deleted storyline's directory
+  takes `_storyline.json` with it, and nothing else would put it back.
+
+- **The fit is floored well above the wheel's own limit** (`STORYLINE_MIN_FIT_ZOOM`).
+  Five scenes in the page column fitted to 47%, where a scene's name is a row of
+  six-pixel marks — measured 2026-09-09. A canvas that always fits is a canvas
+  that becomes unreadable; past the floor it stops shrinking and she pans.
+  **And the lines are trimmed to the cards' edges** (`meetsCard`), because a line
+  drawn centre-to-centre puts its arrowhead underneath the card it points at —
+  which loses the only thing a storyline's lines are for. Both were found by
+  looking at the first working canvas, not by a test.
 
 ---
 

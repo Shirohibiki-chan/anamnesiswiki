@@ -514,17 +514,13 @@ Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer
 
 **The distinction that drives the design:** a timeline is date-locked and linear; a storyline is sequence-driven and date-optional. Nodes connect by what leads to what, not by year. Dates are the reason the timeline never got built — a blank the user can't fill and won't guess at stops the writing. Storylines have no such field. Where a date happens to be known it's just another property on the page.
 
-**The view** is a zoomable, pannable, drag-and-drop graph. Each node is a scene or an event; edges run in narrative order. The tree branches for parallel plot threads or alternate viewpoints and reconverges at shared events — so it's a DAG, not a strict tree, and a node can have two parents. Nothing else in the app has that shape; the sidebar tree's model does not fit it.
+**Three steps.** Step 1 is done; what it delivered is in `docs/shipped.md` and what still binds the code is in `docs/handoff.md` §Storylines. The two below are what's left.
 
-**Where a node sits is her decision, and the app never overrules it.** Added
-2026-08-10. Positions are authored and saved (see Storage below) — a scene goes
-where she puts it and stays there. **This rules out inheriting Phase 24's
-force-directed layout**, whatever else is shared with it: a force simulation
-exists precisely to choose positions for you, and it would spend the session
-undoing her arrangement. Phase 24 is right to use one — a relationship graph is
-explored, not composed — and that's the difference. What Storylines can take
-from Phase 24 is the pan/zoom surface and the edge drawing, not the layout.
-Offer a tidy-up as a button she presses, never as behaviour that just happens.
+### Step 1 — the canvas — closed 2026-09-09
+
+A Storyline page whose body is a zoomable, pannable canvas; scenes that are real pages inside it; directed lines drawn by dragging from one scene to another; a DAG rather than a tree, so threads fork and rejoin; authored positions saved beside the scenes and restored exactly. Detail in `docs/shipped.md`.
+
+### Step 2 — loose notes, and saying what a stretch of it is
 
 **Loose notes can be dropped anywhere on the canvas.** Asked for 2026-08-10, and
 it's the one place a storyline borrows from a whiteboard. Her case is a branch
@@ -539,11 +535,19 @@ not nodes: no edges, no page behind them, never counted as part of the sequence.
 labelling clusters ("Act 2") — for someone who didn't write the thing, an
 unlabelled fork and a fork that stops look identical.
 
-**Every node is also a page.** Opening a node opens a full editor where the whole scene gets written — a storyline is somewhere she writes, not just a map of writing kept elsewhere. Creating a node makes a lightweight page for it by default; pointing a node at an existing page is the other option, and both are first-class, because half the nodes in a real storyline are events that already have pages.
+**And a tidy-up she presses**, never behaviour that just happens. Step 1
+deliberately has no layout at all, which is right for a canvas she has arranged
+and unhelpful for one where she has just added nine scenes in a row: a button
+that lines the sequence up is the version of "lay it out" that cannot undo work
+she did on purpose.
 
-**Storage.** Node pages follow the existing file-per-node model and stay legible on disk. The graph itself — edges, positions, branch structure, and the loose notes — is the new part and wants its own file next to them. Don't scatter edges across the individual pages: a reparent then rewrites two page files, and a failure halfway leaves the graph half-connected.
+### Step 3 — a scene that already has a page, and who is in it
 
-**Sequenced here because** it wants the reference index from Phase 18 (a scene node should be able to show who's in it), the reworked shell from Phase 21 to host a full-screen canvas, and the pan/zoom and edge rendering from Phase 24 — its *layout*, per the note above, is the one thing not to inherit. It doesn't otherwise depend on Database or Graphs, so it can be pulled ahead of both if it's what she wants sooner. **A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition.
+**Pointing a node at an existing page is the other half of "every node is also a page."** Step 1 makes a new Scene page for every scene added, which is the right default and is only half of what a real storyline needs — half the nodes in one are events that already have pages. Both are first-class; this is the second.
+
+**A scene node should be able to show who's in it**, which is what the reference index from Phase 18 is for. This is also the step where a storyline earns its place in the rest of the app: a scene's page saying which storyline it is on, and the storyline turning up where a page's connections are counted.
+
+**A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition. Step 1 gets this for free by being an ordinary page in the tree; the rule only needs stating once a node can point at a page somewhere else, which is this step.
 
 ---
 

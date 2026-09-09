@@ -17,8 +17,16 @@ import {
   writeTextFile,
   type DirEntry,
 } from "./host-service";
-import { FOLDER_TEMPLATE_KEY, LEGACY_TEMPLATE_KEYS, type Node, type Project, type TemplateLibrary } from "../constants/schema";
+import {
+  FOLDER_TEMPLATE_KEY,
+  LEGACY_TEMPLATE_KEYS,
+  type Node,
+  type Project,
+  type Storyline,
+  type TemplateLibrary,
+} from "../constants/schema";
 import { alwaysDirectory } from "./template-registry";
+import { readStoryline } from "./storyline-service";
 import {
   ASSET_FOLDERS_FILE,
   ASSET_NAMES_FILE,
@@ -31,6 +39,7 @@ import {
   HISTORY_README_FILE,
   MOVE_TEMP_PREFIX,
   OPEN_MARKER_FILE,
+  STORYLINE_FILE,
   PAGE_META_FILE,
   PROBE_TEMP_PREFIX,
   PROJECTS_SUBDIR,
@@ -390,6 +399,12 @@ export type LoadedProject = {
    * again, not a count: the page is open in her tree and she can check it.
    */
   supersededNames: string[];
+  /**
+   * Every storyline canvas in the world, by the id of the storyline page it
+   * belongs to (Phase 25). A storyline page with no file yet is simply absent,
+   * which is what a canvas nobody has put anything on reads as.
+   */
+  storylines: Record<string, Storyline>;
 };
 
 // A project folder is plain JSON on the user's own disk, synced by whatever
@@ -434,6 +449,7 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     recovered: [],
     reunited: [],
     sources: new Map(),
+    storylines: new Map(),
     limited: createReadLimiter(READ_CONCURRENCY),
   };
   const rootEntries = await ctx.limited(() => readDir(rootPath));
@@ -452,7 +468,15 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
   supersededNames.sort();
 
   const recoveredCount = await repairStrandedNodes(rootPath, nodes, ctx.recovered);
-  return { project, nodes, skipped: ctx.skipped, recoveredCount, reunited: ctx.reunited, supersededNames };
+  return {
+    project,
+    nodes,
+    skipped: ctx.skipped,
+    recoveredCount,
+    reunited: ctx.reunited,
+    supersededNames,
+    storylines: Object.fromEntries(ctx.storylines),
+  };
 }
 
 // Two files on disk, one node id. The graph is a `Record<string, Node>` keyed
@@ -610,6 +634,17 @@ type WalkContext = {
    * safe here because `readNodeFile` parses a fresh object per file.
    */
   sources: Map<Node, string>;
+  /**
+   * Every storyline canvas found on the way past, by the id of the page whose
+   * directory held it (Phase 25).
+   *
+   * Read during the walk rather than when a storyline page is opened, because
+   * the walk is already holding that directory's listing — asking again later
+   * means finding the page's path a second time, which is the one calculation
+   * in this file that has cost the user data. A canvas is a few hundred bytes
+   * of positions; a world of them is smaller than one page of writing.
+   */
+  storylines: Map<string, Storyline>;
   limited: ReadLimiter;
 };
 
@@ -734,6 +769,19 @@ async function walkEntries(
         }
 
         const node = await readNodeFile(joinPath(entryPath, markerFile), ctx);
+        // The canvas belonging to this page, if it has one. Read off the
+        // listing already in hand — no probe, and no cost to the directories
+        // that hold no storyline, which is nearly all of them. A canvas that
+        // will not parse is an empty canvas rather than a page that fails to
+        // load: the scenes are pages in their own right and are all still
+        // there, so the loss is an arrangement, not writing.
+        if (node && childEntries.some((child) => !child.isDirectory && child.name === STORYLINE_FILE)) {
+          try {
+            ctx.storylines.set(node.id, readStoryline(JSON.parse(await ctx.limited(() => readTextFile(joinPath(entryPath, STORYLINE_FILE))))));
+          } catch {
+            ctx.skipped.push(joinPath(entryPath, STORYLINE_FILE));
+          }
+        }
         // An unreadable marker still leaves a real directory that may hold
         // perfectly good children. Keep walking into it, reparented to this
         // level, so a single bad `_folder.json` costs one node and not the
@@ -758,6 +806,7 @@ async function walkEntries(
         entry.name === PAGE_META_FILE ||
         entry.name === PROJECT_FILE ||
         entry.name === TEMPLATES_FILE ||
+        entry.name === STORYLINE_FILE ||
         entry.name === OPEN_MARKER_FILE
       ) {
         return [];
@@ -1294,6 +1343,40 @@ export async function saveNode(rootPath: string, node: Node, graph: Node[] | Pat
 
   // Only reached on a successful write — the catch above always rethrows.
   await clearSupersededCopy(rootPath, node, dirSegments, fileName);
+}
+
+/**
+ * Writes one storyline page's canvas into that page's own directory
+ * (Phase 25).
+ *
+ * **Not routed through `saveNode`, and not snapshotted with it.** The canvas is
+ * a separate file precisely so arranging it is not an edit to the page — so it
+ * must not enter the page's version history either, or every scene nudged an
+ * inch would push a real draft of the writing off the end of the retention
+ * list. Losing an arrangement costs an arrangement; losing a version of a page
+ * costs writing.
+ *
+ * The directory is the storyline page's own, resolved exactly the way its
+ * `_page.json` is, so a rename or a move carries the canvas along with the
+ * scenes for free — the whole directory moves in one `fs.rename`.
+ *
+ * `mkdir` first because a storyline is `alwaysDirectory` but a brand-new one
+ * has not necessarily been written yet: the canvas can be the first file in
+ * there, and a first scene added before the page's own save lands must not
+ * fail on a directory nobody has made.
+ */
+export async function saveStoryline(
+  rootPath: string,
+  node: Node,
+  graph: Node[] | PathIndex,
+  storyline: Storyline,
+): Promise<void> {
+  const { dirSegments } = resolveNodePath(node, graph);
+  // A storyline is always directory-stored, so its own file sits *inside* the
+  // directory named by the last segment — which is where the canvas goes too.
+  const dirPath = joinPath(rootPath, ...dirSegments);
+  await mkdir(dirPath, { recursive: true });
+  await writeTextFile(joinPath(dirPath, STORYLINE_FILE), JSON.stringify(storyline, null, 2));
 }
 
 // A node that has just been written into its own directory must not still have
