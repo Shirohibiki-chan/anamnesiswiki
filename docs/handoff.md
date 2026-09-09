@@ -3507,6 +3507,37 @@ draws it, `use-shortcut-sheet.ts` owns the two keys that raise it.
   gallery is a service someone has to host and moderate, and nobody has asked
   for one. If she wants it, it is a feature to design, not a boundary to cross.
 
+## The example world
+
+Phase 26, step 1. What binds the code:
+
+- **It is a fourth way a project is made, and it cannot be a project template.**
+  A `.antpl` describes a shape and structurally refuses to carry writing
+  (`constants/project-template.ts`), and this world is almost nothing but
+  writing. `createExampleProject` is the LK import's write path with none of its
+  fetching. Anybody tempted to collapse the two formats is about to lose the
+  guarantee that a template carries nobody's draft.
+
+- **A world made in memory has to fill in everything a *load* would have.** The
+  three defects this shipped with were all one mistake in three places:
+  `selectedId` as well as `homeNodeId`, or it opens with the tree full and no
+  page on screen; the canvases into `storylines` as well as onto disk, or the
+  storyline draws empty until the project is next opened; and `childOrder`,
+  because every node is made in the same millisecond and `orderSiblings` then
+  falls through to comparing ids — the tree came out in a different order on
+  every run. Anything else added to a project's state belongs in this path too.
+
+- **Nothing in the world's prose may name a part of the interface.** That is the
+  split the phase rests on — this world teaches what a world is made of, and the
+  tour teaches where things are — and it is what keeps the half that goes stale
+  small. `example-world.test.ts` enforces it with a word list rather than
+  leaving it to care.
+
+- **A tab nobody writes into keeps its template's prompts, on purpose.** Old
+  Thessaly's Ties tab is untouched, so the world contains a page somebody
+  started and abandoned. Filling in every tab would make the example look like a
+  form that has to be completed, which is the opposite of what it is for.
+
 ## Product decisions
 
 - **Hidden means "not shown to other people", never "out of the way".** A hidden

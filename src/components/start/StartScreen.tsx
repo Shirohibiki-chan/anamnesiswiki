@@ -83,7 +83,7 @@ function emptyMessageFor(scope: LibraryScope, query: string): string {
   if (query.trim().length > 0) return "No project here matches that.";
   if (scope === SCOPE_ARCHIVED) return "Nothing archived turned up — a project on a drive that isn't plugged in won't show here.";
   if (scope !== SCOPE_ALL) return "Nothing is in this group yet. Add a project to it from the ⋯ button on the project.";
-  return "No projects yet — make one, or open a folder you already have.";
+  return "No projects yet — make one, open a folder you already have, or look around the example world.";
 }
 
 export function StartScreen() {
@@ -396,6 +396,7 @@ export function StartScreen() {
         onStartFromTemplate={() => setIsPickingTemplate(true)}
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
+        onOpenExample={() => void actions.openExampleWorld()}
         onOpenReleases={setOpenReleaseVersion}
         projectsDir={newProjectsDir}
         onOpenProjectsFolder={() => void actions.openProjectsFolder()}

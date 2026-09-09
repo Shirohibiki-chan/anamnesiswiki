@@ -51,6 +51,12 @@ export type StartActions = {
   openFound: (path: string) => Promise<void>;
   pickFolderToOpen: () => Promise<void>;
   createProject: (name: string) => Promise<void>;
+  /**
+   * The example world (Phase 26). Takes no name, unlike `createProject` — the
+   * app is offering a world rather than asking her to start one, so naming it
+   * is a decision she makes afterwards if she keeps it.
+   */
+  openExampleWorld: () => Promise<void>;
   /** The rail's Projects folder line. Makes the folder first — same reason
    *  `createProject` calls `prepareNewProjectsDir`, since a fresh install has
    *  a default path nothing has created yet, and handing that to the file
@@ -118,7 +124,7 @@ function templateNameFromPath(path: string): string {
 }
 
 export function useStartActions(): StartActions {
-  const { loadProject, createProjectAt } = useProject();
+  const { loadProject, createProjectAt, createExampleProject } = useProject();
   const {
     recordProjectOpened,
     forgetProject,
@@ -280,6 +286,36 @@ export function useStartActions(): StartActions {
     },
     [createProjectAt, prepareNewProjectsDir, recordProjectOpened],
   );
+
+  const openExampleWorld = useCallback(async () => {
+    setIsBusy(true);
+    let result: Awaited<ReturnType<typeof createExampleProject>>;
+    try {
+      const parentDir = await prepareNewProjectsDir();
+      result = await createExampleProject(parentDir);
+    } catch {
+      result = {
+        ok: false,
+        error: "Couldn't make the example world. Check that your projects folder is writable and try again.",
+      };
+    } finally {
+      setIsBusy(false);
+    }
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setError(null);
+    // Recorded like any other project she opened, because it is one — it is in
+    // the library from here on, and the way back to it is the way back to
+    // anything else.
+    // Named from the folder it landed in rather than from the constant: a
+    // second copy is numbered by the store, and the recent list saying
+    // "Saltmere Example" for a folder called "Saltmere Example 2" is two
+    // answers to which world she was just in.
+    await recordProjectOpened(result.rootPath, fsService.fileNameFromPath(result.rootPath));
+  }, [createExampleProject, prepareNewProjectsDir, recordProjectOpened]);
 
   const openProjectsFolder = useCallback(async () => {
     setIsBusy(true);
@@ -558,6 +594,7 @@ export function useStartActions(): StartActions {
     openFound,
     pickFolderToOpen,
     createProject,
+    openExampleWorld,
     openProjectsFolder,
     setProjectCover,
     removeProjectCover,

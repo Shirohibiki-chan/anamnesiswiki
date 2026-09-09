@@ -5753,3 +5753,60 @@ Pointing a scene at a page that already exists, and showing who is in one. What 
 **What the phase did not build**, and both are decisions rather than leftovers. A band works out what is standing on it at the moment it is picked up and never records it, so a band dragged away and back does not adopt scenes that moved onto it in between — the alternative makes it a container. And drag-to-connect only reaches scenes currently on screen, which is inherent to the gesture rather than a limit worth engineering around.
 
 ---
+
+## Phase 26 — Teach It To Someone Else, step 1 ✅ Shipped 2026-09-09
+
+The example world: a small world somebody can open on the day they install the
+app. The other half of the phase — a short tour of the app itself — is still to
+come, and the two are deliberately kept apart; `docs/plan.md` § Phase 26 has the
+reasoning and `docs/handoff.md` §The example world has what binds the code.
+
+**What it delivered.** *The example world* is a fourth entry under Add a Project
+on the start screen. It makes Saltmere: a harbour town the sea is leaving, in
+fourteen pages — a folder of characters with one written properly and one barely
+started, a page showing the places inside it as a table, a guild holding the item
+it is fighting over, and a storyline of four scenes that forks and rejoins, with
+a note, a labelled stretch, and every name in the prose a real mention. It opens
+on its own Start Here page. Asking for it again makes a numbered second copy
+rather than refusing.
+
+**Why it could not be a project template.** A `.antpl` describes a shape and
+structurally refuses to carry anybody's writing, which is the whole point of that
+format — and an example world is almost nothing but writing. So it is a fourth
+way a project is made, beside `createProjectAt`, `createProjectFromTemplate` and
+`importLkProject`: the import's write path with none of its fetching.
+
+**Why the world is a description rather than finished nodes.**
+`constants/example-world.ts` holds pages, prose and canvas positions;
+`services/example-world.ts` turns them into nodes. Tabs, property schemas and
+sidebar blocks come from `template-registry` at build time, so a tab nobody wrote
+into arrives with today's prompts rather than a copy of what they said when the
+world was written — the same reasoning `materializeProjectTemplate` follows.
+
+**Three defects found by driving the real app**, none of which a unit test could
+have reached:
+
+- **The world opened on nothing.** A world made in memory has to fill in
+  everything a load would have: `selectedId` as well as `homeNodeId`, or it
+  arrives with the tree full and the page area empty.
+- **The storyline drew an empty canvas.** The canvases were written to disk and
+  not put into the store, so the world looked right only after being closed and
+  reopened.
+- **The tree came out in a different order every time.** Every node is made in
+  the same millisecond, so `orderSiblings` fell through to comparing ids —
+  Maren above Thessaly on one run and below her on the next, while Start Here
+  says which of them is the more written. The world writes `childOrder` now.
+
+**And one the screenshots caught.** The canvas note was parked to the right of
+the last scene, outside the box the view fits itself to when it opens — on the
+canvas and off the screen. Moved inside; the underlying behaviour is in
+`docs/plan.md` Known Bugs.
+
+**Verified.** `example-world.test.ts` is 20 unit tests over the description and
+the build: every link resolves, every tab id and property key exists on its
+template, no two pages share a name, the canvas arrives needing no tidying, and
+the prose names nothing in the interface. `e2e/opens-the-example-world.e2e.ts`
+adds 6 scenarios driving the real app from the start screen — the tree, the
+mentions rendered as links, Places as a table, the storyline drawn and joined and
+labelled with its note resolving, and a second copy being made rather than
+refused.
