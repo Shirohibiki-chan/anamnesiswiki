@@ -5573,3 +5573,114 @@ Each step ends with something visible, because the phase is too big for one.
 **Why the alternatives lost.** A fifth *Database* entry beside the existing four would mean two menu items that list sub-pages with no principle for choosing between them — the exact "one word stretched over both" failure the Collections→Database rename was avoiding, read backwards. Replacing the two outright makes the tidiest menu and was rejected because it takes away names she already knows and redraws blocks already on her pages.
 
 ---
+
+## Phase 24 — Graphs ✅ Shipped 2026-09-08
+
+Four steps across two days, #396 through #400: a page's relationships drawn
+over the page (#396); the bar that steers it — reach, line names, filters and
+*Put it back* — with arrangements kept in `project.json` (#397); the whole
+universe from a rail button, with *Everything* as a fourth reach (#399); and
+the pass that closed what the first three had left behind (#400). #398 sits in
+the middle of them and is not a graph change: it fixed the save race the
+graph's *Put it back* was the easiest way to hit.
+
+**The decision the phase rests on is that both graphs are one component fed a
+different set of pages.** It was made at scoping and held: `graphAround` walks
+outward from a page, `graphOfPages` takes a set outright, `assemble` is the
+half they share, and step 4 finished the job by making the two produce the same
+*drawing* rather than merely the same pages.
+
+**What the plan asked for, against Obsidian, and what happened to each.** Nodes
+that look like the tree rather than grey dots — done, template icon and the
+colour cascade, and the cascade's cost is written down rather than solved.
+A layout that settles the same way twice — done, and stronger than asked: the
+simulation is run to a stop rather than animated, so there is no half-settled
+state to catch. Scoped by default — done, one connection out, widened on
+request. Visible filters rather than a query syntax — done, and they are Phase
+23's filters rather than a second set. A click that opens a preview instead of
+throwing the graph away — done, and going to the page is a second, deliberate
+action.
+
+**Three things were found by running it that no test caught**, and they are the
+argument for looking: the automatic fit had to magnify as well as shrink; the
+lines needed a text-grade colour rather than a border one, which had all but
+vanished on the light theme; and holding back names past a zoom had to apply to
+the selected node too, since a two-line label at a fifth of its size is stripes
+of grey rather than a word.
+
+**Two test faults are worth remembering more than the features are.** A
+persistence check that opened the same graph twice and found a node in the same
+place was asserting what a deterministic layout does anyway — it would have
+passed with the feature removed. And a check written in screen pixels was
+partly a measurement of the window it ran in, which is why it passed locally and
+failed on CI; positions are compared as fractions of the rest of the drawing now.
+
+What follows is the section as it was scoped, with what each step shipped
+written into it.
+
+## Phase 24 — Graphs
+
+Both, per the user's decision 2026-07-31, and in this order:
+
+1. **Relationship graph, scoped to one page** — who she knows, who she serves, what she owns. This is the one that earns its keep.
+2. **Global graph** — a view of the whole project at once. Still second, because the relationship graph is smaller and lands sooner, but **it is meant to be a tool, not a poster.** An earlier draft of this entry wrote it off as the thing people screenshot and never use; the user corrected that 2026-08-08 — she wants somewhere to see the whole project, and she specifically doesn't like how Obsidian's is set up.
+
+Obsidian's graph is the thing to beat, so what's wrong with it is the spec. Five commitments, none of them "make it prettier":
+
+- **Nodes have to look like her tree, not like dots.** Obsidian draws every note as the same grey circle, which throws away the one thing this app knows and Obsidian doesn't: templates. Characters, locations, factions and species carry their sidebar icon and her chosen node colour into the graph. This is the single biggest legibility win available and it's nearly free — `constants/icons.ts` and the colour cascade already exist.
+- **The same project has to look the same every time you open it.** Force-directed layouts settle differently on every run, so there's no building a memory of where anything is. Seed the simulation deterministically and remember pinned positions.
+- **Scoped by default, not everything at once.** One universe (Phase 22), widened on request. Five AUs rendered together is precisely the hairball that makes people close the tab.
+- **Filters are visible controls, not a query syntax.** Filter by template and by tag using Phase 23's Database filter model rather than inventing a second language for the same job.
+- **Clicking a node must not throw the graph away.** It opens a preview beside the graph; going to the page is a deliberate second action.
+
+Both run on the reference index built in Phase 18, so neither starts from nothing.
+
+**Don't ask her to describe what it should look like** — she's said she's picky and has no visual direction in the abstract. Build it against the five points above and let her react to something running.
+
+### Scoped 2026-09-07
+
+The five commitments above are the spec and none of them changed. What was missing underneath them is what the graph reads, what it is drawn with, and where it lives.
+
+**Both graphs are one component fed a different set of pages.** The relationship graph is the global graph over a smaller candidate set — the same nodes, the same edges, the same filters, the same layout maths. Building them as two things would be building one renderer twice, which is the mistake Phase 23 avoided when its "rule source" turned out to be a scope. The scoped one still ships first, because a small set is where legibility is cheap to get right, not because it is a different feature.
+
+**Nothing new is computed to draw it.** `link-index.ts` already holds every edge, and its own header comment says it was written for this — Backlinks, the tag index and the subpage index are one question asked three ways, and the graph is the fourth. Every edge already carries *why* it exists (`prose`, `property`, `manual`) and, where it came from a reference property, that field's label. That is exactly what Obsidian cannot say about a line on its graph, and it is already sitting in the file.
+
+**A node wears its template's icon and its colour from the cascade** — `getTemplateIcon` and `getEffectiveColor`, neither of them touched. **The cascade's cost is real and taken on purpose:** colour is inherited, so a world that has one folder near the root coloured draws as a graph of a single colour. `getEffectiveColor` already reports `isOwner`, so a page that chose its colour can be told from a page that was handed one; if a monochrome graph turns out to be the ordinary case rather than the odd one, that flag is the fix, and it costs nothing to leave until it has been seen.
+
+**The same project has to settle the same way every time, so nothing is left to chance.** d3-force accepts a `randomSource`, and a node's starting position is a stable function of its page id rather than a scatter — between the two there is no randomness left in the simulation. **Positions she pins live in `project.json`**, beside tree order, expanded state and the selected universe. Not in the page's own file: dragging a node is arranging a view, and it must not dirty a page, land in that page's version history, or turn up as a change in the folder she syncs.
+
+**SVG, not canvas.** The theme system is CSS tokens all the way down, including the themes she writes herself, and an SVG node inherits all of it for free where a canvas would need every colour read out and re-drawn by hand. Hit-testing, focus and keyboard navigation come with it. The ceiling is somewhere in the low thousands of nodes, which a 75-page world is nowhere near, and the scope control is what keeps the number down — canvas is a swap behind the same component if a world ever gets there.
+
+**`d3-force` is the one new dependency.** ISC licensed, so it sits under MIT without a question, and it does the maths and nothing else — it draws nothing and knows nothing about the DOM, which is what keeps the renderer ours and the theming above working.
+
+**The filters are Phase 23's, not a second set.** `DatabaseField` already carries template, tag and name as first-class things beside properties, and the comment next to it says it was shaped that way for this phase. Filtering the graph by template and tag is that model pointed at a different renderer, which is the plan's "visible controls, not a query syntax" arriving for free.
+
+**Clicking a node opens the preview a hover already gives** — `preview-service.ts`: name, template, tags and an excerpt — beside the graph rather than over it. Going to the page stays a second, deliberate action.
+
+### Settled 2026-09-07
+
+Asked and answered the same day the section was written.
+
+**A page's graph opens over the page.** A button by the page's name, and closing it puts her back where she was reading — so every page has one without being set up for it, and the graph gets the whole window rather than a column. **A block version is the obvious second size and is not being built yet**, which is the shape Phase 23 reached from the other end: the page-level thing first, the block once it exists and can be dropped somewhere smaller. The choice was made without much feeling behind it, so it is worth putting again once there is something running to look at rather than treating it as fixed.
+
+**The tree counts as a connection, drawn fainter than the written ones.** A sword nested under its owner is a real relationship, and leaving it out would draw a picture the app knows to be incomplete. Fainter rather than identical because the two are not the same claim — one is something she wrote down and one is where she filed the page — and a graph that cannot tell them apart is back to Obsidian's every-line-is-a-line. **This is the point where the graph and Phase 23 part company:** a database's scope reads sub-pages as *rows*, and here the same relationship is an *edge*, so the two share the index underneath and nothing above it.
+
+**Whether an edge is labelled is hers to switch, and both answers ship rather than one.** A toggle in the graph's own controls: labels on every edge that has one, or labels only on the edges touching the node under the cursor or the one selected. Asked to choose, she asked for both — the informative picture and the quiet one are wanted at different moments, and picking one would have been picking which moment she was allowed. **The quiet one is the default**, on the plain grounds that a graph opened to find something is easier to read before it is covered in words. **The toggle is an app preference, not part of the project** — beside the sidebar widths and the double-click setting, because which of the two pictures she likes is a habit that follows her between worlds rather than a fact about one of them. Pinned positions stay per-project for the opposite reason.
+
+**Where the *global* graph is reached from is a question for step 3, and deliberately still open.** The rail's lower group already holds errands that are not sidebar panels, so it has somewhere to go, but the answer wants the scoped graph running first to argue against.
+
+### Build order
+
+Each step ends with something visible, the same as Phase 23.
+
+1. ~~**A page’s relationship graph.**~~ **Shipped 2026-09-07.** A button beside the page’s name opens it over the page; the page sits pinned at the centre with everything one connection out around it, wearing its template’s icon and its colour. Written lines are solid and tree lines are dashed. Nodes drag, the background pans, the wheel zooms, and a click opens the hover preview beside the graph with going to the page a second, deliberate click. Two things worth knowing that were not in the scope. **The automatic fit magnifies as well as shrinks** — capped at 1 a graph of eight pages used about a third of a 1440px window and read as a picture that had failed to load. And **a folder has no button**, because `FolderView` draws its own centred landing card and has no name row to put one on; where that button belongs on a folder is a real question rather than an oversight to sweep up.
+2. ~~**The controls.**~~ **Shipped 2026-09-07.** A bar above the graph: how far out it reaches (one, two or three connections), when a line writes what it is, filters by template and tag off Phase 23's model, and *Put it back*. Positions she drags are kept in `project.json` per graph, so arranging one page's graph leaves every other one alone. Three things worth knowing that were not in the scope. **A filter applies during the walk rather than after it** — a page that fails a condition is not walked *through*, so nothing is left floating with no line to it, and that is said in the menu rather than left to be discovered. **A pinned node is a fixed point in the simulation**, so the rest settles around what she arranged, but the layout is not recomputed on a drop, which would jump every other node the instant she let go. And **the reach and the filters last only while the graph is open** — an arrangement is something she made and losing it would lose work, where a filter is a question being asked now, and one still hiding half a world three days later with nothing saying why is the setting that reads as broken.
+3. ~~**The global graph.**~~ **Shipped 2026-09-08.** A *Graph* button in the rail's lower group, under Search — her call that day, put as four options with the running page graph to argue against. It draws every page in the universe the switcher names, and the reach control on a page's graph gained a fourth step, *Everything*, which lands on the same picture with that page still marked at its centre. Two doors, one component, as the scoping said. Three things worth knowing that were not in the scope. **The whole-universe graph is not a walk** — it takes the universe outright, so a page nothing points at is drawn, which is the most useful thing a picture of a world can say about one. **Past a zoom, no names are drawn at all**, including the selected node's: an exception for it was written first and drew a two-line label at a fifth of its size, which is stripes of grey rather than a word; the preview card and the node's tooltip are where a name comes from at that distance. And **the reach control is present but disabled on a graph with no centre**, because hops are counted from somewhere — present rather than absent, per the same rule the toolbar states about controls that come and go.
+
+4. **Closing the holes the steps left.** Shipped 2026-09-08, and the reason it is a step rather than a queue is that a phase is not finished while a list of what it does not do is still growing. **A folder opens its graph from its own card** — it is drawn as a centred landing card rather than a page with a title row, so it had no way in at all, which quietly made the graph a feature that did not apply to a third of the tree. **The two doors now produce the same drawing, not merely the same pages** — the focused page is marked rather than moved, the pages go in in the same order whichever door asked, and nothing is pinned at the origin on a graph of a universe; the layout differed before, which is what made one of them drop under the zoom where names stop being written while the other did not. **The arrangement follows what the graph is *of*** — widening a page's graph all the way now reads and writes the universe's arrangement rather than that page's, so tidying it from either door is one act on one drawing.
+
+**The cost of the layout, measured 2026-09-08** rather than left as an unknown: roughly a millisecond a page, run once when a graph opens. 75 pages take 58ms, 200 take 0.15s, 500 take 0.44s, 1000 take 0.98s and 2000 take 2.1s. It is synchronous, so past about a thousand pages that is a visible pause on opening — worth knowing before anyone raises `GRAPH_TICKS` or reaches for a bigger default reach, and far enough from her world that nothing is being built for it yet.
+
+**One thing is deliberately not kept and is a decision rather than a gap:** the reach and the filters last only while a graph is open. An arrangement is something she made and losing it would lose work; a filter is a question being asked now, and a graph reopened three days later still hiding half of what it is connected to, with nothing on screen saying why, is the setting that reads as broken.
+
+---

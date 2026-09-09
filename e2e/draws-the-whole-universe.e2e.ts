@@ -24,7 +24,9 @@ import {
   graphWrittenNames,
   graphNodeCentre,
   graphNodePlacement,
+  graphPlacements,
   graphReachEnabled,
+  openFolderGraph,
   openPage,
   openPageGraph,
   openWorldGraph,
@@ -39,8 +41,11 @@ const WRITTEN_MS = 1500;
 
 /**
  * An ordinary page rather than a folder, and the same one the step 1 scenario
- * uses. A folder is drawn by FolderView, which has no title row and therefore
- * no button beside a name — see docs/plan.md Phase 24 for that gap.
+ * uses — so the two scenarios are asking about the same neighbourhood.
+ *
+ * A folder reaches its graph a different way, from the card FolderView draws
+ * instead of a title row, and `opens from a folder's own card` below is what
+ * covers that route.
  */
 const PAGE = "Deep Nesting Test";
 
@@ -94,21 +99,46 @@ describe("the graph of a whole universe", () => {
     expect(everywhere).toBeGreaterThan(around);
   });
 
-  // Both doors, one place. Widening a page's graph all the way should draw the
-  // same set as opening the world's, which is what "one component fed a
-  // different set of pages" has to mean on screen.
+  /**
+   * **The same drawing, not merely the same pages.** Both doors are a picture of
+   * one universe, so the pages have to land in the same places too — a set that
+   * matched while the layout differed would be the feature admitting it is
+   * really two things wearing one name.
+   */
   it("is the same picture a page's graph widened all the way gives", async () => {
     await openWorldGraph(app.window);
-    const fromRail = (await graphNodeNames(app.window)).sort();
+    const railPlaces = await graphPlacements(app.window);
     await closePageGraph(app.window);
 
     await openPage(app.window, PAGE);
     await openPageGraph(app.window);
     await setGraphReach(app.window, "everything");
-    const fromPage = (await graphNodeNames(app.window)).sort();
+    const pagePlaces = await graphPlacements(app.window);
     await closePageGraph(app.window);
 
-    expect(fromPage).toEqual(fromRail);
+    expect(Object.keys(pagePlaces).sort()).toEqual(Object.keys(railPlaces).sort());
+    expect(Object.keys(railPlaces).length).toBeGreaterThan(20);
+    for (const [name, rail] of Object.entries(railPlaces)) {
+      expect(Math.abs(pagePlaces[name].x - rail.x)).toBeLessThan(0.01);
+      expect(Math.abs(pagePlaces[name].y - rail.y)).toBeLessThan(0.01);
+    }
+  });
+
+  /**
+   * **A folder had no way in at all**, which made the graph a feature that
+   * quietly did not apply to a third of the tree. It is drawn as a centred card
+   * rather than a page with a title row, so its button lives on that card.
+   */
+  it("opens from a folder's own card", async () => {
+    await openPage(app.window, "Characters");
+    await openFolderGraph(app.window);
+
+    expect(await graphIsOpen(app.window)).toBe(true);
+    expect(await graphHeading(app.window)).toContain("Characters");
+    // A folder's graph is a page's graph: it has a centre, so hops count.
+    expect(await graphReachEnabled(app.window)).toBe(true);
+
+    await closePageGraph(app.window);
   });
 
   /**

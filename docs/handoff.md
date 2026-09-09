@@ -109,10 +109,25 @@ has stopped moving. **A pinned node is a fixed point in the simulation rather
 than a position applied afterwards**, so the rest settles around what she
 arranged; but the layout is deliberately *not* recomputed when pins change,
 which is why putting an arrangement back needs the generation counter as well as
-the empty pins. And **`Project.graphPins` is keyed by graph, not by page** —
-a page's own id for its graph, `universe:<id>` for one with no centre. One
-position per page would mean tidying one graph quietly rearranging every other
-one that page appears on.
+the empty pins. And **`Project.graphPins` is keyed by what a graph is *of*** — a page's own
+id for its neighbourhood, `universe:<id>` for a graph of a whole universe
+whichever door opened it. One position per page would mean tidying one graph
+quietly rearranging every other one that page appears on; keying a universe by
+the universe is what makes widening a page's graph all the way and opening the
+rail's the same act on the same drawing.
+
+**The two doors must keep producing the same drawing.** A focus marks a page, it
+does not move it: `graphOfPages` takes the pages in the order it was given
+whether or not one of them is focused, and `settleGraph` pins a node at the
+origin only when handed a `centreId`, which a whole-universe graph never is.
+This was not true at first, and the symptom was oblique — the two layouts
+differed just enough that one crossed the zoom where names stop being drawn and
+the other did not, so one graph appeared to disagree with itself about labels.
+
+**The layout costs about a millisecond a page** — measured 2026-09-08: 58ms for
+75 pages, 0.44s for 500, 2.1s for 2000 — and it runs synchronously when a graph
+opens. Past roughly a thousand pages that is a visible pause, which is the thing
+to weigh before raising `GRAPH_TICKS` or making a wider reach the default.
 
 **Phase 23 — Database — closed 2026-09-07**: a page, or a block inside one,
 shown as a table, cards, a board or a list of pages that already exist. Two

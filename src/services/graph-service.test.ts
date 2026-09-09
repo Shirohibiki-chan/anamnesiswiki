@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createNode, createTab, type Node } from "../constants/schema";
 import { linkIndex } from "./link-index";
+import type { GraphModel } from "./graph-service";
 import {
   graphAround,
   graphOfPages,
@@ -146,7 +147,7 @@ describe("graphAround", () => {
   });
 
   // Two runs over the same world have to agree, or there is no building a
-  // memory of where anything is — see docs/plan.md Phase 24.
+  // memory of where anything is — see docs/shipped.md Phase 24.
   it("comes out identical when asked twice", () => {
     const valera = page("Valera");
     const sampo = page("Sampo");
@@ -329,21 +330,49 @@ describe("graphOfPages", () => {
     expect(model.nodes.every((node) => node.depth === 1)).toBe(true);
   });
 
-  it("keeps the focused page at the centre when it is given one", () => {
+  // **Marked, not moved.** Widening a page's graph to everything and opening
+  // the world's from the rail are the same picture, so a focus may not shift
+  // anything — it is drawn larger and filled, and that is all.
+  it("marks the focused page without moving it", () => {
     const valera = page("Valera");
     const sampo = page("Sampo");
-    const model = build([valera, sampo], [valera.id, sampo.id], valera.id);
-    expect(model.nodes[0]).toMatchObject({ name: "Valera", depth: 0 });
-    expect(model.nodes[0]).toMatchObject({ x: 0, y: 0 });
+    const withFocus = build([valera, sampo], [valera.id, sampo.id], valera.id);
+    const without = build([valera, sampo], [valera.id, sampo.id]);
+
+    expect(withFocus.nodes[0]).toMatchObject({ name: "Valera", depth: 0 });
+    expect(without.nodes[0]).toMatchObject({ name: "Valera", depth: 1 });
+    // Same page, same seeded position, focus or no focus.
+    expect(withFocus.nodes[0].x).toBe(without.nodes[0].x);
+    expect(withFocus.nodes[0].y).toBe(without.nodes[0].y);
+  });
+
+  // The promise the whole of step 3 rests on, asserted rather than described.
+  it("draws the same pages in the same places whichever door asked", () => {
+    const valera = page("Valera");
+    const sampo = page("Sampo");
+    const kafka = page("Kafka");
+    const nodes = [{ ...valera, tabs: tabWith([mention(sampo.id)]) }, sampo, kafka];
+    const ids = [valera.id, sampo.id, kafka.id];
+
+    const fromRail = build(nodes, ids);
+    const fromPage = build(nodes, ids, valera.id);
+
+    // Depth is the one field that may differ: it is what marks the focus.
+    const place = (model: GraphModel) => model.nodes.map((node) => [node.id, node.x, node.y]);
+    expect(place(fromPage)).toEqual(place(fromRail));
+    expect(fromPage.edges).toEqual(fromRail.edges);
   });
 
   // Opened from a page reached across a universe boundary, that page is still
   // where she is.
-  it("draws a focused page that is not in the set", () => {
+  // Appended rather than inserted, so its presence cannot shift the rest of
+  // the set along and change where everything settles.
+  it("draws a focused page that is not in the set, without reordering it", () => {
     const valera = page("Valera");
     const stranger = page("Stranger");
     const model = build([valera, stranger], [stranger.id], valera.id);
-    expect(model.nodes.map((n) => n.name)).toEqual(["Valera", "Stranger"]);
+    expect(model.nodes.map((n) => n.name)).toEqual(["Stranger", "Valera"]);
+    expect(model.nodes[1]).toMatchObject({ name: "Valera", depth: 0 });
   });
 
   it("leaves out a page a filter rejects, but never the focus", () => {

@@ -80,7 +80,7 @@ export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
  *
  * One, which is the page and the pages touching it. Two hops on a world of any
  * size pulls in most of it, which is the hairball the plan is written against.
- * The control that changes this is step 2 — see `docs/plan.md` Phase 24.
+ * The control that changes this is step 2 — see `docs/shipped.md` Phase 24.
  */
 export const GRAPH_DEFAULT_DEPTH = 1;
 

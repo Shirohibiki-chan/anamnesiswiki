@@ -1331,6 +1331,15 @@ export async function stopShowingAsDatabase(window: Page, rowName: string): Prom
   await window.locator(TREE_CONTEXT_MENU).first().getByRole("button", { name: "Stop showing as a database" }).click();
 }
 
+/**
+ * Opens a folder's graph from its own card, which is the only way in there — a
+ * folder has no title row to carry the button every other page uses.
+ */
+export async function openFolderGraph(window: Page): Promise<void> {
+  await window.getByRole("button", { name: "See connections" }).click();
+  await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
 /** Opens the graph from the button beside the open page’s name. */
 export async function openPageGraph(window: Page): Promise<void> {
   await window.locator(GRAPH_BUTTON).first().click();
@@ -1339,7 +1348,7 @@ export async function openPageGraph(window: Page): Promise<void> {
 
 /**
  * Opens the whole-universe graph from the rail, which is the other of the two
- * doors — see docs/plan.md Phase 24 step 3.
+ * doors — see docs/shipped.md Phase 24 step 3.
  */
 export async function openWorldGraph(window: Page): Promise<void> {
   await window.locator(LEFT_RAIL).getByRole("button", { name: "Graph", exact: true }).click();
@@ -1465,7 +1474,45 @@ export async function graphNodeCentre(window: Page, name: string): Promise<{ x: 
 }
 
 /**
- * Where a node sits, as a fraction of the box the *other* nodes occupy.
+ * Every node's position at once, as a fraction of the box they all occupy.
+ *
+ * **One call rather than one per page.** Comparing two drawings of a
+ * seventy-page world by asking for each node in turn is seventy round trips and
+ * seventy chances for a name to be looked up under a spelling that no longer
+ * matches — which is exactly what went wrong the first time this comparison was
+ * written. Reading the whole picture in one go removes the lookup entirely.
+ *
+ * Fractions rather than pixels for the reason `graphNodePlacement` gives: the
+ * graph scales to fit its window. Here the frame is every node, which is right
+ * for comparing two complete drawings of the same set.
+ */
+export async function graphPlacements(window: Page): Promise<Record<string, { x: number; y: number }>> {
+  return window.locator(GRAPH_NODE).evaluateAll((nodes) => {
+    const tidy = (value: string) => value.replace(/\s+/g, " ").trim();
+    const boxes = nodes.map((node) => ({
+      title: tidy(node.getAttribute("title") ?? ""),
+      rect: node.getBoundingClientRect(),
+    }));
+    if (boxes.length === 0) return {};
+    const left = Math.min(...boxes.map((box) => box.rect.left));
+    const right = Math.max(...boxes.map((box) => box.rect.right));
+    const top = Math.min(...boxes.map((box) => box.rect.top));
+    const bottom = Math.max(...boxes.map((box) => box.rect.bottom));
+    const width = right - left || 1;
+    const height = bottom - top || 1;
+    const places: Record<string, { x: number; y: number }> = {};
+    for (const box of boxes) {
+      places[box.title] = {
+        x: (box.rect.left + box.rect.width / 2 - left) / width,
+        y: (box.rect.top + box.rect.height / 2 - top) / height,
+      };
+    }
+    return places;
+  });
+}
+
+/**
+ * Where one node sits, as a fraction of the box the *other* nodes occupy.
  *
  * **Screen pixels cannot answer "did it stay where I put it".** The graph
  * scales to fit its window, so moving a node outward grows what has to fit and
@@ -1481,26 +1528,39 @@ export async function graphNodeCentre(window: Page, name: string): Promise<{ x: 
  * good ruler rather than a perfect one — compare with a tolerance.
  */
 export async function graphNodePlacement(window: Page, name: string): Promise<{ x: number; y: number }> {
-  const placement = await window.locator(GRAPH_NODE).evaluateAll((nodes, wanted) => {
-    const boxes = nodes.map((node) => ({
-      title: node.getAttribute("title") ?? "",
-      rect: node.getBoundingClientRect(),
-    }));
-    const target = boxes.find((box) => box.title === wanted);
-    const others = boxes.filter((box) => box.title !== wanted);
-    if (!target || others.length === 0) return null;
-    const left = Math.min(...others.map((box) => box.rect.left));
-    const right = Math.max(...others.map((box) => box.rect.right));
-    const top = Math.min(...others.map((box) => box.rect.top));
-    const bottom = Math.max(...others.map((box) => box.rect.bottom));
-    if (right - left === 0 || bottom - top === 0) return null;
-    return {
-      x: (target.rect.left + target.rect.width / 2 - left) / (right - left),
-      y: (target.rect.top + target.rect.height / 2 - top) / (bottom - top),
-    };
-  }, name);
-  if (!placement) throw new Error(`No node on the graph called ${name}`);
-  return placement;
+  // **The name is matched here, not in the page.** Doing it in the browser meant
+  // two copies of what counts as the same name, and a page whose title tidied
+  // differently on the two sides was simply reported as absent. One read, one
+  // matcher — the same `normalize` every other helper reports names through.
+  const boxes = await window.locator(GRAPH_NODE).evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        title: node.getAttribute("title") ?? "",
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+      };
+    }),
+  );
+
+  const wanted = normalize(name);
+  const target = boxes.find((box) => normalize(box.title) === wanted);
+  const others = boxes.filter((box) => normalize(box.title) !== wanted);
+  if (!target) throw new Error(`No node on the graph called ${name}`);
+  if (others.length === 0) throw new Error(`Nothing to measure ${name} against`);
+
+  const left = Math.min(...others.map((box) => box.left));
+  const right = Math.max(...others.map((box) => box.right));
+  const top = Math.min(...others.map((box) => box.top));
+  const bottom = Math.max(...others.map((box) => box.bottom));
+  return {
+    x: (target.x - left) / (right - left || 1),
+    y: (target.y - top) / (bottom - top || 1),
+  };
 }
 
 /** Drags a node by a number of screen pixels, in steps so the move is seen. */

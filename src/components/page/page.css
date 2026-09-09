@@ -1542,6 +1542,15 @@
 
 /* --- FolderView --- */
 
+/* The two things a folder offers, side by side. Wraps rather than overflowing
+   on a narrow window — the card is centred, so a second line stays centred. */
+.folder-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
 .folder-view {
   height: 100%;
   display: flex;

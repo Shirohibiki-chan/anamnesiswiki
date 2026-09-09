@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-08 — the graph, finished off
+
+### Additions
+
+- **A folder can open its graph now.** It's on the folder's own card, next to *Add a page* — folders are drawn as that centred card rather than as a page with a name row, so they had no way in at all and the graph quietly didn't apply to them.
+
+### Fixes
+
+- **Opening the world graph from the rail and widening a page's graph all the way now draw the same picture.** They always showed the same pages, but they laid them out slightly differently — enough that one could be far enough out to stop writing the names while the other still wrote them. The page you opened from is marked rather than moved now, so both routes settle identically.
+- **Tidying that picture counts once, whichever way you got to it.** Dragging pages around the whole-universe graph is remembered against the universe rather than against whichever page you happened to open it from, so arranging it from a page and arranging it from the rail are the same arrangement.
+
+### Notes
+
+- **How long the graph takes to lay out, measured rather than guessed:** roughly a millisecond a page, worked out once when the graph opens. A 75-page world takes about a twentieth of a second; 500 pages take about half a second; 2000 take a couple of seconds. Nothing to notice at the size of your world, and now written down so it isn't a surprise later.
+
 ## 2026-09-08 — the whole world as a graph
 
 ### Additions
@@ -255,21 +270,3 @@
 - **Finding a page by name in the sidebar searches the universe you're in.** The Search button on the left rail still looks across the whole world, and going to one of its results moves you to wherever that page lives.
 
 **What this doesn't do yet:** there's no Shared universe for the pages that are true everywhere — a species, a map, a language. That's the next piece, and until it's built a page like that has to live in one universe or outside all of them.
-
-## 2026-09-05 — universes, the first piece
-
-### Additions
-
-- **You can turn a top-level page into a universe.** Right-click any page sitting at the top of the tree and pick "Turn into a universe" — Canon, Demonic AU, Merfolk AU, one for each version of the world. Nothing already in it moves, and everything written on that page stays exactly where it was.
-- **A universe can only sit at the top.** You can't drag one into a folder, and "Move to" on one says so instead of offering you somewhere to put it. That's the whole difference between a universe and a folder: a folder can end up anywhere, which is how the AUs folder got four levels deep in the first place.
-- **"Turn back into a folder" is in the same menu**, on anything that's already a universe. Nothing about this is one-way.
-
-### Changes
-
-- **A universe isn't in any of the template lists.** It isn't a kind of page — it has no tabs of its own and nothing to fill in — so the New Page screen, the properties panel's picker and the Templates rail all leave it out. Turning a top-level page into one is the only way to make one.
-
-**What this doesn't do yet:** the tree still shows everything at once. The switcher that puts one universe on screen at a time, the Shared section and the "All universes" view are the next pieces — so for now making one is a label and a rule, not a change to what you're looking at.
-
-### Fixes
-
-- **Turning a folder into anything else used to quietly undo itself.** A folder keeps its own data in a file called `_folder.json` and every other kind of page uses `_page.json`, and changing what a folder was left the old file sitting there. The app reads that one first, so the next time you opened the world the page was a folder again and everything you'd done to it was in the file next to it, unread. This has been possible for as long as folders could be given a template; it's fixed, and the file is renamed properly now.

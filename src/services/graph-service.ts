@@ -21,7 +21,7 @@ import { getEffectiveColor, isDescendantOf } from "./tree-service";
  * relationship and leaving it out would draw a picture the app knows to be
  * incomplete — but where a page was filed and what was written about it are not
  * the same claim, so the renderer draws them differently. Her call 2026-09-07;
- * see `docs/plan.md` Phase 24.
+ * see `docs/shipped.md` Phase 24.
  */
 export type GraphEdgeKind = MentionKind | "tree";
 
@@ -51,7 +51,7 @@ export type GraphNode = {
    * Unused by the first drawing and deliberately carried anyway: colour is
    * inherited, so a world with one coloured folder near its root draws as a
    * graph of a single colour, and this flag is the whole of the fix if that
-   * turns out to be the ordinary case. See `docs/plan.md` Phase 24.
+   * turns out to be the ordinary case. See `docs/shipped.md` Phase 24.
    */
   ownsColor: boolean;
   /** Hops from the page the graph is centred on. 0 is that page. */
@@ -292,11 +292,15 @@ export function graphAround(
  * backwards, since being unconnected is the most useful thing a picture of a
  * whole world can tell you about a page.
  *
- * `focusId` is optional and is the difference between the two doors. Opened
- * from a page, that page stays the centre and keeps its own look while
- * everything around it widens out; opened from the rail there is no such page,
- * nothing is pinned, and the shape settles wherever it likes. A focus outside
- * the set is still drawn, because it is where she is.
+ * `focusId` only marks a page, it does not move it. **The two doors have to
+ * produce the same drawing** — widening a page's graph to everything and
+ * opening the world's are the same picture of the same universe, and one of
+ * them quietly laying out differently is the feature admitting it is really two.
+ * So the pages go in in the order they were given whether or not one of them is
+ * the focus, and the focus is not seeded at the centre: it is drawn larger and
+ * filled, and that is the whole of the difference. A focus outside the set is
+ * appended rather than inserted, for the same reason — it is where she is, and
+ * it must not shift everything else along to say so.
  */
 export function graphOfPages(
   pageIds: string[],
@@ -306,19 +310,18 @@ export function graphOfPages(
   keep: (node: Node) => boolean = () => true,
 ): GraphModel {
   const reached = new Map<string, number>();
-  if (focusId && nodes[focusId]) reached.set(focusId, 0);
-
   for (const id of pageIds) {
     if (reached.has(id)) continue;
     const node = nodes[id];
     if (!node || !keep(node)) continue;
-    reached.set(id, 1);
+    reached.set(id, id === focusId ? 0 : 1);
   }
+  // Never filtered out and never reordered: a page opened from outside the
+  // universe it is scoped to is still where she is.
+  if (focusId && nodes[focusId] && !reached.has(focusId)) reached.set(focusId, 0);
 
   const count = reached.size;
-  return assemble(reached, nodes, index, (id, depth) =>
-    depth === 0 ? { x: 0, y: 0 } : seedScatter(id, count),
-  );
+  return assemble(reached, nodes, index, (id) => seedScatter(id, count));
 }
 
 /**
@@ -383,10 +386,14 @@ export function pagesInUniverse(nodes: Record<string, Node>, universeId: string 
 /**
  * Which stored arrangement a graph reads and writes. Phase 24, step 3.
  *
- * A page's graph is keyed by that page, so widening the reach keeps whatever
- * she has already tidied rather than starting again at every step. A graph with
- * no centre is keyed by its universe instead, under a prefix — see
- * `GRAPH_WORLD_PIN_PREFIX` for why the two kinds of key cannot collide.
+ * **Keyed by what the graph is *of*, not by which button opened it.** A page's
+ * neighbourhood is keyed by that page, so widening from one connection out to
+ * three keeps whatever she has already tidied — it is the same picture growing.
+ * A graph of a whole universe is keyed by the universe whichever door it came
+ * through, so tidying it from a page and tidying it from the rail are the same
+ * act on the same drawing. Callers pass a null focus for that case; the prefix
+ * is what keeps the two kinds of key from colliding, since a page id is a UUID
+ * and cannot contain a colon.
  */
 export function graphPinKey(focusId: string | null, universeId: string | null): string {
   if (focusId) return focusId;
