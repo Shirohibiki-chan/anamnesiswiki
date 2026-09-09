@@ -43,9 +43,11 @@ import {
   removeNote,
   resizeBand,
   setBandLabel,
+  sceneRefusal,
   setNoteText,
   tidyUp,
   type ConnectRefusal,
+  type SceneRefusal,
 } from "../services/storyline-service";
 import { TEMPLATES_FILE } from "../constants/paths";
 import type { ProjectTemplateFile } from "../constants/project-template";
@@ -803,6 +805,8 @@ export type ProjectStoreState = {
   addSceneToStoryline: (storylineId: string) => string | null;
   moveStorylineNodes: (storylineId: string, moved: Record<string, { x: number; y: number }>) => void;
   /** Null when the line was drawn, or why it was not. */
+  /** Null when the page went on the canvas, or why it did not. */
+  addExistingPageToStoryline: (storylineId: string, pageId: string) => SceneRefusal | null;
   connectStorylineNodes: (storylineId: string, fromId: string, toId: string) => ConnectRefusal | null;
   disconnectStorylineEdge: (storylineId: string, edgeId: string) => void;
   removeStorylineNode: (storylineId: string, nodeId: string) => void;
@@ -3710,6 +3714,34 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       });
       applyStoryline(storylineId, addSceneNode(storylineOf(storylineId), page.id, at));
       return page.id;
+    },
+
+    /**
+     * Puts a page that already exists on the canvas (Phase 25, step 3).
+     *
+     * **The other half of "every node is also a page", and no page is made.**
+     * Roughly half the nodes in a real storyline are events that already have
+     * pages, and creating a second one for them would be the app quietly
+     * duplicating her world. The canvas node holds the id and a position;
+     * everything else about the scene is still that page's.
+     *
+     * Placed to the right of the sequence like a new one, for the reason
+     * `nextPlacement` gives: annotations cascade, scenes join a line.
+     */
+    addExistingPageToStoryline(storylineId, pageId) {
+      const { nodes, project } = get();
+      if (!nodes[storylineId] || !nodes[pageId]) return "itself";
+      const before = storylineOf(storylineId);
+      const refused = sceneRefusal(pageId, storylineId, before, nodes, project?.sharedUniverseId);
+      if (refused) return refused;
+      const after = addSceneNode(before, pageId, nextPlacement(before));
+      applyStoryline(storylineId, after);
+      record(
+        "putting a page on the storyline",
+        () => applyStoryline(storylineId, before),
+        () => applyStoryline(storylineId, after),
+      );
+      return null;
     },
 
     /**

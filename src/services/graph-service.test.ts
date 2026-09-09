@@ -28,7 +28,7 @@ function mention(nodeId: string) {
 
 function graph(nodes: Node[], focusId: string, depth = 1, keep?: (node: Node) => boolean) {
   const record = Object.fromEntries(nodes.map((node) => [node.id, node]));
-  return graphAround(focusId, record, linkIndex(record), depth, keep);
+  return graphAround(focusId, record, linkIndex(record, {}), depth, keep);
 }
 
 function names(model: ReturnType<typeof graph>) {
@@ -303,7 +303,7 @@ describe("pagesInUniverse", () => {
 describe("graphOfPages", () => {
   function build(all: Node[], ids: string[], focusId: string | null = null, keep?: (node: Node) => boolean) {
     const record = Object.fromEntries(all.map((n) => [n.id, n]));
-    return graphOfPages(ids, focusId, record, linkIndex(record), keep);
+    return graphOfPages(ids, focusId, record, linkIndex(record, {}), keep);
   }
 
   // The whole reason the world graph is not a walk: a page nobody has linked is

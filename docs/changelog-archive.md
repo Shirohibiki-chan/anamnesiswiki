@@ -2,6 +2,16 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — a universe for the things that are true everywhere
+
+### Additions
+
+- **One universe can be your shared one** — the pages that are true in every version of your world. A species, a map, a magic system, a language. You make it like any other universe and then say it's the shared one, from the universe switcher (**Shared universe**) or by right-clicking it in the tree.
+- **Its pages show under whichever universe you're working in**, in their own labelled section at the bottom of the tree, collapsed until you want them. So shared lore is never something you have to switch away to go and read.
+- **The switcher marks which one it is**, so you don't have to visit each in turn to find out.
+- **The section is deliberately not styled like a page.** It's a rule, a gap, and a small heading — because the one thing that should never be ambiguous is which universe the page you're typing in belongs to.
+- **Nothing is shared until you say so.** A world with no shared universe looks exactly as it did, and picking **None** puts it back.
+
 ## 2026-09-06 — a way to actually make a universe
 
 ### Fixes

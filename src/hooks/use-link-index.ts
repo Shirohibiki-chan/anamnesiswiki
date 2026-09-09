@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Block, Node } from "../constants/schema";
 import { linkIndex, pagesWithAnyTag, type Mention } from "../services/link-index";
+import { useStorylines } from "./use-storyline";
 
 /** One row of a collection: a page, and why it is in the list. */
 export type CollectionRow = { node: Node; why?: Mention };
@@ -15,9 +16,13 @@ export type CollectionRow = { node: Node; why?: Mention };
  * and Phase 24's graphs read the same data.
  */
 export function useCollection(nodes: Record<string, Node>, node: Node | undefined, block: Block): CollectionRow[] {
+  // Read here rather than taken as an argument — see `useStorylines`. A scene
+  // standing for a page is a connection, and every caller of this would
+  // otherwise have to know that and pass it.
+  const storylines = useStorylines();
   return useMemo(() => {
     if (!node) return [];
-    const index = linkIndex(nodes);
+    const index = linkIndex(nodes, storylines);
     const source = block.source ?? "manual";
 
     if (source === "mentions") {
@@ -41,5 +46,5 @@ export function useCollection(nodes: Record<string, Node>, node: Node | undefine
 
     // Manual keeps her order, not the tree's, and skips anything deleted.
     return (block.targetIds ?? []).filter((id) => nodes[id]).map((id) => ({ node: nodes[id] }));
-  }, [nodes, node, block]);
+  }, [nodes, node, block, storylines]);
 }

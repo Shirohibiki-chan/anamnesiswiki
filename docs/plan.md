@@ -501,36 +501,19 @@ marked the shared one, and its pages ride along in their own section under
 whichever universe is selected; and following a link out of the universe you are
 in switches to it rather than refusing. Detail is in `docs/shipped.md`; what
 still binds the code is in `docs/handoff.md`.
-**Phase 23 is next**, and it is the next one in this file.
+**Phase 23 (Database) shipped 2026-09-07** — a page, or a block inside one,
+shown as a table, cards, a board or a list of pages that already exist.
+**Phase 24 (Graphs) shipped 2026-09-08** — a page's relationships drawn over
+the page, and the whole universe drawn from the rail.
+**Phase 25 (Storylines) shipped 2026-09-09** — a Storyline page whose body is a
+canvas of scenes joined in narrative order, with loose notes, labelled
+stretches, a tidy-up she presses, and scenes that can point at pages she already
+has. Detail for all three is in `docs/shipped.md`; what still binds the code is
+in `docs/handoff.md`.
+**Phase 26 is next**, and it is the next one in this file.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
-
-## Phase 25 — Storylines
-
-Sequence-based narrative trees, asked for 2026-08-08. **This is the app's answer to "what happened next," and it replaces the calendar timeline** rather than sitting beside it — see `docs/ideas.md` → Timeline visualization.
-
-**The distinction that drives the design:** a timeline is date-locked and linear; a storyline is sequence-driven and date-optional. Nodes connect by what leads to what, not by year. Dates are the reason the timeline never got built — a blank the user can't fill and won't guess at stops the writing. Storylines have no such field. Where a date happens to be known it's just another property on the page.
-
-**Three steps, and step 3 is what remains.** What steps 1 and 2 delivered is in `docs/shipped.md`; what still binds the code is in `docs/handoff.md` §Storylines.
-
-### Step 1 — the canvas — closed 2026-09-09
-
-A Storyline page whose body is a zoomable, pannable canvas; scenes that are real pages inside it; directed lines drawn by dragging from one scene to another; a DAG rather than a tree, so threads fork and rejoin; authored positions saved beside the scenes and restored exactly. Detail in `docs/shipped.md`.
-
-### Step 2 — loose notes and labelled stretches — closed 2026-09-09
-
-Notes dropped anywhere on the canvas, holding wikilinks so a branch that stops becomes an exit; bands labelling a stretch ("Act 2") that carry the scenes standing on them; and a *Tidy up* she presses. Detail in `docs/shipped.md`.
-
-### Step 3 — a scene that already has a page, and who is in it
-
-**Pointing a node at an existing page is the other half of "every node is also a page."** Step 1 makes a new Scene page for every scene added, which is the right default and is only half of what a real storyline needs — half the nodes in one are events that already have pages. Both are first-class; this is the second.
-
-**A scene node should be able to show who's in it**, which is what the reference index from Phase 18 is for. This is also the step where a storyline earns its place in the rest of the app: a scene's page saying which storyline it is on, and the storyline turning up where a page's connections are counted.
-
-**A storyline belongs to exactly one universe** (Phase 22) — a fork in reality has its own sequence of events by definition. Step 1 gets this for free by being an ordinary page in the tree; the rule only needs stating once a node can point at a page somewhere else, which is this step.
 
 ---
 

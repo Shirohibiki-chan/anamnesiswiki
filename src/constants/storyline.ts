@@ -8,7 +8,23 @@
 
 /** A scene node's drawn size, in canvas units. The stylesheet matches these. */
 export const STORYLINE_NODE_WIDTH = 168;
-export const STORYLINE_NODE_HEIGHT = 64;
+/**
+ * Taller since step 3, to make room for the row of who is in the scene.
+ *
+ * **The row is drawn whether or not anybody is in it**, so this is one number
+ * rather than two: a card that grew the first time a name was written into its
+ * page would move every other card on the canvas, which is the failure
+ * `docs/handoff.md` records as reading like the app shifting underneath.
+ */
+export const STORYLINE_NODE_HEIGHT = 84;
+
+/**
+ * How many of a scene's cast fit on the card before the rest become "+3".
+ *
+ * Four small icons is what 168 units of card has room for beside the name.
+ * The full list is in the selection strip, where there is room for names.
+ */
+export const STORYLINE_CAST_SHOWN = 4;
 
 /**
  * How far to the right of everything else a scene added from the button lands.
@@ -47,6 +63,15 @@ export const STORYLINE_ANNOTATION_CASCADE = 28;
  * Taller than a typical note, so a run of them reads as a list.
  */
 export const STORYLINE_NOTE_ROW = 110;
+
+/**
+ * How many pages the "put an existing page on it" picker offers at once.
+ *
+ * Eight, matching the reference property's picker — enough that the page you
+ * meant is nearly always in the list, few enough that the list never becomes
+ * something to scroll instead of something to read.
+ */
+export const STORYLINE_PICKER_RESULTS = 8;
 
 /** How far clear of the scenes a new note or band is placed. */
 export const STORYLINE_ANNOTATION_GAP = 56;

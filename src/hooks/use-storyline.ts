@@ -5,10 +5,12 @@
 // `use-storyline-view.ts`, the same split the graph makes for the same reason.
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { STORYLINE_TEMPLATE_KEY } from "../constants/schema";
+import { STORYLINE_TEMPLATE_KEY, type Node, type Storyline } from "../constants/schema";
+import { STORYLINE_PICKER_RESULTS } from "../constants/storyline";
 import {
   createStoryline,
   needsTidying,
+  sceneCandidates,
   storylineModel,
   type StorylineModel,
 } from "../services/storyline-service";
@@ -16,6 +18,7 @@ import { useProjectStore } from "../state/project-store";
 
 export type {
   ConnectRefusal,
+  SceneRefusal,
   DrawnNote,
   DrawnScene,
   NoteSegment,
@@ -42,8 +45,21 @@ export function useStoryline(storylineId: string | null): StorylineModel {
   const nodes = useProjectStore((state) => state.nodes);
   return useMemo(() => {
     if (!storylineId) return EMPTY;
-    return storylineModel(storyline ?? createStoryline(), nodes);
+    return storylineModel(storyline ?? createStoryline(), nodes, storylineId);
   }, [storylineId, storyline, nodes]);
+}
+
+/**
+ * Every storyline canvas in the world, by the page it belongs to.
+ *
+ * **Read here rather than passed down, because a canvas is now part of what
+ * "connected" means** — a scene standing for a page is a connection neither
+ * page's file records, so Backlinks, the index blocks and the graph all have to
+ * see the canvases. Threading them through four component signatures would mean
+ * four places to forget them.
+ */
+export function useStorylines(): Record<string, Storyline> {
+  return useProjectStore((state) => state.storylines);
 }
 
 /**
@@ -60,10 +76,34 @@ export function useStorylineIsUntidy(storylineId: string | null): boolean {
   return useMemo(() => (storyline ? needsTidying(storyline) : false), [storyline]);
 }
 
+/**
+ * The pages that could be put on this canvas, matching what she has typed.
+ *
+ * The cap and the "nothing until she types" rule are both in `sceneCandidates`
+ * rather than here — see its own note on why.
+ */
+export function useSceneCandidates(storylineId: string | null, query: string): Node[] {
+  const nodes = useProjectStore((state) => state.nodes);
+  const storyline = useProjectStore((state) => (storylineId ? state.storylines[storylineId] : undefined));
+  const sharedUniverseId = useProjectStore((state) => state.project?.sharedUniverseId);
+  return useMemo(() => {
+    if (!storylineId) return [];
+    return sceneCandidates(
+      query,
+      storylineId,
+      storyline ?? createStoryline(),
+      nodes,
+      sharedUniverseId,
+      STORYLINE_PICKER_RESULTS,
+    );
+  }, [storylineId, query, storyline, nodes, sharedUniverseId]);
+}
+
 export function useStorylineActions() {
   return useProjectStore(
     useShallow((state) => ({
       addSceneToStoryline: state.addSceneToStoryline,
+      addExistingPageToStoryline: state.addExistingPageToStoryline,
       moveStorylineNodes: state.moveStorylineNodes,
       connectStorylineNodes: state.connectStorylineNodes,
       disconnectStorylineEdge: state.disconnectStorylineEdge,

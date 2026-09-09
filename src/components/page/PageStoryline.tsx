@@ -22,17 +22,19 @@
 // most of what the markup below is doing.
 //
 // All of the behaviour is in hooks/use-storyline-view.ts; this renders.
-import { useCallback, useEffect, useState } from "react";
-import { Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FilePlus2, Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } from "lucide-react";
 import { getPaletteHex } from "../../constants/palette";
-import { STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
+import { STORYLINE_CAST_SHOWN, STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
 import type { Node } from "../../constants/schema";
 import {
+  useSceneCandidates,
   useStoryline,
   useStorylineActions,
   useStorylineIsUntidy,
   type ConnectRefusal,
   type DrawnNote,
+  type SceneRefusal,
 } from "../../hooks/use-storyline";
 import { useStorylineView } from "../../hooks/use-storyline-view";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
@@ -52,11 +54,26 @@ const REFUSALS: Record<ConnectRefusal, string> = {
   "would-loop": "That would make the story loop back on itself.",
 };
 
+/**
+ * Why a page could not be put on the canvas.
+ *
+ * **The universe one is the only surprising refusal, so it says the reason
+ * rather than the rule.** A storyline is one version of events, and a page from
+ * another universe is a page from a different one — telling her that is more
+ * use than telling her it is not allowed. The picker leaves such pages out
+ * anyway; this is for the route that skips it.
+ */
+const SCENE_REFUSALS: Record<SceneRefusal, string> = {
+  itself: "A storyline can't be a scene on itself.",
+  "already-here": "That page is already on this canvas.",
+  "another-universe": "That page belongs to a different universe, and a storyline is one version of events.",
+};
+
 export function PageStoryline({ node }: { node: Node }) {
   const model = useStoryline(node.id);
   const untidy = useStorylineIsUntidy(node.id);
   const actions = useStorylineActions();
-  const { addSceneToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
+  const { addSceneToStoryline, addExistingPageToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
   const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline } = actions;
   const { addStorylineNote, setStorylineNoteText, moveStorylineNote, removeStorylineNote } = actions;
   const { addStorylineBand, setStorylineBandLabel, moveStorylineBand } = actions;
@@ -64,6 +81,11 @@ export function PageStoryline({ node }: { node: Node }) {
 
   const undoKey = useShortcutLabel("undo");
   const [expanded, setExpanded] = useState(false);
+  /** The "put an existing page on it" search, or null while it is closed. */
+  const [picking, setPicking] = useState<string | null>(null);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const pickerInputRef = useRef<HTMLInputElement | null>(null);
+  const candidates = useSceneCandidates(node.id, picking ?? "");
   const [refusal, setRefusal] = useState<string | null>(null);
   /**
    * The annotation being typed into, and the draft it currently holds.
@@ -131,6 +153,24 @@ export function PageStoryline({ node }: { node: Node }) {
     return () => window.clearTimeout(timer);
   }, [refusal]);
 
+  /**
+   * A press anywhere outside puts the picker away.
+   *
+   * **Without this its only exit was Escape while the box still had focus**,
+   * so clicking a result and then clicking the button again *closed* it instead
+   * of reopening it — and the next thing typed went nowhere. Found 2026-09-09
+   * driving the real app. `pointerdown` rather than `click`, so it lands before
+   * the button's own toggle rather than fighting it.
+   */
+  useEffect(() => {
+    if (picking === null) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!pickerRef.current?.contains(event.target as globalThis.Node)) setPicking(null);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [picking]);
+
   // Escape leaves the expanded canvas, matching every other full-window surface
   // in the app. Only bound while expanded, so it never eats the key from
   // something else on an ordinary page — and never while she is mid-sentence in
@@ -143,6 +183,19 @@ export function PageStoryline({ node }: { node: Node }) {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [expanded, editing]);
+
+  function putExistingPageOn(pageId: string) {
+    const refused = addExistingPageToStoryline(node.id, pageId);
+    setRefusal(refused ? SCENE_REFUSALS[refused] : null);
+    if (refused) return;
+    // Left open on success: putting three pages on a storyline in a row is the
+    // ordinary way an existing world gets one, and closing after each would
+    // make that three trips to the same button. The focus goes back to the box
+    // as well as the text being cleared — without it the next name is typed at
+    // a button that has just been clicked and goes nowhere.
+    setPicking("");
+    pickerInputRef.current?.focus();
+  }
 
   function addScene() {
     // Deliberately not opened afterwards. Adding three scenes in a row is the
@@ -206,6 +259,57 @@ export function PageStoryline({ node }: { node: Node }) {
           <Plus size={15} />
           Add a scene
         </button>
+        {/* Its own button rather than a mode of the one above. Making a page
+            and pointing at one you already have are both first-class — the
+            plan is explicit about that — and hiding the second behind a menu
+            would make it the exception. */}
+        <div className="storyline-picker-anchor" ref={pickerRef}>
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary"
+            aria-expanded={picking !== null}
+            onClick={() => setPicking((open) => (open === null ? "" : null))}
+          >
+            <FilePlus2 size={15} />
+            Put a page on it
+          </button>
+
+          {picking !== null && (
+            <div className="storyline-picker" role="dialog" aria-label="Put an existing page on this storyline">
+              <input
+                type="text"
+                className="property-field-input"
+                placeholder="Search pages…"
+                aria-label="Search pages to put on this storyline"
+                value={picking}
+                autoFocus
+                ref={pickerInputRef}
+                onChange={(event) => setPicking(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setPicking(null);
+                }}
+              />
+              {picking.trim() && candidates.length === 0 && (
+                <p className="storyline-picker-empty">
+                  No page by that name that isn&rsquo;t already here. Pages in other universes aren&rsquo;t
+                  offered — a storyline is one version of events.
+                </p>
+              )}
+              {candidates.map((candidate) => (
+                <button
+                  type="button"
+                  key={candidate.id}
+                  className="storyline-picker-row"
+                  onClick={() => putExistingPageOn(candidate.id)}
+                >
+                  <NodeIcon icon={candidate.icon} templateKey={candidate.templateKey} size={14} />
+                  <span className="storyline-picker-name">{candidate.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button type="button" className="ui-btn ui-btn-secondary" onClick={addNote}>
           <StickyNote size={15} />
           Add a note
@@ -424,6 +528,24 @@ export function PageStoryline({ node }: { node: Node }) {
                     <NodeIcon icon={scene.icon} templateKey={scene.templateKey} size={16} />
                   </span>
                   <span className="storyline-node-name">{scene.name}</span>
+
+                  {/* Who and what is in the scene, from the reference index —
+                      whatever its page points at, however it points. **The row
+                      is always drawn, empty or not**, so a card is the same
+                      height whether or not anybody is in it: a canvas whose
+                      cards changed size as pages were written in would move
+                      under her every time. The names are in the tooltip and in
+                      the strip below; at this size only the icons fit. */}
+                  <span className="storyline-node-cast" aria-hidden="true">
+                    {scene.cast.slice(0, STORYLINE_CAST_SHOWN).map((member) => (
+                      <span key={member.id} className="storyline-cast-dot" title={member.name}>
+                        <NodeIcon icon={member.icon} templateKey={member.templateKey} size={11} />
+                      </span>
+                    ))}
+                    {scene.cast.length > STORYLINE_CAST_SHOWN && (
+                      <span className="storyline-cast-more">+{scene.cast.length - STORYLINE_CAST_SHOWN}</span>
+                    )}
+                  </span>
                 </button>
 
                 {/* Its own element rather than a modifier key on the card: the
@@ -524,6 +646,24 @@ export function PageStoryline({ node }: { node: Node }) {
 
           {selectedScene && (
             <>
+              {/* The names, where there is room for them — the card only had
+                  space for icons. Each one goes to its page, which is the
+                  useful thing to do with "who is in this scene". */}
+              {selectedScene.cast.length > 0 && (
+                <span className="storyline-selection-cast">
+                  {selectedScene.cast.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      className="storyline-cast-chip"
+                      onClick={() => selectNode(member.id)}
+                    >
+                      <NodeIcon icon={member.icon} templateKey={member.templateKey} size={12} />
+                      {member.name}
+                    </button>
+                  ))}
+                </span>
+              )}
               <button
                 type="button"
                 className="ui-btn ui-btn-secondary"

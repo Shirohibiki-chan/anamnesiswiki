@@ -118,7 +118,7 @@
 | Making a page and linking to it without leaving the sentence | `src/components/shell/NewPageLinkDialog.tsx` |
 | The full-size picture viewer | `src/components/shell/Lightbox.tsx` |
 | What one page is connected to, and the whole universe, drawn over the page | `src/components/page/GraphOverlay.tsx` |
-| A storyline's canvas — scenes in narrative order | `src/components/page/PageStoryline.tsx` |
+| A storyline's canvas — scenes in narrative order, notes, labelled stretches | `src/components/page/PageStoryline.tsx` |
 | Start from a template, and managing pinned projects | `src/components/start/TemplatePickerDialog.tsx`, `src/components/start/ManagePinsDialog.tsx` |
 | All properties & tags | `src/components/properties/AllPropertiesModal.tsx` |
 

@@ -92,6 +92,13 @@ const STORYLINE_BAND = ".storyline-band";
 const STORYLINE_BAND_LABEL = ".storyline-band-label";
 const STORYLINE_BAND_INPUT = ".storyline-band-input";
 const STORYLINE_STAGE = ".storyline-stage";
+// Phase 25 step 3: the picker, and who is in a scene.
+const STORYLINE_PICKER = ".storyline-picker";
+const STORYLINE_PICKER_ROW = ".storyline-picker-row";
+const STORYLINE_PICKER_NAME = ".storyline-picker-name";
+const STORYLINE_PICKER_EMPTY = ".storyline-picker-empty";
+const STORYLINE_CAST_DOT = ".storyline-cast-dot";
+const STORYLINE_CAST_CHIP = ".storyline-cast-chip";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -1955,4 +1962,54 @@ export async function storylineScenePlacements(window: Page): Promise<Record<str
     if (box && id) placed[id] = { x: Math.round(box.x), y: Math.round(box.y) };
   }
   return placed;
+}
+
+// ---- Phase 25 step 3: pages that already exist, and who is in a scene ----
+
+/** Opens the "put an existing page on it" search. */
+export async function openStorylinePicker(window: Page): Promise<void> {
+  await window.locator(STORYLINE).getByRole("button", { name: "Put a page on it" }).click();
+  await window.locator(STORYLINE_PICKER).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * Types into the picker and returns what it offers.
+ *
+ * **The box is not cleared first.** It keeps focus and empties itself after a
+ * pick, which is what lets several pages go on without reopening it, so a
+ * caller typing a second name is doing what she would do.
+ */
+export async function searchStorylinePicker(window: Page, query: string): Promise<string[]> {
+  await window.keyboard.type(query);
+  // Long enough for the list to settle rather than catching it mid-keystroke.
+  await window.waitForTimeout(300);
+  const names = await window.locator(STORYLINE_PICKER_NAME).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** Takes the first page the picker is offering. */
+export async function pickStorylinePage(window: Page): Promise<void> {
+  await window.locator(STORYLINE_PICKER_ROW).first().click();
+}
+
+/** What the picker says when it has nothing to offer, or null. */
+export async function storylinePickerEmptyMessage(window: Page): Promise<string | null> {
+  if ((await window.locator(STORYLINE_PICKER_EMPTY).count()) === 0) return null;
+  return normalize(await window.locator(STORYLINE_PICKER_EMPTY).first().innerText());
+}
+
+/** How many cast icons the scene at `index` is drawing on its card. */
+export async function storylineSceneCastCount(window: Page, index: number): Promise<number> {
+  return await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_CAST_DOT).count();
+}
+
+/** The names in the selection strip's cast, for whatever is selected. */
+export async function storylineSelectionCast(window: Page): Promise<string[]> {
+  const names = await window.locator(STORYLINE_CAST_CHIP).allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** Follows one of those names to its page. */
+export async function openStorylineCastMember(window: Page, name: string): Promise<void> {
+  await window.locator(STORYLINE_CAST_CHIP).filter({ hasText: name }).first().click();
 }
