@@ -2,6 +2,17 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — a page can be a table
+
+### Additions
+
+- **Any page can be shown as a table of the pages inside it.** Right-click it in the tree and pick **Turn into a table**. A folder of characters becomes a grid with a row per character and a column per property — nothing is moved, nothing is re-made, and the pages stay exactly where they were.
+- **It picks its own columns.** Whatever the pages inside are mostly made of decides which template's properties become the columns, so a Characters folder comes up with the character fields already in place. A page of a different kind still shows up as a row, with those columns left empty rather than being hidden.
+- **The table is a way of looking, not a box things go into.** **Stop showing as a table** in the same menu puts the page back, and it takes nothing with it — every page that was a row is still a page, in the same place. That is the promise the whole feature is built on.
+- **A page that has writing keeps it.** The table sits between the page's name and its tabs, so the writing underneath is untouched and still there when you scroll past.
+- **Clicking a name opens that page**, and **Add a page** puts a new one straight into the table.
+- **What is not here yet, and is coming:** the values are read-only for now — changing one means opening the page. Choosing which columns show, filtering, sorting and grouping come next, then editing straight in the row, then the card, board and list layouts.
+
 ## 2026-09-06 — the coloured edge on a callout
 
 ### Fixes

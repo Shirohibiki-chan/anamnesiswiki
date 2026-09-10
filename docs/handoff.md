@@ -1634,6 +1634,62 @@ which is the state this was extracted out of.
   is structural — see §Editor & templates. A filter that looks necessary means
   something upstream merged the records, and that is the bug to fix.
 
+## Markdown export
+
+**Obsidian is the dialect, not "markdown" in general.** There is no export on
+that side to match, because a vault *is* a folder of markdown — so its
+conventions are the spec: `> [!info]` callouts, `> [!note]-` for a collapsed
+toggle, `- [x]` tasks, `[[wikilinks]]`. Anything written to look nice in a
+plain renderer instead is a choice against the one program this is for.
+
+- **`markdown-page.ts` converts, `markdown-vault.ts` places, and neither
+  touches the disk.** The page converter is handed resolvers and knows nothing
+  about folders or filenames; the vault planner returns a list of files and
+  their text. That split is what makes every rule below testable without a
+  project, and it is the reason the writer is a third thing.
+
+- **A page that holds pages is a note *beside* a folder of the same name** —
+  `Kaine.md` next to `Kaine/`. This is Obsidian's own shape, and it is also the
+  one that does not borrow a folder-shaped object, which she rejected. Don't
+  "fix" it into `Kaine/index.md`.
+
+- **A universe gets a folder and no note.** It has no tabs and no properties,
+  so its note would hold nothing but its own name.
+
+- **Tabs become `##` headings, and the writing's own headings shift down one
+  level to sit under them** — otherwise a `#` inside a tab lands above the
+  heading naming that tab and the outline comes out inside out. A single-tab
+  page gets no heading at all. **Phase 20 has to split a page back apart on
+  those headings**, and that is the known soft spot in the round trip: a page
+  whose writing legitimately opens with an `##` is ambiguous. The likely answer
+  is recording tab names in front matter so the split is read, not guessed.
+
+- **Never print a `property`, `tags` or `alias` block.** They are views of
+  values the front matter already carries, and writing both makes the file
+  disagree with itself the first time somebody edits one. The schema states the
+  same rule from the other side: a block is a view, not storage, for anything
+  that exists elsewhere.
+
+- **A block can live in the sidebar, in the writing, or in an infobox, and it
+  is one record wherever it is** (Phase 19.5). So the Details section at the
+  end has to exclude every block already drawn inside the writing — checked in
+  `referencedBlockIds`, not assumed.
+
+- **Every YAML value is quoted, and every list goes through `yamlList`.** Bare
+  scalars retype themselves on the way back in (`no` is a boolean, `1.0` a
+  number), and an unquoted `[[[Kaine]]]` is a sequence three levels deep rather
+  than a list holding one wikilink. That one was written and caught in the same
+  session; don't unpick it for prettier output.
+
+- **Picture paths are relative to the note, not vault-absolute.** Obsidian can
+  be configured either way and nothing else understands the absolute form, so
+  relative is the only one that works in both.
+
+- **A link is the bare note name unless two notes share one**, in which case
+  *both* fall back to the full path with her wording kept as the label. A
+  wikilink that resolves to whichever note Obsidian indexed first is worse than
+  a long one.
+
 ## LK export
 
 - **Three separate records answer "where did this picture come from", and they

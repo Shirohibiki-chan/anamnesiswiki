@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-10 — a world written out as markdown
+
+### Notes
+
+- **Groundwork, with nothing to press yet.** This is the part that turns your world into a folder of markdown files — what each page becomes, what each file is called, where the pictures go and what every link has to say to find its page. Saving that folder to disk, and the button that starts it, are the next piece; nothing in the app has changed today.
+- **A page with pages under it becomes a file beside a folder of the same name**, which is how Obsidian does it too — `Kaine.md` next to a `Kaine` folder holding what is inside her.
+- **Your tabs become headings running down the one file**, so a page stays a page. A page with only one tab gets no heading at all, since printing "Main" over every note would say nothing. Headings you wrote inside a tab shift down a level so the note's outline still reads top to bottom.
+- **Properties go to the top of the file** in the block Obsidian shows as a note's properties — with the words you chose rather than anything internal, and a link to another page still a link.
+- **Blocks that have no markdown come out as plain writing**: a meter becomes a line with its number, an index or a database becomes a list of links, side-by-side columns run one after the other. The export counts these and says so, separately from the handful of things that had nothing to write down at all.
+- **Pictures are copied in and every reference is pointed at the copy**, so the folder is complete on its own. A picture you embedded by web address is left exactly as it is.
+- **Callouts, checklists and toggles use Obsidian's own syntax**, so they still look like callouts, checklists and toggles over there rather than arriving as plain paragraphs.
+
 ## 2026-09-10 — one walk behind every export
 
 ### Notes
@@ -273,14 +285,3 @@
 
 - **Filtering matches on the words, not on hidden ids.** Two pages that both say *Alive* are the same answer even though each page keeps its own copy of that dropdown — so a filter built on one page works across all of them.
 - **What isn't here yet:** there's no *any of these* — conditions always all apply — and numbers can't be filtered by greater or less than, only by exact value or emptiness. Grouping is deliberately not offered on tags or multi-selects, because a page carrying three of them would be listed three times.
-
-## 2026-09-06 — a page can be a table
-
-### Additions
-
-- **Any page can be shown as a table of the pages inside it.** Right-click it in the tree and pick **Turn into a table**. A folder of characters becomes a grid with a row per character and a column per property — nothing is moved, nothing is re-made, and the pages stay exactly where they were.
-- **It picks its own columns.** Whatever the pages inside are mostly made of decides which template's properties become the columns, so a Characters folder comes up with the character fields already in place. A page of a different kind still shows up as a row, with those columns left empty rather than being hidden.
-- **The table is a way of looking, not a box things go into.** **Stop showing as a table** in the same menu puts the page back, and it takes nothing with it — every page that was a row is still a page, in the same place. That is the promise the whole feature is built on.
-- **A page that has writing keeps it.** The table sits between the page's name and its tabs, so the writing underneath is untouched and still there when you scroll past.
-- **Clicking a name opens that page**, and **Add a page** puts a new one straight into the table.
-- **What is not here yet, and is coming:** the values are read-only for now — changing one means opening the page. Choosing which columns show, filtering, sorting and grouping come next, then editing straight in the row, then the card, board and list layouts.
