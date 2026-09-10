@@ -706,6 +706,8 @@ export type ProjectStoreState = {
    * shape and drops what's parented to it.
    */
   saveAsTemplate: (nodeId: string, includeDescendants: boolean) => Promise<void>;
+  /** Adds a template that came out of a `.anpage` file (Phase 28). */
+  addImportedTemplate: (nodes: Node[], rootId: string) => string | null;
   deleteTemplate: (rootId: string) => void;
   /**
    * Rewrites the order this world's own templates are offered in — what the
@@ -3268,6 +3270,41 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         () => applyTemplates(removeTemplate(get().templates, rootId)),
         () => applyTemplates(addTemplate(get().templates, withOwnAssets, rootId)),
       );
+    },
+
+    /**
+     * A template read out of a file, added to the library.
+     *
+     * **Ids are re-minted, which is what lets the same file be opened twice.**
+     * A bundle carries the ids it was exported with; adding those as they are
+     * would make a second import silently replace the first, and would collide
+     * outright with a template that happened to share one. `cloneSubtree` is
+     * the same re-minting `saveAsTemplate` does for the same reason.
+     *
+     * **Picture files are the caller's job and are already on disk by now.**
+     * The filenames inside the nodes are uuids, so they name the files the
+     * hook has just written — see `page-template.ts` on why nothing needs
+     * rewriting.
+     */
+    addImportedTemplate(nodes, rootId) {
+      const { rootPath, templates } = get();
+      if (!rootPath) return null;
+
+      const { clones, idMap } = cloneSubtree(nodes, null, () => crypto.randomUUID());
+      const newRootId = idMap.get(rootId);
+      if (!newRootId) return null;
+
+      const nextTemplates = addTemplate(templates, clones, newRootId);
+      set({ templates: nextTemplates });
+      track(() => fsService.saveTemplateLibrary(rootPath, nextTemplates));
+
+      const name = nodes.find((node) => node.id === rootId)?.name ?? "template";
+      record(
+        `opening the "${name}" template`,
+        () => applyTemplates(removeTemplate(get().templates, newRootId)),
+        () => applyTemplates(addTemplate(get().templates, clones, newRootId)),
+      );
+      return newRootId;
     },
 
     // The template's copied image files are deliberately left on disk. They're

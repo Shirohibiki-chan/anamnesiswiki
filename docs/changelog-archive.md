@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-07 — a database can look further than the page it's on
+
+### Additions
+
+- **A database can gather pages from beyond the page it sits on.** Under **Filter**, *Looking in* offers the pages inside this one (as before), everything in this universe, or everywhere in the world. Your filters then narrow whatever it gathered, so "every character in the world tagged noble" is two visible settings rather than a query to write.
+- **The bar says when a view is looking wider** — *14 of 70 pages · Character · everywhere* — so a table gathering from all over never looks like a table of what's inside the page.
+- **Widening once adds the template as a visible filter**, because "everywhere" with no conditions is every page you own and that's a useless answer. It arrives as an ordinary filter you can see and remove.
+- **Add a page disappears when a view is looking wider.** There's nowhere obvious to put a new page once the rows come from all over, and a button that filed it somewhere anyway would be lying to you. Narrow it back and the button returns.
+- **A widened set is listed by name**, since there's no tree order to borrow when the pages come from everywhere. Sorting it your own way still wins.
+
+### Notes
+
+- **Asking for "this universe" from a page that isn't in one says so** rather than showing an empty table.
+
 ## 2026-09-07 — cards, a board and a list
 
 ### Additions

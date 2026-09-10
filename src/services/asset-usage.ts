@@ -78,6 +78,18 @@ export function assetRefsInContent(content: unknown): string[] {
 }
 
 /** Every asset filename this one node points at, by any of the four routes. */
+/**
+ * Every picture file one page points at, with where on the page it is used.
+ *
+ * Exported for the page-template bundle (Phase 28), which needs exactly this
+ * question answered for a handful of nodes rather than for the whole world —
+ * and must not miss one, since a picture left out of a bundle is a broken
+ * image in whatever the person it was sent to builds from it.
+ */
+export function assetUsesIn(node: Node): { fileName: string; where: AssetUse["where"] }[] {
+  return usesIn(node);
+}
+
 function usesIn(node: Node): { fileName: string; where: AssetUse["where"] }[] {
   const uses: { fileName: string; where: AssetUse["where"] }[] = [];
   if (node.image) uses.push({ fileName: node.image, where: "portrait" });

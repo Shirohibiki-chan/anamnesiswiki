@@ -1696,6 +1696,49 @@ plain renderer instead is a choice against the one program this is for.
   and the outline read inside out. That was found by opening a real exported
   file, not by a test — the test came after.
 
+### Page templates as files
+
+**`.anpage` is a zip; `.antpl` is a JSON document; they are not related and
+must not be merged.** A `.antpl` describes a *project's* shape and carries
+nobody's writing — that refusal is structural, and the whole point of it. A
+`.anpage` is one page template copied whole, prose and properties and
+pictures. The extensions are deliberately unalike rather than one character
+apart, because in a folder listing `antpg` next to `antpl` is a trap.
+
+- **A bundle rather than one document, because templates carry pictures.**
+  Base64 in a JSON file would inflate them by a third; a zip holds the bytes.
+  The switch that leaves them out makes the *same* format with an empty asset
+  list, never a second one, so importing never has to ask which it was handed.
+
+- **Asset references are not rewritten and must not start being.** A filename
+  is `{uuid}.{ext}`, so a reference already names the file the bundle carries
+  at `assets/{uuid}.{ext}` — and two projects cannot collide on one, which is
+  also why importing keeps the names instead of minting new ones. A picture
+  already in `assets/` under that name *is* that picture; leave it alone.
+
+- **Node ids are re-minted on import** (`addImportedTemplate` →
+  `cloneSubtree`). Without it, opening one file twice would have the second
+  silently replace the first, and a template that happened to share an id
+  would be overwritten outright.
+
+- **Pictures are written before the nodes go into the library.** The other
+  order puts a template on screen pointing at files that do not exist yet; the
+  worst this order can do is leave a few unreferenced files behind.
+
+- **Every parse failure says what is wrong in a sentence**, because this file
+  arrives through a chat window and the likely faults are mundane — the wrong
+  file picked, a truncated download, a renamed `.zip`. Handing somebody a
+  project template by mistake has its own message pointing at the start
+  screen, since the two share a word in the interface.
+
+- **An asset path inside the bundle is flat or it is ignored.** A nested or
+  `..` path in an archive is how a zip escapes the folder it is unpacked
+  into; a real asset filename never has one.
+
+- **`.tree-templates-share` is its own class, not `-delete` reused.** They
+  look identical and share every rule, but a button named for deleting that
+  actually shares is the sort of thing somebody edits by accident.
+
 ### JSON — the world's folder, zipped
 
 **The only export that reads the disk rather than the store**, and that is the

@@ -13,6 +13,7 @@ import {
   openInSystem,
   revealInFileManager,
 } from "./host-service";
+import { PAGE_TEMPLATE_EXTENSION } from "../constants/page-template";
 import { PROJECT_TEMPLATE_EXTENSION } from "../constants/project-template";
 
 /**
@@ -156,6 +157,46 @@ export async function pickWorldZipSavePath(defaultName: string): Promise<string 
       filters: [{ name: "JSON, zipped", extensions: ["zip"] }],
     }),
   );
+}
+
+/**
+ * Where a page template goes when it's exported (Phase 28).
+ *
+ * Named for what she is making rather than for the extension, the same as the
+ * project-template picker below — `.anpage` is a string nobody has seen
+ * before, and the file's job is to be sent to a person.
+ */
+export async function pickPageTemplateSavePath(defaultName: string): Promise<string | null> {
+  return onePicker(() =>
+    chooseSavePath({
+      title: "Save this template as a file",
+      defaultPath: `${defaultName}.${PAGE_TEMPLATE_EXTENSION}`,
+      filters: [{ name: "Anamnesis page template", extensions: [PAGE_TEMPLATE_EXTENSION] }],
+    }),
+  );
+}
+
+/**
+ * A page template somebody sent her.
+ *
+ * The All-files fallback for the same reason the project-template picker
+ * carries one, and it bites just as hard: this arrives through Discord, so it
+ * has every chance of landing as `Character.anpage.txt` or with its extension
+ * stripped. A file she can see in the folder and not in the picker reads as
+ * the app being broken; letting her choose anything means a bad pick fails at
+ * the parse step, which says what is wrong.
+ */
+export async function pickPageTemplateFile(): Promise<string | null> {
+  const result = await onePicker(() =>
+    chooseFile({
+      title: "Open a page template",
+      filters: [
+        { name: "Page template", extensions: [PAGE_TEMPLATE_EXTENSION] },
+        { name: "All files", extensions: ["*"] },
+      ],
+    }),
+  );
+  return typeof result === "string" ? result : null;
 }
 
 /**
