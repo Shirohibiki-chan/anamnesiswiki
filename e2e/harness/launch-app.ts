@@ -61,6 +61,15 @@ export type LaunchOptions = TestWorldOptions & {
    * with no recent projects, which is what a first launch looks like.
    */
   openWorld?: boolean;
+  /**
+   * Whether the first-run tour is allowed to appear.
+   *
+   * False — the default — marks it seen before the app starts, the same way
+   * `projectsDir` is pointed somewhere temporary: a tutorial covering the
+   * window is a first launch getting in the way of every other scenario. The
+   * one scenario that is *about* the tour asks for it.
+   */
+  showTour?: boolean;
 };
 
 export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp> {
@@ -69,7 +78,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
 
   const world = options.openWorld === false ? null : await makeTestWorld(options);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "anamnesis-e2e-userdata-"));
-  await seedSettings(userDataDir, world);
+  await seedSettings(userDataDir, world, options.showTour === true);
 
   const electron = await _electron.launch({
     executablePath: electronBinary as unknown as string,
@@ -286,16 +295,20 @@ function linuxCiArgs(): string[] {
 /**
  * The settings file the app finds on its first read.
  *
- * **The two keys here exist to stop a first launch getting in the way**
- * rather than to set anything up.
+ * **The keys here exist to stop a first launch getting in the way** rather
+ * than to set anything up.
  *
  * `projectsDir` is pointed somewhere temporary for the same reason as the world
  * is: anything the app decides to create on its own lands there instead of in
  * her Documents.
  */
-async function seedSettings(userDataDir: string, world: TestWorld | null): Promise<void> {
+async function seedSettings(userDataDir: string, world: TestWorld | null, showTour: boolean): Promise<void> {
   const settings: Record<string, unknown> = {
     projectsDir: path.join(userDataDir, "Projects"),
+    // Marked seen unless a scenario asks otherwise — the tour is drawn over
+    // the whole window and would swallow the first click of every other file
+    // in here.
+    ...(showTour ? {} : { tourSeen: true }),
   };
   if (world) {
     settings.lastOpenedProject = world.path;

@@ -347,6 +347,26 @@ export async function setAcknowledgedWarnings(acknowledged: Record<string, strin
   await store.save();
 }
 
+/**
+ * Whether the short tour has been taken or waved away (Phase 26).
+ *
+ * **One key, local like every other setting, and nothing is reported
+ * anywhere.** Whether somebody finished onboarding is exactly the sort of thing
+ * a product would send home, and this app does not — that promise outlived the
+ * retired policy section (`CLAUDE.md` → Two Promises) because it costs nothing
+ * to keep. Absent means never shown, which is what a fresh install looks like.
+ */
+export async function getTourSeen(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("tourSeen")) === true;
+}
+
+export async function setTourSeen(seen: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("tourSeen", seen);
+  await store.save();
+}
+
 export async function getPreferences(): Promise<unknown> {
   const store = await getStore();
   return (await store.get("preferences")) ?? {};

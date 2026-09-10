@@ -3538,6 +3538,36 @@ Phase 26, step 1. What binds the code:
   started and abandoned. Filling in every tab would make the example look like a
   form that has to be completed, which is the opposite of what it is for.
 
+## The short tour
+
+Phase 26, step 2. What binds the code:
+
+- **The steps are anchored by `data-tour` attributes on real elements, and a
+  step whose anchor is missing is dropped rather than drawn.** A class name is a
+  styling decision somebody is entitled to change; the attribute says out loud
+  that the tour points here. The dropping is the important half: the right-hand
+  panel can be closed, and a later phase can move a column — either way the tour
+  must never put a highlight round the corner of the window, because somebody
+  following that concludes the app is broken rather than the instructions. That
+  is the failure this phase was held back until Phases 21 and 22 to avoid.
+
+- **Four fixed rectangles round a hole, not a mask.** No `clip-path`, no
+  `mask`, no CSS anchor positioning, and this is not conservatism for its own
+  sake: Linux gets WebKitGTK and there is a real person on it, and a *tutorial*
+  is the worst thing in the app to render wrong — a newcomer cannot tell a
+  broken tutorial from a broken app. `tour-service.ts` is plain arithmetic over
+  measured rectangles so the placement can be tested without a DOM.
+
+- **The app suite starts every scenario with the tour already seen**
+  (`launchApp`'s `showTour`, default false). A tutorial drawn over the window
+  swallows the first click of whatever a scenario was about, so a new scenario
+  gets this for free and the one file that is *about* the tour opts in. Anybody
+  adding a first-run setting should expect to do the same thing here.
+
+- **Whether it has been seen is one local key and nothing is reported
+  anywhere.** `tourSeen` in `app-settings-service.ts`. Every way out — finishing,
+  skipping, Escape — writes it, because all three mean it has been offered.
+
 ## Product decisions
 
 - **Hidden means "not shown to other people", never "out of the way".** A hidden

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-09 — a short tour, the first time you open a world
+
+### Additions
+
+- **The app shows you round on its first run.** Four steps — the rail, your world, the page, and the panel on the right — each one lit up while a card beside it says what it is for. It runs once a world is open rather than on the start screen, because none of it exists until then.
+- **A way out on every step.** Skip, or press Escape, or walk to the end. However you leave, it does not come back.
+- **Left and right arrows walk through it**, and Enter is Next.
+- **It skips a step it cannot point at.** Close the right-hand panel and the tour is three steps rather than four — it never draws a highlight round nothing, which is the thing that would make the app look broken rather than the tutorial look old.
+
+### Notes
+
+- **Nothing about whether you have seen it goes anywhere.** It is one setting on your own machine, like every other one.
+- **This finishes the pair** (Phase 26): the example world shows what a world is made of, and this shows where things are. What is left is a way back to either of them from Settings.
+
 ## 2026-09-09 — a world you can open and look around
 
 ### Additions
@@ -268,12 +282,3 @@
 - **Changing a callout's colour no longer changes its icon.** It used to: four colour families each stood for something, so recolouring a box swapped the mark on it, and any other colour left it wearing nothing. Nothing on screen ever said so, which made it look like some boxes had icons and some didn't for no reason. A Warning you recolour purple is a purple box that still says warning.
 - **The icon is easier to hit than it looks.** The mark is 15 pixels; the button around it is 24, which is the size everything else clickable in the app has to be.
 - **Picking your own icon, or removing it, works exactly as before** — including "The usual icon", which now means the one its kind wears.
-
-## 2026-09-06 — the icon beside the writing, and a scrollbar that stopped flashing
-
-### Fixes
-
-- **A callout's icon sits beside the writing now**, centred down the left side of the box. It used to sit on a line of its own above the text, which is not what a callout looks like anywhere.
-- **And the empty line above your first word is gone.** A callout with no colour has no icon — icons come from the four colour conventions — so the ordinary case was an *invisible* slot holding a line open for nothing. That space read as a mistake, because it was one.
-- **The little dashed square for adding an icon moved into the corner**, opposite the colour dot. It appears when your pointer is over the callout, the same as before, but now nothing shifts sideways when it does.
-- **Scrollbars don't flash near-white when the pointer crosses them.** The hover colour was borrowed from quiet text, and on 30 August quiet text got lighter in every theme so it would be readable. Nobody thought about the scrollbar. It steps up from your border colour now — and on Daylight it was going nearly black, which is fixed by the same change.
