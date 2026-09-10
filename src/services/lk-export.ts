@@ -11,24 +11,20 @@ import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { getGlyph } from "../constants/glyphs";
 import { COLOR_PALETTE } from "../constants/palette";
 import { FOLDER_TEMPLATE_KEY, ICON_INLINE_TYPE, type Node, type Project, type Tab } from "../constants/schema";
-import { sourceUrlFor, type AssetSources } from "./asset-sources";
-import { assetFileName } from "./asset-urls";
+import type { AssetSources } from "./asset-sources";
+import {
+  bumpLossy,
+  createLossyTally,
+  createPictureResolver,
+  lossyCount,
+  plural,
+  walkPages,
+  PICTURE_MISS,
+  type LossyTally,
+  type PictureResolver,
+} from "./export-walk";
 import type { RenderableProperty } from "./property-service";
 import { getPropertySchema } from "./template-registry";
-
-/**
- * How the converters ask "what address can LegendKeeper fetch this picture
- * from?" — the one question the whole picture-export problem reduces to.
- *
- * A resolver rather than the raw sources map, because there are three possible
- * answers and only one of them is a lookup: the address it was imported from,
- * the picture's own bytes written into a `data:` URI when she asked for that,
- * or nothing. Counting the nothings is the resolver's job too, so no caller can
- * forget to.
- */
-type PictureLookup = {
-  addressFor: (url: unknown) => string | undefined;
-};
 
 /**
  * The inverse of import's `MEDIA_LAYOUT_ALIGNMENT`, and deliberately not a
@@ -131,14 +127,8 @@ export function positionKey(index: number): string {
 }
 
 // ---- Lossy tracking, surfaced in the export preview ----
-type LossyTracker = Map<string, number>;
-function bump(tracker: LossyTracker, key: string, by = 1): void {
-  tracker.set(key, (tracker.get(key) ?? 0) + by);
-}
-
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
+// The tally itself is `export-walk.ts`'s — every format keeps one. What stays
+// here is the wording, which is LegendKeeper's alone.
 
 /**
  * The note about pictures that can't travel, kept out of `lossyNotes` on
@@ -149,15 +139,15 @@ function plural(n: number, word: string): string {
  * unconditionally. The caller decides whether it still applies. See
  * `ExportPlan.localPictureNote`.
  */
-function describeLocalPictures(tracker: LossyTracker): string | null {
-  const localImages = tracker.get("localImages");
+function describeLocalPictures(tally: LossyTally): string | null {
+  const localImages = lossyCount(tally, PICTURE_MISS);
   if (!localImages) return null;
   return `${plural(localImages, "picture")} you added in Anamnesis won't go into this LegendKeeper file. The format normally only stores web addresses of pictures already on LegendKeeper's own servers. Your pictures stay where they are — they're just not in this export.`;
 }
 
-function describeLossy(tracker: LossyTracker): string[] {
+function describeLossy(tally: LossyTally): string[] {
   const notes: string[] = [];
-  const folders = tracker.get("folderTabs");
+  const folders = lossyCount(tally, "folderTabs");
   if (folders) {
     notes.push(`${plural(folders, "folder")} export as pages with an empty Main tab — LegendKeeper has no folder-only concept.`);
   }
@@ -303,7 +293,7 @@ function paragraphOf(content: LkNode[]): LkNode {
   return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
 }
 
-function childBlocks(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkNode[] {
+function childBlocks(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTally, pictures: PictureResolver): LkNode[] {
   return Array.isArray(block.children) ? convertBlocks(block.children, idMap, lossy, pictures) : [];
 }
 
@@ -311,8 +301,8 @@ function convertListRun(
   blocks: BlockNoteBlock[],
   listType: "bulletList" | "orderedList",
   idMap: Map<string, string>,
-  lossy: LossyTracker,
-  pictures: PictureLookup,
+  lossy: LossyTally,
+  pictures: PictureResolver,
 ): LkNode {
   return {
     type: listType,
@@ -331,7 +321,7 @@ function captionRuns(block: BlockNoteBlock): LkNode[] {
   return [{ type: "text", text: caption }];
 }
 
-function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkNode[] {
+function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: LossyTally, pictures: PictureResolver): LkNode[] {
   const inline = () => convertInline(block.content, idMap);
 
   switch (block.type) {
@@ -435,7 +425,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
       // same note. It leaves the caption behind rather than an empty
       // paragraph, so a picture that was explaining something doesn't take the
       // explanation with it.
-      bump(lossy, "localImages");
+      bumpLossy(lossy, PICTURE_MISS);
       return [paragraphOf(captionRuns(block))];
     case "toggleListItem": {
       const title = convertInline(block.content, idMap)
@@ -450,7 +440,7 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
   }
 }
 
-export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkNode[] {
+export function convertBlocks(blocks: unknown, idMap: Map<string, string>, lossy: LossyTally, pictures: PictureResolver): LkNode[] {
   if (!Array.isArray(blocks)) return [];
   const out: LkNode[] = [];
 
@@ -558,7 +548,7 @@ function paletteHexFor(colorKey: string | undefined): string | undefined {
 }
 
 // ---- Tabs -> documents ----
-function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTracker, pictures: PictureLookup): LkDocument[] {
+function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTally, pictures: PictureResolver): LkDocument[] {
   return tabs.map((tab, index) => ({
     id: crypto.randomUUID(),
     name: tab.label,
@@ -569,32 +559,6 @@ function convertTabs(tabs: Tab[], idMap: Map<string, string>, lossy: LossyTracke
 }
 
 // ---- Top-level orchestration ----
-
-/**
- * Collects the ids to export: every node given, plus everything beneath them.
- * A `.lk` export always carries the whole subtree — LegendKeeper's own export
- * offers no choice about it (confirmed against a live account), so neither
- * does ours.
- */
-export function collectSubtree(rootIds: string[], nodes: Node[]): Set<string> {
-  const childrenByParent = new Map<string, Node[]>();
-  for (const node of nodes) {
-    if (!node.parentId) continue;
-    const list = childrenByParent.get(node.parentId) ?? [];
-    list.push(node);
-    childrenByParent.set(node.parentId, list);
-  }
-
-  const included = new Set<string>();
-  const queue = [...rootIds];
-  while (queue.length > 0) {
-    const id = queue.pop()!;
-    if (included.has(id)) continue;
-    included.add(id);
-    for (const child of childrenByParent.get(id) ?? []) queue.push(child.id);
-  }
-  return included;
-}
 
 /**
  * Builds the whole `.lk` file in memory. Pure — no disk, no network.
@@ -628,47 +592,24 @@ export function buildExportFile(input: {
   assetData?: Record<string, string>;
 }): ExportPlan {
   const { project, nodes, rootIds, orderedIdsFor } = input;
-  const sources = input.assetSources ?? {};
-  const embedded = input.assetData ?? {};
 
-  // Every picture that had to be left behind, by filename. A Set because one
-  // file can be on six pages and the caller is going to size these.
-  const localAssetFiles = new Set<string>();
+  const lossy: LossyTally = createLossyTally();
+  // The single place that decides whether a picture can travel, and the
+  // counting of the ones that can't, both live in `export-walk.ts` — every
+  // format hits the same wall for the same reason. What is LK's alone is the
+  // wording of the note, in `describeLocalPictures` above.
+  const pictures: PictureResolver = createPictureResolver({ sources: input.assetSources, embedded: input.assetData, tally: lossy });
+  const addressForSlot = pictures.addressForFile;
 
-  /**
-   * The single place that decides whether a picture can travel.
-   *
-   * Order matters. An address it was imported from is preferred over the
-   * picture's own bytes even when both are available: it's a fraction of the
-   * size, LK can fetch it, and it's the same file.
-   */
-  const pictures: PictureLookup = {
-    addressFor(url) {
-      const known = sourceUrlFor(sources, url);
-      if (known) return known;
-
-      const fileName = typeof url === "string" ? assetFileName(url) : null;
-      if (fileName && embedded[fileName]) return embedded[fileName];
-
-      if (fileName) localAssetFiles.add(fileName);
-      bump(lossy, "localImages");
-      return undefined;
-    },
-  };
-
-  /** The same question for a portrait or a banner, which hold a bare filename. */
-  const addressForSlot = (fileName: string, knownSource: string | undefined): string | undefined => {
-    if (knownSource) return knownSource;
-    if (embedded[fileName]) return embedded[fileName];
-    localAssetFiles.add(fileName);
-    bump(lossy, "localImages");
-    return undefined;
-  };
-  const lossy: LossyTracker = new Map();
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
-  const included = collectSubtree(rootIds, nodes);
-  const includedNodes = nodes.filter((node) => included.has(node.id));
+  // Depth-first in the order the tree actually shows, with each page's
+  // effective parent already resolved — the rule that a page hangs off its own
+  // parent when that parent came along and off the root when it didn't is the
+  // walker's now, not this file's.
+  const walked = walkPages({ nodes, rootIds, orderedIdsFor });
+  const included = new Set(walked.map((page) => page.node.id));
+  const includedNodes = walked.map((page) => page.node);
 
   // LK's format requires exactly one resource with no parent — its project
   // home. Ours is a page like any other, so if the designated home page is in
@@ -702,7 +643,7 @@ export function buildExportFile(input: {
   }
 
   function emit(node: Node, parentLkId: string | null, pos: string): void {
-    if (node.templateKey === FOLDER_TEMPLATE_KEY) bump(lossy, "folderTabs");
+    if (node.templateKey === FOLDER_TEMPLATE_KEY) bumpLossy(lossy, "folderTabs");
 
     // Folders hold no content in our model and LK has no folder-only concept,
     // so they go across as pages with one empty tab. Same for any page that
@@ -749,36 +690,26 @@ export function buildExportFile(input: {
     });
   }
 
-  // Depth-first in the order the tree actually shows, so exported `pos` keys
-  // put siblings back the way the user arranged them.
-  const orderedIncluded: string[] = [];
-  (function collect(parentId: string | null): void {
-    for (const id of orderedIdsFor(parentId)) {
-      if (included.has(id)) orderedIncluded.push(id);
-      collect(id);
-    }
-  })(null);
-
-  // One rule covers every shape this can take: a node hangs off its own parent
-  // when that parent is in the export too, and off the root when it isn't.
-  // That's what lets a single nested page be exported without dragging its
-  // ancestors along, and what puts a whole world's top-level pages under the
-  // home page — which is exactly where LK keeps them.
-  const childrenByLkParent = new Map<string, string[]>();
-  for (const id of orderedIncluded) {
-    if (homeNode && id === homeNode.id) continue;
-    const parentId = byId.get(id)?.parentId;
-    const lkParentId = parentId && included.has(parentId) ? idMap.get(parentId)! : rootId;
-    const siblings = childrenByLkParent.get(lkParentId) ?? [];
-    siblings.push(id);
-    childrenByLkParent.set(lkParentId, siblings);
-  }
-
-  for (const [lkParentId, siblings] of childrenByLkParent) {
-    siblings.forEach((id, index) => {
-      const node = byId.get(id);
-      if (node) emit(node, lkParentId, positionKey(index));
-    });
+  // The walk already put these in the order the tree shows and resolved each
+  // page's effective parent, so all that is left is LK's own vocabulary: an id
+  // for that parent, and a `pos` key.
+  //
+  // **The walk's own `index` is deliberately not used for `pos`.** LK promotes
+  // the home page out of the sibling list to be the one parentless resource
+  // its format requires, so under `rootId` the siblings here are not the
+  // siblings the walk counted — the home page has taken a number. Counting
+  // again against LK's parents keeps the keys contiguous from zero, which is
+  // what they were before this file shared a walker. Nothing depends on the
+  // absolute value (import compares these as plain strings, so only the order
+  // matters — see the `pos` note above), but a refactor that renumbered every
+  // world's export would be a diff nobody could explain.
+  const nextPos = new Map<string, number>();
+  for (const { node, parent } of walked) {
+    if (homeNode && node.id === homeNode.id) continue;
+    const lkParentId = parent ? idMap.get(parent.id)! : rootId;
+    const index = nextPos.get(lkParentId) ?? 0;
+    nextPos.set(lkParentId, index + 1);
+    emit(node, lkParentId, positionKey(index));
   }
 
   const file: LkExportFile = {
@@ -790,7 +721,7 @@ export function buildExportFile(input: {
     calendars: [],
   };
 
-  return { file, pageCount: includedNodes.length, lossyNotes: describeLossy(lossy), localPictureNote: describeLocalPictures(lossy), localAssetFiles: [...localAssetFiles] };
+  return { file, pageCount: includedNodes.length, lossyNotes: describeLossy(lossy), localPictureNote: describeLocalPictures(lossy), localAssetFiles: pictures.missingFiles() };
 }
 
 /**
