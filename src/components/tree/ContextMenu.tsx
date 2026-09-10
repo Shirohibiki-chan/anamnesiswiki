@@ -1,8 +1,7 @@
 // Right-click menu content: New page inside / Rename / Duplicate / Move to /
 // Set color / Earlier versions /
 // Save as template / Turn into a universe / Use as shared universe / Turn into ▸ / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
-// from readers / Set as project home / Show in the file manager / Export,
-// twice — LegendKeeper and Markdown /
+// from readers / Set as project home / Show in the file manager / Export ▸ /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
 // in-app themed dialog (see shell/ConfirmDialog.tsx), which replaced an
@@ -122,7 +121,6 @@ type ContextMenuProps = {
   historyCount: number | null;
   onReveal: () => void;
   onExport: () => void;
-  onExportMarkdown: () => void;
   onDelete: () => void;
   onAddChild: () => void;
   onClose: () => void;
@@ -160,7 +158,6 @@ export function ContextMenu({
   historyCount,
   onReveal,
   onExport,
-  onExportMarkdown,
   onDelete,
   onAddChild,
   onClose,
@@ -355,14 +352,14 @@ export function ContextMenu({
           <FolderOpen size={13} /> Show in {fileManagerName}
         </button>
       )}
-      <button type="button" onClick={() => run(onExport)}>
-        <Upload size={13} /> Export to LegendKeeper
-      </button>
-      {/* Beside it rather than both behind an "Export ▸": the LegendKeeper
-          entry is one she has learnt where to find. Revisit at the third
-          format, not at the second. */}
-      <button type="button" onClick={() => run(onExportMarkdown)}>
-        <Upload size={13} /> Export as Markdown
+      {/* A submenu now that there are three formats, with two more to come.
+          This menu is already long, and five export lines in it would be five
+          lines nobody reads — a person exporting looks for the word rather
+          than for a format. Same swap as Move to and Sort sub-pages. Her
+          call, 2026-09-10. */}
+      <button type="button" className="tree-context-menu-submenu" onClick={onExport}>
+        <Upload size={13} /> Export
+        <ChevronRight size={13} className="tree-context-menu-chevron" />
       </button>
       <button type="button" className="tree-context-menu-danger" onClick={() => run(onDelete)}>
         <Trash2 size={13} /> Delete

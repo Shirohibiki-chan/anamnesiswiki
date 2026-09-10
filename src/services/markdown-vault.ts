@@ -238,7 +238,13 @@ export function planMarkdownVault(input: {
     if (isFolderOnly(entry.page.node)) continue;
 
     const ctx: MarkdownPageContext = {
-      linkTo: (nodeId) => targets.get(nodeId) ?? null,
+      linkFor: (nodeId, label) => {
+        const target = targets.get(nodeId);
+        if (!target) return null;
+        // The label is dropped when it is the target already, so the common
+        // case stays the short form somebody would have typed by hand.
+        return !label || label === target ? `[[${target}]]` : `[[${target}|${label}]]`;
+      },
       pictureAt: (url) => {
         if (typeof url === "string" && (/^https?:\/\//i.test(url) || url.startsWith("data:"))) return url;
         const fileName = assetOf(url);

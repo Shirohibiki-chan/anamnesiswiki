@@ -5,7 +5,7 @@ import { createNode, type Block, type Node, type Tab } from "../constants/schema
 
 function ctx(overrides: Partial<MarkdownPageContext> = {}): MarkdownPageContext {
   return {
-    linkTo: () => null,
+    linkFor: () => null,
     pictureAt: () => null,
     rowsFor: () => [],
     tally: createLossyTally(),
@@ -47,9 +47,12 @@ describe("inlineToMarkdown", () => {
   });
 
   it("turns a page mention into a wikilink, keeping her wording as the alias", () => {
-    const linkTo = (id: string) => (id === "kaine" ? "Kaine" : null);
-    expect(inlineToMarkdown([{ type: "mention", props: { nodeId: "kaine", label: "Kaine" } }], ctx({ linkTo }))).toBe("[[Kaine]]");
-    expect(inlineToMarkdown([{ type: "mention", props: { nodeId: "kaine", text: "she", label: "Kaine" } }], ctx({ linkTo }))).toBe("[[Kaine|she]]");
+    // The vault's own wikilink shape, supplied by `markdown-vault.ts` — this
+    // file only asks for a link and drops it in.
+    const linkFor = (id: string, label?: string) =>
+      id !== "kaine" ? null : !label || label === "Kaine" ? "[[Kaine]]" : `[[Kaine|${label}]]`;
+    expect(inlineToMarkdown([{ type: "mention", props: { nodeId: "kaine", label: "Kaine" } }], ctx({ linkFor }))).toBe("[[Kaine]]");
+    expect(inlineToMarkdown([{ type: "mention", props: { nodeId: "kaine", text: "she", label: "Kaine" } }], ctx({ linkFor }))).toBe("[[Kaine|she]]");
   });
 
   it("degrades a mention of a page outside the vault to its own words", () => {
@@ -203,7 +206,7 @@ describe("frontMatterFor", () => {
     });
     // Quoted, or `[[[Kaine]]]` parses as a sequence three deep rather than a
     // list holding one wikilink.
-    expect(frontMatterFor(node, ctx({ linkTo: () => "Kaine" }))).toContain('Friends: ["[[Kaine]]"]');
+    expect(frontMatterFor(node, ctx({ linkFor: () => "[[Kaine]]" }))).toContain('Friends: ["[[Kaine]]"]');
   });
 
   it("quotes each option of a multi-select, so a comma in a label stays inside it", () => {
@@ -272,7 +275,7 @@ describe("pageToMarkdown", () => {
   it("writes a collection block as a list of links", () => {
     const rows = [createNode({ name: "Her Sword", parentId: null, templateKey: "item" })];
     const blocks: Block[] = [{ id: "c", kind: "collection", source: "subpages", title: "Inside" }];
-    const out = pageToMarkdown(page({ blocks, tabs: [tab("Main", [])] }), ctx({ rowsFor: () => rows, linkTo: () => "Her Sword" }));
+    const out = pageToMarkdown(page({ blocks, tabs: [tab("Main", [])] }), ctx({ rowsFor: () => rows, linkFor: () => "[[Her Sword]]" }));
     expect(out).toContain("- [[Her Sword]]");
   });
 

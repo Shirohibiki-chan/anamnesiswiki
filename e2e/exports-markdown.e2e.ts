@@ -1,5 +1,5 @@
-// Phase 28 — the way into the Markdown export, and what it says before it
-// writes anything.
+// Phase 28 — the way into both Markdown exports, and what each says before
+// it writes anything.
 //
 // **The folder picker is a native window, so the last test answers it from the
 // main process rather than clicking it.** Stubbing Electron's own
@@ -27,6 +27,20 @@ async function openRowMenu(app: RunningApp, name: string): Promise<void> {
   await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
 }
 
+/** Opens a row's menu and steps into `Export ▸`. */
+async function openRowExports(app: RunningApp, name: string): Promise<void> {
+  await openRowMenu(app, name);
+  await app.window.getByText("Export", { exact: true }).click();
+  await app.window.getByText("As Markdown", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+}
+
+/** The same, from the project row rather than a page. */
+async function openProjectExports(app: RunningApp): Promise<void> {
+  await app.window.locator(".tree-project-header").first().click({ button: "right" });
+  await app.window.getByText("Export project", { exact: true }).click();
+  await app.window.getByText("As Markdown", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+}
+
 async function closeModal(app: RunningApp): Promise<void> {
   await app.window.getByRole("button", { name: "Cancel", exact: true }).click();
   await app.window.locator(MODAL).waitFor({ state: "detached", timeout: 10_000 });
@@ -44,20 +58,22 @@ describe("exporting a world as markdown", () => {
     await app?.close();
   });
 
-  it("offers Markdown beside LegendKeeper on a page's own menu", async () => {
-    await openRowMenu(app, "Deliberately Empty Page");
-    const menu = app.window.locator(".tree-context-menu").first();
-    // Both, and the older one still there — the LegendKeeper entry is one she
-    // has learnt where to find, so the new one joins it rather than
-    // displacing it.
-    const entries = await menu.locator("button").allInnerTexts();
-    expect(entries.map((entry) => entry.trim())).toEqual(expect.arrayContaining(["Export to LegendKeeper", "Export as Markdown"]));
+  it("puts every format behind one Export entry, and goes back", async () => {
+    await openRowExports(app, "Deliberately Empty Page");
+    const panel = app.window.locator(".tree-context-menu").first();
+    const entries = (await panel.locator("button").allInnerTexts()).map((entry) => entry.trim());
+    expect(entries).toEqual(expect.arrayContaining(["To LegendKeeper", "As Markdown", "As one Markdown file"]));
+
+    // The back row returns to the menu it came from rather than closing —
+    // a submenu you cannot leave is worse than no submenu.
+    await panel.locator(".tree-context-menu-back").click();
+    await app.window.getByText("Duplicate", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
     await app.window.keyboard.press("Escape");
   });
 
   it("opens a modal that has counted the page and everything under it", async () => {
-    await openRowMenu(app, "Deliberately Empty Page");
-    await app.window.getByText("Export as Markdown", { exact: true }).click();
+    await openRowExports(app, "Deliberately Empty Page");
+    await app.window.getByText("As Markdown", { exact: true }).click();
 
     const modal = app.window.locator(MODAL);
     await modal.waitFor({ state: "visible", timeout: 10_000 });
@@ -69,8 +85,8 @@ describe("exporting a world as markdown", () => {
   });
 
   it("counts the whole world from the project menu, and says what goes flat", async () => {
-    await app.window.locator(".tree-project-header").first().click({ button: "right" });
-    await app.window.getByText("Export project as Markdown", { exact: true }).click();
+    await openProjectExports(app);
+    await app.window.getByText("As Markdown", { exact: true }).click();
 
     const modal = app.window.locator(MODAL);
     await modal.waitFor({ state: "visible", timeout: 10_000 });
@@ -104,8 +120,8 @@ describe("exporting a world as markdown", () => {
         };
       }, destination);
 
-      await openRowMenu(app, "Deliberately Empty Page");
-      await app.window.getByText("Export as Markdown", { exact: true }).click();
+      await openRowExports(app, "Deliberately Empty Page");
+      await app.window.getByText("As Markdown", { exact: true }).click();
       const modal = app.window.locator(MODAL);
       await modal.waitFor({ state: "visible", timeout: 10_000 });
       await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
@@ -124,6 +140,47 @@ describe("exporting a world as markdown", () => {
       // every note in the vault has to carry.
       expect(note.startsWith("---")).toBe(true);
       expect(note).toContain("Deliberately Empty Page");
+
+      await app.window.getByRole("button", { name: "Done", exact: true }).click();
+      await modal.waitFor({ state: "detached", timeout: 10_000 });
+    } finally {
+      await rm(destination, { recursive: true, force: true });
+    }
+  });
+
+  it("writes the whole world into one file, with the tree as its headings", async () => {
+    const destination = await mkdtemp(join(tmpdir(), "anamnesis-single-"));
+    const target = join(destination, "world.md");
+    try {
+      await app.electron.evaluate(({ dialog }, chosen) => {
+        const original = dialog.showSaveDialog.bind(dialog);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (dialog as any).showSaveDialog = async (...args: unknown[]) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (dialog as any).showSaveDialog = original;
+          void args;
+          return { canceled: false, filePath: chosen };
+        };
+      }, target);
+
+      await openProjectExports(app);
+      await app.window.getByText("As one Markdown file", { exact: true }).click();
+      const modal = app.window.locator(MODAL);
+      await modal.waitFor({ state: "visible", timeout: 10_000 });
+      await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
+
+      await expect.poll(() => modal.locator(".export-modal-path").count(), { timeout: 20_000 }).toBe(1);
+
+      const text = await readFile(target, "utf8");
+      // One front matter block for the whole document, and never another —
+      // a per-page one would be prose in the middle of the file.
+      expect(text.match(/^---$/gm)).toHaveLength(2);
+      // A top-level page is `#` and something nested under it is deeper. The
+      // generated world always has a folder holding pages.
+      expect(/^# /m.test(text)).toBe(true);
+      expect(/^## /m.test(text)).toBe(true);
+      // Every page in one file, so it is far longer than any single note.
+      expect(text.length).toBeGreaterThan(10_000);
 
       await app.window.getByRole("button", { name: "Done", exact: true }).click();
       await modal.waitFor({ state: "detached", timeout: 10_000 });

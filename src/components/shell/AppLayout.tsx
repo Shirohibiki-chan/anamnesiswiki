@@ -237,7 +237,8 @@ export function AppLayout() {
         )}
 
         {exportRequest?.format === "lk" && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
-        {exportRequest?.format === "markdown" && <MarkdownExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
+        {exportRequest?.format === "markdown" && <MarkdownExportModal rootIds={exportRequest.rootIds} single={false} onClose={closeExport} />}
+        {exportRequest?.format === "markdown-single" && <MarkdownExportModal rootIds={exportRequest.rootIds} single onClose={closeExport} />}
         {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
         {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
       </div>

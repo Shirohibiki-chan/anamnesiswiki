@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-07 — one column per property
+
+### Fixes
+
+- **A property that several pages carry is one column in a table, not one column per page.** Nine characters each with a Rank made nine columns all called Rank, each filled in on a single row and blank on the other eight. The table now lines them up under one heading, the way the rest of the app already treats two pages using the same property name as using the same property.
+- **What was doing it:** behind the scenes each page keeps its own private id for a property you added yourself, and the table was telling them apart by that id instead of by the name on screen.
+- **It also quietly protected your filters.** A filter or a hidden column pointed at whichever page happened to have defined that property first, so deleting that page would have taken the setting with it. They now point at the name, which no single page owns.
+
 ## 2026-09-07 — setting up a table
 
 ### Additions

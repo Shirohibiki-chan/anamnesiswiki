@@ -125,6 +125,23 @@ export async function pickLkSavePath(defaultName: string): Promise<string | null
 }
 
 /**
+ * Where the whole world goes as one markdown file (Phase 28).
+ *
+ * A save dialog rather than the folder picker the vault uses, because this
+ * time the answer is a file. Named for the reading rather than the format —
+ * `.md` is in the filter, but "one file" is the thing she chose in the menu.
+ */
+export async function pickSingleMarkdownSavePath(defaultName: string): Promise<string | null> {
+  return onePicker(() =>
+    chooseSavePath({
+      title: "Export as one Markdown file",
+      defaultPath: `${defaultName}.md`,
+      filters: [{ name: "Markdown", extensions: ["md"] }],
+    }),
+  );
+}
+
+/**
  * Where a project template goes when it's exported (Phase 27).
  *
  * The filter is named for what she is making rather than for the extension,

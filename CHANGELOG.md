@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-10 — the whole world in one file, and an Export menu
+
+### Additions
+
+- **Export as one Markdown file.** Every page as a heading in a single `.md`, nested as deeply as it sits in your tree — so an editor's outline pane shows your world. It's for handing somebody the whole thing to read in one scroll; links between pages jump down the document instead of opening anything.
+- **Pictures from your own computer aren't in it**, because one file means one file and there's no folder beside it to put them in. Captions stay, and pictures you added by web address still show. The export says how many were left behind, and the Markdown *folder* export takes them all.
+- **All the export formats now sit behind one Export entry**, on both the project menu and a page's right-click menu. Three formats in a menu that long were three lines nobody would read, and there are two more coming.
+
+### Notes
+
+- **Properties come out as a short list under each page's heading**, since a single file can only carry one properties block and it has to be at the very top.
+
 ## 2026-09-10 — Export as Markdown
 
 ### Additions
@@ -271,11 +283,3 @@
 ### Fixes
 
 - **Columns stop squeezing each other.** With five or more columns the words were breaking mid-phrase to make everything fit. Every column now has a minimum width and the table scrolls instead.
-
-## 2026-09-07 — one column per property
-
-### Fixes
-
-- **A property that several pages carry is one column in a table, not one column per page.** Nine characters each with a Rank made nine columns all called Rank, each filled in on a single row and blank on the other eight. The table now lines them up under one heading, the way the rest of the app already treats two pages using the same property name as using the same property.
-- **What was doing it:** behind the scenes each page keeps its own private id for a property you added yourself, and the table was telling them apart by that id instead of by the name on screen.
-- **It also quietly protected your filters.** A filter or a hidden column pointed at whichever page happened to have defined that property first, so deleting that page would have taken the setting with it. They now point at the name, which no single page owns.
