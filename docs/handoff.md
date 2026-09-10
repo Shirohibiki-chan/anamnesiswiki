@@ -1696,6 +1696,50 @@ plain renderer instead is a choice against the one program this is for.
   and the outline read inside out. That was found by opening a real exported
   file, not by a test — the test came after.
 
+### Print
+
+**`src/print.css` is the whole of it** — one `@media print` block, imported
+from `index.css` with the other imports because CSS demands `@import` come
+first. That puts it *before* every component stylesheet in the bundle, so
+nothing in it may rely on source order: its layout rules carry `!important`
+and its token overrides use a doubled `:root` to out-specify
+`[data-theme="…"]`, including a theme she has imported at runtime.
+
+- **Undoing the scroll cage is the point, and it is the least obvious part.**
+  `html, body, #root` are `height: 100%; overflow: hidden` so the panels scroll
+  rather than the window, and `.app-layout-page` is the real scroller. Without
+  the override a long page prints as one sheet with the rest cut off, and
+  nothing on screen tells you.
+
+- **Test it as "nothing is clipped", not as "the document got taller".**
+  Removing the reading-column cap rewraps prose wider, so a page that
+  overflowed on screen can honestly fit on paper — an early version of
+  `prints-a-page.e2e.ts` asserted the document grew and failed on a page that
+  had simply become shorter. `scrollHeight > clientHeight` on every ancestor
+  is the assertion that means something.
+
+- **`emulateMedia({ media: "print" })` is how any of this is checkable.** The
+  print dialog is native and cannot be clicked, but Playwright will lay the
+  page out for paper and then it is an ordinary DOM to measure and screenshot.
+
+- **Hiding the chrome is a list of named elements, not a `visibility: hidden`
+  sweep** — a sweep leaves each hidden thing holding its space and the writing
+  starts a third of the way down the sheet. **Two of them live inside the
+  writing rather than around it** and were still on the paper the first time it
+  was looked at: `.page-title-graph-button` and `.editor-callout-color`. A new
+  control placed inside the page body needs adding here.
+
+- **The palette is Daylight's, not a new one.** Its contrast was measured
+  against white when that theme was built; a second light palette nobody checks
+  is a second thing to get wrong. Only the ground differs — pure white, since
+  `#fafaf9` is ink spent to look like nothing.
+
+- **Block layout all the way down, and the deprecated `page-break-*` spellings
+  beside the modern `break-*` ones.** Both are insurance for WebKitGTK, which
+  is the oldest engine this ships to and the one most likely to get flex
+  containers wrong across a page break. **None of this has been run on Linux**
+  — it cannot be from here, and that is the standing gap.
+
 ### One big file
 
 **`markdown-single.ts` is the same walk and the same converter, arranged

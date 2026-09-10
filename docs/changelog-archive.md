@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-07 — typing straight into a table
+
+### Additions
+
+- **You can change a value without leaving the table.** Text, numbers, dates and dropdowns are edited in the row. Click a cell and type; there's no button to press first.
+- **Filling in a cell on a page that doesn't have that property yet gives it one.** The column is there because some other page uses it, so typing into the blank cell adds the property to that page properly — it turns up in that page's own panel too, not only in the table.
+- **Dropdowns offer what your other pages already say.** Picking *Alive* on a second character gets the same option, with the same colour, rather than a lookalike. You can type a new value straight into the picker to make one.
+- **One press of undo puts a cell back**, including when the edit created the property.
+- **A wide table scrolls sideways, and the name column stays put** while the rest slides under it — so you never lose which row you're looking at.
+- **Long text, linked pages and pictures still open the page.** They want more room than a column has, and a cramped editor for them would be worse than a click.
+
+### Fixes
+
+- **Columns stop squeezing each other.** With five or more columns the words were breaking mid-phrase to make everything fit. Every column now has a minimum width and the table scrolls instead.
+
 ## 2026-09-07 — one column per property
 
 ### Fixes
