@@ -16,8 +16,10 @@ import { ExportModal } from "../export/ExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
 import { useCreatePage } from "../../hooks/use-new-page";
+import { useTourOnFirstRun } from "../../hooks/use-tour";
 import { TreeSidebar } from "../tree/TreeSidebar";
 import { LeftRail, type SidebarPanel } from "./LeftRail";
+import { TourOverlay } from "./TourOverlay";
 import { PageView } from "../page/PageView";
 import { TemplateView } from "../page/TemplateView";
 import { AllPropertiesModal } from "../properties/AllPropertiesModal";
@@ -34,6 +36,8 @@ export function AppLayout() {
   // honest place to hold the marker that says so — no separate bookkeeping to
   // keep in step, and no path that closes a project without releasing it.
   useHoldProjectClaim(useProjectRootPath());
+  // Offers the tour the first time anybody gets this far, and never again.
+  useTourOnFirstRun();
   const openTemplate = useOpenTemplate();
   const { clearLastOpenedProject } = useAppSettings();
   // Raised from a tree row's right-click menu, rendered here — react-arborist
@@ -168,7 +172,7 @@ export function AppLayout() {
           } as React.CSSProperties
         }
       >
-        <aside className="app-layout-tree">
+        <aside className="app-layout-tree" data-tour="tree">
           <TreeSidebar panel={sidebarPanel} onSelectPanel={selectSidebarPanel} />
         </aside>
 
@@ -189,7 +193,7 @@ export function AppLayout() {
               template that stayed put made a click on a tree row look ignored.
               Keyed by template id for the same reason PageView is keyed by node
               id: the tab strip's state resets on a switch without an effect. */}
-          <main className="app-layout-page">
+          <main className="app-layout-page" data-tour="page">
             {openTemplate ? (
               <TemplateView key={openTemplate.id} template={openTemplate} />
             ) : (
@@ -199,7 +203,7 @@ export function AppLayout() {
         </div>
 
         {isRightPanelOpen && (
-          <aside className="app-layout-properties">
+          <aside className="app-layout-properties" data-tour="properties">
             <BlockPanel key={project?.selectedId ?? "none"} />
           </aside>
         )}
@@ -235,6 +239,11 @@ export function AppLayout() {
         {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
         {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
       </div>
+      {/* Phase 26. Mounted here rather than in `App` because every step points
+          at a column that only exists while a project is open — and this is the
+          component that only exists then, so "is a world open" is not a
+          question it has to ask. It draws nothing unless the tour is running. */}
+      <TourOverlay />
     </div>
   );
 }

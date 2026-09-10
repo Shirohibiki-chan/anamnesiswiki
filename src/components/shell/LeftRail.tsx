@@ -61,7 +61,7 @@ export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }
   const { openWorldGraph } = useGraphOverlayActions();
 
   return (
-    <nav className="left-rail" aria-label="Main">
+    <nav className="left-rail" aria-label="Main" data-tour="rail">
       <div className="left-rail-group">
         {PANELS.map(({ panel: which, label, Icon }) => (
           <RailButton

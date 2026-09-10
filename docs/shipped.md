@@ -5810,3 +5810,56 @@ adds 6 scenarios driving the real app from the start screen — the tree, the
 mentions rendered as links, Places as a table, the storyline drawn and joined and
 labelled with its note resolving, and a second copy being made rather than
 refused.
+
+---
+
+## Phase 26 — Teach It To Someone Else, step 2 ✅ Shipped 2026-09-09
+
+The short tour: four highlights over the real app, the first time anybody has a
+world open. With step 1's example world, that is both halves of what the phase
+set out to do — what a world is made of, and where things are. Step 3, a door
+back to either from Settings, is what remains. What binds the code is
+`docs/handoff.md` §The short tour.
+
+**What it delivered.** The rail, the tree, the page and the right-hand panel,
+one step each, with a card beside whichever column is lit and a way out on every
+one of them — Skip, Escape, or walking to the end. It runs once a project is
+open, never on the start screen, because every step points at a column that does
+not exist until then. Whether it has been seen is one local key, and nothing
+about it is reported anywhere.
+
+**Why the anchors are attributes rather than selectors.** Each step names a
+`data-tour` value carried by a real element. A class name is a styling decision
+somebody is entitled to rename underneath the tour; an attribute is a statement
+that the tour points at this thing. A step whose anchor is not on screen is
+dropped rather than drawn against nothing — the right-hand panel can be closed,
+and that is the whole of what happens when it is.
+
+**Why none of it uses a mask or anchor positioning.** Both would have been
+shorter. Linux gets WebKitGTK, there is a real person on it, and a tutorial is
+the worst thing in the app to render wrong: somebody seeing one break has no way
+to tell it from the app being broken. Four dimmed rectangles round a hole works
+on everything, and it left the placement as arithmetic that can be tested
+without a DOM.
+
+**The suite had to be told about it.** A tutorial drawn over the window swallows
+the first click of every scenario in `e2e/`, so `launchApp` marks it seen by
+default and the one file that is about the tour asks for it — the same shape as
+`projectsDir` being pointed somewhere temporary, and for the same reason: a
+first launch getting in the way of a test about something else.
+
+**Verified.** `tour-service.test.ts` is 12 unit tests over the arithmetic: that
+the dimming leaves the highlight clear, covers everything else, and never stacks
+two panels on one spot (two translucent panels are visibly darker and the seam
+shows); that a card goes beside the column it points at, inside one that fills
+its column, and slides back into a window too narrow to hold it beside; and that
+a step with nothing to point at is dropped. `e2e/takes-the-short-tour.e2e.ts`
+adds 7 scenarios driving the real app — including the one that matters, which
+compares the highlight's rectangle against the rail's own and would fail on a
+tour that renders beautifully in the wrong place. It also checks the tour does
+not come back after a restart, and never appears for somebody whose settings say
+they have seen it.
+
+**Looked at rather than only asserted.** Four screenshots, one per step, which
+is how the placement was judged — the arithmetic being right does not say the
+card is readable where it lands.

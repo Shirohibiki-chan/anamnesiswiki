@@ -3320,3 +3320,76 @@ ol.release-notes-list {
 .sidebar-setting-list li {
   margin-bottom: var(--space-2xs);
 }
+
+/* The short tour (Phase 26, step 2)
+   ---------------------------------
+   Four dimmed rectangles round a bordered box, and a card beside it. Nothing
+   here uses a mask, a clip path or anchor positioning — see tour-service.ts for
+   why, which is WebKitGTK and one real person on it.
+
+   Above `.ui-backdrop`'s 1000 but below the lightbox's 1100: the tour covers the
+   app, and nothing the app can raise while it is running should come out on top
+   of it. */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+}
+
+.tour-dim {
+  position: fixed;
+  background: rgb(0 0 0 / 0.55);
+}
+
+/* The ring covers the highlighted element rather than being a frame round it,
+   so a click there leaves the tour exactly as a click on the dimming does.
+   Letting clicks through the hole was the other option and it reads as a bug:
+   the app would be operable in one rectangle of a window that is otherwise
+   waiting for you to finish reading. */
+.tour-ring {
+  position: fixed;
+  border: 2px solid var(--color-accent-light);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+
+.tour-card {
+  position: fixed;
+  padding: 1rem 1.125rem 0.875rem;
+  background: var(--color-panel-edge);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-modal);
+}
+
+.tour-count {
+  margin: 0 0 0.25rem;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.tour-title {
+  margin: 0 0 0.375rem;
+  font-size: var(--fs-lg);
+  color: var(--color-text-primary);
+}
+
+.tour-body {
+  margin: 0 0 0.875rem;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tour-advance {
+  display: flex;
+  gap: 0.5rem;
+}
