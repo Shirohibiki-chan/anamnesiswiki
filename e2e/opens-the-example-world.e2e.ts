@@ -112,3 +112,46 @@ describe("the example world", () => {
     expect(names).toContain("Saltmere Example");
   });
 });
+
+describe("a fresh install", () => {
+  let app: RunningApp;
+
+  beforeAll(async () => {
+    // No world of its own, and the example world left to happen the way it does
+    // on somebody's first morning.
+    app = await launchApp({ openWorld: false, exampleWorld: true });
+    await app.window.locator(".start").waitFor({ state: "visible", timeout: 20_000 });
+  }, 90_000);
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it("has the example world in the library without anybody asking", async () => {
+    // Her call, 2026-09-09: it is a world, so it belongs in the library rather
+    // than behind a row somebody has to notice on the one screen that offers it.
+    await app.window
+      .locator(".project-tile-cap b", { hasText: "Saltmere Example" })
+      .first()
+      .waitFor({ timeout: 30_000 });
+  });
+
+  it("does not put it back after it has been deleted", async () => {
+    // The assertion the whole flag exists for. An example world that reappears
+    // is the app arguing with her about what is in her own folder.
+    const tile = app.window.locator(".project-tile").filter({ hasText: "Saltmere Example" }).first();
+    await tile.hover();
+    await tile.locator(".project-tile-menu-btn").first().click();
+    await app.window.getByRole("menuitem", { name: /Delete/ }).click();
+    await app.window.locator(".confirm-dialog .ui-btn-danger").click();
+    await app.window.waitForTimeout(2500);
+    expect(await app.window.locator(".project-tile-cap b", { hasText: "Saltmere Example" }).count()).toBe(0);
+
+    // Through a real reload rather than by reading the setting: the screen that
+    // makes one is the screen that just came back.
+    await app.window.keyboard.press("Control+r");
+    await app.window.locator(".start").waitFor({ state: "visible", timeout: 20_000 });
+    await app.window.waitForTimeout(3000);
+    expect(await app.window.locator(".project-tile-cap b", { hasText: "Saltmere Example" }).count()).toBe(0);
+  });
+});

@@ -3527,6 +3527,23 @@ Phase 26, step 1. What binds the code:
   falls through to comparing ids — the tree came out in a different order on
   every run. Anything else added to a project's state belongs in this path too.
 
+- **A fresh install is given the world, not offered it** (her call,
+  2026-09-09), and the flag is what makes deleting it stick. The start screen
+  writes one when `exampleWorldMade` is unset and sets it on success; nothing
+  ever clears it. Without that flag the next launch puts back a world she just
+  deleted, which is the app arguing with her about the contents of her own
+  folder. A failed write deliberately leaves the flag alone — nobody was given
+  anything, and next launch may be able to. The app suite marks it already made
+  (`launchApp`'s `exampleWorld`, default false) so a scenario's library holds
+  exactly what its own world put there.
+
+- **`writeExampleWorldToDisk` is shared and only one of its callers opens what
+  it made.** Being given the world happens while she is looking at the start
+  screen, and a project quietly loading itself underneath that is the app
+  deciding what she came to do. Anything added to the world's *creation* goes in
+  the shared half; anything about adopting it as the open project stays in
+  `createExampleProject`.
+
 - **Nothing in the world's prose may name a part of the interface.** That is the
   split the phase rests on — this world teaches what a world is made of, and the
   tour teaches where things are — and it is what keeps the half that goes stale

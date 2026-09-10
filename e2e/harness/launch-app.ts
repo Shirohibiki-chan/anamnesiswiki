@@ -70,6 +70,15 @@ export type LaunchOptions = TestWorldOptions & {
    * one scenario that is *about* the tour asks for it.
    */
   showTour?: boolean;
+  /**
+   * Whether this launch counts as a fresh install for the example world.
+   *
+   * False — the default — marks it already made, so a scenario's library holds
+   * exactly what its own world put there. True lets the start screen write
+   * Saltmere the way a real first launch does, which is what the one scenario
+   * about it needs.
+   */
+  exampleWorld?: boolean;
 };
 
 export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp> {
@@ -78,7 +87,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
 
   const world = options.openWorld === false ? null : await makeTestWorld(options);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "anamnesis-e2e-userdata-"));
-  await seedSettings(userDataDir, world, options.showTour === true);
+  await seedSettings(userDataDir, world, options.showTour === true, options.exampleWorld === true);
 
   const electron = await _electron.launch({
     executablePath: electronBinary as unknown as string,
@@ -302,13 +311,22 @@ function linuxCiArgs(): string[] {
  * is: anything the app decides to create on its own lands there instead of in
  * her Documents.
  */
-async function seedSettings(userDataDir: string, world: TestWorld | null, showTour: boolean): Promise<void> {
+async function seedSettings(
+  userDataDir: string,
+  world: TestWorld | null,
+  showTour: boolean,
+  exampleWorld: boolean,
+): Promise<void> {
   const settings: Record<string, unknown> = {
     projectsDir: path.join(userDataDir, "Projects"),
     // Marked seen unless a scenario asks otherwise — the tour is drawn over
     // the whole window and would swallow the first click of every other file
     // in here.
     ...(showTour ? {} : { tourSeen: true }),
+    // Marked already made for the same kind of reason: a fresh install writes
+    // the example world into the projects folder, and a scenario counting
+    // project tiles should count its own.
+    ...(exampleWorld ? {} : { exampleWorldMade: true }),
   };
   if (world) {
     settings.lastOpenedProject = world.path;

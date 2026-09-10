@@ -422,6 +422,17 @@ export type ProjectStoreState = {
    * is not a reason to say no to reading the example again.
    */
   createExampleProject: (parentDir: string) => Promise<CreateProjectResult>;
+  /**
+   * The example world written to disk and left alone (Phase 26).
+   *
+   * **The same world, not opened.** A fresh install makes one so it is simply
+   * in the library — somebody who installed this to bring their own world in
+   * should not have to leave Saltmere first, and somebody who wants to read it
+   * should not have had to think of asking on the one screen that offers it.
+   * So this writes and returns; the library's next scan finds it like any other
+   * folder on disk.
+   */
+  writeExampleProject: (parentDir: string) => Promise<CreateProjectResult>;
   importLkProject: (
     parentDir: string,
     name: string,
@@ -1386,6 +1397,64 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     track(() => fsService.saveProject(rootPath, nextProject));
   };
 
+  /**
+   * The example world, built and written, without touching what is open.
+   *
+   * Shared by the two ways it can happen: made on a fresh install so it is
+   * simply in the library, and made because somebody asked for it on the start
+   * screen. Only the second one adopts it as the open project, which is the
+   * whole of the difference between them.
+   */
+  const writeExampleWorldToDisk = async (
+    parentDir: string,
+  ): Promise<
+    | { ok: true; rootPath: string; project: Project; nodes: Node[]; storylines: { pageId: string; storyline: Storyline }[] }
+    | { ok: false; error: string }
+  > => {
+    const { nodes, rootOrder, childOrder, expandedIds, homeNodeId, storylines } = buildExampleWorld();
+
+    // A free name rather than a refusal: somebody who has read the example
+    // once, deleted nothing, and wants it again is doing a reasonable thing,
+    // and "a folder with that name already exists" is an answer about our
+    // filing rather than about their request.
+    let name = EXAMPLE_WORLD_NAME;
+    let rootPath = await joinPath(parentDir, fsService.sanitizeSegment(name));
+    for (let copy = 2; copy <= EXAMPLE_COPY_LIMIT && (await fsService.pathExists(rootPath)); copy += 1) {
+      name = `${EXAMPLE_WORLD_NAME} ${copy}`;
+      rootPath = await joinPath(parentDir, fsService.sanitizeSegment(name));
+    }
+    if (await fsService.pathExists(rootPath)) {
+      return { ok: false, error: "There are already a lot of copies of the example world. Rename or delete one and try again." };
+    }
+
+    // Open on the page that says what this is, rather than on nothing. The
+    // other three paths make a world somebody is about to write, where an empty
+    // screen is the invitation; this one is a world somebody is about to read,
+    // and it has a first page for the same reason a book does. Written into the
+    // project file either way, so it is true whenever the world is opened
+    // rather than only when it is opened straight after being made.
+    const home = nodes.find((node) => node.id === homeNodeId) ?? null;
+    const project: Project = {
+      ...createProject({ name, rootOrder, expandedIds }),
+      childOrder,
+      homeNodeId,
+      selectedId: home?.id ?? null,
+      selectedName: home?.name ?? null,
+    };
+
+    await fsService.saveProject(rootPath, project);
+    await fsService.saveNodes(rootPath, nodes, nodes);
+    // The canvases after the pages, because `saveStoryline` resolves a
+    // storyline's directory from the tree it is handed.
+    const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
+    for (const { pageId, storyline } of storylines) {
+      const page = byId[pageId];
+      if (page) await fsService.saveStoryline(rootPath, page, nodes, storyline);
+    }
+
+    return { ok: true, rootPath, project, nodes, storylines };
+  };
+
   // Same split, same reason: undo sets the exact list it saw rather than
   // toggling back, which would be wrong if anything else changed the pins in
   // between.
@@ -1663,47 +1732,18 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // that was built in the app rather than read off disk — the LK import's
     // write path with none of its fetching, since an example world's pictures,
     // if it ever has any, ship with the app rather than living on a server.
-    //
-    // The canvases go down after the pages, because `saveStoryline` resolves a
-    // storyline's directory from the tree it is handed and the whole graph is
-    // already in hand by then.
     async createExampleProject(parentDir) {
-      const { nodes, rootOrder, childOrder, expandedIds, homeNodeId, storylines } = buildExampleWorld();
-
-      // A free name rather than a refusal: somebody who has read the example
-      // once, deleted nothing, and wants it again is doing a reasonable thing,
-      // and "a folder with that name already exists" is an answer about our
-      // filing rather than about their request.
-      let name = EXAMPLE_WORLD_NAME;
-      let rootPath = await joinPath(parentDir, fsService.sanitizeSegment(name));
-      for (let copy = 2; copy <= EXAMPLE_COPY_LIMIT && (await fsService.pathExists(rootPath)); copy += 1) {
-        name = `${EXAMPLE_WORLD_NAME} ${copy}`;
-        rootPath = await joinPath(parentDir, fsService.sanitizeSegment(name));
-      }
-      if (await fsService.pathExists(rootPath)) {
-        return { ok: false, error: "There are already a lot of copies of the example world. Rename or delete one and try again." };
-      }
+      const written = await writeExampleWorldToDisk(parentDir);
+      if (!written.ok) return written;
 
       // Cleared before the state swap, for the reason the two paths above spell
       // out: a world that arrives written is not a stack of things somebody
       // did, and the first undo in it must not start dismantling Saltmere.
       useHistoryStore.getState().clear();
-      // Open on the page that says what this is, rather than on nothing. The
-      // other three paths make a world somebody is about to write, where an
-      // empty screen is the invitation; this one is a world somebody is about
-      // to read, and it has a first page for the same reason a book does.
-      const home = nodes.find((node) => node.id === homeNodeId) ?? null;
-      const project: Project = {
-        ...createProject({ name, rootOrder, expandedIds }),
-        childOrder,
-        homeNodeId,
-        selectedId: home?.id ?? null,
-        selectedName: home?.name ?? null,
-      };
-      const nodesRecord = Object.fromEntries(nodes.map((node) => [node.id, node]));
+      const nodesRecord = Object.fromEntries(written.nodes.map((node) => [node.id, node]));
       set({
-        rootPath,
-        project,
+        rootPath: written.rootPath,
+        project: written.project,
         nodes: nodesRecord,
         contentRevisions: {},
         isLoaded: true,
@@ -1711,19 +1751,22 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         // is a page and pages are in `nodes`; a storyline's canvas is its own
         // file, so a world made in memory that only wrote them would draw an
         // empty canvas until the next time the project was opened.
-        storylines: Object.fromEntries(storylines.map((entry) => [entry.pageId, entry.storyline])),
-        navHistory: visit(EMPTY_NAV_HISTORY, home?.id ?? null),
+        storylines: Object.fromEntries(written.storylines.map((entry) => [entry.pageId, entry.storyline])),
+        navHistory: visit(EMPTY_NAV_HISTORY, written.project.selectedId ?? null),
       });
-
-      await fsService.saveProject(rootPath, project);
-      await fsService.saveNodes(rootPath, nodes, nodes);
-      for (const { pageId, storyline } of storylines) {
-        const page = nodesRecord[pageId];
-        if (page) await fsService.saveStoryline(rootPath, page, nodes, storyline);
-      }
       markSaved();
 
-      return { ok: true, rootPath };
+      return { ok: true, rootPath: written.rootPath };
+    },
+
+    // The same world, written and left alone — what a fresh install does, so
+    // the library has one in it without anybody having asked. Deliberately does
+    // not touch what is open: this runs while she is looking at the start
+    // screen, and a project quietly loading itself underneath that would be the
+    // app deciding what she came to do.
+    async writeExampleProject(parentDir) {
+      const written = await writeExampleWorldToDisk(parentDir);
+      return written.ok ? { ok: true, rootPath: written.rootPath } : written;
     },
 
     // The Phase 8 LK-import path: unlike createProjectAt (a handful of stub

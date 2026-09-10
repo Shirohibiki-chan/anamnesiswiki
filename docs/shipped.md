@@ -5863,3 +5863,42 @@ they have seen it.
 **Looked at rather than only asserted.** Four screenshots, one per step, which
 is how the placement was judged — the arithmetic being right does not say the
 card is readable where it lands.
+
+---
+
+## Phase 26 — the example world is given rather than offered ✅ Shipped 2026-09-09
+
+A change to what step 1 shipped the same day, and hers: everybody gets the
+example world, rather than everybody being offered it.
+
+**The reasoning, in her words rewritten.** The version step 1 shipped only made
+Saltmere when somebody chose it on the start screen — so the person most likely
+to want it, somebody who opens their own world first and wonders later what else
+this app does, had to go back and find a row they had already walked past. It is
+a world; it belongs in the library like a world. LegendKeeper gives you one
+without asking, and that was the argument that settled it.
+
+**What it delivered.** The start screen writes Saltmere into the projects folder
+the first time it is shown on an install that has never had one, and rescans so
+the tile appears without a relaunch. It does not open it — being given a world
+is not the app deciding what she came to do, and somebody who installed this to
+import their own should not have to leave Saltmere first. That was her call
+between the two options offered.
+
+**Deleting it has to stick, and that is the whole of what the flag is for.**
+`exampleWorldMade` is set on success and never cleared, so a world she deleted
+stays deleted. A failed write leaves the flag alone: nobody was given anything,
+and the next launch may be able to. Asking again from the rail still makes a
+fresh copy, numbered if one is already there, so a Saltmere somebody has written
+all over is never overwritten by a new one.
+
+**`writeExampleWorldToDisk` came out of `createExampleProject`** so the two ways
+it can happen share the building and the writing, and only the one that was
+asked for adopts it as the open project.
+
+**Verified.** `e2e/opens-the-example-world.e2e.ts` grew two scenarios on a
+launch that behaves like a fresh install: the tile appears in the library
+without anybody asking, and — the one the flag exists for — deleting it and
+reloading leaves it deleted. The suite marks it already made by default, the
+same shape as the tour, so every other scenario's library holds exactly what its
+own world put there.

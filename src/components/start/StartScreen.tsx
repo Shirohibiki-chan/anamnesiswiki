@@ -19,6 +19,7 @@ import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useExampleOnFirstRun } from "../../hooks/use-example-on-first-run";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
 import { useProjectLibrary } from "../../hooks/use-project-library";
@@ -92,6 +93,10 @@ export function StartScreen() {
   const { releases } = useReleaseHistory();
   const { newProjectsDir } = useAppSettings();
   const actions = useStartActions();
+  // A fresh install is given the example world rather than offered it, so the
+  // grid beside this has something in it on the first morning. Rescans when it
+  // lands, because the scan above has already run by then.
+  useExampleOnFirstRun(refreshWorlds);
   const { confirmDestructive } = useDialogs();
   const fileManagerName = useFileManagerName();
   const widths = usePanelWidths();

@@ -348,6 +348,29 @@ export async function setAcknowledgedWarnings(acknowledged: Record<string, strin
 }
 
 /**
+ * Whether this install has already been given the example world (Phase 26).
+ *
+ * **The flag is what makes deleting it stick.** A fresh install writes Saltmere
+ * into the projects folder so it is simply in the library rather than being an
+ * offer somebody has to notice — and the moment it exists as an ordinary
+ * project, deleting it has to mean deleting it. Without this the next launch
+ * would put it back, which is the app arguing with her about what is in her own
+ * folder.
+ *
+ * Absent means never made, which is what a fresh install looks like.
+ */
+export async function getExampleWorldMade(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("exampleWorldMade")) === true;
+}
+
+export async function setExampleWorldMade(made: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("exampleWorldMade", made);
+  await store.save();
+}
+
+/**
  * Whether the short tour has been taken or waved away (Phase 26).
  *
  * **One key, local like every other setting, and nothing is reported
