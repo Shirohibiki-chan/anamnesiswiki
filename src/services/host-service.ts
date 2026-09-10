@@ -152,7 +152,17 @@ export function copyFile(from: string, to: string): Promise<void> {
  */
 export async function fileInfo(path: string): Promise<FileInfo> {
   const info = await fsStat(path);
-  return { size: info.size, modifiedAt: info.mtime ?? null };
+  return { size: info.size, modifiedAt: info.mtime ?? null, isDirectory: info.isDirectory };
+}
+
+/**
+ * Tauri's webview has native drag-drop switched off (`dragDropEnabled:
+ * false` — see docs/handoff.md § Tauri) and offers no path for a DOM drop,
+ * so a drop here has no path to give. The import falls back to its pickers.
+ */
+export function droppedPath(file: File): string | null {
+  void file;
+  return null;
 }
 
 /**
@@ -409,6 +419,7 @@ const conformance = {
   renamePath,
   copyFile,
   fileInfo,
+  droppedPath,
   watchPath,
   showWindow,
   drawsWindowControls,

@@ -189,6 +189,13 @@ describe("frontMatterFor", () => {
     expect(frontMatterFor(page({ hidden: true }), ctx())).toContain("hidden: true");
   });
 
+  // Phase 20 reads the split from this line rather than guessing it from the
+  // `##` headings; a single-tab page has no headings to split on and no line.
+  it("names the tabs only when the body is split into them", () => {
+    expect(frontMatterFor(page({ tabs: [tab("Main", [])] }), ctx())).not.toContain("tabs:");
+    expect(frontMatterFor(page({ tabs: [tab("Overview", []), tab("Hist \"ory\"", [])] }), ctx())).toContain('tabs: ["Overview", "Hist \\"ory\\""]');
+  });
+
   it("writes a property's label and its option's label, never the stored ids", () => {
     const node = page({
       customProperties: [{ key: "mood", label: "Mood", type: "select", options: [{ id: "opt-1", label: "Grim", color: "slate" }] }],

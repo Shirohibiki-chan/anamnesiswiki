@@ -26,6 +26,13 @@
   font-size: var(--fs-md);
 }
 
+/* File beside folder: two ways in, one row, the first one loud. */
+.import-modal-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
 .import-modal-error {
   color: var(--color-destructive);
   font-size: var(--fs-sm);

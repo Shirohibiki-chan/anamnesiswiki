@@ -118,7 +118,7 @@ export function StartRail({
         </button>
         <button type="button" className="start-item" onClick={onImport} disabled={disabled}>
           <b>Import</b>
-          <span>Bring in a project from a .lk file.</span>
+          <span>Bring in a world from a .lk file, a folder of notes, or a zip.</span>
         </button>
         {/* Last of the four, and the one place it is allowed to sit. It is here
             for somebody who has just installed the app and has nothing to open

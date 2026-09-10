@@ -184,7 +184,7 @@ import {
   recordAssetSource,
   type AssetSources,
 } from "../services/asset-sources";
-import type { ImportPendingImage } from "../services/lk-import";
+import type { ImportAsset, ImportPendingImage } from "../services/import-plan";
 import { countLabel } from "../services/history-service";
 import { useHistoryStore } from "./history-store";
 
@@ -203,11 +203,13 @@ const EXAMPLE_COPY_LIMIT = 20;
 export type CreateProjectResult = { ok: true; rootPath: string } | { ok: false; error: string };
 
 /**
- * How far along an import is. Two phases, because they fail differently and
+ * How far along an import is. Three phases, because they fail differently and
  * take differently long: `images` is dozens of requests to LK's servers and is
- * where the wait actually is, `writing` is local disk and is quick.
+ * where a `.lk` import's wait actually is; `copying` is a vault's pictures
+ * being put into the new project's `assets/` from disk or from a zip (Phase
+ * 20); `writing` is the pages, local disk and quick.
  */
-export type ImportProgress = { phase: "images" | "writing"; done: number; total: number };
+export type ImportProgress = { phase: "images" | "copying" | "writing"; done: number; total: number };
 
 // ─── Undo support ───────────────────────────────────────────────────────────
 
@@ -433,10 +435,10 @@ export type ProjectStoreState = {
    * folder on disk.
    */
   writeExampleProject: (parentDir: string) => Promise<CreateProjectResult>;
-  importLkProject: (
+  importProject: (
     parentDir: string,
     name: string,
-    plan: { nodes: Node[]; rootOrder: string[]; pendingImages: ImportPendingImage[]; homeNodeId: string | null },
+    plan: { nodes: Node[]; rootOrder: string[]; pendingImages: ImportPendingImage[]; assets: ImportAsset[]; homeNodeId: string | null },
     onProgress?: (progress: ImportProgress) => void,
   ) => Promise<CreateProjectResult>;
   closeProject: () => void;
@@ -1684,7 +1686,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
 
     // Phase 27's third way in. Sits between the two either side of it: more
     // than `createProjectAt`'s six stub folders, and without any of the
-    // fetching and picture-shuffling `importLkProject` exists to do — a
+    // fetching and picture-shuffling `importProject` exists to do — a
     // template file has no pictures in it and nothing to download, by design
     // (see constants/project-template.ts).
     //
@@ -1771,15 +1773,17 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       return written.ok ? { ok: true, rootPath: written.rootPath } : written;
     },
 
-    // The Phase 8 LK-import path: unlike createProjectAt (a handful of stub
-    // folders), this writes a whole already-built node graph converted by
-    // src/services/lk-import.ts. Images live on LegendKeeper's own CDN, so
-    // each pending one is fetched here (the single network call this app
-    // ever makes, and only for this explicit, user-confirmed action — see
-    // docs/handoff.md) before anything hits disk. A failed download just
-    // leaves that one page without a picture rather than failing the import.
-    async importLkProject(parentDir, name, plan, onProgress) {
-      const { nodes, rootOrder, pendingImages, homeNodeId } = plan;
+    // The import path (Phase 8 for `.lk`, Phase 20 for markdown): unlike
+    // createProjectAt (a handful of stub folders), this writes a whole
+    // already-built node graph converted by one of the importers. A `.lk`'s
+    // pictures live on LegendKeeper's own CDN, so each pending one is fetched
+    // here (the one network call an import makes, and only for this explicit,
+    // user-confirmed action — see docs/handoff.md) before anything hits disk;
+    // a markdown vault's pictures are files already, and are copied. A failed
+    // download or copy just leaves that one page without a picture rather than
+    // failing the import.
+    async importProject(parentDir, name, plan, onProgress) {
+      const { nodes, rootOrder, pendingImages, assets, homeNodeId } = plan;
       const trimmed = name.trim();
       if (!trimmed) return { ok: false, error: "Give your project a name." };
 
@@ -1838,6 +1842,24 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         }
       });
       await Promise.all(workers);
+
+      // Pictures that are files already — a vault's, or a zip's. The nodes
+      // point at these names before the bytes exist, so a copy that fails
+      // leaves a reference to a picture that never arrived; that is the same
+      // hole a failed download leaves, and it is reported the same way.
+      if (assets.length > 0) {
+        let copied = 0;
+        onProgress?.({ phase: "copying", done: 0, total: assets.length });
+        for (const asset of assets) {
+          try {
+            await fsService.saveAssetImage(rootPath, asset.fileName, await asset.read());
+          } catch {
+            // Ignore — see above.
+          }
+          copied += 1;
+          onProgress?.({ phase: "copying", done: copied, total: assets.length });
+        }
+      }
 
       onProgress?.({ phase: "writing", done: 0, total: nodes.length });
       useHistoryStore.getState().clear();

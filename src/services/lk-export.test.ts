@@ -627,7 +627,7 @@ describe("round trip through LK format", () => {
 
   // The whole point of the sources file. Import can't do this leg itself — the
   // download happens in the store — so the filename it would have produced is
-  // stood in for here, which is exactly what `importLkProject` records.
+  // stood in for here, which is exactly what `importProject` records.
   it("sends a picture in the writing back to the address it came from", () => {
     const withPicture = {
       version: 1,

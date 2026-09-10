@@ -1580,7 +1580,7 @@ under `acknowledgedWarnings`.
   BlockNote assigns ids itself when it loads a document, which is far too late —
   `ImportPendingImage`'s `body` variant carries the id `convertMediaSingle`
   minted, and `applyBodyImage` matches on it. Don't let anything renumber block
-  ids between `buildImportPlan` and `importLkProject`.
+  ids between `buildImportPlan` and `importProject`.
 
 - **Adding a case to `convertBlock` for a node with no children is a fix, not an
   addition.** The `default` branch recurses into children, so a childless node
@@ -1659,10 +1659,11 @@ plain renderer instead is a choice against the one program this is for.
 - **Tabs become `##` headings, and the writing's own headings shift down one
   level to sit under them** — otherwise a `#` inside a tab lands above the
   heading naming that tab and the outline comes out inside out. A single-tab
-  page gets no heading at all. **Phase 20 has to split a page back apart on
-  those headings**, and that is the known soft spot in the round trip: a page
-  whose writing legitimately opens with an `##` is ambiguous. The likely answer
-  is recording tab names in front matter so the split is read, not guessed.
+  page gets no heading at all. **The tab names go into the front matter too**
+  (`tabs:`, Phase 20), so the importer reads the split rather than guessing it
+  from the headings — a page whose writing legitimately opens with an `##`
+  would otherwise be ambiguous. Both sides of that rule live in § Markdown
+  import.
 
 - **Never print a `property`, `tags` or `alias` block.** They are views of
   values the front matter already carries, and writing both makes the file
@@ -1894,6 +1895,70 @@ is `##` in one export and `####` in another.
   `exports-a-markdown-vault.e2e.ts` gets past the folder picker and checks the
   files that actually landed. Nothing test-only is added to the app for it — so
   don't conclude the next export format's last step is untestable.
+
+## Markdown import
+
+**The export's map, read backwards — never a second map.** `markdown-parse.ts`
+is the inverse of `markdown-page.ts` and `markdown-import.ts` the inverse of
+`markdown-vault.ts`; a change to what one side writes is a change to what the
+other reads, and `markdown-import.test.ts` § "the round trip" is the test that
+says so. Don't fix a round-trip gap on one side only.
+
+- **Tabs are split on `##` only when the front matter says `tabs:`.** The
+  export writes that line on any multi-tab page and nothing on a single-tab
+  page. Without it a body is one tab and every `##` is a heading — a page
+  whose writing opens with an `##` is otherwise indistinguishable from one
+  with tabs, and guessing would shred a hand-written vault into tabs named
+  after its sections. Headings inside a split page are lifted one level to
+  undo the export's shift; a page without `tabs:` is not lifted.
+
+- **`warning` is Secret in both directions and is not counted as a change.**
+  The export chose warning as Obsidian's word for a Secret; counting it on
+  the way back would tell her three callouts changed in a vault this app
+  wrote when nothing did. Only kinds the table doesn't know are counted. If
+  the export's word ever changes, change `CALLOUT_KINDS` in the same commit.
+
+- **The planner is handed a listing and closures, never a path.**
+  `MarkdownImportInput` is paths, note texts and a `readBytes` — a folder on
+  disk, a zip in memory and a single file all produce one (`import-source.ts`),
+  and the plan carries pictures as `ImportAsset.read()` closures for the same
+  reason. That is what makes a zip and a folder the same importer and keeps
+  the disk out of every rule.
+
+- **Asset names are assigned in the plan, before the bytes exist.** Unlike a
+  `.lk`'s pictures, which are fetched and then wired in, a vault's are
+  already files, so the nodes point at `uuid.ext` up front and the store only
+  copies. One source path is one asset however many pages use it — the
+  `assetNames` map in `planMarkdownImport` is the dedupe, and it is
+  insertion-ordered so two imports of one folder plan the same copies.
+
+- **The bytes decide the kind before the name does.** `use-import.ts` sniffs
+  gzip and `PK` first, so `world.lk.zip` opens as a `.lk` and a file whose
+  extension Windows is hiding opens as what it is. A zip with `project.json`
+  at its root is the JSON export and is refused with directions rather than
+  read as an empty vault — reading it would import nothing and say nothing.
+
+- **Universes come back as folders, and order comes back alphabetical.** Both
+  are things the export cannot say — a universe is a folder with no note by
+  Phase 28's decision, and a folder of files carries no order. They are
+  listed in the changelog as facts, not bugs; changing either means changing
+  what the export writes first.
+
+- **The drop lives on the window and only on the start screen.** Inside an
+  open project a dropped picture already means something (the editor, the
+  Assets tab), and an import replaces what is open. `use-import-drop` is
+  enabled by the caller — the start screen while no modal is up, the modal
+  while it waits at its buttons — and never while a plan is being read or
+  written, or a second drop replaces the modal under a half-written project.
+  The path of a dropped thing comes from the shell (`droppedPath` in the host
+  contract, `webUtils.getPathForFile` in the Electron preload); a `File` in
+  the page has no path, and a dropped *folder* has not even bytes.
+
+- **`ImportPlan` lives in `import-plan.ts`, not `lk-import.ts`.** Rule 5 says
+  `lk-import.ts` alone reads `.lk`; a second importer producing the same plan
+  cannot import its type from there without the rule reading as broken. The
+  plan gained `assets` (copied files) beside `pendingImages` (downloads), and
+  the store's `importProject` handles both.
 
 ## LK export
 

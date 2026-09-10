@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-07 — Subpage index and Tag index become databases
+
+### Additions
+
+- **Your Subpage index and Tag index blocks are databases now.** Add Block looks exactly as it did — all four names are still there — but those two can be shown as a table, cards, a board or a list, using the control at the top of the block.
+- **Nothing looks different until you change it.** A block you already have draws as a list, which is what it always was.
+- **You can type into them.** The same cells you can edit in a page-level table are editable inside a block.
+- **Manual links and Backlinks are untouched.** A hand-picked list and "pages that mention this one" aren't sets a database can describe, so they stay exactly as they are.
+- **The block still decides which pages it's about.** The tag picker on a Tag index works as before; the layout is a separate question from which pages.
+
+### Notes
+
+- **A table inside the narrow sidebar is cramped** — three columns in that width means a lot of wrapping and some sideways scrolling. List and Cards suit the sidebar better; a block dragged into the page body has room for a table.
+- **Filtering, sorting, grouping and column-hiding aren't on blocks yet.** Those five menus are still page-only; the layout switcher is what blocks have for now.
+
 ## 2026-09-07 — a database can look further than the page it's on
 
 ### Additions
