@@ -63,6 +63,7 @@ Updating these is part of completing a change, not a follow-up. Show them in the
 - **`docs/shipped.md`** — the log: what each phase and engineering pass did,
   measurements, verification. **Nothing reads this by default**, so write freely —
   but lift anything that still binds up into `handoff.md`, or it's lost.
+- **The tutorials** — `src/constants/tour.ts` and `src/constants/example-world.ts` (Phase 26). **Anything that moves, renames or removes a part of the interface is a change to the tour**: its four steps point at real elements by `data-tour` attribute and then describe them in prose. `scripts/tour-anchors.test.ts` fails when an anchor goes missing or is left behind, so the pointing half is guarded — the *wording* is not, and nothing can guard it, so re-read the step you touched and fix what it now says wrongly. The example world is the other half and the rule there is the opposite: it must never name a part of the interface at all (enforced in `services/example-world.test.ts`), so a change to the app is only ever a change to the tour, and a change to templates or property fields is only ever a change to the world.
 - **`docs/lk-format.md`** — update whenever import/export mapping changes. This is what future-us reads when LK ships a new schema version.
 
 ## Commands

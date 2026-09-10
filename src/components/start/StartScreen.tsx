@@ -402,6 +402,7 @@ export function StartScreen() {
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => setIsImportOpen(true)}
         onOpenExample={() => void actions.openExampleWorld()}
+        onSettingsClose={() => void refreshWorlds()}
         onOpenReleases={setOpenReleaseVersion}
         projectsDir={newProjectsDir}
         onOpenProjectsFolder={() => void actions.openProjectsFolder()}

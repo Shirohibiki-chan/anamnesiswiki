@@ -43,6 +43,16 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     blurb: "Small bits of CSS that sit on top of whichever theme is on, each switched on and off by itself.",
   },
   {
+    // First of the app group, because it is the only section here that teaches
+    // rather than configures — somebody hunting for "how does this work" reads
+    // down from the top and stops at the first thing that sounds like an
+    // answer.
+    id: "getting-started",
+    group: "app",
+    label: "Getting started",
+    blurb: "The tour of the app, and the example world — both of them offer themselves once, and this is the way back.",
+  },
+  {
     id: "sidebar",
     group: "app",
     label: "Sidebar",
@@ -122,6 +132,27 @@ export const DECLARED_SETTINGS: readonly {
   hint: string;
   keywords: string[];
 }[] = [
+  {
+    id: "take-the-tour",
+    tabId: "getting-started",
+    label: "Take the tour again",
+    hint: "the four steps shown the first time a world was open — the rail, the tree, the page, the panel on the right",
+    keywords: ["tutorial", "tour", "onboarding", "walkthrough", "help", "guide", "how do i", "getting started", "again"],
+  },
+  {
+    id: "example-world",
+    tabId: "getting-started",
+    label: "The example world",
+    hint: "Saltmere, the little world that comes with Anamnesis — make another copy to look around",
+    // **The wording here is load-bearing and was cut back twice.** An earlier
+    // hint ("the small world already written… make a fresh copy of it") and the
+    // keywords "sample" and "starter" each fuzzy-matched an unrelated question
+    // — "where are my files saved" — and dragged this row into its results.
+    // That is the stray match `settings-search.test.ts` guards against, and it
+    // is why a keyword list is not free: every word here is another chance to
+    // turn up somewhere it is no use.
+    keywords: ["example", "demo", "saltmere", "tutorial world", "test world"],
+  },
   {
     id: "formatting-bar",
     tabId: "writing",

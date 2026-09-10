@@ -3393,3 +3393,42 @@ ol.release-notes-list {
   display: flex;
   gap: 0.5rem;
 }
+
+/* Getting started (Phase 26, step 3)
+   ---------------------------------
+   Two doors back to the two things that only offer themselves once. Plain
+   stacked sections; nothing here is a control that needs a row of its own. */
+.getting-started {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.getting-started-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.getting-started-label {
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--color-text-primary);
+}
+
+.getting-started-note {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.getting-started-done {
+  color: var(--color-accent-light);
+}
+
+.getting-started-failed {
+  color: var(--color-destructive);
+}

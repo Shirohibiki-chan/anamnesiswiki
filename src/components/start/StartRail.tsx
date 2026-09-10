@@ -68,6 +68,8 @@ type StartRailProps = {
   /** Null until read off disk at startup — see StartScreen. */
   projectsDir: string | null;
   onOpenProjectsFolder: () => void;
+  /** The library, told to look again — settings can make a project. */
+  onSettingsClose: () => void;
 };
 
 export function StartRail({
@@ -83,6 +85,7 @@ export function StartRail({
   onOpenReleases,
   projectsDir,
   onOpenProjectsFolder,
+  onSettingsClose,
 }: StartRailProps) {
   return (
     <aside className="start-rail">
@@ -174,7 +177,7 @@ export function StartRail({
             </span>
           </button>
         )}
-        <SettingsButton />
+        <SettingsButton onClose={onSettingsClose} />
       </div>
     </aside>
   );

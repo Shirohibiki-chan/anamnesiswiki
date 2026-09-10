@@ -4,7 +4,7 @@
 // DOM; `tour-service.ts` owns where things go, because that is the part worth
 // testing without one.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TOUR_STEPS, type TourStep } from "../constants/tour";
+import { TOUR_START_DELAY_MS, TOUR_STEPS, type TourStep } from "../constants/tour";
 import { getTourSeen } from "../services/app-settings-service";
 import { availableSteps, dimPanels, highlightRect, placeCard, type Rect, type Size } from "../services/tour-service";
 import { useTourStore } from "../state/tour-store";
@@ -21,6 +21,32 @@ function rectOf(element: HTMLElement): Rect {
 
 function viewportSize(): Size {
   return { width: window.innerWidth, height: window.innerHeight };
+}
+
+/**
+ * Which steps have something to point at right now.
+ *
+ * Asked at the moment the tour starts rather than held anywhere: a panel that
+ * is closed has no anchor, and "how many steps is this tour" is a question
+ * about the window as it currently stands.
+ */
+function stepsOnScreen(): number {
+  const present = new Set(TOUR_STEPS.filter((step) => anchorElement(step.anchor)).map((step) => step.anchor));
+  return availableSteps(TOUR_STEPS, present).length;
+}
+
+/**
+ * Starting the tour on purpose — the door back to it (Phase 26, step 3).
+ *
+ * Delayed by a beat because every caller so far is a button inside something
+ * that is closing: the tour measures the window, and a settings dialog still
+ * on screen is a window with a dialog over the thing being pointed at.
+ */
+export function useStartTour(): () => void {
+  const start = useTourStore((state) => state.start);
+  return useCallback(() => {
+    window.setTimeout(() => start(stepsOnScreen()), TOUR_START_DELAY_MS);
+  }, [start]);
 }
 
 /**
@@ -47,10 +73,7 @@ export function useTourOnFirstRun(): void {
     let timer: number | undefined;
     void getTourSeen().then((seen) => {
       if (cancelled || seen) return;
-      timer = window.setTimeout(() => {
-        const present = new Set(TOUR_STEPS.filter((step) => anchorElement(step.anchor)).map((step) => step.anchor));
-        start(availableSteps(TOUR_STEPS, present).length);
-      }, 400);
+      timer = window.setTimeout(() => start(stepsOnScreen()), TOUR_START_DELAY_MS);
     });
 
     return () => {

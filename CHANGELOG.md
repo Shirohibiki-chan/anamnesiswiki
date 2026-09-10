@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-09 — a way back to the tour and the example world
+
+### Additions
+
+- **Settings has a Getting started section.** It holds the two things that only ever turn up once: the tour, and the example world. Both are searchable from the settings search box.
+- **Take the tour again.** The same four steps, whenever you want them. It needs a world open, since every step points at part of one — from the start screen it says so rather than doing nothing.
+- **Make a fresh copy of the example world.** A new one every time, so a Saltmere you have written all over is never replaced. It tells you which copy it just made.
+
+### Notes
+
+- **This finishes Phase 26.** The example world shows what a world is made of, the tour shows where things are, and this is the way back to either. What it deliberately does not do is wait for you to do something — no step says "now try making a page".
+- **Internal: there is now a test that fails when the app moves out from under the tour.** The tour points at four parts of the window, and if one of them is renamed or removed the test says so by name. It cannot check whether the words are still *true*, so there is a note about that where the rules for this project are kept.
+
 ## 2026-09-09 — the example world is simply there
 
 ### Changes
@@ -272,11 +285,3 @@
 - **What was doing it:** a rule that repaints every border inside the editor to your border grey, which started reaching the callouts when the page's blocks moved inside the editor. Their own edge lost that argument silently from that day.
 - **The edge is a lighter version of the colour rather than the colour itself.** Sitting against a fill mixed from the same colour, the plain one reads as the side of the box instead of as a colour — and the dark end of the palette, the navies and wines and pines, disappeared into it completely. On the light theme it goes darker instead, which is the same fix pointing the other way.
 - **The button that adds an icon is a full-sized target** now, the same as everything else you can click.
-
-## 2026-09-06 — putting a callout's icon back
-
-### Fixes
-
-- **Taking a callout's icon off is no longer a one-way door.** When a callout has no icon, an **Add an icon** button appears in its top corner next to the colour dot — the place you already look to change a callout.
-- **It was technically possible before and that is not a defence.** The way back was an invisible 15-pixel square in the corner of the box that only showed itself while your pointer was over it. If you didn't know it was there, taking the icon off looked permanent.
-- **The ghost square is gone entirely.** A callout with no icon now has nothing invisible in it at all.

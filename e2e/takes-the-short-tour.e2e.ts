@@ -13,7 +13,7 @@
 // the window would swallow their first click. This one asks for it.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { waitForWorld } from "./harness/screen";
+import { openSettings, openSettingsSection, waitForWorld } from "./harness/screen";
 
 const CARD = ".tour-card";
 const RING = ".tour-ring";
@@ -123,5 +123,47 @@ describe("somebody who has used the app before", () => {
   it("is never shown the tour", async () => {
     await app.window.waitForTimeout(2000);
     expect(await app.window.locator(CARD).count()).toBe(0);
+  });
+});
+
+describe("the door back to it", () => {
+  let app: RunningApp;
+
+  beforeAll(async () => {
+    // Somebody who has already had the tour and wants it again, which is every
+    // person this door exists for.
+    app = await launchApp();
+    await waitForWorld(app.window);
+  }, 90_000);
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it("takes the tour again from Settings", async () => {
+    await openSettings(app.window);
+    await openSettingsSection(app.window, "Getting started");
+    await app.window.getByRole("button", { name: "Take the tour again" }).click();
+
+    // The dialog has to be gone before the tour draws, or the first thing it
+    // points at is behind the window that started it.
+    await app.window.getByRole("dialog").waitFor({ state: "detached", timeout: 10_000 });
+    await app.window.locator(CARD).waitFor({ state: "visible", timeout: 20_000 });
+    expect(await app.window.locator(CARD).innerText()).toContain("1 of 4");
+
+    await app.window.keyboard.press("Escape");
+    await app.window.locator(CARD).waitFor({ state: "detached", timeout: 10_000 });
+  });
+
+  it("makes a fresh copy of the example world, and says which one", async () => {
+    await openSettings(app.window);
+    await openSettingsSection(app.window, "Getting started");
+    await app.window.getByRole("button", { name: "Make a fresh copy" }).click();
+    const said = app.window.locator(".getting-started-done");
+    await said.waitFor({ state: "visible", timeout: 30_000 });
+    expect(await said.innerText()).toContain("Saltmere Example");
+    // Named rather than a bare "done": a second copy is numbered, and which one
+    // was just made is the only thing somebody needs to know afterwards.
+    expect(await said.innerText()).toContain("is in your projects list");
   });
 });
