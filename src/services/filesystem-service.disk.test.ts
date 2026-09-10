@@ -91,6 +91,13 @@ const fsMock = vi.hoisted(() => {
     // A copy of a file that is not there fails, the way the real one does —
     // which is the whole point of `writeFileTree` reporting rather than
     // throwing when a picture has gone missing.
+    // Phase 28's archive lists sizes before it reads anything, so the fake
+    // disk has to know how big its files are.
+    stat: vi.fn(async (path: string) => {
+      if (files.has(path)) return { size: files.get(path)!.length, mtime: null, isFile: true, isDirectory: false };
+      if (dirs.has(path)) return { size: 0, mtime: null, isFile: false, isDirectory: true };
+      throw new Error(`no such path: ${path}`);
+    }),
     copyFile: vi.fn(async (from: string, to: string) => {
       if (!files.has(from)) throw new Error(`no such file: ${from}`);
       files.set(to, files.get(from)!);
@@ -103,6 +110,7 @@ vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 import {
   addNodes,
   deleteNode,
+  listFolderContents,
   writeFileTree,
   forgetSnapshotTimes,
   listSnapshots,
@@ -508,5 +516,48 @@ describe("writeFileTree", () => {
   it("makes a parent folder the plan never listed", async () => {
     const result = await writeFileTree("/root", "V", { folders: [], files: [{ path: "Deep/Down/Here.md", text: "hi" }], copies: [] });
     expect(disk.files.get(`${result.path}/Deep/Down/Here.md`)).toBe("hi");
+  });
+});
+
+describe("listFolderContents", () => {
+  beforeEach(() => {
+    disk.dirs.add("/root/Canon");
+    disk.dirs.add("/root/.history");
+    disk.files.set("/root/project.json", "{}");
+    disk.files.set("/root/Canon/Kaine.json", "kaine");
+    disk.files.set("/root/.history/old.json", "older");
+  });
+
+  it("finds every file however deep, with its size, by a path relative to the root", async () => {
+    const found = await listFolderContents("/root", () => false);
+    expect(found).toEqual([
+      { path: ".history/old.json", size: 5 },
+      { path: "Canon/Kaine.json", size: 5 },
+      { path: "project.json", size: 2 },
+    ]);
+  });
+
+  // A zip whose entries shuffle between runs cannot be diffed against the last
+  // one, so the order has to be the same every time.
+  it("comes back sorted, so two archives of an untouched world match", async () => {
+    const once = (await listFolderContents("/root", () => false)).map((entry) => entry.path);
+    expect((await listFolderContents("/root", () => false)).map((entry) => entry.path)).toEqual(once);
+  });
+
+  it("does not descend into a folder the caller skipped", async () => {
+    const found = await listFolderContents("/root", (path, isDirectory) => isDirectory && path === ".history");
+    expect(found.map((entry) => entry.path)).toEqual(["Canon/Kaine.json", "project.json"]);
+  });
+
+  it("skips a single file without skipping its neighbours", async () => {
+    const found = await listFolderContents("/root", (path) => path === "project.json");
+    expect(found.map((entry) => entry.path)).toEqual([".history/old.json", "Canon/Kaine.json"]);
+  });
+
+  // An archive missing one unreadable file beats no archive at all.
+  it("leaves out a file it cannot measure rather than failing the listing", async () => {
+    disk.dirs.add("/root/Ghosts");
+    const found = await listFolderContents("/root", () => false);
+    expect(found.map((entry) => entry.path)).toContain("project.json");
   });
 });

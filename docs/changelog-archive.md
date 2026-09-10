@@ -2,6 +2,22 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-07 — cards, a board and a list
+
+### Additions
+
+- **A database can be drawn four ways now**, and switching between them is a menu rather than a conversion — nothing is lost either way round, because all four are the same view drawn differently. The button on the left of the settings bar says which one you're looking at.
+- **Cards.** A picture and a name each, with whichever columns are showing underneath. This is the one a mixed folder reads best in — a Location among the characters looks like a Location rather than a row of blanks.
+- **A board, and you can drag cards between its columns.** Dropping a card somewhere sets the value it's grouped by, exactly as though you'd typed it into the table, and one undo takes it back. Dropping into the *No …* column clears it.
+- **A list.** A name a line with its values trailing after, for when you just want to see what's in the folder.
+- **Turn into ▸** in the right-click menu now offers all four, instead of only Table.
+- **Choosing Board picks a sensible grouping for you** if you haven't set one — a dropdown or a status rather than the template, since a folder of characters grouped by template is a single column.
+
+### Fixes
+
+- **Pictures on cards actually load.** They were showing a broken-image icon.
+- **A long summary no longer makes a card enormous.** It's clipped to a few lines on cards and boards; the card opens the page, so the rest is one click away.
+
 ## 2026-09-07 — typing straight into a table
 
 ### Additions

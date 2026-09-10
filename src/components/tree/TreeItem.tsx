@@ -478,6 +478,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
       {openPopover === "export" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ExportMenu
+            scope="page"
             onSelect={(format) => {
               closePopover();
               requestExport(targetIds(), format);

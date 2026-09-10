@@ -142,6 +142,23 @@ export async function pickSingleMarkdownSavePath(defaultName: string): Promise<s
 }
 
 /**
+ * Where the world's own folder goes as a zip (Phase 28).
+ *
+ * Named for JSON rather than for zip, her call — people arriving from other
+ * tools look for the word JSON, and the extension is the detail. The filter
+ * says both.
+ */
+export async function pickWorldZipSavePath(defaultName: string): Promise<string | null> {
+  return onePicker(() =>
+    chooseSavePath({
+      title: "Export as JSON",
+      defaultPath: `${defaultName}.zip`,
+      filters: [{ name: "JSON, zipped", extensions: ["zip"] }],
+    }),
+  );
+}
+
+/**
  * Where a project template goes when it's exported (Phase 27).
  *
  * The filter is named for what she is making rather than for the extension,

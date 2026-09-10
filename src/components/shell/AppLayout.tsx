@@ -14,6 +14,7 @@ import { useElementSize } from "../../hooks/use-element-size";
 import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
 import { MarkdownExportModal } from "../export/MarkdownExportModal";
+import { WorldZipModal } from "../export/WorldZipModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
 import { useCreatePage } from "../../hooks/use-new-page";
@@ -239,6 +240,8 @@ export function AppLayout() {
         {exportRequest?.format === "lk" && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
         {exportRequest?.format === "markdown" && <MarkdownExportModal rootIds={exportRequest.rootIds} single={false} onClose={closeExport} />}
         {exportRequest?.format === "markdown-single" && <MarkdownExportModal rootIds={exportRequest.rootIds} single onClose={closeExport} />}
+        {/* No rootIds: this one is the project's folder, whole, whatever was right-clicked. */}
+        {exportRequest?.format === "json-zip" && <WorldZipModal onClose={closeExport} />}
         {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
         {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
       </div>

@@ -28,7 +28,7 @@ type PendingConfirm = { message: string; resolve: (ok: boolean) => void };
  * come — a `jsonExportRequest` beside a `markdownExportRequest` beside this
  * would be four booleans that must never disagree.
  */
-export type ExportFormat = "lk" | "markdown" | "markdown-single";
+export type ExportFormat = "lk" | "markdown" | "markdown-single" | "json-zip";
 
 type ExportRequest = { rootIds: string[]; format: ExportFormat };
 

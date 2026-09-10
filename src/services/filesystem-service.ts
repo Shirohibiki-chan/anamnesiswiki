@@ -2277,6 +2277,72 @@ export async function writeTextTo(path: string, text: string): Promise<void> {
   await writeTextFile(path, text);
 }
 
+/** One file inside a project folder, by its path relative to the root. */
+export type FolderEntry = {
+  /** Relative, `/`-separated whatever the platform uses on disk. */
+  path: string;
+  size: number;
+};
+
+/**
+ * Every file under a folder, recursively, with its size (Phase 28's JSON zip).
+ *
+ * **Listed before it is read, in two passes rather than one.** The archive's
+ * preview has to say how big this is going to be before she picks a
+ * destination, and reading fifty megabytes of pictures to label a modal is the
+ * same wrong trade `listAssetImages` avoids. The bytes come later, one file at
+ * a time, through `readFolderFile`.
+ *
+ * `skip` decides what never travels; it is the caller's rule, not this file's
+ * — see `world-archive.ts` for what it excludes and why. A directory that is
+ * skipped is not descended into.
+ *
+ * **A file that cannot be listed is left out rather than throwing.** The same
+ * reasoning as everywhere else here: an archive missing one unreadable file is
+ * better than no archive.
+ */
+export async function listFolderContents(
+  rootPath: string,
+  skip: (relativePath: string, isDirectory: boolean) => boolean,
+): Promise<FolderEntry[]> {
+  const found: FolderEntry[] = [];
+
+  async function walk(relative: string): Promise<void> {
+    const absolute = relative ? joinPath(rootPath, ...relative.split("/")) : rootPath;
+    let entries: DirEntry[];
+    try {
+      entries = await readDir(absolute);
+    } catch {
+      return;
+    }
+
+    // Sorted, so two archives of an untouched world hold their files in the
+    // same order — a zip whose entries shuffle between runs cannot be diffed.
+    for (const entry of [...entries].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+      const childPath = relative ? `${relative}/${entry.name}` : entry.name;
+      if (skip(childPath, Boolean(entry.isDirectory))) continue;
+
+      if (entry.isDirectory) {
+        await walk(childPath);
+        continue;
+      }
+      try {
+        found.push({ path: childPath, size: (await fileInfo(joinPath(rootPath, ...childPath.split("/")))).size ?? 0 });
+      } catch {
+        // Listed but unreadable — left out, as above.
+      }
+    }
+  }
+
+  await walk("");
+  return found;
+}
+
+/** The bytes of one file inside a project folder, by its relative path. */
+export async function readFolderFile(rootPath: string, relativePath: string): Promise<Uint8Array> {
+  return readFile(joinPath(rootPath, ...relativePath.split("/")));
+}
+
 // --- Phase 28: writing a folder of files somewhere outside any project -----
 
 export type FileTree = {
