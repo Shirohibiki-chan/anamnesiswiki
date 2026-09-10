@@ -2,6 +2,15 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — the coloured edge on a callout
+
+### Fixes
+
+- **A callout's left edge takes its colour now**, and it never has. Whatever you set, the stripe down the side stayed the same grey as every other border in the app — Info was meant to be blue, Quote warm stone, Secret violet, and a callout you had coloured yourself was meant to match the colour you picked. None of them ever showed.
+- **What was doing it:** a rule that repaints every border inside the editor to your border grey, which started reaching the callouts when the page's blocks moved inside the editor. Their own edge lost that argument silently from that day.
+- **The edge is a lighter version of the colour rather than the colour itself.** Sitting against a fill mixed from the same colour, the plain one reads as the side of the box instead of as a colour — and the dark end of the palette, the navies and wines and pines, disappeared into it completely. On the light theme it goes darker instead, which is the same fix pointing the other way.
+- **The button that adds an icon is a full-sized target** now, the same as everything else you can click.
+
 ## 2026-09-06 — putting a callout's icon back
 
 ### Fixes

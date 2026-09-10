@@ -1598,6 +1598,42 @@ under `acknowledgedWarnings`.
   why. Matched on the heading text, which is the part that survives their
   releases.
 
+## Exports in general
+
+**`export-walk.ts` is the walk every format shares, and it must never learn a
+format's vocabulary** (Phase 28). It owns four things: collecting a subtree,
+putting the pages in display order with each one's *effective* parent resolved,
+resolving what address a picture can be reached at, and the tally of what could
+not be represented. Everything above that — LK's nodes, markdown's headings,
+the publisher's HTML — stays in the format's own file. The moment a `.lk` or an
+`.md` concept appears in the walker, the next format has to work around it,
+which is the state this was extracted out of.
+
+- **`walkPages` gives a page's *nearest included ancestor*, not `node.parentId`.**
+  Exporting one deep page must not leave a hole where its ancestors were, so a
+  page hangs off its own parent when that parent travelled and off the top when
+  it did not. Every format needs the same answer. `index` follows the same rule
+  — it counts the siblings that travelled, not the siblings that exist.
+
+- **`lk-export.ts` numbers its own `pos` keys rather than using the walk's
+  `index`, and that is deliberate.** LK's format needs exactly one parentless
+  resource, so the home page is promoted out of the sibling list — which means
+  under the synthesised root the siblings are not the ones the walk counted.
+  Handing `index` straight to `positionKey` renumbers every export by one.
+  Nothing breaks (import compares these as plain strings, so only the order
+  matters), but it makes a diff nobody can explain. Don't "simplify" it back.
+
+- **Two functions are called `collectSubtree` and they are not the same one.**
+  `export-walk.ts`'s walks the project's pages from several roots and returns
+  ids; `template-library.ts`'s walks the template library's own nodes from a
+  single root and returns records. They were never one function, and merging
+  them forces a shape on both.
+
+- **Templates can't reach an export walk, and no walker should filter for
+  them.** They live outside `project-store`'s `nodes` precisely so that safety
+  is structural — see §Editor & templates. A filter that looks necessary means
+  something upstream merged the records, and that is the bug to fix.
+
 ## LK export
 
 - **Three separate records answer "where did this picture come from", and they

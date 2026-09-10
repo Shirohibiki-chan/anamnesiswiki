@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-10 — one walk behind every export
+
+### Notes
+
+- **Internal tidy-up, nothing visible in the app.** Exporting to LegendKeeper does exactly what it did before — the file it writes is identical, which was checked by building the same export with the old code and the new one and comparing them line for line.
+- **What moved is underneath it.** The part that walks through your pages working out what goes into an export, in what order, and which pictures can travel, now lives in one place of its own instead of being wound through LegendKeeper's file format.
+- **This is the groundwork for the rest of Phase 28.** The Markdown export, the one-big-file version and the website publisher all have to walk your pages the same way, and they can now share that instead of each writing it again — which is where the same bug would otherwise have been fixed three times.
+
 ## 2026-09-09 — a way back to the tour and the example world
 
 ### Additions
@@ -276,12 +284,3 @@
 - **A page that has writing keeps it.** The table sits between the page's name and its tabs, so the writing underneath is untouched and still there when you scroll past.
 - **Clicking a name opens that page**, and **Add a page** puts a new one straight into the table.
 - **What is not here yet, and is coming:** the values are read-only for now — changing one means opening the page. Choosing which columns show, filtering, sorting and grouping come next, then editing straight in the row, then the card, board and list layouts.
-
-## 2026-09-06 — the coloured edge on a callout
-
-### Fixes
-
-- **A callout's left edge takes its colour now**, and it never has. Whatever you set, the stripe down the side stayed the same grey as every other border in the app — Info was meant to be blue, Quote warm stone, Secret violet, and a callout you had coloured yourself was meant to match the colour you picked. None of them ever showed.
-- **What was doing it:** a rule that repaints every border inside the editor to your border grey, which started reaching the callouts when the page's blocks moved inside the editor. Their own edge lost that argument silently from that day.
-- **The edge is a lighter version of the colour rather than the colour itself.** Sitting against a fill mixed from the same colour, the plain one reads as the side of the box instead of as a colour — and the dark end of the palette, the navies and wines and pines, disappeared into it completely. On the light theme it goes darker instead, which is the same fix pointing the other way.
-- **The button that adds an icon is a full-sized target** now, the same as everything else you can click.

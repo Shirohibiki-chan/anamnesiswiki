@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildExportFile, collectSubtree, packLkBytes, positionKey } from "./lk-export";
+import { buildExportFile, packLkBytes, positionKey } from "./lk-export";
 import { applyBodyImage, buildImportPlan, parseLkBytes } from "./lk-import";
 import { createProject, type Node, type Project } from "../constants/schema";
 
@@ -45,18 +45,6 @@ describe("positionKey", () => {
     const keys = Array.from({ length: 200 }, (_, i) => positionKey(i));
     const sorted = [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     expect(sorted).toEqual(keys);
-  });
-});
-
-describe("collectSubtree", () => {
-  it("takes descendants along, however deep — a .lk export has no subpage option", () => {
-    const nodes = [
-      node({ id: "a", name: "Canon", parentId: null, templateKey: "folder" }),
-      node({ id: "b", name: "Valera", parentId: "a", templateKey: "character" }),
-      node({ id: "c", name: "Her Sword", parentId: "b", templateKey: "item" }),
-      node({ id: "d", name: "Elsewhere", parentId: null, templateKey: "note" }),
-    ];
-    expect([...collectSubtree(["a"], nodes)].sort()).toEqual(["a", "b", "c"]);
   });
 });
 
