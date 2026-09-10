@@ -32,7 +32,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronRight, FilePlus, GripVertical, RotateCcw, X } from "lucide-react";
+import { ChevronRight, FilePlus, FolderOpen, GripVertical, RotateCcw, Share2, X } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { getTemplateIcon } from "../../constants/icons";
 import { PAGE_TEMPLATE_KEYS } from "../../constants/schema";
@@ -40,17 +40,21 @@ import { useCustomTemplateTree, useProjectActions } from "../../hooks/use-projec
 import { useBuiltInTemplateStates, useOpenTemplateId, useTemplateActions } from "../../hooks/use-template-editing";
 import { useCreatePageFromTemplate } from "../../hooks/use-new-page";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { usePageTemplateFile, type PageTemplatePlan } from "../../hooks/use-page-template-file";
 import { useTemplates } from "../../hooks/use-templates";
+import { PageTemplateModal } from "../export/PageTemplateModal";
 import type { NewPageTemplate } from "../../hooks/use-new-page";
 import type { TemplateTreeItem } from "../../services/template-library";
 
 export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void }) {
   const templates = useCustomTemplateTree();
   const { deleteTemplate } = useProjectActions();
+  const { planTemplate, openTemplateFile } = usePageTemplateFile();
+  const [sharing, setSharing] = useState<PageTemplatePlan | null>(null);
   const { openTemplate, openBuiltInTemplate, resetBuiltInTemplate, reorderTemplates } = useTemplateActions();
   const openTemplateId = useOpenTemplateId();
   const builtInStates = useBuiltInTemplateStates();
-  const { confirmDestructive } = useDialogs();
+  const { confirmDestructive, showNotice, pickPageTemplateFile } = useDialogs();
   const { getLabel } = useTemplates();
   const createPageFromTemplate = useCreatePageFromTemplate();
 
@@ -104,6 +108,45 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
   async function handleDelete(templateId: string, name: string) {
     const ok = await confirmDestructive(`Delete the "${name}" template? Pages already made from it aren't affected.`);
     if (ok) deleteTemplate(templateId);
+  }
+
+  // Planned here rather than in the modal so the modal never opens on a
+  // template that turns out to be empty — the plan is what says how many
+  // pages and pictures there are.
+  async function handleShare(templateId: string) {
+    try {
+      const plan = await planTemplate(templateId);
+      if (plan) setSharing(plan);
+      else showNotice("That template has nothing in it to save.");
+    } catch (e) {
+      showNotice(e instanceof Error ? e.message : "Couldn't read that template.");
+    }
+  }
+
+  // The other direction. No preview before it lands: it adds a template
+  // rather than changing anything she has, undo covers it, and a modal
+  // describing a skeleton somebody sent her would say less than the row that
+  // appears.
+  async function handleOpenFile() {
+    let path: string | null;
+    try {
+      path = await pickPageTemplateFile();
+    } catch (e) {
+      showNotice(e instanceof Error ? e.message : "Couldn't open the file picker.");
+      return;
+    }
+    if (!path) return;
+
+    try {
+      const summary = await openTemplateFile(path);
+      showNotice(
+        summary.pictures > 0
+          ? `"${summary.name}" is in your templates — ${summary.pages} page${summary.pages === 1 ? "" : "s"} and ${summary.pictures} picture${summary.pictures === 1 ? "" : "s"}.`
+          : `"${summary.name}" is in your templates — ${summary.pages} page${summary.pages === 1 ? "" : "s"}.`,
+      );
+    } catch (e) {
+      showNotice(e instanceof Error ? e.message : "That file couldn't be opened as a template.");
+    }
   }
 
   // Asked for the same reason deleting one is: it throws away writing, and
@@ -162,6 +205,7 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
                   expanded={expanded}
                   onToggle={toggle}
                   onDelete={handleDelete}
+                  onShare={handleShare}
                   onOpen={openTemplate}
                   openTemplateId={openTemplateId}
                   getLabel={getLabel}
@@ -175,6 +219,15 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
           </SortableContext>
         </DndContext>
       )}
+
+      {/* Always here, in the same place, empty list or not: a control that
+          appears somewhere different depending on what she has is the thing
+          that reads as the app moving under her. */}
+      <button type="button" className="tree-templates-open-file" onClick={() => void handleOpenFile()}>
+        <FolderOpen size={13} /> Open a template file
+      </button>
+
+      {sharing && <PageTemplateModal plan={sharing} onClose={() => setSharing(null)} />}
     </div>
   );
 }
@@ -252,6 +305,7 @@ type RowProps = {
   expanded: Set<string>;
   onToggle: (id: string) => void;
   onDelete: (id: string, name: string) => void;
+  onShare: (id: string) => void;
   onOpen: (id: string) => void;
   openTemplateId: string | null;
   getLabel: (key: string) => string;
@@ -305,7 +359,7 @@ function SortableTemplateRow(props: RowProps) {
  * sub-page on its own would leave the template describing a shape it no longer
  * has, so only a whole template can go.
  */
-function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTemplateId, getLabel, onCreate, canReorder, drag }: RowProps) {
+function TemplateRow({ item, depth, expanded, onToggle, onDelete, onShare, onOpen, openTemplateId, getLabel, onCreate, canReorder, drag }: RowProps) {
   const { node, children } = item;
   const Icon = getTemplateIcon(node.templateKey);
   const isExpanded = expanded.has(node.id);
@@ -364,6 +418,21 @@ function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTe
           </span>
         )}
 
+        {/* Roots only, the same rule Delete follows and for the same reason:
+            a sub-page on its own is not the shape the template describes, so
+            sending one would be sending something that is not a template. */}
+        {depth === 0 && (
+          <button
+            type="button"
+            className="tree-templates-share"
+            title={`Save "${node.name}" as a file to send somebody`}
+            aria-label={`Save "${node.name}" as a file to send somebody`}
+            onClick={() => onShare(node.id)}
+          >
+            <Share2 size={13} />
+          </button>
+        )}
+
         {depth === 0 && (
           <button
             type="button"
@@ -387,6 +456,7 @@ function TemplateRow({ item, depth, expanded, onToggle, onDelete, onOpen, openTe
               expanded={expanded}
               onToggle={onToggle}
               onDelete={onDelete}
+              onShare={onShare}
               onOpen={onOpen}
               openTemplateId={openTemplateId}
               getLabel={getLabel}

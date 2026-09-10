@@ -1242,7 +1242,32 @@ button.tree-path-crumb:hover {
 /* `display: none`, never `opacity: 0` — see the long note on the tree row's
    hover controls above. An invisible button still takes its width, and this
    panel is as narrow as that one. */
-.tree-templates-delete {
+/* The way in for a template somebody sent her (Phase 28). A row of its own
+   under both sections rather than an icon on a heading: it is an errand, not
+   a property of either list, and it has to sit in the same place whether or
+   not she has templates of her own yet. */
+.tree-templates-open-file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: calc(100% - var(--space-md) * 2);
+  margin: var(--space-md) var(--space-md) var(--space-lg);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.tree-templates-open-file:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+.tree-templates-delete,
+.tree-templates-share {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
@@ -1257,12 +1282,15 @@ button.tree-path-crumb:hover {
 }
 
 .tree-templates-row:hover .tree-templates-delete,
-.tree-templates-row:focus-within .tree-templates-delete {
+.tree-templates-row:hover .tree-templates-share,
+.tree-templates-row:focus-within .tree-templates-delete,
+.tree-templates-row:focus-within .tree-templates-share {
   display: flex;
 }
 
 /* Sits inside a row that's already hovered, so it takes the bigger step. */
-.tree-templates-delete:hover {
+.tree-templates-delete:hover,
+.tree-templates-share:hover {
   background: var(--color-hover-strong);
   color: var(--color-destructive);
 }
