@@ -1,0 +1,251 @@
+/* Printing a page (Phase 28).
+ *
+ * **A stylesheet, not a feature.** Ctrl+P already opens the system print
+ * dialog and Windows already offers Print to PDF — verified 2026-08-14. What
+ * was wrong was *what* it printed: the whole interface went onto the paper,
+ * rail and tree and side panel included, and only the part of the writing that
+ * happened to be on screen. So this is the closest thing to a PDF export the
+ * app gets for free, and it costs one file.
+ *
+ * Three jobs, in the order they matter:
+ *
+ *   1. **Undo the app's own scroll cage.** `html, body, #root` are
+ *      `height: 100%; overflow: hidden` so the panels scroll rather than the
+ *      window, and `.app-layout-page` is the real scroller. Left alone, a
+ *      twelve-page character prints as one sheet with the rest cut off — the
+ *      single most important thing here, and the least obvious.
+ *   2. **Take the interface off the paper**, leaving the title and the
+ *      writing. Named elements rather than a `visibility: hidden` sweep: the
+ *      sweep leaves the hidden things holding their space, so the writing
+ *      starts a third of the way down the sheet.
+ *   3. **Print in ink somebody would want to use.** Every shipped theme but
+ *      one is dark, and a dark theme on paper is a solid black rectangle.
+ *
+ * **The palette is Daylight's**, the light theme, rather than a set invented
+ * here — its contrast was measured against white when it was built, and a
+ * second light palette nobody checks is a second thing to get wrong. Only the
+ * ground changes: pure white, because paper is already white and `#fafaf9`
+ * is ink spent to look like nothing.
+ */
+
+@media print {
+  /* Doubled `:root` to out-specify `[data-theme="…"]`, which is where every
+     theme sets these — including a theme she has imported, which this file
+     cannot be ordered after. */
+  :root:root {
+    --color-bg: #ffffff;
+    --color-panel: #ffffff;
+    --color-panel-alt: #ffffff;
+    --color-panel-edge: #ffffff;
+
+    --color-border-strong: #b8b8b3;
+    --color-border: #d6d6d1;
+    --color-border-subtle: #e6e6e1;
+
+    --color-text-primary: #16161a;
+    --color-text-secondary: #3f3f46;
+    --color-text-muted: #4c4c54;
+    --color-text-placeholder: #6f6f75;
+
+    --color-accent-light: #0f766e;
+    --color-accent-dark: #115e59;
+    --color-accent-faint: rgba(15, 118, 110, 0.1);
+    --color-accent-faint-border: rgba(15, 118, 110, 0.3);
+
+    --color-callout-info: #2563eb;
+    --color-callout-info-bg: rgba(37, 99, 235, 0.06);
+    --color-callout-info-text: #1e3a8a;
+
+    --color-callout-quote: #8a7f6b;
+    --color-callout-quote-bg: rgba(138, 127, 107, 0.1);
+    --color-callout-quote-text: #45403a;
+
+    --color-callout-secret: #7c3aed;
+    --color-callout-secret-bg: rgba(124, 58, 237, 0.06);
+    --color-callout-secret-text: #4c1d95;
+
+    --color-destructive: #dc2626;
+
+    /* Every theme's optional background wash. On screen they are the theme;
+       on paper they are a full-bleed tint on every sheet. */
+    --gradient-bg: none;
+    --gradient-page: none;
+    --gradient-props: none;
+    --gradient-sidebar: none;
+  }
+
+  /* Nothing paints its own ground. Callout fills and the like still do — they
+     are the writing — but panels and columns must not. */
+  html,
+  body,
+  #root,
+  .app-frame,
+  .app-layout,
+  .app-layout-center,
+  .app-layout-page,
+  .page-view-shell,
+  .page-view {
+    background: #ffffff !important;
+  }
+
+  /* ---- 1. Out of the cage ------------------------------------------------
+     Everything from the window down to the writing has to stop being a fixed
+     box with its own scrollbar, or the printer gets one screenful. */
+  html,
+  body,
+  #root,
+  .app-frame,
+  .app-layout,
+  .app-layout-center,
+  .app-layout-page,
+  .page-view-shell,
+  .page-view,
+  .editor-shell {
+    /* Block rather than flex all the way down, and not only to undo the
+       stretching. Flex containers are where print layout goes wrong across a
+       page break, and WebKitGTK is the engine most likely to get it wrong —
+       there is a real Linux user, so the safe box model is the one to use. */
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* The grid still holds three columns even with two of them hidden, and the
+     centre would keep its share of the width. */
+  .app-layout {
+    grid-template-columns: none !important;
+  }
+
+  /* ---- 2. The interface off the paper ------------------------------------
+     Named rather than swept: `visibility: hidden` leaves each of these
+     holding its space, and the writing would start a third of the way down. */
+  .title-bar,
+  .left-rail,
+  .app-layout-tree,
+  .app-layout-properties,
+  .resize-handle,
+  .page-controls,
+  .page-tabs,
+  .page-title-breadcrumb,
+  .page-banner-empty,
+  .load-warning,
+  .save-warning,
+  .recovery-notice,
+  .tour,
+  .ui-backdrop,
+  .tree-context-menu,
+  /* Buttons that live inside the writing rather than around it, and so
+     survived the sweep above: the graph button beside the page's name, and
+     the colour dot on a callout. Both were still on the paper the first time
+     this was looked at. */
+  .page-title-graph-button,
+  .editor-callout-color,
+  /* The editor's own furniture: the drag handle and + that follow the cursor,
+     the slash menu, the formatting bar, the link editor. None of it is hers. */
+  .bn-side-menu,
+  .bn-drag-preview,
+  .bn-formatting-toolbar,
+  .bn-link-toolbar,
+  .bn-suggestion-menu,
+  #bn-suggestion-menu,
+  .bn-add-file-button,
+  .bn-resize-handle,
+  .bn-toggle-add-block-button,
+  .bn-trailing-block {
+    display: none !important;
+  }
+
+  /* A placeholder is an instruction to somebody typing. On paper it is a
+     sentence she did not write, sitting in her chapter. */
+  [data-placeholder]::before,
+  .bn-inline-content[data-placeholder]::after {
+    content: none !important;
+  }
+
+  /* ---- 3. The sheet ------------------------------------------------------ */
+  @page {
+    /* Wider at the top and bottom than the sides: the reading column is
+       already narrow, and paper wants the breathing room vertically. */
+    margin: 18mm 16mm;
+  }
+
+  /* The reading column is capped for a screen. On paper the margin above is
+     the margin, and a second one inside it wastes half the sheet. */
+  .page-view {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* The banner is a full-bleed decoration for a screen; the page's title is
+     the furniture on paper. Kept when it is a real picture — it is hers, and
+     somebody printing a place might want it — but never the empty "add one"
+     row, which is a button.
+     `print-color-adjust` because browsers drop background images by default,
+     and a banner is a background image. */
+  .page-banner {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Callout fills and property chips are colour that carries meaning rather
+     than decoration — a Secret that prints as a plain paragraph has lost the
+     one thing it was saying. */
+  .callout,
+  .bn-block-content[data-content-type^="callout"],
+  blockquote {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* ---- 4. Where the paper is allowed to break --------------------------- */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    /* A heading alone at the foot of a sheet is the classic bad break.
+       The `page-break-*` pair alongside is the deprecated spelling, kept
+       because WebKitGTK is the oldest of the three engines this ships to and
+       there is a real Linux user — see `docs/handoff.md`. A browser that
+       understands both takes the modern one. */
+    break-after: avoid-page;
+    page-break-after: avoid;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  img,
+  pre,
+  table,
+  blockquote,
+  .callout,
+  .block-meter,
+  .infobox {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* A picture scaled for a wide screen runs off the side of a sheet. */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Nothing is being clicked, so the underline is what says "this was a
+     link" — colour alone does not survive a black-and-white printer. */
+  a {
+    text-decoration: underline;
+  }
+}
