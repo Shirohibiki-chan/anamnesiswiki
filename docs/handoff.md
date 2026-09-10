@@ -1696,6 +1696,44 @@ plain renderer instead is a choice against the one program this is for.
   and the outline read inside out. That was found by opening a real exported
   file, not by a test — the test came after.
 
+### JSON — the world's folder, zipped
+
+**The only export that reads the disk rather than the store**, and that is the
+whole of its claim: what it hands over is the files exactly as they are,
+including a page the app could not parse and anything she put in the folder
+herself. `listFolderContents` in `filesystem-service.ts` walks it,
+`world-archive.ts` decides what travels and builds the zip.
+
+- **Two passes, list then read.** The preview has to say how big this is
+  before she picks a destination, and reading fifty megabytes of pictures to
+  label a modal is the trade `listAssetImages` already refuses. The bytes come
+  one file at a time at write time.
+
+- **The exclusion list is two entries and each had to earn itself.** The open
+  marker is a fact about *this moment* — carried into an archive it makes a
+  fresh copy look locked by somebody else — and a parked move is half of an
+  interrupted rename the loader repairs by itself. **History is deliberately
+  not excluded**: it is the biggest thing in a mature folder and the obvious
+  thing to drop, but it is hers, and near-identical JSON compresses to almost
+  nothing. Adding a third exclusion needs the same argument.
+
+- **The listing is sorted**, so two archives of an untouched world hold their
+  files in the same order. A zip whose entries shuffle between runs cannot be
+  diffed against the last one.
+
+- **Everything goes under one folder named for the project.** Unzipping
+  otherwise empties ninety files into whatever folder the person was in.
+
+- **It is offered on the project menu only** — `ExportMenu.tsx` takes a
+  `scope`, and this format is `projectOnly`. There is no folder for a single
+  character, so offering it on a row would offer something that cannot mean
+  what it says. A future format that is whole-world only goes in the same way.
+
+- **`fflate`, MIT, async `zip` not `zipSync`.** The webview's own
+  `CompressionStream` does one stream and cannot make an archive, which is why
+  a dependency was needed at all; `zipSync` would freeze the window for the
+  duration on a world with a picture folder.
+
 ### Print
 
 **`src/print.css` is the whole of it** — one `@media print` block, imported

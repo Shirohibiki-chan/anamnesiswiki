@@ -81,7 +81,7 @@ export function ProjectHeader() {
       <UniverseSwitcher />
       {anchorRect && showingExports && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
-          <ExportMenu onSelect={handleExportProject} onBack={() => setShowingExports(false)} />
+          <ExportMenu scope="project" onSelect={handleExportProject} onBack={() => setShowingExports(false)} />
         </TreePopover>
       )}
       {anchorRect && !showingExports && (

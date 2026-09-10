@@ -10,12 +10,21 @@
 // Deliberately shaped like `SortMenu` and `MoveMenu`: the same panel, the same
 // back row, swapped into the same popover. A third way of drawing a submenu
 // would be the thing that made the menus feel inconsistent.
-import { ArrowLeft, FileText, Files, Upload } from "lucide-react";
+import { ArrowLeft, FileArchive, FileText, Files, Upload } from "lucide-react";
 import type { ExportFormat } from "../../state/dialog-store";
 
 type ExportMenuProps = {
   onSelect: (format: ExportFormat) => void;
   onBack: () => void;
+  /**
+   * Which menu this is in.
+   *
+   * **Not every format makes sense for one page.** The JSON zip is the
+   * project's own folder — there is no such thing as a folder for a single
+   * character — so offering it on a row would be offering something that
+   * cannot mean what it says. The other three take whatever they are given.
+   */
+  scope: "project" | "page";
 };
 
 /**
@@ -24,19 +33,22 @@ type ExportMenuProps = {
  * Kept as data rather than three hand-written buttons because two more
  * formats are coming and a list is where they should be added.
  */
-const FORMATS: { format: ExportFormat; label: string; Icon: typeof Upload }[] = [
+const FORMATS: { format: ExportFormat; label: string; Icon: typeof Upload; projectOnly?: true }[] = [
   { format: "lk", label: "To LegendKeeper", Icon: Upload },
   { format: "markdown", label: "As Markdown", Icon: Files },
   { format: "markdown-single", label: "As one Markdown file", Icon: FileText },
+  // Labelled JSON rather than Zip, her call: people arriving from other tools
+  // look for the word, and the extension is the detail.
+  { format: "json-zip", label: "As JSON (.zip)", Icon: FileArchive, projectOnly: true },
 ];
 
-export function ExportMenu({ onSelect, onBack }: ExportMenuProps) {
+export function ExportMenu({ onSelect, onBack, scope }: ExportMenuProps) {
   return (
     <div className="tree-context-menu">
       <button type="button" className="tree-context-menu-back" onClick={onBack}>
         <ArrowLeft size={13} /> Export
       </button>
-      {FORMATS.map(({ format, label, Icon }) => (
+      {FORMATS.filter((entry) => scope === "project" || !entry.projectOnly).map(({ format, label, Icon }) => (
         <button key={format} type="button" onClick={() => onSelect(format)}>
           <Icon size={13} /> {label}
         </button>

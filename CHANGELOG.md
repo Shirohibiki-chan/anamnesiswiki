@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-10 — Export as JSON
+
+### Additions
+
+- **Export as JSON (.zip)**, on the project's Export menu. Your writing is already JSON files on disk, so this zips up the folder exactly as it sits rather than converting anything — unzip it anywhere and you have a working world back.
+- **It tells you what's in there first**: how many files, how big before squashing, and how much of that is the earlier versions of your pages.
+- **Earlier versions come along.** They're the biggest thing in a project folder and the obvious thing to leave out, but they're yours, and because each one is nearly identical to the last they squash down to a fraction of their size.
+- **Everything sits inside one folder in the zip**, named after your project, so unzipping doesn't scatter ninety files into whatever folder you were in.
+
+### Notes
+
+- **Two things deliberately don't travel**: the marker saying the world is open right now, which would make a fresh copy look locked by somebody else, and the half-finished rename left behind by an interrupted move, which the app repairs by itself anyway.
+- **It's on the project menu only.** There's no such thing as a folder for a single character, so it isn't offered on a page.
+- **Internal: the first dependency this app has taken on in a while** — a small MIT-licensed zip library. The compression the app already had can only do one stream at a time and can't make an archive.
+
 ## 2026-09-10 — a page you can actually print
 
 ### Fixes
@@ -266,19 +281,3 @@
 ### Notes
 
 - **Asking for "this universe" from a page that isn't in one says so** rather than showing an empty table.
-
-## 2026-09-07 — cards, a board and a list
-
-### Additions
-
-- **A database can be drawn four ways now**, and switching between them is a menu rather than a conversion — nothing is lost either way round, because all four are the same view drawn differently. The button on the left of the settings bar says which one you're looking at.
-- **Cards.** A picture and a name each, with whichever columns are showing underneath. This is the one a mixed folder reads best in — a Location among the characters looks like a Location rather than a row of blanks.
-- **A board, and you can drag cards between its columns.** Dropping a card somewhere sets the value it's grouped by, exactly as though you'd typed it into the table, and one undo takes it back. Dropping into the *No …* column clears it.
-- **A list.** A name a line with its values trailing after, for when you just want to see what's in the folder.
-- **Turn into ▸** in the right-click menu now offers all four, instead of only Table.
-- **Choosing Board picks a sensible grouping for you** if you haven't set one — a dropdown or a status rather than the template, since a folder of characters grouped by template is a single column.
-
-### Fixes
-
-- **Pictures on cards actually load.** They were showing a broken-image icon.
-- **A long summary no longer makes a card enormous.** It's clipped to a few lines on cards and boards; the card opens the page, so the rest is one click away.
