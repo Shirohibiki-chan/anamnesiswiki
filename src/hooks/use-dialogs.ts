@@ -1,7 +1,7 @@
 // The only import path components have into dialog-service.ts and
 // dialog-store.ts. See CLAUDE.md's layer order — components never import
 // services or stores directly.
-import { pickFolder, pickImportFile, pickLkSavePath } from "../services/dialog-service";
+import { fileManagerName, pickFolder, pickImportFile, pickLkSavePath, showFolder } from "../services/dialog-service";
 import { useDialogStore } from "../state/dialog-store";
 
 export function useDialogs() {
@@ -57,6 +57,10 @@ export function useDialogs() {
     pickFolder,
     pickImportFile,
     pickLkSavePath,
+    // For a result that names somewhere on disk — a button beats a path in a
+    // tooltip that has to be typed correctly.
+    showFolder,
+    fileManagerName,
     confirmDestructive: requestConfirm,
     pendingConfirm,
     resolveConfirm,

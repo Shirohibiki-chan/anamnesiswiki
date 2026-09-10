@@ -528,7 +528,8 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onShowHistory={() => openHistory(node.id)}
             historyCount={historyCount}
             onReveal={() => void revealNode(node.id)}
-            onExport={() => requestExport(targetIds())}
+            onExport={() => requestExport(targetIds(), "lk")}
+            onExportMarkdown={() => requestExport(targetIds(), "markdown")}
             onDelete={handleDelete}
             onAddChild={handleAddChild}
             onClose={closePopover}

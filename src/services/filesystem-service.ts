@@ -1826,6 +1826,18 @@ export async function readAssetImage(rootPath: string, fileName: string): Promis
 }
 
 /**
+ * Where a picture lives on disk, for a caller that needs the path rather than
+ * the bytes.
+ *
+ * Here rather than assembled by the caller because the separator is the
+ * platform's and `joinPath` is this file's — a hand-built `root + "/assets/"`
+ * works on Windows by luck rather than by rule.
+ */
+export function assetPath(rootPath: string, fileName: string): string {
+  return joinPath(rootPath, ASSETS_DIR, fileName);
+}
+
+/**
  * The marker saying a project is open, if there is one and it reads.
  *
  * Unreadable and absent are both `null`. A marker whose contents don't parse
@@ -2255,6 +2267,93 @@ export async function readRawFile(path: string): Promise<Uint8Array> {
 // lk-export.ts reaching for the fs plugin itself.
 export async function writeRawFile(path: string, data: Uint8Array): Promise<void> {
   await writeFile(path, data);
+}
+
+// --- Phase 28: writing a folder of files somewhere outside any project -----
+
+export type FileTree = {
+  /** Folders to make, parents before children, `/`-separated and relative. */
+  folders: string[];
+  files: { path: string; text: string }[];
+  /** Absolute source, `/`-separated relative destination. */
+  copies: { from: string; to: string }[];
+};
+
+export type FileTreeResult = {
+  /** Where it actually landed, which is not always what was asked for. */
+  path: string;
+  filesWritten: number;
+  copied: number;
+  /** Sources that could not be read, by their `from` path. */
+  missing: string[];
+};
+
+/**
+ * The folder the tree goes in, made fresh and never written over.
+ *
+ * **A new folder every time, rather than emptying or merging into one that
+ * exists.** An export is not a sync: there is no record of what the last one
+ * put there, so "overwrite" would either leave orphans from a page she has
+ * since deleted or delete files it did not write. Numbering instead means the
+ * worst case is a folder she does not want, which she can delete — and the
+ * only thing that can never be undone is the one this refuses to do.
+ */
+async function freshFolder(parentDir: string, name: string): Promise<string> {
+  for (let n = 1; n < 1000; n += 1) {
+    const candidate = joinPath(parentDir, n === 1 ? name : `${name} (${n})`);
+    if (!(await exists(candidate))) {
+      await mkdir(candidate, { recursive: true });
+      return candidate;
+    }
+  }
+  throw new Error(`There are already a thousand folders called ${name} here.`);
+}
+
+/**
+ * Writes a planned tree of text files, and copies the files it references.
+ *
+ * **Deliberately knows nothing about markdown.** It takes paths and text, so
+ * the JSON zip and the Phase 1.5 publisher can use the same call — and so this
+ * file does not have to import the markdown services, which would make a cycle
+ * with the one that borrows `sanitizeSegment` from here.
+ *
+ * **A picture that will not read is reported, not thrown.** Losing one from an
+ * otherwise complete export is bad; losing the export because of one is worse,
+ * and she has no way to act on a failure that leaves nothing behind.
+ */
+export async function writeFileTree(parentDir: string, folderName: string, tree: FileTree): Promise<FileTreeResult> {
+  const root = await freshFolder(parentDir, folderName);
+
+  // Every segment reaching `joinPath` has been through `sanitizeSegment` or is
+  // one of our own constants — see the note above that function. The split is
+  // what turns the plan's `/` separators into the platform's.
+  const resolve = (relative: string) => joinPath(root, ...relative.split("/"));
+
+  for (const folder of tree.folders) await mkdir(resolve(folder), { recursive: true });
+
+  for (const file of tree.files) {
+    // A note can sit in a folder no page created — nothing does today, but a
+    // future format may, and a missing parent is a failure that reads as the
+    // whole export being broken.
+    const parent = file.path.split("/").slice(0, -1);
+    if (parent.length > 0) await mkdir(joinPath(root, ...parent), { recursive: true });
+    await writeTextFile(resolve(file.path), file.text);
+  }
+
+  const missing: string[] = [];
+  let copied = 0;
+  for (const copy of tree.copies) {
+    const parent = copy.to.split("/").slice(0, -1);
+    if (parent.length > 0) await mkdir(joinPath(root, ...parent), { recursive: true });
+    try {
+      await copyFile(copy.from, resolve(copy.to));
+      copied += 1;
+    } catch {
+      missing.push(copy.from);
+    }
+  }
+
+  return { path: root, filesWritten: tree.files.length, copied, missing };
 }
 
 // --- Phase 12: themes and snippets ----------------------------------------

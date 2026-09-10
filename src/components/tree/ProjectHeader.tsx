@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { History, Home, Plus, Upload } from "lucide-react";
 import { useDialogs } from "../../hooks/use-dialogs";
+import type { ExportFormat } from "../../state/dialog-store";
 import { useProject, useProjectHomeId, useUniverses } from "../../hooks/use-project";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { TreePopover } from "./TreePopover";
@@ -27,10 +28,10 @@ export function ProjectHeader() {
   }
 
   // Exporting the whole project means every top-level page; their descendants
-  // come along on their own (see lk-export's collectSubtree).
-  function handleExportProject() {
+  // come along on their own (see export-walk's collectSubtree).
+  function handleExportProject(format: ExportFormat) {
     closePopover();
-    requestExport(project?.rootOrder ?? []);
+    requestExport(project?.rootOrder ?? [], format);
   }
 
   return (
@@ -75,8 +76,15 @@ export function ProjectHeader() {
       {anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <div className="tree-context-menu">
-            <button type="button" onClick={handleExportProject}>
+            <button type="button" onClick={() => handleExportProject("lk")}>
               <Upload size={13} /> Export project to LegendKeeper
+            </button>
+            {/* Beside the LegendKeeper one rather than both moving behind an
+                "Export ▸" — that entry is one she has learnt where to find,
+                and two entries do not need a submenu yet. When the third
+                format lands is the moment to reconsider. */}
+            <button type="button" onClick={() => handleExportProject("markdown")}>
+              <Upload size={13} /> Export project as Markdown
             </button>
             {/* The tree's own history, in the same place a page's is: on the
                 right-click menu of the row it belongs to. This row is the

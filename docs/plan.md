@@ -569,6 +569,14 @@ Build order: the shared walker, then Markdown, then the one big file that falls
 out of it, then the print stylesheet, then JSON, then templates as files. The
 last three are independent of each other and of the first three.
 
+**The export menu becomes an `Export ▸` submenu at the third format, not
+before.** Markdown was added beside *Export to LegendKeeper* rather than both
+moving behind a submenu, because that entry is one she has learnt where to
+find and two entries do not need one. The one big file makes three, and three
+is where a flat list starts costing more than the move does — `Move ▸` in
+`ContextMenu.tsx` is the pattern. Both menus carry the entries: the project
+menu in `ProjectHeader.tsx` and the row menu in `ContextMenu.tsx`.
+
 ### The shared walker
 
 **Build it first.** `lk-export.ts`, Phase 1.5's HTML publish and the queued AO3
