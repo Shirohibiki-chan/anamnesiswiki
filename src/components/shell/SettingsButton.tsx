@@ -12,9 +12,13 @@ type SettingsButtonProps = {
   /** The word under the icon, where there is somewhere to put one. Absent on
       the start screen, where the cog stands alone. */
   label?: string;
+  /** Told when the dialog closes, for a screen that has to catch up with what
+      was done in it — the start screen's library, since Getting started can
+      make a project while the grid behind it is not looking. */
+  onClose?: () => void;
 };
 
-export function SettingsButton({ className, label }: SettingsButtonProps = {}) {
+export function SettingsButton({ className, label, onClose }: SettingsButtonProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -34,7 +38,14 @@ export function SettingsButton({ className, label }: SettingsButtonProps = {}) {
         <Settings size={16} />
         {label && <span>{label}</span>}
       </button>
-      {isOpen && <SettingsModal onClose={() => setIsOpen(false)} />}
+      {isOpen && (
+        <SettingsModal
+          onClose={() => {
+            setIsOpen(false);
+            onClose?.();
+          }}
+        />
+      )}
     </>
   );
 }

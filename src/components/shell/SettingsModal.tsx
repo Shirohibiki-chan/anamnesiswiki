@@ -49,6 +49,7 @@ import { WritingSettings } from "./WritingSettings";
 import { SnippetSettings } from "./SnippetSettings";
 import { ThemeEditor } from "./ThemeEditor";
 import { PatchNotes } from "./PatchNotes";
+import { GettingStartedSettings } from "./GettingStartedSettings";
 import { BugReportSettings } from "./BugReportSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { UpdateCheck } from "./UpdateCheck";
@@ -71,6 +72,10 @@ const PANELS: Record<string, () => React.JSX.Element> = {
   updates: UpdateCheck,
   report: BugReportSettings,
   "patch-notes": PatchNotes,
+  // Rendered through the special case below rather than from here, like Patch
+  // Notes — the entry exists so the id has a panel and the search index can
+  // find it.
+  "getting-started": () => <GettingStartedSettings onClose={() => {}} />,
 };
 
 type TabId = string;
@@ -371,7 +376,17 @@ export function SettingsModal({ onClose, initialTab, initialVersion }: SettingsM
                     all of them just to give this one its version would be the
                     generic mechanism CLAUDE.md's "no speculative abstraction"
                     rule exists to head off. */}
-                {active.id === "patch-notes" ? <PatchNotes initialVersion={initialVersion} /> : <ActivePanel />}
+                {active.id === "patch-notes" ? (
+                  <PatchNotes initialVersion={initialVersion} />
+                ) : active.id === "getting-started" ? (
+                  // The second special case, and the last one worth having: it
+                  // needs to *close* this dialog rather than be given a value,
+                  // because the tour it starts draws over everything including
+                  // this window.
+                  <GettingStartedSettings onClose={onClose} />
+                ) : (
+                  <ActivePanel />
+                )}
               </div>
             </div>
           )}

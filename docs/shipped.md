@@ -5902,3 +5902,55 @@ without anybody asking, and — the one the flag exists for — deleting it and
 reloading leaves it deleted. The suite marks it already made by default, the
 same shape as the tour, so every other scenario's library holds exactly what its
 own world put there.
+
+---
+
+## Phase 26 — Teach It To Someone Else, step 3 ✅ Shipped 2026-09-09 — phase closed
+
+A door back to both halves, and the trip-wire that says when either has fallen
+behind the app. What still binds the code is `docs/handoff.md` §The example
+world and §The short tour, plus the standing rule now in `CLAUDE.md`.
+
+**What it delivered.** A *Getting started* section in Settings, first in the app
+group because it is the only one there that teaches rather than configures. It
+holds the two things that only ever offer themselves once: *Take the tour again*
+— which closes the dialog first, since the tour draws over everything including
+the window that started it, and is refused with a reason from the start screen,
+where there is no project for it to point at — and *Make a fresh copy* of the
+example world, which says which copy it made, because a second one is numbered.
+Both are in the settings search index.
+
+**Why the example world's door makes a copy rather than opening one.** Somebody
+asking for it has usually written all over theirs, and the point of asking is to
+see it as it came. Opening it instead would mean swapping projects from inside a
+modal, which is a much larger action than the button appears to be.
+
+**The reminder she asked for, and why it is a test.** Phase 26's two halves go
+stale in different ways, and neither failure is visible to anybody working on
+this app: the tour points at four elements by `data-tour` attribute, so a shell
+rearranged a phase from now silently loses a step for everybody installing
+afterwards. `scripts/tour-anchors.test.ts` fails in both directions — a step
+pointing at an attribute no component carries, and an attribute no step uses —
+with a message saying what to do about it. It lives in `scripts/` because it
+reads the repository off disk and `tsconfig.json` deliberately gives `src` no
+Node types; `make-test-world.test.ts` is there for the same reason. What no test
+can check is whether the *words* still describe what is there, so `CLAUDE.md`
+carries that instruction in the Tracking Docs list, beside the changelog and the
+plan.
+
+**What the phase set out to do, and what it did.** Asked for 2026-08-10 and
+placed last on purpose, because a tutorial written before Phases 21 and 22 would
+have described an app that no longer existed. It shipped as three steps in one
+day: the example world (given to every install, after her call the same
+afternoon), the short tour, and this. The one thing it deliberately does not do
+is wait for anybody to *do* something — no step says "now try making a page",
+because a tutorial that blocks until you perform is a different and much larger
+thing.
+
+**Verified.** `settings-search.test.ts` passes with the new section, which
+matters more than it sounds: the first wording of the example world's search
+entry fuzzy-matched "where are my files saved" and dragged the row into an
+unrelated question, and the fix was cutting words rather than loosening the
+test. `e2e/takes-the-short-tour.e2e.ts` grew two scenarios — taking the tour
+again from Settings, with the dialog gone before the tour draws, and making a
+fresh copy of the example world that names what it made.

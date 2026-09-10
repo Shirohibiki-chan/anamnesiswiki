@@ -3575,6 +3575,14 @@ Phase 26, step 2. What binds the code:
   broken tutorial from a broken app. `tour-service.ts` is plain arithmetic over
   measured rectangles so the placement can be tested without a DOM.
 
+- **`scripts/tour-anchors.test.ts` is the alarm when the app moves out from
+  under the tutorial.** It fails when a step points at a `data-tour` no
+  component carries, and when a component carries one no step uses. It cannot
+  check whether the step's *words* still describe what is there — that
+  instruction is in `CLAUDE.md`'s Tracking Docs list, because it needs a person.
+  It lives in `scripts/` because it reads the repo off disk and `tsconfig.json`
+  gives `src` no Node types on purpose.
+
 - **The app suite starts every scenario with the tour already seen**
   (`launchApp`'s `showTour`, default false). A tutorial drawn over the window
   swallows the first click of whatever a scenario was about, so a new scenario

@@ -14,6 +14,12 @@
 // step whose anchor is missing is dropped rather than drawn against nothing —
 // see `tour-service.ts` — so a panel somebody has closed costs a step, never a
 // highlight floating in the corner.
+//
+// **`scripts/tour-anchors.test.ts` is the alarm on all of that.** It fails when
+// a step points at an attribute no component carries, and when a component
+// carries one no step uses — which is what an interface rearranged a phase from
+// now looks like. What it cannot check is whether the *words* below still
+// describe what is there, so read them when it fires.
 
 /** Where the card sits against the thing it is pointing at. */
 export type TourSide = "right" | "left" | "inside";
@@ -35,6 +41,17 @@ export const TOUR_HIGHLIGHT_PAD = 4;
 export const TOUR_VIEWPORT_MARGIN = 12;
 
 export const TOUR_CARD_WIDTH = 320;
+
+/**
+ * How long the tour waits before measuring anything.
+ *
+ * Not cosmetic in either of the two places it is used. On a first run the
+ * layout settles its fitted panel widths after its first paint, so starting in
+ * the same tick highlights the rectangle a panel had before it was sized. From
+ * the door in Settings, the dialog that held the button is still closing, and a
+ * tour measured through it points at a window with a dialog over it.
+ */
+export const TOUR_START_DELAY_MS = 400;
 
 /**
  * Four steps, and deliberately not more.

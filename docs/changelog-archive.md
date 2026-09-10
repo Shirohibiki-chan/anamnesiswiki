@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-06 — putting a callout's icon back
+
+### Fixes
+
+- **Taking a callout's icon off is no longer a one-way door.** When a callout has no icon, an **Add an icon** button appears in its top corner next to the colour dot — the place you already look to change a callout.
+- **It was technically possible before and that is not a defence.** The way back was an invisible 15-pixel square in the corner of the box that only showed itself while your pointer was over it. If you didn't know it was there, taking the icon off looked permanent.
+- **The ghost square is gone entirely.** A callout with no icon now has nothing invisible in it at all.
+
 ## 2026-09-06 — every callout has an icon, and picking the kind picks it
 
 ### Changes
