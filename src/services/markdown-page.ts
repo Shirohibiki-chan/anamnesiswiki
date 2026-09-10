@@ -412,8 +412,11 @@ export function panelBlockToMarkdown(block: Block, node: Node, ctx: MarkdownPage
       const file = block.image ?? node.image;
       const path = file ? ctx.pictureAt(file) : null;
       if (!path) return null;
-      const alt = block.imageAlt ?? node.imageAlt ?? heading;
-      return withHeading(`![${escapeText(alt ?? "")}](${encodePath(path)})`);
+      // Falls through to the page's name rather than leaving `![]()`. An
+      // empty alt is a picture with nothing to announce it, and every page
+      // has at least a name worth saying.
+      const alt = block.imageAlt || node.imageAlt || heading || node.name;
+      return withHeading(`![${escapeText(alt)}](${encodePath(path)})`);
     }
 
     case "meter": {
@@ -577,7 +580,12 @@ export function pageToMarkdown(node: Node, ctx: MarkdownPageContext): string {
     .filter((part): part is string => Boolean(part));
 
   if (panel.length > 0) {
-    sections.push(`${named ? "##" : "#"} Details`);
+    // Always `##`, whether or not tabs were named. With tab headings it is a
+    // peer of them; without, the writing keeps its own levels and its top
+    // sections are conventionally `##` too — so a `#` here came out *larger*
+    // than the sections above it and the outline read inside out. Seen in a
+    // real export before it was believed.
+    sections.push("## Details");
     sections.push(...panel);
   }
 

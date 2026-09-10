@@ -248,6 +248,18 @@ describe("pageToMarkdown", () => {
     expect(lossyCount(tally, BLOCK_FLATTENED)).toBe(1);
   });
 
+  // Seen wrong in a real export first: with one tab, the writing keeps its own
+  // levels and its sections are `##`, so a `#` here was larger than everything
+  // above it.
+  it("puts Details at the same level as the sections above it, tabs or no tabs", () => {
+    const blocks: Block[] = [{ id: "n", kind: "text", text: "a note", showTitle: false }];
+    const oneTab = pageToMarkdown(page({ blocks, tabs: [tab("Main", [])] }), ctx());
+    const twoTabs = pageToMarkdown(page({ blocks, tabs: [tab("Life", []), tab("Secrets", [])] }), ctx());
+    expect(oneTab).toContain("## Details");
+    expect(/^# Details$/m.test(oneTab)).toBe(false);
+    expect(twoTabs).toContain("## Details");
+  });
+
   // The schema's own rule: a block is a view, not storage, for what lives elsewhere.
   it("does not print a property or tags block, which the front matter already carries", () => {
     const blocks: Block[] = [

@@ -88,6 +88,13 @@ const fsMock = vi.hoisted(() => {
     }),
     readFile: vi.fn(async () => new Uint8Array()),
     writeFile: vi.fn(async () => {}),
+    // A copy of a file that is not there fails, the way the real one does —
+    // which is the whole point of `writeFileTree` reporting rather than
+    // throwing when a picture has gone missing.
+    copyFile: vi.fn(async (from: string, to: string) => {
+      if (!files.has(from)) throw new Error(`no such file: ${from}`);
+      files.set(to, files.get(from)!);
+    }),
     watch: vi.fn(async () => () => {}),
   };
 });
@@ -96,6 +103,7 @@ vi.mock("@tauri-apps/plugin-fs", () => fsMock);
 import {
   addNodes,
   deleteNode,
+  writeFileTree,
   forgetSnapshotTimes,
   listSnapshots,
   moveNodes,
@@ -455,3 +463,50 @@ describe("old copies of a page", () => {
   });
 });
 
+describe("writeFileTree", () => {
+  const tree = {
+    folders: ["Canon", "Canon/Kaine"],
+    files: [
+      { path: "Canon/Kaine.md", text: "# Kaine" },
+      { path: "Canon/Kaine/Her Sword.md", text: "# Her Sword" },
+    ],
+    copies: [] as { from: string; to: string }[],
+  };
+
+  it("makes the folder, then everything inside it", async () => {
+    const result = await writeFileTree("/root", "Valeraverse", tree);
+    expect(result.path).toBe("/root/Valeraverse");
+    expect(result.filesWritten).toBe(2);
+    expect(disk.files.get("/root/Valeraverse/Canon/Kaine.md")).toBe("# Kaine");
+    expect(disk.files.get("/root/Valeraverse/Canon/Kaine/Her Sword.md")).toBe("# Her Sword");
+  });
+
+  // An export is not a sync, so it never writes over what is already there.
+  it("numbers a second export rather than overwriting the first", async () => {
+    await writeFileTree("/root", "Valeraverse", tree);
+    const second = await writeFileTree("/root", "Valeraverse", tree);
+    expect(second.path).toBe("/root/Valeraverse (2)");
+    expect(disk.files.get("/root/Valeraverse/Canon/Kaine.md")).toBe("# Kaine");
+  });
+
+  it("copies the pictures it was given", async () => {
+    disk.files.set("/root/assets/face.png", "bytes");
+    const result = await writeFileTree("/root", "V", { ...tree, copies: [{ from: "/root/assets/face.png", to: "assets/face.png" }] });
+    expect(result.copied).toBe(1);
+    expect(disk.files.get("/root/V/assets/face.png")).toBe("bytes");
+  });
+
+  // Losing one picture is bad; losing the whole export because of one is
+  // worse, and she cannot act on a failure that leaves nothing behind.
+  it("reports a picture that will not read instead of failing the export", async () => {
+    const result = await writeFileTree("/root", "V", { ...tree, copies: [{ from: "/root/assets/gone.png", to: "assets/gone.png" }] });
+    expect(result.missing).toEqual(["/root/assets/gone.png"]);
+    expect(result.copied).toBe(0);
+    expect(result.filesWritten).toBe(2);
+  });
+
+  it("makes a parent folder the plan never listed", async () => {
+    const result = await writeFileTree("/root", "V", { folders: [], files: [{ path: "Deep/Down/Here.md", text: "hi" }], copies: [] });
+    expect(disk.files.get(`${result.path}/Deep/Down/Here.md`)).toBe("hi");
+  });
+});

@@ -13,6 +13,7 @@ import { fitPanelWidths, maxPanelWidth, planPanelDrag } from "../../services/lay
 import { useElementSize } from "../../hooks/use-element-size";
 import { ResizeHandle } from "./ResizeHandle";
 import { ExportModal } from "../export/ExportModal";
+import { MarkdownExportModal } from "../export/MarkdownExportModal";
 import { SearchPalette } from "../search/SearchPalette";
 import { useGlobalShortcuts } from "../../hooks/use-global-shortcuts";
 import { useCreatePage } from "../../hooks/use-new-page";
@@ -235,7 +236,8 @@ export function AppLayout() {
           />
         )}
 
-        {exportRequest && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
+        {exportRequest?.format === "lk" && <ExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
+        {exportRequest?.format === "markdown" && <MarkdownExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
         {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
         {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
       </div>

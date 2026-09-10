@@ -20,7 +20,17 @@ import type { LinkMatch as AutoLinkMatch } from "../services/auto-link-service";
 type PendingConfirm = { message: string; resolve: (ok: boolean) => void };
 
 /** The nodes to export, plus their descendants. Null when the modal is shut. */
-type ExportRequest = { rootIds: string[] };
+/**
+ * Which export the modal that opens is for.
+ *
+ * One request carrying a format rather than one piece of state per format:
+ * only ever one export modal is open, and Phase 28 has two more formats to
+ * come — a `jsonExportRequest` beside a `markdownExportRequest` beside this
+ * would be four booleans that must never disagree.
+ */
+export type ExportFormat = "lk" | "markdown";
+
+type ExportRequest = { rootIds: string[]; format: ExportFormat };
 
 /**
  * A one-way message with nothing to decide — the app couldn't do the thing and
@@ -106,7 +116,7 @@ type DialogStoreState = {
   requestConfirm: (message: string) => Promise<boolean>;
   resolveConfirm: (ok: boolean) => void;
   exportRequest: ExportRequest | null;
-  requestExport: (rootIds: string[]) => void;
+  requestExport: (rootIds: string[], format: ExportFormat) => void;
   closeExport: () => void;
   notice: Notice | null;
   showNotice: (message: string) => void;
@@ -232,8 +242,8 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
     set({ notice: null });
   },
 
-  requestExport(rootIds) {
-    set({ exportRequest: { rootIds } });
+  requestExport(rootIds, format) {
+    set({ exportRequest: { rootIds, format } });
   },
 
   closeExport() {

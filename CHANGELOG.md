@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-10 — Export as Markdown
+
+### Additions
+
+- **Export as Markdown**, on the project menu and on any page's right-click menu, beside the LegendKeeper one. It writes your world as a folder of `.md` files you can open as an Obsidian vault, or read in anything else that reads markdown.
+- **It says what it's about to do before it does it** — how many pages, how many pictures it will copy, and which blocks come out as plain writing rather than staying live.
+- **A new folder every time.** Pick where it goes and it makes a folder named after your project inside it; export twice and the second is *(2)*. It never writes over a folder that's already there, because an export isn't a sync and it has no way of knowing what belongs to the last one.
+- **A button to open the folder when it's done**, rather than a path you'd have to type out.
+
+### Notes
+
+- **A picture that won't read is reported, not fatal.** The rest of the export still lands, and the modal says how many were missed — losing one picture is bad, losing the whole export because of one is worse.
+- **Nothing is asked of you beyond where to put it.** The LegendKeeper export has a picture switch because that format can't hold pictures; a markdown folder just takes them, because a folder pointing back at your project folder wouldn't be much of a way out.
+
 ## 2026-09-10 — a world written out as markdown
 
 ### Notes
@@ -265,23 +279,3 @@
 - **A property that several pages carry is one column in a table, not one column per page.** Nine characters each with a Rank made nine columns all called Rank, each filled in on a single row and blank on the other eight. The table now lines them up under one heading, the way the rest of the app already treats two pages using the same property name as using the same property.
 - **What was doing it:** behind the scenes each page keeps its own private id for a property you added yourself, and the table was telling them apart by that id instead of by the name on screen.
 - **It also quietly protected your filters.** A filter or a hidden column pointed at whichever page happened to have defined that property first, so deleting that page would have taken the setting with it. They now point at the name, which no single page owns.
-
-## 2026-09-07 — setting up a table
-
-### Additions
-
-- **A table can be filtered.** Stack up as many conditions as you like — every one of them has to hold, so *tagged noble* and *name contains kalla* together means both. You can filter on any column, and also on a page's name, its template and its tags, whether or not those are columns.
-- **The count tells you what was left out.** A filtered table says **3 of 9 pages**, so a filter hiding six and a folder holding three never look the same.
-- **Sorting, as many rungs as you need.** The first decides, the ones under it break ties — status first, then alphabetical inside each status. Click the arrow to turn one round. Blank values always go last, whichever way it's pointing, so reversing a sort doesn't drag forty empty rows to the top.
-- **Grouping.** Rows gather into labelled sections with a count each, under a dropdown, a status, or the template. Sections are alphabetical and the pages with no value sit last under a heading that says so.
-- **Turning columns off.** Anything you don't want on screen. A row's name always shows — it's the identity, not a property. What's stored is what you turned *off*, so a property added to a template later still turns up instead of staying invisible.
-- **All four settings live in one bar above the table**, always in the same place, and a setting that's doing something wears a count so you can see it without opening it.
-
-### Fixes
-
-- **A long page name is readable again.** In a table it was being cut off against the edge with no way to see the rest. It wraps now, and ordinary names still sit on one line.
-
-### Notes
-
-- **Filtering matches on the words, not on hidden ids.** Two pages that both say *Alive* are the same answer even though each page keeps its own copy of that dropdown — so a filter built on one page works across all of them.
-- **What isn't here yet:** there's no *any of these* — conditions always all apply — and numbers can't be filtered by greater or less than, only by exact value or emptiness. Grouping is deliberately not offered on tags or multi-selects, because a page carrying three of them would be listed three times.

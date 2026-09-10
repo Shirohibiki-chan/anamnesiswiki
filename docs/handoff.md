@@ -1690,6 +1690,44 @@ plain renderer instead is a choice against the one program this is for.
   wikilink that resolves to whichever note Obsidian indexed first is worse than
   a long one.
 
+- **The Details section is always `##`, never `#`.** With tab headings it is a
+  peer of them; without them the writing keeps its own levels and its top
+  sections are `##` too, so a `#` came out *larger* than everything above it
+  and the outline read inside out. That was found by opening a real exported
+  file, not by a test — the test came after.
+
+### Writing it
+
+- **`writeFileTree` makes a new folder every time and never writes over one.**
+  An export is not a sync: nothing records what the last one put there, so
+  "overwrite" would either leave orphans from a page since deleted or delete
+  files it did not write. It numbers instead — `Valeraverse (2)` — so the worst
+  case is a folder she can delete, and the case that cannot be undone never
+  happens.
+
+- **It knows nothing about markdown, on purpose.** It takes folders, files and
+  copies, so the JSON zip and the Phase 1.5 publisher can use it — *and*
+  because `markdown-vault.ts` borrows `sanitizeSegment` from
+  `filesystem-service.ts`, so an import the other way would be a cycle.
+
+- **A picture that will not copy is reported, not thrown.** Losing one from an
+  otherwise complete export is bad; losing the export because of one is worse,
+  and she cannot act on a failure that leaves nothing behind.
+
+- **One `exportRequest` carrying a format, not one piece of state per format.**
+  Only ever one export modal is open, and two formats are still to come — four
+  booleans that must never disagree is the shape to avoid.
+
+- **The LegendKeeper entry stays where it is; Markdown sits beside it.** Moving
+  a menu entry she has learnt behind an `Export ▸` submenu is the change to
+  make when the *third* format lands, not the second.
+
+- **A native dialog can be answered from the main process.** `app.electron
+  .evaluate` replaces Electron's `showOpenDialog` for one call, which is how
+  `exports-a-markdown-vault.e2e.ts` gets past the folder picker and checks the
+  files that actually landed. Nothing test-only is added to the app for it — so
+  don't conclude the next export format's last step is untestable.
+
 ## LK export
 
 - **Three separate records answer "where did this picture come from", and they
