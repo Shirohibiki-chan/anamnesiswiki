@@ -1,27 +1,34 @@
-// Phase 28 — write the world out as a folder of markdown.
+// Phase 28 — write the world out as markdown, either as a folder or as one
+// file.
 //
-// Deliberately the same shape as `ExportModal.tsx` beside it: say what is
-// about to happen, name anything that changes on the way, ask where it goes.
-// What is *different* is that this one has no options at all. The `.lk` export
-// offers a picture switch because that format cannot hold pictures and the
-// file would otherwise be enormous; a vault copies them in because a folder of
-// markdown pointing back at a project folder is not a way out of anything.
+// **One component for both, because they are the same errand with a different
+// destination.** Say what is about to happen, name anything that changes on
+// the way, ask where it goes. Splitting them would mean two copies of the
+// preview, the notes list, the error handling and the done panel, differing
+// only in three sentences — and the sentences are the part that should differ.
+//
+// What is *different* from the `.lk` export beside it is that neither of these
+// has options. That one offers a picture switch because the format cannot hold
+// pictures and the file would otherwise be enormous; a markdown folder simply
+// takes them, and a single file simply cannot.
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useMarkdownExport } from "../../hooks/use-markdown-export";
+import { useProjectName } from "../../hooks/use-project";
 import "./export.css";
 
 type Status = "preview" | "saving" | "done" | "error";
 
-export function MarkdownExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: () => void }) {
-  const { pickFolder, showFolder, fileManagerName } = useDialogs();
-  const { planVault, writeVault } = useMarkdownExport();
+export function MarkdownExportModal({ rootIds, single, onClose }: { rootIds: string[]; single: boolean; onClose: () => void }) {
+  const { pickFolder, pickSingleMarkdownSavePath, showFolder, fileManagerName } = useDialogs();
+  const { planVault, writeVault, planSingleFile, writeSingleFile } = useMarkdownExport();
+  const projectName = useProjectName();
 
   // Built once per opening: it is a pure conversion of a snapshot, and
   // rebuilding it on every render would redo the whole world on each keystroke
   // behind the modal.
-  const plan = useMemo(() => planVault(rootIds), [rootIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const plan = useMemo(() => (single ? planSingleFile(rootIds) : planVault(rootIds)), [rootIds, single]); // eslint-disable-line react-hooks/exhaustive-deps
   const [status, setStatus] = useState<Status>("preview");
   const [error, setError] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
@@ -33,23 +40,28 @@ export function MarkdownExportModal({ rootIds, onClose }: { rootIds: string[]; o
 
     // Same shape as the other two modals: the picker is a native window whose
     // failure would otherwise reject into a discarded promise.
-    let parent: string | null;
+    let destination: string | null;
     try {
-      parent = await pickFolder({ title: "Where should the folder go?" });
+      destination = single ? await pickSingleMarkdownSavePath(projectName ?? "Export") : await pickFolder({ title: "Where should the folder go?" });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't open the folder picker.");
+      setError(e instanceof Error ? e.message : "Couldn't open the picker.");
       return;
     }
-    if (!parent) return;
+    if (!destination) return;
 
     setStatus("saving");
     try {
-      const result = await writeVault(plan, parent);
-      setSavedTo(result.path);
-      setMissing(result.missing.length);
+      if (single && "text" in plan) {
+        await writeSingleFile(plan, destination);
+        setSavedTo(destination);
+      } else if (!single && "files" in plan) {
+        const result = await writeVault(plan, destination);
+        setSavedTo(result.path);
+        setMissing(result.missing.length);
+      }
       setStatus("done");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong writing the folder.");
+      setError(e instanceof Error ? e.message : "Something went wrong writing it.");
       setStatus("error");
     }
   }
@@ -57,16 +69,27 @@ export function MarkdownExportModal({ rootIds, onClose }: { rootIds: string[]; o
   return createPortal(
     <div className="ui-backdrop" onClick={status === "saving" ? undefined : onClose}>
       <div className="ui-modal ui-modal-lg export-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="export-modal-title">Export as Markdown</h2>
+        <h2 className="export-modal-title">{single ? "Export as one Markdown file" : "Export as Markdown"}</h2>
 
         {!plan && <p className="export-modal-error">There's nothing to export.</p>}
 
         {plan && status !== "done" && (
           <>
             <p className="export-modal-summary">
-              {plan.pageCount} page{plan.pageCount === 1 ? "" : "s"} will be written as a folder of{" "}
-              <code>.md</code> files, one file per page, with pages kept inside folders the way they are here. It
-              opens as an Obsidian vault, and every other program that reads markdown can read it too.
+              {single ? (
+                <>
+                  {plan.pageCount} page{plan.pageCount === 1 ? "" : "s"} will be written into a single <code>.md</code>{" "}
+                  file, each one a heading, nested as deeply as it sits in your tree. It's for handing somebody the
+                  whole world to read in one scroll — links between pages jump down the document rather than opening
+                  anything.
+                </>
+              ) : (
+                <>
+                  {plan.pageCount} page{plan.pageCount === 1 ? "" : "s"} will be written as a folder of <code>.md</code>{" "}
+                  files, one file per page, with pages kept inside folders the way they are here. It opens as an
+                  Obsidian vault, and every other program that reads markdown can read it too.
+                </>
+              )}
             </p>
 
             {plan.notes.length > 0 && (
@@ -101,8 +124,8 @@ export function MarkdownExportModal({ rootIds, onClose }: { rootIds: string[]; o
         {status === "done" && savedTo && (
           <>
             <p className="export-modal-summary">
-              Exported. The folder is at <code className="export-modal-path">{savedTo}</code> — open that folder as a
-              vault in Obsidian, or read the files anywhere.
+              Exported. {single ? "The file is at" : "The folder is at"} <code className="export-modal-path">{savedTo}</code>
+              {single ? " — open it in anything that reads markdown." : " — open that folder as a vault in Obsidian, or read the files anywhere."}
             </p>
             {/* Named rather than counted away: a picture that would not read is
                 a page missing its picture over there, and she is the only one

@@ -33,12 +33,19 @@ export const BLOCK_DROPPED = "blockDropped";
 /** Everything about the rest of the world that converting one page needs. */
 export type MarkdownPageContext = {
   /**
-   * What `[[ ]]` should contain to reach this page, or null when it is not in
-   * the vault. A bare name where that is unambiguous, and a path where two
-   * pages share one — Obsidian resolves a wikilink by name first and by path
-   * only when it has to.
+   * A finished markdown link to that page, or null when it is not in the
+   * export at all.
+   *
+   * **The whole link rather than just a target**, because the two markdown
+   * exports disagree about what a link even is: a vault wants `[[Kaine]]`,
+   * which Obsidian resolves across files, and the one big file wants
+   * `[Kaine](#kaine)`, which jumps within the document. Handing back a target
+   * for this file to wrap would mean it had to know which.
+   *
+   * `label` is the words the link should read as. Absent means the page's own
+   * name, which is what a reference field and a collection row want.
    */
-  linkTo: (nodeId: string) => string | null;
+  linkFor: (nodeId: string, label?: string) => string | null;
   /**
    * The vault-relative path a picture ended up at, or null when it could not
    * travel. Unlike the `.lk` export this should almost always answer, since
@@ -125,8 +132,8 @@ export function inlineToMarkdown(content: unknown, ctx: MarkdownPageContext): st
       // link reads as in the sentence.
       const chosen = typeof raw.props?.text === "string" ? raw.props.text : "";
       const label = chosen || (typeof raw.props?.label === "string" ? raw.props.label : "");
-      const target = nodeId ? ctx.linkTo(nodeId) : null;
-      if (target) out += target === label || !label ? `[[${target}]]` : `[[${target}|${label}]]`;
+      const link = nodeId ? ctx.linkFor(nodeId, label) : null;
+      if (link) out += link;
       else if (label) out += escapeText(label);
       continue;
     }
@@ -438,8 +445,8 @@ export function panelBlockToMarkdown(block: Block, node: Node, ctx: MarkdownPage
       if (rows.length === 0) return null;
       bumpLossy(ctx.tally, BLOCK_FLATTENED);
       const lines = rows.map((row) => {
-        const target = ctx.linkTo(row.id);
-        return `- ${target ? `[[${target}]]` : escapeText(row.name)}`;
+        const link = ctx.linkFor(row.id);
+        return `- ${link ?? escapeText(row.name)}`;
       });
       return withHeading(lines.join("\n"));
     }
@@ -476,8 +483,8 @@ function propertyText(spec: RenderableProperty, value: unknown, ctx: MarkdownPag
     // A reference is a link, so it stays one. Obsidian resolves a wikilink
     // inside front matter, which is what makes a character's Friends field
     // still clickable over there.
-    const links = ids.map((id) => ctx.linkTo(id)).filter((target): target is string => Boolean(target));
-    return links.length > 0 ? links.map((target) => `[[${target}]]`) : null;
+    const links = ids.map((id) => ctx.linkFor(id)).filter((link): link is string => Boolean(link));
+    return links.length > 0 ? links : null;
   }
 
   if (spec.type === "select" || spec.type === "status" || spec.type === "multiselect") {
@@ -503,6 +510,26 @@ function yamlKey(label: string): string {
   return /^[A-Za-z][A-Za-z0-9 _-]*$/.test(label) ? label : yamlString(label);
 }
 
+/**
+ * Every property that has something to say, with its label and printed value.
+ *
+ * Shared so the two markdown exports print the same values in different
+ * furniture: the vault puts them in front matter, and the one big file — which
+ * can only have one front matter block, at the very top — puts them in a list
+ * under each page's heading. Two copies of the label-resolution rules is how
+ * one of them starts writing a UUID where a Status should be.
+ */
+export function printedProperties(node: Node, ctx: MarkdownPageContext): { label: string; printed: string | string[] }[] {
+  const specs: RenderableProperty[] = [...getPropertySchema(node.templateKey), ...(node.customProperties ?? [])];
+  const out: { label: string; printed: string | string[] }[] = [];
+  for (const spec of specs) {
+    const printed = propertyText(spec, node.properties[spec.key], ctx);
+    if (printed === null) continue;
+    out.push({ label: spec.label, printed });
+  }
+  return out;
+}
+
 export function frontMatterFor(node: Node, ctx: MarkdownPageContext): string {
   const lines: string[] = [];
 
@@ -525,15 +552,12 @@ export function frontMatterFor(node: Node, ctx: MarkdownPageContext): string {
   const banner = node.banner ? ctx.pictureAt(node.banner) : null;
   if (banner) lines.push(`banner: ${yamlString(banner)}`);
 
-  const specs: RenderableProperty[] = [...getPropertySchema(node.templateKey), ...(node.customProperties ?? [])];
-  for (const spec of specs) {
-    const printed = propertyText(spec, node.properties[spec.key], ctx);
-    if (printed === null) continue;
+  for (const { label: key, printed } of printedProperties(node, ctx)) {
     // A list goes through `yamlList` rather than being joined raw. Unquoted,
     // `[[[Kaine]]]` is a YAML sequence three deep instead of a one-item list
     // holding a wikilink, and a multi-select label with a comma in it would
     // silently become two options.
-    lines.push(`${yamlKey(spec.label)}: ${Array.isArray(printed) ? yamlList(printed) : yamlString(printed)}`);
+    lines.push(`${yamlKey(key)}: ${Array.isArray(printed) ? yamlList(printed) : yamlString(printed)}`);
   }
 
   return `---\n${lines.join("\n")}\n---`;
@@ -557,16 +581,72 @@ export function frontMatterFor(node: Node, ctx: MarkdownPageContext): string {
  * is why `blockToMarkdown` takes it rather than reading a constant.
  */
 export function pageToMarkdown(node: Node, ctx: MarkdownPageContext): string {
+  // The note's title is its filename here, so nothing prints it — but it is
+  // still notionally level 1, and everything below hangs off that.
+  return `${[frontMatterFor(node, ctx), ...pageBody(node, ctx, 1)].join("\n\n")}\n`;
+}
+
+/**
+ * The smallest heading level anywhere in a run of blocks, or null for prose
+ * with no headings in it at all.
+ *
+ * Needed because *her* top level is not a fixed number. One page starts its
+ * sections at `#` and another at `##`, and a fixed shift is right for one of
+ * them and wrong for the other — see `pageBody`.
+ */
+function minHeadingLevel(blocks: unknown): number | null {
+  if (!Array.isArray(blocks)) return null;
+  let smallest: number | null = null;
+  for (const block of blocks as BlockNoteBlock[]) {
+    if (!block || typeof block !== "object") continue;
+    if (block.type === "heading") {
+      const raw = block.props?.level;
+      const level = Math.min(6, Math.max(1, typeof raw === "number" ? raw : 1));
+      smallest = smallest === null ? level : Math.min(smallest, level);
+    }
+    const inside = minHeadingLevel(block.children);
+    if (inside !== null) smallest = smallest === null ? inside : Math.min(smallest, inside);
+  }
+  return smallest;
+}
+
+/**
+ * A page's tabs and its Details section, as markdown, under a title at
+ * `titleLevel`.
+ *
+ * **The level is a parameter because the one big file needs it to be.** There
+ * a page sits as deep in the headings as it sits in the tree, so the same page
+ * is `##` in one export and `####` in another; the vault always passes 1.
+ *
+ * **A single-tab page gets no tab heading at all.** Most pages have one, and
+ * printing its name over the writing would put a heading on every note that
+ * says nothing.
+ *
+ * **The writing is shifted so *its own* top heading lands one below whatever
+ * is above it, rather than by a fixed amount.** A fixed shift assumes her
+ * sections start at a particular level, and they do not — one page uses `#`
+ * and the next uses `##`. Shifting by a constant therefore either collides
+ * with the tab heading above or buries the writing two levels too deep,
+ * depending on the page. Measuring first is what makes both come out right.
+ */
+export function pageBody(node: Node, ctx: MarkdownPageContext, titleLevel: number): string[] {
   const tabs = node.tabs ?? [];
   const named = tabs.length > 1;
-  const shift = named ? 1 : 0;
+  const hash = (level: number) => "#".repeat(Math.min(6, level));
+  // Tabs, and the Details section, are one below the page's title.
+  const sectionLevel = titleLevel + 1;
+  // The writing sits below the tab heading when there is one, and level with
+  // the other sections when there is not.
+  const contentBase = named ? sectionLevel + 1 : sectionLevel;
 
-  const sections: string[] = [frontMatterFor(node, ctx)];
+  const sections: string[] = [];
 
   for (const tab of tabs) {
+    const smallest = minHeadingLevel(tab.content);
+    const shift = smallest === null ? 0 : Math.max(0, contentBase - smallest);
     const body = blocksToMarkdown(tab.content, ctx, shift, node);
     if (!named && !body) continue;
-    if (named) sections.push(`## ${escapeText(tab.label)}${tab.hidden ? " *(hidden)*" : ""}`);
+    if (named) sections.push(`${hash(sectionLevel)} ${escapeText(tab.label)}${tab.hidden ? " *(hidden)*" : ""}`);
     if (body) sections.push(body);
   }
 
@@ -580,16 +660,14 @@ export function pageToMarkdown(node: Node, ctx: MarkdownPageContext): string {
     .filter((part): part is string => Boolean(part));
 
   if (panel.length > 0) {
-    // Always `##`, whether or not tabs were named. With tab headings it is a
-    // peer of them; without, the writing keeps its own levels and its top
-    // sections are conventionally `##` too — so a `#` here came out *larger*
-    // than the sections above it and the outline read inside out. Seen in a
-    // real export before it was believed.
-    sections.push("## Details");
+    // Level with the tabs rather than with the page's title. A `#` here came
+    // out *larger* than the sections above it and the outline read inside
+    // out — seen in a real export before it was believed.
+    sections.push(`${hash(sectionLevel)} Details`);
     sections.push(...panel);
   }
 
-  return `${sections.join("\n\n")}\n`;
+  return sections;
 }
 
 /**

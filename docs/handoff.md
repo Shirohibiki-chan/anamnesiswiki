@@ -1696,6 +1696,41 @@ plain renderer instead is a choice against the one program this is for.
   and the outline read inside out. That was found by opening a real exported
   file, not by a test — the test came after.
 
+### One big file
+
+**`markdown-single.ts` is the same walk and the same converter, arranged
+differently** — every page a heading instead of a file, anchors instead of
+wikilinks. `pageBody` takes the heading level for exactly this reason: a page
+is `##` in one export and `####` in another.
+
+- **A page sits as deep in the headings as it sits in the tree**, capped at
+  six because markdown has no seventh. That is what makes an editor's outline
+  pane show her world.
+
+- **The heading space is shared between page depth and page content, and that
+  is a limitation rather than a bug.** A page's tabs and *its child pages* both
+  land one level below it, so `### Origin` (a tab) and `### Wren Okonkwo` (a
+  sub-page) read as peers. Flattening a tree of pages that each hold headed
+  sections into one heading hierarchy cannot avoid this; don't "fix" it by
+  inventing a level, and past depth four it degrades further as everything
+  hits six.
+
+- **Pictures are the inverse of the vault's rule**: a web address survives, one
+  from her disk is dropped with its caption kept and counted under
+  `PICTURE_LEFT_BEHIND`. A single file with a folder of images beside it is not
+  one file, which is the whole reason the two exports are separate.
+
+- **The meta lines under a heading are a bullet list, and must stay one.** Two
+  lines separated by a single newline are one run-on paragraph in markdown, so
+  `**Summary** — …` written straight under the tags rendered as one line. A
+  hard break needs two trailing spaces, which editors strip. Found by reading
+  a real export.
+
+- **Anchors follow GitHub's slug rules, including its `-1` suffix for a
+  repeat.** No standard exists; matching the most widely copied implementation
+  is the whole of the reasoning, and the suffixes must be assigned in document
+  order because that is the order a reader's own renderer assigns them in.
+
 ### Writing it
 
 - **`writeFileTree` makes a new folder every time and never writes over one.**
@@ -1718,9 +1753,16 @@ plain renderer instead is a choice against the one program this is for.
   Only ever one export modal is open, and two formats are still to come — four
   booleans that must never disagree is the shape to avoid.
 
-- **The LegendKeeper entry stays where it is; Markdown sits beside it.** Moving
-  a menu entry she has learnt behind an `Export ▸` submenu is the change to
-  make when the *third* format lands, not the second.
+- **Every export format lives behind `Export ▸`, in both menus.**
+  `ExportMenu.tsx` is the one panel; the row menu and the project menu both
+  swap into it, the way `Move ▸` already does. Add a format to the `FORMATS`
+  list there, not to either menu.
+
+- **Argue menu shape from what a reader of the menu needs, never from what she
+  is used to.** She is bug-testing this app rather than living in it, and said
+  so plainly on 2026-09-10 when a change was justified to her on the grounds
+  that she knew where something was. Habit is not evidence here; a menu nobody
+  can scan is a real cost and that is the argument to make.
 
 - **A native dialog can be answered from the main process.** `app.electron
   .evaluate` replaces Electron's `showOpenDialog` for one call, which is how

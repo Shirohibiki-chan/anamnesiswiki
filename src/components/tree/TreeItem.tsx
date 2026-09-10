@@ -34,10 +34,11 @@ import { IconPicker, NodeIcon } from "../blocks/IconPicker";
 import { ColorPicker } from "./ColorPicker";
 import { ContextMenu } from "./ContextMenu";
 import { MoveMenu } from "./MoveMenu";
+import { ExportMenu } from "./ExportMenu";
 import { SortMenu } from "./SortMenu";
 import { TreePopover } from "./TreePopover";
 
-type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | null;
+type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | "export" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
@@ -474,6 +475,17 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "export" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <ExportMenu
+            onSelect={(format) => {
+              closePopover();
+              requestExport(targetIds(), format);
+            }}
+            onBack={() => setOpenPopover("menu")}
+          />
+        </TreePopover>
+      )}
       {openPopover === "menu" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <ContextMenu
@@ -528,8 +540,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onShowHistory={() => openHistory(node.id)}
             historyCount={historyCount}
             onReveal={() => void revealNode(node.id)}
-            onExport={() => requestExport(targetIds(), "lk")}
-            onExportMarkdown={() => requestExport(targetIds(), "markdown")}
+            onExport={() => setOpenPopover("export")}
             onDelete={handleDelete}
             onAddChild={handleAddChild}
             onClose={closePopover}

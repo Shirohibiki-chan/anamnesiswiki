@@ -7,11 +7,12 @@
 // no home set it stays put as a plain icon rather than disappearing — the row
 // it decorates is the project itself either way.
 import { useState } from "react";
-import { History, Home, Plus, Upload } from "lucide-react";
+import { ChevronRight, History, Home, Plus, Upload } from "lucide-react";
 import { useDialogs } from "../../hooks/use-dialogs";
 import type { ExportFormat } from "../../state/dialog-store";
 import { useProject, useProjectHomeId, useUniverses } from "../../hooks/use-project";
 import { useCreatePageIn } from "../../hooks/use-new-page";
+import { ExportMenu } from "./ExportMenu";
 import { TreePopover } from "./TreePopover";
 import { UniverseSwitcher } from "./UniverseSwitcher";
 
@@ -22,15 +23,20 @@ export function ProjectHeader() {
   const homeNodeId = useProjectHomeId();
   const { current: currentUniverse } = useUniverses();
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  // Which panel the one popover is showing. Same swap the row menu makes.
+  const [showingExports, setShowingExports] = useState(false);
 
   function closePopover() {
     setAnchorRect(null);
+    // Closing and reopening starts at the top level, never mid-submenu.
+    setShowingExports(false);
   }
 
   // Exporting the whole project means every top-level page; their descendants
   // come along on their own (see export-walk's collectSubtree).
   function handleExportProject(format: ExportFormat) {
     closePopover();
+    setShowingExports(false);
     requestExport(project?.rootOrder ?? [], format);
   }
 
@@ -73,18 +79,21 @@ export function ProjectHeader() {
       {/* Always drawn, universes or not — it is how you find out they exist.
           See UniverseSwitcher.tsx. */}
       <UniverseSwitcher />
-      {anchorRect && (
+      {anchorRect && showingExports && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <ExportMenu onSelect={handleExportProject} onBack={() => setShowingExports(false)} />
+        </TreePopover>
+      )}
+      {anchorRect && !showingExports && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <div className="tree-context-menu">
-            <button type="button" onClick={() => handleExportProject("lk")}>
-              <Upload size={13} /> Export project to LegendKeeper
-            </button>
-            {/* Beside the LegendKeeper one rather than both moving behind an
-                "Export ▸" — that entry is one she has learnt where to find,
-                and two entries do not need a submenu yet. When the third
-                format lands is the moment to reconsider. */}
-            <button type="button" onClick={() => handleExportProject("markdown")}>
-              <Upload size={13} /> Export project as Markdown
+            {/* Behind a submenu, the same as the row menu's — five formats
+                listed flat is a menu nobody reads, and a person looking for
+                "export" looks for the word rather than for a particular
+                format. Her call, 2026-09-10. */}
+            <button type="button" className="tree-context-menu-submenu" onClick={() => setShowingExports(true)}>
+              <Upload size={13} /> Export project
+              <ChevronRight size={13} className="tree-context-menu-chevron" />
             </button>
             {/* The tree's own history, in the same place a page's is: on the
                 right-click menu of the row it belongs to. This row is the

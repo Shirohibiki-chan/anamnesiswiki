@@ -2269,6 +2269,14 @@ export async function writeRawFile(path: string, data: Uint8Array): Promise<void
   await writeFile(path, data);
 }
 
+// Phase 28's one big file — the text equivalent of the two above. The user
+// picks the path through a native save dialog, so this writes outside any
+// project folder by design, and it is here rather than in the markdown
+// services because rule 4 says a disk touch happens in one file.
+export async function writeTextTo(path: string, text: string): Promise<void> {
+  await writeTextFile(path, text);
+}
+
 // --- Phase 28: writing a folder of files somewhere outside any project -----
 
 export type FileTree = {

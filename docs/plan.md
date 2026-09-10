@@ -569,13 +569,21 @@ Build order: the shared walker, then Markdown, then the one big file that falls
 out of it, then the print stylesheet, then JSON, then templates as files. The
 last three are independent of each other and of the first three.
 
-**The export menu becomes an `Export ▸` submenu at the third format, not
-before.** Markdown was added beside *Export to LegendKeeper* rather than both
-moving behind a submenu, because that entry is one she has learnt where to
-find and two entries do not need one. The one big file makes three, and three
-is where a flat list starts costing more than the move does — `Move ▸` in
-`ContextMenu.tsx` is the pattern. Both menus carry the entries: the project
-menu in `ProjectHeader.tsx` and the row menu in `ContextMenu.tsx`.
+**The export formats live behind an `Export ▸` submenu, in both menus** — done
+2026-09-10 when the one big file made three, with JSON and page templates
+still to come. `ExportMenu.tsx` is the panel; the row menu swaps into it the
+same way `Move ▸` and `Sort sub-pages ▸` do, and the project menu in
+`ProjectHeader.tsx` does the same.
+
+**The argument is what a person reading the menu needs, not what anybody has
+got used to.** Five export lines in an already-long right-click menu are five
+lines nobody reads, and somebody who wants to export goes looking for the word
+*export* rather than for a particular format. An earlier draft of this
+paragraph argued the opposite from habit — that the LegendKeeper entry should
+not move because she knew where it was — and **she rejected that reasoning
+outright**: she is bug-testing rather than using the app in earnest, so what
+she is accustomed to is not evidence about anything. Don't make that argument
+here again.
 
 ### The shared walker
 
