@@ -543,36 +543,151 @@ Raised 2026-08-14 against LegendKeeper's export menu, which offers five formats
 beside its own: HTML, print, Markdown (file or vault), one big text file, and
 JSON. Ours offers `.lk` and nothing else.
 
-**Build the shared walker first.** `lk-export.ts`, Phase 1.5's HTML publish and
-the queued AO3 export are already the same job — walk the pages, emit another
-format — and this adds three more. The note elsewhere in this plan about
-extracting the shared piece by the third one is now overdue at six.
+**Scoped 2026-09-10**, which is where everything below marked "her call" was
+decided unless another date is given.
 
-- **HTML** — already Phase 1.5 (Publish). Unchanged by this; noted so the two
-  don't get built twice. LK's version carries timelines and map pins, which we
-  don't have.
-- **Markdown** — a vault of `.md` files mirroring the page tree. **Build it
-  with Phase 20's importer, not separately.** Same map read in both directions,
-  and it supplies the round-trip test that phase wants: export a world,
-  re-import it, compare. Obsidian has no export because a vault *is* a folder
-  of markdown, so this is also the Obsidian route in both directions. Our
-  `[[wikilinks]]` are already Obsidian's syntax, which is the part that would
-  otherwise be painful.
-- **One big file** — the same walker, one file instead of many. Small addition
-  to the above, not its own item.
-- **Print** — the only one that isn't "walk and write". **Verified working
-  2026-08-14** (Q3 closed): Ctrl+P in the desktop window opens the system print
-  dialog and offers Microsoft Print to PDF. What it prints is the problem — the
-  whole interface goes onto the page, tree and side panels included. So this
-  isn't a capability question any more, it's a stylesheet: a print stylesheet
-  that drops every panel and prints the page body, with the title and nothing
-  else as furniture. Cheap, and the closest thing to a PDF export we get free.
-- **JSON** — **settled 2026-08-14** (Q2 closed): a zip of the world's folder,
-  since the data is already JSON files on disk and re-zipping is honest about
-  that. **Label it as JSON in the menu** (her call) — people coming from other
-  tools are looking for the word, and "Zip" alone doesn't tell them what's
-  inside. Something like "JSON (.zip)" with a line saying it's the world's own
-  files.
+### What is in this phase, and what moved
+
+**Markdown export is built here, without the importer.** Q5 said this phase
+should follow Phase 20 so the Markdown export and the Markdown importer were
+built as one round trip; Phase 20 was then deferred on 2026-09-04, so that
+answer is stale and **Q5 is superseded on this point**. Her call: build the
+export half now. The reasoning is that a way out to Obsidian is the point of
+this phase — it is the piece the people arriving from elsewhere would actually
+use — and the plan already sanctions either order, with the rule that whichever
+half is built first carries the shared map. **So this phase writes the map, and
+Phase 20 re-reads this section before it starts rather than inventing its own.**
+The cost is named and accepted: a map designed from one direction only will have
+gaps the importer finds, and finding them is the importer's job.
+
+**HTML is still Phase 1.5 and is not in this phase.** Noted again because the
+two keep drifting together: the publisher is a website with navigation and a
+search index, this is a folder of files, and only the walker underneath them is
+shared.
+
+Build order: the shared walker, then Markdown, then the one big file that falls
+out of it, then the print stylesheet, then JSON, then templates as files. The
+last three are independent of each other and of the first three.
+
+### The shared walker
+
+**Build it first.** `lk-export.ts`, Phase 1.5's HTML publish and the queued AO3
+export are already the same job — walk the pages, emit another format — and
+this phase adds two more. The note elsewhere in this plan about extracting the
+shared piece by the third one is overdue at six.
+
+**What is shared is the walk, not the writing.** `lk-export.ts` is 800 lines and
+most of them are LegendKeeper's node vocabulary, which nothing else wants. What
+every format repeats is the part above that: collect the subtree, resolve
+sibling order into a stable sequence, keep templates out of it, decide what each
+picture's address is, and carry a tally of what could not be represented so the
+modal can say so. `collectSubtree`, the `PictureLookup` seam and the
+`LossyTracker` are the three pieces already written twice in spirit; they come
+out into one service and `lk-export.ts` becomes a consumer of it.
+
+**Templates must stay out of every walk, and that is not the walker's rule to
+invent** — the world's templates are already kept out of `project-store`'s
+`nodes` precisely so no walker has to remember. See `docs/handoff.md`. The
+walker inherits the safety rather than re-implementing it.
+
+### Markdown — a vault
+
+A folder of `.md` files mirroring the page tree. Our `[[wikilinks]]` are already
+Obsidian's syntax, which is the part that would otherwise be painful. Obsidian
+has no export of its own because a vault *is* a folder of markdown, so this is
+the Obsidian route in both directions.
+
+**A page with pages under it becomes a file beside a folder of the same name** —
+`Kaine.md` next to `Kaine/`. This is Obsidian's own convention, it round-trips
+without a lookup table, and it does not borrow a folder-shaped object: a page
+that holds pages is still one page here, and a page that holds none is still one
+file. See the standing decision about pages holding pages rather than folders
+holding notes.
+
+**Tabs become headings in the one file (her call).** A page's tabs are written
+one after another down `Kaine.md` under `## Overview`, `## History` and so on,
+rather than each becoming a file of its own. One page stays one file, which is
+what somebody opening the vault expects, and nothing about a page is scattered
+across a folder. **The cost is on the importer**: splitting a page back into its
+tabs means trusting the top-level headings, and a page whose writing legitimately
+starts with an `##` heading is ambiguous. Phase 20 decides how to disambiguate —
+most likely by recording the tab names in front matter so the split is read
+rather than guessed. A single-tab page gets no heading at all; the tab furniture
+should not appear on pages that have none.
+
+**Properties become YAML front matter.** Labels, not raw values — the same rule
+`lk-export.ts` follows through `getPropertySchema`, because writing a select's
+stored value puts a UUID at the top of her file.
+
+**Blocks are written out as best we can, and the summary counts what lost its
+behaviour (her call).** A meter becomes a line of text carrying its number and
+its label; a database, a Subpage index, a Tag index or a Backlinks block becomes
+a markdown table or a list of links; a graph is skipped and named. They are
+readable in Obsidian and they are not live, and the export modal says which
+kinds went flat and how many. The alternative — leaving them out — was rejected
+because a character page that is mostly a stat panel would come out nearly
+empty, and the alternative to *that* — fenced JSON — was rejected because it puts
+a box of machine text in the middle of her writing.
+
+**Pictures are copied into the vault and every reference is rewritten to point
+at the copy.** No option and no switch: a vault of markdown whose pictures are
+still addresses into `assets/` in a folder she may have moved is not a way out of
+anything. This is the one place the Markdown export is unambiguously bigger than
+the `.lk` one, and it should be.
+
+**Universes are the top level of the vault**, one folder each, because that is
+what the tree already shows one at a time. The Shared universe is a folder like
+any other rather than being copied into each.
+
+**Hidden pages and Secret blocks come out.** This is not the publisher and the
+rule is the opposite one: Phase 1.5 excludes hidden pages because it makes a
+website, and this hands her own writing back to her. Both are marked in front
+matter so nothing is lost about what they were, and so a re-import can restore
+the marks. If this is ever pointed at somebody else rather than at her own disk,
+that is a different destination and gets its own switch — not a default that
+quietly drops writing.
+
+### One big file
+
+The same walker, one file instead of many, page titles as headings and the tree
+depth as heading depth. A small addition to the above rather than its own item.
+It is the format for handing the whole world to somebody who wants to read it in
+one scroll, so the picture rule inverts: pictures stay as they are and are not
+copied out beside it, because a single file with a folder of images next to it is
+not one file.
+
+### Print
+
+**The only one that isn't "walk and write".** Verified working 2026-08-14 (Q3
+closed): Ctrl+P in the desktop window opens the system print dialog and offers
+Microsoft Print to PDF. What it prints is the problem — the whole interface goes
+onto the page, tree and side panels included. So this is a stylesheet, not a
+capability question: an `@media print` block that drops every panel and prints
+the page body, with the title and nothing else as furniture. There is no
+`@media print` anywhere in `src/` today.
+
+Cheap, and the closest thing to a PDF export we get free. **Check it on
+WebKitGTK before calling it done** — print styling is exactly the sort of thing
+that renders differently on the weakest of the three engines, and there is a real
+Linux user.
+
+### JSON — a zip of the world's folder
+
+**Settled 2026-08-14** (Q2 closed): a zip of the world's folder, since the data
+is already JSON files on disk and re-zipping is honest about that. **Label it as
+JSON in the menu** (her call) — people coming from other tools are looking for
+the word, and "Zip" alone doesn't tell them what's inside. Something like "JSON
+(.zip)" with a line saying it's the world's own files.
+
+**Nothing in the app has ever written a zip**, so this brings in the first
+dependency of the phase. It must be MIT or similarly permissive and small —
+`fflate` is the obvious candidate. `.lk` is gzip via the webview's own
+`CompressionStream`, which does one stream and cannot make an archive, so there
+is nothing already here to reuse.
+
+**It reads the world off disk rather than out of the store.** That is the whole
+argument for the format being honest — what it hands over is the files, exactly
+as they are, including anything the app has not loaded.
 
 ### Templates as files
 
@@ -590,8 +705,10 @@ Templates already copy a page *and everything nested under it*
 (`collectSubtree` in `template-library.ts`), so a template that is a whole
 folder skeleton is already the shape Phase 17 built. What's missing is
 writing one to a file and reading one back — for handing skeletons to people
-who are struggling to set their own up. Themes already work this way, so
-there's a pattern to copy.
+who are struggling to set their own up. Themes already work this way, and so
+does `.antpl` (`pickTemplateSavePath` and `pickTemplateFile` in
+`dialog-service.ts`), so there are two patterns to copy and the newer one is
+closer.
 
 **Templates carry their pictures** (her call, 2026-08-14, Q4 closed) — in case
 people want to share skeletons with images in them. So a template file is a
@@ -619,7 +736,9 @@ answer now lives, because several of these are rules rather than one-off calls.
 - **Q4** — shared templates → carry their pictures. Phase 28.
 - **Q5 / sequencing** → Phase 27 runs next and promptly; the rest sits where it
   makes sense, which is 28 after 20 so Markdown export and the Markdown importer
-  are built as one round trip.
+  are built as one round trip. **Superseded on that last point 2026-09-10**:
+  Phase 20 was deferred on 2026-09-04, so 28 runs first and its Markdown export
+  carries the shared map alone. See Phase 28 § What is in this phase.
 - **Q8** — start screen direction → settled; see "The screen itself" in
   `docs/shipped.md` § Phase 27.
 - **Q9** — the loud button → New world, centred and alone. Settled by the layout
@@ -653,7 +772,7 @@ JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs
 
 **What made it long, which is the part to weigh when it comes back.** Reading a folder of plain `.md` files is the small half: `readDir` is already in the host contract and works on both shells, and since any page here can hold pages, a directory maps to a page with children without inventing anything. Our `[[wikilinks]]` are Obsidian's syntax already, so that part is resolution rather than translation. The length is in the rest of the tail — Obsidian's embeds and tags; a front-matter parser the repo does not have; copying pictures in and repointing every reference; zip, which nothing in the app has ever opened, `.lk` being plain JSON; and the folder-drag entry point, which needs checking before it is scoped, because what a dropped folder hands the page is not obviously the path `readDir` wants.
 
-**Phase 28 expects this phase to exist.** Its markdown export is written down as something to build *with* this importer rather than separately — one map read in both directions, and the round-trip test that comes free with it. Whichever of the two is built first therefore carries the shared map, and the other should be re-read before it starts.
+**Phase 28 went first, so the map is already written.** Its markdown export was scoped to be built *with* this importer — one map read in both directions, and the round-trip test that comes free with it — but this phase was deferred and 28 was scoped on 2026-09-10 without it. The rule that whichever half goes first carries the shared map therefore applies to 28, and **the thing to do before starting this phase is read Phase 28 § Markdown, not design a mapping from scratch**. Two things it deliberately left for here: splitting a page back into its tabs from the `##` headings the export writes, and whatever the export turned out not to be able to say.
 
 ---
 
