@@ -36,7 +36,8 @@ type HostBridge = {
   trashPath(path: string): Promise<void>;
   renamePath(from: string, to: string): Promise<void>;
   copyFile(from: string, to: string): Promise<void>;
-  fileInfo(path: string): Promise<{ size: number; modifiedAt: Date | string | null }>;
+  fileInfo(path: string): Promise<{ size: number; modifiedAt: Date | string | null; isDirectory: boolean }>;
+  pathForFile(file: File): string;
   watch(paths: string | string[], options: { delayMs: number; recursive: boolean }): Promise<number>;
   unwatch(id: number): Promise<void>;
   onWatchEvent(handler: (id: number, changed: string[]) => void): () => void;
@@ -149,7 +150,18 @@ export async function fileInfo(path: string): Promise<FileInfo> {
   // A Date survives the trip between processes, but a store that has been
   // through JSON hands back a string. Both arrive here; one shape leaves.
   const modifiedAt = info.modifiedAt === null ? null : new Date(info.modifiedAt);
-  return { size: info.size, modifiedAt };
+  return { size: info.size, modifiedAt, isDirectory: Boolean(info.isDirectory) };
+}
+
+/**
+ * Electron answers this from the preload, where `webUtils.getPathForFile`
+ * lives — the `File.path` property it replaced was removed in Electron 32.
+ * An empty answer means the drop was not from the disk at all (a picture
+ * dragged out of a browser, say).
+ */
+export function droppedPath(file: File): string | null {
+  const path = bridge().pathForFile(file);
+  return path || null;
 }
 
 export async function watchPath(
@@ -371,6 +383,7 @@ const conformance = {
   renamePath,
   copyFile,
   fileInfo,
+  droppedPath,
   watchPath,
   showWindow,
   drawsWindowControls,

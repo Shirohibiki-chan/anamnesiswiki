@@ -12,6 +12,7 @@ import { IMAGE_MIN_PREVIEW_WIDTH } from "../constants/limits";
 import { COLOR_PALETTE } from "../constants/palette";
 import { ASSET_REF_PREFIX } from "../constants/paths";
 import { createTab, FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
+import type { ImportPendingImage, ImportPlan, ImportPreviewNode } from "./import-plan";
 import { getPropertySchema, type TemplateKey } from "./template-registry";
 
 // ---- Raw .lk shapes (loose — only the fields we actually read) ----
@@ -45,34 +46,9 @@ type LkExportFile = { resources: LkResource[] };
 type BlockSeed = Record<string, unknown>;
 
 // ---- Public result shapes ----
-/**
- * A picture that still has to be downloaded before the import can be written.
- *
- * Three slots, not one, and the third is shaped differently on purpose. A
- * portrait and a banner are fields on the Node, so naming the node is enough to
- * say where the filename goes. A picture in the writing is a block inside a
- * tab's content, and there can be any number of them in one page — so it
- * carries the id of the block it belongs to, and `applyBodyImage` is what puts
- * the two back together.
- */
-export type ImportPendingImage =
-  | { nodeId: string; url: string; field: "image" | "banner" }
-  | { nodeId: string; url: string; field: "body"; blockId: string };
-export type ImportPreviewNode = { id: string; name: string; templateKey: string; children: ImportPreviewNode[] };
-export type ImportPlan = {
-  projectName: string;
-  nodes: Node[];
-  rootOrder: string[];
-  // LK's project root comes across as a real page designated the project home
-  // (see buildImportPlan) — never null in practice for a well-formed export,
-  // null only for the malformed no-single-root fallback.
-  homeNodeId: string | null;
-  templateCounts: Partial<Record<TemplateKey, number>>;
-  totalResources: number;
-  lossyNotes: string[];
-  pendingImages: ImportPendingImage[];
-  preview: ImportPreviewNode[];
-};
+// The plan itself lives in `import-plan.ts` since Phase 20, when a second
+// importer started producing one. `ImportPendingImage`'s `body` variant is the
+// half of a pair whose other half is `applyBodyImage` below.
 
 export async function parseLkBytes(bytes: Uint8Array): Promise<unknown> {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
@@ -373,7 +349,7 @@ const MEDIA_LAYOUT_ALIGNMENT: Record<string, "left" | "center" | "right"> = {
  *
  * The URL is only queued here. It's on LegendKeeper's CDN, and the file has to
  * be downloaded into the project's own `assets/` before the block can point at
- * anything — that happens in `importLkProject`, which is why the block gets an
+ * anything — that happens in `importProject`, which is why the block gets an
  * explicit id rather than letting BlockNote assign one later.
  */
 function convertMediaSingle(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
@@ -801,6 +777,7 @@ export function buildImportPlan(raw: unknown): ImportPlan {
     totalResources: importedResources.length,
     lossyNotes: describeLossy(lossy),
     pendingImages,
+    assets: [],
     preview,
   };
 }

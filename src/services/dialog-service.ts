@@ -308,17 +308,22 @@ export async function pickImageFile(): Promise<string | null> {
  * choice fails at the parse step with a message, which is a better place to
  * fail than a file list that silently omits the file.
  *
- * `.lk` is the only format there is so far. When the Markdown, Obsidian and
- * World Anvil importers land (docs/plan.md), they belong in this same picker
- * as more entries rather than as separate buttons — the errand is "bring my
- * world in", and which program it came out of is a detail of the file.
+ * One picker for every format (settled 2026-08-18, built out in Phase 20):
+ * the errand is "bring my world in", and which program it came out of is a
+ * detail of the file. Each importer is a filter entry here and a branch on
+ * what the bytes turn out to be in `use-import.ts`. A folder is the one
+ * thing a file picker cannot return, so that has its own button and the
+ * drop on the window.
  */
 export async function pickImportFile(): Promise<string | null> {
   const result = await onePicker(() =>
     chooseFile({
       title: "Import a project",
       filters: [
-        { name: "Project export (.lk)", extensions: ["lk"] },
+        { name: "Anything importable", extensions: ["lk", "md", "markdown", "txt", "zip"] },
+        { name: "LegendKeeper export (.lk)", extensions: ["lk"] },
+        { name: "Markdown or text (.md, .txt)", extensions: ["md", "markdown", "txt"] },
+        { name: "Zipped folder of notes (.zip)", extensions: ["zip"] },
         { name: "All files", extensions: ["*"] },
       ],
     }),

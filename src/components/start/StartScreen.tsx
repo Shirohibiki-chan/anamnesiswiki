@@ -15,11 +15,12 @@
 // The rail drags on the shell's own handle rather than a second mechanism
 // written for this screen. It is the same gesture on the same kind of edge, and
 // the width is stored beside the shell's two — see `layout-service`.
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { FolderInput, Trash2 } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useExampleOnFirstRun } from "../../hooks/use-example-on-first-run";
+import { useImportDrop } from "../../hooks/use-import-drop";
 import { usePanelWidths, useRailWidthActions } from "../../hooks/use-panel-widths";
 import { usePins } from "../../hooks/use-pins";
 import { useProjectLibrary } from "../../hooks/use-project-library";
@@ -31,6 +32,7 @@ import { useStartActions } from "../../hooks/use-start-actions";
 import { useWorldLibrary } from "../../hooks/use-world-library";
 import { scopeProjects, SCOPE_ALL, SCOPE_ARCHIVED, type LibraryScope } from "../../services/library-scope";
 import { resolvePins, unpinned as unpinnedOf } from "../../services/pins";
+import type { ImportPick } from "../../services/import-source";
 import { filterWorlds, type ListedWorld } from "../../services/world-scan";
 import { RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from "../../constants/layout";
 import { ImportModal } from "../import/ImportModal";
@@ -105,7 +107,15 @@ export function StartScreen() {
   const [query, setQuery] = useState("");
   const [isNaming, setIsNaming] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
-  const [isImportOpen, setIsImportOpen] = useState(false);
+  // Open, and what it opened with: a folder or file dropped on the window
+  // arrives already picked, so the modal starts reading it rather than at
+  // its buttons. `at` makes a second drop a fresh modal rather than a stale
+  // one.
+  const [importing, setImporting] = useState<{ pick?: ImportPick; at: number } | null>(null);
+  const openImport = useCallback((pick?: ImportPick) => setImporting({ pick, at: Date.now() }), []);
+  // Off while the modal is up: it takes its own drops, and a new modal
+  // arriving under one that is halfway through writing would strand it.
+  const { dragging } = useImportDrop(openImport, importing === null);
   const [isManagingPins, setIsManagingPins] = useState(false);
   const [isPickingTemplate, setIsPickingTemplate] = useState(false);
   // The version to open on, or null when the panel isn't open at all — one
@@ -400,7 +410,7 @@ export function StartScreen() {
         onOpen={(project) => void actions.openListed(project.path, project.name)}
         onStartFromTemplate={() => setIsPickingTemplate(true)}
         onOpenFolder={() => void actions.pickFolderToOpen()}
-        onImport={() => setIsImportOpen(true)}
+        onImport={() => openImport()}
         onOpenExample={() => void actions.openExampleWorld()}
         onSettingsClose={() => void refreshWorlds()}
         onOpenReleases={setOpenReleaseVersion}
@@ -408,7 +418,16 @@ export function StartScreen() {
         onOpenProjectsFolder={() => void actions.openProjectsFolder()}
       />
 
-      {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
+      {importing && <ImportModal key={importing.at} initialPick={importing.pick} onClose={() => setImporting(null)} />}
+
+      {/* Says what a drop will do while one is in the air — the window has no
+          other way to show it is a target. */}
+      {dragging && (
+        <p className="start-notice start-notice-drop" role="status">
+          <FolderInput className="start-notice-icon" size={15} aria-hidden="true" />
+          Drop it to import it as a new world.
+        </p>
+      )}
 
       {/* Not routed through SettingsButton in the rail's foot: that one
           always opens to Theme, and a release row's job is to land on Patch

@@ -108,7 +108,7 @@
 
 | What you see | File |
 |---|---|
-| LegendKeeper import — file picker, preview of the parsed tree, warnings for what will convert lossily | `src/components/import/ImportModal.tsx` |
+| Import — a `.lk`, a folder of Markdown, a zip of one or a single note: file and folder pickers, a drop on the window, preview of the parsed tree, warnings for what will convert lossily | `src/components/import/ImportModal.tsx`, `src/hooks/use-import.ts`, `src/hooks/use-import-drop.ts` |
 | LegendKeeper export — what to export, and the `.lk` file it writes | `src/components/export/ExportModal.tsx` |
 | Two-step confirm for destructive actions | `src/components/shell/ConfirmDialog.tsx` |
 | A message with nothing to decide — the one-way notices | `src/components/shell/NoticeDialog.tsx` |

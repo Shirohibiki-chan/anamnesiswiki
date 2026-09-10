@@ -533,10 +533,16 @@ LegendKeeper file, a folder of Markdown, one big Markdown file or a JSON
 zip; a page prints as a page rather than as the whole window; and one
 template at a time can be handed to somebody as a file. Detail is in
 `docs/shipped.md`; what still binds the code is in `docs/handoff.md`.
+**Phase 20 (Markdown & Folder Import) shipped 2026-09-10**, the same day and
+un-deferred by her that morning — a folder of Markdown, a zip of one or a
+single note comes in as a world, from the picker or dropped on the window, and
+the Phase 28 export round-trips through it. Detail and the reasoning it was
+deferred with are in `docs/shipped.md`; what still binds the code is in
+`docs/handoff.md` § Markdown import.
 
 **Nothing in this file is scheduled after it.** What remains is Phase 1.5
-(Publish), the deferred phases below, and Queued Adjustments — which comes
-next is hers to choose.
+(Publish), the deferred phases below (Cloud Sync and Split Panes), and Queued
+Adjustments — which comes next is hers to choose.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
@@ -554,8 +560,9 @@ answer now lives, because several of these are rules rather than one-off calls.
 - **Q5 / sequencing** → Phase 27 runs next and promptly; the rest sits where it
   makes sense, which is 28 after 20 so Markdown export and the Markdown importer
   are built as one round trip. **Superseded on that last point 2026-09-10**:
-  Phase 20 was deferred on 2026-09-04, so 28 runs first and its Markdown export
-  carries the shared map alone. See `docs/shipped.md` § Phase 28.
+  Phase 20 was deferred on 2026-09-04, so 28 ran first and its Markdown export
+  carried the shared map alone — and 20 followed the same day, reading that map
+  back. See `docs/shipped.md` § Phase 28 and § Phase 20.
 - **Q8** — start screen direction → settled; see "The screen itself" in
   `docs/shipped.md` § Phase 27.
 - **Q9** — the loud button → New world, centred and alone. Settled by the layout
@@ -570,26 +577,6 @@ answer now lives, because several of these are rules rather than one-off calls.
 Only if the shared-folder sync approach demonstrably stops working. Options in preference order: Supabase (hosted Postgres + auth), Yjs + y-webrtc (P2P CRDT), self-hosted sync server.
 
 Do not scaffold in earlier phases. The file-per-node data model already sets us up well for any of these.
-
----
-
-## Phase 20 — Markdown & Folder Import (Deferred)
-
-**Deferred 2026-09-04 by the user, in favour of Phase 21.** Not dropped and not disliked — mistimed. Her world is already in Anamnesis, so an importer serves people arriving from somewhere else: her boyfriend, who was talked out of starting in Obsidian, and the botmaker in her Discord who uses it. That is a real audience and a later one. Phase 21 is the shell she looks at every day, and it won on that.
-
-**What it was, kept whole so none of it has to be worked out twice:**
-
-**Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
-
-**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
-
-JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs/ideas.md`).
-
-**One Import button, more entries behind it — not a button per format.** Settled 2026-08-18: the errand is "bring my world in", and which program it came out of is a detail of the file, not a decision she should have to make before the picker opens. `pickImportFile` in `dialog-service.ts` already has the shape — a filter list plus an All files fallback — so each new importer adds a filter entry and a branch on what the file turns out to be, the way theme import already works out `.css` from `.json` after the fact. The folder-drag entry point above is the exception and stays separate, because a folder isn't something a file picker returns.
-
-**What made it long, which is the part to weigh when it comes back.** Reading a folder of plain `.md` files is the small half: `readDir` is already in the host contract and works on both shells, and since any page here can hold pages, a directory maps to a page with children without inventing anything. Our `[[wikilinks]]` are Obsidian's syntax already, so that part is resolution rather than translation. The length is in the rest of the tail — Obsidian's embeds and tags; a front-matter parser the repo does not have; copying pictures in and repointing every reference; zip, which nothing in the app has ever opened, `.lk` being plain JSON; and the folder-drag entry point, which needs checking before it is scoped, because what a dropped folder hands the page is not obviously the path `readDir` wants.
-
-**Phase 28 went first, so the map is already written.** Its markdown export was scoped to be built *with* this importer — one map read in both directions, and the round-trip test that comes free with it — but this phase was deferred and 28 was scoped on 2026-09-10 without it. The rule that whichever half goes first carries the shared map therefore applies to 28, and **the thing to do before starting this phase is read `docs/shipped.md` § Phase 28 § Markdown, not design a mapping from scratch**. Two things it deliberately left for here: splitting a page back into its tabs from the `##` headings the export writes, and whatever the export turned out not to be able to say.
 
 ---
 

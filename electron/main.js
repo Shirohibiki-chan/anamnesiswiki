@@ -386,7 +386,7 @@ handle("fs:copyFile", (_event, from, to) => fs.copyFile(from, to));
 
 handle("fs:fileInfo", async (_event, target) => {
   const info = await fs.stat(target);
-  return { size: info.size, modifiedAt: info.mtime ?? null };
+  return { size: info.size, modifiedAt: info.mtime ?? null, isDirectory: info.isDirectory() };
 });
 
 // Watches, by id, so the renderer can stop one without holding a handle to it.

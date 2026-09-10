@@ -22,6 +22,8 @@ export type FileInfo = {
   size: number;
   /** Null where the host doesn't report a modification time. */
   modifiedAt: Date | null;
+  /** Whether the path is a folder — asked once, by the import, of a drop. */
+  isDirectory: boolean;
 };
 
 /** A named set of extensions for a file dialog to filter by. */
@@ -102,6 +104,18 @@ export type HostContract = {
     onChange: (changed: string[]) => void,
     options: { delayMs: number; recursive: boolean },
   ): Promise<() => void>;
+
+  /**
+   * The real path of a file the OS dropped onto the page, or null when the
+   * host cannot say.
+   *
+   * A dropped `File` carries a name and bytes but not where it lives, and
+   * for a folder it carries nothing at all — Chromium hands the page an
+   * empty file called after the folder. Only the shell knows the path, so
+   * only the shell can turn a drop into something `readDir` can open. Phase
+   * 20's folder-drop entry point is the one caller.
+   */
+  droppedPath(file: File): string | null;
 
   // ---- window
   showWindow(): Promise<void>;

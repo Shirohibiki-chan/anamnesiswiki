@@ -6157,3 +6157,145 @@ resulting size next to the switch; that's the whole reason it exists.
 
 Nothing here touches the network — a template is a file she hands over however
 she already hands over files.
+
+## Phase 20 — Markdown & Folder Import ✅ Shipped 2026-09-10 — phase closed
+
+Deferred 2026-09-04 in favour of Phase 21 and un-deferred by her on
+2026-09-10, the morning after Phase 28 closed. Built that day in one PR. What
+follows keeps the deferred scoping whole, then says what was built against it.
+
+### What it was, as scoped before it was deferred
+
+**Deferred 2026-09-04 by the user, in favour of Phase 21.** Not dropped and not disliked — mistimed. Her world is already in Anamnesis, so an importer serves people arriving from somewhere else: her boyfriend, who was talked out of starting in Obsidian, and the botmaker in her Discord who uses it. That is a real audience and a later one. Phase 21 is the shell she looks at every day, and it won on that.
+
+**Text & Markdown, Obsidian.md, Folder and Zip are one importer wearing four hats** — read a tree of markdown files, map directories to the tree. Build it once.
+
+**Dragging a folder onto the window is the entry point**, and imports the whole thing with its directory structure preserved. Obsidian added exactly this in 1.13 and it's the right front door for an importer that's already directory-shaped: it skips the file-picker step for the case that matters most, and it's the same code path underneath.
+
+JSON and HTML are separate and lower priority. World Anvil is dropped (see `docs/ideas.md`).
+
+**One Import button, more entries behind it — not a button per format.** Settled 2026-08-18: the errand is "bring my world in", and which program it came out of is a detail of the file, not a decision she should have to make before the picker opens. `pickImportFile` in `dialog-service.ts` already has the shape — a filter list plus an All files fallback — so each new importer adds a filter entry and a branch on what the file turns out to be, the way theme import already works out `.css` from `.json` after the fact. The folder-drag entry point above is the exception and stays separate, because a folder isn't something a file picker returns.
+
+**What made it long, which is the part to weigh when it comes back.** Reading a folder of plain `.md` files is the small half: `readDir` is already in the host contract and works on both shells, and since any page here can hold pages, a directory maps to a page with children without inventing anything. Our `[[wikilinks]]` are Obsidian's syntax already, so that part is resolution rather than translation. The length is in the rest of the tail — Obsidian's embeds and tags; a front-matter parser the repo does not have; copying pictures in and repointing every reference; zip, which nothing in the app has ever opened, `.lk` being plain JSON; and the folder-drag entry point, which needs checking before it is scoped, because what a dropped folder hands the page is not obviously the path `readDir` wants.
+
+**Phase 28 went first, so the map is already written.** Its markdown export was scoped to be built *with* this importer — one map read in both directions, and the round-trip test that comes free with it — but this phase was deferred and 28 was scoped on 2026-09-10 without it. The rule that whichever half goes first carries the shared map therefore applies to 28, and the thing to do before starting this phase is read § Phase 28 § Markdown, not design a mapping from scratch. Two things it deliberately left for here: splitting a page back into its tabs from the `##` headings the export writes, and whatever the export turned out not to be able to say.
+
+### What was built
+
+**Three services, mirroring the export's two plus a hat rack.**
+`markdown-parse.ts` is the inverse of `markdown-page.ts`: one file's text into
+front matter and blocks, with links and pictures resolved through a context so
+it is testable from a string. `markdown-import.ts` is the inverse of
+`markdown-vault.ts`: a listing of paths and note texts into the same
+`ImportPlan` the `.lk` importer produces — tree, preview, tally, pictures to
+copy. `import-source.ts` turns the three shapes a person can hand over — a
+folder on disk, a zip, a single file — into that listing, so the planner never
+knows which it was. `import-plan.ts` is the plan's type, moved out of
+`lk-import.ts` the moment a second importer needed it.
+
+**The parser is a reader for the shapes that matter, not CommonMark.** It is
+line-based on purpose: every block it reads starts at a line boundary, so a
+callout's or a list item's inner lines can be handed back to the same reader,
+which is how nesting works without a grammar. It reads headings (ATX and
+setext), paragraphs with hard breaks, fenced code, bullet/numbered/task lists
+nested by indent (tabs expanded first, so a tab-indented child is not sliced
+by its measured width — that was a bug caught by a test), tables with escaped
+pipes, dividers, pictures on their own line with an italic caption under them,
+markdown links and autolinks, `[[wikilinks]]` with `|label` and `#heading`,
+`![[embeds]]`, Obsidian callouts by kind, `> [!note]-` with a title as a
+toggle, and the inline marks the export writes plus `<u>`, `<br>`, `==` and
+`%%comments%%`. The emphasis rule is deliberately looser than CommonMark's
+flanking rules — a delimiter opens a style when a closer exists later and the
+next character is not a space, so `2 * 3` stays arithmetic and `snake_case`
+stays a word. Front matter is a YAML subset: quoted and bare scalars, flow
+lists, block lists; a wikilink is a string however it is written, because YAML
+would read `[[Kaine]]` as a list two deep.
+
+**The tab split is read, not guessed — the export changed for it.**
+`frontMatterFor` now writes `tabs: ["Overview", "History"]` on any page whose
+body is split into `##` tab headings, and nothing on a single-tab page, whose
+body carries no tab heading either. The importer splits on `##` only when
+that key is present, matching the names it lists (with the ` *(hidden)*` mark
+read back), and folds `## Details` into the last tab under its own heading.
+Headings inside a split page climb back up one level, undoing the shift the
+export made to seat the writing under its tab. A vault written by hand — no
+`tabs:` — is one tab, and its `##` headings are headings.
+
+**Callouts map both ways.** `info` and Obsidian's note-ish family are Info;
+`tip`/`success`/`check`/`done` are Info in emerald, `caution`/`attention`
+amber, `danger`/`error`/`failure`/`bug` red; `quote`/`cite` are Quote; and
+`warning` is Secret, because that is the export's word for one in both
+directions. A warning is therefore *not* counted as a change — a vault this
+app wrote would otherwise come back with a note saying something changed when
+nothing did. Only a kind the table does not know is counted, and comes in as
+Info.
+
+**The tree is Obsidian's shape read back.** A note beside a folder of the
+same name is one page holding pages; a folder with no such note is a folder
+page; a folder with no note anywhere beneath it (`attachments/`) is not a
+page. `.obsidian/`, `.trash/` and anything dotted are skipped. Siblings sort
+by name with numbers compared as numbers, so `Chapter 2` precedes
+`Chapter 10`; the numeric prefixes some vaults use are kept as part of the
+name (`docs/ideas.md` had already asked for that). `[[links]]` resolve the way
+Obsidian resolves them — exact path, then note name, then title or alias,
+first by path when names collide.
+
+**Pictures are copied in once and pre-named.** Every reference — relative
+path, `![[name.png]]` by bare name anywhere in the vault, `image:` and
+`banner:` in front matter — resolves to one source file, which gets one
+`uuid.ext` asset name however many pages use it, and the nodes point at that
+name before the bytes exist. The plan carries the bytes as `read()` closures
+(`ImportAsset`) because the source may be a folder on disk or a zip in memory
+and the store has no business knowing which. `importProject` (née
+`importLkProject`) copies them in a `copying` phase the modal reports
+separately from a `.lk`'s `images` phase, and the "needs the internet" line
+shows only when there is something to download.
+
+**The picker and the drop.** `pickImportFile` lists everything importable
+first, then each kind, then All files. `use-import.ts` decides what was picked
+from the bytes (gzip → `.lk`, `PK` → zip) before the name, so `world.lk.zip`
+opens as a `.lk`. A zip of one folder is that folder, and names the project;
+a zip holding a `project.json` is the JSON export and is refused with
+directions to unzip it into the projects folder. The drop is `use-import-drop`
+on the window, enabled on the start screen while no modal is up and inside
+the modal while it waits at its buttons — never while one is reading or
+writing, so a second drop cannot strand a plan halfway through. The shell
+answers where a dropped thing lives through a new contract entry,
+`droppedPath`: Electron's preload calls `webUtils.getPathForFile`, which
+works for folders too (`File.path` was removed in Electron 32); Tauri returns
+null and the pickers remain. `FileInfo` grew `isDirectory` so the drop can
+tell a folder from a file with the one call it already had.
+
+**Verification.** 60 new Vitest tests across the three services, including a
+round trip that builds nodes, runs them through `planMarkdownVault` and reads
+the files back through `planMarkdownImport` — tree, template, tags, aliases,
+hidden, portrait, tabs with their hidden marks, headings at their original
+level, mentions with her wording, a Secret, a captioned picture, a nested
+bold list item, a quote. `e2e/imports-a-folder-of-notes.e2e.ts` does the same
+in the real app: exports the generated world as a vault, switches to the start
+screen, answers the folder picker from the main process, checks the preview
+counts one page per note and names the project after the world, imports, and
+opens a page to find its prose, its heading and its mention chip. The modal
+and the drag hint were screenshotted in the running Electron app. The unit
+suite is 2199 green; lint and `tsc` clean.
+
+**What it deliberately does not do, and where that shows.**
+
+- **Universes come back as folders.** The export gives a universe a folder
+  and no note, and there is nothing in a folder to say it was one. The
+  contents are intact; the switcher entry is not. A marker would be the
+  export's to write, and Phase 28 decided against a note for a universe.
+- **Order is by name.** A folder of files has no memory of the tree's
+  arrangement; she drags pages where she wants them.
+- **Details sections come back as writing.** Meters and index lists were
+  exported flat, and flat is what comes back — counted and said in the
+  preview, not reconstructed by guessing at a bullet's shape.
+- **A callout's colour, a page's own colour and icon, block-level anchors
+  (`[[Page#^id]]`) and `==highlights==`** have no representation on the way
+  out or no equivalent on the way in, and are dropped with the words kept.
+- **HTML import is not built** and was never in this phase's scope; JSON
+  import is the unzip the refusal message describes.
+- **The real-disk drop was not exercised by the suite.** Playwright can
+  dispatch a drop carrying an in-page `File`, which has no path — that was
+  done, to check the hint appears and a pathless drop is ignored without an
+  error — but a drop of a real folder from Explorer is hers to try.

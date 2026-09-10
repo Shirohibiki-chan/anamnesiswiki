@@ -13,7 +13,7 @@
 // Nothing here is a decision either. Every function forwards and returns; the
 // shapes it produces are turned into the app's own vocabulary one layer up, in
 // `src/services/host-service.electron.ts`.
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 // The one thing the app asks for synchronously. It never changes while the app
 // is running, so it is read once here rather than being a round trip.
@@ -62,6 +62,10 @@ contextBridge.exposeInMainWorld("anamnesisHost", {
   renamePath: (from, to) => invoke("fs:rename", from, to),
   copyFile: (from, to) => invoke("fs:copyFile", from, to),
   fileInfo: (target) => invoke("fs:fileInfo", target),
+  // Synchronous and local: the path of a dropped file is something only the
+  // preload can read off the File object, and it is the one thing here that
+  // is not a round trip to main.
+  pathForFile: (file) => webUtils.getPathForFile(file),
   watch: (targets, options) => invoke("fs:watch", targets, options),
   unwatch: (id) => invoke("fs:unwatch", id),
   onWatchEvent: (handler) => {

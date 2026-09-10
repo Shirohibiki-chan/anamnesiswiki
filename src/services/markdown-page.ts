@@ -546,6 +546,13 @@ export function frontMatterFor(node: Node, ctx: MarkdownPageContext): string {
   // Only when true. A `hidden: false` on every page in the vault is noise
   // about a state almost nothing is in.
   if (node.hidden) lines.push("hidden: true");
+  // The tab names, when the body below is split into them. This is what lets
+  // the importer *read* the split back rather than guess it from the `##`
+  // headings — a page whose own writing opens with an `##` is otherwise
+  // ambiguous (see `pageBody`). Left off a single-tab page, whose body
+  // carries no tab heading either.
+  const tabs = node.tabs ?? [];
+  if (tabs.length > 1) lines.push(`tabs: ${yamlList(tabs.map((tab) => tab.label))}`);
 
   const portrait = node.image ? ctx.pictureAt(node.image) : null;
   if (portrait) lines.push(`image: ${yamlString(portrait)}`);

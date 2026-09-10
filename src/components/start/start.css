@@ -1207,6 +1207,14 @@
   animation: start-notice-in 6000ms ease forwards;
 }
 
+/* The drop hint stays while the drag does, rather than fading on the
+   notice's own timer. */
+.start-notice-drop {
+  animation: none;
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .start-notice-icon {
   flex: none;
   color: var(--color-accent-foreground, var(--color-text));

@@ -1,16 +1,20 @@
-// Phase 8 — bring a `.lk` export in as a brand-new project. Four steps in one
-// modal: pick the file, preview what was found (tree + inferred template
-// counts + a plain-language list of anything that won't come across
-// perfectly), pick a destination folder, then write it all to disk. See
-// docs/lk-format.md for the field mapping this preview reflects.
-import { useState } from "react";
+// Phase 8 — bring a `.lk` export in as a brand-new project; Phase 20 — the
+// same door for a folder of markdown, a zip of one, or a single note. Four
+// steps in one modal: pick the file or folder (or arrive with one already
+// dropped on the window), preview what was found (tree + template counts + a
+// plain-language list of anything that won't come across perfectly), pick a
+// destination folder, then write it all to disk. See docs/lk-format.md for
+// the `.lk` mapping and docs/handoff.md § Markdown import for the other.
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getTemplateIcon } from "../../constants/icons";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
-import { useLkImport } from "../../hooks/use-lk-import";
+import { useImport } from "../../hooks/use-import";
+import { useImportDrop } from "../../hooks/use-import-drop";
 import { useTemplates } from "../../hooks/use-templates";
-import type { ImportPlan, ImportPreviewNode } from "../../services/lk-import";
+import type { ImportPlan, ImportPreviewNode } from "../../services/import-plan";
+import type { ImportPick } from "../../services/import-source";
 import "./import.css";
 
 // `picking` is a state of its own rather than a flag because the OS file
@@ -45,26 +49,29 @@ function ImportPreviewRow({ node, depth }: { node: ImportPreviewNode; depth: num
 // little while" was the whole of it before, and a minute of that with no
 // number moving is indistinguishable from the app having died.
 function progressHeadline(
-  progress: { phase: "images" | "writing"; done: number; total: number } | null,
+  progress: { phase: "images" | "copying" | "writing"; done: number; total: number } | null,
   imageCount: number,
+  assetCount: number,
 ): string {
   if (!progress) {
-    return imageCount > 0 ? `Getting ready — ${imageCount} picture${imageCount === 1 ? "" : "s"} to fetch.` : "Getting ready…";
+    if (imageCount > 0) return `Getting ready — ${imageCount} picture${imageCount === 1 ? "" : "s"} to fetch.`;
+    if (assetCount > 0) return `Getting ready — ${assetCount} picture${assetCount === 1 ? "" : "s"} to copy in.`;
+    return "Getting ready…";
   }
-  if (progress.phase === "images") {
-    if (progress.total === 0) return "Writing your project to disk…";
-    return `Fetching pictures — ${progress.done} of ${progress.total}.`;
-  }
+  if (progress.phase === "images" && progress.total > 0) return `Fetching pictures — ${progress.done} of ${progress.total}.`;
+  if (progress.phase === "copying" && progress.total > 0) return `Copying pictures — ${progress.done} of ${progress.total}.`;
   return "Writing your project to disk…";
 }
 
-export function ImportModal({ onClose }: { onClose: () => void }) {
+export function ImportModal({ onClose, initialPick }: { onClose: () => void; initialPick?: ImportPick }) {
   const { pickImportFile, pickFolder } = useDialogs();
-  const { parseLkFile, importLkProject } = useLkImport();
+  const { parseImport, importProject } = useImport();
   const { recordProjectOpened, projectsDir, prepareNewProjectsDir } = useAppSettings();
   const { getLabel } = useTemplates();
 
-  const [status, setStatus] = useState<Status>("idle");
+  // Opened with something already dropped on the window, it starts reading
+  // rather than at its buttons.
+  const [status, setStatus] = useState<Status>(initialPick ? "parsing" : "idle");
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [projectName, setProjectName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -72,24 +79,68 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   // Settings. Deliberately not written back to the setting: overriding the
   // destination once shouldn't silently move where everything lands from now on.
   const [destinationOverride, setDestinationOverride] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ phase: "images" | "writing"; done: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{ phase: "images" | "copying" | "writing"; done: number; total: number } | null>(null);
 
   const destination = destinationOverride ?? projectsDir;
+
+  // Reading what was picked, whichever way it arrived. One try around it so
+  // every way this can fail ends on a line she can read.
+  const readPick = useCallback(
+    async (pick: ImportPick) => {
+      setStatus("parsing");
+      try {
+        const result = await parseImport(pick);
+        setPlan(result);
+        setProjectName(result.projectName);
+        setStatus("preview");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Couldn't read that.");
+        setStatus("error");
+      }
+    },
+    [parseImport],
+  );
+
+  // The pick the modal opened with, read once. The status is already
+  // `parsing` from the first render, so nothing is set until the read lands.
+  useEffect(() => {
+    if (!initialPick) return;
+    let stale = false;
+    parseImport(initialPick).then(
+      (result) => {
+        if (stale) return;
+        setPlan(result);
+        setProjectName(result.projectName);
+        setStatus("preview");
+      },
+      (e: unknown) => {
+        if (stale) return;
+        setError(e instanceof Error ? e.message : "Couldn't read that.");
+        setStatus("error");
+      },
+    );
+    return () => {
+      stale = true;
+    };
+  }, [initialPick, parseImport]);
+
+  // A drop while the modal is waiting at its buttons reads the same way a
+  // picker's answer does. Off once something is being read or written, so a
+  // second drop cannot replace a plan halfway through.
+  useImportDrop(readPick, status === "idle" || status === "error");
 
   // One try around both halves on purpose. Opening the picker was outside it
   // before, and the click handler discards this promise — so a picker that
   // failed to open threw into nothing: no dialog, no message, no clue. Every
   // way this can fail now ends on a line she can read.
-  async function handlePickFile() {
+  async function handlePick(kind: ImportPick["kind"]) {
     setError(null);
     setStatus("picking");
     let path: string | null;
     try {
-      path = await pickImportFile();
+      path = kind === "folder" ? await pickFolder({ title: "Choose a folder of notes to import" }) : await pickImportFile();
     } catch (e) {
-      setError(
-        `Couldn't open the file picker${e instanceof Error && e.message ? ` — ${e.message}` : "."}`,
-      );
+      setError(`Couldn't open the ${kind} picker${e instanceof Error && e.message ? ` — ${e.message}` : "."}`);
       setStatus("error");
       return;
     }
@@ -97,16 +148,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
       setStatus("idle");
       return;
     }
-    setStatus("parsing");
-    try {
-      const result = await parseLkFile(path);
-      setPlan(result);
-      setProjectName(result.projectName);
-      setStatus("preview");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't read that file.");
-      setStatus("error");
-    }
+    await readPick({ kind, path });
   }
 
   async function handleChangeDestination() {
@@ -142,9 +184,9 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     setError(null);
     // A failed write partway through would otherwise leave the modal stuck on
     // "Importing your project" with no error and no way back.
-    let result: Awaited<ReturnType<typeof importLkProject>>;
+    let result: Awaited<ReturnType<typeof importProject>>;
     try {
-      result = await importLkProject(parentDir, trimmedName, plan, setProgress);
+      result = await importProject(parentDir, trimmedName, plan, setProgress);
     } catch (e) {
       result = { ok: false, error: e instanceof Error ? e.message : "Something went wrong writing the project to disk." };
     }
@@ -168,7 +210,10 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
         {(status === "idle" || status === "picking" || status === "parsing" || status === "error") && (
           <div className="import-modal-pick">
-            <p>Bring in your pages, tabs, and cross-references from a .lk export.</p>
+            <p>
+              Bring in a world from a .lk export, a folder of Markdown notes (an Obsidian vault, say), a zip of one, or a single
+              note. You can also drop any of those onto this window.
+            </p>
             {error && <p className="import-modal-error">{error}</p>}
             {/* `ui-btn` is not decoration here. Without it the app's reset leaves
                 this as bare text — no fill, no border, no padding, not even a
@@ -177,9 +222,14 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 shipped that way from Phase 8 and was reported as the picker
                 failing to open, which is what missing a 21px-tall invisible
                 button looks like from the outside. */}
-            <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handlePickFile()} disabled={isBusy}>
-              {status === "picking" ? "Waiting for the file picker…" : status === "parsing" ? "Reading file…" : "Choose a file"}
-            </button>
+            <div className="import-modal-buttons">
+              <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handlePick("file")} disabled={isBusy}>
+                {status === "picking" ? "Waiting for the picker…" : status === "parsing" ? "Reading…" : "Choose a file"}
+              </button>
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void handlePick("folder")} disabled={isBusy}>
+                Choose a folder
+              </button>
+            </div>
             {/* The picker is an OS window this app doesn't draw, so when it
                 opens behind the app there is nothing on screen to say so. This
                 line is the only thing that can. */}
@@ -193,7 +243,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 runs — so it read as nothing having happened at all. */}
             {status === "parsing" && (
               <p className="import-modal-progress-note">
-                Unpacking your project. A big one takes a few seconds, and the window may sit still while it does.
+                Reading your notes. A big world takes a few seconds, and the window may sit still while it does.
               </p>
             )}
           </div>
@@ -257,7 +307,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
         {status === "importing" && (
           <div className="import-modal-pick">
-            <p>{progressHeadline(progress, plan?.pendingImages.length ?? 0)}</p>
+            <p>{progressHeadline(progress, plan?.pendingImages.length ?? 0, plan?.assets.length ?? 0)}</p>
             {progress && progress.total > 0 && (
               <div
                 className="import-modal-progress-track"
@@ -272,9 +322,13 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
             )}
-            <p className="import-modal-progress-note">
-              Pictures are stored on the servers of whatever you exported from, so this part needs the internet.
-            </p>
+            {/* Only a `.lk` fetches anything; a vault's pictures are files
+                beside the notes and never leave the machine. */}
+            {(plan?.pendingImages.length ?? 0) > 0 && (
+              <p className="import-modal-progress-note">
+                Pictures are stored on the servers of whatever you exported from, so this part needs the internet.
+              </p>
+            )}
           </div>
         )}
       </div>
