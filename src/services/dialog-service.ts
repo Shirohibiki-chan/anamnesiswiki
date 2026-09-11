@@ -9,6 +9,7 @@ import {
   chooseDirectory,
   chooseFile,
   chooseSavePath,
+  joinPath,
   openInBrowser,
   openInSystem,
   revealInFileManager,
@@ -71,6 +72,16 @@ async function onePicker<T>(run: () => Promise<T>): Promise<T | null> {
  */
 export async function showFolder(path: string): Promise<void> {
   await openInSystem(path);
+}
+
+/**
+ * Opens a published site's front page in whatever the OS opens `.html` with
+ * (Phase 1.5) — the browser, which is exactly the thing she is about to hand
+ * the folder to. Same mechanism as `showFolder`, aimed at a file rather than a
+ * folder so the reader's view opens instead of Explorer.
+ */
+export async function previewSite(siteDir: string): Promise<void> {
+  await openInSystem(await joinPath(siteDir, "index.html"));
 }
 
 /**

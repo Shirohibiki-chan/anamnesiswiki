@@ -91,10 +91,10 @@ Kept short on purpose — this file is read most sessions.
 
 ## Where We Are
 
-**Phases 0–19, 19.5, 21, 22, 23, 24, 25, 27 and 29 are done.** The app is shippable and shipping —
-v0.6.0 is out on the Electron shell. `docs/plan.md` has the remaining phases and
-the unscheduled Phase 1.5 (Publish); `docs/shipped.md` has what each finished
-piece delivered.
+**Phases 0–20, 21, 22, 23, 24, 25, 27, 28 and 29 are done, and so is 1.5.** The
+app is shippable and shipping — v0.6.0 is out on the Electron shell.
+`docs/plan.md` has the deferred phases and the queued work; `docs/shipped.md`
+has what each finished piece delivered.
 
 **Phase 25 — Storylines — closed 2026-09-09**: a Storyline page whose body is a
 canvas, scenes that are real pages, directed lines she draws herself, loose
@@ -1634,6 +1634,48 @@ which is the state this was extracted out of.
   is structural — see §Editor & templates. A filter that looks necessary means
   something upstream merged the records, and that is the bug to fix.
 
+## Publishing
+
+**Hidden means not published, with no switch** (Phase 1.5, 2026-09-10). A
+hidden page and everything under it is filtered out of `planSite`'s walk;
+a hidden tab and a Secret callout are left out by `html-page.ts`; and each
+kind is counted so the modal can say how many stayed behind. The 2026-07-31
+plan had a checkbox tree and an "include hidden tabs" toggle — both were
+dropped when the page-level flag existed, because a publish dialog with its
+own idea of "not this one" is a second control to get wrong. Don't add one
+back; if a case needs finer control, it is a case for marking the page hidden.
+
+- **The words of a Secret or a hidden tab must not reach the search index
+  either.** `pageToHtml` builds the index text from the same filtered tabs and
+  skips Secret blocks in `inlineTextOf`; a search that finds what the page
+  refuses to show is the same leak by a side door.
+
+- **The home page is rendered twice and the tally is read in between.**
+  `planSite` computes the notes before writing the root `index.html`, because
+  that second render would count the home page's secrets again.
+
+- **The Fuse bundle is the ES build with its last statement rewritten.**
+  `siteScript` matches `export{X as default}` at the end of
+  `fuse.js/min-basic?raw` and replaces it with `window.Fuse = X`. The CommonJS
+  build cannot be imported through Vite's export map, and an inline module
+  script cannot run from `file://`. The test that executes the result is the
+  guard; if it fails after a Fuse upgrade, fix the regex, not the test.
+
+- **Icons come through `renderIcon`, not through the converter.** A Lucide
+  component carries no path data (`iconNode` is closed over, not attached),
+  so the hook renders it with `react-dom/server` and the services only place
+  markup. Keep it that way — a service importing React breaks the layer rule,
+  and a hand-built SVG table drifts from the app's own icons.
+
+- **Fonts are read from `document.styleSheets`, not from a list.** Any
+  `@font-face` whose family matches the three text tokens comes along, which
+  means a theme that names a library font gets it without anyone editing the
+  publisher. The fetch goes through `hostFetch`, which in Electron is the main
+  process's `net.fetch` and reads `file:` — the renderer's own `fetch` cannot.
+
+- **`writeFileTree` takes `binaries`** for exactly this: bytes that exist
+  nowhere on her disk to `copyFile` from. Don't route them through a temp file.
+
 ## Markdown export
 
 **Obsidian is the dialect, not "markdown" in general.** There is no export on
@@ -2778,9 +2820,10 @@ says so. Don't fix a round-trip gap on one side only.
   tabs are the actual way material is held back. The template copy now says so
   in as many words, because the old LK-transcribed text promised "information
   that only admins can see", which was never true here and never could be in a
-  single-user app. If Publish (Phase 1.5) ever does filter Secret blocks, that
-  copy can change; until then don't write UI text that implies it hides
-  anything.
+  single-user app. **Publish (Phase 1.5, 2026-09-10) does leave Secret blocks
+  off the site** — so the honest sentence is now "kept out of anything
+  published", and UI text may say that; it still must not imply the block
+  hides anything *inside* the app.
 
 - **`date` properties render as free text, not a date picker** — fictional
   calendars ("Year 872, Third Age") don't fit a real calendar widget. Reference
@@ -3974,10 +4017,12 @@ Phase 26, step 2. What binds the code:
   deletes the field rather than writing `false`, so a page that was never hidden
   and one that was un-hidden are the same file.
 
-- **Nothing consumes `Node.hidden` yet.** It ships ahead of the thing it's for:
-  Phase 1.5's publisher is what has to read it, and a publisher that doesn't
-  puts the pages she marked private on a website. Noted in `docs/plan.md` under
-  Phase 1.5 as well, because that's where someone will be looking.
+- **`Node.hidden` is read by exactly one thing: the publisher** (Phase 1.5,
+  `site-plan.ts`), which drops a hidden page and everything under it before
+  the walk begins. Nothing else in the app consumes it, on purpose — hidden is
+  "not for readers", not "not for her". A new export that is aimed at other
+  people has to read it too; one aimed at her own disk (Markdown, `.lk`, JSON)
+  must not.
 
 - **Folders get full-row colour tinting; pages get icon-only.** Folders are
   categorical anchors and should read as containers; pages are their contents and

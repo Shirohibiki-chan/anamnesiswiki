@@ -8,7 +8,7 @@ A personal local-first worldbuilding wiki for the user, styled as an offline alt
 
 Electron desktop app as of v0.6.0 (Phase 29): React 19 + TypeScript + Vite renderer, with the shell in `electron/`. Tauri built every release up to v0.5.0 and `src-tauri/` is still present — the icons and the version files are read from it — but nothing ships from it. Local-first, single-user, offline. LegendKeeper-import compatible on day one — she has an existing 75-page world to migrate.
 
-**What it is not:** not a cloud service, not a LegendKeeper client, not an AI writing tool, not multi-user yet. A browser edition is wanted and unscheduled, not ruled out. Read-only publish for sharing comes in Phase 1.5.
+**What it is not:** not a cloud service, not a LegendKeeper client, not an AI writing tool, not multi-user yet. A browser edition is wanted and unscheduled, not ruled out. Read-only publish for sharing shipped in Phase 1.5 (2026-09-10) — `docs/handoff.md` § Publishing.
 
 ## Two Promises
 

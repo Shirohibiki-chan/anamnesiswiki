@@ -23,7 +23,7 @@ The working shape will be familiar if you've used a wiki-style worldbuilding too
 - **Template-driven properties** in the right sidebar — references to other pages, tags, images, dates
 - **Import your existing LegendKeeper world** from a `.lk` export on Day 1
 - **Export back to LK format** anytime, in case you ever want to go back
-- **Read-only publish** to a static site of selected pages, for sharing worlds with co-writers or the public *(Phase 1.5)*
+- **Read-only publish** — a world, or one page and everything under it, as a folder of web pages you host anywhere free, with hidden pages and Secret callouts kept off it
 - **Offline** — nothing about you or your world ever leaves your machine. No telemetry, no analytics, no accounts, and nothing that phones home on a timer. The app makes exactly two network requests, both only when you press a button for them: fetching your pictures during a LegendKeeper import, and checking whether a newer version exists
 
 ## Install
@@ -58,7 +58,7 @@ By default, projects go in `~/Documents/Anamnesis/YourProjectName/`. Each page i
 
 Two options:
 
-**Read-only publishing.** *File → Publish* generates a static HTML site of whichever pages you pick, respecting hidden-tab settings so your GM-only content stays private. Host the output anywhere free — Cloudflare Pages, Netlify, GitHub Pages — and share the URL. Whoever you send it to sees a browseable, styled version of your world in any web browser, no account required on their end. *(This is Phase 1.5 — not in the initial release. Coming soon.)*
+**Read-only publishing.** Right-click the project (or any page) → *Export ▸ As a website*. It writes a folder of web pages in your own theme — tree down the side, a search box, pictures and typefaces included. Anything you marked hidden, and every Secret callout, stays off it. Host the folder anywhere free — Cloudflare Pages, Netlify, GitHub Pages — and share the link. Whoever you send it to sees a browseable, styled version of your world in any web browser, no account required on their end.
 
 **Shared-folder editing.** Put your project folder in Dropbox, iCloud Drive, or Syncthing, and have your co-writer install Anamnesis and point it at the same synced folder. Both of you edit locally; the sync tool propagates changes. Works well for two or three people who aren't editing the same page at the same second.
 
