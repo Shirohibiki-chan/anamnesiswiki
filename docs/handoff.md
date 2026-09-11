@@ -2821,9 +2821,9 @@ says so. Don't fix a round-trip gap on one side only.
   in as many words, because the old LK-transcribed text promised "information
   that only admins can see", which was never true here and never could be in a
   single-user app. **Publish (Phase 1.5, 2026-09-10) does leave Secret blocks
-  off the site** — so the honest sentence is now "kept out of anything
-  published", and UI text may say that; it still must not imply the block
-  hides anything *inside* the app.
+  off the site**, and the Character prompt was reworded the same day (her
+  call) to say so; UI text may say "kept off a published site", and still must
+  not imply the block hides anything *inside* the app.
 
 - **`date` properties render as free text, not a date picker** — fictional
   calendars ("Year 872, Third Age") don't fit a real calendar widget. Reference

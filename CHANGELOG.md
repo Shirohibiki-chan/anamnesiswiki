@@ -16,6 +16,10 @@
 - **Every publish writes a new folder** — `Your World website`, then `(2)`, `(3)` — rather than overwriting, the same rule as the Markdown export. Upload the newest one in place of the last.
 - **This finishes Phase 1.5**, the oldest unstarted phase on the plan.
 
+### Changes
+
+- **The Character template's Secret prompt now says what a Secret does.** It used to say a Secret marks the passage and doesn't lock it, which was the whole truth until today; now it also says that a published website leaves it out.
+
 ## 2026-09-10 — bring in a folder of notes
 
 ### Additions
