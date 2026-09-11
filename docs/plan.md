@@ -531,12 +531,126 @@ everything under it, as a folder of web pages in the app's own look, with
 hidden pages, hidden tabs and Secret callouts kept off it. Detail in
 `docs/shipped.md`; what binds the code is in `docs/handoff.md` § Publishing.
 
-**Nothing in this file is scheduled after it.** What remains is the deferred
-phases below (Cloud Sync and Split Panes) and Queued Adjustments — which comes
-next is hers to choose.
+**Phase 30 is what comes next**, scoped 2026-09-10 and her pick from what was
+left. After it, what remains is the deferred phases below (Cloud Sync and Split
+Panes) and Queued Adjustments.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
+
+---
+
+## Phase 30 — Home Dashboards & Quick Capture
+
+Scoped 2026-09-10 from two things she brought: a gallery of Obsidian home
+dashboards, and a friend's own dashboard with a capture box on it that files
+each thought where it belongs. The second is the part she reacted to first and
+it leads the phase.
+
+**What an Obsidian dashboard is made of, because it decides the shape of this.**
+Each one in that gallery is two files: a CSS snippet that turns a note into a
+grid of glass cards, and a note whose content comes from a plugin running
+JavaScript — recent notes, notes with a tag, a clock, the weather, the capture
+box. **The look is Phase 12's job and already works here**: themes and
+snippets are `.css` files, live-reloaded, importable. **The content is where
+this app answers differently, and the decision is that no page runs code.** A
+shared file that runs a script is what makes those dashboards fragile and
+occasionally unsafe, and it is the reason every gallery entry opens with a list
+of plugins to install first. Here a dashboard is made of block kinds anyone can
+add from the Add Block menu, so it works in every theme, needs nothing
+installed, and can be handed to somebody as the page template Phase 28 already
+exports. One snippet beside it is the whole bundle.
+
+### 1. The Quick capture block — first
+
+A block with a text box and a Capture button. Type a thought, capture it, and
+it becomes a page under the right parent without leaving the page you were on.
+The point is the trip it saves: today a stray idea about the magic system,
+had mid-chapter, means opening the tree, making a page, naming it and finding
+the way back.
+
+- **Destinations are pages, because pages hold pages.** The block names one
+  page — its own by default — and the destinations are that page's children.
+  A `Quick capture` page with `Magic`, `Story` and `Characters` under it is the
+  friend's folder tree, made of the thing this app already has, and a
+  captured page can be dragged out of it into the world proper when it has
+  grown up.
+- **The picker is a box you type into, not a dropdown.** Her point, 2026-09-10:
+  a dropdown works for five destinations and stops working for twenty. So it is
+  the same control the reference pickers use — type, and the list narrows —
+  defaulting to wherever the last capture went.
+- **Code words are a shortcut into that picker, not a second system.** Text
+  that starts with a destination's name and a dash (`magic - i love witches`)
+  pre-selects that destination and drops the prefix from the title. A word that
+  matches nothing changes nothing: the text is kept whole and the capture goes
+  where the picker says. The friend's version files an unmatched word under
+  *other* silently, and a typo vanishing into a bin is the failure this design
+  avoids. After each capture the block says where it went, with a link.
+- **The title is what was typed.** The first line becomes the page's name and
+  the rest its body — not a timestamp with the words after it, which is what
+  the friend's tree shows and what makes it unreadable. The time goes into a
+  `Captured` property written in one fixed sortable form, so a database block
+  underneath can show newest first or group by parent. That strip of category
+  cards in her friend's screenshot is a Subpage index shown as cards, already
+  built.
+- **A captured page is a plain page and skips the template offer.** It was
+  created to hold three lines, not to be a Character yet. It gets the
+  automation rule from the top of this file for free: nothing runs on its own,
+  and what she typed is what the page says.
+- **The second door, built right after the first.** Once the block exists the
+  same box should open from anywhere — a shortcut and a search-palette action
+  — using the capture block on the home page as its rules. No home page block
+  means the action says so and offers to make one. Separate step so the block
+  ships and gets lived in before its rules are copied anywhere.
+
+### 2. A style class per page — what turns a theme into a dashboard skin
+
+The one gap between Phase 12 and the gallery. Obsidian's dashboards style only
+the dashboard note because a note can carry a class name in its properties and
+the snippet targets it. Here a snippet hits every page. So: a page setting —
+one short name, kept in the page's own file, landed on the page view's root as
+a data attribute. A snippet writes `[data-style="dashboard"] …` and nothing
+else in the app changes shape. It sits on the page view's root rather than the
+window's so the sidebar and the properties panel keep the theme; a skin
+describes a page, not the app around it.
+
+**Open, and it changes the build:** whether the name is per page only, or a
+template can carry one too so every Character page picks it up. Per page is
+the gallery's model and enough for a home page; per template is what a
+"character sheet" skin wants. Per page first is the recommendation, with the
+template half left as a Queued Adjustment if it is wanted, because the
+attribute and the snippet are the same either way and only the setting moves.
+
+### 3. Two blocks a home page is missing
+
+The gallery's tiles are mostly things this app already draws — Manual links
+as the *jump anywhere* cards, a Subpage index or Tag index for lists, a
+database for anything sorted. Two are missing and both are small:
+
+- **Recently edited** — the pages touched last, newest first, a count she sets.
+- **Pinned** — the shortcut rail's pins (Phase 19), as a block, so the home
+  page and the rail agree without being kept in step by hand.
+
+Clocks, weather and habit grids are the script half and stay out. **Layout
+stays a column of sections**, which is what the gallery's dashboards are too —
+sections stacked, cards inside each. Columns side by side would mean
+BlockNote's multi-column package, which is one of the paid ones and off the
+table; a snippet can grid the cards inside a section and that is as far as
+this phase goes.
+
+### 4. One dashboard, shipped as an example
+
+The rule from Phase 12 applies unchanged: don't ask her to describe a home
+page, build a complete one and let her react. One page template plus one
+snippet, bundled the way the built-in themes are, with the capture block, the
+two new blocks and a row of link cards on it. It is the thing that proves the
+four parts above add up, and the thing somebody copies to make their own.
+
+### Order
+
+Capture block → its shortcut and palette action → style class → the two
+blocks → the example. The capture block first because it is useful on its own
+and is what she asked for; the example last because it needs everything else.
 
 ---
 
