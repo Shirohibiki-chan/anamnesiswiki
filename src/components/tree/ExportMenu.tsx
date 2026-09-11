@@ -10,7 +10,7 @@
 // Deliberately shaped like `SortMenu` and `MoveMenu`: the same panel, the same
 // back row, swapped into the same popover. A third way of drawing a submenu
 // would be the thing that made the menus feel inconsistent.
-import { ArrowLeft, FileArchive, FileText, Files, Upload } from "lucide-react";
+import { ArrowLeft, FileArchive, FileText, Files, Globe, Upload } from "lucide-react";
 import type { ExportFormat } from "../../state/dialog-store";
 
 type ExportMenuProps = {
@@ -40,6 +40,9 @@ const FORMATS: { format: ExportFormat; label: string; Icon: typeof Upload; proje
   // Labelled JSON rather than Zip, her call: people arriving from other tools
   // look for the word, and the extension is the detail.
   { format: "json-zip", label: "As JSON (.zip)", Icon: FileArchive, projectOnly: true },
+  // Phase 1.5. Last because it is the odd one out: the others hand her a file
+  // to keep, this hands her a folder to put online.
+  { format: "website", label: "As a website", Icon: Globe },
 ];
 
 export function ExportMenu({ onSelect, onBack, scope }: ExportMenuProps) {

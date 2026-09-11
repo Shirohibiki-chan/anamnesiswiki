@@ -17,7 +17,7 @@ page view, BlockNote editor with custom callouts and `@`/`[[ ]]` cross-reference
 properties panel, all templates, LegendKeeper import *and* export, project-wide
 search, rebindable keyboard shortcuts, sidebar undo/redo, and automated unsigned
 releases for four platforms. **The app is shippable.** Phase 1.5 (read-only
-publish) is next up; phases 11–23 are planned in `docs/plan.md`.
+publish) shipped 2026-09-10; `docs/plan.md` has what is left.
 
 > **If you are a Claude reading this to plan or write code:** this summary
 > describes the shape of the project, not its current source. Code has been
@@ -45,7 +45,7 @@ publish) is next up; phases 11–23 are planned in `docs/plan.md`.
 
 **LegendKeeper export** — the inverse, reached by right-clicking a page (or the project name, for the whole world). No checkbox tree and no options: a page always exports with everything under it, because LK's own `.lk` export works that way. A summary screen names anything that won't survive — chiefly pictures added inside Anamnesis, which have no LK address to point at — then a file-save dialog, and a `.lk` file drops out.
 
-**Publish (Phase 1.5, later)** — a modal to pick which pages to include, whether to include hidden tabs (default off), a tag filter, and an output folder. Generates a static HTML site the user hosts anywhere free.
+**Publish (Phase 1.5, shipped 2026-09-10)** — *Export ▸ As a website* on the project row or a page's row. Writes a folder of web pages in the app's own look — tree sidebar, search, pictures and fonts included — that the user hosts anywhere free. Hidden pages, hidden tabs and Secret callouts stay off it, with no toggle; the modal counts each kind first.
 
 ---
 
@@ -81,7 +81,8 @@ src/
     template-registry.ts  — sole source of template definitions
     autosave.ts           — debounced save-to-disk service (plain, not a hook)
     editor-blocks/        — BlockNote custom block definitions
-    publisher.ts          — Phase 1.5 static-site generator
+    site-plan.ts          — Phase 1.5 publisher: the site as a plan
+    html-page.ts          — one page as HTML, for the publisher
   hooks/              — React hooks; the only layer components import
   state/              — Zustand store
   components/
@@ -153,7 +154,7 @@ Max folder depth is 3: `src/components/tree/TreeItem.tsx` is the deepest allowed
 
 **Phase 1 is done.** Phase 10 closed 2026-07-31, and with it everything Phase 1 needed to be a real, installable, updatable app. `docs/plan.md` has what's left and the queued work; `docs/shipped.md` records what each phase delivered.
 
-The next unlock is Phase 1.5 — read-only static-site publishing. Same feature serves two use cases: sharing a world with a co-writer for read-only viewing, and eventual public release of a world (e.g. Orynthia going public). Not blocked on anything.
+Phase 1.5 — read-only static-site publishing — shipped 2026-09-10. It serves two use cases: sharing a world with a co-writer for read-only viewing, and eventual public release of a world (e.g. Orynthia going public).
 
 Phases 11–23 were planned out on 2026-07-31 from the user's own list of wants: her own writing in the templates, a theme switcher and the queued palettes, richer property types, everyday navigation, the full right-click menu, sidebar blocks and meters, version history, markdown import, the shell rework, collections and graphs. Two things carried over from Phase 10 deliberately — undo for the right-hand panel (Phase 19) and duplicate-on-multi-selection (Phase 15).
 

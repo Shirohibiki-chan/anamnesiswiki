@@ -151,7 +151,7 @@ Investigated 2026-07-31 against a real export (`World-Orynthia_ Fragments of Fab
 
 **Browser version**
 
-The user raised this 2026-07-31 — not for herself, but so people who won't install an unknown `.exe` can still look at a world. **Phase 1.5 (Publish) already covers that need** and needs no re-architecture; check whether it's satisfied before considering anything further.
+The user raised this 2026-07-31 — not for herself, but so people who won't install an unknown `.exe` can still look at a world. **Phase 1.5 (Publish) shipped 2026-09-10 and covers that need**: a world becomes a folder of web pages in the app's own look, hosted anywhere free. Whether it satisfies the ask is hers to say once somebody has read a published world.
 
 A genuinely editable browser build is a different animal: `filesystem-service.ts` talking to the user's disk through Tauri *is* the storage layer, and a browser can't do that. It would mean either a real backend or a much more limited "your world lives in this browser" mode. Not a build flag. Deferred, and related to Phase 2 below.
 
@@ -254,7 +254,7 @@ Raised half as a joke and it shouldn't be taken as one: a competing tool's AO3 e
 
 **Open question worth settling before building: what's a work?** One page is the easy answer; a **Phase 25 storyline exported as chapters** maps onto AO3's own chapter model and is probably what she actually wants. That pairing decides the shape, so don't build the single-page version in a way that can't grow chapters.
 
-**Third of a kind.** `lk-export.ts`, Phase 1.5's static publish and this are all "walk BlockNote blocks, emit another format". By the third one the shared walker is worth extracting; it wasn't at the second.
+**Third of a kind — now fourth.** `lk-export.ts`, the Markdown exports, the Phase 1.5 publisher and this are all "walk BlockNote blocks, emit another format". The shared walker exists (`export-walk.ts`, Phase 28) and the publisher's `html-page.ts` is the closest converter to borrow from, since AO3 wants HTML.
 
 ---
 
@@ -363,7 +363,7 @@ Asked for by the user 2026-08-31. Wanted, unscheduled. Most of the shape below w
 
 **Still open: what a gallery does with an embedded picture.** One in the library has its bytes here; one embedded from elsewhere does not, and *Save a copy* deliberately opens it in a browser rather than the app fetching it. In a grid of thirty, a tile that opens a browser instead of saving is a surprise unless it is marked as one — whether to mark it, hide it or leave it is undecided, and she had no instinct either way when asked.
 
-**Still open: who "people" means, which decides how much can be built now.** Inside the app it is her and one other person, and that half is buildable today. A world handed to anyone else is Phase 1.5 (Publish), where the download is an anchor on an exported page and the export has to carry the files — so that half waits for Publish rather than being designed around it now.
+**Still open: who "people" means, which decides how much can be built now.** Inside the app it is her and one other person, and that half is buildable today. A world handed to anyone else is Phase 1.5 (Publish), shipped 2026-09-10: a file block is already an anchor with `download` on the published page, and the site carries the file — so that half exists, and a gallery of downloads is a question of drawing, not of transport.
 
 **Two things, two words — her split, 2026-08-31, and it is what keeps this from becoming Notion's mess.** **Image gallery** for the pictures; **database** for pages laid out as cards. One name per thing, and no name shared: Notion's whole failure is one word stretched over both.
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-10 — publish a world as a website
+
+### Additions
+
+- **Publish a world as a website.** *Export ▸ As a website*, on the project row or on any page's row, writes a folder of web pages: one page each, in folders that mirror your tree, with the whole tree down the left side, a search box, and pictures copied in. Anyone with the link can read it in a browser without installing anything. The done panel names three free places to put the folder — Netlify, Cloudflare Pages, GitHub Pages — and *Open in browser* shows you the site from your own disk first, which is a fair preview of what a reader gets.
+- **It looks the way your world looks here.** The colours are read off whatever theme you have on, and the theme's typefaces come along as files, so the site reads in the same type on every machine rather than falling back to Times. Callouts keep their colour and icon, meters are drawn as bars (or stars and tokens), a page shown as a database is a table with its columns, columns stay side by side, toggles open and close, and a contents block lists the headings on its tab.
+- **Hidden means not published.** A hidden page and everything under it stays off the site; a hidden tab stays off its page; a Secret callout is left out of the writing and out of the search index. There is no toggle for any of them — the one thing a reader must never see is the thing you marked private — and the modal counts each kind before you save, so a world you thought had secrets in it that reports none is something you catch before uploading. A link to a hidden page becomes plain words rather than a dead link.
+- **Tabs are tabs, and the site works with scripts off.** A page with several tabs gets a tab strip; without JavaScript the tabs run down the page under their own headings, the tree is the browser's own collapsible list, and every link is a real link. Search and tab-switching are what the script adds.
+- **Publishing from a page's row publishes that page and everything under it**, the same as the other exports — so "just this part of the world" is a right-click away, and the rest of the tree isn't in the sidebar.
+
+### Notes
+
+- **What changes on the way**, and the modal says so: a round meter (circle, gauge, pie) becomes a bar, and a database in cards or a board becomes a table. Nothing is lost; it just doesn't move. Graphs and storyline canvases aren't drawn — a storyline's scenes are still there as pages under it.
+- **Every publish writes a new folder** — `Your World website`, then `(2)`, `(3)` — rather than overwriting, the same rule as the Markdown export. Upload the newest one in place of the last.
+- **This finishes Phase 1.5**, the oldest unstarted phase on the plan.
+
 ## 2026-09-10 — bring in a folder of notes
 
 ### Additions
@@ -269,21 +285,3 @@
 - **The reach and the filters are forgotten when you close the graph**, on purpose — a graph reopened days later still hiding half of what it is connected to, with nothing on screen saying why, would look broken. What you moved is kept; what you were asking is not.
 - **A filtered-out page takes its lines with it**, so at two or three connections out, anything only reachable through it goes too. The filter menu says so.
 - **Only reference fields have a name to write on a line** — Friends, Enemies, and so on. A mention you wrote in a sentence, a link you added by hand, and a page nested inside another have no name to give, so most lines stay bare in either mode.
-
-## 2026-09-07 — see what a page is connected to
-
-### Additions
-
-- **Every page has a picture of what it is connected to.** The button beside a page’s name opens it over the page; Escape or the X closes it and puts you back where you were reading.
-- **The page you were on sits in the middle**, with everything one connection away from it around the outside — pages you mentioned while writing, pages that mentioned this one, anything in a reference field like Friends, and anything you linked by hand.
-- **Pages look like they do in your tree**, carrying their template’s icon and their colour, rather than every page being the same grey dot.
-- **Where a page is filed counts as a connection too**, so a sword nested under its owner is joined to it. Those lines are drawn as quiet dashes, because where you filed something and what you wrote about it aren’t the same claim.
-- **Clicking a page shows a card about it beside the graph** — its name, what kind of page it is, its tags and the start of what’s written on it. Going there is a second click on **Open this page**, so a look never costs you the graph.
-- **You can drag pages around and move the picture.** Drag a page to move it, drag the background to move everything, and scroll to zoom.
-- **The same world always looks the same.** The arrangement is worked out the same way every time, so pages stay roughly where you last saw them instead of scattering differently on each visit.
-
-### Notes
-
-- **Positions you drag aren’t kept yet** — they last as long as the graph is open. Remembering them comes with the next piece, along with filters and a control for how far out it reaches.
-- **Folders don’t have the button.** A folder is drawn as its own landing card with no name row to put it on; every other kind of page has it.
-- **Long page names wrap under their circle rather than being cut off**, so a name is always readable in full.

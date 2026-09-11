@@ -403,8 +403,9 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 ## Shipped
 
 Phases 0–15 are complete. **`docs/shipped.md`** has what each one delivered;
-`CHANGELOG.md` has the same story in plain language. **Phase 1.5 (Publish) is
-the only unstarted phase behind us** — it's unblocked and unscheduled, below.
+`CHANGELOG.md` has the same story in plain language. **Phase 1.5 (Publish)
+shipped 2026-09-10**, the last unstarted phase behind us; its detail and the
+scoping it was built with are in `docs/shipped.md`.
 
 | Phase | | Shipped |
 |---|---|---|
@@ -427,6 +428,7 @@ the only unstarted phase behind us** — it's unblocked and unscheduled, below.
 | 15 | Right-Click Menu, Full Pass | 2026-08-11 |
 | 16 | Images & Tags | 2026-08-11 |
 | 17 | Templates & Assets Tabs | 2026-08-18 |
+| 1.5 | Publish | 2026-09-10 |
 
 Project home — the last Queued Adjustment standing before Phase 9 — shipped
 2026-07-31.
@@ -449,22 +451,6 @@ verified through our own importer against the real 75-resource
 `Valeraverse.lk`, which proves the mapping is self-consistent — not that LK
 accepts it. That needs an LK account and an import attempt. See
 `docs/handoff.md` §Known gaps.
-
----
-
-## Phase 1.5 — Publish
-
-**Unblocked as of 2026-07-31** — Phase 10 was the thing in front of it.
-
-`PublishModal.tsx` with checkbox tree of what to publish, "include hidden tabs?" toggle (default off), tag filter, output folder picker. Hidden pages are excluded outright rather than offered as a toggle — see below.
-
-`src/services/publisher.ts` — static site generator. Renders each node as an HTML page, preserves tree navigation as a sidebar, respects hidden tabs and Secret blocks. **Hidden *pages* are the other half of that and are not optional**: `Node.hidden` shipped 2026-08-10 with nothing yet consuming it, and a publisher that ignores it puts the pages she marked private on a website. It cascades — a hidden page takes everything under it (see `tree-service.ts`'s `isHiddenByAncestor`), so filtering the roots is enough and walking each descendant is not. Bundles a Fuse.js search index as JSON for client-side search on the published site. Same visual style as the app (dark theme, callouts, references as clickable links).
-
-User then hosts the output folder anywhere free (Cloudflare Pages / Netlify / GitHub Pages). Re-publish overwrites.
-
-**End state:** user can share Valeraverse with Nitwit read-only, and Orynthia with the world when it's ready, without any account or backend.
-
-**Not scheduled against Phases 11+ below.** It can land whenever the user wants it; nothing after it depends on it. Its one live argument for going sooner is that it's the existing answer to "people won't install an unknown `.exe`" — see `docs/ideas.md` → Browser version.
 
 ---
 
@@ -540,9 +526,14 @@ the Phase 28 export round-trips through it. Detail and the reasoning it was
 deferred with are in `docs/shipped.md`; what still binds the code is in
 `docs/handoff.md` § Markdown import.
 
-**Nothing in this file is scheduled after it.** What remains is Phase 1.5
-(Publish), the deferred phases below (Cloud Sync and Split Panes), and Queued
-Adjustments — which comes next is hers to choose.
+**Phase 1.5 (Publish) shipped 2026-09-10** — a world, or one page and
+everything under it, as a folder of web pages in the app's own look, with
+hidden pages, hidden tabs and Secret callouts kept off it. Detail in
+`docs/shipped.md`; what binds the code is in `docs/handoff.md` § Publishing.
+
+**Nothing in this file is scheduled after it.** What remains is the deferred
+phases below (Cloud Sync and Split Panes) and Queued Adjustments — which comes
+next is hers to choose.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.

@@ -2351,6 +2351,12 @@ export type FileTree = {
   files: { path: string; text: string }[];
   /** Absolute source, `/`-separated relative destination. */
   copies: { from: string; to: string }[];
+  /**
+   * Bytes to write as they are, `/`-separated relative destination. The
+   * published site's fonts (Phase 1.5) — files that exist nowhere on her disk
+   * to copy from, only inside the app.
+   */
+  binaries?: { path: string; bytes: Uint8Array }[];
 };
 
 export type FileTreeResult = {
@@ -2412,6 +2418,12 @@ export async function writeFileTree(parentDir: string, folderName: string, tree:
     const parent = file.path.split("/").slice(0, -1);
     if (parent.length > 0) await mkdir(joinPath(root, ...parent), { recursive: true });
     await writeTextFile(resolve(file.path), file.text);
+  }
+
+  for (const binary of tree.binaries ?? []) {
+    const parent = binary.path.split("/").slice(0, -1);
+    if (parent.length > 0) await mkdir(joinPath(root, ...parent), { recursive: true });
+    await writeFile(resolve(binary.path), binary.bytes);
   }
 
   const missing: string[] = [];

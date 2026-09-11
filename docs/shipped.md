@@ -6299,3 +6299,128 @@ suite is 2199 green; lint and `tsc` clean.
   dispatch a drop carrying an in-page `File`, which has no path — that was
   done, to check the hint appears and a pathless drop is ignored without an
   error — but a drop of a real folder from Explorer is hers to try.
+
+---
+
+## Phase 1.5 — Publish ✅ Shipped 2026-09-10 — phase closed
+
+Planned 2026-07-31 as the answer to "people won't install an unknown `.exe`",
+unblocked when Phase 10 shipped, and left unscheduled behind everything else
+until she chose it on 2026-09-10. Built in one PR the same day.
+
+### What the plan said, and what changed
+
+The 2026-07-31 section asked for a modal with a checkbox tree of pages, an
+"include hidden tabs?" toggle, a tag filter and an output folder, in front of a
+static-site generator with a tree sidebar, a Fuse.js search index and the
+app's own look. Everything below the modal is what was built. **The modal is
+not**, and the reasoning is worth keeping:
+
+- **Hidden is the one privacy control, and it has no toggle.** The checkbox
+  tree and the tab toggle were designed before `Node.hidden` existed
+  (2026-08-10). Once a page can be marked hidden, a second way of saying "not
+  this one" in the publish dialog is a second thing to get wrong — and the tab
+  toggle would have made hidden *tabs* publishable while hidden *pages* were
+  not, which is a rule nobody could explain. So: a hidden page and everything
+  under it, a hidden tab, and a Secret callout all stay off the site, always.
+  The modal counts each kind before she saves, so the thing she can check is
+  "did it see my secrets", not "did I tick the right boxes".
+- **"Just this part" is the row menu.** `Export ▸` from a page publishes that
+  page and everything under it, the same as every other export; the project
+  row publishes the world. The tag filter went with the checkbox tree.
+- **The look is read, not chosen.** The plan said "dark theme"; there have
+  been themes since Phase 12, so the site takes whatever she has on — colours
+  resolved through the engine, typefaces as files — rather than a fixed
+  palette that would stop matching the moment she switched.
+
+### What it is
+
+`src/services/html-page.ts` is the page converter (`markdown-page.ts` with
+HTML on the other end), `src/services/site-plan.ts` is the site planner
+(`markdown-vault.ts`'s shape: a plan, written by `writeFileTree`),
+`src/services/site-theme.ts` reads the running theme, `src/constants/site-style.ts`
+and `site-script.ts` are the site's own stylesheet and script, and
+`WebsiteExportModal.tsx` is the modal. The hooks `use-export-world.ts` (shared
+with the Markdown exports) and `use-site-export.ts` are the composition.
+
+- **One `.html` per page, folders mirroring the tree**: `Kaine/index.html`
+  beside `Kaine/Her Sword.html`, `Note.html` for a page holding nothing.
+  `index.html` is reserved per folder, so a page called "index" gets ` (2)`.
+- **The front door is the home page written a second time** at the root,
+  rather than a redirect; with no home set, the first page.
+- **Every address is relative**, the search index is a `<script>` rather than
+  a fetched JSON, and the stylesheet is plain CSS — so the folder works
+  double-clicked from disk (`file://` refuses `fetch`), which is how she
+  previews it before uploading. *Open in browser* on the done panel does that.
+- **The sidebar is the whole tree on every page**, as nested `<details>`, the
+  branch to the current page open. A universe is a section, and its own page
+  is a listing of what is inside it; a folder's page is the same listing,
+  because that is what the app shows for a folder.
+- **Search is Fuse.js**, already a dependency, bundled into `site.js` by
+  rewriting the ES build's closing `export` into `window.Fuse = …` — a test
+  runs the result as a plain script and searches with it, so a Fuse release
+  that ends differently fails there rather than on a reader's screen. Keys:
+  title ×3, aliases ×2, tags, and the words of the visible tabs (never a
+  Secret's, never a hidden tab's).
+- **Icons are the app's own SVG.** A Lucide icon is a React component with no
+  path data reachable from plain TypeScript, so `use-site-export.ts` renders
+  each one with `renderToStaticMarkup` and hands the converter a `renderIcon`
+  resolver — hooks being the lowest layer allowed to import React.
+- **Fonts travel.** `site-theme.ts` finds every `@font-face` the document has
+  loaded whose family is one of `--font-ui`, `--font-display` or
+  `--font-prose`, fetches the bytes through `hostFetch` (Electron's `net.fetch`
+  reads `file:` and the dev server alike), and the planner writes them under
+  `fonts/` with matching `@font-face` rules. A font that will not read is
+  skipped and the notes say so. `writeFileTree` grew an optional `binaries`
+  list for this — bytes with no file on her disk to copy from.
+- **What is drawn**: callouts with colour and icon (Secret: left out and
+  counted), meters as bars, ratings as stars, pools as tokens, spectrums as a
+  marker between two words; round meters as bars and counted as flattened; a
+  database page as a table above the writing (cards/board/list counted as
+  flattened); columns, toggles as `<details>`, tables, code, pictures, files,
+  video and audio; a contents block from the headings written so far on its
+  tab; an infobox as a bordered aside, floated when it was; a block placed in
+  the writing where it was placed, at its width. The side panel is the page's
+  blocks in her order, minus any the writing already draws — the same rule
+  the app applies. Properties print with labels, chips carry their colours,
+  references link.
+- **Tabs are tabs**, with a strip that switches in place; with scripts off
+  they run down the page under their own headings. A single-tab page has
+  neither. A hash link into a hidden-by-tab heading opens that tab first.
+- **Theme tokens**: `SITE_COLOR_TOKENS` are resolved through
+  `resolveTokenColor` so a `color-mix()` in her theme arrives as an `rgb()`;
+  the four font stacks are copied as declared.
+
+### Verification
+
+- `html-page.test.ts` (22) and `site-plan.test.ts` (16): the converter's
+  every block kind, the tally keys, hidden and secret exclusion, placement,
+  relative links, the sidebar's open branch, the universe section, the home
+  page at the root, picture collection, the search index, asset and font
+  paths, and the Fuse bundle actually running.
+- `e2e/publishes-a-website.e2e.ts`: the menu entry on a row and on the
+  project, the count for an empty page, the wait for the theme, the notes on
+  the whole generated world, the written folder (front door, stylesheet,
+  scripts, fonts, pictures), and — the one worth the Electron launch — that
+  the modal's counts of hidden pages, hidden tabs and Secret callouts match
+  what the world's own files hold. Checking the words themselves was tried
+  and rejected: the generator builds prose from a sentence pool, so a
+  secret's sentence is often somebody else's public one.
+- Looked at, served over HTTP in the Browser pane on the generated world
+  under its default theme: the sidebar, a character page with its portrait,
+  four meters and a Connected list, a page with two tabs switching, the
+  search box with snippets and breadcrumbs. Not looked at: a phone width, a
+  light theme, WebKitGTK.
+
+### What it deliberately does not do
+
+- **Graphs and storyline canvases are not drawn.** A storyline's scenes are
+  pages under it and are on the site; the canvas is not.
+- **No universe switcher.** Universes are sections of one sidebar, the
+  all-universes view; one universe at a time would be a row-menu publish of
+  that universe's page, which the tree does not offer for a universe today.
+- **No incremental publish.** Every publish is a fresh numbered folder, the
+  Markdown export's rule; the host's own upload replaces the last.
+- **Not a browser edition.** Read-only, static, no editing — `docs/ideas.md`
+  → Browser version still describes what an editable one would take.
+
