@@ -199,7 +199,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
           p("The handful of moments that carved this person out. Two or three is usually enough."),
           h2("Recent years"),
           p("What they've been doing lately, right up to the point your story picks them up."),
-          secret("A Secret block is a flag for you: spoilers, twists, things a reader shouldn't hit yet. It marks the passage; it doesn't lock it. To actually hold material back, hide the whole tab."),
+          secret("A Secret block is for spoilers, twists, things a reader shouldn't hit yet. Here it only marks the passage; if you publish the world as a website, it stays off the site. To hold a whole stretch back, hide the tab."),
         ],
       },
     ],
