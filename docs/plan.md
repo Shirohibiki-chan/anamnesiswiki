@@ -614,12 +614,12 @@ else in the app changes shape. It sits on the page view's root rather than the
 window's so the sidebar and the properties panel keep the theme; a skin
 describes a page, not the app around it.
 
-**Open, and it changes the build:** whether the name is per page only, or a
-template can carry one too so every Character page picks it up. Per page is
-the gallery's model and enough for a home page; per template is what a
-"character sheet" skin wants. Per page first is the recommendation, with the
-template half left as a Queued Adjustment if it is wanted, because the
-attribute and the snippet are the same either way and only the setting moves.
+**Both halves are in, in this order — her call, 2026-09-11.** Per page first:
+the gallery's model and enough for a home page. Then per template, so every
+Character page can pick up a "character sheet" skin without being set one by
+one. The attribute and the snippet are the same either way; only where the
+name is set moves, and a page's own name wins over its template's, the way
+anything a person set outranks what came with the template.
 
 ### 3. Two blocks a home page is missing
 
