@@ -26,6 +26,7 @@ import {
   GRAPH_CHARGE,
   GRAPH_COLLIDE_RADIUS,
   GRAPH_LINK_DISTANCE,
+  GRAPH_RING_GAP,
   GRAPH_TICKS,
 } from "../constants/graph";
 import type { GraphModel, GraphNode } from "./graph-service";
@@ -78,6 +79,66 @@ export function settleGraph(
   if (model.nodes.length === 0) return model;
 
   const { centreId = null, seed } = options;
+
+  /**
+   * **A page with no lines is not simulated; it is placed on a ring outside
+   * everything that has them.** Run through the forces it drifts to wherever
+   * the repulsion leaves it, mixed in with the connected pages and saying
+   * nothing about itself. On the ring it says the one thing worth knowing —
+   * nothing points at this and it points at nothing — and the core is left
+   * to the pages that are actually joined. The centre and anything she has
+   * pinned stay where they are whatever their connections.
+   */
+  const joined = new Set<string>();
+  for (const edge of model.edges) {
+    joined.add(edge.sourceId);
+    joined.add(edge.targetId);
+  }
+  const isLone = (node: GraphNode) => !joined.has(node.id) && node.id !== centreId && !pins[node.id];
+  const lone = model.nodes.filter(isLone);
+  const core = model.nodes.filter((node) => !isLone(node));
+
+  const settledCore = core.length > 0 ? simulate({ nodes: core, edges: model.edges }, pins, centreId, seed) : [];
+  const ringed = ringAround(settledCore, lone);
+  const placed = new Map([...settledCore, ...ringed].map((node) => [node.id, node]));
+  return { edges: model.edges, nodes: model.nodes.map((node) => placed.get(node.id) ?? node) };
+}
+
+/**
+ * The lone pages spaced evenly on rings around the box the core settled in.
+ *
+ * One ring while the pages fit on it at GRAPH_COLLIDE_RADIUS apart, then
+ * another outside it, and so on — a world of many lone pages is several
+ * bands rather than one ring of pages drawn on top of each other. In the
+ * order they were given, so the same world rings the same way every time.
+ */
+function ringAround(core: GraphNode[], lone: GraphNode[]): GraphNode[] {
+  if (lone.length === 0) return [];
+  const box = graphBounds(core, 0);
+  const centreX = box.minX + box.width / 2;
+  const centreY = box.minY + box.height / 2;
+  let radius = Math.hypot(box.width / 2, box.height / 2) + GRAPH_RING_GAP;
+  const out: GraphNode[] = [];
+  let index = 0;
+  while (index < lone.length) {
+    const fit = Math.max(1, Math.floor((2 * Math.PI * radius) / GRAPH_COLLIDE_RADIUS));
+    const band = lone.slice(index, index + fit);
+    band.forEach((node, i) => {
+      const angle = (i / band.length) * 2 * Math.PI;
+      out.push({
+        ...node,
+        x: Math.round(centreX + radius * Math.cos(angle)),
+        y: Math.round(centreY + radius * Math.sin(angle)),
+      });
+    });
+    index += band.length;
+    radius += GRAPH_COLLIDE_RADIUS;
+  }
+  return out;
+}
+
+/** The simulation proper, over the pages that have lines. */
+function simulate(model: GraphModel, pins: GraphPins, centreId: string | null, seed: string | undefined): GraphNode[] {
   const simNodes: SimNode[] = model.nodes.map((node) => {
     const pin = pins[node.id];
     if (pin) return { id: node.id, x: pin.x, y: pin.y, fx: pin.x, fy: pin.y };
@@ -113,19 +174,16 @@ export function settleGraph(
   simulation.tick(GRAPH_TICKS);
 
   const settled = new Map(simNodes.map((node) => [node.id, node]));
-  return {
-    edges: model.edges,
-    nodes: model.nodes.map((node) => {
-      const placed = settled.get(node.id);
-      // Rounded because nothing downstream can use a fraction of a pixel, and
-      // an integer is a thing a test can compare without a tolerance.
-      return {
-        ...node,
-        x: Math.round(placed?.x ?? node.x),
-        y: Math.round(placed?.y ?? node.y),
-      };
-    }),
-  };
+  return model.nodes.map((node) => {
+    const placed = settled.get(node.id);
+    // Rounded because nothing downstream can use a fraction of a pixel, and
+    // an integer is a thing a test can compare without a tolerance.
+    return {
+      ...node,
+      x: Math.round(placed?.x ?? node.x),
+      y: Math.round(placed?.y ?? node.y),
+    };
+  });
 }
 
 export type GraphBounds = {

@@ -102,6 +102,33 @@ describe("settleGraph", () => {
     const loner = settleGraph(model).nodes[1];
     expect(Math.hypot(loner.x, loner.y)).toBeLessThan(2000);
   });
+
+  // Her call 2026-09-13: the pages with lines in the middle, the lone ones in
+  // a band around them — Obsidian's physics happens to draw this, and here it
+  // is drawn on purpose so it is the same every time.
+  it("puts pages with no lines on a ring outside the connected ones", () => {
+    const model = star(6);
+    const loners = Array.from({ length: 4 }, (_, i) => node(`lone-${i}`, 1));
+    const settled = settleGraph({ nodes: [...model.nodes, ...loners], edges: model.edges });
+    const core = settled.nodes.filter((n) => !n.id.startsWith("lone-"));
+    const ring = settled.nodes.filter((n) => n.id.startsWith("lone-"));
+    const reach = Math.max(...core.map((n) => Math.hypot(n.x, n.y)));
+    for (const loner of ring) expect(Math.hypot(loner.x, loner.y)).toBeGreaterThan(reach);
+    // Evenly spaced: every lone page is about as far from the middle as the next.
+    const radii = ring.map((n) => Math.hypot(n.x, n.y));
+    expect(Math.max(...radii) - Math.min(...radii)).toBeLessThan(2);
+  });
+
+  it("rings a lone page the same way twice", () => {
+    const model: GraphModel = { nodes: [...star(3).nodes, node("lone", 1)], edges: star(3).edges };
+    expect(settleGraph(model)).toEqual(settleGraph(model));
+  });
+
+  it("keeps a pinned lone page where it was put rather than on the ring", () => {
+    const model: GraphModel = { nodes: [...star(3).nodes, node("lone", 1)], edges: star(3).edges };
+    const settled = settleGraph(model, { lone: { x: 7, y: 9 } });
+    expect(settled.nodes.find((n) => n.id === "lone")).toMatchObject({ x: 7, y: 9 });
+  });
 });
 
 describe("graphBounds", () => {
