@@ -10,6 +10,7 @@ export type GlobalShortcutHandlers = {
   onSearch: () => void;
   onAllProperties: () => void;
   onNewPage: () => void;
+  onQuickCapture: () => void;
   onSave: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -28,6 +29,7 @@ export function useGlobalShortcuts({
   onSearch,
   onAllProperties,
   onNewPage,
+  onQuickCapture,
   onSave,
   onUndo,
   onRedo,
@@ -40,6 +42,7 @@ export function useGlobalShortcuts({
       search: onSearch,
       allProperties: onAllProperties,
       newPage: onNewPage,
+      quickCapture: onQuickCapture,
       save: onSave,
       undo: onUndo,
       redo: onRedo,
@@ -82,5 +85,5 @@ export function useGlobalShortcuts({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSearch, onAllProperties, onNewPage, onSave, onUndo, onRedo, onNavigateBack, onNavigateForward, onNavigateHome]);
+  }, [onSearch, onAllProperties, onNewPage, onQuickCapture, onSave, onUndo, onRedo, onNavigateBack, onNavigateForward, onNavigateHome]);
 }

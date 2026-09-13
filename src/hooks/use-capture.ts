@@ -7,11 +7,15 @@ import {
   captureDestinations,
   captureDocument,
   captureStamp,
+  findCaptureSource,
   parseCapture,
   type CaptureDestination,
+  type CaptureSource,
   type ParsedCapture,
 } from "../services/capture-service";
-import { useProject } from "./use-project";
+import { blocksFor } from "../services/block-service";
+import { getPropertySchema } from "../services/template-registry";
+import { useProject, useProjectHomeId } from "./use-project";
 
 export type CaptureResolution = {
   parsed: ParsedCapture;
@@ -84,4 +88,18 @@ export function useCapture(node: Node, block: Block) {
       setCaptureRoot(node.id, block.id, rootId);
     },
   };
+}
+
+/**
+ * The capture block the shortcut and the palette open, or undefined when the
+ * world has none. Recomputed as pages change, so adding a box to the home
+ * page shows up in the open dialog without closing it.
+ */
+export function useCaptureSource(): CaptureSource | undefined {
+  const { nodes } = useProject();
+  const homeId = useProjectHomeId();
+  return useMemo(
+    () => findCaptureSource(nodes, homeId, (node) => blocksFor(node, getPropertySchema(node.templateKey))),
+    [nodes, homeId],
+  );
 }

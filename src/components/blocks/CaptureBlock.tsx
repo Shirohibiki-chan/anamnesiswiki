@@ -26,9 +26,11 @@ type CaptureBlockProps = {
   node: Node;
   nodes: Record<string, Node>;
   onOpen: (nodeId: string) => void;
+  /** Put the caret in the box on mount — the dialog opened by the shortcut wants it; a block in a page must not steal it. */
+  autoFocus?: boolean;
 };
 
-export function CaptureBlock({ block, node, nodes, onOpen }: CaptureBlockProps) {
+export function CaptureBlock({ block, node, nodes, onOpen, autoFocus }: CaptureBlockProps) {
   const { root, rootIsOwn, destinations, pickerDestination, resolve, choose, capture, setRoot } = useCapture(
     node,
     block,
@@ -90,6 +92,7 @@ export function CaptureBlock({ block, node, nodes, onOpen }: CaptureBlockProps) 
     <div className="block-capture" ref={boxRef}>
       <GrowTextarea
         className="property-value-textarea block-capture-text"
+        autoFocus={autoFocus}
         value={text}
         placeholder={CAPTURE_PLACEHOLDER}
         onChange={(e) => {

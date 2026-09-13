@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-13 — capture a thought from anywhere
+
+### Additions
+
+- **Quick capture from anywhere.** Ctrl+Shift+N — one step out from New page, the way All properties sits one step out from Search — opens the capture box over whatever you're doing, and it's on the search palette's footer too. It's the same box as the one on your page, not a second one: the dialog names whose it is (*The box on your home page*, or the page it found one on), files under the same destinations, remembers the same last one, and reads the same code words. Type, capture, Escape, and you're back where you were. The shortcut can be rebound in Settings → Keyboard like every other.
+- **It reaches for the home page's box first**, then the first box anywhere in the world — so a world that keeps its box on a `Quick capture` page rather than on home works just as well. A world with no box yet is told so, and if it has a home page, offered a button that puts one there.
+
+### Notes
+
+- **This finishes step 1 of Phase 30.** Next is a style class per page, so a snippet can skin one page.
+
 ## 2026-09-13 — a box that files a thought where it belongs
 
 ### Additions
@@ -267,16 +278,3 @@
 
 - **Zoomed far enough out, the names stop being drawn.** A whole world does not fit on a screen at a size names can be read at, and unreadable ones sit exactly where the shape you are looking at should be. Hovering a page still shows its name, and clicking one still names it in full in the card beside the graph.
 - **The graph now says which world it is of by name**, rather than calling it "this world".
-
-## 2026-09-08 — changes made right after opening a page now stick
-
-### Fixes
-
-- **Setting a page as a shortcut could be lost when you restarted.** It appeared in the strip above the tree straight away and was gone the next time the app opened. The same went for removing one.
-- **Anything else changed in the moment after opening a page could be lost the same way** — the home page, an arrangement restored from an earlier version, a graph's layout, and the order of pages after a move, a delete or a duplicate.
-- **The cause was one thing, and it is fixed in one place.** Opening a page schedules a save of the file that holds your page order, your shortcuts and which folders are open. That save was writing the file as it looked when you opened the page, so anything you changed in the next third of a second was written over. It now writes the file as it actually is at the moment it saves, so nothing can be overtaken.
-
-### Notes
-
-- **Nothing you have on disk needs fixing** — this only ever affected a change made within a few hundred milliseconds of opening a page, and only until you made another change to the same file. Anything currently in your world is what it says it is.
-- Found through the graph's **Put it back** the day before, which is simply the easiest way to hit it: that button sits inches from the page you just opened.

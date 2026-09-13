@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-08 — changes made right after opening a page now stick
+
+### Fixes
+
+- **Setting a page as a shortcut could be lost when you restarted.** It appeared in the strip above the tree straight away and was gone the next time the app opened. The same went for removing one.
+- **Anything else changed in the moment after opening a page could be lost the same way** — the home page, an arrangement restored from an earlier version, a graph's layout, and the order of pages after a move, a delete or a duplicate.
+- **The cause was one thing, and it is fixed in one place.** Opening a page schedules a save of the file that holds your page order, your shortcuts and which folders are open. That save was writing the file as it looked when you opened the page, so anything you changed in the next third of a second was written over. It now writes the file as it actually is at the moment it saves, so nothing can be overtaken.
+
+### Notes
+
+- **Nothing you have on disk needs fixing** — this only ever affected a change made within a few hundred milliseconds of opening a page, and only until you made another change to the same file. Anything currently in your world is what it says it is.
+- Found through the graph's **Put it back** the day before, which is simply the easiest way to hit it: that button sits inches from the page you just opened.
+
 ## 2026-09-07 — steering the graph, and it remembers how you left it
 
 ### Additions
