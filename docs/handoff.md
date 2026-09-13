@@ -481,6 +481,20 @@ Board spike, closed 2026-09-13. What binds the code:
   (`withoutLone`). The generated world's default shape is random links, which
   no layout can make readable; judge the graph on `--shape hubs`.
 
+- **While the pages are dots, the stage does the pointing.** Below the names
+  threshold the buttons take `pointer-events: none` and `use-graph-view`'s
+  `nearest` finds the dot under the pointer: within GRAPH_DOT_HOVER_PX to
+  hover, within GRAPH_DOT_GRAB_PX of the dot's edge to pick up, and any other
+  press pans. Two hit-box sizes were tried first and each failed the other
+  way — the dot's own size was four pixels to aim at, and one big enough to
+  hover covered the gaps and grabbed a page on every background drag. The
+  harness clicks a node by mouse position (`clickGraphNode`) for this reason.
+  **Never compute a state step inside an updater from a ref the handler then
+  moves on**: the pan did, and its step was zero whenever React deferred the
+  updater — which was most of the time. Work the step out first, hand over
+  numbers. The wheel glides to a target about the pointer (`handleWheel`);
+  `zooming` is true for the glide, and the canvas paints light until it lands.
+
 - **A node's button is the disc; the name hangs below it and is not part of the
   box.** It was a 118px-wide column holding both, and the column stayed that
   wide with the name hidden — so on a packed graph most of what looked like

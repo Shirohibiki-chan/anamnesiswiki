@@ -9,6 +9,9 @@
 
 ### Fixes
 
+- **Dragging the graph's background pans it — for real this time.** The pan was adding up its steps in a way React was free to apply late, and when it did, every step came out as zero. That's why a drag sometimes did nothing at all; it had nothing to do with what was under the pointer.
+- **The wheel glides and zooms toward your pointer.** A notch sets a target and the view eases to it over a dozen frames instead of jumping the whole notch at once, and the point under the pointer stays put — Obsidian's feel, both of them.
+- **Pointing at dots is precise, and the background is the background.** While the pages are dots there are no clickable boxes at all: the graph works out the nearest dot to the pointer itself — generous for pointing, tight for picking up — and any press anywhere else pans. A box big enough to hover was covering the gaps between dots and grabbing pages on a background drag.
 - **Zooming a big graph is smooth.** While the wheel turns, only what's on screen is painted and the filed-under lines are drawn solid; they get their dashes back the moment it stops. Measured on 831 pages: 43ms a frame → 18ms, the same as with no lines at all. Lines also never grow wider than a pixel and a half on screen, however far in you go.
 - **Pointing at a page no longer flashes the lines.** The dots still fade and the page's own lines still light up in the accent, but the other lines stay as they are — they only step back when you click a page. Lines can't fade the way dots can, so dimming them on hover made thousands of them flash as the pointer crossed a row of dots.
 
