@@ -2,6 +2,22 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-09 — storylines: notes, labels, and tidying up
+
+### Additions
+
+- **Loose notes, dropped anywhere on a storyline's canvas.** A note is for the thing the picture can't say — a thread that stops here and carries on somewhere else. Add a note and it opens straight into typing; double-click one to change it later.
+- **Notes hold links.** Write `[[Greyharbour]]` in a note and it becomes a link to that page, so a branch that ends becomes an exit rather than a dead end. Aliases work the same way they do everywhere else, and a name two pages both answer to isn't guessed at.
+- **A name nothing answers to is marked rather than quietly drawn as words.** If you rename the page a note pointed at, the note shows you the link is broken instead of looking finished.
+- **Label a stretch of the storyline — "Act 2".** It's drawn behind the scenes as a dashed frame with a name on it, and it starts drawn around everything so you pull it in to the stretch you actually meant. **Dragging one carries the scenes standing on it**, so moving an act moves the act.
+- **Tidy up.** One button that lines the scenes up in order — one column per step, forks side by side, and a scene that can be reached the long way round sits after the long way rather than jumping back. It only ever runs when you press it, and Ctrl+Shift+Z puts your own arrangement back.
+
+### Notes
+
+- **Notes and labels are not part of the story, on purpose.** Neither one has lines, neither has a page behind it, and neither is counted in the scene tally. Removing a label removes a label — the scenes it was drawn around stay exactly where they are.
+- **Tidying leaves your notes and labels where you put them.** They're anchored to a thought about a place on the canvas and there's no honest way to guess where that thought went.
+- **What's left of storylines:** pointing a scene at a page that already exists (right now every scene added makes a new page), and showing who's in a scene. That's the last part — `docs/plan.md` has it.
+
 ## 2026-09-09 — storylines, the canvas
 
 ### Additions

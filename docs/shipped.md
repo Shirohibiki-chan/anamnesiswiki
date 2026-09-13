@@ -6574,3 +6574,31 @@ four parts above add up, and the thing somebody copies to make their own.
 Capture block → its shortcut and palette action → style class → the two
 blocks → the example. The capture block first because it is useful on its own
 and is what she asked for; the example last because it needs everything else.
+
+## Board spike ✅ Shipped 2026-09-13
+
+Asked 2026-09-13: was a whiteboard ever built, and if it is going to be, use
+something good — Excalidraw. `docs/ideas.md` had already made that call on
+2026-08-10; this was the spike that showed it running inside a page.
+
+**What it delivered.** `board` as a sixteenth template key, the storyline's
+shape exactly (no tabs, no properties, `alwaysDirectory`), offered in every
+picker with a pen icon. `PageBoard` draws Excalidraw in the page where a
+storyline's canvas sits, with Expand in the library's own top-right slot.
+The drawing lives in `_board.json` beside `_page.json`; the walk reads it,
+`saveBoard` writes it, `restoreNodes` puts it back after an undone delete.
+`@excalidraw/excalidraw` 0.18.1 is the one new dependency, MIT, and it lands
+in its own lazy chunk (~1MB JS, 145KB CSS) that a world with no boards never
+loads — checked by grepping the built main chunk for the library's class
+names. Fonts are bundled under `public/excalidraw/fonts/` (500KB without the
+CJK face) and the app-suite scenario asserts nothing was fetched from
+`esm.sh`.
+
+**Verified.** `e2e/a-board-canvas.e2e.ts` — Board is offered, the library
+loads inside Electron, a rectangle drawn by tool shortcut and drag reaches
+`_board.json` with one `rectangle` element, Expand fills the window and
+comes back, and the shape is still there after Ctrl+R. Screenshots taken
+during the run were how the Expand button was found sitting on top of the
+library's Library button; it moved into `renderTopRightUI`.
+
+**Left out on purpose** — the five follow-ups in `docs/ideas.md` § Canvas.
