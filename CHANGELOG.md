@@ -15,6 +15,7 @@
 
 - **The lines on a big graph step back.** Past a couple of hundred lines they fade in proportion to how many there are, so a world of hundreds of pages drawn all at once shows its pages rather than one solid mesh. A page's own graph, with a handful of lines, looks the same as before.
 - **Point at a page and its connections light up.** Its own lines come up to full weight on top of everything else, so what one page is connected to can be seen on a graph of eight hundred. Click it and the rest of the graph steps back to half strength for as long as it stays selected; it's the click that dims, not the pointer, so a picture that dense doesn't flicker as you move across it.
+- **The card about a clicked page has a close button.** Clicking empty background still puts it away too, but nobody would guess that.
 - **A third *Lines* setting, *Only when pointed at*.** No lines are drawn until a page is pointed at, which on a very big world is the quietest picture there is. *Names when pointed at* is still the default.
 - **The name on a line is held back at the same zoom a page's name is.** Pointing at a page while zoomed far out used to write the reasons on its lines at a size that drew as short grey dashes.
 

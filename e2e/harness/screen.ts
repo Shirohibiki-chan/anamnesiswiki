@@ -1630,6 +1630,12 @@ export async function graphPreviewName(window: Page): Promise<string | null> {
   return normalize(await window.locator(GRAPH_PREVIEW_NAME).first().innerText());
 }
 
+/** Puts the card away by its own close button, leaving the graph up. */
+export async function closeGraphPreview(window: Page): Promise<void> {
+  await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Close this card" }).click();
+  await window.locator(GRAPH_PREVIEW).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
 /** Follows the preview’s way through to the page it describes. */
 export async function openGraphPreviewPage(window: Page): Promise<void> {
   await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Open this page" }).click();

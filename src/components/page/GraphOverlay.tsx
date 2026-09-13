@@ -292,6 +292,18 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
 
         {preview && selected && (
           <aside className="page-graph-preview" aria-label={`About ${preview.name}`}>
+            {/* Clicking empty background also puts the card away, but nobody
+                would guess that; a card with no way to close it reads as stuck.
+                Her words, 2026-09-13. */}
+            <button
+              type="button"
+              className="page-graph-preview-close"
+              aria-label="Close this card"
+              title="Close"
+              onClick={() => select(null)}
+            >
+              <X size={16} />
+            </button>
             <div className="page-graph-preview-head">
               <NodeIcon icon={selected.icon} templateKey={selected.templateKey} size={18} />
               <h2 className="page-graph-preview-name">{preview.name}</h2>

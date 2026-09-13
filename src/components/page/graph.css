@@ -465,6 +465,7 @@
 }
 
 .page-graph-preview {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -472,9 +473,40 @@
   width: 320px;
   flex: none;
   padding: var(--space-lg);
+  /* Room for the close button, so a long name wraps before it rather than
+     running underneath it. */
+  padding-right: 3.25rem;
   overflow-y: auto;
   border-left: 1px solid var(--color-border);
   background: var(--color-panel);
+}
+
+/* The same shape as the graph's own close button, one size down, in the
+   corner where a card's close is looked for. */
+.page-graph-preview-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.page-graph-preview-close:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.page-graph-preview-close:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
 .page-graph-preview-head {
