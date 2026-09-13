@@ -4,7 +4,9 @@ import { linkIndex } from "./link-index";
 import type { GraphModel } from "./graph-service";
 import {
   dotSize,
+  edgeLabels,
   edgeOpacity,
+  edgeRule,
   graphAround,
   restrict,
   withoutLone,
@@ -515,7 +517,7 @@ describe("restrict", () => {
     { id: "a|b", sourceId: "a", targetId: "b", kind: "prose" as const },
     { id: "b|c", sourceId: "b", targetId: "c", kind: "tree" as const },
   ];
-  const all = new Set(GRAPH_EDGE_KINDS);
+  const all = edgeRule(new Set(GRAPH_EDGE_KINDS), new Set());
 
   it("takes pages off the settled picture without moving the rest", () => {
     const shown = restrict({ nodes, edges }, null, (id) => id !== "a", all, false);
@@ -524,13 +526,39 @@ describe("restrict", () => {
   });
 
   it("drops lines of a kind switched off, and counts links from what is left", () => {
-    const shown = restrict({ nodes, edges }, null, () => true, new Set(["prose" as const]), false);
+    const shown = restrict({ nodes, edges }, null, () => true, edgeRule(new Set(["prose"]), new Set()), false);
     expect(shown.edges.map((e) => e.id)).toEqual(["a|b"]);
     expect(shown.nodes.map((n) => n.links)).toEqual([1, 1, 0]);
   });
 
   it("keeps the focus whatever the conditions say", () => {
     expect(restrict({ nodes, edges }, "a", () => false, all, false).nodes.map((n) => n.id)).toEqual(["a"]);
+  });
+});
+
+describe("edgeRule and edgeLabels", () => {
+  const friends = { kind: "property" as const, label: "Friends" };
+  const enemies = { kind: "property" as const, label: "Enemies" };
+  const prose = { kind: "prose" as const };
+
+  it("hides a relationship by what it is called, and nothing else", () => {
+    const rule = edgeRule(new Set(GRAPH_EDGE_KINDS), new Set(["Enemies"]));
+    expect(rule(friends)).toBe(true);
+    expect(rule(enemies)).toBe(false);
+    expect(rule(prose)).toBe(true);
+  });
+
+  it("lists each name once, in order", () => {
+    const model = {
+      nodes: [],
+      edges: [
+        { id: "1", sourceId: "a", targetId: "b", ...enemies },
+        { id: "2", sourceId: "a", targetId: "c", ...friends },
+        { id: "3", sourceId: "b", targetId: "c", ...friends },
+        { id: "4", sourceId: "b", targetId: "d", ...prose },
+      ],
+    };
+    expect(edgeLabels(model)).toEqual(["Enemies", "Friends"]);
   });
 });
 

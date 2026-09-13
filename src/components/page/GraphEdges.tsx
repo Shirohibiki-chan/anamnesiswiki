@@ -21,6 +21,7 @@
 // play are drawn again on top in a tiny SVG (`GraphLitEdges`) — a dozen lines,
 // so a hover repaints a dozen lines rather than thousands.
 import { memo, useEffect, useRef, type RefObject } from "react";
+import { GRAPH_LINE_MAX_PX } from "../../constants/graph";
 import type { PlacedEdge } from "../../hooks/use-graph-view";
 import type { GraphBounds } from "../../services/graph-layout";
 
@@ -31,10 +32,17 @@ type GraphEdgesCanvasProps = {
   bounds: GraphBounds;
   view: View;
   /**
-   * Whether the view is mid-gesture. While it is, the picture already drawn
-   * is slid and scaled rather than drawn again — see the effect below.
+   * Whether the background is being dragged. While it is, the picture already
+   * drawn is slid rather than drawn again — see the effect below.
    */
   moving: boolean;
+  /**
+   * Whether the wheel is turning. While it is, only the window is painted —
+   * the overdraw margin is a drag's need, and painting it on every tick was
+   * painting more than twice the screen per frame. It is painted once when
+   * the wheel stops.
+   */
+  zooming: boolean;
   /** The scene, where the probe lines live and the stylesheet resolves. */
   sceneRef: RefObject<HTMLDivElement | null>;
   /** Whether the page in play is selected — the stylesheet dims the rest, and the canvas has to hear about it. */
@@ -92,6 +100,7 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
   bounds,
   view,
   moving,
+  zooming,
   sceneRef,
   dimmed,
 }: GraphEdgesCanvasProps) {
@@ -99,8 +108,8 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
   const paintedRef = useRef<Painted | null>(null);
   const written = edges.filter((edge) => edge.kind !== "tree").length;
 
-  const marginX = Math.round(view.stageSize.width * OVERDRAW);
-  const marginY = Math.round(view.stageSize.height * OVERDRAW);
+  const marginX = zooming ? 0 : Math.round(view.stageSize.width * OVERDRAW);
+  const marginY = zooming ? 0 : Math.round(view.stageSize.height * OVERDRAW);
 
   /**
    * **Mid-drag the picture is slid; otherwise it is painted.** Painting
@@ -180,7 +189,12 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
       for (const kind of ["tree", "written"] as const) {
         const style = kind === "tree" ? treeStyle : writtenStyle;
         context.strokeStyle = style.stroke;
-        context.lineWidth = style.width;
+        // A line never gets wider than GRAPH_LINE_MAX_PX on the screen. Drawn
+        // purely in scene units it was four pixels across at full zoom — heavy
+        // to look at and, since a stroke's cost is the pixels it covers, half of
+        // what made zooming in lag. Far out the stylesheet's width still holds,
+        // so the whole-world mesh is as fine as it was.
+        context.lineWidth = Math.min(style.width, GRAPH_LINE_MAX_PX / zoom);
         // Round on a written line, as the SVG had it; square on a dashed one.
         // A round cap is drawn on every dash, and up close a tree line is
         // hundreds of them: measured 2026-09-13, dashed tree lines were 30ms
@@ -188,7 +202,11 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
         // a dash is invisible.
         context.lineCap = kind === "tree" ? "butt" : "round";
         context.globalAlpha = style.opacity;
-        context.setLineDash(style.dash);
+        // Solid while the wheel turns, dashed when it stops: every dash is a
+        // path of its own to the painter, and on a graph of thousands of
+        // filed-under lines they were a third of a zoom frame — for a pattern
+        // the eye cannot follow on a picture that is changing size.
+        context.setLineDash(zooming ? [] : style.dash);
         context.beginPath();
         for (const edge of edges) {
           if ((edge.kind === "tree") !== (kind === "tree")) continue;
@@ -206,7 +224,7 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
     const observer = new MutationObserver(paint);
     observer.observe(document.documentElement, { attributes: true });
     return () => observer.disconnect();
-  }, [edges, bounds, view, moving, sceneRef, dimmed, marginX, marginY]);
+  }, [edges, bounds, view, moving, zooming, sceneRef, dimmed, marginX, marginY]);
 
   return (
     <canvas
