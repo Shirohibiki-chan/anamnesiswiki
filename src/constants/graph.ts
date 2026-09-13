@@ -18,6 +18,35 @@ export const GRAPH_RING_RADIUS = 220;
 export const GRAPH_NODE_RADIUS = 22;
 
 /**
+ * How big a page's dot is when the graph is far out, by how many lines it
+ * has — Obsidian's rule, hers 2026-09-13: a hub is the thing your eye should
+ * land on, so a hub is bigger. Diameter in scene units: the base for a page
+ * with nothing, growing with the square root of its lines so a page with a
+ * hundred is bigger than one with ten without being ten times bigger, and
+ * capped so the busiest page is not a moon.
+ */
+export const GRAPH_DOT_SIZE = 20;
+export const GRAPH_DOT_GROWTH = 4;
+export const GRAPH_DOT_MAX = 64;
+
+/**
+ * The button's hit box while the page is a dot, in scene units.
+ *
+ * Bigger than the dot on purpose: the dot is four pixels wide at whole-world
+ * zoom, and a hover that has to land on it exactly reads as "extremely
+ * imprecise" — her words, 2026-09-13, after the button had shrunk to the
+ * dot's size. Under the collide radius, so two hit boxes never overlap.
+ */
+export const GRAPH_DOT_HIT = 64;
+
+/**
+ * How long a page takes to fade back when the pointer leaves the page it was
+ * near. Obsidian's is about half a second; at a fifth of that, crossing a
+ * row of dots flashed.
+ */
+export const GRAPH_FADE_MS = 350;
+
+/**
  * How much room a node claims from its neighbours.
  *
  * Bigger than the disc on purpose — a node carries its name underneath it, and

@@ -36,11 +36,19 @@ import { X } from "lucide-react";
 import {
   GRAPH_DEFAULT_DEPTH,
   GRAPH_DIM_OPACITY,
+  GRAPH_DOT_HIT,
+  GRAPH_FADE_MS,
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
 } from "../../constants/graph";
 import type { DatabaseFilter } from "../../constants/schema";
-import { edgeOpacity, graphPinKey, neighbourhoodOf } from "../../services/graph-service";
+import {
+  edgeOpacity,
+  graphPinKey,
+  neighbourhoodOf,
+  GRAPH_EDGE_KINDS,
+  type GraphEdgeKind,
+} from "../../services/graph-service";
 import { usePageGraph, useGraphPins, useGraphPreview, useGraphScope } from "../../hooks/use-graph";
 import { useGraphOverlayActions, useOpenGraph } from "../../hooks/use-graph-overlay";
 import { useGraphView } from "../../hooks/use-graph-view";
@@ -88,6 +96,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const [filters, setFilters] = useState<DatabaseFilter[]>([]);
   // With the filters, and for the same reason: a question being asked now.
   const [hideLone, setHideLone] = useState(false);
+  const [kinds, setKinds] = useState<ReadonlySet<GraphEdgeKind>>(() => new Set(GRAPH_EDGE_KINDS));
   const [generation, setGeneration] = useState(0);
 
   const { universeId, universeName } = useGraphScope(focusId);
@@ -104,7 +113,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const { setGraphEdgeLabels, setGraphNameZoom } = usePreferenceActions();
   const { selectNode, setGraphPins } = useProjectActions();
 
-  const graph = usePageGraph({ focusId, reach, filters, hideLone, pins, generation });
+  const graph = usePageGraph({ focusId, reach, filters, hideLone, kinds, pins, generation });
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => setGraphPins(pinKey, { ...pins, ...moved }),
@@ -210,6 +219,8 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           choicesFor={graph.choicesFor}
           hideLone={hideLone}
           onHideLone={setHideLone}
+          kinds={kinds}
+          onKinds={setKinds}
           nameZoom={nameZoom}
           onNameZoom={setGraphNameZoom}
           arranged={arranged}
@@ -273,6 +284,8 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
                 // Fainter the more of them there are — see edgeOpacity.
                 "--graph-edge-opacity": edgeOpacity(edges.length),
                 "--graph-dim-opacity": GRAPH_DIM_OPACITY,
+                "--graph-dot-hit": `${GRAPH_DOT_HIT}px`,
+                "--graph-fade": `${GRAPH_FADE_MS}ms`,
               } as React.CSSProperties
             }
           >
@@ -306,7 +319,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
 
           {empty && (
             <p className="page-graph-empty">
-              {filters.length > 0 || hideLone
+              {filters.length > 0 || hideLone || kinds.size < GRAPH_EDGE_KINDS.length
                 ? "Nothing here matches those filters. Loosen one, or reach further out."
                 : focus
                   ? "Nothing points at this page and it points at nothing yet. Mention another page while writing, fill in a reference field, or put a page inside this one."

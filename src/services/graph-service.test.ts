@@ -3,9 +3,12 @@ import { createNode, createTab, type Node } from "../constants/schema";
 import { linkIndex } from "./link-index";
 import type { GraphModel } from "./graph-service";
 import {
+  dotSize,
   edgeOpacity,
   graphAround,
+  restrict,
   withoutLone,
+  GRAPH_EDGE_KINDS,
   graphOfPages,
   graphOperatorsFor,
   graphPinKey,
@@ -16,7 +19,13 @@ import {
   seededRandom,
   GRAPH_FILTER_FIELDS,
 } from "./graph-service";
-import { GRAPH_EDGE_FADE_FROM, GRAPH_EDGE_MIN_OPACITY } from "../constants/graph";
+import {
+  GRAPH_DOT_GROWTH,
+  GRAPH_DOT_MAX,
+  GRAPH_DOT_SIZE,
+  GRAPH_EDGE_FADE_FROM,
+  GRAPH_EDGE_MIN_OPACITY,
+} from "../constants/graph";
 
 function page(name: string, patch: Partial<Node> = {}): Node {
   return { ...createNode({ parentId: null, templateKey: "character", name }), ...patch };
@@ -469,6 +478,7 @@ describe("withoutLone", () => {
     color: null,
     ownsColor: false,
     depth: 1,
+    links: 0,
     x: 0,
     y: 0,
   }));
@@ -486,5 +496,48 @@ describe("withoutLone", () => {
 
   it("keeps the focus whatever its lines", () => {
     expect(withoutLone({ nodes, edges }, "d").nodes.map((n) => n.id)).toEqual(["a", "b", "d"]);
+  });
+});
+
+describe("restrict", () => {
+  const nodes = ["a", "b", "c"].map((id) => ({
+    id,
+    name: id,
+    templateKey: id === "a" ? "character" : "note",
+    color: null,
+    ownsColor: false,
+    depth: 1,
+    links: 0,
+    x: 0,
+    y: 0,
+  }));
+  const edges = [
+    { id: "a|b", sourceId: "a", targetId: "b", kind: "prose" as const },
+    { id: "b|c", sourceId: "b", targetId: "c", kind: "tree" as const },
+  ];
+  const all = new Set(GRAPH_EDGE_KINDS);
+
+  it("takes pages off the settled picture without moving the rest", () => {
+    const shown = restrict({ nodes, edges }, null, (id) => id !== "a", all, false);
+    expect(shown.nodes.map((n) => n.id)).toEqual(["b", "c"]);
+    expect(shown.edges.map((e) => e.id)).toEqual(["b|c"]);
+  });
+
+  it("drops lines of a kind switched off, and counts links from what is left", () => {
+    const shown = restrict({ nodes, edges }, null, () => true, new Set(["prose" as const]), false);
+    expect(shown.edges.map((e) => e.id)).toEqual(["a|b"]);
+    expect(shown.nodes.map((n) => n.links)).toEqual([1, 1, 0]);
+  });
+
+  it("keeps the focus whatever the conditions say", () => {
+    expect(restrict({ nodes, edges }, "a", () => false, all, false).nodes.map((n) => n.id)).toEqual(["a"]);
+  });
+});
+
+describe("dotSize", () => {
+  it("grows with the square root of the links and stops at the cap", () => {
+    expect(dotSize(0)).toBe(GRAPH_DOT_SIZE);
+    expect(dotSize(4)).toBe(GRAPH_DOT_SIZE + 2 * GRAPH_DOT_GROWTH);
+    expect(dotSize(100000)).toBe(GRAPH_DOT_MAX);
   });
 });

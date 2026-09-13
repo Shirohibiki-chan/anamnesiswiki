@@ -168,6 +168,14 @@
   padding: var(--space-md);
 }
 
+.graph-menu-head {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
 .graph-menu-note {
   margin: 0;
   padding: var(--space-2xs) 0;
@@ -439,8 +447,10 @@
   cursor: pointer;
   touch-action: none;
   /* Eased rather than switched, so the world stepping back around a pointed-at
-     page is a ripple rather than a strobe as the pointer crosses packed dots. */
-  transition: opacity 120ms ease-out;
+     page is a ripple rather than a strobe as the pointer crosses packed dots.
+     About Obsidian's length; at a third of it the crossing flashed — her
+     report 2026-09-13. See GRAPH_FADE_MS, which is what the number is. */
+  transition: opacity var(--graph-fade, 350ms) ease-out;
   /* Falls back to the ordinary border colour for a page with no colour of its
      own and none inherited — PageGraph sets this per node when there is one. */
   --graph-node-color: var(--color-border-strong);
@@ -668,10 +678,20 @@
    answer, and hers 2026-09-13. The button stays its full size underneath so
    the dot can still be pointed at and dragged; only the drawing shrinks. */
 .page-graph-scene-small .page-graph-node-disc {
-  width: 22px;
-  height: 22px;
+  /* Per node, from how many lines it has — a hub is what the eye should land
+     on. Set on the button by GraphNodeButton; see GRAPH_DOT_SIZE. */
+  width: var(--graph-dot-size, 20px);
+  height: var(--graph-dot-size, 20px);
   border: none;
   background: var(--graph-node-color);
+}
+
+/* The hit box stays a full button while the dot is small, or the dot is four
+   pixels to aim at and hovering reads as imprecise — see GRAPH_DOT_HIT, which
+   is what the number is. */
+.page-graph-scene-small .page-graph-node {
+  width: var(--graph-dot-hit, 64px);
+  height: var(--graph-dot-hit, 64px);
 }
 
 .page-graph-scene-small .page-graph-node-disc > * {

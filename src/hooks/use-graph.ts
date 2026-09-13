@@ -12,7 +12,10 @@ import {
   graphOfPages,
   graphPinKey,
   pagesInUniverse,
+  restrict,
   withoutLone,
+  GRAPH_EDGE_KINDS,
+  type GraphEdgeKind,
   type GraphModel,
 } from "../services/graph-service";
 import { linkIndex } from "../services/link-index";
@@ -30,6 +33,7 @@ export { fieldId, fieldLabel, takesValue, OPERATOR_LABELS } from "../services/da
 export type { GraphPins } from "../services/graph-layout";
 
 const EMPTY: GraphModel = { nodes: [], edges: [] };
+const ALL_KINDS: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS);
 
 export type PageGraphOptions = {
   /** The page the graph is centred on, or null for a graph of the whole thing. */
@@ -40,6 +44,8 @@ export type PageGraphOptions = {
   filters: DatabaseFilter[];
   /** Whether pages with no written line to anything are left off. */
   hideLone?: boolean;
+  /** Which kinds of line are drawn; every kind when absent. */
+  kinds?: ReadonlySet<GraphEdgeKind>;
   /** Where she has already dragged nodes on this graph. */
   pins: GraphPins;
   /**
@@ -99,7 +105,15 @@ export function useGraphScope(focusId: string | null): { universeId: string | nu
  * the current filter could never be used to widen it. `linkIndex` is cached
  * against the store's record, so the expensive half is done once.
  */
-export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, generation }: PageGraphOptions): PageGraph {
+export function usePageGraph({
+  focusId,
+  reach,
+  filters,
+  hideLone = false,
+  kinds = ALL_KINDS,
+  pins,
+  generation,
+}: PageGraphOptions): PageGraph {
   const { nodes } = useProject();
   const { getLabel } = useTemplates();
   const { universeId } = useGraphScope(focusId);
@@ -109,7 +123,17 @@ export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, 
   // The shape of the question, as one value a memo can be keyed on. Pins are
   // deliberately absent: they change on every drop, and re-running the
   // simulation then would jump every other node the instant one was let go of.
-  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${hideLone ? "lone" : ""}|${JSON.stringify(filters)}`;
+  const asked = `${hideLone ? "lone" : ""}|${[...kinds].sort().join(",")}|${JSON.stringify(filters)}`;
+  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${asked}`;
+  /**
+   * What the *layout* is keyed on, which on a whole-world graph leaves the
+   * conditions out. Her call 2026-09-13: a filter on the whole world hides
+   * in place rather than laying the world out again — see `restrict` — so
+   * the world is settled once for its pages and the conditions are applied
+   * to the settled picture. A page's own graph is a walk, and there the
+   * conditions decide what is walked to, so they stay in its key.
+   */
+  const layoutKey = everything ? `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}` : structure;
 
   /**
    * The arrangement as it stood when this graph was last worked out.
@@ -179,20 +203,21 @@ export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, 
    * build again.
    */
   const built = useMemo(() => {
+    if (scopedIds) {
+      // No centre: a universe has no one page that belongs in the middle, and
+      // pinning one of seventy there would bend the shape around that choice.
+      // Unfiltered — the conditions are applied to the settled picture below.
+      return { model: graphOfPages(scopedIds, focusId, nodes, index), centreId: null as string | null };
+    }
+    if (!focusId) return { model: EMPTY, centreId: null as string | null };
     const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
     // Off after the walk rather than during it: a lone page is one the
     // finished picture has no written line to, which the walk cannot know
     // about a page until it has been through everything.
-    const trim = (model: GraphModel) => (hideLone ? withoutLone(model, focusId) : model);
-    if (scopedIds) {
-      // No centre: a universe has no one page that belongs in the middle, and
-      // pinning one of seventy there would bend the shape around that choice.
-      return { model: trim(graphOfPages(scopedIds, focusId, nodes, index, keep)), centreId: null as string | null };
-    }
-    if (!focusId) return { model: EMPTY, centreId: null as string | null };
-    return { model: trim(graphAround(focusId, nodes, index, reach as number, keep)), centreId: focusId };
+    const walked = graphAround(focusId, nodes, index, reach as number, keep, kinds);
+    return { model: hideLone ? withoutLone(walked, focusId) : walked, centreId: focusId };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, scopedIds, nodes, index, getLabel]);
+  }, [layoutKey, scopedIds, nodes, index, getLabel]);
 
   /**
    * The settled picture, and which request it answers.
@@ -224,8 +249,17 @@ export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, 
     };
   }, [built, frozen, seed]);
 
-  const model = settled.model;
   const working = settled.request !== latest;
+  const model = useMemo(() => {
+    if (!scopedIds) return settled.model;
+    const keep = (id: string) => {
+      const node = nodes[id];
+      return Boolean(node) && filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
+    };
+    return restrict(settled.model, focusId, keep, kinds, hideLone);
+    // `asked` stands in for the filters, the kinds and hideLone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settled, scopedIds, nodes, focusId, asked, getLabel]);
 
   // Columns are empty on purpose: a graph filters on what a page *is* rather
   // than on a table's columns, and `template` and `tag` are answered from the

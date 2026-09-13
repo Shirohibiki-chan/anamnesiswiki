@@ -15,6 +15,7 @@ import {
   type GraphReach,
 } from "../../constants/graph";
 import type { DatabaseField, DatabaseFilter } from "../../constants/schema";
+import { GRAPH_EDGE_KINDS, type GraphEdgeKind } from "../../services/graph-service";
 import { GRAPH_EDGE_LABELS, type GraphEdgeLabels } from "../../services/preferences-service";
 import { TreePopover } from "../tree/TreePopover";
 import { GraphFilterMenu } from "./GraphFilterMenu";
@@ -49,6 +50,9 @@ type GraphToolbarProps = {
   /** Whether pages nothing written points at are left off. In the filter menu, since it hides pages. */
   hideLone: boolean;
   onHideLone: (hide: boolean) => void;
+  /** Which kinds of line are drawn. Also in the filter menu, since it hides lines. */
+  kinds: ReadonlySet<GraphEdgeKind>;
+  onKinds: (kinds: ReadonlySet<GraphEdgeKind>) => void;
   /** The zoom below which no names are drawn — hers to move, see the Display menu. */
   nameZoom: number;
   onNameZoom: (zoom: number) => void;
@@ -70,6 +74,8 @@ export function GraphToolbar({
   choicesFor,
   hideLone,
   onHideLone,
+  kinds,
+  onKinds,
   nameZoom,
   onNameZoom,
   arranged,
@@ -77,7 +83,7 @@ export function GraphToolbar({
 }: GraphToolbarProps) {
   const [filterRect, setFilterRect] = useState<DOMRect | null>(null);
   const [displayRect, setDisplayRect] = useState<DOMRect | null>(null);
-  const hiding = filters.length + (hideLone ? 1 : 0);
+  const hiding = filters.length + (hideLone ? 1 : 0) + (GRAPH_EDGE_KINDS.length - kinds.size);
 
   // Both numbers when a filter is on, because a filter that hides everything
   // and a page connected to nothing look identical otherwise — the same reason
@@ -197,6 +203,8 @@ export function GraphToolbar({
             choicesFor={choicesFor}
             hideLone={hideLone}
             onHideLone={onHideLone}
+            kinds={kinds}
+            onKinds={onKinds}
           />
         </TreePopover>
       )}

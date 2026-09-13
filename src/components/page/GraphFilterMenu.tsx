@@ -15,6 +15,7 @@ import {
   GRAPH_FILTER_FIELDS,
   OPERATOR_LABELS,
 } from "../../hooks/use-graph";
+import { GRAPH_EDGE_KINDS, type GraphEdgeKind } from "../../services/graph-service";
 
 type GraphFilterMenuProps = {
   filters: DatabaseFilter[];
@@ -22,9 +23,42 @@ type GraphFilterMenuProps = {
   choicesFor: (field: DatabaseField) => string[];
   hideLone: boolean;
   onHideLone: (hide: boolean) => void;
+  kinds: ReadonlySet<GraphEdgeKind>;
+  onKinds: (kinds: ReadonlySet<GraphEdgeKind>) => void;
 };
 
-export function GraphFilterMenu({ filters, onChange, choicesFor, hideLone, onHideLone }: GraphFilterMenuProps) {
+/**
+ * What each kind of line is called to her. The kinds are link-index's, and
+ * the tree's; the words are the ones the rest of the app uses for the same
+ * things — a mention in the writing, a reference field in the sidebar, a
+ * manual links block, a storyline's scene, a shape on a board, and where the
+ * page is filed.
+ */
+const KIND_LABELS: Record<GraphEdgeKind, string> = {
+  prose: "Mentions in the writing",
+  property: "Reference fields",
+  manual: "Manual links",
+  storyline: "Storylines",
+  board: "Boards",
+  tree: "Filed under",
+};
+
+export function GraphFilterMenu({
+  filters,
+  onChange,
+  choicesFor,
+  hideLone,
+  onHideLone,
+  kinds,
+  onKinds,
+}: GraphFilterMenuProps) {
+  function toggleKind(kind: GraphEdgeKind) {
+    const next = new Set(kinds);
+    if (next.has(kind)) next.delete(kind);
+    else next.add(kind);
+    onKinds(next);
+  }
+
   function add() {
     const field = GRAPH_FILTER_FIELDS[0];
     onChange([...filters, { id: crypto.randomUUID(), field, operator: graphOperatorsFor(field)[0] }]);
@@ -44,7 +78,7 @@ export function GraphFilterMenu({ filters, onChange, choicesFor, hideLone, onHid
 
   return (
     <div className="graph-menu-body">
-      {filters.length === 0 && !hideLone && (
+      {filters.length === 0 && !hideLone && kinds.size === GRAPH_EDGE_KINDS.length && (
         <p className="graph-menu-note">
           No filters. Every page connected to this one is drawn.
         </p>
@@ -131,6 +165,17 @@ export function GraphFilterMenu({ filters, onChange, choicesFor, hideLone, onHid
         <input type="checkbox" checked={hideLone} onChange={(event) => onHideLone(event.target.checked)} />
         <span>Hide pages nothing points at</span>
       </label>
+
+      {/* Which kinds of line are drawn — hers 2026-09-13. On a whole-world
+          graph a kind switched off is taken off the settled picture; on a
+          page's graph it is not walked along either, so nothing floats. */}
+      <p className="graph-menu-head">Lines to show</p>
+      {GRAPH_EDGE_KINDS.map((kind) => (
+        <label key={kind} className="graph-check">
+          <input type="checkbox" checked={kinds.has(kind)} onChange={() => toggleKind(kind)} />
+          <span>{KIND_LABELS[kind]}</span>
+        </label>
+      ))}
 
       {/* Said here rather than left to be discovered: on a picture, hiding a
           page also cuts every route that ran through it, so filtering at two

@@ -13,7 +13,7 @@
 // and would defeat the memo on its own.
 import { memo } from "react";
 import { getPaletteHex } from "../../constants/palette";
-import type { GraphNode } from "../../services/graph-service";
+import { dotSize, type GraphNode } from "../../services/graph-service";
 import { NodeIcon } from "../blocks/IconPicker";
 
 type GraphNodeButtonProps = {
@@ -57,6 +57,8 @@ export const GraphNodeButton = memo(function GraphNodeButton({
         {
           left: drawn.x,
           top: drawn.y,
+          // A hub is a bigger dot when the graph is far out — see dotSize.
+          "--graph-dot-size": `${dotSize(drawn.links)}px`,
           ...(hex ? { "--graph-node-color": hex } : {}),
         } as React.CSSProperties
       }

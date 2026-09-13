@@ -12,6 +12,7 @@ function node(id: string, depth: number): GraphNode {
     color: null,
     ownsColor: false,
     depth,
+    links: 0,
     ...seedPosition(id, depth),
   };
 }
