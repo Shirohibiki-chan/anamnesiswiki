@@ -249,7 +249,17 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     ],
     properties: [
       { key: "summary", label: "Summary", type: "longtext", placeholder: "A one-line summary." },
+      // The relationships a character has by default, each a reference field
+      // so the graph can draw the line and say what it is. Friends was the
+      // only one until 2026-09-13; she asked for the rest after seeing the
+      // graph filter lines by what a relationship is called, with one thing
+      // to call them. Family first because it is the one most characters
+      // have; enemies last because they are the exception.
+      { key: "family", label: "Family", type: "refs" },
       { key: "friends", label: "Friends", type: "refs" },
+      { key: "allies", label: "Allies", type: "refs" },
+      { key: "rivals", label: "Rivals", type: "refs" },
+      { key: "enemies", label: "Enemies", type: "refs" },
     ],
   },
   location: {

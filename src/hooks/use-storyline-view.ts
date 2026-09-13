@@ -402,9 +402,16 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     const dy = event.clientY - drag.fromY;
     if (!drag.moved && Math.hypot(dx, dy) < STORYLINE_DRAG_THRESHOLD) return;
     drag.moved = true;
-    setPan((prev) => ({ x: prev.x + (dx - drag.atX), y: prev.y + (dy - drag.atY) }));
+    // The step is worked out here, as numbers, before the updater. The graph's
+    // pan had the same lines the other way round and the same bug — the
+    // updater read `drag.atX` after these two lines had moved it on, so the
+    // step was zero whenever React deferred it. Fixed there 2026-09-13; this
+    // was the copy, reported the same evening.
+    const stepX = dx - drag.atX;
+    const stepY = dy - drag.atY;
     drag.atX = dx;
     drag.atY = dy;
+    setPan((prev) => ({ x: prev.x + stepX, y: prev.y + stepY }));
   }, []);
 
   const endPan = useCallback((event: React.PointerEvent<HTMLElement>) => {

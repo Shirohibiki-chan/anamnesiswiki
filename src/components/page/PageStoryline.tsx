@@ -74,7 +74,7 @@ export function PageStoryline({ node }: { node: Node }) {
   const untidy = useStorylineIsUntidy(node.id);
   const actions = useStorylineActions();
   const { addSceneToStoryline, addExistingPageToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
-  const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline } = actions;
+  const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline, renameNode } = actions;
   const { addStorylineNote, setStorylineNoteText, moveStorylineNote, removeStorylineNote } = actions;
   const { addStorylineBand, setStorylineBandLabel, moveStorylineBand } = actions;
   const { resizeStorylineBand, removeStorylineBand } = actions;
@@ -93,8 +93,15 @@ export function PageStoryline({ node }: { node: Node }) {
    * **The draft lives here rather than in the canvas file**, so typing is not
    * one write to her disk per letter. It is committed on blur — the same moment
    * a drag commits, and for the same reason.
+   *
+   * **A scene is the third kind, and it is the page's name being typed.** A
+   * scene card is a page, so renaming it here is the same rename the tree does,
+   * and the canvas has nothing of its own to write. The id is the canvas
+   * node's, as for the other two; the page is looked up when the draft lands.
    */
-  const [editing, setEditing] = useState<{ kind: "note" | "band"; id: string; draft: string } | null>(null);
+  const [editing, setEditing] = useState<{ kind: "note" | "band" | "scene"; id: string; draft: string } | null>(
+    null,
+  );
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => moveStorylineNodes(node.id, moved),
@@ -222,9 +229,37 @@ export function PageStoryline({ node }: { node: Node }) {
   function commitEdit() {
     if (!editing) return;
     if (editing.kind === "note") setStorylineNoteText(node.id, editing.id, editing.draft);
-    else setStorylineBandLabel(node.id, editing.id, editing.draft);
+    else if (editing.kind === "band") setStorylineBandLabel(node.id, editing.id, editing.draft);
+    else {
+      // A blank name is not a rename — the tree refuses it the same way — and
+      // an unchanged one is not worth a write to the disk.
+      const scene = scenes.find((candidate) => candidate.id === editing.id);
+      const name = editing.draft.trim();
+      if (scene && name && name !== scene.name) renameNode(scene.pageId, name);
+    }
     setEditing(null);
   }
+
+  /** Opens the selected scene's name for typing. Also what F2 does. */
+  function renameSelectedScene() {
+    if (!selectedScene) return;
+    setEditing({ kind: "scene", id: selectedScene.id, draft: selectedScene.name });
+  }
+
+  // F2 renames the selected scene, as it does a file in every file manager.
+  // Only while a scene is selected and nothing is being typed into, so it is
+  // never taken from a note mid-sentence.
+  useEffect(() => {
+    if (!selectedScene || editing) return;
+    const { id, name } = selectedScene;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "F2") return;
+      event.preventDefault();
+      setEditing({ kind: "scene", id, draft: name });
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [selectedScene, editing]);
 
   /** A note's text with its links drawn as links. */
   function noteBody(note: DrawnNote) {
@@ -492,6 +527,7 @@ export function PageStoryline({ node }: { node: Node }) {
 
           {scenes.map((scene) => {
             const hex = getPaletteHex(scene.color ?? undefined);
+            const isRenaming = editing?.kind === "scene" && editing.id === scene.id;
             return (
               <div
                 key={scene.id}
@@ -564,6 +600,29 @@ export function PageStoryline({ node }: { node: Node }) {
                 >
                   <Link2 size={13} />
                 </button>
+
+                {/* Drawn over the name rather than in place of it, because the
+                    name sits inside a button and a box to type in cannot. The
+                    press that focuses it must not start dragging the card
+                    underneath — same as the band's box. */}
+                {isRenaming && (
+                  <input
+                    className="storyline-node-input"
+                    value={editing.draft}
+                    autoFocus
+                    aria-label="What this scene is called"
+                    onFocus={(event) => event.currentTarget.select()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
+                    onBlur={commitEdit}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                      // Escape keeps the old name: this is a page's name, and
+                      // half a new one landing on it is worse than none.
+                      else if (event.key === "Escape") setEditing(null);
+                    }}
+                  />
+                )}
               </div>
             );
           })}
@@ -670,6 +729,11 @@ export function PageStoryline({ node }: { node: Node }) {
                 onClick={() => selectNode(selectedScene.pageId)}
               >
                 Open this scene
+              </button>
+              {/* Renames the page — a scene *is* one — and reads "Rename"
+                  like the band's button so the two are learnt once. */}
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={renameSelectedScene}>
+                Rename
               </button>
               {/* Says "off the canvas", never "delete": the page keeps
                   existing, in the tree, with everything written in it. */}

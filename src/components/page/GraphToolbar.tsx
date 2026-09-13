@@ -53,6 +53,10 @@ type GraphToolbarProps = {
   /** Which kinds of line are drawn. Also in the filter menu, since it hides lines. */
   kinds: ReadonlySet<GraphEdgeKind>;
   onKinds: (kinds: ReadonlySet<GraphEdgeKind>) => void;
+  /** What the relationships on this graph are called, and which are switched off. */
+  lineNames: string[];
+  hiddenLabels: ReadonlySet<string>;
+  onHiddenLabels: (hidden: ReadonlySet<string>) => void;
   /** The zoom below which no names are drawn — hers to move, see the Display menu. */
   nameZoom: number;
   onNameZoom: (zoom: number) => void;
@@ -76,6 +80,9 @@ export function GraphToolbar({
   onHideLone,
   kinds,
   onKinds,
+  lineNames,
+  hiddenLabels,
+  onHiddenLabels,
   nameZoom,
   onNameZoom,
   arranged,
@@ -83,7 +90,7 @@ export function GraphToolbar({
 }: GraphToolbarProps) {
   const [filterRect, setFilterRect] = useState<DOMRect | null>(null);
   const [displayRect, setDisplayRect] = useState<DOMRect | null>(null);
-  const hiding = filters.length + (hideLone ? 1 : 0) + (GRAPH_EDGE_KINDS.length - kinds.size);
+  const hiding = filters.length + (hideLone ? 1 : 0) + (GRAPH_EDGE_KINDS.length - kinds.size) + hiddenLabels.size;
 
   // Both numbers when a filter is on, because a filter that hides everything
   // and a page connected to nothing look identical otherwise — the same reason
@@ -205,6 +212,9 @@ export function GraphToolbar({
             onHideLone={onHideLone}
             kinds={kinds}
             onKinds={onKinds}
+            lineNames={lineNames}
+            hiddenLabels={hiddenLabels}
+            onHiddenLabels={onHiddenLabels}
           />
         </TreePopover>
       )}

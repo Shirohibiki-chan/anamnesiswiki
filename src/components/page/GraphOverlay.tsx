@@ -36,7 +36,6 @@ import { X } from "lucide-react";
 import {
   GRAPH_DEFAULT_DEPTH,
   GRAPH_DIM_OPACITY,
-  GRAPH_DOT_HIT,
   GRAPH_FADE_MS,
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
@@ -97,6 +96,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // With the filters, and for the same reason: a question being asked now.
   const [hideLone, setHideLone] = useState(false);
   const [kinds, setKinds] = useState<ReadonlySet<GraphEdgeKind>>(() => new Set(GRAPH_EDGE_KINDS));
+  const [hiddenLabels, setHiddenLabels] = useState<ReadonlySet<string>>(() => new Set());
   const [generation, setGeneration] = useState(0);
 
   const { universeId, universeName } = useGraphScope(focusId);
@@ -113,13 +113,13 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const { setGraphEdgeLabels, setGraphNameZoom } = usePreferenceActions();
   const { selectNode, setGraphPins } = useProjectActions();
 
-  const graph = usePageGraph({ focusId, reach, filters, hideLone, kinds, pins, generation });
+  const graph = usePageGraph({ focusId, reach, filters, hideLone, kinds, hiddenLabels, pins, generation });
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => setGraphPins(pinKey, { ...pins, ...moved }),
     [setGraphPins, pinKey, pins],
   );
-  const view = useGraphView(graph.model, { resetKey: graph.key, onArrange });
+  const view = useGraphView(graph.model, { resetKey: graph.key, onArrange, dotsBelow: nameZoom });
 
   // Destructured up here rather than reached for as `view.x` through the
   // markup, the same shape Lightbox takes from use-lightbox. It keeps the JSX
@@ -128,7 +128,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // For the canvas to find the probe lines the stylesheet resolves on.
   const sceneRef = useRef<HTMLDivElement>(null);
   const { startNodeDrag, moveNodeDrag, endNodeDrag, startPan, movePan, endPan, handleWheel } = view;
-  const { hoveredId, hover, moving, forgetArrangement, hasMoved } = view;
+  const { hoveredId, hover, moving, zooming, forgetArrangement, hasMoved } = view;
 
   const preview = useGraphPreview(selectedId);
 
@@ -221,6 +221,9 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           onHideLone={setHideLone}
           kinds={kinds}
           onKinds={setKinds}
+          lineNames={graph.labels}
+          hiddenLabels={hiddenLabels}
+          onHiddenLabels={setHiddenLabels}
           nameZoom={nameZoom}
           onNameZoom={setGraphNameZoom}
           arranged={arranged}
@@ -257,8 +260,14 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               bounds={bounds}
               view={view.view}
               moving={moving}
+              zooming={zooming}
               sceneRef={sceneRef}
-              dimmed={inPlay !== null}
+              // On selection, not on hover: a canvas cannot ease, so lines that
+              // dimmed on hover snapped between full and faint on every dot the
+              // pointer crossed — thousands of lines flashing, "disco party" in
+              // her words 2026-09-13. The dots ease and the lit lines come up
+              // on hover; the rest of the lines step back only for a click.
+              dimmed={selectedId !== null}
             />
           )}
 
@@ -274,6 +283,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
               inPlay !== null ? "page-graph-scene-inplay" : "",
+              selectedId !== null ? "page-graph-scene-selected" : "",
               moving ? "page-graph-scene-moving" : "",
             ]
               .filter(Boolean)
@@ -284,7 +294,6 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
                 // Fainter the more of them there are — see edgeOpacity.
                 "--graph-edge-opacity": edgeOpacity(edges.length),
                 "--graph-dim-opacity": GRAPH_DIM_OPACITY,
-                "--graph-dot-hit": `${GRAPH_DOT_HIT}px`,
                 "--graph-fade": `${GRAPH_FADE_MS}ms`,
               } as React.CSSProperties
             }
@@ -319,7 +328,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
 
           {empty && (
             <p className="page-graph-empty">
-              {filters.length > 0 || hideLone || kinds.size < GRAPH_EDGE_KINDS.length
+              {filters.length > 0 || hideLone || kinds.size < GRAPH_EDGE_KINDS.length || hiddenLabels.size > 0
                 ? "Nothing here matches those filters. Loosen one, or reach further out."
                 : focus
                   ? "Nothing points at this page and it points at nothing yet. Mention another page while writing, fill in a reference field, or put a page inside this one."

@@ -119,6 +119,7 @@ export function useStorylineActions() {
       removeStorylineBand: state.removeStorylineBand,
       tidyStoryline: state.tidyStoryline,
       selectNode: state.selectNode,
+      renameNode: state.renameNode,
     })),
   );
 }

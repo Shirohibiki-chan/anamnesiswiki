@@ -232,7 +232,9 @@ Phase 25, closed 2026-09-09. What binds the code:
   folder-shaped kind of object**, which is the rule `CLAUDE.md` §Data on disk
   states and the one a canvas feature is most likely to break — the temptation
   is a "scene" that is a card with a title, and a card with a title is not
-  somewhere she can write.
+  somewhere she can write. The same rule decides how a scene is renamed from
+  the canvas (2026-09-13): the box on the card calls `renameNode` on the page,
+  and `_storyline.json` holds no name to fall out of step with the tree.
 
 - **The canvas is `_storyline.json`, its own file inside the storyline page's
   directory, and it must not become a field on the page.** Dragging a scene an
@@ -447,7 +449,15 @@ Board spike, closed 2026-09-13. What binds the code:
   what makes a zoomed-in drag 17ms a frame instead of 40 — painting thousands
   of thick dashed lines every frame cannot be made fast, so it is not done.
   Dashed tree lines use square caps on the canvas: round caps are drawn on
-  every dash and were 30ms of the frame on their own.
+  every dash and were 30ms of the frame on their own. **A zoom repaints every
+  tick, crisp** — scaling the painting instead read as blurry — and is cheap
+  because while the wheel turns (`zooming`) the canvas paints the window
+  without its overdraw margin and draws the tree lines solid; dashes and the
+  margin come back GRAPH_ZOOM_SETTLE_MS after the last tick. Measured: 43ms a
+  frame to 18ms on 831 pages, which is what the pages alone cost. Lines never
+  exceed GRAPH_LINE_MAX_PX on screen. **The canvas dims its lines for a
+  selection, never a hover**: a canvas cannot ease, and lines that dimmed on
+  hover flashed on every dot the pointer crossed.
 
 - **The layout runs in a worker, and every read in the app suite waits for it.**
   `settleGraphInWorker` is `settleGraph` on another thread — same inputs, same
@@ -472,6 +482,20 @@ Board spike, closed 2026-09-13. What binds the code:
   menu's *Hide pages nothing points at* uses the same definition
   (`withoutLone`). The generated world's default shape is random links, which
   no layout can make readable; judge the graph on `--shape hubs`.
+
+- **While the pages are dots, the stage does the pointing.** Below the names
+  threshold the buttons take `pointer-events: none` and `use-graph-view`'s
+  `nearest` finds the dot under the pointer: within GRAPH_DOT_HOVER_PX to
+  hover, within GRAPH_DOT_GRAB_PX of the dot's edge to pick up, and any other
+  press pans. Two hit-box sizes were tried first and each failed the other
+  way — the dot's own size was four pixels to aim at, and one big enough to
+  hover covered the gaps and grabbed a page on every background drag. The
+  harness clicks a node by mouse position (`clickGraphNode`) for this reason.
+  **Never compute a state step inside an updater from a ref the handler then
+  moves on**: the pan did, and its step was zero whenever React deferred the
+  updater — which was most of the time. Work the step out first, hand over
+  numbers. The wheel glides to a target about the pointer (`handleWheel`);
+  `zooming` is true for the glide, and the canvas paints light until it lands.
 
 - **A node's button is the disc; the name hangs below it and is not part of the
   box.** It was a 118px-wide column holding both, and the column stayed that

@@ -220,6 +220,11 @@
   cursor: pointer;
 }
 
+.graph-check-sub {
+  padding-left: var(--space-xl);
+  font-size: var(--fs-xs);
+}
+
 .graph-slider {
   display: flex;
   flex-direction: column;
@@ -401,7 +406,12 @@
   stroke-width: 2;
 }
 
-.page-graph-scene-inplay .page-graph-edge:not(.page-graph-edge-lit) {
+/* The other lines step back for a *selection* only. A canvas cannot ease, so
+   lines that dimmed on hover snapped between full and faint on every dot the
+   pointer crossed — thousands of lines flashing. The dots (below) ease on
+   hover; the lines wait for a click. The probe reads this, so the canvas
+   follows. */
+.page-graph-scene-selected .page-graph-edge:not(.page-graph-edge-lit) {
   stroke-opacity: calc(var(--graph-dim-opacity, 0.3) * var(--graph-edge-opacity, 1));
 }
 
@@ -686,12 +696,14 @@
   background: var(--graph-node-color);
 }
 
-/* The hit box stays a full button while the dot is small, or the dot is four
-   pixels to aim at and hovering reads as imprecise — see GRAPH_DOT_HIT, which
-   is what the number is. */
+/* **No hit boxes while the pages are dots.** The stage finds the nearest dot
+   to the pointer itself (use-graph-view's `nearest`), generous for pointing
+   and tight for picking up, and every other press pans. A box the dot's size
+   was four pixels to aim at; a box big enough to hover covered the gaps and
+   grabbed a page on every drag of the background. Keyboard focus still
+   reaches the buttons; only the pointer goes around them. */
 .page-graph-scene-small .page-graph-node {
-  width: var(--graph-dot-hit, 64px);
-  height: var(--graph-dot-hit, 64px);
+  pointer-events: none;
 }
 
 .page-graph-scene-small .page-graph-node-disc > * {

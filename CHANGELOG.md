@@ -2,7 +2,20 @@
 
 ## 2026-09-13 — The graph learns from Obsidian
 
+### Additions
+
+- **A character has Family, Friends, Allies, Rivals and Enemies fields by default.** Only Friends shipped before. They're reference fields, so each one is a line on the graph that says what it is.
+- **The graph's filter menu lists each relationship by name.** Under *Reference fields*: Friends, Enemies, Leader, Members — whatever the pages on this graph actually use — each one its own tick box.
+
 ### Fixes
+
+- **A scene can be renamed on the storyline.** Select it and press *Rename* (or F2), type over the name on the card, and Enter keeps it — Escape keeps the old one. It's the page that gets renamed, the same as in the tree; the card only ever showed the page's name. Before this, the canvas had no way to do it at all: double-clicking a scene opens its page, and the only buttons were *Open this scene* and *Take off the canvas*.
+- **Dragging the storyline's background pans it.** It had the graph's pan bug below, copied over before that was found: the step came out as zero, so the canvas sat still under the drag.
+- **Dragging the graph's background pans it — for real this time.** The pan was adding up its steps in a way React was free to apply late, and when it did, every step came out as zero. That's why a drag sometimes did nothing at all; it had nothing to do with what was under the pointer.
+- **The wheel glides and zooms toward your pointer.** A notch sets a target and the view eases to it over a dozen frames instead of jumping the whole notch at once, and the point under the pointer stays put — Obsidian's feel, both of them.
+- **Pointing at dots is precise, and the background is the background.** While the pages are dots there are no clickable boxes at all: the graph works out the nearest dot to the pointer itself — generous for pointing, tight for picking up — and any press anywhere else pans. A box big enough to hover was covering the gaps between dots and grabbing pages on a background drag.
+- **Zooming a big graph is smooth.** While the wheel turns, only what's on screen is painted and the filed-under lines are drawn solid; they get their dashes back the moment it stops. Measured on 831 pages: 43ms a frame → 18ms, the same as with no lines at all. Lines also never grow wider than a pixel and a half on screen, however far in you go.
+- **Pointing at a page no longer flashes the lines.** The dots still fade and the page's own lines still light up in the accent, but the other lines stay as they are — they only step back when you click a page. Lines can't fade the way dots can, so dimming them on hover made thousands of them flash as the pointer crossed a row of dots.
 
 - **Changing a filter or the reach on a big graph no longer freezes the app.** The layout is worked out on a separate thread now; the last picture stays up with a "Working out the picture…" note until the new one is ready, and the window keeps answering meanwhile. On 831 pages that's about a second of waiting instead of a second of frozen window — the same wait the graph had on opening, which is also no longer a freeze.
 
