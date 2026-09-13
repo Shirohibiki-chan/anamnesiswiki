@@ -168,11 +168,13 @@ export const GRAPH_EDGE_FADE_FROM = 200;
 export const GRAPH_EDGE_MIN_OPACITY = 0.2;
 
 /**
- * How far the rest of the picture steps back while one page is selected.
+ * How far the rest of the picture steps back while one page is pointed at
+ * or selected.
  *
- * Halfway, not further: at 0.35 on her dark theme the graph went black behind
- * the selection and read as having vanished. Selected rather than pointed at
- * — a hover only lights the page's own lines, because dimming everything else
- * on every hover flickers on a dense graph and repaints all of it each time.
+ * Obsidian's picture, her call 2026-09-13: the page's own lines in the accent
+ * and everything else well back. An earlier 0.35 read as the graph vanishing,
+ * but that was with the lit lines in neon white over full-size discs; with
+ * the accent, dots far out and an eased fade, this reads as focus rather
+ * than as loss.
  */
-export const GRAPH_DIM_OPACITY = 0.5;
+export const GRAPH_DIM_OPACITY = 0.3;

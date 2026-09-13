@@ -81,16 +81,20 @@ export function settleGraph(
   const { centreId = null, seed } = options;
 
   /**
-   * **A page with no lines is not simulated; it is placed on a ring outside
-   * everything that has them.** Run through the forces it drifts to wherever
-   * the repulsion leaves it, mixed in with the connected pages and saying
-   * nothing about itself. On the ring it says the one thing worth knowing —
-   * nothing points at this and it points at nothing — and the core is left
-   * to the pages that are actually joined. The centre and anything she has
-   * pinned stay where they are whatever their connections.
+   * **A page with no written lines is not simulated; it is placed on a ring
+   * outside everything that has them.** Run through the forces it drifts to
+   * wherever the repulsion leaves it, mixed in with the connected pages and
+   * saying nothing about itself. On the ring it says the one thing worth
+   * knowing — nothing she wrote points at this and it points at nothing —
+   * and the core is left to the pages that are actually joined. **The tree
+   * does not count here**, on purpose: every page has a tree line to what
+   * it is filed under, so if it counted nothing would ever be lone, and where
+   * a page is filed is the quieter claim (her call 2026-09-07). The centre
+   * and anything she has pinned stay where they are whatever their lines.
    */
   const joined = new Set<string>();
   for (const edge of model.edges) {
+    if (edge.kind === "tree") continue;
     joined.add(edge.sourceId);
     joined.add(edge.targetId);
   }
@@ -137,8 +141,11 @@ function ringAround(core: GraphNode[], lone: GraphNode[]): GraphNode[] {
   return out;
 }
 
-/** The simulation proper, over the pages that have lines. */
+/** The simulation proper, over the pages that have written lines. */
 function simulate(model: GraphModel, pins: GraphPins, centreId: string | null, seed: string | undefined): GraphNode[] {
+  // A line to a page on the ring has no second end in here; d3 throws on one.
+  const inside = new Set(model.nodes.map((node) => node.id));
+  const edges = model.edges.filter((edge) => inside.has(edge.sourceId) && inside.has(edge.targetId));
   const simNodes: SimNode[] = model.nodes.map((node) => {
     const pin = pins[node.id];
     if (pin) return { id: node.id, x: pin.x, y: pin.y, fx: pin.x, fy: pin.y };
@@ -152,7 +159,7 @@ function simulate(model: GraphModel, pins: GraphPins, centreId: string | null, s
     };
   });
 
-  const simLinks: SimulationLinkDatum<SimNode>[] = model.edges.map((edge) => ({
+  const simLinks: SimulationLinkDatum<SimNode>[] = edges.map((edge) => ({
     source: edge.sourceId,
     target: edge.targetId,
   }));

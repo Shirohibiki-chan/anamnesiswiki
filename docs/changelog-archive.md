@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-09 — a short tour, the first time you open a world
+
+### Additions
+
+- **The app shows you round on its first run.** Four steps — the rail, your world, the page, and the panel on the right — each one lit up while a card beside it says what it is for. It runs once a world is open rather than on the start screen, because none of it exists until then.
+- **A way out on every step.** Skip, or press Escape, or walk to the end. However you leave, it does not come back.
+- **Left and right arrows walk through it**, and Enter is Next.
+- **It skips a step it cannot point at.** Close the right-hand panel and the tour is three steps rather than four — it never draws a highlight round nothing, which is the thing that would make the app look broken rather than the tutorial look old.
+
+### Notes
+
+- **Nothing about whether you have seen it goes anywhere.** It is one setting on your own machine, like every other one.
+- **This finishes the pair** (Phase 26): the example world shows what a world is made of, and this shows where things are. What is left is a way back to either of them from Settings.
+
 ## 2026-09-09 — a world you can open and look around
 
 ### Additions

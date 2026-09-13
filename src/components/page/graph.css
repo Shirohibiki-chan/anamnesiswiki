@@ -338,16 +338,19 @@
   stroke-opacity: calc(0.8 * var(--graph-edge-opacity, 1));
 }
 
-/* **Pointing at a page lights its own lines, and nothing else moves.** The
-   lit lines are drawn again on top in a second SVG (GraphLitEdges), in the
-   secondary text colour rather than the primary — on a dark theme the primary
-   drew as neon over a graph that had gone black, which is her screenshot of
-   2026-09-13. Hovering changes nothing about the other lines or the other
-   pages on purpose: on a dense graph the pointer crosses a page every few
-   pixels, and a picture that dims and undims on every crossing flickers, and
-   repaints all 835 pages each time it does. */
+/* **Pointing at a page lights its lines in the accent and the rest of the
+   world steps back** — Obsidian's picture, her call 2026-09-13 after seeing
+   the two side by side. An earlier cut of this drew the lit lines in the
+   primary text colour over a picture dimmed to near-black, which on her dark
+   theme was neon on nothing and flickered as the pointer crossed packed
+   discs; the accent is a colour rather than a glare, the dim is gentler, the
+   discs are dots when the graph is that dense, and a node's fade is eased
+   over a few frames so a crossing is a ripple rather than a strobe. The lit
+   lines are drawn again on top in a second SVG (GraphLitEdges); the rest are
+   the canvas, which reads the dimmed style off its probe. See
+   GRAPH_DIM_OPACITY. */
 .page-graph-edge-lit {
-  stroke: var(--color-text-secondary);
+  stroke: var(--color-accent-light);
   stroke-opacity: 1;
 }
 
@@ -355,16 +358,12 @@
   stroke-width: 2;
 }
 
-/* **Selecting a page is when the rest steps back**, and only halfway. A click
-   is deliberate and rare where a hover is neither, and the card at the side
-   already says the graph is now about this one page; the rest fading behind it
-   is that said in the picture. See GRAPH_DIM_OPACITY. */
-.page-graph-scene-selected .page-graph-edge:not(.page-graph-edge-lit) {
-  stroke-opacity: calc(var(--graph-dim-opacity, 0.5) * var(--graph-edge-opacity, 1));
+.page-graph-scene-inplay .page-graph-edge:not(.page-graph-edge-lit) {
+  stroke-opacity: calc(var(--graph-dim-opacity, 0.3) * var(--graph-edge-opacity, 1));
 }
 
-.page-graph-scene-selected .page-graph-node:not(.page-graph-node-near) {
-  opacity: var(--graph-dim-opacity, 0.5);
+.page-graph-scene-inplay .page-graph-node:not(.page-graph-node-near) {
+  opacity: var(--graph-dim-opacity, 0.3);
 }
 
 /* What a line is, where it knows — the field's own name, from a reference
@@ -404,6 +403,9 @@
   transform: translate(-50%, -50%);
   cursor: pointer;
   touch-action: none;
+  /* Eased rather than switched, so the world stepping back around a pointed-at
+     page is a ripple rather than a strobe as the pointer crosses packed dots. */
+  transition: opacity 120ms ease-out;
   /* Falls back to the ordinary border colour for a page with no colour of its
      own and none inherited — PageGraph sets this per node when there is one. */
   --graph-node-color: var(--color-border-strong);
@@ -608,6 +610,28 @@
    at a readable size, and hovering still raises the node's own tooltip. */
 .page-graph-scene-small .page-graph-node-name {
   display: none;
+}
+
+/* **Far out, a page is a dot.** A ring with an icon in it is the right thing
+   at the size an icon can be read; at whole-world size it is a ring drawn
+   around nothing, and eight hundred of them are noise. A filled dot in the
+   page's colour is what the eye can take in by the hundred — Obsidian's
+   answer, and hers 2026-09-13. The button stays its full size underneath so
+   the dot can still be pointed at and dragged; only the drawing shrinks. */
+.page-graph-scene-small .page-graph-node-disc {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: var(--graph-node-color);
+}
+
+.page-graph-scene-small .page-graph-node-disc > * {
+  display: none;
+}
+
+.page-graph-scene-small .page-graph-node-focus .page-graph-node-disc {
+  width: 32px;
+  height: 32px;
 }
 
 /* Lifted above its neighbours so a name that has just reappeared is not drawn

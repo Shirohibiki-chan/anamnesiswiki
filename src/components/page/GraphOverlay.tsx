@@ -126,13 +126,12 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // follows: the thing under the pointer if there is one, else the selection.
   const inPlay = hoveredId ?? selectedId;
   /**
-   * The lines touching the page in play are drawn again on top; the pages
-   * around the *selected* one stay at full strength while the rest step back.
-   * The neighbourhood is the selection's rather than the hover's on purpose:
-   * dimming on hover flickers on a dense graph and repaints every page each
-   * time the pointer crosses one. Recomputed only when the selection changes.
+   * The lines touching the page in play are drawn again on top, and the pages
+   * around it stay at full strength while the rest step back — Obsidian's
+   * picture, her call 2026-09-13. Recomputed only when the page in play
+   * changes, not on every pan.
    */
-  const near = useMemo(() => neighbourhoodOf(graph.model.edges, selectedId), [graph.model.edges, selectedId]);
+  const near = useMemo(() => neighbourhoodOf(graph.model.edges, inPlay), [graph.model.edges, inPlay]);
   const lit = inPlay === null ? [] : edges.filter((edge) => edge.sourceId === inPlay || edge.targetId === inPlay);
   const arranged = hasMoved || Object.keys(pins).length > 0;
   const empty = focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0;
@@ -242,7 +241,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               view={view.view}
               moving={moving}
               sceneRef={sceneRef}
-              dimmed={selectedId !== null}
+              dimmed={inPlay !== null}
             />
           )}
 
@@ -251,7 +250,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
-              selectedId !== null ? "page-graph-scene-selected" : "",
+              inPlay !== null ? "page-graph-scene-inplay" : "",
               moving ? "page-graph-scene-moving" : "",
             ]
               .filter(Boolean)

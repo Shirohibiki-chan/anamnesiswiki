@@ -25,7 +25,18 @@
 //
 //   node scripts/make-test-world.mjs
 //   node scripts/make-test-world.mjs --pages 800 --seed 7
+//   node scripts/make-test-world.mjs --pages 800 --shape hubs
 //   node scripts/make-test-world.mjs --out "D:/scratch/Big World" --force
+//
+// **`--shape hubs` is for looking at the graph, and it is not the default.**
+// The default world links every page to random other pages, which is the one
+// shape no graph can make readable — a uniform ball — and it stays the
+// default because the scenarios were written against it and its seed. A real
+// world has hubs (a handful of pages most things point at) and lone pages
+// (nothing points at them and they point at nothing); `hubs` writes that
+// shape so the graph can be judged on a picture with something in it. Added
+// 2026-09-13 after the comparison with Obsidian's graph over a vault that
+// happened to have hubs and orphans, and looked better for it.
 //
 // Refuses to write over a directory it did not generate. The marker it checks
 // for has no `.json` extension on purpose: the loader reads every `.json` at
@@ -86,6 +97,7 @@ function parseArgs(argv) {
     pages: 300,
     seed: 1,
     force: false,
+    shape: "random",
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -93,8 +105,9 @@ function parseArgs(argv) {
     else if (arg === "--out") opts.out = argv[++i];
     else if (arg === "--pages") opts.pages = Number(argv[++i]);
     else if (arg === "--seed") opts.seed = Number(argv[++i]);
+    else if (arg === "--shape") opts.shape = argv[++i];
     else if (arg === "--help" || arg === "-h") {
-      console.log("node scripts/make-test-world.mjs [--out PATH] [--pages N] [--seed N] [--force]");
+      console.log("node scripts/make-test-world.mjs [--out PATH] [--pages N] [--seed N] [--shape random|hubs] [--force]");
       process.exit(0);
     } else {
       console.error("Unknown option: " + arg);
@@ -107,6 +120,10 @@ function parseArgs(argv) {
   }
   if (!Number.isFinite(opts.seed)) {
     console.error("--seed must be a number");
+    process.exit(1);
+  }
+  if (opts.shape !== "random" && opts.shape !== "hubs") {
+    console.error("--shape must be random or hubs");
     process.exit(1);
   }
   return opts;
@@ -241,6 +258,50 @@ function meterBlock(longLabels) {
 // as long as it existed — no generated world had a picture block in any panel,
 // while a third of its pages had a portrait file on disk with nowhere to show
 // it. It is added where the picture is picked instead.
+// ------------------------------------------------------------------ shape
+/**
+ * What each page is allowed to point at, by the world's shape.
+ *
+ * `random`: everything, which is what every scenario was written against.
+ * `hubs`: a few pages are hubs, every other page belongs to *one* of them
+ * and most of its links go there, and a quarter of the pages are lone —
+ * pointed at by nothing and pointing at nothing. One home hub each is what
+ * makes clusters; a page that mentions several hubs is a strand between
+ * them, and a world of strands is a ball again. The hubs are picked from the
+ * stream so the same seed makes the same hubs, and the lone pages are kept
+ * out of everyone's targets — a lone page a random mention happens to land
+ * on is not lone.
+ */
+function shapedTargets(pages, shape) {
+  if (shape !== "hubs") return () => pages;
+  const shuffled = pages.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const hubCount = Math.max(4, Math.round(pages.length * 0.015));
+  const loneCount = Math.round(pages.length * 0.25);
+  const hubs = shuffled.slice(0, hubCount);
+  const lone = new Set(shuffled.slice(hubCount, hubCount + loneCount).map((page) => page.id));
+  const ordinary = shuffled.slice(hubCount + loneCount);
+  const home = new Map(ordinary.map((page, i) => [page.id, hubs[i % hubs.length]]));
+  const siblingsOf = (hub) => ordinary.filter((page) => home.get(page.id) === hub);
+  return (page) => {
+    if (lone.has(page.id)) return [];
+    const hub = home.get(page.id) ?? pick(hubs);
+    // Mostly the home hub, some of its own cluster, the odd one elsewhere —
+    // in that proportion, whatever the counts.
+    const cluster = siblingsOf(hub).filter((target) => target.id !== page.id);
+    const elsewhere = ordinary.filter((target) => home.get(target.id) !== hub);
+    return [
+      ...Array.from({ length: Math.max(1, cluster.length) }, () => hub),
+      ...Array.from({ length: Math.max(1, cluster.length) }, () => hub),
+      ...cluster,
+      ...elsewhere.slice(0, Math.max(1, Math.round(cluster.length * 0.1))),
+    ];
+  };
+}
+
 function sidebarFor(node, refTargets, hardCase) {
   const blocks = [];
   blocks.push({ id: uuid(), kind: "property", propertyKey: "summary" });
@@ -318,7 +379,7 @@ const HARD_CASES = [
 ];
 
 // ---------------------------------------------------------------- the graph
-function buildGraph(pageCount) {
+function buildGraph(pageCount, shape = "random") {
   const nodes = [];
   // A fixed clock rather than Date.now(), so two runs at the same seed agree
   // on creation order — which is what decides collision suffixes.
@@ -421,11 +482,13 @@ function buildGraph(pageCount) {
 
   // Pass two: content. Separate because mentions and reference properties
   // point at other pages, which have to exist first.
-  const mentionable = nodes.filter((node) => node.templateKey !== "folder");
+  const pages = nodes.filter((node) => node.templateKey !== "folder");
+  const targetsFor = shapedTargets(pages, shape);
   for (const node of nodes) {
     if (node.templateKey === "folder") continue;
     const hardCase = hardCaseIds.get(node.id);
     if (hardCase === "empty") continue;
+    const mentionable = targetsFor(node);
 
     node.tabs = [{ id: "overview", label: "Overview", hidden: false, content: bodyFor(mentionable) }];
     if (chance(0.4)) {
@@ -438,7 +501,9 @@ function buildGraph(pageCount) {
     }
     node.properties = {
       summary: sentence(),
-      ...(chance(0.5) ? { friends: Array.from({ length: between(1, 4) }, () => pick(mentionable).id) } : {}),
+      ...(mentionable.length && chance(0.5)
+        ? { friends: Array.from({ length: between(1, 4) }, () => pick(mentionable).id) }
+        : {}),
     };
     node.blocks = sidebarFor(node, mentionable, hardCase);
   }
@@ -591,7 +656,7 @@ function main() {
   guardTarget(opts.out, opts.force);
   mkdirSync(join(opts.out, ASSETS_DIR), { recursive: true });
 
-  const nodes = buildGraph(opts.pages);
+  const nodes = buildGraph(opts.pages, opts.shape);
 
   // Pictures first, so a node that claims one is claiming a file that is really
   // there — a missing asset is its own bug, and not the one this world is for.

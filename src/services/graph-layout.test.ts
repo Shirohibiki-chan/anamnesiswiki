@@ -119,6 +119,20 @@ describe("settleGraph", () => {
     expect(Math.max(...radii) - Math.min(...radii)).toBeLessThan(2);
   });
 
+  // Every page has a tree line to what it is filed under, so if the tree
+  // counted nothing would ever be lone.
+  it("treats a page joined only by the tree as lone", () => {
+    const model = star(3);
+    const filed = node("filed", 1);
+    const settled = settleGraph({
+      nodes: [...model.nodes, filed],
+      edges: [...model.edges, { id: "focus|filed", sourceId: "focus", targetId: "filed", kind: "tree" }],
+    });
+    const reach = Math.max(...settled.nodes.filter((n) => n.id !== "filed").map((n) => Math.hypot(n.x, n.y)));
+    const placed = settled.nodes.find((n) => n.id === "filed")!;
+    expect(Math.hypot(placed.x, placed.y)).toBeGreaterThan(reach);
+  });
+
   it("rings a lone page the same way twice", () => {
     const model: GraphModel = { nodes: [...star(3).nodes, node("lone", 1)], edges: star(3).edges };
     expect(settleGraph(model)).toEqual(settleGraph(model));
