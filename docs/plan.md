@@ -563,10 +563,11 @@ exports. One snippet beside it is the whole bundle.
 
 ### 1. The Quick capture block — first
 
-**The block shipped 2026-09-13** (`CaptureBlock.tsx`, `use-capture.ts`,
-`capture-service.ts`; the rules that bind it are in `docs/handoff.md` § Quick
-capture). Everything below it in this section is built except the second door,
-which is next.
+**Shipped 2026-09-13, both halves** — the block (`CaptureBlock.tsx`,
+`use-capture.ts`, `capture-service.ts`) and the second door
+(`QuickCaptureDialog.tsx`, Ctrl+Shift+N and the palette footer). The rules that
+bind it are in `docs/handoff.md` § Quick capture. Everything below in this
+section is built; it stays here until the phase closes.
 
 A block with a text box and a Capture button. Type a thought, capture it, and
 it becomes a page under the right parent without leaving the page you were on.

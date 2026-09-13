@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createNode, type Node } from "../constants/schema";
+import { createNode, type Block, type Node } from "../constants/schema";
 import {
   CAPTURE_TITLE_MAX_CHARS,
   CAPTURE_UNTITLED,
@@ -7,6 +7,7 @@ import {
   captureDocument,
   captureStamp,
   filterDestinations,
+  findCaptureSource,
   parseCapture,
 } from "./capture-service";
 
@@ -143,5 +144,31 @@ describe("captureStamp", () => {
   it("writes a zero-padded local date and time that sorts as text", () => {
     expect(captureStamp(new Date(2026, 8, 3, 7, 5))).toBe("2026-09-03 07:05");
     expect(captureStamp(new Date(2026, 11, 31, 23, 59)) > captureStamp(new Date(2026, 8, 3, 7, 5))).toBe(true);
+  });
+});
+
+describe("findCaptureSource", () => {
+  const capture = (): Block => ({ id: crypto.randomUUID(), kind: "capture" });
+  const blocksOf = (node: Node) => node.blocks ?? [];
+
+  it("takes the home page's block first", () => {
+    const home = page("Home", null, { blocks: [capture()] });
+    const other = page("Quick capture", null, { blocks: [capture()], createdAt: 1 });
+    const found = findCaptureSource(graph(other, home), home.id, blocksOf);
+    expect(found?.node.id).toBe(home.id);
+    expect(found?.isHome).toBe(true);
+  });
+
+  it("falls back to the first block anywhere when home has none", () => {
+    const home = page("Home");
+    const later = page("Later", null, { blocks: [capture()], createdAt: 5 });
+    const earlier = page("Earlier", null, { blocks: [capture()], createdAt: 2 });
+    const found = findCaptureSource(graph(home, later, earlier), home.id, blocksOf);
+    expect(found?.node.id).toBe(earlier.id);
+    expect(found?.isHome).toBe(false);
+  });
+
+  it("is nothing when no page has one", () => {
+    expect(findCaptureSource(graph(page("Home")), null, blocksOf)).toBeUndefined();
   });
 });

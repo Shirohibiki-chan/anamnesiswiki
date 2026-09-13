@@ -274,7 +274,7 @@ Everything a single user needs to build worlds. No sharing, no sync, no accounts
 - Node duplication (right-click → duplicate creates a full copy with fresh id, renamed "{original} (Copy)")
 - Undo/redo at the app level (BlockNote handles per-editor undo natively)
 - Global search across all nodes' content (Fuse.js)
-- Keyboard shortcuts: Cmd/Ctrl+K for search, Cmd/Ctrl+N for new page
+- Keyboard shortcuts: Cmd/Ctrl+K for search, Cmd/Ctrl+N for new page, Cmd/Ctrl+Shift+N for quick capture (Phase 30)
 - Dark theme is the default and only theme in phase 1
 
 ### Explicit non-goals for phase 1

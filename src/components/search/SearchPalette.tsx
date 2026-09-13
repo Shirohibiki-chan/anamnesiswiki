@@ -106,12 +106,15 @@ function ResultRow({ row, isActive, onPick }: { row: SearchRow; isActive: boolea
 export function SearchPalette({
   onClose,
   onOpenAllProperties,
+  onOpenQuickCapture,
 }: {
   onClose: () => void;
   onOpenAllProperties: () => void;
+  onOpenQuickCapture: () => void;
 }) {
   const { selectNode } = useProjectActions();
   const allPropertiesKeys = useShortcutLabel("allProperties");
+  const quickCaptureKeys = useShortcutLabel("quickCapture");
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [scope, setScope] = useState<SearchScopeMode>("all");
@@ -235,6 +238,19 @@ export function SearchPalette({
           >
             All properties &amp; tags
             <kbd>{allPropertiesKeys}</kbd>
+          </button>
+          {/* The other thing somebody opens the palette wanting that is not a
+              page: to put a thought somewhere without going there. Phase 30. */}
+          <button
+            type="button"
+            className="search-palette-footer-action"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onOpenQuickCapture();
+            }}
+          >
+            Quick capture
+            <kbd>{quickCaptureKeys}</kbd>
           </button>
         </div>
       </div>

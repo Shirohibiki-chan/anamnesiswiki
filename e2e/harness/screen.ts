@@ -50,6 +50,7 @@ const CAPTURE_BOX = ".block-capture";
 const CAPTURE_TEXT = ".block-capture-text";
 const CAPTURE_DESTINATION = ".block-capture-destination";
 const CAPTURE_SAVED = ".block-capture-saved";
+const QUICK_CAPTURE_DIALOG = ".quick-capture-dialog";
 // Phase 24: one page’s relationships, opened over the page. The button that
 // opens it lives on the page title; everything else only exists while it is up.
 const GRAPH_BUTTON = ".page-title-graph-button";
@@ -2049,4 +2050,26 @@ export async function pickCaptureDestination(window: Page, name: string): Promis
   const search = window.getByPlaceholder("Find a destination");
   await search.fill(name);
   await search.press("Enter");
+}
+
+/** Opens the Quick capture dialog by its default shortcut, and waits for it. */
+export async function openQuickCapture(window: Page): Promise<void> {
+  await window.keyboard.press("Control+Shift+n");
+  await window.locator(QUICK_CAPTURE_DIALOG).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Whether the Quick capture dialog is on screen. */
+export async function quickCaptureOpen(window: Page): Promise<boolean> {
+  return (await window.locator(QUICK_CAPTURE_DIALOG).count()) > 0;
+}
+
+/** Everything the Quick capture dialog says, as one run of text. */
+export async function quickCaptureText(window: Page): Promise<string> {
+  return normalize((await window.locator(QUICK_CAPTURE_DIALOG).first().textContent()) ?? "");
+}
+
+/** Opens the search palette by its default shortcut. */
+export async function openSearchPalette(window: Page): Promise<void> {
+  await window.keyboard.press("Control+k");
+  await window.getByPlaceholder(/Search every page/).waitFor({ state: "visible", timeout: WAIT_MS });
 }

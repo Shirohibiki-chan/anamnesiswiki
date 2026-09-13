@@ -5112,6 +5112,13 @@ Phase 26, step 2. What binds the code:
   a choice, through `editBlocks`, recorded — and it clears `captureLast`,
   because the old answer was a child of the old root.
 
+- **The dialog is the block, drawn somewhere else.** `QuickCaptureDialog`
+  finds the world's capture block with `findCaptureSource` — the home page's,
+  else the first anywhere — and renders `CaptureBlock` with it, so the
+  shortcut and the box on the page can never disagree about destinations,
+  the remembered last one or the code words. Don't give the dialog rules of
+  its own; if the dialog needs something the block lacks, the block grows it.
+
 - **A captured page is `blank` with one tab and `hideTemplatePrompt`.**
   `capturePage` in the store is the only place a page is born with writing
   already in it, and `addNode` grew `tabs`, `properties`, `customProperties`

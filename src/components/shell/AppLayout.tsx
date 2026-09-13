@@ -26,6 +26,7 @@ import { TourOverlay } from "./TourOverlay";
 import { PageView } from "../page/PageView";
 import { TemplateView } from "../page/TemplateView";
 import { AllPropertiesModal } from "../properties/AllPropertiesModal";
+import { QuickCaptureDialog } from "./QuickCaptureDialog";
 import { BlockPanel } from "../blocks/BlockPanel";
 import { LoadWarning } from "./LoadWarning";
 import { RecoveryNotice } from "./RecoveryNotice";
@@ -54,6 +55,7 @@ export function AppLayout() {
   const { openTemplate: setOpenTemplate } = useTemplateActions();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAllPropertiesOpen, setIsAllPropertiesOpen] = useState(false);
+  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const saveNow = useSaveNow();
   const { undo, redo } = useHistoryActions();
@@ -87,11 +89,19 @@ export function AppLayout() {
     setIsSearchOpen(false);
     setIsAllPropertiesOpen(true);
   }, []);
+  // Same hand-over as All properties: from the palette it replaces the palette
+  // rather than stacking on it.
+  const openQuickCapture = useCallback(() => {
+    setIsSearchOpen(false);
+    setIsQuickCaptureOpen(true);
+  }, []);
+  const closeQuickCapture = useCallback(() => setIsQuickCaptureOpen(false), []);
   const handleSave = useCallback(() => void saveNow(), [saveNow]);
   useGlobalShortcuts({
     onSearch: openSearch,
     onAllProperties: openAllProperties,
     onNewPage: openNewPage,
+    onQuickCapture: openQuickCapture,
     onSave: handleSave,
     onUndo: undo,
     onRedo: redo,
@@ -244,8 +254,15 @@ export function AppLayout() {
         {/* No rootIds: this one is the project's folder, whole, whatever was right-clicked. */}
         {exportRequest?.format === "json-zip" && <WorldZipModal onClose={closeExport} />}
         {exportRequest?.format === "website" && <WebsiteExportModal rootIds={exportRequest.rootIds} onClose={closeExport} />}
-        {isSearchOpen && <SearchPalette onClose={() => setIsSearchOpen(false)} onOpenAllProperties={openAllProperties} />}
+        {isSearchOpen && (
+          <SearchPalette
+            onClose={() => setIsSearchOpen(false)}
+            onOpenAllProperties={openAllProperties}
+            onOpenQuickCapture={openQuickCapture}
+          />
+        )}
         {isAllPropertiesOpen && <AllPropertiesModal onClose={() => setIsAllPropertiesOpen(false)} />}
+        {isQuickCaptureOpen && <QuickCaptureDialog onClose={closeQuickCapture} />}
       </div>
       {/* Phase 26. Mounted here rather than in `App` because every step points
           at a column that only exists while a project is open — and this is the

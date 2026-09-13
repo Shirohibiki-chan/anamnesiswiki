@@ -25,6 +25,7 @@ export const SHORTCUT_ACTIONS = [
   "search",
   "allProperties",
   "newPage",
+  "quickCapture",
   "save",
   "undo",
   "redo",
@@ -39,6 +40,7 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   search: "Search",
   allProperties: "All properties & tags",
   newPage: "New page",
+  quickCapture: "Quick capture",
   save: "Save now",
   undo: "Undo (sidebar and panels)",
   redo: "Redo (sidebar and panels)",
@@ -54,6 +56,10 @@ export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   // this and Ctrl+K never collide.
   allProperties: { key: "k", mod: true, shift: true },
   newPage: { key: "n", mod: true },
+  // One step out from New page, the way All properties sits one step out from
+  // Search: both make a page, and the Shift is the difference between "a page,
+  // here, that I will name" and "a thought, filed wherever it goes". Phase 30.
+  quickCapture: { key: "n", mod: true, shift: true },
   save: { key: "s", mod: true },
   // **Not Ctrl+Z, and that is the whole point** (2026-08-27, her call).
   // Ctrl+Z belongs to whatever is being written in the middle of the window,

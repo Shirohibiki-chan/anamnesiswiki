@@ -1,0 +1,57 @@
+/* The capture box as a dialog (Phase 30). The box itself is CaptureBlock's own
+   styles in blocks.css; this is only the frame round it. */
+
+.quick-capture-dialog {
+  gap: var(--space-lg);
+}
+
+.quick-capture-dialog-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.quick-capture-dialog-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+.quick-capture-dialog-from {
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.quick-capture-dialog-keys {
+  margin-left: auto;
+  padding: 1px var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--fs-2xs);
+}
+
+/* Roomier than the block in a sidebar: this is the only thing on screen. */
+.quick-capture-dialog .block-capture-text {
+  min-height: calc(5 * var(--lh-normal, 1.5) * 1em + 2 * var(--space-sm));
+  font-size: var(--fs-md);
+}
+
+.quick-capture-dialog-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.quick-capture-dialog-empty p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal, 1.5);
+}

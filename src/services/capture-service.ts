@@ -17,7 +17,7 @@
 // unmatched word under "other" silently, and a typo vanishing into a bin is
 // the failure this design exists to avoid. The picker is always the answer;
 // the word only moves it.
-import type { BlockNoteDocument, CustomPropertySpec, Node } from "../constants/schema";
+import type { Block, BlockNoteDocument, CustomPropertySpec, Node } from "../constants/schema";
 
 /** The name of the field a captured page carries saying when it was written. */
 export const CAPTURED_PROPERTY_LABEL = "Captured";
@@ -158,4 +158,41 @@ export function captureStamp(at: Date): string {
 /** The field a captured page carries, matched by name across pages the way every custom field is. */
 export function capturedPropertySpec(key: string): CustomPropertySpec {
   return { key, label: CAPTURED_PROPERTY_LABEL, type: "date" };
+}
+
+export type CaptureSource = {
+  /** The page whose capture block is being used. */
+  node: Node;
+  block: Block;
+  /** True when that page is the world's home page. */
+  isHome: boolean;
+};
+
+/**
+ * The capture block the shortcut and the palette open: the home page's if it
+ * has one, else the first one anywhere in the world, else nothing.
+ *
+ * **The home page first, because that is where the plan puts the box** — a
+ * dashboard's capture box is the one that means "file this wherever it goes".
+ * The fallback is for the world that keeps its box on a `Quick capture` page
+ * instead and never put one on home, which is a perfectly good arrangement
+ * and should not make the shortcut say there is no box. Pages are walked in
+ * a stable order so "the first one" is the same one tomorrow.
+ */
+export function findCaptureSource(
+  nodes: Record<string, Node>,
+  homeNodeId: string | null | undefined,
+  blocksOf: (node: Node) => Block[],
+): CaptureSource | undefined {
+  const home = homeNodeId ? nodes[homeNodeId] : undefined;
+  if (home) {
+    const block = blocksOf(home).find((candidate) => candidate.kind === "capture");
+    if (block) return { node: home, block, isHome: true };
+  }
+  const pages = Object.values(nodes).sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+  for (const node of pages) {
+    const block = blocksOf(node).find((candidate) => candidate.kind === "capture");
+    if (block) return { node, block, isHome: false };
+  }
+  return undefined;
 }
