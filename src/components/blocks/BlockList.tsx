@@ -31,6 +31,7 @@ import { useProject } from "../../hooks/use-project";
 import { usePageImage } from "../../hooks/use-page-image";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
 import { isPipMeter, meterPip, meterSegmented, metersOf } from "../../services/meter-service";
+import { recentLimit } from "../../services/collection-service";
 import type { RenderableProperty } from "../../services/property-service";
 import { DateProperty } from "../properties/DateProperty";
 import { ImageSlot } from "../properties/ImageSlot";
@@ -79,6 +80,7 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
     setBlockColor,
     setBlockText,
     setBlockSource,
+    setBlockLimit,
     setBlockTargets,
     setBlockTags,
     setBlockMeter,
@@ -364,6 +366,8 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
                     ? {
                         source: block.source ?? "manual",
                         onSetSource: (source) => setBlockSource(node.id, block.id, source),
+                        limit: recentLimit(block),
+                        onSetLimit: (limit) => setBlockLimit(node.id, block.id, limit),
                       }
                     : undefined
                 }

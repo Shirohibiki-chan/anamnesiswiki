@@ -12,7 +12,8 @@
 import type { Block, Node } from "../constants/schema";
 import { databaseCell, databaseRows, presentDatabase } from "../services/database-service";
 import type { DatabaseTable } from "../services/html-page";
-import { linkIndex, pagesWithAnyTag } from "../services/link-index";
+import { linkIndex } from "../services/link-index";
+import { collectionRows } from "../services/collection-service";
 import { orderedSiblingIds } from "../services/node-edit-service";
 import { getPropertySchema, getTemplate } from "../services/template-registry";
 import { useProjectStore } from "../state/project-store";
@@ -34,35 +35,14 @@ export function readExportWorld(): ExportWorld | null {
   // and rebuilding it for each of a hundred sidebar blocks would make the
   // preview visibly slow on her world.
   const index = linkIndex(nodes, storylines);
+  const pinnedIds = project.pinnedIds ?? [];
 
   /**
-   * The pages a collection block lists.
-   *
-   * The same four branches `use-collection` draws with, so a Backlinks block
-   * exports the list it shows. It is duplicated rather than shared because
-   * that one is a hook wrapped in `useMemo` and this is not a render — but
-   * if a fifth source ever appears, the two have to move together.
+   * The pages a collection block lists — the same resolver the sidebar draws
+   * with, so a block exports the list it shows.
    */
   function rowsFor(node: Node, block: Block): Node[] {
-    const source = block.source ?? "manual";
-
-    if (source === "mentions") {
-      return (index.mentionsOf.get(node.id) ?? []).map((mention) => nodes[mention.fromId]).filter(Boolean);
-    }
-    if (source === "subpages") {
-      return (index.childrenOf.get(node.id) ?? []).map((id) => nodes[id]).filter(Boolean);
-    }
-    if (source === "tags") {
-      // A block with no tags chosen shows nothing rather than everything,
-      // which is what the sidebar does with one.
-      return pagesWithAnyTag(index, block.tags ?? [])
-        .filter((id) => id !== node.id)
-        .map((id) => nodes[id])
-        .filter(Boolean);
-    }
-    // Manual keeps her order rather than the tree's, and skips anything
-    // since deleted.
-    return (block.targetIds ?? []).map((id) => nodes[id]).filter(Boolean);
+    return collectionRows({ nodes, node, block, index, pinnedIds }).map((row) => row.node);
   }
 
   /**

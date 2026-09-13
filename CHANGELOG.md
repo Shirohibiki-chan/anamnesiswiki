@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-13 — Recently edited and Shortcuts, two blocks for a home page
+
+### Additions
+
+- **Recently edited.** *Add Block ▸ Recently edited*, or `/recent` in the writing: the pages you touched last, newest first. Writing in a page moves it to the top. It never lists the page it sits on — a home page is edited every time its dashboard is rearranged, and a list that opened with *Home* would never say anything — and it leaves universes out for the same reason. Its menu has a *How many* row: 5, 8, 12 or 20.
+- **Shortcuts.** *Add Block ▸ Shortcuts*, or `/shortcuts`: the pages you've *Set as shortcut*, in the rail's order. It's the rail's own list drawn as a block, so the two can't disagree — set a shortcut and it's in both; remove it and it's gone from both.
+- **Both are the same collection block as Manual links, Subpage index, Tag index and Backlinks**, so they get the same menu, colour, title and drag as the rest, can sit in the page body or an infobox, and both switch to any of the other sources from *Where these come from*.
+
+### Notes
+
+- **They export.** A Recently edited or Shortcuts block writes the same list it shows into a Markdown export or a published website, because the sidebar and the exports now share one resolver for every collection source — an internal tidy-up, nothing visible on the older four.
+- **This is step 3 of Phase 30.** Left in the phase: one example dashboard, shipped as a page template with a snippet beside it.
+
 ## 2026-09-13 — a style name, so a snippet can skin one page
 
 ### Additions
@@ -264,18 +277,3 @@
 
 - **This is the first part of storylines, not all of it.** Loose notes you can drop anywhere on the canvas, labels for a group of scenes ("Act 2"), pointing a scene at a page that already exists, and a tidy-up button are the next parts. `docs/plan.md` has the rest.
 - **The canvas is its own file** — `_storyline.json`, sitting inside the storyline page's folder alongside the scenes. Moving or renaming the storyline carries it along, and moving a scene an inch doesn't count as editing any page, so it stays out of version history and out of whatever syncs your folder.
-
-## 2026-09-08 — the graph, finished off
-
-### Additions
-
-- **A folder can open its graph now.** It's on the folder's own card, next to *Add a page* — folders are drawn as that centred card rather than as a page with a name row, so they had no way in at all and the graph quietly didn't apply to them.
-
-### Fixes
-
-- **Opening the world graph from the rail and widening a page's graph all the way now draw the same picture.** They always showed the same pages, but they laid them out slightly differently — enough that one could be far enough out to stop writing the names while the other still wrote them. The page you opened from is marked rather than moved now, so both routes settle identically.
-- **Tidying that picture counts once, whichever way you got to it.** Dragging pages around the whole-universe graph is remembered against the universe rather than against whichever page you happened to open it from, so arranging it from a page and arranging it from the rail are the same arrangement.
-
-### Notes
-
-- **How long the graph takes to lay out, measured rather than guessed:** roughly a millisecond a page, worked out once when the graph opens. A 75-page world takes about a twentieth of a second; 500 pages take about half a second; 2000 take a couple of seconds. Nothing to notice at the size of your world, and now written down so it isn't a surprise later.

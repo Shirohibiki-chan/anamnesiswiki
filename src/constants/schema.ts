@@ -415,7 +415,16 @@ export type MeterEntry = {
  * Block menu still offers them under those four names, because "Backlinks" is
  * what somebody goes looking for and "Collection, source: mentions" is not.
  */
-export type CollectionSource = "manual" | "subpages" | "tags" | "mentions";
+// `recent` and `pinned` are Phase 30's two — the tiles a home page was
+// missing. Neither is a database: what was touched last and what is pinned
+// are orders the app already keeps, not sets a filter describes.
+export type CollectionSource = "manual" | "subpages" | "tags" | "mentions" | "recent" | "pinned";
+
+/** How many pages a Recently edited block shows unless it says otherwise. */
+export const RECENT_DEFAULT_LIMIT = 8;
+
+/** The counts a Recently edited block can be set to, in menu order. */
+export const RECENT_LIMITS = [5, 8, 12, 20] as const;
 
 export type Block = {
   id: string;
@@ -497,6 +506,12 @@ export type Block = {
   view?: DatabaseView;
   targetIds?: string[];
   tags?: string[];
+  /**
+   * `collection` whose source is `recent` only: how many pages it lists.
+   * Absent means `RECENT_DEFAULT_LIMIT`, so a block that shows the usual
+   * number carries no field saying so. Phase 30.
+   */
+  limit?: number;
   // `meter` only. The shape every reading in the block is drawn in, and the
   // readings themselves. `showText` and `showMax` are the block's two display
   // toggles — absent means on, the way `showTitle` does it, so a block that

@@ -21,6 +21,8 @@ const EMPTY: Record<string, string> = {
   subpages: "This page has no pages inside it.",
   tags: "Pick a tag to list pages by.",
   mentions: "Nothing links here yet. A backlink appears when another page mentions this one.",
+  recent: "Nothing has been edited yet.",
+  pinned: "No shortcuts yet. Set as shortcut on a page's right-click menu puts it here and on the rail.",
 };
 
 type CollectionBlockProps = {
