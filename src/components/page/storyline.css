@@ -239,6 +239,31 @@
   overflow: hidden;
 }
 
+/* Sits exactly where the name is drawn — same inset, same size — so opening
+   the box reads as the name becoming typeable rather than as a second thing
+   appearing. It is a sibling of the card's button rather than a child, since
+   a button cannot hold a box to type in. */
+.storyline-node-input {
+  position: absolute;
+  /* The 2px is the card's own border, which the outer element does not have. */
+  left: calc(2px + var(--space-md) + 16px + var(--space-sm));
+  right: calc(2px + var(--space-md));
+  top: calc(2px + var(--space-sm));
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--color-panel);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--fs-sm);
+  line-height: 1.3;
+}
+
+.storyline-node-input:focus {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
 .storyline-node-selected .storyline-node-body {
   border-color: var(--color-accent-light);
   /* The lift is kept and the ring added, rather than replacing it — a selected

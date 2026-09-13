@@ -83,6 +83,7 @@ const STORYLINE = ".storyline";
 const STORYLINE_NODE = ".storyline-node";
 const STORYLINE_NODE_BODY = ".storyline-node-body";
 const STORYLINE_NODE_NAME = ".storyline-node-name";
+const STORYLINE_NODE_INPUT = ".storyline-node-input";
 const STORYLINE_HANDLE = ".storyline-node-handle";
 const STORYLINE_EDGE = ".storyline-edge";
 const STORYLINE_SELECTION = ".storyline-selection";
@@ -2014,6 +2015,31 @@ export async function dragStorylineScene(
   await window.mouse.up();
 }
 
+/**
+ * Drags the canvas itself by a number of screen pixels, from its top-left
+ * corner — the one spot nothing is ever drawn on, since the picture is fitted
+ * to the middle of the stage.
+ */
+export async function panStoryline(window: Page, byX: number, byY: number): Promise<void> {
+  const box = await window.locator(STORYLINE_STAGE).boundingBox();
+  if (!box) throw new Error("No storyline stage on screen");
+  const from = { x: box.x + 12, y: box.y + 12 };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + byX, from.y + byY, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** Where each scene's card sits on screen, in DOM order. */
+export async function storylineScenePositions(window: Page): Promise<{ x: number; y: number }[]> {
+  const positions: { x: number; y: number }[] = [];
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const box = await node.boundingBox();
+    if (box) positions.push({ x: box.x, y: box.y });
+  }
+  return positions;
+}
+
 /** Clicks a scene's card, which selects it and shows what can be done with it. */
 export async function selectStorylineScene(window: Page, index: number): Promise<void> {
   await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).click();
@@ -2034,6 +2060,22 @@ export async function takeSceneOffCanvas(window: Page): Promise<void> {
 /** Follows the selected scene through to its page. */
 export async function openSelectedScene(window: Page): Promise<void> {
   await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Open this scene" }).click();
+}
+
+/**
+ * Renames the selected scene from the canvas, or gives up on it.
+ *
+ * The box opens over the card's name with the old name selected, so typing
+ * replaces it. Enter keeps the new name; Escape keeps the old one, which is
+ * the half of this that a rename box is most often wrong about.
+ */
+export async function renameSelectedScene(window: Page, name: string, how: "keep" | "give-up" = "keep"): Promise<void> {
+  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Rename" }).click();
+  const input = window.locator(STORYLINE_NODE_INPUT);
+  await input.waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.type(name);
+  await window.keyboard.press(how === "keep" ? "Enter" : "Escape");
+  await input.waitFor({ state: "hidden", timeout: WAIT_MS });
 }
 
 // ---- Phase 25 step 2: notes, labelled stretches, and tidying up ----

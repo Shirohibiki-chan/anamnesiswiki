@@ -232,7 +232,9 @@ Phase 25, closed 2026-09-09. What binds the code:
   folder-shaped kind of object**, which is the rule `CLAUDE.md` §Data on disk
   states and the one a canvas feature is most likely to break — the temptation
   is a "scene" that is a card with a title, and a card with a title is not
-  somewhere she can write.
+  somewhere she can write. The same rule decides how a scene is renamed from
+  the canvas (2026-09-13): the box on the card calls `renameNode` on the page,
+  and `_storyline.json` holds no name to fall out of step with the tree.
 
 - **The canvas is `_storyline.json`, its own file inside the storyline page's
   directory, and it must not become a field on the page.** Dragging a scene an

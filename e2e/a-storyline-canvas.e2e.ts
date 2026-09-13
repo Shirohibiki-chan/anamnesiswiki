@@ -21,12 +21,15 @@ import {
   makeStoryline,
   openSelectedScene,
   pageTitle,
+  panStoryline,
+  renameSelectedScene,
   searchTree,
   selectStorylineScene,
   storylineEdgeCount,
   storylineIsShown,
   storylineRefusal,
   storylineSceneOrder,
+  storylineScenePositions,
   storylineScenesLeftToRight,
   takeSceneOffCanvas,
   treeRow,
@@ -141,6 +144,21 @@ describe("a storyline's canvas", () => {
     expect(await storylineEdgeCount(app.window)).toBe(2);
   });
 
+  it("moves the whole picture when the background is dragged", async () => {
+    // The pan had the graph's bug — a step worked out inside a deferred state
+    // updater from a ref that had already moved on, so it came out as zero.
+    // "Panning is also completely broken", 2026-09-13. A screen-pixel drag
+    // moves every card by the same screen pixels, whatever the zoom.
+    const before = await storylineScenePositions(app.window);
+    await panStoryline(app.window, 150, 60);
+    const after = await storylineScenePositions(app.window);
+    expect(after.length).toBe(before.length);
+    for (let i = 0; i < before.length; i += 1) {
+      expect(after[i].x - before[i].x).toBeCloseTo(150, 0);
+      expect(after[i].y - before[i].y).toBeCloseTo(60, 0);
+    }
+  });
+
   it("opens the page behind a scene", async () => {
     await selectStorylineScene(app.window, 0);
     await openSelectedScene(app.window);
@@ -163,5 +181,27 @@ describe("a storyline's canvas", () => {
     await searchTree(app.window, "Untitled");
     expect(await treeRow(app.window, "Untitled").count()).toBeGreaterThanOrEqual(3);
     await clearTreeSearch(app.window);
+  });
+
+  it("renames a scene from the canvas, and that renames its page", async () => {
+    await selectStorylineScene(app.window, 0);
+    await renameSelectedScene(app.window, "The Fall");
+    expect(await storylineScenesLeftToRight(app.window)).toContain("The Fall");
+
+    // Escape keeps the old name. Half a name landing on a page because the
+    // box committed on the way out would be worse than no rename at all.
+    await selectStorylineScene(app.window, 1);
+    await renameSelectedScene(app.window, "Not this", "give-up");
+    expect(await storylineScenesLeftToRight(app.window)).not.toContain("Not this");
+
+    // The card is a page, so the name reached the tree — and the page behind
+    // the card opens under it, which is what proves it was the page that was
+    // renamed and not only the card.
+    await searchTree(app.window, "The Fall");
+    expect(await treeRow(app.window, "The Fall").count()).toBe(1);
+    await clearTreeSearch(app.window);
+    await selectStorylineScene(app.window, 0);
+    await openSelectedScene(app.window);
+    expect(await pageTitle(app.window)).toBe("The Fall");
   });
 });
