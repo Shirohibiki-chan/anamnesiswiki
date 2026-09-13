@@ -421,13 +421,40 @@ Board spike, closed 2026-09-13. What binds the code:
   `Math.random` when two nodes land on the same point, which is exactly the
   rare event that makes one opening differ from the next.
 
-- **Nodes are HTML and only the lines are SVG, and that is the plan’s “SVG, not
-  canvas” rather than a departure from it.** The reason for the commitment is
-  that the CSS token themes — hers included — apply for free; an ordinary
-  `<button>` gets more of that than an SVG node would, plus focus, hover, a
-  lucide icon and a wrapping name, with no hit-testing of its own. Both sit
-  inside one transformed scene so they pan and zoom together. Moving the nodes
-  into the SVG would mean re-solving all of that inside `foreignObject`.
+- **Nodes are HTML buttons; the lines are a canvas; what is text stays SVG.**
+  Phase 24 chose SVG over canvas so the CSS token themes — hers included —
+  would apply for free, and named canvas as the swap "if a world ever gets
+  there". A generated world of 835 pages got there on 2026-09-13: 3,902 lines
+  as one SVG made a zoomed-in drag 98ms a frame, and 16ms with the lines off.
+  `GraphEdgesCanvas` paints them now, and **the themes still apply because the
+  canvas never chooses a colour**: two invisible `<line>`s with the real
+  classes (`GraphEdgeProbe`) sit in the scene, the stylesheet resolves on them
+  — colour, width, dash, the fade by count, the dim while a page is selected —
+  and each paint reads the computed result. Restyle lines in `graph.css` and
+  the canvas follows; put a colour in `GraphEdges.tsx` and a theme breaks.
+  The names on lines are still `<text>`, and the lines touching the page in
+  play are drawn again on top in a tiny SVG so a hover repaints a dozen lines.
+  The buttons stay buttons for focus, hover, the lucide icon and the name.
+
+- **Mid-gesture the graph is slid and scaled; at rest it is painted.** Both
+  halves do this. The scene takes `will-change: transform` only while a pan
+  or a wheel is in progress (`moving` in `use-graph-view`) — left on, Chrome
+  keeps the layer's painting at its first scale and scales that bitmap for
+  every zoom after, which pixellated the whole world. The canvas does the same
+  by hand: while `moving` it keeps what it painted and a CSS transform moves
+  it, then paints once, crisp, when the hand stops; a quarter of the window is
+  painted beyond each edge so an ordinary drag reveals nothing blank. That is
+  what makes a zoomed-in drag 17ms a frame instead of 40 — painting thousands
+  of thick dashed lines every frame cannot be made fast, so it is not done.
+  Dashed tree lines use square caps on the canvas: round caps are drawn on
+  every dash and were 30ms of the frame on their own.
+
+- **A node's button is the disc; the name hangs below it and is not part of the
+  box.** It was a 118px-wide column holding both, and the column stayed that
+  wide with the name hidden — so on a packed graph most of what looked like
+  background between discs was invisible button, and dragging the background
+  grabbed a page instead of panning. The stage has `user-select: none` for the
+  same reason: a name outside its button's box selects like text under a drag.
 
 - **A dragged node is an override in the view, never an edit of the model.**
   `useGraphView` keeps a `moved` map keyed by id and the settled layout stays
@@ -482,6 +509,35 @@ Board spike, closed 2026-09-13. What binds the code:
   every other node the instant she lets go. Putting an arrangement back
   therefore needs the generation counter as well as clearing the pins: without
   it nothing moves, because nothing asked for a new layout.
+
+- **A big world is read by pointing, and the stylesheet cannot count.** On a
+  generated world of 835 pages every line drawn at its neighbourhood weight was
+  one solid mesh with the discs lost inside it. Three things now hold and all
+  three are in `GraphOverlay` plus `graph.css`: lines fade in proportion to how
+  many there are (`edgeOpacity`, handed to the stylesheet as
+  `--graph-edge-opacity` because a CSS rule has no way to know the count);
+  pointing at a node draws its own lines again on top in a second SVG
+  (`GraphLitEdges`) and changes nothing else — dimming on hover flickered on a
+  dense graph and repainted every page each time the pointer crossed one;
+  *selecting* a node is what fades everything not touching it to
+  `GRAPH_DIM_OPACITY`; and a third *Lines* mode, `pointed`, draws no line at
+  all until a node is pointed at. The fade keeps a graph of a page's
+  neighbourhood untouched — under `GRAPH_EDGE_FADE_FROM` lines nothing changes —
+  so do not "fix" a faint whole-world graph by raising the floor without looking
+  at a small one. The generated world is random links and will never show
+  clusters; a real world does, and that is the picture the fade is tuned for.
+
+- **The lag on a big graph was the simulation, not the drawing — check memo
+  dependencies before optimising the renderer.** `useTemplates().getLabel` was
+  remade on every call, `usePageGraph` listed it as a dependency of the model,
+  and so `settleGraph` ran its 300 ticks on every pointer move: 770ms a move on
+  831 pages, measured. It is a module-level function now. The lines and the
+  buttons were memoised in the same pass (`GraphEdges`, `GraphNodeButton`) and
+  that is worth keeping, but it was worth a few milliseconds; the dependency
+  was worth the rest. And **never leave `will-change: transform` on the scene**:
+  Chrome keeps such a layer's painting at the scale it was first drawn and
+  scales the bitmap for every zoom after, which pixellated the whole world. It
+  is applied only while the background is being dragged.
 
 ---
 

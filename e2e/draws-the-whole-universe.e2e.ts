@@ -24,6 +24,7 @@ import {
   graphWrittenNames,
   graphNodeCentre,
   graphNodePlacement,
+  graphNodeSpot,
   graphPlacements,
   graphReachEnabled,
   openFolderGraph,
@@ -238,6 +239,7 @@ describe("the graph of a whole universe", () => {
     const settled = await graphNodePlacement(app.window, second);
     await dragGraphNode(app.window, second, 180, 120);
     const dropped = await graphNodePlacement(app.window, second);
+    const droppedAt = await graphNodeSpot(app.window, second);
     await app.window.waitForTimeout(WRITTEN_MS);
     await closePageGraph(app.window);
 
@@ -246,16 +248,18 @@ describe("the graph of a whole universe", () => {
 
     await openWorldGraph(app.window);
     const reopened = await graphNodePlacement(app.window, second);
+    const reopenedAt = await graphNodeSpot(app.window, second);
     await closePageGraph(app.window);
 
-    // **Measured against the rest of the graph rather than against the screen.**
-    // See graphNodePlacement: the picture rescales when a node is moved outward,
-    // so a comparison in pixels is partly a measurement of the window it was run
-    // in — which is how the first version of this passed locally and failed on a
-    // CI runner. The tolerance is loose because the other nodes settle a little
-    // around a newly pinned one; it is still a fraction of the distance to where
-    // the simulation had put this node, which is what the second line says.
-    expect(Math.hypot(reopened.x - dropped.x, reopened.y - dropped.y)).toBeLessThan(0.08);
+    // **Exactly where it was dropped, in the graph's own coordinates.** A pin is
+    // written as integers in that frame and read back as a fixed point, so
+    // this is an equality and not a tolerance — see graphNodeSpot. The first
+    // version compared fractions of the rest of the picture with a tolerance,
+    // and the rest re-settles around a pin, so a change to what a node's box
+    // is moved it across that tolerance without anything being wrong.
+    expect(reopenedAt).toEqual(droppedAt);
+    // And nowhere near where the simulation had put it, measured against the
+    // rest of the graph rather than the screen — see graphNodePlacement.
     expect(Math.hypot(reopened.x - settled.x, reopened.y - settled.y)).toBeGreaterThan(0.15);
   });
 });

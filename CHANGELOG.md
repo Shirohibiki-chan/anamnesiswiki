@@ -14,6 +14,26 @@
 - **Picked links survive renames; typed ones don't.** The picker writes the page's id into the shape; a typed name is looked up when clicked. Rename Greyharbour and the picked link still opens it, the typed one stops and tells you.
 - **One wart worth knowing.** When a linked shape is selected, the drawing tool's own popup shows the link as it stores it — `anamnesis://page/…` followed by an id — rather than the page's name. The name is on the button at the top right. Making the popup say the name would mean changing the library, which is not worth it for this.
 
+## 2026-09-13 — A big world's graph can be read
+
+### Fixes
+
+- **A big graph no longer stutters when you pan, zoom or point at it.** The whole layout was being worked out again from scratch on every mouse move — on eight hundred pages that was three-quarters of a second per pixel, and on a small graph a few milliseconds nobody noticed. Measured on an 831-page world: a pan step went from 770ms to 5ms, a hover from 1.7s to 11ms. The picture is also built once and only moved now, so pointing at a page redraws the dozen things it touches rather than the lot.
+
+- **The controls above a graph, an expanded board, an expanded storyline and a picture's lightbox can be clicked along their whole height.** Each of those covers the window's own title bar, and the strip you drag the window by was still catching clicks through them — so the top half of every button dragged the window and the dropdowns, being short, hardly opened at all.
+- **Dragging the graph's background actually pans it.** Each page's clickable area was far wider than its disc — room for a name that wasn't even showing — so on a packed graph most "empty" space was invisible button, and a drag grabbed a page instead. The clickable area is the disc and the name now; and a drag no longer paints every name it crosses as selected text.
+- **Panning and zooming a big graph is smooth at every zoom.** The lines are painted on a canvas and, while you're dragging or wheeling, the picture is slid and scaled as it is and painted again crisp when your hand stops. Measured on an 831-page world zoomed all the way in: a drag went from 98ms a frame (with hitches over half a second) to 17ms, which is as fast as the screen refreshes. Your themes still colour the lines.
+- **The page under the pointer is a solid disc.** Its hover tint was see-through, so the lines ran through it.
+- **A big graph can be zoomed all the way in.** The wheel used to stop at two and a half times the starting size, and on a world of hundreds of pages the starting size is tiny — so it stopped right where the names had just appeared.
+
+### Changes
+
+- **The lines on a big graph step back.** Past a couple of hundred lines they fade in proportion to how many there are, so a world of hundreds of pages drawn all at once shows its pages rather than one solid mesh. A page's own graph, with a handful of lines, looks the same as before.
+- **Point at a page and its connections light up.** Its own lines come up to full weight on top of everything else, so what one page is connected to can be seen on a graph of eight hundred. Click it and the rest of the graph steps back to half strength for as long as it stays selected; it's the click that dims, not the pointer, so a picture that dense doesn't flicker as you move across it.
+- **The card about a clicked page has a close button.** Clicking empty background still puts it away too, but nobody would guess that.
+- **A third *Lines* setting, *Only when pointed at*.** No lines are drawn until a page is pointed at, which on a very big world is the quietest picture there is. *Names when pointed at* is still the default.
+- **The name on a line is held back at the same zoom a page's name is.** Pointing at a page while zoomed far out used to write the reasons on its lines at a size that drew as short grey dashes.
+
 ## 2026-09-13 — Board, a whiteboard page
 
 ### Additions
@@ -254,16 +274,3 @@
 
 - **Nothing about whether you have seen it goes anywhere.** It is one setting on your own machine, like every other one.
 - **This finishes the pair** (Phase 26): the example world shows what a world is made of, and this shows where things are. What is left is a way back to either of them from Settings.
-
-## 2026-09-09 — a world you can open and look around
-
-### Additions
-
-- **The example world.** A fourth way in on the start screen, under **Add a Project**: *The example world* makes Saltmere — a harbour town the sea is leaving, four people, one guild, and one night that went wrong. It's for anyone opening this app who hasn't watched it get built, and it opens on a page saying what it is.
-- **It's a real project, not a locked demo.** Opening it copies a world onto your disk like any other: rename it, write in it, delete it. Nothing you do to it touches anything else.
-- **Asking for it again gives you another copy** rather than refusing because the name is taken — the second one is *Saltmere Example 2*.
-- **It's small, and it's meant to be read in about ten minutes.** A folder of characters with one properly written and one barely started, a page that lists the places inside it as a table, a guild holding the thing it's fighting over, and a storyline with four scenes that fork and come back together — with a note, a labelled stretch, and every name in the writing a real link.
-
-### Notes
-
-- **This is the first half of Phase 26.** The other half is a short tour of the app itself, which is what teaches where things are — nothing in the example world describes the app on purpose, so it can't go out of date when a later change moves something.

@@ -109,9 +109,10 @@ describe("parsePreferences and the graph", () => {
     expect(parsePreferences({}).graphEdgeLabels).toBe("selected");
   });
 
-  it("keeps either mode it recognises", () => {
+  it("keeps any mode it recognises", () => {
     expect(parsePreferences({ graphEdgeLabels: "all" }).graphEdgeLabels).toBe("all");
     expect(parsePreferences({ graphEdgeLabels: "selected" }).graphEdgeLabels).toBe("selected");
+    expect(parsePreferences({ graphEdgeLabels: "pointed" }).graphEdgeLabels).toBe("pointed");
   });
 
   // A hand-edited word no control can show would otherwise be obeyed by a

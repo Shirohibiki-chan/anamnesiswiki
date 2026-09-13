@@ -8,7 +8,12 @@
 // what makes "one connection out" and "two" the same code with a different
 // number, and what lets the ordering be asserted in a test instead of eyeballed
 // on a canvas.
-import { GRAPH_RING_RADIUS, GRAPH_WORLD_PIN_PREFIX } from "../constants/graph";
+import {
+  GRAPH_EDGE_FADE_FROM,
+  GRAPH_EDGE_MIN_OPACITY,
+  GRAPH_RING_RADIUS,
+  GRAPH_WORLD_PIN_PREFIX,
+} from "../constants/graph";
 import { UNIVERSE_TEMPLATE_KEY, type DatabaseField, type DatabaseOperator, type Node } from "../constants/schema";
 import { outgoingEdges, type LinkIndex, type MentionKind } from "./link-index";
 import { getEffectiveColor, isDescendantOf } from "./tree-service";
@@ -402,4 +407,36 @@ export function pagesInUniverse(nodes: Record<string, Node>, universeId: string 
 export function graphPinKey(focusId: string | null, universeId: string | null): string {
   if (focusId) return focusId;
   return `${GRAPH_WORLD_PIN_PREFIX}${universeId ?? "all"}`;
+}
+
+/**
+ * How solid a graph's lines are drawn, from how many there are.
+ *
+ * Full weight up to GRAPH_EDGE_FADE_FROM, then fading in proportion, floored
+ * at GRAPH_EDGE_MIN_OPACITY so a world of any size still shows that its pages
+ * are joined. A number here rather than a rule in the stylesheet because the
+ * stylesheet cannot count, and because a count is a thing a test can hold to.
+ */
+export function edgeOpacity(edgeCount: number): number {
+  if (edgeCount <= GRAPH_EDGE_FADE_FROM) return 1;
+  return Math.max(GRAPH_EDGE_MIN_OPACITY, GRAPH_EDGE_FADE_FROM / edgeCount);
+}
+
+/**
+ * Every page joined to `id` by a line, plus `id` itself.
+ *
+ * What stays lit while a node is pointed at: the node, its neighbours and the
+ * lines between them, with everything else stepping back. An empty set when
+ * nothing is pointed at, so the caller can treat "nothing dimmed" and "these
+ * lit" as one case.
+ */
+export function neighbourhoodOf(edges: GraphEdge[], id: string | null): Set<string> {
+  const near = new Set<string>();
+  if (id === null) return near;
+  near.add(id);
+  for (const edge of edges) {
+    if (edge.sourceId === id) near.add(edge.targetId);
+    else if (edge.targetId === id) near.add(edge.sourceId);
+  }
+  return near;
 }

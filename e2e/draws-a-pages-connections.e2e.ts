@@ -26,6 +26,7 @@ import {
   graphIsOpen,
   graphNodeCentre,
   graphNodeNames,
+  closeGraphPreview,
   graphPreviewName,
   openGraphPreviewPage,
   openPage,
@@ -93,6 +94,21 @@ describe("a page's connections", () => {
 
     expect(await graphPreviewName(app.window)).toBe(neighbour);
     expect(await graphIsOpen(app.window)).toBe(true);
+  });
+
+  // Clicking empty background also puts the card away, but nobody would guess
+  // that; a card with no close of its own read as stuck — her report 2026-09-13.
+  it("puts the card away from its own close button, keeping the graph", async () => {
+    const shown = await graphPreviewName(app.window);
+    expect(shown).not.toBeNull();
+
+    await closeGraphPreview(app.window);
+
+    expect(await graphPreviewName(app.window)).toBeNull();
+    expect(await graphIsOpen(app.window)).toBe(true);
+
+    await clickGraphNode(app.window, shown!);
+    expect(await graphPreviewName(app.window)).toBe(shown);
   });
 
   it("goes to that page only when asked a second time", async () => {

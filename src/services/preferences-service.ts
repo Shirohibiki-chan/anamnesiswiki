@@ -181,19 +181,25 @@ export type HistoryPerPage = (typeof HISTORY_PER_PAGE)[number];
  */
 /**
  * Whether the graph writes the reason on every line it can, or only on the
- * lines touching the page under the cursor (Phase 24, step 2).
+ * lines touching the page under the cursor (Phase 24, step 2) — or draws no
+ * line at all until a page is pointed at.
  *
- * **Both ship because she asked for both**, put the choice as one or the other
- * on 2026-09-07. The informative picture and the quiet one are wanted at
- * different moments and choosing between them would have been choosing which
- * moment she was allowed.
+ * **Both label modes ship because she asked for both**, put the choice as one
+ * or the other on 2026-09-07. The informative picture and the quiet one are
+ * wanted at different moments and choosing between them would have been
+ * choosing which moment she was allowed.
+ *
+ * **`pointed` came from a world of 835 pages** (2026-09-13): at that size every
+ * line drawn at once is one solid mesh whatever weight it is drawn at, and the
+ * only readable picture is the discs alone, with a page's lines appearing when
+ * it is pointed at. It is quieter than the quiet mode, so it sits first.
  *
  * **A preference rather than part of a project**, beside the panel widths: which
  * of the two she likes is a habit that follows her between worlds, not a fact
  * about any one of them. Pinned positions are per-project for the opposite
  * reason — see `Project.graphPins`.
  */
-export const GRAPH_EDGE_LABELS = ["selected", "all"] as const;
+export const GRAPH_EDGE_LABELS = ["pointed", "selected", "all"] as const;
 export type GraphEdgeLabels = (typeof GRAPH_EDGE_LABELS)[number];
 
 export const FORMATTING_BAR_MODES = ["floating", "fixed"] as const;

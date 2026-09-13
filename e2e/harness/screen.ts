@@ -58,8 +58,7 @@ const GRAPH = ".page-graph";
 const GRAPH_NODE = ".page-graph-node";
 const GRAPH_NODE_NAME = ".page-graph-node-name";
 const GRAPH_NODE_FOCUS = ".page-graph-node-focus";
-const GRAPH_EDGE_TREE = ".page-graph-edge-tree";
-const GRAPH_EDGE_WRITTEN = ".page-graph-edge-written";
+const GRAPH_EDGES_CANVAS = ".page-graph-edges-canvas";
 const GRAPH_PREVIEW = ".page-graph-preview";
 const GRAPH_PREVIEW_NAME = ".page-graph-preview-name";
 const GRAPH_EDGE_LABEL = ".page-graph-edge-label";
@@ -1483,9 +1482,12 @@ export async function graphFocusName(window: Page): Promise<string> {
  * exactly what a unit test on the model cannot check.
  */
 export async function graphEdgeCounts(window: Page): Promise<{ written: number; tree: number }> {
+  // The lines are painted on a canvas since the big-world pass, so they are
+  // counted from what it says it drew rather than from elements.
+  const canvas = window.locator(GRAPH_EDGES_CANVAS).first();
   return {
-    written: await window.locator(GRAPH_EDGE_WRITTEN).count(),
-    tree: await window.locator(GRAPH_EDGE_TREE).count(),
+    written: Number(await canvas.getAttribute("data-written")),
+    tree: Number(await canvas.getAttribute("data-tree")),
   };
 }
 
@@ -1559,6 +1561,27 @@ export async function graphPlacements(window: Page): Promise<Record<string, { x:
  * of the graph does re-settle a little around a newly pinned node, so this is a
  * good ruler rather than a perfect one — compare with a tolerance.
  */
+/**
+ * Where a node sits in the graph's own coordinates — the numbers the layout
+ * put it at, or the ones it was dropped at, before any zoom or fit.
+ *
+ * **Exact where graphNodePlacement is approximate.** A pinned node is written
+ * to `project.json` as integers in this frame and read back as fixed points,
+ * so "did it come back where it was dropped" has an exact answer here, and
+ * none in pixels or in fractions of the rest of the picture — the rest
+ * re-settles around a pin, and what counts as a node's box changed once
+ * already (2026-09-13) and moved a fraction-based check across its tolerance.
+ */
+export async function graphNodeSpot(window: Page, name: string): Promise<{ x: number; y: number }> {
+  const node = graphNode(window, name).first();
+  const spot = await node.evaluate((element) => ({
+    x: parseFloat((element as HTMLElement).style.left),
+    y: parseFloat((element as HTMLElement).style.top),
+  }));
+  if (!Number.isFinite(spot.x) || !Number.isFinite(spot.y)) throw new Error(`No node on the graph called ${name}`);
+  return spot;
+}
+
 export async function graphNodePlacement(window: Page, name: string): Promise<{ x: number; y: number }> {
   // **The name is matched here, not in the page.** Doing it in the browser meant
   // two copies of what counts as the same name, and a page whose title tidied
@@ -1630,6 +1653,12 @@ export async function graphPreviewName(window: Page): Promise<string | null> {
   return normalize(await window.locator(GRAPH_PREVIEW_NAME).first().innerText());
 }
 
+/** Puts the card away by its own close button, leaving the graph up. */
+export async function closeGraphPreview(window: Page): Promise<void> {
+  await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Close this card" }).click();
+  await window.locator(GRAPH_PREVIEW).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
 /** Follows the preview’s way through to the page it describes. */
 export async function openGraphPreviewPage(window: Page): Promise<void> {
   await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Open this page" }).click();
@@ -1652,7 +1681,7 @@ export async function graphReachEnabled(window: Page): Promise<boolean> {
 }
 
 /** Chooses when a line says what it is — "selected" or "all". */
-export async function setGraphLabels(window: Page, mode: "selected" | "all"): Promise<void> {
+export async function setGraphLabels(window: Page, mode: "pointed" | "selected" | "all"): Promise<void> {
   await window.getByLabel("When to write what a line is").selectOption(mode);
 }
 

@@ -76,6 +76,16 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
 
 /**
+ * How long after the last wheel tick the picture is painted again, crisp.
+ *
+ * While the wheel is turning the scene scales the painting it already has —
+ * see `moving` in use-graph-view — so this is the longest the picture stays
+ * soft after her hand stops. Short enough not to be noticed as a delay,
+ * long enough that a wheel still turning does not repaint between ticks.
+ */
+export const GRAPH_ZOOM_SETTLE_MS = 160;
+
+/**
  * How many connections out the graph reaches by default.
  *
  * One, which is the page and the pages touching it. Two hops on a world of any
@@ -140,3 +150,27 @@ export const GRAPH_NAME_ZOOM = 0.5;
  * anyone who arranges one would expect of the next.
  */
 export const GRAPH_WORLD_PIN_PREFIX = "universe:";
+
+/**
+ * Past this many lines, the lines start to fade.
+ *
+ * Found by looking at a generated world of 835 pages: every line drawn at the
+ * weight that suits a page's neighbourhood painted the whole window one solid
+ * mesh, with the discs barely showing through. At that scale the lines are a
+ * texture and the discs are the picture, so the lines step back in proportion
+ * — a graph of two hundred is untouched, one of two thousand is a faint haze.
+ */
+export const GRAPH_EDGE_FADE_FROM = 200;
+
+/** How faint a whole world's worth of lines is allowed to get. */
+export const GRAPH_EDGE_MIN_OPACITY = 0.2;
+
+/**
+ * How far the rest of the picture steps back while one page is selected.
+ *
+ * Halfway, not further: at 0.35 on her dark theme the graph went black behind
+ * the selection and read as having vanished. Selected rather than pointed at
+ * — a hover only lights the page's own lines, because dimming everything else
+ * on every hover flickers on a dense graph and repaints all of it each time.
+ */
+export const GRAPH_DIM_OPACITY = 0.5;
