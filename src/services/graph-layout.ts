@@ -91,8 +91,17 @@ export function settleGraph(
    * it is filed under, so if it counted nothing would ever be lone, and where
    * a page is filed is the quieter claim (her call 2026-09-07). The centre
    * and anything she has pinned stay where they are whatever their lines.
+   *
+   * **Only on a graph with no centre.** A page's own graph reaches its
+   * neighbours by walking every kind of line, the tree included, so a page
+   * there is on the picture *because* it is joined — its parent folder and
+   * its sub-pages are the neighbourhood, and flinging them to a ring outside
+   * the mentions would draw the page's own family as strangers. The ring is
+   * a reading of a whole world, where "nothing written points at this" is
+   * the one thing worth saying about a page.
    */
   const joined = new Set<string>();
+  if (centreId) for (const node of model.nodes) joined.add(node.id);
   for (const edge of model.edges) {
     if (edge.kind === "tree") continue;
     joined.add(edge.sourceId);

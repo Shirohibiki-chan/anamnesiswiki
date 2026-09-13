@@ -133,6 +133,24 @@ describe("settleGraph", () => {
     expect(Math.hypot(placed.x, placed.y)).toBeGreaterThan(reach);
   });
 
+  // A page's own graph reaches its neighbours by every kind of line, so a
+  // page there is joined by definition; the ring is a whole-world reading.
+  it("rings nothing on a graph with a centre", () => {
+    const model = star(3);
+    const filed = node("filed", 1);
+    const settled = settleGraph(
+      {
+        nodes: [...model.nodes, filed],
+        edges: [...model.edges, { id: "focus|filed", sourceId: "focus", targetId: "filed", kind: "tree" }],
+      },
+      {},
+      { centreId: "focus" },
+    );
+    const reach = Math.max(...settled.nodes.filter((n) => n.id !== "filed").map((n) => Math.hypot(n.x, n.y)));
+    const placed = settled.nodes.find((n) => n.id === "filed")!;
+    expect(Math.hypot(placed.x, placed.y)).toBeLessThan(reach + 1);
+  });
+
   it("rings a lone page the same way twice", () => {
     const model: GraphModel = { nodes: [...star(3).nodes, node("lone", 1)], edges: star(3).edges };
     expect(settleGraph(model)).toEqual(settleGraph(model));
