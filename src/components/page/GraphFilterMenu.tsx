@@ -20,9 +20,11 @@ type GraphFilterMenuProps = {
   filters: DatabaseFilter[];
   onChange: (filters: DatabaseFilter[]) => void;
   choicesFor: (field: DatabaseField) => string[];
+  hideLone: boolean;
+  onHideLone: (hide: boolean) => void;
 };
 
-export function GraphFilterMenu({ filters, onChange, choicesFor }: GraphFilterMenuProps) {
+export function GraphFilterMenu({ filters, onChange, choicesFor, hideLone, onHideLone }: GraphFilterMenuProps) {
   function add() {
     const field = GRAPH_FILTER_FIELDS[0];
     onChange([...filters, { id: crypto.randomUUID(), field, operator: graphOperatorsFor(field)[0] }]);
@@ -42,7 +44,7 @@ export function GraphFilterMenu({ filters, onChange, choicesFor }: GraphFilterMe
 
   return (
     <div className="graph-menu-body">
-      {filters.length === 0 && (
+      {filters.length === 0 && !hideLone && (
         <p className="graph-menu-note">
           No filters. Every page connected to this one is drawn.
         </p>
@@ -120,6 +122,15 @@ export function GraphFilterMenu({ filters, onChange, choicesFor }: GraphFilterMe
       <button type="button" className="graph-menu-add" onClick={add}>
         <Plus size={13} /> Add a filter
       </button>
+
+      {/* Obsidian's Orphans switch, hers 2026-09-13. A checkbox rather than a
+          filter row because it is not a condition on a field — it is about
+          the lines, which no page carries as a property. Nothing written
+          counts; where a page is filed does not, or nothing would be lone. */}
+      <label className="graph-check">
+        <input type="checkbox" checked={hideLone} onChange={(event) => onHideLone(event.target.checked)} />
+        <span>Hide pages nothing points at</span>
+      </label>
 
       {/* Said here rather than left to be discovered: on a picture, hiding a
           page also cuts every route that ran through it, so filtering at two

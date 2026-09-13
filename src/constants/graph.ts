@@ -143,6 +143,17 @@ export type GraphReach = (typeof GRAPH_REACHES)[number];
 export const GRAPH_NAME_ZOOM = 0.5;
 
 /**
+ * How far the *Names appear* setting can be moved either way.
+ *
+ * Hers to set since 2026-09-13 — Obsidian has the same slider and she asked
+ * for it. The floor is where a name is a smear whatever she prefers; the
+ * ceiling is a zoom the wheel can still reach. GRAPH_NAME_ZOOM is the default.
+ */
+export const GRAPH_NAME_ZOOM_MIN = 0.25;
+export const GRAPH_NAME_ZOOM_MAX = 1.5;
+export const GRAPH_NAME_ZOOM_STEP = 0.05;
+
+/**
  * The prefix for a whole-universe graph's stored arrangement.
  *
  * `Project.graphPins` is keyed by the page a graph is centred on, and this

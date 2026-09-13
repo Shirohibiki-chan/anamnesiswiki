@@ -201,6 +201,41 @@
   gap: var(--space-xs);
 }
 
+/* The database's check row, without its class — same reason as .graph-select. */
+.graph-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xs) 0;
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.graph-slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+}
+
+.graph-slider-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.graph-slider-value {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-range {
+  width: 100%;
+  accent-color: var(--color-accent-light);
+}
+
 .graph-filter-row .graph-select {
   flex: 1;
 }

@@ -5,6 +5,7 @@ import type { GraphModel } from "./graph-service";
 import {
   edgeOpacity,
   graphAround,
+  withoutLone,
   graphOfPages,
   graphOperatorsFor,
   graphPinKey,
@@ -457,5 +458,33 @@ describe("neighbourhoodOf", () => {
 
   it("is empty when nothing is pointed at", () => {
     expect(neighbourhoodOf(edges, null).size).toBe(0);
+  });
+});
+
+describe("withoutLone", () => {
+  const nodes = ["a", "b", "c", "d"].map((id) => ({
+    id,
+    name: id,
+    templateKey: "note",
+    color: null,
+    ownsColor: false,
+    depth: 1,
+    x: 0,
+    y: 0,
+  }));
+  const edges = [
+    { id: "a|b", sourceId: "a", targetId: "b", kind: "prose" as const },
+    { id: "b|c", sourceId: "b", targetId: "c", kind: "tree" as const },
+    { id: "c|d", sourceId: "c", targetId: "d", kind: "tree" as const },
+  ];
+
+  it("drops pages joined by nothing written, and the tree lines to them", () => {
+    const trimmed = withoutLone({ nodes, edges }, null);
+    expect(trimmed.nodes.map((n) => n.id)).toEqual(["a", "b"]);
+    expect(trimmed.edges.map((e) => e.id)).toEqual(["a|b"]);
+  });
+
+  it("keeps the focus whatever its lines", () => {
+    expect(withoutLone({ nodes, edges }, "d").nodes.map((n) => n.id)).toEqual(["a", "b", "d"]);
   });
 });

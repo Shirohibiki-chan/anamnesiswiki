@@ -18,6 +18,7 @@ import {
   type ProjectSort,
   type ProjectView,
   type FormattingBarMode,
+  clampGraphNameZoom,
   type GraphEdgeLabels,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
@@ -36,6 +37,7 @@ export type PreferencesStoreState = {
   setHistoryKeepDays: (days: HistoryKeepDays) => void;
   setHistoryPerPage: (count: HistoryPerPage) => void;
   setGraphEdgeLabels: (mode: GraphEdgeLabels) => void;
+  setGraphNameZoom: (zoom: number) => void;
   /** Keeps a colour mixed in the system picker, for use anywhere else. */
   saveColor: (color: string) => void;
   forgetColor: (color: string) => void;
@@ -121,6 +123,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setGraphEdgeLabels(mode) {
       apply({ ...get().preferences, graphEdgeLabels: mode });
+    },
+
+    setGraphNameZoom(zoom) {
+      apply({ ...get().preferences, graphNameZoom: clampGraphNameZoom(zoom) });
     },
 
     saveColor(color) {

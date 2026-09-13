@@ -440,3 +440,26 @@ export function neighbourhoodOf(edges: GraphEdge[], id: string | null): Set<stri
   }
   return near;
 }
+
+/**
+ * The model with every page that has no written line left off, and the tree
+ * lines that ran to those pages with them.
+ *
+ * Obsidian's Orphans switch, hers 2026-09-13. The tree does not count as a
+ * line here, for the reason the ring in graph-layout gives: every page is
+ * filed somewhere, so if it counted nothing would ever be lone. The focus
+ * stays whatever its lines — the graph is of it.
+ */
+export function withoutLone(model: GraphModel, focusId: string | null): GraphModel {
+  const joined = new Set<string>();
+  for (const edge of model.edges) {
+    if (edge.kind === "tree") continue;
+    joined.add(edge.sourceId);
+    joined.add(edge.targetId);
+  }
+  const kept = new Set(model.nodes.filter((node) => joined.has(node.id) || node.id === focusId).map((node) => node.id));
+  return {
+    nodes: model.nodes.filter((node) => kept.has(node.id)),
+    edges: model.edges.filter((edge) => kept.has(edge.sourceId) && kept.has(edge.targetId)),
+  };
+}

@@ -6,7 +6,14 @@ import { GRAPH_REACH_EVERYTHING, GRAPH_WORLD_PIN_PREFIX, type GraphReach } from 
 import type { DatabaseField, DatabaseFilter, Node } from "../constants/schema";
 import { fieldChoices, matchesFilter } from "../services/database-service";
 import { settleGraph, type GraphPins } from "../services/graph-layout";
-import { graphAround, graphOfPages, graphPinKey, pagesInUniverse, type GraphModel } from "../services/graph-service";
+import {
+  graphAround,
+  graphOfPages,
+  graphPinKey,
+  pagesInUniverse,
+  withoutLone,
+  type GraphModel,
+} from "../services/graph-service";
 import { linkIndex } from "../services/link-index";
 import { buildNodePreview, type NodePreview } from "../services/preview-service";
 import { selectedUniverse, universeOf } from "../services/tree-service";
@@ -30,6 +37,8 @@ export type PageGraphOptions = {
   reach: GraphReach;
   /** Conditions a page has to meet to be walked through and drawn. */
   filters: DatabaseFilter[];
+  /** Whether pages with no written line to anything are left off. */
+  hideLone?: boolean;
   /** Where she has already dragged nodes on this graph. */
   pins: GraphPins;
   /**
@@ -87,7 +96,7 @@ export function useGraphScope(focusId: string | null): { universeId: string | nu
  * the current filter could never be used to widen it. `linkIndex` is cached
  * against the store's record, so the expensive half is done once.
  */
-export function usePageGraph({ focusId, reach, filters, pins, generation }: PageGraphOptions): PageGraph {
+export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, generation }: PageGraphOptions): PageGraph {
   const { nodes } = useProject();
   const { getLabel } = useTemplates();
   const { universeId } = useGraphScope(focusId);
@@ -97,7 +106,7 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
   // The shape of the question, as one value a memo can be keyed on. Pins are
   // deliberately absent: they change on every drop, and re-running the
   // simulation then would jump every other node the instant one was let go of.
-  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${JSON.stringify(filters)}`;
+  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${hideLone ? "lone" : ""}|${JSON.stringify(filters)}`;
 
   /**
    * The arrangement as it stood when this graph was last worked out.
@@ -157,13 +166,17 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
 
   const model = useMemo(() => {
     const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
+    // Off after the walk rather than during it: a lone page is one the
+    // finished picture has no written line to, which the walk cannot know
+    // about a page until it has been through everything.
+    const trim = (built: GraphModel) => (hideLone ? withoutLone(built, focusId) : built);
     if (scopedIds) {
       // No centre: a universe has no one page that belongs in the middle, and
       // pinning one of seventy there would bend the shape around that choice.
-      return settleGraph(graphOfPages(scopedIds, focusId, nodes, index, keep), frozen.pins, { seed });
+      return settleGraph(trim(graphOfPages(scopedIds, focusId, nodes, index, keep)), frozen.pins, { seed });
     }
     if (!focusId) return EMPTY;
-    return settleGraph(graphAround(focusId, nodes, index, reach as number, keep), frozen.pins, {
+    return settleGraph(trim(graphAround(focusId, nodes, index, reach as number, keep)), frozen.pins, {
       centreId: focusId,
       seed,
     });

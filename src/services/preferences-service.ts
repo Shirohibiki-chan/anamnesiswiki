@@ -6,6 +6,7 @@
 // App-level, not per-project, for the reason every other preference is: one
 // person, one screen, several worlds. A habit about double-clicking doesn't
 // change because a different project is open.
+import { GRAPH_NAME_ZOOM, GRAPH_NAME_ZOOM_MAX, GRAPH_NAME_ZOOM_MIN } from "../constants/graph";
 import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_AGE_MS, SNAPSHOT_MAX_PER_NODE } from "../constants/limits";
 
 /**
@@ -202,6 +203,16 @@ export type HistoryPerPage = (typeof HISTORY_PER_PAGE)[number];
 export const GRAPH_EDGE_LABELS = ["pointed", "selected", "all"] as const;
 export type GraphEdgeLabels = (typeof GRAPH_EDGE_LABELS)[number];
 
+/**
+ * A zoom in the graph's own units, for the setting that says when names are
+ * drawn. Clamped to the slider's range on the way in, so a hand-edited file
+ * cannot put the threshold somewhere no control could have.
+ */
+export function clampGraphNameZoom(value: unknown): number {
+  const number = typeof value === "number" && Number.isFinite(value) ? value : GRAPH_NAME_ZOOM;
+  return Math.min(GRAPH_NAME_ZOOM_MAX, Math.max(GRAPH_NAME_ZOOM_MIN, number));
+}
+
 export const FORMATTING_BAR_MODES = ["floating", "fixed"] as const;
 export type FormattingBarMode = (typeof FORMATTING_BAR_MODES)[number];
 
@@ -245,6 +256,12 @@ export type Preferences = {
   historyPerPage: HistoryPerPage;
   /** See GRAPH_EDGE_LABELS. Defaults to the quiet one. */
   graphEdgeLabels: GraphEdgeLabels;
+  /**
+   * The zoom below which the graph draws no names (2026-09-13). A preference
+   * like the label mode, for the same reason: how close is close enough to
+   * read is a habit of hers, not a fact about a world.
+   */
+  graphNameZoom: number;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -264,6 +281,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // The quiet one, on the plain grounds that a graph opened to find something
   // is easier to read before it is covered in words.
   graphEdgeLabels: "selected",
+  graphNameZoom: GRAPH_NAME_ZOOM,
 };
 
 /**
@@ -378,5 +396,6 @@ export function parsePreferences(raw: unknown): Preferences {
     graphEdgeLabels: GRAPH_EDGE_LABELS.includes(graphEdgeLabels as GraphEdgeLabels)
       ? (graphEdgeLabels as GraphEdgeLabels)
       : DEFAULT_PREFERENCES.graphEdgeLabels,
+    graphNameZoom: clampGraphNameZoom(source.graphNameZoom),
   };
 }

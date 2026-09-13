@@ -119,6 +119,7 @@ export function usePreferenceActions() {
       setHistoryKeepDays: state.setHistoryKeepDays,
       setHistoryPerPage: state.setHistoryPerPage,
       setGraphEdgeLabels: state.setGraphEdgeLabels,
+      setGraphNameZoom: state.setGraphNameZoom,
     })),
   );
 }
@@ -126,6 +127,11 @@ export function usePreferenceActions() {
 /** Whether the graph writes the reason on every line, or only the ones in play. */
 export function useGraphEdgeLabels(): GraphEdgeLabels {
   return usePreferencesStore((state) => state.preferences.graphEdgeLabels);
+}
+
+/** The zoom below which the graph draws no names. */
+export function useGraphNameZoom(): number {
+  return usePreferencesStore((state) => state.preferences.graphNameZoom);
 }
 
 /** Reads the saved preferences at startup. See StartupRouter. */

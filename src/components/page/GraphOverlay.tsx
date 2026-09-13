@@ -36,7 +36,6 @@ import { X } from "lucide-react";
 import {
   GRAPH_DEFAULT_DEPTH,
   GRAPH_DIM_OPACITY,
-  GRAPH_NAME_ZOOM,
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
 } from "../../constants/graph";
@@ -45,7 +44,7 @@ import { edgeOpacity, graphPinKey, neighbourhoodOf } from "../../services/graph-
 import { usePageGraph, useGraphPins, useGraphPreview, useGraphScope } from "../../hooks/use-graph";
 import { useGraphOverlayActions, useOpenGraph } from "../../hooks/use-graph-overlay";
 import { useGraphView } from "../../hooks/use-graph-view";
-import { useGraphEdgeLabels, usePreferenceActions } from "../../hooks/use-preferences";
+import { useGraphEdgeLabels, useGraphNameZoom, usePreferenceActions } from "../../hooks/use-preferences";
 import { useProject, useProjectActions, useProjectName } from "../../hooks/use-project";
 import { NodeIcon } from "../blocks/IconPicker";
 import { GraphEdgeLabels, GraphEdgeProbe, GraphEdgesCanvas, GraphLitEdges } from "./GraphEdges";
@@ -87,6 +86,8 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
    */
   const [reach, setReach] = useState<GraphReach>(focusId ? GRAPH_DEFAULT_DEPTH : GRAPH_REACH_EVERYTHING);
   const [filters, setFilters] = useState<DatabaseFilter[]>([]);
+  // With the filters, and for the same reason: a question being asked now.
+  const [hideLone, setHideLone] = useState(false);
   const [generation, setGeneration] = useState(0);
 
   const { universeId, universeName } = useGraphScope(focusId);
@@ -99,10 +100,11 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const pinKey = graphPinKey(arrangedAs, universeId);
   const pins = useGraphPins(arrangedAs, universeId);
   const labels = useGraphEdgeLabels();
-  const { setGraphEdgeLabels } = usePreferenceActions();
+  const nameZoom = useGraphNameZoom();
+  const { setGraphEdgeLabels, setGraphNameZoom } = usePreferenceActions();
   const { selectNode, setGraphPins } = useProjectActions();
 
-  const graph = usePageGraph({ focusId, reach, filters, pins, generation });
+  const graph = usePageGraph({ focusId, reach, filters, hideLone, pins, generation });
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => setGraphPins(pinKey, { ...pins, ...moved }),
@@ -138,7 +140,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // Too far out for a name to be readable, so none of them are drawn — the
   // preview card and the node's tooltip are where a name comes from at this
   // distance. See GRAPH_NAME_ZOOM.
-  const namesQuiet = zoom < GRAPH_NAME_ZOOM;
+  const namesQuiet = zoom < nameZoom;
 
   /**
    * What this graph is of, in the words its subject is known by.
@@ -206,6 +208,10 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           filters={filters}
           onFilters={setFilters}
           choicesFor={graph.choicesFor}
+          hideLone={hideLone}
+          onHideLone={setHideLone}
+          nameZoom={nameZoom}
+          onNameZoom={setGraphNameZoom}
           arranged={arranged}
           onPutBack={putBack}
         />
@@ -294,7 +300,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
 
           {empty && (
             <p className="page-graph-empty">
-              {filters.length > 0
+              {filters.length > 0 || hideLone
                 ? "Nothing here matches those filters. Loosen one, or reach further out."
                 : focus
                   ? "Nothing points at this page and it points at nothing yet. Mention another page while writing, fill in a reference field, or put a page inside this one."
