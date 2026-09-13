@@ -46,6 +46,10 @@ const BLOCK_ADD_MENU = ".block-add-menu";
 const BLOCK_MENU = ".block-menu";
 const MENU_HEADING = ".tree-context-menu-heading";
 const BLOCK_TITLE = ".block-title";
+const CAPTURE_BOX = ".block-capture";
+const CAPTURE_TEXT = ".block-capture-text";
+const CAPTURE_DESTINATION = ".block-capture-destination";
+const CAPTURE_SAVED = ".block-capture-saved";
 // Phase 24: one page’s relationships, opened over the page. The button that
 // opens it lives on the page title; everything else only exists while it is up.
 const GRAPH_BUTTON = ".page-title-graph-button";
@@ -2012,4 +2016,37 @@ export async function storylineSelectionCast(window: Page): Promise<string[]> {
 /** Follows one of those names to its page. */
 export async function openStorylineCastMember(window: Page, name: string): Promise<void> {
   await window.locator(STORYLINE_CAST_CHIP).filter({ hasText: name }).first().click();
+}
+
+// ---- Quick capture (Phase 30) ----
+
+/** Types into the open page's capture box, replacing whatever was there. */
+export async function typeCapture(window: Page, text: string): Promise<void> {
+  await window.locator(`${CAPTURE_BOX} ${CAPTURE_TEXT}`).first().fill(text);
+}
+
+/** Presses the capture box's button and gives the page time to appear. */
+export async function pressCapture(window: Page): Promise<void> {
+  await window.locator(CAPTURE_BOX).getByRole("button", { name: "Capture", exact: true }).first().click();
+  await window.waitForTimeout(600);
+}
+
+/** What the capture box says it will file under — the words on the control, chip included. */
+export async function captureDestination(window: Page): Promise<string> {
+  return normalize((await window.locator(`${CAPTURE_BOX} ${CAPTURE_DESTINATION}`).first().textContent()) ?? "");
+}
+
+/** The line under the box saying where the last thought went, or "" before any has. */
+export async function captureSavedNote(window: Page): Promise<string> {
+  const note = window.locator(`${CAPTURE_BOX} ${CAPTURE_SAVED}`);
+  if ((await note.count()) === 0) return "";
+  return normalize((await note.first().textContent()) ?? "");
+}
+
+/** Opens the capture box's destination picker and takes the top match for `name`. */
+export async function pickCaptureDestination(window: Page, name: string): Promise<void> {
+  await window.locator(`${CAPTURE_BOX} ${CAPTURE_DESTINATION}`).first().click();
+  const search = window.getByPlaceholder("Find a destination");
+  await search.fill(name);
+  await search.press("Enter");
 }

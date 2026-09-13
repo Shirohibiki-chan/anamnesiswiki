@@ -563,6 +563,11 @@ exports. One snippet beside it is the whole bundle.
 
 ### 1. The Quick capture block — first
 
+**The block shipped 2026-09-13** (`CaptureBlock.tsx`, `use-capture.ts`,
+`capture-service.ts`; the rules that bind it are in `docs/handoff.md` § Quick
+capture). Everything below it in this section is built except the second door,
+which is next.
+
 A block with a text box and a Capture button. Type a thought, capture it, and
 it becomes a page under the right parent without leaving the page you were on.
 The point is the trip it saves: today a stray idea about the magic system,

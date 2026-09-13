@@ -13,6 +13,7 @@ import {
   AtSign,
   FileText,
   Image as ImageIcon,
+  Inbox,
   LayoutTemplate,
   Link2,
   ListTree,
@@ -105,6 +106,9 @@ export function AddBlockMenu({
       </button>
       <button type="button" onClick={() => onAdd("alias")}>
         <AtSign size={13} /> Alias
+      </button>
+      <button type="button" onClick={() => onAdd("capture")}>
+        <Inbox size={13} /> Quick capture
       </button>
 
       <div className="tree-context-menu-heading">Meters</div>

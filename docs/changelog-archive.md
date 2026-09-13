@@ -2,6 +2,28 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-07 — steering the graph, and it remembers how you left it
+
+### Additions
+
+- **You can move pages around a graph and they stay where you put them.** Drag a page, and next time you open that graph it is where you left it — including after closing the app. Each page's graph remembers its own arrangement, so tidying one leaves every other one exactly as it was.
+- **Put it back** lays a graph out again from scratch and forgets everything you moved on it. It sits in the bar and is greyed out until there is something to undo.
+- **Reach** chooses how far out the graph looks: one connection, two, or three. One is the default, and it stays that way each time you open a graph.
+- **Filter by what a page is** — its template, or its tags. The same filters the database views use, so there is nothing new to learn. The bar counts what is left against what there was, so a filter hiding everything never looks like a page connected to nothing.
+- **Lines** chooses when a line writes what it is. *Names when pointed at* only labels the lines touching whatever you are hovering; *Names always* labels every line that has a name. This is a preference, so it follows you between worlds.
+
+### Fixes
+
+- **Clearing a graph's arrangement right after opening a page could quietly fail.** It looked cleared on screen, but the file on disk still held it, so it came back the next time the app started. A save left over from opening the page was landing on top and putting it back.
+- **The graph's filter menu could not be clicked.** It drew in the right place, but every click went through it to the graph behind.
+- **The close button no longer drops onto a second line** when the window is at its narrowest and the controls wrap.
+
+### Notes
+
+- **The reach and the filters are forgotten when you close the graph**, on purpose — a graph reopened days later still hiding half of what it is connected to, with nothing on screen saying why, would look broken. What you moved is kept; what you were asking is not.
+- **A filtered-out page takes its lines with it**, so at two or three connections out, anything only reachable through it goes too. The filter menu says so.
+- **Only reference fields have a name to write on a line** — Friends, Enemies, and so on. A mention you wrote in a sentence, a link you added by hand, and a page nested inside another have no name to give, so most lines stay bare in either mode.
+
 ## 2026-09-07 — see what a page is connected to
 
 ### Additions

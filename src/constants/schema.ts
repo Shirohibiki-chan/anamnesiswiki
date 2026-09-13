@@ -13,6 +13,13 @@ export const FOLDER_TEMPLATE_KEY = "folder";
 // between, and the one a page stays in if the user just starts writing.
 export const BLANK_TEMPLATE_KEY = "blank";
 
+// What the one tab of a blank page written in is called. Matches the first tab
+// most templates start with, so a page that skipped the templates, one that
+// took the plainest of them and a captured thought (Phase 30) don't disagree
+// about what the tab they're written in is called. Was NewPageLanding's own
+// constant until the capture block needed the same word.
+export const FIRST_TAB_LABEL = "Overview";
+
 // The name a page is created with. Not left empty: a node's name is also its
 // filename, and an empty one has nowhere to be written.
 export const UNTITLED_PAGE_NAME = "Untitled";
@@ -310,7 +317,10 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
 // pointer, and the value stays in the field it has always lived in. Only the
 // kinds with genuinely new data (`text` and `meter`) store a value inside the
 // block itself.
-export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter";
+// `capture` (Phase 30) is the third kind with data of its own, and it is only
+// settings: which page its destinations hang under, and where the last
+// capture went. What gets captured becomes a page, not a value in the block.
+export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter" | "capture";
 
 /**
  * How a `meter` block draws itself. Phase 18c, plus `spectrum` on 2026-08-25.
@@ -517,6 +527,16 @@ export type Block = {
   // existed still opens.
   value?: number;
   max?: number;
+  /**
+   * `capture` only (Phase 30). `captureRoot` is the page whose children are
+   * the places a thought can be filed — absent means the block's own page, so
+   * a block dropped on a `Quick capture` page works with nothing set.
+   * `captureLast` is where the last one went, which is what the picker offers
+   * next time; it is remembered without an undo entry, because it is the
+   * block remembering rather than her editing.
+   */
+  captureRoot?: string;
+  captureLast?: string;
 };
 
 /**
