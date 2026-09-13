@@ -12,14 +12,21 @@ import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
   boardIsExpanded,
   boardIsShown,
+  boardLinkLabel,
   clearTreeSearch,
-  waitForBoard,
   drawBoardRectangle,
+  followBoardLink,
+  linkBoardShapeToPage,
   makeBoard,
   pageTitle,
+  selectBoardShape,
   toggleBoardExpand,
+  waitForPageTitle,
   waitForWorld,
 } from "./harness/screen";
+
+/** A page the generated world really has — see a-storyline-existing-pages. */
+const EXISTING = "Greyharbour";
 
 /** Long enough for the settle delay and the queued write to reach the disk. */
 const WRITTEN_MS = 2500;
@@ -88,12 +95,34 @@ describe("a board's whiteboard", () => {
     expect(await boardIsExpanded(app.window)).toBe(false);
   });
 
-  it("still has the shape after a restart", async () => {
-    await reload(app);
-    await waitForBoard(app.window);
+  it("links a shape to a page, and writes the page's id rather than its name", async () => {
+    await selectBoardShape(app.window);
+    expect(await boardLinkLabel(app.window)).toBe("Link this shape to a page");
+    await linkBoardShapeToPage(app.window, EXISTING);
+    expect(await boardLinkLabel(app.window)).toBe(`Linked to ${EXISTING}`);
+    await app.window.waitForTimeout(WRITTEN_MS);
     const file = await findBoardFile(app.world!.path);
-    const board = JSON.parse(await fs.readFile(file!, "utf8")) as { elements: { type: string }[] };
+    const board = JSON.parse(await fs.readFile(file!, "utf8")) as { elements: { link?: string }[] };
+    expect(board.elements[0].link).toMatch(/^anamnesis:\/\/page\/.+/);
+    expect(board.elements[0].link).not.toContain(EXISTING);
+  });
+
+  it("opens the page when the link is followed", async () => {
+    await selectBoardShape(app.window);
+    await followBoardLink(app.window);
+    await waitForPageTitle(app.window, EXISTING);
+    expect(await pageTitle(app.window)).toBe(EXISTING);
+    expect(app.errors).toEqual([]);
+  });
+
+  it("still has the shape and its link after a restart", async () => {
+    // The app reopens on the page the link led to, not on the board — the
+    // file is what is being asked about here, not the screen.
+    await reload(app);
+    const file = await findBoardFile(app.world!.path);
+    const board = JSON.parse(await fs.readFile(file!, "utf8")) as { elements: { type: string; link?: string }[] };
     expect(board.elements).toHaveLength(1);
+    expect(board.elements[0].link).toMatch(/^anamnesis:\/\/page\//);
     expect(app.errors).toEqual([]);
   });
 });

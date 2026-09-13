@@ -12,6 +12,7 @@ import { buildNodePreview, type NodePreview } from "../services/preview-service"
 import { selectedUniverse, universeOf } from "../services/tree-service";
 import { useProject } from "./use-project";
 import { useStorylines } from "./use-storyline";
+import { useBoards } from "./use-board";
 import { useTemplates } from "./use-templates";
 
 // Re-exported so components reach the graph's services through this one door,
@@ -113,7 +114,8 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
   // The canvases are part of what "connected" means since Phase 25 step 3, so
   // a graph draws a line from a storyline to every scene on it.
   const storylines = useStorylines();
-  const index = useMemo(() => linkIndex(nodes, storylines), [nodes, storylines]);
+  const boards = useBoards();
+  const index = useMemo(() => linkIndex(nodes, storylines, boards), [nodes, storylines, boards]);
 
   /**
    * The pages a whole-universe graph is over, before any filter.
