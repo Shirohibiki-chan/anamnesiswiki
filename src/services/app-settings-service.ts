@@ -379,6 +379,24 @@ export async function setExampleWorldMade(made: boolean): Promise<void> {
  * retired policy section (`CLAUDE.md` → Two Promises) because it costs nothing
  * to keep. Absent means never shown, which is what a fresh install looks like.
  */
+/**
+ * Whether the dashboard snippet has ever been written into the snippets
+ * folder (Phase 30). The same shape as `exampleWorldMade`, for the same
+ * reason: it is written once so the Dashboard template arrives looking like
+ * one, and once it exists as an ordinary file in her folder, deleting it has
+ * to mean deleting it. Absent means never written.
+ */
+export async function getDashboardSnippetMade(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("dashboardSnippetMade")) === true;
+}
+
+export async function setDashboardSnippetMade(made: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("dashboardSnippetMade", made);
+  await store.save();
+}
+
 export async function getTourSeen(): Promise<boolean> {
   const store = await getStore();
   return (await store.get<boolean>("tourSeen")) === true;

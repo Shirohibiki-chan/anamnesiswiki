@@ -4,6 +4,7 @@
 // has to survive that screen being closed.
 import { create } from "zustand";
 import { SNIPPETS_DIR, THEMES_DIR } from "../constants/paths";
+import { DASHBOARD_SNIPPET_CSS, DASHBOARD_SNIPPET_FILE } from "../constants/dashboard-snippet";
 import {
   BUILT_IN_THEMES,
   DEFAULT_CONTENT_SCALE,
@@ -285,6 +286,22 @@ let watchedSnippetsDir = "";
  */
 let lastSelfWrite = 0;
 const SELF_WRITE_QUIET_MS = 800;
+
+/**
+ * Writes the shipped dashboard snippet if it never has been, and says which
+ * file it wrote so the caller can switch it on. Nothing the second time, and
+ * nothing if a file of that name is already there — hers wins.
+ */
+async function seedDashboardSnippet(snippetsDir: string): Promise<string | null> {
+  if (await appSettings.getDashboardSnippetMade()) return null;
+  const existing = await readCssDir(snippetsDir);
+  if (!existing.some((file) => file.name === DASHBOARD_SNIPPET_FILE)) {
+    lastSelfWrite = Date.now();
+    await writeCssFile(snippetsDir, DASHBOARD_SNIPPET_FILE, DASHBOARD_SNIPPET_CSS);
+  }
+  await appSettings.setDashboardSnippetMade(true);
+  return DASHBOARD_SNIPPET_FILE;
+}
 
 export const useThemeStore = create<ThemeStoreState>((set, get) => {
   /**
@@ -674,6 +691,11 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         // what to do next is obvious once you're standing in it.
         const themesDir = await ensureCssDir(parent, THEMES_DIR);
         const snippetsDir = await ensureCssDir(parent, SNIPPETS_DIR);
+        // The one snippet the app ships, written into her folder the first
+        // time it is scanned and switched on, so the Dashboard template
+        // arrives looking like one. An ordinary file from then on — see
+        // constants/dashboard-snippet.ts.
+        const seededSnippet = await seedDashboardSnippet(snippetsDir);
         const [themeFiles, snippetFiles] = await Promise.all([readCssDir(themesDir), readCssDir(snippetsDir)]);
 
         const customThemes = themeFiles.map(toStylesheet);
@@ -707,7 +729,10 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
           ...(renamed ? { themeId: renamed } : {}),
           // Snippets that have gone are dropped from the enabled list, but
           // only once they're confirmed missing by a completed scan.
-          enabledSnippets: state.enabledSnippets.filter((file) => snippets.some((s) => s.file === file)),
+          enabledSnippets: [
+            ...state.enabledSnippets.filter((file) => snippets.some((s) => s.file === file)),
+            ...(seededSnippet && !state.enabledSnippets.includes(seededSnippet) ? [seededSnippet] : []),
+          ],
         });
         apply();
         syncDraft();
@@ -719,7 +744,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         // Persisted for the same reason as `lost`: the settings file records
         // the id as well as the filename, so a rescan that corrects one and
         // doesn't save it hands the stale one straight back on next launch.
-        if (lost || renamed) await persist();
+        if (lost || renamed || seededSnippet) await persist();
       } catch {
         // A projects folder that has moved or a drive that isn't mounted. The
         // built-in themes still work, so this is a smaller list, not a failure.
