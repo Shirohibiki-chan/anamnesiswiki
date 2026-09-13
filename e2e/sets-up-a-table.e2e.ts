@@ -66,13 +66,13 @@ describe("setting up a table", () => {
   });
 
   it("turns a column off and leaves the rest alone", async () => {
-    expect((await databaseColumns(app.window)).map((c) => c.toLowerCase())).toEqual(["name", "summary", "friends"]);
+    expect((await databaseColumns(app.window)).map((c) => c.toLowerCase())).toEqual(["name", "summary", "family", "friends", "allies", "rivals", "enemies"]);
 
     await openDatabaseMenu(app.window, "columns");
     await app.window.getByRole("checkbox", { name: "Summary" }).click();
     await closeMenu(app);
 
-    expect((await databaseColumns(app.window)).map((c) => c.toLowerCase())).toEqual(["name", "friends"]);
+    expect((await databaseColumns(app.window)).map((c) => c.toLowerCase())).toEqual(["name", "family", "friends", "allies", "rivals", "enemies"]);
   });
 
   it("puts the column back", async () => {
@@ -80,7 +80,7 @@ describe("setting up a table", () => {
     await app.window.getByRole("checkbox", { name: "Summary" }).click();
     await closeMenu(app);
 
-    expect((await databaseColumns(app.window)).map((c) => c.toLowerCase())).toEqual(["name", "summary", "friends"]);
+    expect((await databaseColumns(app.window)).map((c) => c.toLowerCase())).toEqual(["name", "summary", "family", "friends", "allies", "rivals", "enemies"]);
   });
 
   it("hides the rows a filter excludes, and says how many it left out", async () => {
