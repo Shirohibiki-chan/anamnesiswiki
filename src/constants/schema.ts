@@ -771,6 +771,23 @@ export type Node = {
   // can't reach the parent can't reach the children either. Only the page's
   // own flag is stored — see tree-service's isHiddenByAncestor.
   hidden?: boolean;
+  /**
+   * One short name a stylesheet can aim at (Phase 30, step 2). Lands on the
+   * page view's root as `data-style`, so a snippet writing
+   * `[data-style="dashboard"] …` skins this page and nothing else — the gap
+   * between "I have themes" and "I have a dashboard". Kept in the page's own
+   * file, normalised by `normaliseStyleClass` to lowercase letters, digits and
+   * hyphens. Absent means none, and every page written before this existed is
+   * absent.
+   *
+   * **A template can carry one as well, and the page's own wins.** This
+   * world's copy of a built-in template (an override node in the library) may
+   * set one, and every page of that template picks it up unless it names its
+   * own — see `effectiveStyleClass`. Her call, 2026-09-11: per page first, then
+   * per template; a name the page set itself outranks what came with the
+   * template, the way anything a person set does.
+   */
+  styleClass?: string;
   // Filename of the uploaded portrait/sidebar image inside the project's
   // assets/ directory (see paths.ts's ASSETS_DIR), not a full path — Phase 6's
   // ImageSlot resolves it against the project root when it needs to display

@@ -546,6 +546,10 @@ export function frontMatterFor(node: Node, ctx: MarkdownPageContext): string {
   // Only when true. A `hidden: false` on every page in the vault is noise
   // about a state almost nothing is in.
   if (node.hidden) lines.push("hidden: true");
+  // The page's own style name only, never the one it inherits from its
+  // template — that belongs to the template, and writing it here would turn
+  // an inheritance into a copy on the way back in. Phase 30.
+  if (node.styleClass) lines.push(`style: ${yamlString(node.styleClass)}`);
   // The tab names, when the body below is split into them. This is what lets
   // the importer *read* the split back rather than guess it from the `##`
   // headings — a page whose own writing opens with an `##` is otherwise

@@ -253,6 +253,9 @@ export function removeOverride(library: TemplateLibrary, templateKey: string): T
  */
 export function isOverrideModified(override: Node, defaultName: string, defaultTabs: Tab[]): boolean {
   if (override.name !== defaultName) return true;
+  // A style name is an edit to the template even though the built-in has no
+  // such field to differ from: the original carries none, so any is a change.
+  if (override.styleClass) return true;
   if (override.tabs.length !== defaultTabs.length) return true;
   return override.tabs.some((tab, index) => {
     const original = defaultTabs[index];

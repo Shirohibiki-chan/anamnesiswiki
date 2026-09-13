@@ -189,6 +189,11 @@ describe("frontMatterFor", () => {
     expect(frontMatterFor(page({ hidden: true }), ctx())).toContain("hidden: true");
   });
 
+  it("writes the page's own style name and nothing when it has none", () => {
+    expect(frontMatterFor(page(), ctx())).not.toContain("style");
+    expect(frontMatterFor(page({ styleClass: "dashboard" }), ctx())).toContain('style: "dashboard"');
+  });
+
   // Phase 20 reads the split from this line rather than guessing it from the
   // `##` headings; a single-tab page has no headings to split on and no line.
   it("names the tabs only when the body is split into them", () => {

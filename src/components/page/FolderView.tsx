@@ -8,6 +8,7 @@
 // button stays either way: this is the only place a page can be made inside
 // the folder she's looking at without going back to the tree.
 import { type CSSProperties } from "react";
+import { useEffectiveStyleClass } from "../../hooks/use-style-class";
 import { Waypoints } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { NodeIcon } from "../blocks/IconPicker";
@@ -25,9 +26,12 @@ export function FolderView({ node }: { node: Node }) {
   const effectiveHex = getPaletteHex(effectiveKey ?? undefined);
 
   const containerStyle: CSSProperties = effectiveHex ? { backgroundColor: `${effectiveHex}14` } : {};
+  const styleClass = useEffectiveStyleClass(node);
 
   return (
-    <div className="folder-view" style={containerStyle}>
+    // The same two hooks the page shell carries, so a snippet written for a
+    // page works on a folder too. See PageView.
+    <div className="folder-view" style={containerStyle} data-style={styleClass} data-template={node.templateKey}>
       <NodeIcon
         icon={node.icon}
         templateKey={node.templateKey}

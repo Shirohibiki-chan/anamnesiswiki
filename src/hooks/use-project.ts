@@ -32,6 +32,7 @@ export function useProjectActions() {
       applyTemplate: state.applyTemplate,
       addTab: state.addTab,
       renameNode: state.renameNode,
+      setStyleClass: state.setStyleClass,
       moveNode: state.moveNode,
       moveNodes: state.moveNodes,
       deleteNode: state.deleteNode,

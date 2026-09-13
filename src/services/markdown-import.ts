@@ -16,6 +16,7 @@
 // matter says so*, since a page whose writing opens with an `##` is otherwise
 // indistinguishable from one with tabs.
 import { createTab, FOLDER_TEMPLATE_KEY, PAGE_TEMPLATE_KEYS, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
+import { normaliseStyleClass } from "./style-class";
 import { assetRef } from "./asset-urls";
 import type { ImportAsset, ImportPlan, ImportPreviewNode } from "./import-plan";
 import {
@@ -52,7 +53,7 @@ const NOTE_EXTENSIONS = new Set(["md", "markdown", "txt"]);
 const PICTURE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "avif"]);
 
 /** Front matter keys that are the page's own fields rather than properties. */
-const RESERVED_KEYS = new Set(["title", "aliases", "alias", "tags", "tag", "template", "hidden", "image", "banner", "tabs"]);
+const RESERVED_KEYS = new Set(["title", "aliases", "alias", "tags", "tag", "template", "hidden", "style", "image", "banner", "tabs"]);
 
 /** The heading the export puts over the page's own blocks. */
 const DETAILS_HEADING = "Details";
@@ -574,6 +575,7 @@ export function planMarkdownImport(input: MarkdownImportInput): ImportPlan {
     const { properties, customProperties } = propertiesOf(note.frontMatter, templateKey, { resolveLink, tally });
     const image = yamlStrings(note.frontMatter.image)[0];
     const banner = yamlStrings(note.frontMatter.banner)[0];
+    const styleClass = normaliseStyleClass(yamlStrings(note.frontMatter.style)[0]);
     const portrait = image ? pictureFor(entry.dir, image) : null;
     const cover = banner ? pictureFor(entry.dir, banner) : null;
     if (image && !portrait) bumpTally(tally, PICTURE_MISSING);
@@ -590,6 +592,10 @@ export function planMarkdownImport(input: MarkdownImportInput): ImportPlan {
       tags: tagsOf(note.frontMatter),
       ...(note.aliases.length > 0 ? { aliases: note.aliases } : {}),
       ...(note.frontMatter.hidden === true ? { hidden: true } : {}),
+      // Normalised on the way in, the same as one typed into the menu — a
+      // hand-written `style: Zen Home` becomes `zen-home`, not a name no
+      // selector can match.
+      ...(styleClass ? { styleClass } : {}),
       // A portrait is a file in `assets/`, named without the prefix a block
       // carries; a web address stays as it is.
       ...(portrait ? { image: stripRef(portrait) } : {}),

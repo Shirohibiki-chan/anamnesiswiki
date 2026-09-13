@@ -14,6 +14,7 @@ import { PageStoryline } from "./PageStoryline";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
+import { useEffectiveStyleClass } from "../../hooks/use-style-class";
 import { useCreatePageIn } from "../../hooks/use-new-page";
 import { NewPageLanding } from "./NewPageLanding";
 import { PageBanner } from "./PageBanner";
@@ -46,6 +47,9 @@ export function PageView() {
   const { openPageGraph } = useGraphOverlayActions();
   const selectedId = project?.selectedId ?? null;
   const node = selectedId ? nodes[selectedId] : undefined;
+  // What a snippet aims at — see `styleClass` on Node. Read here, above the
+  // early returns, because it is a hook.
+  const styleClass = useEffectiveStyleClass(node);
 
   const focusedTabId = pendingFocus && pendingFocus.nodeId === node?.id ? pendingFocus.tabId : undefined;
   const [activeTabId, setActiveTabId] = useState<string | null>(focusedTabId ?? node?.tabs[0]?.id ?? null);
@@ -91,7 +95,11 @@ export function PageView() {
   }
 
   return (
-    <div className="page-view-shell">
+    // `data-template` beside `data-style`: the page's kind is a fact worth a
+    // hook of its own, so a snippet can say "every Character page" without
+    // anybody naming a style first. Both are on the page's root and not the
+    // window's — a skin describes a page, not the app around it.
+    <div className="page-view-shell" data-style={styleClass} data-template={node.templateKey}>
       <PageBanner node={node} />
       <div className="page-view">
         {/* The one page whose name is worth interrupting for: it was created a

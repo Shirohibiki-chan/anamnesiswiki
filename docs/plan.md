@@ -611,6 +611,12 @@ the way back.
 
 ### 2. A style class per page — what turns a theme into a dashboard skin
 
+**Shipped 2026-09-13, both halves** — *Style name* on a page's right-click
+menu and a chip on a template's own view (`StyleMenu.tsx`, `style-class.ts`,
+`use-style-class.ts`); `data-style` and `data-template` land on the page
+view's, the folder view's and the template view's root. Rules that bind it are
+in `docs/handoff.md` § Style names. Everything below is built.
+
 The one gap between Phase 12 and the gallery. Obsidian's dashboards style only
 the dashboard note because a note can carry a class name in its properties and
 the snippet targets it. Here a snippet hits every page. So: a page setting —

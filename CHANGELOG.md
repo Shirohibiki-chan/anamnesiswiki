@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-13 — a style name, so a snippet can skin one page
+
+### Additions
+
+- **Style name, on a page's right-click menu.** Give a page a short name — *Zen Home* saves as `zen-home` and the menu says so — and it lands on that page as `data-style="zen-home"`. A snippet in your snippets folder that starts `[data-style="zen-home"]` now reaches that page and no other. That's the gap between themes and the dashboards in the Obsidian gallery: a theme is the whole app, a skin is one page, and the name is how a stylesheet tells them apart. Names already used anywhere in the world are offered under the box so you pick rather than retype; *Clear* takes it off again.
+- **A template can carry one too.** Open a template from the Templates panel and there's a *Style name* chip beside its kind. Every page of that template picks the name up — every Character gets the character-sheet skin — unless the page names its own, which wins. A template with a style name counts as edited, so *Put back to the original* is offered for it. Saving a page as a template keeps its name, and a page made from that template starts with it.
+- **Every page also says what kind it is** — `data-template="character"`, `data-template="location"` and so on, on the same root — so a snippet can say "all my locations" without anyone naming a style first. A folder shown as a folder carries both hooks as well, and so does a template while you're editing it, so you can see a skin land while you write it.
+- **It travels with a Markdown export** as `style:` in the front matter, and an imported note carrying one gets it back, normalised the same way.
+
+### Notes
+
+- **Only the page's *own* name is exported**, never the one it inherits from its template — that belongs to the template, and writing it into every page would turn an inheritance into a hundred copies on the way back in.
+- **Names are lowercase letters, digits and hyphens**, and anything else is dropped rather than kept: a colon or a space in a name is a snippet that silently matches nothing, and "my styles don't work" is a worse day than "it saved as zen-home".
+- **This is step 2 of Phase 30.** Next are the two blocks a home page is missing: Recently edited and Pinned.
+
 ## 2026-09-13 — capture a thought from anywhere
 
 ### Additions
@@ -264,17 +279,3 @@
 ### Notes
 
 - **How long the graph takes to lay out, measured rather than guessed:** roughly a millisecond a page, worked out once when the graph opens. A 75-page world takes about a twentieth of a second; 500 pages take about half a second; 2000 take a couple of seconds. Nothing to notice at the size of your world, and now written down so it isn't a surprise later.
-
-## 2026-09-08 — the whole world as a graph
-
-### Additions
-
-- **A Graph button in the rail, under Search, draws your whole universe at once.** Every page in it, however it is joined up — and pages that are joined to nothing are drawn too, which is the thing a picture of a whole world is most useful for saying.
-- **A page's own graph can be widened all the way.** Reach has a fourth setting, *Everything*, and choosing it gives the same picture with the page you were on still marked in the middle. The rail's button and the page's are two ways into one thing, not two features.
-- **It draws whichever universe you are in.** Opened from the rail, that is whichever the switcher says; opened from a page, it is the universe that page lives in, even if the tree is showing a different one. With All universes selected it draws the whole world.
-- **A whole-universe graph remembers its own arrangement**, kept apart from every page's, so tidying it leaves each page's graph exactly as you left it.
-
-### Adjustments
-
-- **Zoomed far enough out, the names stop being drawn.** A whole world does not fit on a screen at a size names can be read at, and unreadable ones sit exactly where the shape you are looking at should be. Hovering a page still shows its name, and clicking one still names it in full in the card beside the graph.
-- **The graph now says which world it is of by name**, rather than calling it "this world".

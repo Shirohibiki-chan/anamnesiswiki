@@ -1801,6 +1801,34 @@
   color: var(--color-text-muted);
 }
 
+/* The template's style name, beside its kind (Phase 30). A quiet chip: it is
+   a setting most templates never touch, sitting in a row whose point is the
+   name. */
+.template-view-style {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.template-view-style:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+
+.template-view-style code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-secondary);
+}
+
 /* --- PageFilePanel's Library tab (Phase 17) ---
 
    The panel is BlockNote's, and its tabs are sized by its own stylesheet. This

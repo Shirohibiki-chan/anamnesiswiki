@@ -60,7 +60,7 @@ describe("planMarkdownImport", () => {
   it("takes the page's fields from the front matter", () => {
     const plan = planMarkdownImport(
       input({
-        "K.md": '---\ntitle: "Kaine: Book 1"\naliases: ["Kai"]\ntags: ["lore", "#canon"]\ntemplate: "Character"\nhidden: true\n---\nbody',
+        "K.md": '---\ntitle: "Kaine: Book 1"\naliases: ["Kai"]\ntags: ["lore", "#canon"]\ntemplate: "Character"\nhidden: true\nstyle: "Zen Home"\n---\nbody',
       }),
     );
     const node = plan.nodes[0];
@@ -69,6 +69,8 @@ describe("planMarkdownImport", () => {
     expect(node.tags).toEqual(["lore", "canon"]);
     expect(node.templateKey).toBe("character");
     expect(node.hidden).toBe(true);
+    expect(node.styleClass).toBe("zen-home");
+    expect(node.customProperties).toEqual([]);
   });
 
   it("fills a template's own field by label and makes the rest custom properties", () => {

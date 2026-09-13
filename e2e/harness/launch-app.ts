@@ -47,6 +47,12 @@ export type RunningApp = {
    * logged during startup.
    */
   errors: string[];
+  /**
+   * The folder the app was told holds her projects — and, beside them, the
+   * `themes/` and `snippets/` folders it watches. A scenario that drops a
+   * `.css` in there is exercising the same live reload she gets.
+   */
+  projectsDir: string;
   /** Quits the app and deletes everything it was given. Safe to call twice. */
   close: () => Promise<void>;
 };
@@ -88,6 +94,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
   const world = options.openWorld === false ? null : await makeTestWorld(options);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "anamnesis-e2e-userdata-"));
   await seedSettings(userDataDir, world, options.showTour === true, options.exampleWorld === true);
+  const projectsDir = path.join(userDataDir, "Projects");
 
   const electron = await _electron.launch({
     executablePath: electronBinary as unknown as string,
@@ -157,7 +164,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
     await removeQuietly(userDataDir);
   };
 
-  return { window, electron, world, errors, close };
+  return { window, electron, world, errors, projectsDir, close };
 }
 
 

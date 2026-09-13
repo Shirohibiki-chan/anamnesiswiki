@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-08 — the whole world as a graph
+
+### Additions
+
+- **A Graph button in the rail, under Search, draws your whole universe at once.** Every page in it, however it is joined up — and pages that are joined to nothing are drawn too, which is the thing a picture of a whole world is most useful for saying.
+- **A page's own graph can be widened all the way.** Reach has a fourth setting, *Everything*, and choosing it gives the same picture with the page you were on still marked in the middle. The rail's button and the page's are two ways into one thing, not two features.
+- **It draws whichever universe you are in.** Opened from the rail, that is whichever the switcher says; opened from a page, it is the universe that page lives in, even if the tree is showing a different one. With All universes selected it draws the whole world.
+- **A whole-universe graph remembers its own arrangement**, kept apart from every page's, so tidying it leaves each page's graph exactly as you left it.
+
+### Adjustments
+
+- **Zoomed far enough out, the names stop being drawn.** A whole world does not fit on a screen at a size names can be read at, and unreadable ones sit exactly where the shape you are looking at should be. Hovering a page still shows its name, and clicking one still names it in full in the card beside the graph.
+- **The graph now says which world it is of by name**, rather than calling it "this world".
+
 ## 2026-09-08 — changes made right after opening a page now stick
 
 ### Fixes
