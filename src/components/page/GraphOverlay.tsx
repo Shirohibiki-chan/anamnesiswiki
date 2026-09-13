@@ -36,7 +36,6 @@ import { X } from "lucide-react";
 import {
   GRAPH_DEFAULT_DEPTH,
   GRAPH_DIM_OPACITY,
-  GRAPH_DOT_HIT,
   GRAPH_FADE_MS,
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
@@ -120,7 +119,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
     (moved: Record<string, { x: number; y: number }>) => setGraphPins(pinKey, { ...pins, ...moved }),
     [setGraphPins, pinKey, pins],
   );
-  const view = useGraphView(graph.model, { resetKey: graph.key, onArrange });
+  const view = useGraphView(graph.model, { resetKey: graph.key, onArrange, dotsBelow: nameZoom });
 
   // Destructured up here rather than reached for as `view.x` through the
   // markup, the same shape Lightbox takes from use-lightbox. It keeps the JSX
@@ -295,7 +294,6 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
                 // Fainter the more of them there are — see edgeOpacity.
                 "--graph-edge-opacity": edgeOpacity(edges.length),
                 "--graph-dim-opacity": GRAPH_DIM_OPACITY,
-                "--graph-dot-hit": `${GRAPH_DOT_HIT}px`,
                 "--graph-fade": `${GRAPH_FADE_MS}ms`,
               } as React.CSSProperties
             }

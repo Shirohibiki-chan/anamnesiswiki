@@ -696,12 +696,14 @@
   background: var(--graph-node-color);
 }
 
-/* The hit box stays a full button while the dot is small, or the dot is four
-   pixels to aim at and hovering reads as imprecise — see GRAPH_DOT_HIT, which
-   is what the number is. */
+/* **No hit boxes while the pages are dots.** The stage finds the nearest dot
+   to the pointer itself (use-graph-view's `nearest`), generous for pointing
+   and tight for picking up, and every other press pans. A box the dot's size
+   was four pixels to aim at; a box big enough to hover covered the gaps and
+   grabbed a page on every drag of the background. Keyboard focus still
+   reaches the buttons; only the pointer goes around them. */
 .page-graph-scene-small .page-graph-node {
-  width: var(--graph-dot-hit, 64px);
-  height: var(--graph-dot-hit, 64px);
+  pointer-events: none;
 }
 
 .page-graph-scene-small .page-graph-node-disc > * {

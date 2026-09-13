@@ -1516,7 +1516,11 @@ function graphNode(window: Page, name: string): Locator {
 /** Clicks a page on the graph, which should open its preview and nothing else. */
 export async function clickGraphNode(window: Page, name: string): Promise<void> {
   await waitForGraphSettled(window);
-  await graphNode(window, name).click();
+  // The mouse at the node's centre rather than a click on its element: while
+  // the pages are dots the buttons take no pointer events and the stage finds
+  // the nearest dot itself, which is what she does with a real mouse too.
+  const at = await graphNodeCentre(window, name);
+  await window.mouse.click(at.x, at.y);
 }
 
 /** Where a node sits on screen, for asserting a drag moved it. */

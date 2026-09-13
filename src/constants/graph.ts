@@ -30,14 +30,20 @@ export const GRAPH_DOT_GROWTH = 4;
 export const GRAPH_DOT_MAX = 64;
 
 /**
- * The button's hit box while the page is a dot, in scene units.
+ * How near the pointer has to be to a dot, in screen pixels, to be pointing
+ * at it — and, tighter, to pick it up.
  *
- * Bigger than the dot on purpose: the dot is four pixels wide at whole-world
- * zoom, and a hover that has to land on it exactly reads as "extremely
- * imprecise" — her words, 2026-09-13, after the button had shrunk to the
- * dot's size. Under the collide radius, so two hit boxes never overlap.
+ * **While the pages are dots there are no hit boxes; the graph finds the
+ * nearest dot itself.** A hit box big enough to hover comfortably (64 units
+ * was tried) covered most of the space between dots at whole-world zoom, so
+ * a drag on the "background" grabbed a page instead of panning — her report
+ * 2026-09-13, the second time the same conflict came up. A box the size of
+ * the dot was the first time: four pixels to aim at, "extremely imprecise".
+ * Two radii settle it the way Obsidian does: pointing is generous, grabbing
+ * is the dot itself and a little, and a press anywhere else pans.
  */
-export const GRAPH_DOT_HIT = 64;
+export const GRAPH_DOT_HOVER_PX = 18;
+export const GRAPH_DOT_GRAB_PX = 6;
 
 /**
  * How long a page takes to fade back when the pointer leaves the page it was
@@ -129,13 +135,19 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
 
 /**
- * How long after the last wheel tick the wheel counts as stopped.
+ * How much of the way to the wheel's target the zoom moves each frame.
  *
- * While it turns, the lines are painted for the window alone; when it stops
- * they are painted once more with the margin a drag needs. Short enough not
- * to be noticed, long enough that a wheel still turning is one gesture.
+ * **A wheel notch sets a target and the view glides to it** — Obsidian's
+ * feel, and the difference between a zoom that is smooth and one that is
+ * merely fast: at sixty frames a second, a notch applied all at once is
+ * still a staircase. A quarter per frame is a glide of a dozen frames that
+ * still feels like the hand's own movement. The glide is also when the
+ * canvas paints light (see `zooming`); it paints fully once it lands.
  */
-export const GRAPH_ZOOM_SETTLE_MS = 160;
+export const GRAPH_ZOOM_EASE = 0.25;
+
+/** Close enough to the target to land on it and stop the glide. */
+export const GRAPH_ZOOM_LANDED = 0.002;
 
 /**
  * How many connections out the graph reaches by default.

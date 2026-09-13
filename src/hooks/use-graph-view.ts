@@ -3,16 +3,19 @@
 // part worth being able to read on its own.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  GRAPH_DOT_GRAB_PX,
+  GRAPH_DOT_HOVER_PX,
   GRAPH_DRAG_THRESHOLD,
   GRAPH_FIT_PADDING,
   GRAPH_MAX_FIT_ZOOM,
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
+  GRAPH_ZOOM_EASE,
+  GRAPH_ZOOM_LANDED,
   GRAPH_ZOOM_SENSITIVITY,
-  GRAPH_ZOOM_SETTLE_MS,
 } from "../constants/graph";
 import { graphBounds } from "../services/graph-layout";
-import type { GraphEdge, GraphModel, GraphNode } from "../services/graph-service";
+import { dotSize, type GraphEdge, type GraphModel, type GraphNode } from "../services/graph-service";
 
 /** An edge with both ends resolved to where its nodes actually are. */
 export type PlacedEdge = GraphEdge & { x1: number; y1: number; x2: number; y2: number };
@@ -35,9 +38,17 @@ export type GraphViewOptions = {
   resetKey: string;
   /** Called on letting go of a node, with everything moved so far. */
   onArrange: (moved: Record<string, Point>) => void;
+  /**
+   * The zoom below which the pages are drawn as dots — the names threshold.
+   *
+   * While they are, the buttons take no pointer events and the stage finds
+   * the nearest dot itself (see `nearest`); above it the buttons handle their
+   * own hover and drag as ordinary elements.
+   */
+  dotsBelow: number;
 };
 
-export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphViewOptions) {
+export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow }: GraphViewOptions) {
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [zoomFactor, setZoomFactor] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
@@ -53,14 +64,18 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
    */
   const [panning, setPanning] = useState(false);
   /**
-   * Whether the wheel is turning — true from a tick until GRAPH_ZOOM_SETTLE_MS
-   * after the last one. Not for scaling anything (that was tried and read as
-   * blurry); the canvas uses it to paint only the window while the wheel
-   * turns and the overdraw margin once it stops. See GraphEdgesCanvas.
+   * Whether the zoom is gliding toward the wheel's target. Not for scaling
+   * anything (that was tried and read as blurry); the canvas uses it to
+   * paint only the window while the glide lasts and the overdraw margin
+   * once it lands. See GraphEdgesCanvas, and `handleWheel` for the glide.
    */
   const [zooming, setZooming] = useState(false);
-  const zoomSettleRef = useRef<number | null>(null);
-  useEffect(() => () => window.clearTimeout(zoomSettleRef.current ?? undefined), []);
+  const glideRef = useRef<{ target: number; anchor: Point; frame: number | null }>({
+    target: 1,
+    anchor: { x: 0, y: 0 },
+    frame: null,
+  });
+  useEffect(() => () => cancelAnimationFrame(glideRef.current.frame ?? 0), []);
 
   /**
    * Nodes she has dragged somewhere, by id.
@@ -103,7 +118,9 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
    * is meant for, and it means nothing has to reach for the element during
    * render to find out how big it is.
    */
+  const stageElement = useRef<HTMLDivElement | null>(null);
   const stageRef = useCallback((element: HTMLDivElement | null) => {
+    stageElement.current = element;
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
@@ -168,6 +185,43 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     zoomRef.current = zoom;
     fitZoomRef.current = fitZoom;
   }, [zoom, fitZoom]);
+
+  /**
+   * Everything a pointer event needs to find the dot under it, kept current
+   * without being closed over — so the stage's handlers are made once and
+   * every dot is found against this frame's picture.
+   */
+  const dots = zoom < dotsBelow;
+  const frameRef = useRef({ nodes, bounds, pan, zoom, stageSize, dots });
+  useEffect(() => {
+    frameRef.current = { nodes, bounds, pan, zoom, stageSize, dots };
+  }, [nodes, bounds, pan, zoom, stageSize, dots]);
+
+  /**
+   * The dot nearest a pointer, if one is within `radius` screen pixels of it —
+   * measured from the dot's edge, so a big hub is as easy to catch as it
+   * looks. Eight hundred distances per pointer move is nothing.
+   */
+  const nearest = useCallback((clientX: number, clientY: number, radius: number): GraphNode | null => {
+    const stage = stageElement.current;
+    if (!stage) return null;
+    const { nodes: drawn, bounds: box, pan: at, zoom: scale, stageSize: size } = frameRef.current;
+    const rect = stage.getBoundingClientRect();
+    const originX = rect.left + size.width / 2 + at.x - scale * (box.minX + box.width / 2);
+    const originY = rect.top + size.height / 2 + at.y - scale * (box.minY + box.height / 2);
+    let best: GraphNode | null = null;
+    let bestGap = radius;
+    for (const node of drawn) {
+      const gap =
+        Math.hypot(originX + scale * node.x - clientX, originY + scale * node.y - clientY) -
+        (scale * dotSize(node.links)) / 2;
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = node;
+      }
+    }
+    return best;
+  }, []);
 
   // Right-to-left, so: centre the box on the stage's middle, scale about it,
   // then apply whatever panning has been done. The scene element itself sits at
@@ -235,26 +289,72 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     [moved, onArrange],
   );
 
-  const startPan = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    if (event.button !== 0) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    panRef.current = { fromX: event.clientX, fromY: event.clientY, atX: 0, atY: 0, moved: false };
-  }, []);
+  /**
+   * A press on the stage. While the pages are dots, a press within
+   * GRAPH_DOT_GRAB_PX of one picks it up; any other press begins a pan.
+   * With the pages as buttons, a press that reached here missed them all.
+   */
+  const startPan = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      if (event.button !== 0) return;
+      if (frameRef.current.dots) {
+        const grabbed = nearest(event.clientX, event.clientY, GRAPH_DOT_GRAB_PX);
+        if (grabbed) {
+          startNodeDrag(event, grabbed);
+          return;
+        }
+      }
+      event.currentTarget.setPointerCapture(event.pointerId);
+      panRef.current = { fromX: event.clientX, fromY: event.clientY, atX: 0, atY: 0, moved: false };
+    },
+    [nearest, startNodeDrag],
+  );
 
+  /**
+   * The pointer moving over the stage: a node being dragged follows it, a pan
+   * in progress follows it, and otherwise — while the pages are dots — the
+   * dot nearest it, within GRAPH_DOT_HOVER_PX, is the one pointed at.
+   */
   const movePan = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (dragRef.current) {
+      moveNodeDrag(event);
+      return;
+    }
     const drag = panRef.current;
-    if (!drag) return;
+    if (!drag) {
+      if (frameRef.current.dots) {
+        const near = nearest(event.clientX, event.clientY, GRAPH_DOT_HOVER_PX);
+        setHoveredId((current) => (current === (near?.id ?? null) ? current : (near?.id ?? null)));
+      }
+      return;
+    }
     const dx = event.clientX - drag.fromX;
     const dy = event.clientY - drag.fromY;
     if (!drag.moved && Math.hypot(dx, dy) < GRAPH_DRAG_THRESHOLD) return;
     if (!drag.moved) setPanning(true);
     drag.moved = true;
-    setPan((prev) => ({ x: prev.x + (dx - drag.atX), y: prev.y + (dy - drag.atY) }));
+    // The step is worked out here and handed over as numbers. It used to be
+    // worked out inside the updater from `drag.atX`, which the next two lines
+    // had already moved on by the time React ran it — so the step was zero
+    // whenever React deferred the updater, which turned out to be most of the
+    // time. "I still can't left click to move the canvas": her report,
+    // 2026-09-13, and she was right all day.
+    const stepX = dx - drag.atX;
+    const stepY = dy - drag.atY;
     drag.atX = dx;
     drag.atY = dy;
-  }, []);
+    setPan((prev) => ({ x: prev.x + stepX, y: prev.y + stepY }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearest]);
 
   const endPan = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    const grabbed = dragRef.current;
+    if (grabbed) {
+      const node = frameRef.current.nodes.find((candidate) => candidate.id === grabbed.id);
+      if (node) endNodeDrag(event, node);
+      else dragRef.current = null;
+      return;
+    }
     const drag = panRef.current;
     panRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -264,7 +364,7 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     // Clicking the empty background puts the preview away, the same gesture
     // that dismisses a popover anywhere else in the app.
     if (drag && !drag.moved) setSelectedId(null);
-  }, []);
+  }, [endNodeDrag]);
 
   /**
    * The factor is bounded so that the *zoom* stays within the limits, not the
@@ -274,14 +374,49 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
    * being drawn at, so the whole world could never be read closer than that.
    * Her report of 2026-09-13.
    */
+  /**
+   * **A notch sets a target; the view glides to it, about the pointer.**
+   * Both are Obsidian's, and both are what she felt as the difference after
+   * the frame rate itself had been made even (2026-09-13). The glide: each
+   * frame moves GRAPH_ZOOM_EASE of the way to the target, so a notch is a
+   * dozen frames of movement rather than one jump. The anchor: the point
+   * under the pointer stays under it, which means the pan moves with the
+   * zoom — a point at `c` from the stage's middle needs
+   * `pan = c - (z1 / z0) · (c - pan0)` to stay put. The glide is what
+   * `zooming` means now; it lands when the target is within GRAPH_ZOOM_LANDED.
+   */
   const handleWheel = useCallback((event: React.WheelEvent<HTMLElement>) => {
     const fit = fitZoomRef.current;
-    setZoomFactor((prev) =>
-      clamp(prev * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY), GRAPH_MIN_ZOOM / fit, GRAPH_MAX_ZOOM / fit),
+    const glide = glideRef.current;
+    const rect = event.currentTarget.getBoundingClientRect();
+    glide.anchor = { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 };
+    // A fresh glide starts from wherever the zoom is now — after a reset, a
+    // refit, anything — rather than from where the last glide ended.
+    if (glide.frame === null) glide.target = frameRef.current.zoom / fit;
+    glide.target = clamp(
+      glide.target * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY),
+      GRAPH_MIN_ZOOM / fit,
+      GRAPH_MAX_ZOOM / fit,
     );
+    if (glide.frame !== null) return;
     setZooming(true);
-    window.clearTimeout(zoomSettleRef.current ?? undefined);
-    zoomSettleRef.current = window.setTimeout(() => setZooming(false), GRAPH_ZOOM_SETTLE_MS);
+    const step = () => {
+      const current = frameRef.current.zoom / fitZoomRef.current;
+      const remaining = glide.target - current;
+      const landed = Math.abs(remaining) <= GRAPH_ZOOM_LANDED * Math.max(current, glide.target);
+      const next = landed ? glide.target : current + remaining * GRAPH_ZOOM_EASE;
+      const ratio = next / current;
+      const { anchor } = glide;
+      setPan((prev) => ({ x: anchor.x - ratio * (anchor.x - prev.x), y: anchor.y - ratio * (anchor.y - prev.y) }));
+      setZoomFactor(next);
+      if (landed) {
+        glide.frame = null;
+        setZooming(false);
+        return;
+      }
+      glide.frame = requestAnimationFrame(step);
+    };
+    glide.frame = requestAnimationFrame(step);
   }, []);
 
   const hover = useCallback((id: string | null) => setHoveredId(id), []);
