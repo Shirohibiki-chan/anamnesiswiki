@@ -121,6 +121,13 @@ describe("parsePreferences and the graph", () => {
   it("falls back on a word it does not know", () => {
     expect(parsePreferences({ graphEdgeLabels: "hover" }).graphEdgeLabels).toBe("selected");
   });
+
+  it("keeps the names threshold within the slider's range", () => {
+    expect(parsePreferences({}).graphNameZoom).toBe(0.5);
+    expect(parsePreferences({ graphNameZoom: 0.8 }).graphNameZoom).toBe(0.8);
+    expect(parsePreferences({ graphNameZoom: 9 }).graphNameZoom).toBe(1.5);
+    expect(parsePreferences({ graphNameZoom: "far" }).graphNameZoom).toBe(0.5);
+  });
 });
 
 describe("parsePreferences and saved colours", () => {

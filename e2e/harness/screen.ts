@@ -1369,12 +1369,14 @@ export async function stopShowingAsDatabase(window: Page, rowName: string): Prom
 export async function openFolderGraph(window: Page): Promise<void> {
   await window.getByRole("button", { name: "See connections" }).click();
   await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
+  await waitForGraphSettled(window);
 }
 
 /** Opens the graph from the button beside the open page’s name. */
 export async function openPageGraph(window: Page): Promise<void> {
   await window.locator(GRAPH_BUTTON).first().click();
   await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
+  await waitForGraphSettled(window);
 }
 
 /**
@@ -1384,6 +1386,19 @@ export async function openPageGraph(window: Page): Promise<void> {
 export async function openWorldGraph(window: Page): Promise<void> {
   await window.locator(LEFT_RAIL).getByRole("button", { name: "Graph", exact: true }).click();
   await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
+  await waitForGraphSettled(window);
+}
+
+/**
+ * Waits for the picture to be the one the controls currently ask for.
+ *
+ * The layout is worked out off the window's thread since the big-world pass,
+ * and the last picture stays up meanwhile — so a read straight after a
+ * control changed would read the old one. Every helper that reads the graph
+ * goes through this first.
+ */
+export async function waitForGraphSettled(window: Page): Promise<void> {
+  await window.locator(`${GRAPH_SCENE}[data-settled="true"]`).first().waitFor({ state: "attached", timeout: WAIT_MS });
 }
 
 /** What the graph calls itself, which says which of the two is up. */
@@ -1393,6 +1408,7 @@ export async function graphHeading(window: Page): Promise<string> {
 
 /** Whether the picture is far enough out that names are being held back. */
 export async function graphNamesAreQuiet(window: Page): Promise<boolean> {
+  await waitForGraphSettled(window);
   const scene = window.locator(GRAPH_SCENE).first();
   return (await scene.getAttribute("class"))?.includes("page-graph-scene-small") ?? false;
 }
@@ -1425,6 +1441,7 @@ export async function closePageGraph(window: Page): Promise<void> {
  * boxes rather than about text.
  */
 export async function graphNodeNames(window: Page): Promise<string[]> {
+  await waitForGraphSettled(window);
   const titles = await window.locator(GRAPH_NODE).evaluateAll((nodes) =>
     nodes.map((node) => node.getAttribute("title") ?? ""),
   );
@@ -1482,6 +1499,7 @@ export async function graphFocusName(window: Page): Promise<string> {
  * exactly what a unit test on the model cannot check.
  */
 export async function graphEdgeCounts(window: Page): Promise<{ written: number; tree: number }> {
+  await waitForGraphSettled(window);
   // The lines are painted on a canvas since the big-world pass, so they are
   // counted from what it says it drew rather than from elements.
   const canvas = window.locator(GRAPH_EDGES_CANVAS).first();
@@ -1497,11 +1515,13 @@ function graphNode(window: Page, name: string): Locator {
 
 /** Clicks a page on the graph, which should open its preview and nothing else. */
 export async function clickGraphNode(window: Page, name: string): Promise<void> {
+  await waitForGraphSettled(window);
   await graphNode(window, name).click();
 }
 
 /** Where a node sits on screen, for asserting a drag moved it. */
 export async function graphNodeCentre(window: Page, name: string): Promise<{ x: number; y: number }> {
+  await waitForGraphSettled(window);
   const box = await graphNode(window, name).boundingBox();
   if (!box) throw new Error(`No node on the graph called ${name}`);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -1521,6 +1541,7 @@ export async function graphNodeCentre(window: Page, name: string): Promise<{ x: 
  * for comparing two complete drawings of the same set.
  */
 export async function graphPlacements(window: Page): Promise<Record<string, { x: number; y: number }>> {
+  await waitForGraphSettled(window);
   return window.locator(GRAPH_NODE).evaluateAll((nodes) => {
     const tidy = (value: string) => value.replace(/\s+/g, " ").trim();
     const boxes = nodes.map((node) => ({
@@ -1573,6 +1594,7 @@ export async function graphPlacements(window: Page): Promise<Record<string, { x:
  * already (2026-09-13) and moved a fraction-based check across its tolerance.
  */
 export async function graphNodeSpot(window: Page, name: string): Promise<{ x: number; y: number }> {
+  await waitForGraphSettled(window);
   const node = graphNode(window, name).first();
   const spot = await node.evaluate((element) => ({
     x: parseFloat((element as HTMLElement).style.left),
@@ -1583,6 +1605,7 @@ export async function graphNodeSpot(window: Page, name: string): Promise<{ x: nu
 }
 
 export async function graphNodePlacement(window: Page, name: string): Promise<{ x: number; y: number }> {
+  await waitForGraphSettled(window);
   // **The name is matched here, not in the page.** Doing it in the browser meant
   // two copies of what counts as the same name, and a page whose title tidied
   // differently on the two sides was simply reported as absent. One read, one
@@ -1620,6 +1643,7 @@ export async function graphNodePlacement(window: Page, name: string): Promise<{ 
 
 /** Drags a node by a number of screen pixels, in steps so the move is seen. */
 export async function dragGraphNode(window: Page, name: string, byX: number, byY: number): Promise<void> {
+  await waitForGraphSettled(window);
   const from = await graphNodeCentre(window, name);
   await window.mouse.move(from.x, from.y);
   await window.mouse.down();
@@ -1637,6 +1661,7 @@ export async function dragGraphNode(window: Page, name: string, byX: number, byY
  * right survives any amount of scaling.
  */
 export async function graphNodesLeftToRight(window: Page): Promise<string[]> {
+  await waitForGraphSettled(window);
   const nodes = window.locator(GRAPH_NODE);
   const placed: { name: string; x: number }[] = [];
   for (const node of await nodes.all()) {
@@ -1667,6 +1692,7 @@ export async function openGraphPreviewPage(window: Page): Promise<void> {
 
 /** How many pages the graph says it is drawing, as the bar words it. */
 export async function graphCount(window: Page): Promise<string> {
+  await waitForGraphSettled(window);
   return normalize(await window.locator(GRAPH_COUNT).first().innerText());
 }
 
@@ -1687,6 +1713,7 @@ export async function setGraphLabels(window: Page, mode: "pointed" | "selected" 
 
 /** The names written along lines right now, which is what the mode above decides. */
 export async function graphEdgeLabels(window: Page): Promise<string[]> {
+  await waitForGraphSettled(window);
   // textContent rather than innerText: these are SVG <text> nodes, which have
   // no innerText at all, so allInnerTexts hands back a list of undefined.
   return (await window.locator(GRAPH_EDGE_LABEL).allTextContents()).map((text) => normalize(text));

@@ -168,6 +168,14 @@
   padding: var(--space-md);
 }
 
+.graph-menu-head {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
 .graph-menu-note {
   margin: 0;
   padding: var(--space-2xs) 0;
@@ -199,6 +207,41 @@
   display: flex;
   align-items: center;
   gap: var(--space-xs);
+}
+
+/* The database's check row, without its class — same reason as .graph-select. */
+.graph-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xs) 0;
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.graph-slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  color: var(--color-text-primary);
+  font-size: var(--fs-sm);
+}
+
+.graph-slider-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.graph-slider-value {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-range {
+  width: 100%;
+  accent-color: var(--color-accent-light);
 }
 
 .graph-filter-row .graph-select {
@@ -271,17 +314,15 @@
   transform-origin: 0 0;
 }
 
-/* **Only mid-gesture: while the background is being dragged or the wheel is
-   turning.** `will-change: transform` makes the scene its own compositor
-   layer, so a pan moves a picture that has already been painted and a wheel
-   tick scales it, instead of repainting 835 buttons and thousands of lines on
-   every pointer move. Left on permanently it was a disaster: Chrome keeps
-   such a layer's painting at the size it was first drawn and scales that
-   bitmap for every zoom after, which is the "extremely pixellated" world she
-   photographed on 2026-09-13 — every line five pixels wide and every disc a
-   smear. Set on the press and dropped on the release, and set on a wheel tick
-   and dropped GRAPH_ZOOM_SETTLE_MS after the last, the picture is crisp at
-   rest and briefly soft only while it is actually moving. */
+/* **Only while the background is being dragged.** `will-change: transform`
+   makes the scene its own compositor layer, so a pan moves a picture that
+   has already been painted instead of repainting 835 buttons on every
+   pointer move. Left on permanently it was a disaster: Chrome keeps such a
+   layer's painting at the size it was first drawn and scales that bitmap for
+   every zoom after, which is the "extremely pixellated" world she
+   photographed on 2026-09-13. And it is not on while the wheel turns either
+   — that scaled the painting for a moment and read as blurry; a zoom
+   repaints, crisp, every tick. Set on the press and dropped on the release. */
 .page-graph-scene-moving {
   will-change: transform;
 }
@@ -340,16 +381,19 @@
   stroke-opacity: calc(0.8 * var(--graph-edge-opacity, 1));
 }
 
-/* **Pointing at a page lights its own lines, and nothing else moves.** The
-   lit lines are drawn again on top in a second SVG (GraphLitEdges), in the
-   secondary text colour rather than the primary — on a dark theme the primary
-   drew as neon over a graph that had gone black, which is her screenshot of
-   2026-09-13. Hovering changes nothing about the other lines or the other
-   pages on purpose: on a dense graph the pointer crosses a page every few
-   pixels, and a picture that dims and undims on every crossing flickers, and
-   repaints all 835 pages each time it does. */
+/* **Pointing at a page lights its lines in the accent and the rest of the
+   world steps back** — Obsidian's picture, her call 2026-09-13 after seeing
+   the two side by side. An earlier cut of this drew the lit lines in the
+   primary text colour over a picture dimmed to near-black, which on her dark
+   theme was neon on nothing and flickered as the pointer crossed packed
+   discs; the accent is a colour rather than a glare, the dim is gentler, the
+   discs are dots when the graph is that dense, and a node's fade is eased
+   over a few frames so a crossing is a ripple rather than a strobe. The lit
+   lines are drawn again on top in a second SVG (GraphLitEdges); the rest are
+   the canvas, which reads the dimmed style off its probe. See
+   GRAPH_DIM_OPACITY. */
 .page-graph-edge-lit {
-  stroke: var(--color-text-secondary);
+  stroke: var(--color-accent-light);
   stroke-opacity: 1;
 }
 
@@ -357,16 +401,12 @@
   stroke-width: 2;
 }
 
-/* **Selecting a page is when the rest steps back**, and only halfway. A click
-   is deliberate and rare where a hover is neither, and the card at the side
-   already says the graph is now about this one page; the rest fading behind it
-   is that said in the picture. See GRAPH_DIM_OPACITY. */
-.page-graph-scene-selected .page-graph-edge:not(.page-graph-edge-lit) {
-  stroke-opacity: calc(var(--graph-dim-opacity, 0.5) * var(--graph-edge-opacity, 1));
+.page-graph-scene-inplay .page-graph-edge:not(.page-graph-edge-lit) {
+  stroke-opacity: calc(var(--graph-dim-opacity, 0.3) * var(--graph-edge-opacity, 1));
 }
 
-.page-graph-scene-selected .page-graph-node:not(.page-graph-node-near) {
-  opacity: var(--graph-dim-opacity, 0.5);
+.page-graph-scene-inplay .page-graph-node:not(.page-graph-node-near) {
+  opacity: var(--graph-dim-opacity, 0.3);
 }
 
 /* What a line is, where it knows — the field's own name, from a reference
@@ -406,6 +446,11 @@
   transform: translate(-50%, -50%);
   cursor: pointer;
   touch-action: none;
+  /* Eased rather than switched, so the world stepping back around a pointed-at
+     page is a ripple rather than a strobe as the pointer crosses packed dots.
+     About Obsidian's length; at a third of it the crossing flashed — her
+     report 2026-09-13. See GRAPH_FADE_MS, which is what the number is. */
+  transition: opacity var(--graph-fade, 350ms) ease-out;
   /* Falls back to the ordinary border colour for a page with no colour of its
      own and none inherited — PageGraph sets this per node when there is one. */
   --graph-node-color: var(--color-border-strong);
@@ -484,6 +529,20 @@
 
 .page-graph-node-selected .page-graph-node-name {
   font-weight: 600;
+}
+
+.page-graph-working {
+  position: absolute;
+  left: 50%;
+  top: var(--space-xl);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  background: var(--color-panel);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  pointer-events: none;
 }
 
 .page-graph-empty {
@@ -610,6 +669,38 @@
    at a readable size, and hovering still raises the node's own tooltip. */
 .page-graph-scene-small .page-graph-node-name {
   display: none;
+}
+
+/* **Far out, a page is a dot.** A ring with an icon in it is the right thing
+   at the size an icon can be read; at whole-world size it is a ring drawn
+   around nothing, and eight hundred of them are noise. A filled dot in the
+   page's colour is what the eye can take in by the hundred — Obsidian's
+   answer, and hers 2026-09-13. The button stays its full size underneath so
+   the dot can still be pointed at and dragged; only the drawing shrinks. */
+.page-graph-scene-small .page-graph-node-disc {
+  /* Per node, from how many lines it has — a hub is what the eye should land
+     on. Set on the button by GraphNodeButton; see GRAPH_DOT_SIZE. */
+  width: var(--graph-dot-size, 20px);
+  height: var(--graph-dot-size, 20px);
+  border: none;
+  background: var(--graph-node-color);
+}
+
+/* The hit box stays a full button while the dot is small, or the dot is four
+   pixels to aim at and hovering reads as imprecise — see GRAPH_DOT_HIT, which
+   is what the number is. */
+.page-graph-scene-small .page-graph-node {
+  width: var(--graph-dot-hit, 64px);
+  height: var(--graph-dot-hit, 64px);
+}
+
+.page-graph-scene-small .page-graph-node-disc > * {
+  display: none;
+}
+
+.page-graph-scene-small .page-graph-node-focus .page-graph-node-disc {
+  width: 32px;
+  height: 32px;
 }
 
 /* Lifted above its neighbours so a name that has just reappeared is not drawn

@@ -36,16 +36,23 @@ import { X } from "lucide-react";
 import {
   GRAPH_DEFAULT_DEPTH,
   GRAPH_DIM_OPACITY,
-  GRAPH_NAME_ZOOM,
+  GRAPH_DOT_HIT,
+  GRAPH_FADE_MS,
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
 } from "../../constants/graph";
 import type { DatabaseFilter } from "../../constants/schema";
-import { edgeOpacity, graphPinKey, neighbourhoodOf } from "../../services/graph-service";
+import {
+  edgeOpacity,
+  graphPinKey,
+  neighbourhoodOf,
+  GRAPH_EDGE_KINDS,
+  type GraphEdgeKind,
+} from "../../services/graph-service";
 import { usePageGraph, useGraphPins, useGraphPreview, useGraphScope } from "../../hooks/use-graph";
 import { useGraphOverlayActions, useOpenGraph } from "../../hooks/use-graph-overlay";
 import { useGraphView } from "../../hooks/use-graph-view";
-import { useGraphEdgeLabels, usePreferenceActions } from "../../hooks/use-preferences";
+import { useGraphEdgeLabels, useGraphNameZoom, usePreferenceActions } from "../../hooks/use-preferences";
 import { useProject, useProjectActions, useProjectName } from "../../hooks/use-project";
 import { NodeIcon } from "../blocks/IconPicker";
 import { GraphEdgeLabels, GraphEdgeProbe, GraphEdgesCanvas, GraphLitEdges } from "./GraphEdges";
@@ -87,6 +94,9 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
    */
   const [reach, setReach] = useState<GraphReach>(focusId ? GRAPH_DEFAULT_DEPTH : GRAPH_REACH_EVERYTHING);
   const [filters, setFilters] = useState<DatabaseFilter[]>([]);
+  // With the filters, and for the same reason: a question being asked now.
+  const [hideLone, setHideLone] = useState(false);
+  const [kinds, setKinds] = useState<ReadonlySet<GraphEdgeKind>>(() => new Set(GRAPH_EDGE_KINDS));
   const [generation, setGeneration] = useState(0);
 
   const { universeId, universeName } = useGraphScope(focusId);
@@ -99,10 +109,11 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const pinKey = graphPinKey(arrangedAs, universeId);
   const pins = useGraphPins(arrangedAs, universeId);
   const labels = useGraphEdgeLabels();
-  const { setGraphEdgeLabels } = usePreferenceActions();
+  const nameZoom = useGraphNameZoom();
+  const { setGraphEdgeLabels, setGraphNameZoom } = usePreferenceActions();
   const { selectNode, setGraphPins } = useProjectActions();
 
-  const graph = usePageGraph({ focusId, reach, filters, pins, generation });
+  const graph = usePageGraph({ focusId, reach, filters, hideLone, kinds, pins, generation });
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => setGraphPins(pinKey, { ...pins, ...moved }),
@@ -126,20 +137,19 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // follows: the thing under the pointer if there is one, else the selection.
   const inPlay = hoveredId ?? selectedId;
   /**
-   * The lines touching the page in play are drawn again on top; the pages
-   * around the *selected* one stay at full strength while the rest step back.
-   * The neighbourhood is the selection's rather than the hover's on purpose:
-   * dimming on hover flickers on a dense graph and repaints every page each
-   * time the pointer crosses one. Recomputed only when the selection changes.
+   * The lines touching the page in play are drawn again on top, and the pages
+   * around it stay at full strength while the rest step back — Obsidian's
+   * picture, her call 2026-09-13. Recomputed only when the page in play
+   * changes, not on every pan.
    */
-  const near = useMemo(() => neighbourhoodOf(graph.model.edges, selectedId), [graph.model.edges, selectedId]);
+  const near = useMemo(() => neighbourhoodOf(graph.model.edges, inPlay), [graph.model.edges, inPlay]);
   const lit = inPlay === null ? [] : edges.filter((edge) => edge.sourceId === inPlay || edge.targetId === inPlay);
   const arranged = hasMoved || Object.keys(pins).length > 0;
-  const empty = focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0;
+  const empty = !graph.working && (focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0);
   // Too far out for a name to be readable, so none of them are drawn — the
   // preview card and the node's tooltip are where a name comes from at this
   // distance. See GRAPH_NAME_ZOOM.
-  const namesQuiet = zoom < GRAPH_NAME_ZOOM;
+  const namesQuiet = zoom < nameZoom;
 
   /**
    * What this graph is of, in the words its subject is known by.
@@ -207,6 +217,12 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           filters={filters}
           onFilters={setFilters}
           choicesFor={graph.choicesFor}
+          hideLone={hideLone}
+          onHideLone={setHideLone}
+          kinds={kinds}
+          onKinds={setKinds}
+          nameZoom={nameZoom}
+          onNameZoom={setGraphNameZoom}
           arranged={arranged}
           onPutBack={putBack}
         />
@@ -242,16 +258,22 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               view={view.view}
               moving={moving}
               sceneRef={sceneRef}
-              dimmed={selectedId !== null}
+              dimmed={inPlay !== null}
             />
           )}
 
+          {/* Said rather than left as a frozen window. The last picture stays
+              up while the next is worked out; on a first open there is none,
+              and this is what stands in for it. */}
+          {graph.working && <p className="page-graph-working">Working out the picture…</p>}
+
           <div
             ref={sceneRef}
+            data-settled={graph.working ? "false" : "true"}
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
-              selectedId !== null ? "page-graph-scene-selected" : "",
+              inPlay !== null ? "page-graph-scene-inplay" : "",
               moving ? "page-graph-scene-moving" : "",
             ]
               .filter(Boolean)
@@ -262,6 +284,8 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
                 // Fainter the more of them there are — see edgeOpacity.
                 "--graph-edge-opacity": edgeOpacity(edges.length),
                 "--graph-dim-opacity": GRAPH_DIM_OPACITY,
+                "--graph-dot-hit": `${GRAPH_DOT_HIT}px`,
+                "--graph-fade": `${GRAPH_FADE_MS}ms`,
               } as React.CSSProperties
             }
           >
@@ -295,7 +319,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
 
           {empty && (
             <p className="page-graph-empty">
-              {filters.length > 0
+              {filters.length > 0 || hideLone || kinds.size < GRAPH_EDGE_KINDS.length
                 ? "Nothing here matches those filters. Loosen one, or reach further out."
                 : focus
                   ? "Nothing points at this page and it points at nothing yet. Mention another page while writing, fill in a reference field, or put a page inside this one."

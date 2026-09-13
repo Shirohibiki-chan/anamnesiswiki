@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-13 — The graph learns from Obsidian
+
+### Fixes
+
+- **Changing a filter or the reach on a big graph no longer freezes the app.** The layout is worked out on a separate thread now; the last picture stays up with a "Working out the picture…" note until the new one is ready, and the window keeps answering meanwhile. On 831 pages that's about a second of waiting instead of a second of frozen window — the same wait the graph had on opening, which is also no longer a freeze.
+
+### Changes
+
+- **Far out, a page is a dot.** At whole-world zoom a page is a filled dot in its colour rather than a ring with an unreadable icon in it; the ring, icon and name come back as you zoom in. Hundreds of dots are something the eye can take in, and drawing them is cheap enough that zooming repaints crisp on every tick — no more soft picture while the wheel turns.
+- **Pages nothing points at sit in a ring around the rest.** A page with no written connections (a mention, a reference field, a manual link) is placed on a band outside the connected pages instead of being mixed in with them — where it's filed doesn't count, since every page is filed somewhere. It's the picture Obsidian's physics happens to produce, done on purpose so it's the same every time.
+- **Pointing at a page lights its connections in the accent colour and the rest of the world steps back.** The page, the pages it touches and the lines between them stay at full strength; everything else fades. Clicking keeps it that way while the page is selected.
+- **Hubs are bigger dots.** Far out, a page's dot grows with how many lines it has, so the pages everything points at are the ones your eye lands on.
+- **The filter menu can switch kinds of line on and off** — mentions in the writing, reference fields, manual links, storylines, boards, and filed-under. On the whole-world graph a filter, a hidden kind or the lone-pages tick hides in place: nothing else moves, and it's instant. On a page's own graph they decide what's walked to, as before.
+- **Pointing at a page far out is precise again, and the fade is calmer.** The dot had shrunk its clickable area down to four pixels; it has a proper one back. And the rest of the world fades over about a third of a second rather than flashing as the pointer crosses a row of dots.
+- **A *Display* menu on the graph's bar, with a slider for when names appear.** Obsidian's text-fade threshold, in our terms: lower shows names from further out, higher keeps the picture to dots until you are close. It's a preference, like the Lines setting, so it follows you between worlds.
+- **The filter menu can hide pages nothing points at.** A tick box beside the filters; the bar counts it as one. Where a page is filed doesn't count as pointing at it.
+- **The test-world generator can make a world with hubs** (`--shape hubs`): a few pages most things point at, one home hub per page so the clusters are real, and a quarter of pages nothing points at. The default world still links everything to random other pages, which is the one shape no graph can make readable — judge the graph on the hub one.
+
 ## 2026-09-13 — a shape on a board can point at a page
 
 ### Additions
@@ -260,17 +278,3 @@
 - **A new install has the example world in its library from the start**, instead of only getting one if you asked for it on the start screen. It is the same world it was — an ordinary project on your disk — it just does not wait to be noticed. If the first thing you do is bring in a world of your own, Saltmere is still sitting there for the evening you wonder what else this thing does.
 - **Deleting it means deleting it.** It is not put back on the next launch, ever. The app only ever gives you one, once.
 - **Asking for it again still works**, from *The example world* on the start screen — that makes a fresh copy, so a Saltmere you have written all over is never overwritten by a new one.
-
-## 2026-09-09 — a short tour, the first time you open a world
-
-### Additions
-
-- **The app shows you round on its first run.** Four steps — the rail, your world, the page, and the panel on the right — each one lit up while a card beside it says what it is for. It runs once a world is open rather than on the start screen, because none of it exists until then.
-- **A way out on every step.** Skip, or press Escape, or walk to the end. However you leave, it does not come back.
-- **Left and right arrows walk through it**, and Enter is Next.
-- **It skips a step it cannot point at.** Close the right-hand panel and the tour is three steps rather than four — it never draws a highlight round nothing, which is the thing that would make the app look broken rather than the tutorial look old.
-
-### Notes
-
-- **Nothing about whether you have seen it goes anywhere.** It is one setting on your own machine, like every other one.
-- **This finishes the pair** (Phase 26): the example world shows what a world is made of, and this shows where things are. What is left is a way back to either of them from Settings.

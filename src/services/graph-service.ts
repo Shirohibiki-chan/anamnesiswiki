@@ -9,6 +9,9 @@
 // number, and what lets the ordering be asserted in a test instead of eyeballed
 // on a canvas.
 import {
+  GRAPH_DOT_GROWTH,
+  GRAPH_DOT_MAX,
+  GRAPH_DOT_SIZE,
   GRAPH_EDGE_FADE_FROM,
   GRAPH_EDGE_MIN_OPACITY,
   GRAPH_RING_RADIUS,
@@ -29,6 +32,9 @@ import { getEffectiveColor, isDescendantOf } from "./tree-service";
  * see `docs/shipped.md` Phase 24.
  */
 export type GraphEdgeKind = MentionKind | "tree";
+
+/** Every kind a line can be, in the order the filter menu lists them. */
+export const GRAPH_EDGE_KINDS: readonly GraphEdgeKind[] = ["prose", "property", "manual", "storyline", "board", "tree"];
 
 /**
  * Which kind survives when one pair of pages is connected several ways.
@@ -65,6 +71,8 @@ export type GraphNode = {
   ownsColor: boolean;
   /** Hops from the page the graph is centred on. 0 is that page. */
   depth: number;
+  /** How many lines touch this page on this graph, after one-per-pair. */
+  links: number;
   x: number;
   y: number;
 };
@@ -203,6 +211,7 @@ function assemble(
   nodes: Record<string, Node>,
   index: LinkIndex,
   place: (id: string, depth: number) => { x: number; y: number },
+  kinds: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS),
 ): GraphModel {
   const best = new Map<string, GraphEdge>();
   for (const id of reached.keys()) {
@@ -210,12 +219,19 @@ function assemble(
     if (!node) continue;
     for (const edge of edgesTouching(node, nodes, index)) {
       if (edge.sourceId === edge.targetId) continue;
+      if (!kinds.has(edge.kind)) continue;
       if (!reached.has(edge.sourceId) || !reached.has(edge.targetId)) continue;
       const key = pairKey(edge.sourceId, edge.targetId);
       const standing = best.get(key);
       if (standing && KIND_RANK[standing.kind] <= KIND_RANK[edge.kind]) continue;
       best.set(key, { id: key, ...edge });
     }
+  }
+
+  const links = new Map<string, number>();
+  for (const edge of best.values()) {
+    links.set(edge.sourceId, (links.get(edge.sourceId) ?? 0) + 1);
+    links.set(edge.targetId, (links.get(edge.targetId) ?? 0) + 1);
   }
 
   const graphNodes: GraphNode[] = [];
@@ -231,6 +247,7 @@ function assemble(
       color,
       ownsColor: isOwner,
       depth: hop,
+      links: links.get(id) ?? 0,
       ...place(id, hop),
     });
   }
@@ -265,6 +282,7 @@ export function graphAround(
   index: LinkIndex,
   depth: number,
   keep: (node: Node) => boolean = () => true,
+  kinds: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS),
 ): GraphModel {
   if (!nodes[focusId]) return { nodes: [], edges: [] };
 
@@ -277,6 +295,9 @@ export function graphAround(
       const node = nodes[id];
       if (!node) continue;
       for (const edge of edgesTouching(node, nodes, index)) {
+        // A kind she has switched off is not walked along either, for the
+        // reason a filtered page is not walked through: nothing floats.
+        if (!kinds.has(edge.kind)) continue;
         const other = edge.sourceId === id ? edge.targetId : edge.sourceId;
         if (other === id || reached.has(other)) continue;
         const candidate = nodes[other];
@@ -288,7 +309,7 @@ export function graphAround(
     frontier = next;
   }
 
-  return assemble(reached, nodes, index, seedPosition);
+  return assemble(reached, nodes, index, seedPosition, kinds);
 }
 
 /**
@@ -317,6 +338,7 @@ export function graphOfPages(
   nodes: Record<string, Node>,
   index: LinkIndex,
   keep: (node: Node) => boolean = () => true,
+  kinds: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS),
 ): GraphModel {
   const reached = new Map<string, number>();
   for (const id of pageIds) {
@@ -330,7 +352,7 @@ export function graphOfPages(
   if (focusId && nodes[focusId] && !reached.has(focusId)) reached.set(focusId, 0);
 
   const count = reached.size;
-  return assemble(reached, nodes, index, (id) => seedScatter(id, count));
+  return assemble(reached, nodes, index, (id) => seedScatter(id, count), kinds);
 }
 
 /**
@@ -439,4 +461,69 @@ export function neighbourhoodOf(edges: GraphEdge[], id: string | null): Set<stri
     else if (edge.targetId === id) near.add(edge.sourceId);
   }
   return near;
+}
+
+/**
+ * The settled picture of a whole world, with some of it left off.
+ *
+ * **A filter on the whole-world graph hides in place; it does not lay the
+ * world out again.** Her call 2026-09-13 (offered both): the map she has
+ * built a memory of must not reshuffle because she asked to see only the
+ * characters, and hiding is instant where a layout is a second. So the
+ * world is settled once, unfiltered, and this takes pages and lines off the
+ * settled picture — pages that fail a condition, lines of a kind she has
+ * switched off, and then, if asked, pages left with no written line. The
+ * focus is never taken off; the graph is of it.
+ */
+export function restrict(
+  model: GraphModel,
+  focusId: string | null,
+  keep: (id: string) => boolean,
+  kinds: ReadonlySet<GraphEdgeKind>,
+  hideLone: boolean,
+): GraphModel {
+  const kept = new Set(model.nodes.filter((node) => node.id === focusId || keep(node.id)).map((node) => node.id));
+  const edges = model.edges.filter(
+    (edge) => kinds.has(edge.kind) && kept.has(edge.sourceId) && kept.has(edge.targetId),
+  );
+  const links = new Map<string, number>();
+  for (const edge of edges) {
+    links.set(edge.sourceId, (links.get(edge.sourceId) ?? 0) + 1);
+    links.set(edge.targetId, (links.get(edge.targetId) ?? 0) + 1);
+  }
+  const shown = {
+    nodes: model.nodes.filter((node) => kept.has(node.id)).map((node) => ({ ...node, links: links.get(node.id) ?? 0 })),
+    edges,
+  };
+  return hideLone ? withoutLone(shown, focusId) : shown;
+}
+
+/**
+ * How big a page's dot is drawn, from how many lines it has. See GRAPH_DOT_SIZE.
+ */
+export function dotSize(links: number): number {
+  return Math.min(GRAPH_DOT_MAX, Math.round(GRAPH_DOT_SIZE + GRAPH_DOT_GROWTH * Math.sqrt(links)));
+}
+
+/**
+ * The model with every page that has no written line left off, and the tree
+ * lines that ran to those pages with them.
+ *
+ * Obsidian's Orphans switch, hers 2026-09-13. The tree does not count as a
+ * line here, for the reason the ring in graph-layout gives: every page is
+ * filed somewhere, so if it counted nothing would ever be lone. The focus
+ * stays whatever its lines — the graph is of it.
+ */
+export function withoutLone(model: GraphModel, focusId: string | null): GraphModel {
+  const joined = new Set<string>();
+  for (const edge of model.edges) {
+    if (edge.kind === "tree") continue;
+    joined.add(edge.sourceId);
+    joined.add(edge.targetId);
+  }
+  const kept = new Set(model.nodes.filter((node) => joined.has(node.id) || node.id === focusId).map((node) => node.id));
+  return {
+    nodes: model.nodes.filter((node) => kept.has(node.id)),
+    edges: model.edges.filter((edge) => kept.has(edge.sourceId) && kept.has(edge.targetId)),
+  };
 }

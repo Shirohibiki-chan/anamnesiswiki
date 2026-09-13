@@ -1,12 +1,23 @@
 // The only import path components have into graph-service.ts and
 // graph-layout.ts. See CLAUDE.md's layer order — components never import
 // services directly.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GRAPH_REACH_EVERYTHING, GRAPH_WORLD_PIN_PREFIX, type GraphReach } from "../constants/graph";
 import type { DatabaseField, DatabaseFilter, Node } from "../constants/schema";
 import { fieldChoices, matchesFilter } from "../services/database-service";
-import { settleGraph, type GraphPins } from "../services/graph-layout";
-import { graphAround, graphOfPages, graphPinKey, pagesInUniverse, type GraphModel } from "../services/graph-service";
+import type { GraphPins } from "../services/graph-layout";
+import { settleGraphInWorker } from "../services/graph-layout-worker";
+import {
+  graphAround,
+  graphOfPages,
+  graphPinKey,
+  pagesInUniverse,
+  restrict,
+  withoutLone,
+  GRAPH_EDGE_KINDS,
+  type GraphEdgeKind,
+  type GraphModel,
+} from "../services/graph-service";
 import { linkIndex } from "../services/link-index";
 import { buildNodePreview, type NodePreview } from "../services/preview-service";
 import { selectedUniverse, universeOf } from "../services/tree-service";
@@ -22,6 +33,7 @@ export { fieldId, fieldLabel, takesValue, OPERATOR_LABELS } from "../services/da
 export type { GraphPins } from "../services/graph-layout";
 
 const EMPTY: GraphModel = { nodes: [], edges: [] };
+const ALL_KINDS: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS);
 
 export type PageGraphOptions = {
   /** The page the graph is centred on, or null for a graph of the whole thing. */
@@ -30,6 +42,10 @@ export type PageGraphOptions = {
   reach: GraphReach;
   /** Conditions a page has to meet to be walked through and drawn. */
   filters: DatabaseFilter[];
+  /** Whether pages with no written line to anything are left off. */
+  hideLone?: boolean;
+  /** Which kinds of line are drawn; every kind when absent. */
+  kinds?: ReadonlySet<GraphEdgeKind>;
   /** Where she has already dragged nodes on this graph. */
   pins: GraphPins;
   /**
@@ -45,6 +61,8 @@ export type PageGraphOptions = {
 export type PageGraph = {
   /** What to draw: filtered, and settled with her arrangement as fixed points. */
   model: GraphModel;
+  /** Whether the picture on screen is the last one while the next is worked out. */
+  working: boolean;
   /** Every page in range with no filters applied. */
   reached: Node[];
   /** The values a field actually takes across `reached`, for the value picker. */
@@ -87,7 +105,15 @@ export function useGraphScope(focusId: string | null): { universeId: string | nu
  * the current filter could never be used to widen it. `linkIndex` is cached
  * against the store's record, so the expensive half is done once.
  */
-export function usePageGraph({ focusId, reach, filters, pins, generation }: PageGraphOptions): PageGraph {
+export function usePageGraph({
+  focusId,
+  reach,
+  filters,
+  hideLone = false,
+  kinds = ALL_KINDS,
+  pins,
+  generation,
+}: PageGraphOptions): PageGraph {
   const { nodes } = useProject();
   const { getLabel } = useTemplates();
   const { universeId } = useGraphScope(focusId);
@@ -97,7 +123,17 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
   // The shape of the question, as one value a memo can be keyed on. Pins are
   // deliberately absent: they change on every drop, and re-running the
   // simulation then would jump every other node the instant one was let go of.
-  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${JSON.stringify(filters)}`;
+  const asked = `${hideLone ? "lone" : ""}|${[...kinds].sort().join(",")}|${JSON.stringify(filters)}`;
+  const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${asked}`;
+  /**
+   * What the *layout* is keyed on, which on a whole-world graph leaves the
+   * conditions out. Her call 2026-09-13: a filter on the whole world hides
+   * in place rather than laying the world out again — see `restrict` — so
+   * the world is settled once for its pages and the conditions are applied
+   * to the settled picture. A page's own graph is a walk, and there the
+   * conditions decide what is walked to, so they stay in its key.
+   */
+  const layoutKey = everything ? `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}` : structure;
 
   /**
    * The arrangement as it stood when this graph was last worked out.
@@ -155,23 +191,75 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
    */
   const seed = everything ? `${GRAPH_WORLD_PIN_PREFIX}${universeId ?? "all"}` : (focusId ?? "");
 
-  const model = useMemo(() => {
-    const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
+  /**
+   * The pages and lines, before the layout — cheap, and worked out here.
+   *
+   * The layout itself is not: 300 ticks of d3-force over 831 pages is about
+   * 800ms, and done in this memo it froze the window every time the reach or
+   * a filter changed (her report 2026-09-13). It is sent to a worker below,
+   * and the picture on screen is the last one that came back until the next
+   * does. `structure` stands in for focusId, reach, generation, the filters
+   * and the seed, so an identical filter list rebuilt by a re-render does not
+   * build again.
+   */
+  const built = useMemo(() => {
     if (scopedIds) {
       // No centre: a universe has no one page that belongs in the middle, and
       // pinning one of seventy there would bend the shape around that choice.
-      return settleGraph(graphOfPages(scopedIds, focusId, nodes, index, keep), frozen.pins, { seed });
+      // Unfiltered — the conditions are applied to the settled picture below.
+      return { model: graphOfPages(scopedIds, focusId, nodes, index), centreId: null as string | null };
     }
-    if (!focusId) return EMPTY;
-    return settleGraph(graphAround(focusId, nodes, index, reach as number, keep), frozen.pins, {
-      centreId: focusId,
-      seed,
-    });
-    // `structure` stands in for focusId, reach, generation, the filters and the
-    // seed, so an identical filter list rebuilt by a re-render does not
-    // re-settle.
+    if (!focusId) return { model: EMPTY, centreId: null as string | null };
+    const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
+    // Off after the walk rather than during it: a lone page is one the
+    // finished picture has no written line to, which the walk cannot know
+    // about a page until it has been through everything.
+    const walked = graphAround(focusId, nodes, index, reach as number, keep, kinds);
+    return { model: hideLone ? withoutLone(walked, focusId) : walked, centreId: focusId };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, scopedIds, nodes, index, frozen, getLabel]);
+  }, [layoutKey, scopedIds, nodes, index, getLabel]);
+
+  /**
+   * The settled picture, and which request it answers.
+   *
+   * A request is numbered when it is sent, and a reply is kept only if it is
+   * the latest — the reach changed twice before the first picture arrived,
+   * and drawing the first would be drawing a question she has stopped
+   * asking. `working` is true from the send until the matching reply, which
+   * is what the overlay shows a note for.
+   */
+  const [settled, setSettled] = useState<{ request: number; model: GraphModel }>({ request: 0, model: EMPTY });
+  const requestRef = useRef(0);
+  // Starts one ahead of what has been answered, so the very first render is
+  // already "working" rather than a settled picture of nothing.
+  const [latest, setLatest] = useState(1);
+  useEffect(() => {
+    const request = ++requestRef.current;
+    setLatest(request);
+    if (built.model.nodes.length === 0) {
+      setSettled({ request, model: EMPTY });
+      return;
+    }
+    let live = true;
+    void settleGraphInWorker(built.model, frozen.pins, { centreId: built.centreId, seed }).then((model) => {
+      if (live) setSettled({ request, model });
+    });
+    return () => {
+      live = false;
+    };
+  }, [built, frozen, seed]);
+
+  const working = settled.request !== latest;
+  const model = useMemo(() => {
+    if (!scopedIds) return settled.model;
+    const keep = (id: string) => {
+      const node = nodes[id];
+      return Boolean(node) && filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
+    };
+    return restrict(settled.model, focusId, keep, kinds, hideLone);
+    // `asked` stands in for the filters, the kinds and hideLone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settled, scopedIds, nodes, focusId, asked, getLabel]);
 
   // Columns are empty on purpose: a graph filters on what a page *is* rather
   // than on a table's columns, and `template` and `tag` are answered from the
@@ -181,7 +269,7 @@ export function usePageGraph({ focusId, reach, filters, pins, generation }: Page
     [reached, nodes, getLabel],
   );
 
-  return { model, reached, choicesFor, key: structure };
+  return { model, reached, choicesFor, key: structure, working };
 }
 
 /**

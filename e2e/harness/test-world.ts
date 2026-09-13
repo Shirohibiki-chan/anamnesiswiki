@@ -52,6 +52,12 @@ export type TestWorldOptions = {
   pages?: number;
   /** Same seed, same world. Left alone unless a scenario wants a different one. */
   seed?: number;
+  /**
+   * How the pages link: `random` (the default every scenario was written
+   * against) or `hubs` — a few pages most things point at and a quarter that
+   * nothing points at, which is what a real world's graph looks like.
+   */
+  shape?: "random" | "hubs";
 };
 
 /**
@@ -74,6 +80,7 @@ export async function makeTestWorld(options: TestWorldOptions = {}): Promise<Tes
     String(options.pages ?? 40),
   ];
   if (options.seed !== undefined) args.push("--seed", String(options.seed));
+  if (options.shape !== undefined) args.push("--shape", options.shape);
 
   const output = await run(process.execPath, args);
   const pages = Number(/Wrote (\d+) pages/.exec(output)?.[1] ?? 0);

@@ -449,6 +449,30 @@ Board spike, closed 2026-09-13. What binds the code:
   Dashed tree lines use square caps on the canvas: round caps are drawn on
   every dash and were 30ms of the frame on their own.
 
+- **The layout runs in a worker, and every read in the app suite waits for it.**
+  `settleGraphInWorker` is `settleGraph` on another thread — same inputs, same
+  answer, so the same-world-same-picture promise holds — bundled inline
+  because the built app is `file://` and Chromium will not start a worker
+  from a separate script there. `usePageGraph` keeps the last settled picture
+  up while the next is worked out and exposes `working`; the scene carries
+  `data-settled`, and **every harness helper that reads the graph goes through
+  `waitForGraphSettled` first** — a read straight after a control changed
+  reads the old picture otherwise, which is exactly how four scenarios failed
+  the first time. A scenario reading `.page-graph-node` on its own must wait
+  the same way. Replies are matched by request number and a stale one is
+  dropped, so changing the reach twice draws the second, not the first.
+
+- **Far out a page is a dot, and a page with no written lines is on the ring.**
+  Both from the comparison with Obsidian on 2026-09-13. The dot is CSS on the
+  same button (`.page-graph-scene-small`), so hover, drag, focus and the app
+  suite see nothing different; only the drawing shrinks. The ring is placed in
+  `settleGraph` after the connected pages settle, evenly spaced and in given
+  order, and **the tree does not count as a line for it** — every page is
+  filed somewhere, so if it counted nothing would ever be lone. The filter
+  menu's *Hide pages nothing points at* uses the same definition
+  (`withoutLone`). The generated world's default shape is random links, which
+  no layout can make readable; judge the graph on `--shape hubs`.
+
 - **A node's button is the disc; the name hangs below it and is not part of the
   box.** It was a 118px-wide column holding both, and the column stayed that
   wide with the name hidden — so on a packed graph most of what looked like

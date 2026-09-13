@@ -18,6 +18,35 @@ export const GRAPH_RING_RADIUS = 220;
 export const GRAPH_NODE_RADIUS = 22;
 
 /**
+ * How big a page's dot is when the graph is far out, by how many lines it
+ * has — Obsidian's rule, hers 2026-09-13: a hub is the thing your eye should
+ * land on, so a hub is bigger. Diameter in scene units: the base for a page
+ * with nothing, growing with the square root of its lines so a page with a
+ * hundred is bigger than one with ten without being ten times bigger, and
+ * capped so the busiest page is not a moon.
+ */
+export const GRAPH_DOT_SIZE = 20;
+export const GRAPH_DOT_GROWTH = 4;
+export const GRAPH_DOT_MAX = 64;
+
+/**
+ * The button's hit box while the page is a dot, in scene units.
+ *
+ * Bigger than the dot on purpose: the dot is four pixels wide at whole-world
+ * zoom, and a hover that has to land on it exactly reads as "extremely
+ * imprecise" — her words, 2026-09-13, after the button had shrunk to the
+ * dot's size. Under the collide radius, so two hit boxes never overlap.
+ */
+export const GRAPH_DOT_HIT = 64;
+
+/**
+ * How long a page takes to fade back when the pointer leaves the page it was
+ * near. Obsidian's is about half a second; at a fifth of that, crossing a
+ * row of dots flashed.
+ */
+export const GRAPH_FADE_MS = 350;
+
+/**
  * How much room a node claims from its neighbours.
  *
  * Bigger than the disc on purpose — a node carries its name underneath it, and
@@ -28,6 +57,18 @@ export const GRAPH_COLLIDE_RADIUS = 78;
 
 /** Resting length of a line between two connected pages. */
 export const GRAPH_LINK_DISTANCE = 150;
+
+/**
+ * The gap between the connected pages and the ring of unconnected ones.
+ *
+ * A page with no lines at all is placed on a ring around everything that has
+ * them rather than run through the simulation — her call 2026-09-13, from
+ * the picture Obsidian's physics happens to produce: a core of connected
+ * pages and a clear band of lone ones around it. Done on purpose here so it
+ * is the same every time and costs nothing. The gap is what makes the band
+ * read as a band and not as the outer edge of the core.
+ */
+export const GRAPH_RING_GAP = 120;
 
 /** How hard nodes push each other apart. Negative is repulsion, as d3 has it. */
 export const GRAPH_CHARGE = -520;
@@ -74,16 +115,6 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 
 /** How fast the wheel zooms. Small: a notch should nudge, not jump. */
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
-
-/**
- * How long after the last wheel tick the picture is painted again, crisp.
- *
- * While the wheel is turning the scene scales the painting it already has —
- * see `moving` in use-graph-view — so this is the longest the picture stays
- * soft after her hand stops. Short enough not to be noticed as a delay,
- * long enough that a wheel still turning does not repaint between ticks.
- */
-export const GRAPH_ZOOM_SETTLE_MS = 160;
 
 /**
  * How many connections out the graph reaches by default.
@@ -141,6 +172,17 @@ export type GraphReach = (typeof GRAPH_REACHES)[number];
 export const GRAPH_NAME_ZOOM = 0.5;
 
 /**
+ * How far the *Names appear* setting can be moved either way.
+ *
+ * Hers to set since 2026-09-13 — Obsidian has the same slider and she asked
+ * for it. The floor is where a name is a smear whatever she prefers; the
+ * ceiling is a zoom the wheel can still reach. GRAPH_NAME_ZOOM is the default.
+ */
+export const GRAPH_NAME_ZOOM_MIN = 0.25;
+export const GRAPH_NAME_ZOOM_MAX = 1.5;
+export const GRAPH_NAME_ZOOM_STEP = 0.05;
+
+/**
  * The prefix for a whole-universe graph's stored arrangement.
  *
  * `Project.graphPins` is keyed by the page a graph is centred on, and this
@@ -166,11 +208,13 @@ export const GRAPH_EDGE_FADE_FROM = 200;
 export const GRAPH_EDGE_MIN_OPACITY = 0.2;
 
 /**
- * How far the rest of the picture steps back while one page is selected.
+ * How far the rest of the picture steps back while one page is pointed at
+ * or selected.
  *
- * Halfway, not further: at 0.35 on her dark theme the graph went black behind
- * the selection and read as having vanished. Selected rather than pointed at
- * — a hover only lights the page's own lines, because dimming everything else
- * on every hover flickers on a dense graph and repaints all of it each time.
+ * Obsidian's picture, her call 2026-09-13: the page's own lines in the accent
+ * and everything else well back. An earlier 0.35 read as the graph vanishing,
+ * but that was with the lit lines in neon white over full-size discs; with
+ * the accent, dots far out and an eased fade, this reads as focus rather
+ * than as loss.
  */
-export const GRAPH_DIM_OPACITY = 0.5;
+export const GRAPH_DIM_OPACITY = 0.3;
