@@ -153,9 +153,11 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
    * for a zoom that the scene's transform already applies on its own.
    */
   const zoomRef = useRef(zoom);
+  const fitZoomRef = useRef(fitZoom);
   useEffect(() => {
     zoomRef.current = zoom;
-  }, [zoom]);
+    fitZoomRef.current = fitZoom;
+  }, [zoom, fitZoom]);
 
   // Right-to-left, so: centre the box on the stage's middle, scale about it,
   // then apply whatever panning has been done. The scene element itself sits at
@@ -254,9 +256,18 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     if (drag && !drag.moved) setSelectedId(null);
   }, []);
 
+  /**
+   * The factor is bounded so that the *zoom* stays within the limits, not the
+   * factor itself. It used to be the factor, which on a small graph is the same
+   * thing and on a big one is not: a world of 835 pages fits at 0.2, and a
+   * factor capped at 2.5 stopped the wheel at 0.5 — the exact zoom names start
+   * being drawn at, so the whole world could never be read closer than that.
+   * Her report of 2026-09-13.
+   */
   const handleWheel = useCallback((event: React.WheelEvent<HTMLElement>) => {
+    const fit = fitZoomRef.current;
     setZoomFactor((prev) =>
-      clamp(prev * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM),
+      clamp(prev * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY), GRAPH_MIN_ZOOM / fit, GRAPH_MAX_ZOOM / fit),
     );
   }, []);
 

@@ -285,6 +285,26 @@
   user-select: none;
 }
 
+/* **Anything that covers the whole window covers the band too, and must opt
+   out of it.** The drag region is a set of rectangles Electron works out from
+   the elements marked `drag`, and it does not care what is painted over them:
+   a full-window overlay drawn at z-index 1100 still hands the top 32px of
+   itself to the window-mover, so the upper half of every control in the
+   graph's bar dragged the window instead of clicking — "hard to access", her
+   words on 2026-09-13, and the dropdowns, which are short, hardly at all. The
+   suite never saw it because Playwright's clicks do not go through the
+   window-mover. Listed here beside the rule they undo rather than one line in
+   each of six stylesheets, so the next overlay is added to this list and not
+   found by the same report. */
+.page-graph,
+.board-expanded,
+.storyline-expanded,
+.lightbox-backdrop,
+.crash-screen,
+.tour {
+  -webkit-app-region: no-drag;
+}
+
 .title-bar-name {
   font-size: var(--fs-xs);
   color: var(--color-text-secondary);
