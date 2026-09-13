@@ -9,6 +9,7 @@
 // TreePopover wrapper.
 import {
   ArrowDownUp,
+  Brush,
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
@@ -103,6 +104,8 @@ type ContextMenuProps = {
   onDuplicate: () => void;
   onMoveTo: () => void;
   onSetColor: () => void;
+  /** Opens the style-name submenu (Phase 30). Single selection only. */
+  onSetStyle: () => void;
   onSaveAsTemplate: () => void;
   onSortChildren: () => void;
   onExpandAll: () => void;
@@ -146,6 +149,7 @@ export function ContextMenu({
   onDuplicate,
   onMoveTo,
   onSetColor,
+  onSetStyle,
   onSaveAsTemplate,
   onSortChildren,
   onExpandAll,
@@ -221,6 +225,16 @@ export function ContextMenu({
       <button type="button" onClick={onSetIcon}>
         <Smile size={13} /> Set icon
       </button>
+      {/* Single selection only, beside colour and icon because it is the
+          third thing about how a page looks — except this one is a name a
+          snippet aims at rather than a look the app draws. Swaps the popover
+          like the two above it, so bound directly. */}
+      {!isMultiple && (
+        <button type="button" className="tree-context-menu-submenu" onClick={onSetStyle}>
+          <Brush size={13} /> Style name
+          <ChevronRight size={13} className="tree-context-menu-chevron" />
+        </button>
+      )}
       {/* Single selection only. It copies one page's shape, and three pages
           have three shapes — "save these as a template" would have to either
           pick one or make three, and neither is what the click looked like. */}

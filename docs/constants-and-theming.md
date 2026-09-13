@@ -365,6 +365,7 @@ Twelve optional tokens — `--gradient-` plus `bg`, `topbar`, `sidebar`, `page`,
 
 - A theme file's `[data-theme="…"]` id is read out of the file (`readThemeId`) and put on the document, which is what makes a sandbox export work with no editing. A file with no such block falls back to a slug of its filename.
 - Snippets are concatenated and injected *after* the theme, so a snippet adjusting a theme wins on ordering alone and needs no `!important`.
+- **A snippet can aim at one page** (Phase 30). The page view's root carries `data-style="<name>"` when the page — or this world's copy of its template — has a style name (right-click ▸ Style name), and always carries `data-template="<key>"`. `[data-style="dashboard"] .page-view { … }` skins that page alone; `[data-template="character"] …` reaches every Character. Neither attribute is on the window, so the sidebar and panels keep the theme. Rules in `docs/handoff.md` § Style names.
 - **All of it goes through `sanitizeCustomCss` first.** CSS can make network requests and the app ships with `"csp": null`; anything that isn't a `data:` URI or an app-bundle path is stripped and reported to the user. This is a Policy Boundary rule, not a nicety — see `docs/handoff.md`.
 - The 98 bundled families in `src/fonts-library.css` are what let a theme name a font and have it render. All OFL or Apache 2.0. Generated, along with `src/constants/font-library.ts` and the sandbox's copies, by `node scripts/build-fonts.mjs`.
 

@@ -5127,6 +5127,39 @@ Phase 26, step 2. What binds the code:
   label the way every custom column is — so a database under the destination
   sorts by it with nothing special.
 
+## Style names
+
+- **The attribute is the whole feature, and the app must never read the name
+  back.** Phase 30, step 2. A page's `styleClass` exists so that one
+  `data-style` lands on the page view's root and a snippet in
+  `<projectsDir>/snippets/` can aim at it. The moment the app styles anything
+  by a style name — a built-in look for `dashboard`, say — the name stops
+  being hers and becomes a keyword she has to avoid. `data-template` beside it
+  is the same kind of hook: a fact about the page a snippet can use, and
+  nothing the app's own stylesheets may key on either.
+
+- **On the page's root, not the window's.** `.page-view-shell`, `.folder-view`
+  and the template view's shell carry both attributes; the sidebar, the
+  properties panel and the rail do not. A skin describes a page, not the app
+  around it, and a snippet author who wants the whole window has the theme
+  format for that. Don't lift the attribute higher to make a selector shorter.
+
+- **A template's name lives only on this world's override node.** The
+  built-in registry carries no style names and never will; `effectiveStyleClass`
+  reads the page's own, else `overrideFor(library, templateKey)?.styleClass`.
+  So setting one on a built-in means opening it (which makes the override) and
+  a name alone counts as a modification — `isOverrideModified` says so — or
+  *Put back to the original* would hide the one edit that exists. A custom
+  template (a saved page tree) has no live link to its pages, so its name is
+  *copied* onto the page in `applyCustomTemplate` like its colour is; that is
+  the existing rule that applying a template deep-copies, not a second model.
+
+- **Names are normalised on every way in.** `normaliseStyleClass` runs in the
+  store, in the template hook and in the Markdown importer: lowercase letters,
+  digits and hyphens, nothing that an attribute selector would need escaping
+  for. Don't add a path that stores a raw name — a name a selector can't match
+  is the failure that reads as "snippets don't work".
+
 ## The link index
 
 - **`link-index.ts` is the only answer to "what points at what", and Phase 24's

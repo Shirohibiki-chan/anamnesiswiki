@@ -100,6 +100,7 @@ import {
 } from "../services/tab-service";
 import { planCellEdit, type CellEdit } from "../services/database-service";
 import { capturedPropertySpec } from "../services/capture-service";
+import { normaliseStyleClass } from "../services/style-class";
 import type { RenderableProperty } from "../services/property-service";
 import { getDefaultTabs, getPropertySchema, getTemplate } from "../services/template-registry";
 import {
@@ -579,6 +580,8 @@ export type ProjectStoreState = {
    */
   capturePage: (input: { parentId: string; title: string; content: Tab["content"]; stamp: string }) => Node;
   setNodeAliases: (nodeId: string, aliases: string[]) => void;
+  /** The page's own style name (Phase 30, step 2), normalised on the way in; empty clears it. */
+  setStyleClass: (nodeId: string, styleClass: string | undefined) => void;
   // Project-wide, from the All properties & tags view. Each is one undo entry
   // however many pages it touched — see applyBulk.
   renamePropertyEverywhere: (label: string, newLabel: string) => void;
@@ -2652,6 +2655,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       });
     },
 
+    setStyleClass(nodeId, styleClass) {
+      const node = get().nodes[nodeId];
+      if (!node) return;
+      const next = normaliseStyleClass(styleClass);
+      if (next === node.styleClass) return;
+      patchNode(next ? `naming the style "${next}"` : "clearing the style name", nodeId, { styleClass: next });
+    },
+
     // Blank entries are dropped rather than stored: an empty alias would match
     // an empty search and pull every page into the results.
     setNodeAliases(nodeId, aliases) {
@@ -3603,6 +3614,10 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         blocks: swap.blocks,
         tags: [...source.tags],
         color: source.color,
+        // Copied like the colour: a template saved from a skinned page carries
+        // the skin, and a page made from it starts skinned. A page's own name
+        // outranks its template's, so this is written as the page's.
+        styleClass: source.styleClass,
         image: rootImage,
         banner: rootBanner,
       };

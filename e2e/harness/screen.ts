@@ -2073,3 +2073,73 @@ export async function openSearchPalette(window: Page): Promise<void> {
   await window.keyboard.press("Control+k");
   await window.getByPlaceholder(/Search every page/).waitFor({ state: "visible", timeout: WAIT_MS });
 }
+
+// ---- Style name (Phase 30, step 2) ----
+
+/**
+ * The `data-style` the open page's root carries, or null when it carries
+ * none. Read off the root itself, because that attribute *is* the feature —
+ * it is what a snippet aims at.
+ */
+export async function pageStyleName(window: Page): Promise<string | null> {
+  const root = window.locator(".page-view-shell, .folder-view").first();
+  return root.getAttribute("data-style");
+}
+
+/** The `data-template` beside it — the page's kind, as a snippet sees it. */
+export async function pageTemplateHook(window: Page): Promise<string | null> {
+  const root = window.locator(".page-view-shell, .folder-view").first();
+  return root.getAttribute("data-template");
+}
+
+/** Opens a row's menu, goes into Style name, and types a name in. Enter saves it. */
+export async function setStyleName(window: Page, rowName: string, name: string): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  await window.getByRole("button", { name: /^Style name/ }).click();
+  const box = window.getByPlaceholder("e.g. dashboard");
+  await box.fill(name);
+  await box.press("Enter");
+  await clearTreeSearch(window);
+  await window.waitForTimeout(300);
+}
+
+/** The names the Style name submenu is offering under "Already in use", once it is open. */
+export async function styleNamesOffered(window: Page, rowName: string): Promise<string[]> {
+  await openTreeRowMenu(window, rowName);
+  await window.getByRole("button", { name: /^Style name/ }).click();
+  const menu = window.locator(".tree-style-menu");
+  const heading = menu.locator(".tree-context-menu-heading");
+  if ((await heading.count()) === 0) return [];
+  const rows = await menu.locator(".tree-context-menu-heading ~ button:not(.tree-style-clear)").allInnerTexts();
+  return rows.map(normalize);
+}
+
+/**
+ * The value of the `--skin` custom property on the open page's root, as the
+ * stylesheets resolved it — "" when nothing set one. A scenario writes a
+ * snippet that sets it under `[data-style="…"]` and reads it back here, which
+ * proves the attribute is reachable from a real `.css` file and not only
+ * present in the DOM.
+ */
+export async function pageSkinMarker(window: Page): Promise<string> {
+  return window.evaluate(() => {
+    const root = document.querySelector(".page-view-shell, .folder-view");
+    return root ? getComputedStyle(root).getPropertyValue("--skin").trim() : "";
+  });
+}
+
+/**
+ * Switches a snippet on in Settings → Snippets, by its file name, and closes
+ * Settings again. Snippets are opt-in on purpose — a file dropped in the folder
+ * does nothing until it is ticked — so a scenario writing one has to do this.
+ */
+export async function enableSnippet(window: Page, fileName: string): Promise<void> {
+  await openSettings(window);
+  await openSettingsSection(window, "Snippets");
+  const row = window.getByRole("dialog").locator("label").filter({ hasText: fileName }).first();
+  await row.waitFor({ state: "visible", timeout: WAIT_MS });
+  const box = row.locator("input[type=checkbox]");
+  if (!(await box.isChecked())) await box.check();
+  await window.keyboard.press("Escape");
+  await window.waitForTimeout(300);
+}

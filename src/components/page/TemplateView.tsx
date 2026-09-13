@@ -11,12 +11,15 @@
 // that's driven by the project's selection and is the next thing to reach for
 // if template properties ever need editing.
 import { useState } from "react";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, Brush, RotateCcw } from "lucide-react";
 import type { Node } from "../../constants/schema";
 import { getTemplateIcon } from "../../constants/icons";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenBuiltInKey, useTemplateActions, useTemplateEditing } from "../../hooks/use-template-editing";
 import { useTemplates } from "../../hooks/use-templates";
+import { useStyleClassesInUse } from "../../hooks/use-style-class";
+import { StyleMenu } from "../tree/StyleMenu";
+import { TreePopover } from "../tree/TreePopover";
 import { Editor } from "./Editor";
 import { PageTabs } from "./PageTabs";
 import "./page.css";
@@ -35,6 +38,9 @@ export function TemplateView({ template }: { template: Node }) {
 
   const [activeTabId, setActiveTabId] = useState<string | null>(template.tabs[0]?.id ?? null);
   const [isRenaming, setIsRenaming] = useState(false);
+  // The style-name menu, anchored to the chip that opens it. Phase 30.
+  const [styleAnchor, setStyleAnchor] = useState<DOMRect | null>(null);
+  const styleNamesInUse = useStyleClassesInUse();
 
   const activeTab = template.tabs.find((tab) => tab.id === activeTabId) ?? template.tabs[0];
   const Icon = getTemplateIcon(template.templateKey);
@@ -62,7 +68,10 @@ export function TemplateView({ template }: { template: Node }) {
   }
 
   return (
-    <div className="page-view-shell">
+    // The template's own style name, so a snippet written for it can be seen
+    // while the template is being edited rather than only on a page made
+    // from it afterwards.
+    <div className="page-view-shell" data-style={template.styleClass} data-template={template.templateKey}>
       <div className="page-view">
         {/* Two rows when there's a Put back button — back and the button on
             one line, the note under them. One row without it, as before. The
@@ -113,7 +122,34 @@ export function TemplateView({ template }: { template: Node }) {
             </button>
           )}
           <span className="template-view-kind">{getLabel(template.templateKey)} template</span>
+          {/* The template's style name — every page made of this template
+              carries it unless the page names its own. A chip here rather than
+              a right-click item, because a template's own view is the one
+              place it is edited and templates have no row menu. */}
+          <button
+            type="button"
+            className="template-view-style"
+            title="A name a snippet can aim at, on every page of this template"
+            onClick={(e) => setStyleAnchor(e.currentTarget.getBoundingClientRect())}
+          >
+            <Brush size={12} />
+            {template.styleClass ? <code>{template.styleClass}</code> : "Style name"}
+          </button>
         </div>
+
+        {styleAnchor && (
+          <TreePopover anchorRect={styleAnchor} onClose={() => setStyleAnchor(null)}>
+            <StyleMenu
+              current={template.styleClass}
+              inUse={styleNamesInUse}
+              onSelect={(styleClass) => {
+                editing.setStyleClass(styleClass);
+                setStyleAnchor(null);
+              }}
+              onBack={() => setStyleAnchor(null)}
+            />
+          </TreePopover>
+        )}
 
         {template.tabs.length === 0 ? (
           <div className="page-view-no-tabs">

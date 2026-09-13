@@ -1903,3 +1903,57 @@ button.tree-path-crumb:hover {
   font-size: 13px;
   line-height: 1;
 }
+
+/* ---- Style name submenu (Phase 30) ---- */
+
+.tree-style-menu {
+  width: 14rem;
+}
+
+.tree-style-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm) var(--space-sm);
+}
+
+.tree-style-input {
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel-alt);
+  color: var(--color-text-primary);
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+}
+
+.tree-style-input::placeholder {
+  color: var(--color-text-placeholder);
+  font-family: inherit;
+}
+
+.tree-style-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-normal, 1.5);
+  overflow-wrap: anywhere;
+}
+
+.tree-style-hint code {
+  color: var(--color-text-secondary);
+  font-size: inherit;
+}
+
+/* These two are the menu's own rows and carry an icon, so they take the
+   ordinary item indent rather than the icon-less submenu one. */
+.tree-context-menu-back ~ .tree-style-apply,
+.tree-context-menu-back ~ .tree-style-clear {
+  padding-left: var(--space-md);
+}
+
+.tree-style-apply:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

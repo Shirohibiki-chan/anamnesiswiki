@@ -22,6 +22,7 @@ import {
   withTabsReordered,
 } from "../services/tab-service";
 import { isOverrideModified } from "../services/template-library";
+import { normaliseStyleClass } from "../services/style-class";
 import { getDefaultTabs, getTemplate } from "../services/template-registry";
 import type { BlockNoteDocument, Node, Tab } from "../constants/schema";
 
@@ -119,6 +120,11 @@ export function useTemplateEditing(templateNodeId: string | null) {
     return {
       rename(name: string) {
         if (templateNodeId) updateTemplateNode(templateNodeId, { name });
+      },
+
+      /** The template's style name, which every page of it inherits unless it names its own. */
+      setStyleClass(styleClass: string | undefined) {
+        if (templateNodeId) updateTemplateNode(templateNodeId, { styleClass: normaliseStyleClass(styleClass) });
       },
 
       updateTabContent(tabId: string, content: BlockNoteDocument) {

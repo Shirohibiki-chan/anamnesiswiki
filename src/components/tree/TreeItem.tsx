@@ -36,9 +36,11 @@ import { ContextMenu } from "./ContextMenu";
 import { MoveMenu } from "./MoveMenu";
 import { ExportMenu } from "./ExportMenu";
 import { SortMenu } from "./SortMenu";
+import { StyleMenu } from "./StyleMenu";
 import { TreePopover } from "./TreePopover";
+import { useEffectiveStyleClass, useStyleClassesInUse } from "../../hooks/use-style-class";
 
-type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | "export" | null;
+type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | "export" | "style" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
@@ -60,6 +62,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
     sortChildren,
     saveAsTemplate,
     togglePinned,
+    setStyleClass,
   } = useProjectActions();
   const newDatabaseView = useNewDatabaseView();
   const effective = useEffectiveColor(node.id);
@@ -75,6 +78,10 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const fileManagerName = useFileManagerName();
   const getMoveDestinations = useMoveDestinations();
   const [openPopover, setOpenPopover] = useState<OpenPopover>(null);
+  // Only while the style submenu is open: the list of names is a walk over
+  // every page, and every row asking for it would be that walk per row.
+  const styleNamesInUse = useStyleClassesInUse();
+  const inheritedStyle = useEffectiveStyleClass(openPopover === "style" && fullNode?.styleClass === undefined ? fullNode : undefined);
   // Only while this row's menu is open — see useSnapshotCount on why every row
   // asking would be a directory listing per visible page.
   const historyCount = useSnapshotCount(openPopover === "menu" ? node.id : null);
@@ -463,6 +470,20 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "style" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <StyleMenu
+            current={fullNode.styleClass}
+            inUse={styleNamesInUse}
+            inherited={inheritedStyle}
+            onSelect={(styleClass) => {
+              setStyleClass(node.id, styleClass);
+              closePopover();
+            }}
+            onBack={() => setOpenPopover("menu")}
+          />
+        </TreePopover>
+      )}
       {openPopover === "move" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <MoveMenu
@@ -523,6 +544,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onMoveTo={openMoveMenu}
             onSetColor={() => setOpenPopover("color")}
             onSetIcon={() => setOpenPopover("icon")}
+            onSetStyle={() => setOpenPopover("style")}
             onSaveAsTemplate={() => void handleSaveAsTemplate()}
             onSortChildren={() => setOpenPopover("sort")}
             onExpandAll={() => setSubtreeOpen(true)}
