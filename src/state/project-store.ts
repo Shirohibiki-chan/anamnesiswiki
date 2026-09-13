@@ -9,6 +9,7 @@ import {
   createTab,
   DEFAULT_STATUS_OPTIONS,
   FIRST_TAB_LABEL,
+  RECENT_DEFAULT_LIMIT,
   FOLDER_TEMPLATE_KEY,
   UNIVERSE_TEMPLATE_KEY,
   type Block,
@@ -568,6 +569,8 @@ export type ProjectStoreState = {
    */
   setBlockView: (nodeId: string, blockId: string, view: DatabaseView) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
+  /** A Recently edited block's count (Phase 30). The default count is stored as absent. */
+  setBlockLimit: (nodeId: string, blockId: string, limit: number) => void;
   setBlockTags: (nodeId: string, blockId: string, tags: string[]) => void;
   /** `capture` only (Phase 30): the page whose children the block files under. `undefined` means its own page. */
   setCaptureRoot: (nodeId: string, blockId: string, rootId: string | undefined) => void;
@@ -2597,6 +2600,15 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         nodeId,
         (blocks) => blocks.map((block) => (block.id === blockId ? withField(block, "view", view) : block)),
         "changing how a block is laid out",
+      );
+    },
+
+    setBlockLimit(nodeId, blockId, limit) {
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(block, "limit", limit === RECENT_DEFAULT_LIMIT ? undefined : limit) : block,
+        ),
+        "changing how many a block shows",
       );
     },
 

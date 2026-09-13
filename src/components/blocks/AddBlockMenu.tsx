@@ -12,11 +12,13 @@
 import {
   AtSign,
   FileText,
+  History,
   Image as ImageIcon,
   Inbox,
   LayoutTemplate,
   Link2,
   ListTree,
+  Pin,
   Sparkles,
   Tags,
   Tags as TagsIcon,
@@ -103,6 +105,14 @@ export function AddBlockMenu({
           went looking for. Same block, same source picker underneath. */}
       <button type="button" onClick={() => onAddCollection("mentions")}>
         <Sparkles size={13} /> Backlinks
+      </button>
+      {/* Phase 30: the two a home page was missing. Same block as the four
+          above, with a source that reads an order the app already keeps. */}
+      <button type="button" onClick={() => onAddCollection("recent")}>
+        <History size={13} /> Recently edited
+      </button>
+      <button type="button" onClick={() => onAddCollection("pinned")}>
+        <Pin size={13} /> Shortcuts
       </button>
       <button type="button" onClick={() => onAdd("alias")}>
         <AtSign size={13} /> Alias

@@ -5,6 +5,7 @@
 // differently.
 import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Grid2x2, Image as ImageIcon, PencilLine, Plus, Trash2, Type } from "lucide-react";
 import { COLLECTION_SOURCES } from "../../constants/collection-sources";
+import { RECENT_LIMITS } from "../../constants/schema";
 import { METER_STYLES } from "../../constants/meter-styles";
 import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
 import { ColorSwatches } from "./ColorSwatches";
@@ -70,6 +71,9 @@ type BlockMenuProps = {
   collection?: {
     source: CollectionSource;
     onSetSource: (source: CollectionSource) => void;
+    /** Recently edited only: how many it lists, and how to change that. Phase 30. */
+    limit?: number;
+    onSetLimit?: (limit: number) => void;
   };
   /**
    * Present only for an image block: whether this one holds the page's own
@@ -130,6 +134,29 @@ export function BlockMenu({
               {collection.source === option.key && <Check size={13} className="block-menu-trailing-check" />}
             </button>
           ))}
+          {/* Only a Recently edited block has a count worth choosing; the
+              other sources list what there is. A short fixed set rather than
+              a number box: this is a tile on a home page, and "twelve" is a
+              decision about how tall it is, not a value to type. */}
+          {collection.source === "recent" && collection.onSetLimit && (
+            <>
+              <div className="block-menu-separator" />
+              <div className="tree-context-menu-heading">How many</div>
+              <div className="block-menu-limits">
+                {RECENT_LIMITS.map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    className={collection.limit === count ? "tree-context-menu-checked" : undefined}
+                    aria-pressed={collection.limit === count}
+                    onClick={() => collection.onSetLimit?.(count)}
+                  >
+                    {count}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </>
       )}
 

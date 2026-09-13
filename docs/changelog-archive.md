@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-08 — the graph, finished off
+
+### Additions
+
+- **A folder can open its graph now.** It's on the folder's own card, next to *Add a page* — folders are drawn as that centred card rather than as a page with a name row, so they had no way in at all and the graph quietly didn't apply to them.
+
+### Fixes
+
+- **Opening the world graph from the rail and widening a page's graph all the way now draw the same picture.** They always showed the same pages, but they laid them out slightly differently — enough that one could be far enough out to stop writing the names while the other still wrote them. The page you opened from is marked rather than moved now, so both routes settle identically.
+- **Tidying that picture counts once, whichever way you got to it.** Dragging pages around the whole-universe graph is remembered against the universe rather than against whichever page you happened to open it from, so arranging it from a page and arranging it from the rail are the same arrangement.
+
+### Notes
+
+- **How long the graph takes to lay out, measured rather than guessed:** roughly a millisecond a page, worked out once when the graph opens. A 75-page world takes about a twentieth of a second; 500 pages take about half a second; 2000 take a couple of seconds. Nothing to notice at the size of your world, and now written down so it isn't a surprise later.
+
 ## 2026-09-08 — the whole world as a graph
 
 ### Additions

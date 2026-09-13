@@ -61,6 +61,9 @@ type BlockShellProps = {
   collection?: {
     source: CollectionSource;
     onSetSource: (source: CollectionSource) => void;
+    /** Recently edited only — see BlockMenu. */
+    limit?: number;
+    onSetLimit?: (limit: number) => void;
   };
   /**
    * Present only for an image block: whether this is the frame the page's own

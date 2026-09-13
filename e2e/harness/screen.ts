@@ -2143,3 +2143,26 @@ export async function enableSnippet(window: Page, fileName: string): Promise<voi
   await window.keyboard.press("Escape");
   await window.waitForTimeout(300);
 }
+
+// ---- Collection rows (Phase 30) ----
+
+/**
+ * The page names a sidebar block lists, top to bottom, by the block's heading.
+ * Rooted at the panel so a block moved into the page isn't counted twice.
+ */
+export async function panelBlockRows(window: Page, title: string): Promise<string[]> {
+  const shell = window
+    .locator(`${BLOCK_PANEL} ${BLOCK_SHELL}`)
+    .filter({ has: window.locator(BLOCK_TITLE, { hasText: title }) })
+    .first();
+  const names = await shell.locator(".block-link-name").allTextContents();
+  return names.map(normalize);
+}
+
+/** Sets a page as a shortcut from its row menu — the rail's pin. */
+export async function setAsShortcut(window: Page, rowName: string): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  await window.getByRole("button", { name: "Set as shortcut", exact: true }).click();
+  await clearTreeSearch(window);
+  await window.waitForTimeout(200);
+}

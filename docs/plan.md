@@ -635,6 +635,11 @@ anything a person set outranks what came with the template.
 
 ### 3. Two blocks a home page is missing
 
+**Shipped 2026-09-13** as two more collection sources — `recent` and
+`pinned`, offered as *Recently edited* and *Shortcuts* — with the sidebar and
+the exports now sharing one resolver (`collection-service.ts`). Everything
+below is built; only step 4 remains.
+
 The gallery's tiles are mostly things this app already draws — Manual links
 as the *jump anywhere* cards, a Subpage index or Tag index for lists, a
 database for anything sorted. Two are missing and both are small:

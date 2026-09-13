@@ -2468,3 +2468,25 @@
 .block-link-results button.block-capture-current {
   color: var(--color-accent-light);
 }
+
+/* The Recently edited count, as a row of numbers rather than four menu
+   items - four rows saying 5, 8, 12, 20 is a menu pretending to be a slider.
+   Phase 30. */
+.block-menu-limits {
+  display: flex;
+  gap: var(--space-xs);
+  padding: 0 var(--space-md) var(--space-xs);
+}
+
+.block-menu-limits button {
+  flex: 1;
+  justify-content: center;
+  padding: var(--space-xs) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.block-menu-limits button.tree-context-menu-checked {
+  border-color: var(--color-accent-faint-border);
+  background: var(--color-accent-faint);
+}

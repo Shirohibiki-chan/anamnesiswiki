@@ -15,7 +15,7 @@
 // appears here without being added here.
 import { insertOrUpdateBlockForSlashMenu, type BlockNoteEditor } from "@blocknote/core";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
-import { AtSign, FileText, Image as ImageIcon, Inbox, Link2, List, ListTree, PanelsTopLeft, Sparkles, Tags } from "lucide-react";
+import { AtSign, FileText, History, Image as ImageIcon, Inbox, Link2, List, ListTree, PanelsTopLeft, Pin, Sparkles, Tags } from "lucide-react";
 import { METER_STYLES } from "../../constants/meter-styles";
 import { BLOCK_REF_TYPE, INFOBOX_TYPE, PAGE_CONTENTS_TYPE, type Block, type BlockKind } from "../../constants/schema";
 
@@ -115,6 +115,22 @@ export function getPageBlockSlashMenuItems(
       group: "Page blocks",
       icon: <AtSign size={16} />,
       onItemClick: () => insert("alias"),
+    },
+    {
+      title: "Recently edited",
+      subtext: "The pages touched last, newest first",
+      aliases: ["recent", "recentlyedited", "latest", "history"],
+      group: "Page blocks",
+      icon: <History size={16} />,
+      onItemClick: () => insert("collection", { source: "recent" }),
+    },
+    {
+      title: "Shortcuts",
+      subtext: "The pages set as shortcuts, in the rail's order",
+      aliases: ["shortcuts", "pinned", "pins", "bookmarks"],
+      group: "Page blocks",
+      icon: <Pin size={16} />,
+      onItemClick: () => insert("collection", { source: "pinned" }),
     },
     {
       title: "Quick capture",

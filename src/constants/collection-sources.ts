@@ -7,7 +7,7 @@
 // offers, so the block you asked for is the block you get — "Tagged" was not
 // one of them, and reading it on a block you added as a Tag index is the kind
 // of small lie that makes a panel feel untrustworthy.
-import { Link2, ListTree, Sparkles, Tags as TagsIcon, type LucideIcon } from "lucide-react";
+import { History, Link2, ListTree, Pin, Sparkles, Tags as TagsIcon, type LucideIcon } from "lucide-react";
 import type { CollectionSource } from "./schema";
 
 export type CollectionSourceOption = {
@@ -22,6 +22,12 @@ export const COLLECTION_SOURCES: CollectionSourceOption[] = [
   { key: "subpages", label: "Subpage index", hint: "This page's children", icon: ListTree },
   { key: "tags", label: "Tag index", hint: "Pages carrying tags you pick", icon: TagsIcon },
   { key: "mentions", label: "Backlinks", hint: "Pages that mention this one", icon: Sparkles },
+  // Phase 30: the two a home page was missing. Both read orders the app
+  // already keeps, so nothing has to be maintained by hand for either.
+  { key: "recent", label: "Recently edited", hint: "The pages touched last, newest first", icon: History },
+  // "Shortcuts", because that is the word on the right-click menu and over
+  // the rail — the source key says "pinned" and the person never sees it.
+  { key: "pinned", label: "Shortcuts", hint: "The pages set as shortcuts, in the rail's order", icon: Pin },
 ];
 
 export function getCollectionSourceOption(source: CollectionSource | undefined): CollectionSourceOption {

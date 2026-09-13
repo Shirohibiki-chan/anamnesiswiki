@@ -5160,6 +5160,28 @@ Phase 26, step 2. What binds the code:
   for. Don't add a path that stores a raw name — a name a selector can't match
   is the failure that reads as "snippets don't work".
 
+## Collection sources
+
+- **One resolver for every source, and it lives in `collection-service.ts`.**
+  Until Phase 30 the hook that draws a collection block and the export that
+  writes one each carried their own copy of the four branches, with a note
+  that a fifth source would have to move both. Two arrived — `recent` and
+  `pinned` — and the branches moved. `useCollection` and `readExportWorld`'s
+  `rowsFor` both call `collectionRows`; a new source is one branch there and
+  one entry in `COLLECTION_SOURCES`, plus the two Add Block / slash-menu
+  buttons that name it. Don't add a branch anywhere else.
+
+- **Recently edited never lists the page it sits on, and never a universe.** A
+  home page is touched whenever its dashboard is rearranged and a container
+  whenever anything inside it moves, so either at the top of the list would
+  say nothing. Shortcuts is `project.pinnedIds` in the rail's order — one
+  list, two views — so a block cannot hold a pin the rail doesn't.
+
+- **The user-facing word for a pin is "shortcut".** The right-click item is
+  *Set as shortcut*, the rail is labelled Shortcuts, and so is the block; the
+  source key says `pinned` and nobody sees it. Don't let "Pinned" back into
+  copy.
+
 ## The link index
 
 - **`link-index.ts` is the only answer to "what points at what", and Phase 24's
