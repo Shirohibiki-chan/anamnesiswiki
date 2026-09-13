@@ -6602,3 +6602,20 @@ during the run were how the Expand button was found sitting on top of the
 library's Library button; it moved into `renderTopRightUI`.
 
 **Left out on purpose** — the five follow-ups in `docs/ideas.md` § Canvas.
+
+**Links, the same day.** She drew on it, said it works, and asked for the
+links next. A *Link to page* button in the library's top-right slot
+(`renderTopRightUI`) opens a picker built on `linkCandidates`; picking
+writes `anamnesis://page/<id>` into the selected element through
+`updateScene` with `newElementWith`, as one undoable edit in the library's
+own history. `onLinkOpen` takes every click: a page link becomes
+`selectNode`, a web address goes to `openExternalUrl`, a name nothing
+answers to shows a notice for three seconds. `link-index.ts` gained a
+`board` mention kind and a third argument. Two things the app suite found
+on the way: a shape with no fill is hollow to the library, so the scenario
+selects by clicking the edge rather than the middle; and the canvas
+resizes a moment *after* Expand or Shrink, so a click measured before that
+lands against the old size — `toggleBoardExpand` now waits for the canvas
+to match its box. Scenario: six steps in `a-board-canvas.e2e.ts`, including
+that the file holds the id rather than the name and that following the
+link lands on the page.

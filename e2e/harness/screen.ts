@@ -1742,6 +1742,11 @@ export async function openAndUnpinShortcutTogether(window: Page, name: string): 
 
 const BOARD = ".board";
 const BOARD_CANVAS = ".board .excalidraw__canvas.interactive";
+const BOARD_LINK_BUTTON = ".board-link-button";
+const BOARD_PICKER_ROW = ".board-picker-row";
+const BOARD_PICKER_INPUT = ".board-picker input";
+// The library's own popup for a selected shape that carries a link.
+const BOARD_HYPERLINK = ".excalidraw-hyperlinkContainer-link";
 
 /**
  * Turns the open page into a board, from the template grid a blank page
@@ -1783,13 +1788,63 @@ export async function drawBoardRectangle(window: Page): Promise<void> {
   await window.keyboard.press("Escape");
 }
 
+/**
+ * Selects the shape `drawBoardRectangle` drew, by clicking its left edge with
+ * the selection tool. The edge and not the middle: a shape with no fill is
+ * hollow to the library, and a click inside it lands on the canvas.
+ */
+export async function selectBoardShape(window: Page): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await window.keyboard.press("Escape");
+  await window.keyboard.press("v");
+  await canvas.click({ position: { x: box.width * 0.3, y: box.height * 0.45 } });
+  await window.locator(BOARD_LINK_BUTTON).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** What the link button says of the selected shape — its tooltip, which is the same in the page and expanded. */
+export async function boardLinkLabel(window: Page): Promise<string> {
+  return (await window.locator(BOARD_LINK_BUTTON).getAttribute("title")) ?? "";
+}
+
+/** Links the selected shape to the page called `name`, through the picker. */
+export async function linkBoardShapeToPage(window: Page, name: string): Promise<void> {
+  await window.locator(BOARD_LINK_BUTTON).click();
+  await window.locator(BOARD_PICKER_INPUT).fill(name);
+  await window.locator(BOARD_PICKER_ROW).filter({ hasText: name }).first().click();
+}
+
+/**
+ * Follows the selected shape's link, from the library's own link popup — the
+ * same handler the small link icon on the shape reaches, and one that can be
+ * clicked without guessing where on the canvas the icon was drawn.
+ */
+export async function followBoardLink(window: Page): Promise<void> {
+  await window.locator(BOARD_HYPERLINK).first().click();
+}
+
 /** Whether the board is filling the window. */
 export async function boardIsExpanded(window: Page): Promise<boolean> {
   return (await window.locator(`${BOARD}.board-expanded`).count()) > 0;
 }
 
+/**
+ * Expands or shrinks the board, and waits for the drawing surface to have
+ * followed: the library resizes its canvas a moment after its box changes,
+ * and a click landed before that is measured against the old size.
+ */
 export async function toggleBoardExpand(window: Page): Promise<void> {
   await window.locator(`${BOARD} .board-expand`).click();
+  await window.waitForFunction(
+    ([boardSelector, canvasSelector]) => {
+      const board = document.querySelector(boardSelector)?.getBoundingClientRect();
+      const canvas = document.querySelector(canvasSelector)?.getBoundingClientRect();
+      return !!board && !!canvas && Math.abs(board.width - canvas.width) < 4 && Math.abs(board.height - canvas.height) < 4;
+    },
+    [BOARD, BOARD_CANVAS],
+    { timeout: WAIT_MS },
+  );
 }
 
 // ---- Phase 25: the storyline canvas, drawn in the page whose body it is ----

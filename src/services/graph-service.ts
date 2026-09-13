@@ -39,7 +39,7 @@ export type GraphEdgeKind = MentionKind | "tree";
 // placement rather than something filed, but it is made *outside* both pages,
 // so anything either page actually says about the other is the better reason
 // to show on the line.
-const KIND_RANK: Record<GraphEdgeKind, number> = { prose: 0, property: 1, manual: 2, storyline: 3, tree: 4 };
+const KIND_RANK: Record<GraphEdgeKind, number> = { prose: 0, property: 1, manual: 2, storyline: 3, board: 3, tree: 4 };
 
 export type GraphNode = {
   id: string;
