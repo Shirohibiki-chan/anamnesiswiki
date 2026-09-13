@@ -92,7 +92,7 @@ describe("showing a page as a table", () => {
     // Compared without case because the heading is uppercased by CSS, and the
     // question here is which columns a table decided to show — pinning the
     // casing would make a restyle look like a broken feature.
-    expect(await columns(app)).toEqual(["name", "summary", "friends"]);
+    expect(await columns(app)).toEqual(["name", "summary", "family", "friends", "allies", "rivals", "enemies"]);
     expect((await databaseRowNames(app.window)).length).toBeGreaterThan(0);
   });
 
@@ -101,7 +101,7 @@ describe("showing a page as a table", () => {
     await openPage(app.window, SECTION);
 
     expect(await hasDatabase(app.window)).toBe(true);
-    expect(await columns(app)).toEqual(["name", "summary", "friends"]);
+    expect(await columns(app)).toEqual(["name", "summary", "family", "friends", "allies", "rivals", "enemies"]);
   });
 
   it("opens the page a row names", async () => {
