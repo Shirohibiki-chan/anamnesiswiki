@@ -27,14 +27,14 @@ export type ExportWorld = {
 };
 
 export function readExportWorld(): ExportWorld | null {
-  const { project, nodes, storylines } = useProjectStore.getState();
+  const { project, nodes, storylines, boards } = useProjectStore.getState();
   if (!project) return null;
 
   // Built once for the whole export rather than per block. Every collection
   // source resolves through this one index — that is the point of Phase 18b,
   // and rebuilding it for each of a hundred sidebar blocks would make the
   // preview visibly slow on her world.
-  const index = linkIndex(nodes, storylines);
+  const index = linkIndex(nodes, storylines, boards);
   const pinnedIds = project.pinnedIds ?? [];
 
   /**

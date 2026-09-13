@@ -4,7 +4,9 @@
 // are the same question asked three ways, and Phase 24's graphs need exactly
 // this data. Computed inside a component instead, it would be built twice and
 // the two copies would disagree.
-import { type BlockNoteDocument, type Node, type Storyline } from "../constants/schema";
+import { type BlockNoteDocument, type Board, type Node, type Storyline } from "../constants/schema";
+import { boardPageLinks } from "./board-service";
+import { linkTargets } from "./storyline-service";
 import { getPropertySchema } from "./template-registry";
 
 // Same loose shape search-service walks: BlockNoteDocument is `unknown[]` on
@@ -27,7 +29,12 @@ type BlockNoteBlock = { content?: unknown; children?: unknown };
  * the rule §The graph states: a new kind of connection belongs in this file,
  * where Backlinks, the index blocks and the graph all see it at once.
  */
-export type MentionKind = "prose" | "property" | "manual" | "storyline";
+/**
+ * `board` is the same shape of thing (Board spike, 2026-09-13): a shape on a
+ * board pointing at a page is recorded in `_board.json`, which neither page's
+ * file mentions, so it lives here for the same reason.
+ */
+export type MentionKind = "prose" | "property" | "manual" | "storyline" | "board";
 
 export type Mention = {
   /** The page doing the pointing. */
@@ -108,13 +115,20 @@ export function outgoingEdges(node: Node): Map<string, { kind: MentionKind; labe
 
 // ---- The index, cached the way search-service caches its text ----
 
+// One shared empty object, so callers that pass no boards hit the cache
+// rather than missing it on a fresh `{}` every time.
+const NO_BOARDS: Record<string, Board> = {};
+
 // `nodes` is replaced on every keystroke, so an index rebuilt per render walks
 // every page of prose in the world per character typed. Same shape and same
 // hazard as search-service's tab-text cache, and solved the same way: keyed on
 // the record's identity so the store's next immutable update evicts it, held
 // weakly so a closed project isn't kept alive by it, and with a per-node inner
 // cache so the pages that didn't change are not re-walked.
-const indexCache = new WeakMap<Record<string, Node>, { index: LinkIndex; storylines: Record<string, Storyline> }>();
+const indexCache = new WeakMap<
+  Record<string, Node>,
+  { index: LinkIndex; storylines: Record<string, Storyline>; boards: Record<string, Board> }
+>();
 const edgeCache = new WeakMap<Node, Map<string, { kind: MentionKind; label?: string }>>();
 
 /**
@@ -144,14 +158,18 @@ function edgesFor(node: Node): Map<string, { kind: MentionKind; label?: string }
  * order — so every list this produces is stable between renders rather than
  * reshuffling as the map is rebuilt.
  */
-export function linkIndex(nodes: Record<string, Node>, storylines: Record<string, Storyline>): LinkIndex {
+export function linkIndex(
+  nodes: Record<string, Node>,
+  storylines: Record<string, Storyline>,
+  boards: Record<string, Board> = NO_BOARDS,
+): LinkIndex {
   const cached = indexCache.get(nodes);
   // **The canvases are part of the answer, so they are part of the cache
   // key.** `nodes` alone was enough until a storyline could point at a page:
   // dragging a scene onto the canvas changes the index without changing a
   // single page, and an index keyed on pages only would keep handing back the
   // answer from before it.
-  if (cached && cached.storylines === storylines) return cached.index;
+  if (cached && cached.storylines === storylines && cached.boards === boards) return cached.index;
 
   const mentionsOf = new Map<string, Mention[]>();
   const childrenOf = new Map<string, string[]>();
@@ -198,8 +216,24 @@ export function linkIndex(nodes: Record<string, Node>, storylines: Record<string
     }
   }
 
+  // Every linked shape on every board, as a connection from the board page to
+  // the page the shape points at. Names typed by hand resolve against one
+  // name table for all the boards, built only if there is a board to read.
+  const boardEntries = Object.entries(boards).filter(([boardId]) => nodes[boardId]);
+  if (boardEntries.length > 0) {
+    const targets = linkTargets(nodes);
+    for (const [boardId, board] of boardEntries) {
+      for (const pageId of boardPageLinks(board, nodes, targets)) {
+        if (pageId === boardId) continue;
+        const list = mentionsOf.get(pageId) ?? [];
+        list.push({ fromId: boardId, kind: "board" });
+        mentionsOf.set(pageId, list);
+      }
+    }
+  }
+
   const index = { mentionsOf, childrenOf, taggedWith };
-  indexCache.set(nodes, { index, storylines });
+  indexCache.set(nodes, { index, storylines, boards });
   return index;
 }
 

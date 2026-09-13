@@ -391,6 +391,23 @@ Board spike, closed 2026-09-13. What binds the code:
   — the library keeps them for its in-session undo, and on disk they would
   be a file that only grows.
 
+- **A shape's link is one string, and its front decides what it means.**
+  `anamnesis://page/<id>` is a page the picker chose and survives renames;
+  any other scheme is a web address and goes to the browser through the
+  host, never through `window.open`, which the Electron shell denies; no
+  scheme at all is a name typed into the library's own link box, resolved
+  when clicked by `linkTargets` — the storyline note's rule, so a shared
+  name points at neither page. `boardLinkTarget` is the one place that
+  reads a link and `elementLink` the one place that reads the field off an
+  element; keep it that way. Every click goes through `onLinkOpen` with
+  `preventDefault`, so the library never opens anything itself.
+
+- **The link index reads boards as a third argument and keys its cache on
+  them**, for the reason it keys on storylines: writing a link into a shape
+  changes what is connected without touching a page. Callers that have no
+  boards pass nothing and hit the cache through one shared empty object —
+  a fresh `{}` per call would miss it every time.
+
 ## The graph
 
 - **The simulation is ticked to a stop and must not be animated.** `settleGraph`

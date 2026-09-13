@@ -17,6 +17,11 @@ export function useBoard(boardId: string | null): Board {
   return useProjectStore((state) => (boardId ? state.boards[boardId] : undefined)) ?? EMPTY;
 }
 
+/** Every board's drawing, by the page it belongs to — read here for the reason `useStorylines` gives. */
+export function useBoards(): Record<string, Board> {
+  return useProjectStore((state) => state.boards);
+}
+
 export function useSetBoard(): (boardId: string, board: Board) => void {
   const setBoard = useProjectStore((state) => state.setBoard);
   return useCallback((boardId: string, board: Board) => setBoard(boardId, board), [setBoard]);
