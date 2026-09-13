@@ -103,14 +103,14 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
   const marginY = Math.round(view.stageSize.height * OVERDRAW);
 
   /**
-   * **Mid-gesture the picture is slid and scaled; at rest it is painted.**
-   * Painting thousands of thick lines is 40ms a frame up close, measured, and
-   * a drag or a wheel asks for a frame every 16ms. So while `moving` the
-   * canvas keeps what it has and a CSS transform moves it — a slide is
-   * pixel-exact and a scale is briefly soft, the same trade the scene makes
-   * with its own layer — and when the hand stops it is painted once, crisp,
-   * for where the view has ended up. A drag that runs past the overdraw is
-   * painted mid-gesture rather than revealing blank.
+   * **Mid-drag the picture is slid; otherwise it is painted.** Painting
+   * thousands of thick lines is 40ms a frame up close, measured, and a drag
+   * asks for a frame every 16ms. So while `moving` the canvas keeps what it
+   * has and a CSS transform slides it, pixel-exact, and when the hand stops
+   * it is painted once for where the view has ended up. A drag that runs
+   * past the overdraw is painted mid-gesture rather than revealing blank.
+   * A zoom is painted every tick: scaling the painting instead was soft on
+   * the way in and showed blank around the painted rectangle on the way out.
    */
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -124,18 +124,11 @@ export const GraphEdgesCanvas = memo(function GraphEdgesCanvas({
       painted.bounds === bounds &&
       painted.dimmed === dimmed &&
       painted.stageSize === view.stageSize;
-    if (sameWorld && moving) {
-      // A point q on the painted canvas is c + pan0 + zoom0·p; it now belongs
-      // at c + pan + zoom·p. Solving for the map from one to the other gives
-      // a scale about the canvas's own corner and a translation.
-      const k = view.zoom / painted.zoom;
-      const cx = view.stageSize.width / 2 + marginX;
-      const cy = view.stageSize.height / 2 + marginY;
-      const tx = cx + view.pan.x - k * (cx + painted.pan.x);
-      const ty = cy + view.pan.y - k * (cy + painted.pan.y);
-      const within = k !== 1 || (Math.abs(tx) <= marginX && Math.abs(ty) <= marginY);
-      if (within) {
-        canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
+    if (sameWorld && moving && painted.zoom === view.zoom) {
+      const tx = view.pan.x - painted.pan.x;
+      const ty = view.pan.y - painted.pan.y;
+      if (Math.abs(tx) <= marginX && Math.abs(ty) <= marginY) {
+        canvas.style.transform = `translate(${tx}px, ${ty}px)`;
         return;
       }
     }

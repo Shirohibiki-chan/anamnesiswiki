@@ -29,6 +29,18 @@ export const GRAPH_COLLIDE_RADIUS = 78;
 /** Resting length of a line between two connected pages. */
 export const GRAPH_LINK_DISTANCE = 150;
 
+/**
+ * The gap between the connected pages and the ring of unconnected ones.
+ *
+ * A page with no lines at all is placed on a ring around everything that has
+ * them rather than run through the simulation — her call 2026-09-13, from
+ * the picture Obsidian's physics happens to produce: a core of connected
+ * pages and a clear band of lone ones around it. Done on purpose here so it
+ * is the same every time and costs nothing. The gap is what makes the band
+ * read as a band and not as the outer edge of the core.
+ */
+export const GRAPH_RING_GAP = 120;
+
 /** How hard nodes push each other apart. Negative is repulsion, as d3 has it. */
 export const GRAPH_CHARGE = -520;
 
@@ -74,16 +86,6 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 
 /** How fast the wheel zooms. Small: a notch should nudge, not jump. */
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
-
-/**
- * How long after the last wheel tick the picture is painted again, crisp.
- *
- * While the wheel is turning the scene scales the painting it already has —
- * see `moving` in use-graph-view — so this is the longest the picture stays
- * soft after her hand stops. Short enough not to be noticed as a delay,
- * long enough that a wheel still turning does not repaint between ticks.
- */
-export const GRAPH_ZOOM_SETTLE_MS = 160;
 
 /**
  * How many connections out the graph reaches by default.
