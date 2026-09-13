@@ -22,6 +22,7 @@ import {
   pickStorylinePage,
   searchStorylinePicker,
   searchTree,
+  waitForGraphSettled,
   storylinePickerEmptyMessage,
   storylineSceneCastCount,
   storylineScenesLeftToRight,
@@ -142,6 +143,7 @@ describe("putting a page that already exists on a storyline", () => {
     // and it is reached from the page's own title row.
     await app.window.locator(".page-title-graph-button").first().click();
     await app.window.locator(".page-graph").waitFor({ state: "visible", timeout: 10_000 });
+    await waitForGraphSettled(app.window);
     const drawn = await app.window.locator(".page-graph-node").evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("title") ?? ""),
     );

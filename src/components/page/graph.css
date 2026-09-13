@@ -521,6 +521,20 @@
   font-weight: 600;
 }
 
+.page-graph-working {
+  position: absolute;
+  left: 50%;
+  top: var(--space-xl);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  background: var(--color-panel);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  pointer-events: none;
+}
+
 .page-graph-empty {
   position: absolute;
   left: 50%;

@@ -136,7 +136,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   const near = useMemo(() => neighbourhoodOf(graph.model.edges, inPlay), [graph.model.edges, inPlay]);
   const lit = inPlay === null ? [] : edges.filter((edge) => edge.sourceId === inPlay || edge.targetId === inPlay);
   const arranged = hasMoved || Object.keys(pins).length > 0;
-  const empty = focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0;
+  const empty = !graph.working && (focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0);
   // Too far out for a name to be readable, so none of them are drawn — the
   // preview card and the node's tooltip are where a name comes from at this
   // distance. See GRAPH_NAME_ZOOM.
@@ -251,8 +251,14 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
             />
           )}
 
+          {/* Said rather than left as a frozen window. The last picture stays
+              up while the next is worked out; on a first open there is none,
+              and this is what stands in for it. */}
+          {graph.working && <p className="page-graph-working">Working out the picture…</p>}
+
           <div
             ref={sceneRef}
+            data-settled={graph.working ? "false" : "true"}
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",

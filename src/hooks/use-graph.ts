@@ -1,11 +1,12 @@
 // The only import path components have into graph-service.ts and
 // graph-layout.ts. See CLAUDE.md's layer order — components never import
 // services directly.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GRAPH_REACH_EVERYTHING, GRAPH_WORLD_PIN_PREFIX, type GraphReach } from "../constants/graph";
 import type { DatabaseField, DatabaseFilter, Node } from "../constants/schema";
 import { fieldChoices, matchesFilter } from "../services/database-service";
-import { settleGraph, type GraphPins } from "../services/graph-layout";
+import type { GraphPins } from "../services/graph-layout";
+import { settleGraphInWorker } from "../services/graph-layout-worker";
 import {
   graphAround,
   graphOfPages,
@@ -54,6 +55,8 @@ export type PageGraphOptions = {
 export type PageGraph = {
   /** What to draw: filtered, and settled with her arrangement as fixed points. */
   model: GraphModel;
+  /** Whether the picture on screen is the last one while the next is worked out. */
+  working: boolean;
   /** Every page in range with no filters applied. */
   reached: Node[];
   /** The values a field actually takes across `reached`, for the value picker. */
@@ -164,27 +167,65 @@ export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, 
    */
   const seed = everything ? `${GRAPH_WORLD_PIN_PREFIX}${universeId ?? "all"}` : (focusId ?? "");
 
-  const model = useMemo(() => {
+  /**
+   * The pages and lines, before the layout — cheap, and worked out here.
+   *
+   * The layout itself is not: 300 ticks of d3-force over 831 pages is about
+   * 800ms, and done in this memo it froze the window every time the reach or
+   * a filter changed (her report 2026-09-13). It is sent to a worker below,
+   * and the picture on screen is the last one that came back until the next
+   * does. `structure` stands in for focusId, reach, generation, the filters
+   * and the seed, so an identical filter list rebuilt by a re-render does not
+   * build again.
+   */
+  const built = useMemo(() => {
     const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
     // Off after the walk rather than during it: a lone page is one the
     // finished picture has no written line to, which the walk cannot know
     // about a page until it has been through everything.
-    const trim = (built: GraphModel) => (hideLone ? withoutLone(built, focusId) : built);
+    const trim = (model: GraphModel) => (hideLone ? withoutLone(model, focusId) : model);
     if (scopedIds) {
       // No centre: a universe has no one page that belongs in the middle, and
       // pinning one of seventy there would bend the shape around that choice.
-      return settleGraph(trim(graphOfPages(scopedIds, focusId, nodes, index, keep)), frozen.pins, { seed });
+      return { model: trim(graphOfPages(scopedIds, focusId, nodes, index, keep)), centreId: null as string | null };
     }
-    if (!focusId) return EMPTY;
-    return settleGraph(trim(graphAround(focusId, nodes, index, reach as number, keep)), frozen.pins, {
-      centreId: focusId,
-      seed,
-    });
-    // `structure` stands in for focusId, reach, generation, the filters and the
-    // seed, so an identical filter list rebuilt by a re-render does not
-    // re-settle.
+    if (!focusId) return { model: EMPTY, centreId: null as string | null };
+    return { model: trim(graphAround(focusId, nodes, index, reach as number, keep)), centreId: focusId };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, scopedIds, nodes, index, frozen, getLabel]);
+  }, [structure, scopedIds, nodes, index, getLabel]);
+
+  /**
+   * The settled picture, and which request it answers.
+   *
+   * A request is numbered when it is sent, and a reply is kept only if it is
+   * the latest — the reach changed twice before the first picture arrived,
+   * and drawing the first would be drawing a question she has stopped
+   * asking. `working` is true from the send until the matching reply, which
+   * is what the overlay shows a note for.
+   */
+  const [settled, setSettled] = useState<{ request: number; model: GraphModel }>({ request: 0, model: EMPTY });
+  const requestRef = useRef(0);
+  // Starts one ahead of what has been answered, so the very first render is
+  // already "working" rather than a settled picture of nothing.
+  const [latest, setLatest] = useState(1);
+  useEffect(() => {
+    const request = ++requestRef.current;
+    setLatest(request);
+    if (built.model.nodes.length === 0) {
+      setSettled({ request, model: EMPTY });
+      return;
+    }
+    let live = true;
+    void settleGraphInWorker(built.model, frozen.pins, { centreId: built.centreId, seed }).then((model) => {
+      if (live) setSettled({ request, model });
+    });
+    return () => {
+      live = false;
+    };
+  }, [built, frozen, seed]);
+
+  const model = settled.model;
+  const working = settled.request !== latest;
 
   // Columns are empty on purpose: a graph filters on what a page *is* rather
   // than on a table's columns, and `template` and `tag` are answered from the
@@ -194,7 +235,7 @@ export function usePageGraph({ focusId, reach, filters, hideLone = false, pins, 
     [reached, nodes, getLabel],
   );
 
-  return { model, reached, choicesFor, key: structure };
+  return { model, reached, choicesFor, key: structure, working };
 }
 
 /**
