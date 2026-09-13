@@ -1561,6 +1561,27 @@ export async function graphPlacements(window: Page): Promise<Record<string, { x:
  * of the graph does re-settle a little around a newly pinned node, so this is a
  * good ruler rather than a perfect one — compare with a tolerance.
  */
+/**
+ * Where a node sits in the graph's own coordinates — the numbers the layout
+ * put it at, or the ones it was dropped at, before any zoom or fit.
+ *
+ * **Exact where graphNodePlacement is approximate.** A pinned node is written
+ * to `project.json` as integers in this frame and read back as fixed points,
+ * so "did it come back where it was dropped" has an exact answer here, and
+ * none in pixels or in fractions of the rest of the picture — the rest
+ * re-settles around a pin, and what counts as a node's box changed once
+ * already (2026-09-13) and moved a fraction-based check across its tolerance.
+ */
+export async function graphNodeSpot(window: Page, name: string): Promise<{ x: number; y: number }> {
+  const node = graphNode(window, name).first();
+  const spot = await node.evaluate((element) => ({
+    x: parseFloat((element as HTMLElement).style.left),
+    y: parseFloat((element as HTMLElement).style.top),
+  }));
+  if (!Number.isFinite(spot.x) || !Number.isFinite(spot.y)) throw new Error(`No node on the graph called ${name}`);
+  return spot;
+}
+
 export async function graphNodePlacement(window: Page, name: string): Promise<{ x: number; y: number }> {
   // **The name is matched here, not in the page.** Doing it in the browser meant
   // two copies of what counts as the same name, and a page whose title tidied
