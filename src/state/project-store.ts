@@ -2147,11 +2147,19 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         getPropertySchema(existing.templateKey),
         getPropertySchema(templateKey),
       );
+      // A template that names its own blocks (the dashboard) brings them
+      // even to a page that already has some: its tabs point at them, and a
+      // pointer with nothing behind it draws as nothing. Hers stay first.
+      // This world's copy of the template supplies them when it has any, so
+      // a retitled block on the copy is what a new page gets.
+      const seeded = override?.blocks?.length ? structuredClone(override.blocks) : seedBlocks(templateKey, getPropertySchema(templateKey));
+      const declared = getTemplate(templateKey)?.blocks ? seeded : [];
+      const keptIds = new Set(swap.blocks.map((block) => block.id));
       const updated: Node = {
         ...existing,
         templateKey,
         tabs: [...existing.tabs, ...newTabs],
-        blocks: hadBlocks ? swap.blocks : seedBlocks(templateKey, getPropertySchema(templateKey)),
+        blocks: hadBlocks ? [...swap.blocks, ...declared.filter((block) => !keptIds.has(block.id))] : seeded,
         properties: swap.properties,
         customProperties: swap.customProperties,
         updatedAt: Date.now(),
@@ -3505,7 +3513,15 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // Named after the built-in it replaces rather than "Copy of Character",
       // because it isn't a copy from her side — it's what Character means in
       // this world now, and the sidebar row it opens from says Character.
-      const node = buildOverrideNode(templateKey, crypto.randomUUID(), definition.label, getDefaultTabs(templateKey));
+      const node = buildOverrideNode(
+        templateKey,
+        crypto.randomUUID(),
+        definition.label,
+        getDefaultTabs(templateKey),
+        // Only a template that declares blocks (the dashboard) gives its copy
+        // a list; the rest derive theirs from their fields as they always did.
+        definition.blocks ? seedBlocks(templateKey, getPropertySchema(templateKey)) : undefined,
+      );
       const nextTemplates = addOverride(templates, templateKey, node);
       set({ templates: nextTemplates, openTemplateId: node.id });
       track(() => fsService.saveTemplateLibrary(rootPath, nextTemplates));

@@ -69,6 +69,14 @@ export const STORYLINE_TEMPLATE_KEY = "storyline";
  */
 export const SCENE_TEMPLATE_KEY = "scene";
 
+/**
+ * The example dashboard (Phase 30, step 4): a home page with the capture box,
+ * Recently edited, Shortcuts and a row of links already on it. The one
+ * template whose body starts with blocks in it rather than headings — see
+ * `blocks` on the definition in template-registry.ts.
+ */
+export const DASHBOARD_TEMPLATE_KEY = "dashboard";
+
 // Canonical order used in the New Page picker. See docs/constants-and-theming.md.
 // `universe` is in this list so it is a real template like any other — the
 // pickers filter it back out themselves rather than it being half-registered.
@@ -87,6 +95,7 @@ export const TEMPLATE_KEYS = [
   "event",
   "scene",
   "quest",
+  "dashboard",
   "note",
   "blank",
 ] as const;

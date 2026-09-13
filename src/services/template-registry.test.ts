@@ -8,7 +8,7 @@
 // prototype reintroduces someone else's writing. See docs/handoff.md §Editor &
 // templates.
 import { describe, expect, it } from "vitest";
-import { TEMPLATE_KEYS } from "../constants/schema";
+import { BLOCK_REF_TYPE, COLUMN_LIST_TYPE, COLUMN_TYPE, TEMPLATE_KEYS } from "../constants/schema";
 import { getDefaultTabs, TEMPLATE_REGISTRY } from "./template-registry";
 
 // Verbatim fragments of the LK-transcribed copy this phase removed. Substrings,
@@ -83,13 +83,27 @@ describe("template seed structure", () => {
   });
 
   it("uses only block types the editor schema knows", () => {
-    const known = new Set(["paragraph", "heading", "calloutInfo", "calloutQuote", "calloutSecret"]);
-    for (const key of TEMPLATE_KEYS) {
-      for (const tab of getDefaultTabs(key)) {
-        for (const block of tab.content) {
-          expect(known, `${key}/${tab.id}`).toContain((block as { type: string }).type);
-        }
+    // The dashboard's three are the page-body kinds from Phase 19.5 and the
+    // columns row: pointers to the page's own blocks, and lanes to hold them.
+    const known = new Set([
+      "paragraph",
+      "heading",
+      "calloutInfo",
+      "calloutQuote",
+      "calloutSecret",
+      BLOCK_REF_TYPE,
+      COLUMN_LIST_TYPE,
+      COLUMN_TYPE,
+    ]);
+    const check = (blocks: unknown[], where: string) => {
+      for (const block of blocks) {
+        const { type, children } = block as { type: string; children?: unknown[] };
+        expect(known, where).toContain(type);
+        if (Array.isArray(children)) check(children, where);
       }
+    };
+    for (const key of TEMPLATE_KEYS) {
+      for (const tab of getDefaultTabs(key)) check(tab.content, `${key}/${tab.id}`);
     }
   });
 

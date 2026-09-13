@@ -10,6 +10,7 @@ import {
   Flag,
   Folder as FolderIcon,
   GitBranch,
+  LayoutDashboard,
   Globe,
   MapPin,
   Package,
@@ -36,6 +37,7 @@ export const TEMPLATE_ICONS: Record<string, LucideIcon> = {
   event: Calendar,
   scene: Clapperboard,
   quest: Scroll,
+  dashboard: LayoutDashboard,
   note: FileText,
   blank: File,
   // Pre-rename pages still arriving as `species` are translated to `race` on

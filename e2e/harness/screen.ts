@@ -2166,3 +2166,34 @@ export async function setAsShortcut(window: Page, rowName: string): Promise<void
   await clearTreeSearch(window);
   await window.waitForTimeout(200);
 }
+
+/**
+ * Makes a new page with Ctrl+N, names it, and gives it a built-in template
+ * from the grid a fresh page opens on. Returns once the page's title is up.
+ */
+export async function makePageOfTemplate(window: Page, name: string, template: string): Promise<void> {
+  await window.keyboard.press("Control+n");
+  await window.keyboard.type(name);
+  await window.keyboard.press("Enter");
+  await window.locator(NEW_PAGE_GRID).getByRole("button", { name: template, exact: true }).click();
+  await waitForPageTitle(window, name);
+  await window.waitForTimeout(500);
+}
+
+/** The names of the snippets Settings → Snippets lists, and whether each is on. */
+export async function snippetStates(window: Page): Promise<{ file: string; on: boolean }[]> {
+  await openSettings(window);
+  await openSettingsSection(window, "Snippets");
+  const rows = window.getByRole("dialog").locator("label");
+  const count = await rows.count();
+  const out: { file: string; on: boolean }[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const row = rows.nth(i);
+    const file = normalize((await row.locator(".appearance-snippet-file").textContent()) ?? "");
+    if (!file) continue;
+    out.push({ file, on: await row.locator("input[type=checkbox]").isChecked() });
+  }
+  await window.keyboard.press("Escape");
+  await window.waitForTimeout(200);
+  return out;
+}

@@ -10,7 +10,7 @@
 // 2026-08-28 — same tabs, same headings, same block scaffold on every tab.
 // The comment above TEMPLATE_REGISTRY says what replaced it and why. Neither
 // the wording nor the shape should drift back.
-import { createTab, TEMPLATE_KEYS, type Tab } from "../constants/schema";
+import { BLOCK_REF_TYPE, COLUMN_LIST_TYPE, COLUMN_TYPE, createTab, TEMPLATE_KEYS, type Block, type Tab } from "../constants/schema";
 
 export type PropertySpec = {
   key: string;
@@ -42,6 +42,18 @@ export type TemplateDefinition = {
   alwaysDirectory: boolean;
   tabs: TabSeed[];
   properties: PropertySpec[];
+  /**
+   * The sidebar blocks a page of this template starts with, when the template
+   * says so itself rather than leaving it to `seedBlocks` to derive from the
+   * fields. Only the dashboard has these (Phase 30): its body is made of
+   * blocks — the capture box, two lists, a row of links — and a `blockRef`
+   * in a tab has to name a block that exists on the page from the first
+   * moment. **The ids are fixed on purpose.** A block id only has to be unique
+   * within one page (see `derivedId` in block-service.ts), so every dashboard
+   * carrying `dashboard-capture` is fine, and it is what lets the tab content
+   * below point at them without minting ids at creation.
+   */
+  blocks?: Block[];
 };
 
 // ---- BlockNote content helpers (see editor-blocks/editor-schema.ts for the block types) ----
@@ -63,6 +75,28 @@ function quote(value: string): BlockSeed {
 function secret(value: string): BlockSeed {
   return { type: "calloutSecret", content: text(value) };
 }
+/** A pointer to one of the page's own blocks, drawn in the body. */
+function ref(blockId: string): BlockSeed {
+  return { type: BLOCK_REF_TYPE, props: { blockId } };
+}
+/** Lanes side by side, each holding what it is given. */
+function columns(...lanes: BlockSeed[][]): BlockSeed {
+  return { type: COLUMN_LIST_TYPE, children: lanes.map((children) => ({ type: COLUMN_TYPE, children })) };
+}
+
+/**
+ * The dashboard's own blocks. Named ids — see `blocks` on the definition —
+ * and one of each of the things a home page wants: somewhere to put a
+ * thought, what was touched last, what is pinned, and a row of links she
+ * fills in herself. The links block is titled because "Manual links" is a
+ * setting's name and "Jump to" is what the row is for.
+ */
+const DASHBOARD_BLOCKS: Block[] = [
+  { id: "dashboard-capture", kind: "capture" },
+  { id: "dashboard-recent", kind: "collection", source: "recent" },
+  { id: "dashboard-shortcuts", kind: "collection", source: "pinned" },
+  { id: "dashboard-links", kind: "collection", source: "manual", title: "Jump to" },
+];
 
 // The layouts below are ours. They were redesigned on 2026-08-28 because the
 // copy had been rewritten in Phase 11 but the *shape* underneath it hadn't:
@@ -673,6 +707,32 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
       { key: "where", label: "Where", type: "refs" },
     ],
   },
+  // The example dashboard (Phase 30, step 4). One tab, no headings: its body
+  // is the blocks above, laid out as the reference dashboards lay theirs —
+  // a capture box across the top, two lists side by side, links along the
+  // bottom, and a line under them to write on. The look comes from a snippet
+  // shipped beside it (see constants/dashboard-snippet.ts), not from here,
+  // because a dashboard's look is the thing somebody copies to make their own.
+  dashboard: {
+    key: "dashboard",
+    label: "Dashboard",
+    alwaysDirectory: false,
+    tabs: [
+      {
+        id: "home",
+        label: "Home",
+        hidden: false,
+        content: [
+          ref("dashboard-capture"),
+          columns([ref("dashboard-recent")], [ref("dashboard-shortcuts")]),
+          ref("dashboard-links"),
+          p(""),
+        ],
+      },
+    ],
+    properties: [],
+    blocks: DASHBOARD_BLOCKS,
+  },
   note: {
     key: "note",
     label: "Note",
@@ -708,7 +768,10 @@ export function getPropertySchema(key: string): PropertySpec[] {
 // registry's own literal seed data.
 export function getDefaultTabs(key: string): Tab[] {
   const seeds = getTemplate(key)?.tabs ?? [];
+  // `structuredClone` rather than a spread per block: the dashboard's columns
+  // carry children, and a shallow copy would hand every page the same lane
+  // arrays to edit.
   return seeds.map((seed) =>
-    createTab({ id: seed.id, label: seed.label, hidden: seed.hidden, content: seed.content.map((block) => ({ ...block })) }),
+    createTab({ id: seed.id, label: seed.label, hidden: seed.hidden, content: structuredClone(seed.content) }),
   );
 }

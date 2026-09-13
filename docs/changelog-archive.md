@@ -2,6 +2,23 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-09 — storylines, the canvas
+
+### Additions
+
+- **Storyline is a new kind of page, and its body is a canvas.** Make one the way you make any page — it's in the list of kinds a new page offers, next to Scene and Quest. Instead of tabs it opens onto an empty canvas you drag around and zoom with the wheel.
+- **Add a scene, and it becomes a real page inside the storyline.** It's a Scene page like any other: it's in the tree, you can open it and write the whole scene in it, and it has its own tabs and properties. The card on the canvas is a view of that page, not a copy of it — rename the page and the card follows.
+- **Drag from a scene's handle to another scene to say it leads there.** The line is drawn with an arrow, because a storyline is about what happens next rather than about what's related to what. A scene can lead to several, and several can lead into one, so a thread that splits and comes back together is drawn the way it actually is.
+- **Nothing rearranges itself.** Where you put a scene is where it stays — this is not the relationship graph, which works its own layout out for you. Your arrangement is saved beside the scenes and comes back exactly as you left it.
+- **The canvas says no, and says why.** It won't join a scene to itself, won't draw a second line between two scenes that are already joined, and won't let the story loop back on itself — each one tells you which it was rather than just not drawing the line.
+- **Fill the window** when the arrangement wants more room than the page column has. Escape puts it back.
+- **Take a scene off the canvas without deleting anything.** The page keeps existing, in the tree, with everything you wrote in it. Deleting the page is still a separate thing you do from the tree.
+
+### Notes
+
+- **This is the first part of storylines, not all of it.** Loose notes you can drop anywhere on the canvas, labels for a group of scenes ("Act 2"), pointing a scene at a page that already exists, and a tidy-up button are the next parts. `docs/plan.md` has the rest.
+- **The canvas is its own file** — `_storyline.json`, sitting inside the storyline page's folder alongside the scenes. Moving or renaming the storyline carries it along, and moving a scene an inch doesn't count as editing any page, so it stays out of version history and out of whatever syncs your folder.
+
 ## 2026-09-08 — the graph, finished off
 
 ### Additions

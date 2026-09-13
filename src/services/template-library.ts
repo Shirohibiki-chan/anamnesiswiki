@@ -5,7 +5,7 @@
 // A template is a copied page, not a description of one. See
 // constants/schema.ts's TemplateLibrary for why it reuses `Node` wholesale, and
 // why templates live in their own record rather than among the project's pages.
-import { createTemplateLibrary, type Node, type Tab, type TemplateLibrary } from "../constants/schema";
+import { createTemplateLibrary, type Block, type Node, type Tab, type TemplateLibrary } from "../constants/schema";
 
 /**
  * `rootId` and everything beneath it, breadth-first, with the root first.
@@ -199,7 +199,7 @@ export function overrideFor(library: TemplateLibrary, templateKey: string): Node
  * still holds — `getDefaultTabs` already deep-copies its blocks for exactly
  * this reason.
  */
-export function buildOverrideNode(templateKey: string, id: string, name: string, tabs: Tab[]): Node {
+export function buildOverrideNode(templateKey: string, id: string, name: string, tabs: Tab[], blocks?: Block[]): Node {
   const now = Date.now();
   return {
     id,
@@ -207,6 +207,9 @@ export function buildOverrideNode(templateKey: string, id: string, name: string,
     templateKey,
     name,
     tabs,
+    // Spread so an ordinary copy carries no `blocks` key and keeps deriving
+    // its sidebar from its fields — see the same shape on `createNode`.
+    ...(blocks ? { blocks } : {}),
     properties: {},
     customProperties: [],
     propertyOrder: [],

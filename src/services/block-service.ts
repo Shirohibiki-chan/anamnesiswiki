@@ -16,6 +16,7 @@ import {
   INFOBOX_TYPE,
 } from "../constants/schema";
 import { orderProperties, type RenderableProperty } from "./property-service";
+import { getTemplate } from "./template-registry";
 
 // The templates that begin with a picture, decided 2026-08-21: the ones about
 // a thing you can picture. `note` and `blank` start empty, and faction and
@@ -401,6 +402,11 @@ export function migrateBlocks(blocks: Block[]): Block[] {
  */
 export function seedBlocks(templateKey: string, schema: RenderableProperty[], custom: CustomPropertySpec[] = []): Block[] {
   if (templateKey === FOLDER_TEMPLATE_KEY) return [];
+  // A template that names its own blocks (the dashboard) gets exactly those,
+  // copied — its tabs point at their ids, so deriving a different list from
+  // its (empty) fields would leave every pointer dangling.
+  const own = getTemplate(templateKey)?.blocks;
+  if (own) return structuredClone(own);
 
   const ordered = defaultPropertyOrder(schema, custom);
   if (ordered.length === 0) return TEMPLATES_STARTING_WITH_IMAGE.has(templateKey) ? [newBlock("image")] : [];

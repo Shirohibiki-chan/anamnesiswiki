@@ -5160,6 +5160,25 @@ Phase 26, step 2. What binds the code:
   for. Don't add a path that stores a raw name — a name a selector can't match
   is the failure that reads as "snippets don't work".
 
+## Templates that declare blocks
+
+- **A template may name its own blocks, and only the dashboard does.** Phase
+  30, step 4. `TemplateDefinition.blocks` carries fixed-id block records and
+  the template's tabs point at them with `blockRef`s; `seedBlocks` hands those
+  out (copied) instead of deriving from the fields, `applyTemplate` appends
+  them after a page's own blocks when the page already has some, and
+  `openBuiltInTemplate` gives the override node a block list so the copy draws
+  them. The ids are fixed on purpose — a block id is unique per page, not per
+  world — so don't mint them at creation, and don't let a second template
+  share the dashboard's.
+
+- **The shipped snippet is a file of hers from the moment it lands.**
+  `seedDashboardSnippet` in the theme store writes `dashboard.css` once, on
+  the first scan with `dashboardSnippetMade` unset, and never again — the
+  same rule as the example world. Don't refresh it on update, don't rewrite
+  it when its text changes in the constant, and don't make anything in the
+  app depend on its being there.
+
 ## Collection sources
 
 - **One resolver for every source, and it lives in `collection-service.ts`.**
