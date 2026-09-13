@@ -2,7 +2,15 @@
 
 ## 2026-09-13 — The graph learns from Obsidian
 
+### Additions
+
+- **A character has Family, Friends, Allies, Rivals and Enemies fields by default.** Only Friends shipped before. They're reference fields, so each one is a line on the graph that says what it is.
+- **The graph's filter menu lists each relationship by name.** Under *Reference fields*: Friends, Enemies, Leader, Members — whatever the pages on this graph actually use — each one its own tick box.
+
 ### Fixes
+
+- **Zooming a big graph is smooth.** While the wheel turns, only what's on screen is painted and the filed-under lines are drawn solid; they get their dashes back the moment it stops. Measured on 831 pages: 43ms a frame → 18ms, the same as with no lines at all. Lines also never grow wider than a pixel and a half on screen, however far in you go.
+- **Pointing at a page no longer flashes the lines.** The dots still fade and the page's own lines still light up in the accent, but the other lines stay as they are — they only step back when you click a page. Lines can't fade the way dots can, so dimming them on hover made thousands of them flash as the pointer crossed a row of dots.
 
 - **Changing a filter or the reach on a big graph no longer freezes the app.** The layout is worked out on a separate thread now; the last picture stays up with a "Working out the picture…" note until the new one is ready, and the window keeps answering meanwhile. On 831 pages that's about a second of waiting instead of a second of frozen window — the same wait the graph had on opening, which is also no longer a freeze.
 

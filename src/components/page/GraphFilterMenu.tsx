@@ -25,6 +25,9 @@ type GraphFilterMenuProps = {
   onHideLone: (hide: boolean) => void;
   kinds: ReadonlySet<GraphEdgeKind>;
   onKinds: (kinds: ReadonlySet<GraphEdgeKind>) => void;
+  lineNames: string[];
+  hiddenLabels: ReadonlySet<string>;
+  onHiddenLabels: (hidden: ReadonlySet<string>) => void;
 };
 
 /**
@@ -51,12 +54,22 @@ export function GraphFilterMenu({
   onHideLone,
   kinds,
   onKinds,
+  lineNames,
+  hiddenLabels,
+  onHiddenLabels,
 }: GraphFilterMenuProps) {
   function toggleKind(kind: GraphEdgeKind) {
     const next = new Set(kinds);
     if (next.has(kind)) next.delete(kind);
     else next.add(kind);
     onKinds(next);
+  }
+
+  function toggleLabel(label: string) {
+    const next = new Set(hiddenLabels);
+    if (next.has(label)) next.delete(label);
+    else next.add(label);
+    onHiddenLabels(next);
   }
 
   function add() {
@@ -78,7 +91,7 @@ export function GraphFilterMenu({
 
   return (
     <div className="graph-menu-body">
-      {filters.length === 0 && !hideLone && kinds.size === GRAPH_EDGE_KINDS.length && (
+      {filters.length === 0 && !hideLone && kinds.size === GRAPH_EDGE_KINDS.length && hiddenLabels.size === 0 && (
         <p className="graph-menu-note">
           No filters. Every page connected to this one is drawn.
         </p>
@@ -171,10 +184,24 @@ export function GraphFilterMenu({
           page's graph it is not walked along either, so nothing floats. */}
       <p className="graph-menu-head">Lines to show</p>
       {GRAPH_EDGE_KINDS.map((kind) => (
-        <label key={kind} className="graph-check">
-          <input type="checkbox" checked={kinds.has(kind)} onChange={() => toggleKind(kind)} />
-          <span>{KIND_LABELS[kind]}</span>
-        </label>
+        <div key={kind}>
+          <label className="graph-check">
+            <input type="checkbox" checked={kinds.has(kind)} onChange={() => toggleKind(kind)} />
+            <span>{KIND_LABELS[kind]}</span>
+          </label>
+          {/* Under Reference fields, each relationship the graph knows by
+              name — Friends, Enemies, Leader — to switch on its own. Hers
+              2026-09-13: "friends/enemies/etc". Only a reference field knows
+              what to call itself, so only this kind opens up. */}
+          {kind === "property" &&
+            kinds.has(kind) &&
+            lineNames.map((label) => (
+              <label key={label} className="graph-check graph-check-sub">
+                <input type="checkbox" checked={!hiddenLabels.has(label)} onChange={() => toggleLabel(label)} />
+                <span>{label}</span>
+              </label>
+            ))}
+        </div>
       ))}
 
       {/* Said here rather than left to be discovered: on a picture, hiding a

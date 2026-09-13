@@ -37,6 +37,14 @@ export type GraphEdgeKind = MentionKind | "tree";
 export const GRAPH_EDGE_KINDS: readonly GraphEdgeKind[] = ["prose", "property", "manual", "storyline", "board", "tree"];
 
 /**
+ * Whether a line is drawn, by what it is: its kind, and for a reference field
+ * what that field is called. The filter menu's *Lines to show* is one of
+ * these; everything else draws every line.
+ */
+export type EdgeRule = (edge: { kind: GraphEdgeKind; label?: string }) => boolean;
+export const EVERY_EDGE: EdgeRule = () => true;
+
+/**
  * Which kind survives when one pair of pages is connected several ways.
  *
  * **One line per pair, and the most specific reason wins.** Two lines between
@@ -211,7 +219,7 @@ function assemble(
   nodes: Record<string, Node>,
   index: LinkIndex,
   place: (id: string, depth: number) => { x: number; y: number },
-  kinds: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS),
+  allow: EdgeRule = EVERY_EDGE,
 ): GraphModel {
   const best = new Map<string, GraphEdge>();
   for (const id of reached.keys()) {
@@ -219,7 +227,7 @@ function assemble(
     if (!node) continue;
     for (const edge of edgesTouching(node, nodes, index)) {
       if (edge.sourceId === edge.targetId) continue;
-      if (!kinds.has(edge.kind)) continue;
+      if (!allow(edge)) continue;
       if (!reached.has(edge.sourceId) || !reached.has(edge.targetId)) continue;
       const key = pairKey(edge.sourceId, edge.targetId);
       const standing = best.get(key);
@@ -282,7 +290,7 @@ export function graphAround(
   index: LinkIndex,
   depth: number,
   keep: (node: Node) => boolean = () => true,
-  kinds: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS),
+  allow: EdgeRule = EVERY_EDGE,
 ): GraphModel {
   if (!nodes[focusId]) return { nodes: [], edges: [] };
 
@@ -295,9 +303,9 @@ export function graphAround(
       const node = nodes[id];
       if (!node) continue;
       for (const edge of edgesTouching(node, nodes, index)) {
-        // A kind she has switched off is not walked along either, for the
+        // A line she has switched off is not walked along either, for the
         // reason a filtered page is not walked through: nothing floats.
-        if (!kinds.has(edge.kind)) continue;
+        if (!allow(edge)) continue;
         const other = edge.sourceId === id ? edge.targetId : edge.sourceId;
         if (other === id || reached.has(other)) continue;
         const candidate = nodes[other];
@@ -309,7 +317,7 @@ export function graphAround(
     frontier = next;
   }
 
-  return assemble(reached, nodes, index, seedPosition, kinds);
+  return assemble(reached, nodes, index, seedPosition, allow);
 }
 
 /**
@@ -338,7 +346,7 @@ export function graphOfPages(
   nodes: Record<string, Node>,
   index: LinkIndex,
   keep: (node: Node) => boolean = () => true,
-  kinds: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS),
+  allow: EdgeRule = EVERY_EDGE,
 ): GraphModel {
   const reached = new Map<string, number>();
   for (const id of pageIds) {
@@ -352,7 +360,7 @@ export function graphOfPages(
   if (focusId && nodes[focusId] && !reached.has(focusId)) reached.set(focusId, 0);
 
   const count = reached.size;
-  return assemble(reached, nodes, index, (id) => seedScatter(id, count), kinds);
+  return assemble(reached, nodes, index, (id) => seedScatter(id, count), allow);
 }
 
 /**
@@ -479,13 +487,11 @@ export function restrict(
   model: GraphModel,
   focusId: string | null,
   keep: (id: string) => boolean,
-  kinds: ReadonlySet<GraphEdgeKind>,
+  allow: EdgeRule,
   hideLone: boolean,
 ): GraphModel {
   const kept = new Set(model.nodes.filter((node) => node.id === focusId || keep(node.id)).map((node) => node.id));
-  const edges = model.edges.filter(
-    (edge) => kinds.has(edge.kind) && kept.has(edge.sourceId) && kept.has(edge.targetId),
-  );
+  const edges = model.edges.filter((edge) => allow(edge) && kept.has(edge.sourceId) && kept.has(edge.targetId));
   const links = new Map<string, number>();
   for (const edge of edges) {
     links.set(edge.sourceId, (links.get(edge.sourceId) ?? 0) + 1);
@@ -496,6 +502,26 @@ export function restrict(
     edges,
   };
   return hideLone ? withoutLone(shown, focusId) : shown;
+}
+
+/**
+ * What the reference-field lines on a graph are called — "Friends",
+ * "Enemies", "Leader" — each once, in alphabetical order, for the filter
+ * menu to list. Only a reference field knows what to call itself.
+ */
+export function edgeLabels(model: GraphModel): string[] {
+  const labels = new Set<string>();
+  for (const edge of model.edges) if (edge.label) labels.add(edge.label);
+  return [...labels].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+/**
+ * The rule the filter menu's choices come to: a kind switched off draws no
+ * line of that kind, and a relationship name switched off draws no
+ * reference-field line called that.
+ */
+export function edgeRule(kinds: ReadonlySet<GraphEdgeKind>, hiddenLabels: ReadonlySet<string>): EdgeRule {
+  return (edge) => kinds.has(edge.kind) && !(edge.label !== undefined && hiddenLabels.has(edge.label));
 }
 
 /**

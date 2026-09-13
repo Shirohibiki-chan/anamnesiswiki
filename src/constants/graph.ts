@@ -55,6 +55,18 @@ export const GRAPH_FADE_MS = 350;
  */
 export const GRAPH_COLLIDE_RADIUS = 78;
 
+/**
+ * The widest a line is drawn on the screen, in pixels, whatever the zoom.
+ *
+ * Lines are drawn in scene units and scaled with the picture, which far out
+ * is right — the whole-world mesh should be fine — and up close made every
+ * line four pixels wide, heavy to look at and expensive to paint. Obsidian's
+ * stay hairlines at every zoom. Measured 2026-09-13: capping them took a
+ * wheel zoom on 831 pages from 43ms a frame toward the 16ms the pages alone
+ * cost.
+ */
+export const GRAPH_LINE_MAX_PX = 1.5;
+
 /** Resting length of a line between two connected pages. */
 export const GRAPH_LINK_DISTANCE = 150;
 
@@ -115,6 +127,15 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 
 /** How fast the wheel zooms. Small: a notch should nudge, not jump. */
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
+
+/**
+ * How long after the last wheel tick the wheel counts as stopped.
+ *
+ * While it turns, the lines are painted for the window alone; when it stops
+ * they are painted once more with the margin a drag needs. Short enough not
+ * to be noticed, long enough that a wheel still turning is one gesture.
+ */
+export const GRAPH_ZOOM_SETTLE_MS = 160;
 
 /**
  * How many connections out the graph reaches by default.

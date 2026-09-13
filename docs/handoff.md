@@ -447,7 +447,15 @@ Board spike, closed 2026-09-13. What binds the code:
   what makes a zoomed-in drag 17ms a frame instead of 40 — painting thousands
   of thick dashed lines every frame cannot be made fast, so it is not done.
   Dashed tree lines use square caps on the canvas: round caps are drawn on
-  every dash and were 30ms of the frame on their own.
+  every dash and were 30ms of the frame on their own. **A zoom repaints every
+  tick, crisp** — scaling the painting instead read as blurry — and is cheap
+  because while the wheel turns (`zooming`) the canvas paints the window
+  without its overdraw margin and draws the tree lines solid; dashes and the
+  margin come back GRAPH_ZOOM_SETTLE_MS after the last tick. Measured: 43ms a
+  frame to 18ms on 831 pages, which is what the pages alone cost. Lines never
+  exceed GRAPH_LINE_MAX_PX on screen. **The canvas dims its lines for a
+  selection, never a hover**: a canvas cannot ease, and lines that dimmed on
+  hover flashed on every dot the pointer crossed.
 
 - **The layout runs in a worker, and every read in the app suite waits for it.**
   `settleGraphInWorker` is `settleGraph` on another thread — same inputs, same

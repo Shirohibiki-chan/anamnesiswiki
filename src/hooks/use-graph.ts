@@ -8,6 +8,8 @@ import { fieldChoices, matchesFilter } from "../services/database-service";
 import type { GraphPins } from "../services/graph-layout";
 import { settleGraphInWorker } from "../services/graph-layout-worker";
 import {
+  edgeLabels,
+  edgeRule,
   graphAround,
   graphOfPages,
   graphPinKey,
@@ -34,6 +36,7 @@ export type { GraphPins } from "../services/graph-layout";
 
 const EMPTY: GraphModel = { nodes: [], edges: [] };
 const ALL_KINDS: ReadonlySet<GraphEdgeKind> = new Set(GRAPH_EDGE_KINDS);
+const NO_LABELS: ReadonlySet<string> = new Set();
 
 export type PageGraphOptions = {
   /** The page the graph is centred on, or null for a graph of the whole thing. */
@@ -46,6 +49,8 @@ export type PageGraphOptions = {
   hideLone?: boolean;
   /** Which kinds of line are drawn; every kind when absent. */
   kinds?: ReadonlySet<GraphEdgeKind>;
+  /** Relationship names — "Enemies" — whose reference-field lines are not drawn. */
+  hiddenLabels?: ReadonlySet<string>;
   /** Where she has already dragged nodes on this graph. */
   pins: GraphPins;
   /**
@@ -63,6 +68,8 @@ export type PageGraph = {
   model: GraphModel;
   /** Whether the picture on screen is the last one while the next is worked out. */
   working: boolean;
+  /** What the reference-field lines are called — "Friends", "Enemies" — for the filter menu. */
+  labels: string[];
   /** Every page in range with no filters applied. */
   reached: Node[];
   /** The values a field actually takes across `reached`, for the value picker. */
@@ -111,6 +118,7 @@ export function usePageGraph({
   filters,
   hideLone = false,
   kinds = ALL_KINDS,
+  hiddenLabels = NO_LABELS,
   pins,
   generation,
 }: PageGraphOptions): PageGraph {
@@ -123,7 +131,7 @@ export function usePageGraph({
   // The shape of the question, as one value a memo can be keyed on. Pins are
   // deliberately absent: they change on every drop, and re-running the
   // simulation then would jump every other node the instant one was let go of.
-  const asked = `${hideLone ? "lone" : ""}|${[...kinds].sort().join(",")}|${JSON.stringify(filters)}`;
+  const asked = `${hideLone ? "lone" : ""}|${[...kinds].sort().join(",")}|${[...hiddenLabels].sort().join(",")}|${JSON.stringify(filters)}`;
   const structure = `${focusId ?? ""}|${reach}|${universeId ?? ""}|${generation}|${asked}`;
   /**
    * What the *layout* is keyed on, which on a whole-world graph leaves the
@@ -214,7 +222,7 @@ export function usePageGraph({
     // Off after the walk rather than during it: a lone page is one the
     // finished picture has no written line to, which the walk cannot know
     // about a page until it has been through everything.
-    const walked = graphAround(focusId, nodes, index, reach as number, keep, kinds);
+    const walked = graphAround(focusId, nodes, index, reach as number, keep, edgeRule(kinds, hiddenLabels));
     return { model: hideLone ? withoutLone(walked, focusId) : walked, centreId: focusId };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layoutKey, scopedIds, nodes, index, getLabel]);
@@ -256,10 +264,27 @@ export function usePageGraph({
       const node = nodes[id];
       return Boolean(node) && filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
     };
-    return restrict(settled.model, focusId, keep, kinds, hideLone);
+    return restrict(settled.model, focusId, keep, edgeRule(kinds, hiddenLabels), hideLone);
     // `asked` stands in for the filters, the kinds and hideLone.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settled, scopedIds, nodes, focusId, asked, getLabel]);
+
+  /**
+   * What the relationships on this graph are called, before any of them is
+   * switched off — so a name she has hidden stays in the list to be brought
+   * back. A whole world reads them off the settled picture; a page's graph
+   * walks again with every line allowed, which is cheap at that size.
+   */
+  const filterKey = JSON.stringify(filters);
+  const labels = useMemo(() => {
+    if (scopedIds) return edgeLabels(settled.model);
+    if (!focusId) return [];
+    const keep = (node: Node) => filters.every((filter) => matchesFilter(node, filter, [], nodes, getLabel));
+    return edgeLabels(graphAround(focusId, nodes, index, reach as number, keep));
+    // `filterKey` stands in for the filters, so a list rebuilt by a re-render
+    // does not walk again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopedIds, settled, focusId, nodes, index, reach, filterKey, getLabel]);
 
   // Columns are empty on purpose: a graph filters on what a page *is* rather
   // than on a table's columns, and `template` and `tag` are answered from the
@@ -269,7 +294,7 @@ export function usePageGraph({
     [reached, nodes, getLabel],
   );
 
-  return { model, reached, choicesFor, key: structure, working };
+  return { model, reached, choicesFor, labels, key: structure, working };
 }
 
 /**

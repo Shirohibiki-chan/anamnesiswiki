@@ -9,6 +9,7 @@ import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
   GRAPH_ZOOM_SENSITIVITY,
+  GRAPH_ZOOM_SETTLE_MS,
 } from "../constants/graph";
 import { graphBounds } from "../services/graph-layout";
 import type { GraphEdge, GraphModel, GraphNode } from "../services/graph-service";
@@ -51,6 +52,15 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
    * see graph.css on why leaving it on pixellates every zoom.
    */
   const [panning, setPanning] = useState(false);
+  /**
+   * Whether the wheel is turning — true from a tick until GRAPH_ZOOM_SETTLE_MS
+   * after the last one. Not for scaling anything (that was tried and read as
+   * blurry); the canvas uses it to paint only the window while the wheel
+   * turns and the overdraw margin once it stops. See GraphEdgesCanvas.
+   */
+  const [zooming, setZooming] = useState(false);
+  const zoomSettleRef = useRef<number | null>(null);
+  useEffect(() => () => window.clearTimeout(zoomSettleRef.current ?? undefined), []);
 
   /**
    * Nodes she has dragged somewhere, by id.
@@ -269,6 +279,9 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     setZoomFactor((prev) =>
       clamp(prev * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY), GRAPH_MIN_ZOOM / fit, GRAPH_MAX_ZOOM / fit),
     );
+    setZooming(true);
+    window.clearTimeout(zoomSettleRef.current ?? undefined);
+    zoomSettleRef.current = window.setTimeout(() => setZooming(false), GRAPH_ZOOM_SETTLE_MS);
   }, []);
 
   const hover = useCallback((id: string | null) => setHoveredId(id), []);
@@ -303,6 +316,8 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
      * pixel-exact slide and stays cheap.
      */
     moving: panning,
+    /** Whether the wheel is turning; the canvas paints less while it is. */
+    zooming,
     forgetArrangement,
     hasMoved: Object.keys(moved).length > 0,
     select: setSelectedId,
