@@ -70,6 +70,19 @@ export const STORYLINE_TEMPLATE_KEY = "storyline";
 export const SCENE_TEMPLATE_KEY = "scene";
 
 /**
+ * A page whose body is a whiteboard: shapes, arrows, freehand lines, text
+ * and pictures, drawn wherever she puts them (Board spike, 2026-09-13).
+ *
+ * The storyline's sibling rather than its replacement. A storyline knows
+ * that its cards are pages and that its arrows are the order of events; a
+ * board knows nothing about the world and that is what it is for — the
+ * sketch, the map, the "how do these fit together" that has no shape yet.
+ *
+ * The drawing itself is not in this node's file. See `BOARD_FILE`.
+ */
+export const BOARD_TEMPLATE_KEY = "board";
+
+/**
  * The example dashboard (Phase 30, step 4): a home page with the capture box,
  * Recently edited, Shortcuts and a row of links already on it. The one
  * template whose body starts with blocks in it rather than headings — see
@@ -83,6 +96,7 @@ export const DASHBOARD_TEMPLATE_KEY = "dashboard";
 export const TEMPLATE_KEYS = [
   "universe",
   "storyline",
+  "board",
   "folder",
   "character",
   "race",
@@ -1222,6 +1236,25 @@ export type StorylineBand = {
  * written onto the two pages it joins means a reparent rewrites two files, and
  * a failure halfway leaves the canvas half-connected.
  */
+/**
+ * A board page's drawing, stored in `_board.json` inside that page's own
+ * directory — the same call `Storyline` makes, for the same reasons: a
+ * drawing is not an edit to the page, must not enter its version history,
+ * and must not read as a change to whoever syncs the folder.
+ *
+ * The three fields are Excalidraw's own scene shape, held opaquely. The app
+ * never reads inside an element; it stores what the drawing library hands
+ * back and hands it back on the next open. `files` is the pictures dropped
+ * on the board, keyed by the library's own file ids and carried as data URLs
+ * — the spike's one known shortcut, see docs/plan.md.
+ */
+export type Board = {
+  version: 1;
+  elements: unknown[];
+  appState: Record<string, unknown>;
+  files: Record<string, unknown>;
+};
+
 export type Storyline = {
   version: 1;
   nodes: StorylineNode[];

@@ -37,6 +37,14 @@ export const PAGE_META_FILE = "_page.json";
  * be read as true, while this is only read when it is asked for by name.
  */
 export const STORYLINE_FILE = "_storyline.json";
+/**
+ * A board page's drawing, inside that page's own directory beside `_page.json`
+ * (Board spike, 2026-09-13). Everything said of `STORYLINE_FILE` above holds
+ * here: its own file so drawing is not an edit to the page, underscored so
+ * it reads as this node's own data, skipped by the walk, kept if the page
+ * stops being a board.
+ */
+export const BOARD_FILE = "_board.json";
 export const ASSETS_DIR = "assets";
 
 /**

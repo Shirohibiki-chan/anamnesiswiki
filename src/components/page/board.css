@@ -1,0 +1,56 @@
+/* A board's whiteboard, in the page whose body it is. Board spike, 2026-09-13.
+   The sizing is the storyline's: a fixed height in the page, the whole window
+   when expanded, and one element either way. */
+
+.board {
+  position: relative;
+  height: 32rem;
+  margin-bottom: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  overflow: hidden;
+}
+
+.board-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  height: auto;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* In the library's top-right slot, drawn to match its own buttons. */
+.board-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--island-bg-color, var(--color-panel));
+  color: var(--icon-fill-color, var(--color-text-secondary));
+  box-shadow: var(--shadow-island, none);
+  cursor: pointer;
+}
+
+.board-expand:hover {
+  color: var(--color-text-primary);
+  background: var(--color-panel-alt);
+}
+
+.board-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-secondary);
+}
+
+/* The library's fonts for its own chrome; the drawing's fonts are its own. */
+.board .excalidraw {
+  --ui-font: var(--font-ui, inherit);
+}

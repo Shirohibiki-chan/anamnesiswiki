@@ -1738,6 +1738,60 @@ export async function openAndUnpinShortcutTogether(window: Page, name: string): 
   }, name);
 }
 
+// ---- Board spike (2026-09-13): a whiteboard drawn in the page whose body it is ----
+
+const BOARD = ".board";
+const BOARD_CANVAS = ".board .excalidraw__canvas.interactive";
+
+/**
+ * Turns the open page into a board, from the template grid a blank page
+ * shows, and waits for the drawing library to have loaded — it comes in late,
+ * on first use, so the grid button click is not the end of it.
+ */
+export async function makeBoard(window: Page): Promise<void> {
+  await window.locator(NEW_PAGE_GRID).getByRole("button", { name: "Board", exact: true }).click();
+  await window.locator(BOARD_CANVAS).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Waits for the whiteboard, which arrives late on a fresh load because the library is loaded on first use. */
+export async function waitForBoard(window: Page): Promise<void> {
+  await window.locator(BOARD_CANVAS).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Whether the open page is drawing a whiteboard. */
+export async function boardIsShown(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_CANVAS).count()) > 0;
+}
+
+/**
+ * Draws a rectangle on the board, by tool shortcut and a drag across the
+ * middle of it — the way a hand would, since the drawing is a canvas and
+ * there is no element to click.
+ */
+export async function drawBoardRectangle(window: Page): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await canvas.click({ position: { x: box.width / 2, y: box.height / 2 } });
+  await window.keyboard.press("r");
+  const from = { x: box.x + box.width * 0.3, y: box.y + box.height * 0.3 };
+  const to = { x: box.x + box.width * 0.6, y: box.y + box.height * 0.6 };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(to.x, to.y, { steps: 8 });
+  await window.mouse.up();
+  await window.keyboard.press("Escape");
+}
+
+/** Whether the board is filling the window. */
+export async function boardIsExpanded(window: Page): Promise<boolean> {
+  return (await window.locator(`${BOARD}.board-expanded`).count()) > 0;
+}
+
+export async function toggleBoardExpand(window: Page): Promise<void> {
+  await window.locator(`${BOARD} .board-expand`).click();
+}
+
 // ---- Phase 25: the storyline canvas, drawn in the page whose body it is ----
 
 /**

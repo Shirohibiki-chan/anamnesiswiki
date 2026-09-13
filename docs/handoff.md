@@ -351,6 +351,46 @@ Phase 25, closed 2026-09-09. What binds the code:
 
 ---
 
+
+## Boards
+
+Board spike, closed 2026-09-13. What binds the code:
+
+- **The drawing is Excalidraw's, held opaquely.** `Board` is three fields the
+  library hands back — elements, a kept slice of its view state, and files —
+  and the app never reads inside an element. `board-service.ts` is
+  deliberately thin for that reason; anything that starts interpreting an
+  element's shape is a second copy of the library's rules, wrong the next
+  time the library moves. `BoardCanvas.tsx` is the one file that knows the
+  library's types, and the cast lives there.
+
+- **`_board.json` is the storyline's arrangement, for the storyline's
+  reasons.** Own file inside the page's directory, not through `saveNode`,
+  not snapshotted, kept if the page stops being a board, rewritten by
+  `restoreNodes` — every line of §Storylines' second bullet applies.
+
+- **The library is loaded on first use, and the asset path is set before
+  it loads.** `PageBoard` sets `window.EXCALIDRAW_ASSET_PATH` at module scope
+  and imports `BoardCanvas` lazily; the order is the point. The path is
+  resolved against `document.baseURI` rather than written as `/excalidraw/`
+  because the Electron build is a `file://` page and a root path on one is
+  the top of the drive. Without the variable the library fetches its fonts
+  from a CDN, which is the promise in `CLAUDE.md` §Two Promises. The fonts
+  are a copy of the package's own under `public/excalidraw/fonts/`, minus
+  the CJK face — see `docs/ideas.md` § Canvas.
+
+- **The board is not in the app's undo history, and must not be.** The
+  library has its own undo over its own elements; a second history over
+  the same edits would fight it. Ctrl+Z inside a board goes to Excalidraw.
+
+- **A change is written when the drawing holds still, not when it is
+  reported.** The library reports on every pointer move. `use-board-view.ts`
+  fingerprints ids, versions and deletion and writes 600ms after the last
+  real change, flushing on unmount so a stroke drawn just before clicking
+  away is not the one lost. Deleted elements are dropped on the way to disk
+  — the library keeps them for its in-session undo, and on disk they would
+  be a file that only grows.
+
 ## The graph
 
 - **The simulation is ticked to a stop and must not be animated.** `settleGraph`

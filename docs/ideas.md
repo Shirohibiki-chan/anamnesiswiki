@@ -26,6 +26,14 @@ Freeform spatial planning surface — LK ships one as "Board." Kept on the list 
 
 **It is not a prerequisite for Phase 25 — Storylines**, and the two must not be collapsed into one job. They share pan, zoom and drag-a-thing-somewhere, which is the smaller part of either. A storyline's nodes are *pages* and its edges *mean* something ("this leads to that"), so it needs a graph that knows what it's holding; a board deliberately holds anything and knows nothing about it. Building storylines out of a drawing tool would give up the part that makes it useful.
 
+**The spike shipped 2026-09-13: `board` is a sixteenth template, its body an Excalidraw whiteboard, saved as `_board.json` inside the page's directory the way a storyline's canvas is.** Decided by looking at it running rather than by reading about it. `docs/handoff.md` § Boards has what binds the code. What the spike deliberately left out, in the order they'd matter to her:
+
+- **Pictures go through the world's picture library.** Today a picture dropped on a board is held inside `_board.json` as a data URL — a board with three photos is a three-megabyte JSON file, and the library's "pull a picture out of everywhere" can't see it. The library takes an `onDrop`/`generateIdForFile` hook, so the fix is routing the bytes into `assets/` and keeping the id.
+- **A shape links to a page.** Excalidraw elements carry a `link`; pointing one at a page in the world and having it open on click is what makes this a wiki whiteboard rather than a drawing app in a page. That is also the moment `link-index.ts` learns about boards, the way it learnt about storylines.
+- **Boards export.** A board is not drawn in the Markdown, website or LK exports (a storyline canvas isn't either). The library exports PNG and SVG, so the Markdown and site exports can carry a picture of it; LK has no shape for it and should say so in the lossy list.
+- **Theme follows while open.** The board reads light/dark off the page background once, at mount. A theme switched while a board is open is caught on the next visit.
+- **The CJK hand-drawn face is not bundled.** Xiaolai is 13MB of the library's 14MB of fonts and was left out; text in Chinese, Japanese or Korean draws in a fallback face. Bundle it the day someone needs it.
+
 ---
 
 **Icons you choose yourself**

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import {
   BLANK_TEMPLATE_KEY,
+  BOARD_TEMPLATE_KEY,
   FOLDER_TEMPLATE_KEY,
   STORYLINE_TEMPLATE_KEY,
   UNIVERSE_TEMPLATE_KEY,
@@ -11,6 +12,7 @@ import {
 import { useProject } from "../../hooks/use-project";
 import { PageDatabase } from "./PageDatabase";
 import { PageStoryline } from "./PageStoryline";
+import { PageBoard } from "./PageBoard";
 import { Editor } from "./Editor";
 import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
@@ -80,6 +82,8 @@ export function PageView() {
   // has no tabs yet" offer below would be the wrong prompt on the one page
   // where having none is the point.
   const isStoryline = node.templateKey === STORYLINE_TEMPLATE_KEY;
+  // A board is the same case: the drawing is the body (Board spike).
+  const isCanvasPage = isStoryline || node.templateKey === BOARD_TEMPLATE_KEY;
 
   // A page nobody has answered anything about yet: created blank, and nothing
   // written in it since. Both halves matter — a blank page *with* tabs is one
@@ -126,7 +130,8 @@ export function PageView() {
             what kind of page it was is the thing that reads as the app moving
             under her. */}
         {isStoryline && <PageStoryline node={node} />}
-        {isStoryline || (node.view && node.tabs.length === 0) ? null : isUnanswered ? (
+        {node.templateKey === BOARD_TEMPLATE_KEY && <PageBoard node={node} />}
+        {isCanvasPage || (node.view && node.tabs.length === 0) ? null : isUnanswered ? (
           <NewPageLanding node={node} />
         ) : node.tabs.length === 0 ? (
           // A universe is a container, not a page you write in, so the offer

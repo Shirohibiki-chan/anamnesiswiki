@@ -24,6 +24,7 @@ import {
   type Node,
   type Project,
   type Storyline,
+  type Board,
   type TemplateLibrary,
   type Tab,
 } from "../constants/schema";
@@ -685,6 +686,8 @@ export type ProjectStoreState = {
    * than finding the page's directory a second time later.
    */
   storylines: Record<string, Storyline>;
+  /** Every board's drawing, by the id of the board page (Board spike). Held like `storylines`, for the same reasons. */
+  boards: Record<string, Board>;
   /**
    * What each picture is called, keyed by filename. A label, never the file's
    * own name — see constants/paths.ts ASSET_NAMES_FILE for why that isn't a
@@ -896,6 +899,12 @@ export type ProjectStoreState = {
   removeStorylineBand: (storylineId: string, bandId: string) => void;
   tidyStoryline: (storylineId: string) => void;
   /**
+   * The board's drawing (Board spike, 2026-09-13). Set and written together,
+   * like `applyStoryline`. Called by the board component once the drawing has
+   * settled, not per pointer move — the debounce is the component's job.
+   */
+  setBoard: (boardId: string, board: Board) => void;
+  /**
    * Puts the tree's arrangement back to an earlier copy of `project.json`
    * (Phase 19) — the order, the home page, the pins, the expanded folders.
    *
@@ -1014,6 +1023,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     if (!rootPath || !page) return;
     set({ storylines: { ...storylines, [storylineId]: storyline } });
     track(() => fsService.saveStoryline(rootPath, page, Object.values(get().nodes), storyline));
+  };
+
+  const applyBoard = (boardId: string, board: Board): void => {
+    const { rootPath, nodes, boards } = get();
+    const page = nodes[boardId];
+    if (!rootPath || !page) return;
+    set({ boards: { ...boards, [boardId]: board } });
+    track(() => fsService.saveBoard(rootPath, page, Object.values(get().nodes), board));
   };
 
   // Set and written together, always. The library is one file, so there's no
@@ -1333,6 +1350,13 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       if (!storyline) continue;
       await enqueueWrite(() => fsService.saveStoryline(rootPath, node, Object.values(nextNodes), storyline));
     }
+    // A board's drawing went with its directory the same way (Board spike).
+    const drawings = get().boards;
+    for (const node of restored) {
+      const board = drawings[node.id];
+      if (!board) continue;
+      await enqueueWrite(() => fsService.saveBoard(rootPath, node, Object.values(nextNodes), board));
+    }
 
     set({ nodes: nextNodes, project: nextProject });
     markSaved();
@@ -1516,6 +1540,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     removedAssets: createRemovedAssets(),
     assetSources: createAssetSources(),
     storylines: {},
+    boards: {},
     skippedFiles: [],
     loadWasIncomplete: false,
     saveErrors: [],
@@ -1587,6 +1612,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         removedAssets,
         assetSources,
         storylines: result.storylines,
+        boards: result.boards,
         // Opening a world never opens a template — see the field's own note.
         openTemplateId: null,
         isLoaded: true,
@@ -1678,6 +1704,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         removedAssets: createRemovedAssets(),
         assetSources: createAssetSources(),
         storylines: {},
+        boards: {},
         skippedFiles: [],
         loadWasIncomplete: false,
         navHistory: EMPTY_NAV_HISTORY,
@@ -1788,6 +1815,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         // file, so a world made in memory that only wrote them would draw an
         // empty canvas until the next time the project was opened.
         storylines: Object.fromEntries(written.storylines.map((entry) => [entry.pageId, entry.storyline])),
+        boards: {},
         navHistory: visit(EMPTY_NAV_HISTORY, written.project.selectedId ?? null),
       });
       markSaved();
@@ -1941,6 +1969,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         removedAssets: createRemovedAssets(),
         assetSources: createAssetSources(),
         storylines: {},
+        boards: {},
         skippedFiles: [],
         loadWasIncomplete: false,
         saveErrors: [],
@@ -4242,6 +4271,13 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         () => applyStoryline(storylineId, before),
         () => applyStoryline(storylineId, after),
       );
+    },
+
+    // Not recorded for undo: the drawing library has its own undo, over its
+    // own elements, and a second history on top would fight it — Ctrl+Z
+    // inside the board goes to Excalidraw, not to the app.
+    setBoard(boardId, board) {
+      applyBoard(boardId, board);
     },
 
     setExpanded(id, isOpen) {

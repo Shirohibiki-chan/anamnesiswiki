@@ -23,10 +23,12 @@ import {
   type Node,
   type Project,
   type Storyline,
+  type Board,
   type TemplateLibrary,
 } from "../constants/schema";
 import { alwaysDirectory } from "./template-registry";
 import { readStoryline } from "./storyline-service";
+import { readBoard } from "./board-service";
 import {
   ASSET_FOLDERS_FILE,
   ASSET_NAMES_FILE,
@@ -40,6 +42,7 @@ import {
   MOVE_TEMP_PREFIX,
   OPEN_MARKER_FILE,
   STORYLINE_FILE,
+  BOARD_FILE,
   PAGE_META_FILE,
   PROBE_TEMP_PREFIX,
   PROJECTS_SUBDIR,
@@ -405,6 +408,8 @@ export type LoadedProject = {
    * which is what a canvas nobody has put anything on reads as.
    */
   storylines: Record<string, Storyline>;
+  /** Every board's drawing, by the id of the board page (Board spike). Same shape as `storylines`. */
+  boards: Record<string, Board>;
 };
 
 // A project folder is plain JSON on the user's own disk, synced by whatever
@@ -450,6 +455,7 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     reunited: [],
     sources: new Map(),
     storylines: new Map(),
+    boards: new Map(),
     limited: createReadLimiter(READ_CONCURRENCY),
   };
   const rootEntries = await ctx.limited(() => readDir(rootPath));
@@ -476,6 +482,7 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     reunited: ctx.reunited,
     supersededNames,
     storylines: Object.fromEntries(ctx.storylines),
+    boards: Object.fromEntries(ctx.boards),
   };
 }
 
@@ -645,6 +652,8 @@ type WalkContext = {
    * of positions; a world of them is smaller than one page of writing.
    */
   storylines: Map<string, Storyline>;
+  /** Every board drawing found on the way past (Board spike), read for the same reason as the storylines. */
+  boards: Map<string, Board>;
   limited: ReadLimiter;
 };
 
@@ -782,6 +791,14 @@ async function walkEntries(
             ctx.skipped.push(joinPath(entryPath, STORYLINE_FILE));
           }
         }
+        // The board's drawing, the same way (Board spike, 2026-09-13).
+        if (node && childEntries.some((child) => !child.isDirectory && child.name === BOARD_FILE)) {
+          try {
+            ctx.boards.set(node.id, readBoard(JSON.parse(await ctx.limited(() => readTextFile(joinPath(entryPath, BOARD_FILE))))));
+          } catch {
+            ctx.skipped.push(joinPath(entryPath, BOARD_FILE));
+          }
+        }
         // An unreadable marker still leaves a real directory that may hold
         // perfectly good children. Keep walking into it, reparented to this
         // level, so a single bad `_folder.json` costs one node and not the
@@ -807,6 +824,7 @@ async function walkEntries(
         entry.name === PROJECT_FILE ||
         entry.name === TEMPLATES_FILE ||
         entry.name === STORYLINE_FILE ||
+        entry.name === BOARD_FILE ||
         entry.name === OPEN_MARKER_FILE
       ) {
         return [];
@@ -1377,6 +1395,19 @@ export async function saveStoryline(
   const dirPath = joinPath(rootPath, ...dirSegments);
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(joinPath(dirPath, STORYLINE_FILE), JSON.stringify(storyline, null, 2));
+}
+
+/**
+ * Writes one board page's drawing into that page's own directory (Board
+ * spike, 2026-09-13). Everything `saveStoryline` says holds here: not through
+ * `saveNode`, not snapshotted, and `mkdir` first because the drawing can be
+ * the first thing written into a brand-new board's directory.
+ */
+export async function saveBoard(rootPath: string, node: Node, graph: Node[] | PathIndex, board: Board): Promise<void> {
+  const { dirSegments } = resolveNodePath(node, graph);
+  const dirPath = joinPath(rootPath, ...dirSegments);
+  await mkdir(dirPath, { recursive: true });
+  await writeTextFile(joinPath(dirPath, BOARD_FILE), JSON.stringify(board));
 }
 
 // A node that has just been written into its own directory must not still have

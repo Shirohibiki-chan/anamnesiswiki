@@ -173,6 +173,16 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
     tabs: [],
     properties: [],
   },
+  // Board spike, 2026-09-13. The storyline's shape exactly — no tabs, no
+  // properties, a directory even when empty — because the drawing is the
+  // body and it lives in `_board.json` inside the page's directory.
+  board: {
+    key: "board",
+    label: "Board",
+    alwaysDirectory: true,
+    tabs: [],
+    properties: [],
+  },
   folder: {
     key: "folder",
     label: "Folder",
