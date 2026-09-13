@@ -15,7 +15,7 @@
 // appears here without being added here.
 import { insertOrUpdateBlockForSlashMenu, type BlockNoteEditor } from "@blocknote/core";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
-import { AtSign, FileText, Image as ImageIcon, Link2, List, ListTree, PanelsTopLeft, Sparkles, Tags } from "lucide-react";
+import { AtSign, FileText, Image as ImageIcon, Inbox, Link2, List, ListTree, PanelsTopLeft, Sparkles, Tags } from "lucide-react";
 import { METER_STYLES } from "../../constants/meter-styles";
 import { BLOCK_REF_TYPE, INFOBOX_TYPE, PAGE_CONTENTS_TYPE, type Block, type BlockKind } from "../../constants/schema";
 
@@ -115,6 +115,14 @@ export function getPageBlockSlashMenuItems(
       group: "Page blocks",
       icon: <AtSign size={16} />,
       onItemClick: () => insert("alias"),
+    },
+    {
+      title: "Quick capture",
+      subtext: "A box that files a thought as a page under the right parent",
+      aliases: ["capture", "quickcapture", "inbox", "jot"],
+      group: "Page blocks",
+      icon: <Inbox size={16} />,
+      onItemClick: () => insert("capture"),
     },
     {
       title: "Manual links",

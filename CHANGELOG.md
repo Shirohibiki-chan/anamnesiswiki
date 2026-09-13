@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-13 — a box that files a thought where it belongs
+
+### Additions
+
+- **Quick capture, a new block.** *Add Block ▸ Quick capture*, or `/quick capture` in the writing. Type a thought into the box, press *Capture*, and it becomes a page under the destination the block shows — while you stay on the page you were on. The line under the box says what it was saved as and where, and both are links. Ctrl+Enter captures too; plain Enter is a new line, because a thought is allowed to be more than one.
+- **Destinations are pages.** The block files under its own page and the pages directly inside it — a `Quick capture` page with `Magic`, `Story` and `Characters` under it is the whole setup, and *Destinations are pages under…* at the foot of the block points it at a different page if the box lives somewhere else, like a home page. The picker is a box you type into rather than a dropdown: the whole list until you type, narrowing as you do, Enter takes the top match. It offers wherever the last capture went.
+- **Code words.** Start the text with a destination's name and a dash — `magic - i love witches!` — and the block picks that destination on its own and drops the word from the title. The control says *code word* while that's in effect, so nothing is routed quietly. A word that matches nothing changes nothing: the text is kept whole and goes where the picker says, so a typo turns up in a page's title where you can see it rather than in a bin.
+- **A captured page is a plain page.** Its name is the first line you typed and the rest is its writing, one paragraph per line. It carries a *Captured* field with the date and time in a form that sorts, so a Subpage index under the destination can show newest first. It skips the "what kind of page is this?" grid — it was made to hold three lines, not to be a Character yet — and *Add Block ▸ Apply a template* is still there when it grows up.
+
+### Notes
+
+- **This is the first piece of Phase 30**, Home Dashboards & Quick Capture. Next is the same box opening from anywhere, by shortcut and from the search palette.
+
 ## 2026-09-10 — publish a world as a website
 
 ### Additions
@@ -267,25 +280,3 @@
 
 - **Nothing you have on disk needs fixing** — this only ever affected a change made within a few hundred milliseconds of opening a page, and only until you made another change to the same file. Anything currently in your world is what it says it is.
 - Found through the graph's **Put it back** the day before, which is simply the easiest way to hit it: that button sits inches from the page you just opened.
-
-## 2026-09-07 — steering the graph, and it remembers how you left it
-
-### Additions
-
-- **You can move pages around a graph and they stay where you put them.** Drag a page, and next time you open that graph it is where you left it — including after closing the app. Each page's graph remembers its own arrangement, so tidying one leaves every other one exactly as it was.
-- **Put it back** lays a graph out again from scratch and forgets everything you moved on it. It sits in the bar and is greyed out until there is something to undo.
-- **Reach** chooses how far out the graph looks: one connection, two, or three. One is the default, and it stays that way each time you open a graph.
-- **Filter by what a page is** — its template, or its tags. The same filters the database views use, so there is nothing new to learn. The bar counts what is left against what there was, so a filter hiding everything never looks like a page connected to nothing.
-- **Lines** chooses when a line writes what it is. *Names when pointed at* only labels the lines touching whatever you are hovering; *Names always* labels every line that has a name. This is a preference, so it follows you between worlds.
-
-### Fixes
-
-- **Clearing a graph's arrangement right after opening a page could quietly fail.** It looked cleared on screen, but the file on disk still held it, so it came back the next time the app started. A save left over from opening the page was landing on top and putting it back.
-- **The graph's filter menu could not be clicked.** It drew in the right place, but every click went through it to the graph behind.
-- **The close button no longer drops onto a second line** when the window is at its narrowest and the controls wrap.
-
-### Notes
-
-- **The reach and the filters are forgotten when you close the graph**, on purpose — a graph reopened days later still hiding half of what it is connected to, with nothing on screen saying why, would look broken. What you moved is kept; what you were asking is not.
-- **A filtered-out page takes its lines with it**, so at two or three connections out, anything only reachable through it goes too. The filter menu says so.
-- **Only reference fields have a name to write on a line** — Friends, Enemies, and so on. A mention you wrote in a sentence, a link you added by hand, and a page nested inside another have no name to give, so most lines stay bare in either mode.

@@ -3,9 +3,12 @@
 import { create } from "zustand";
 import { joinPath } from "../services/host-service";
 import {
+  BLANK_TEMPLATE_KEY,
   createNode,
   createProject,
+  createTab,
   DEFAULT_STATUS_OPTIONS,
+  FIRST_TAB_LABEL,
   FOLDER_TEMPLATE_KEY,
   UNIVERSE_TEMPLATE_KEY,
   type Block,
@@ -96,6 +99,7 @@ import {
   withTabsReordered,
 } from "../services/tab-service";
 import { planCellEdit, type CellEdit } from "../services/database-service";
+import { capturedPropertySpec } from "../services/capture-service";
 import type { RenderableProperty } from "../services/property-service";
 import { getDefaultTabs, getPropertySchema, getTemplate } from "../services/template-registry";
 import {
@@ -442,7 +446,19 @@ export type ProjectStoreState = {
     onProgress?: (progress: ImportProgress) => void,
   ) => Promise<CreateProjectResult>;
   closeProject: () => void;
-  addNode: (input: { parentId: string | null; templateKey: string; name: string; blocks?: Block[] }) => Node;
+  addNode: (input: {
+    parentId: string | null;
+    templateKey: string;
+    name: string;
+    blocks?: Block[];
+    // The three below exist for a page born with writing already in it — a
+    // captured thought (Phase 30) — and are absent for every page made from
+    // the tree, which starts from its template alone.
+    tabs?: Tab[];
+    properties?: Record<string, unknown>;
+    customProperties?: CustomPropertySpec[];
+    hideTemplatePrompt?: boolean;
+  }) => Node;
   /**
    * `touch: false` leaves `updatedAt` alone.
    *
@@ -552,6 +568,16 @@ export type ProjectStoreState = {
   setBlockView: (nodeId: string, blockId: string, view: DatabaseView) => void;
   setBlockTargets: (nodeId: string, blockId: string, targetIds: string[]) => void;
   setBlockTags: (nodeId: string, blockId: string, tags: string[]) => void;
+  /** `capture` only (Phase 30): the page whose children the block files under. `undefined` means its own page. */
+  setCaptureRoot: (nodeId: string, blockId: string, rootId: string | undefined) => void;
+  /** `capture` only: remembers where the last capture went. No undo entry — see the field on Block. */
+  rememberCaptureDestination: (nodeId: string, blockId: string, destinationId: string) => void;
+  /**
+   * Files a captured thought as a page (Phase 30): a plain page under
+   * `parentId`, named `title`, with `content` as its writing and a `Captured`
+   * field saying when. Returns the page so the block can say where it went.
+   */
+  capturePage: (input: { parentId: string; title: string; content: Tab["content"]; stamp: string }) => Node;
   setNodeAliases: (nodeId: string, aliases: string[]) => void;
   // Project-wide, from the All properties & tags view. Each is one undo entry
   // however many pages it touched — see applyBulk.
@@ -1929,14 +1955,19 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       const { rootPath, project, nodes } = get();
       if (!rootPath || !project) throw new Error("addNode: no project loaded");
 
-      const tabs = getDefaultTabs(input.templateKey);
+      const tabs = input.tabs ?? getDefaultTabs(input.templateKey);
       // A new page's sidebar is its template's — the picture, the fields that
       // template asks for, and tags — while a blank page starts with nothing
       // in it but Add block. Written at creation rather than derived on read,
       // because an authored empty list is exactly how a blank page says its
       // sidebar is meant to be empty. See block-service's seedBlocks.
       const blocks = input.blocks ?? seedBlocks(input.templateKey, getPropertySchema(input.templateKey));
-      const node = createNode({ ...input, tabs, blocks });
+      // Spread rather than assigned so an ordinary page carries no
+      // `hideTemplatePrompt` key at all — the shape a page read off disk has.
+      const node: Node = {
+        ...createNode({ ...input, tabs, blocks }),
+        ...(input.hideTemplatePrompt ? { hideTemplatePrompt: true } : {}),
+      };
       const nextNodes = { ...nodes, [node.id]: node };
       const nextProject: Project =
         input.parentId === null ? { ...project, rootOrder: [...project.rootOrder, node.id] } : project;
@@ -2578,6 +2609,47 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         blocks.map((block) => (block.id === blockId ? withField(block, "tags", tags) : block)),
         "changing a block's tags",
       );
+    },
+
+    setCaptureRoot(nodeId, blockId, rootId) {
+      // Changing where things file also forgets the last destination: it was
+      // a child of the old root and is not a choice under the new one.
+      editBlocks(nodeId, (blocks) =>
+        blocks.map((block) =>
+          block.id === blockId ? withField(withField(block, "captureRoot", rootId), "captureLast", undefined) : block,
+        ),
+        "changing where captures go",
+      );
+    },
+
+    rememberCaptureDestination(nodeId, blockId, destinationId) {
+      const node = get().nodes[nodeId];
+      if (!node) return;
+      const blocks = currentBlocks(node).map((block) =>
+        block.id === blockId ? withField(block, "captureLast", destinationId) : block,
+      );
+      // Straight to updateNode rather than through patchNode: this is the
+      // block remembering a preference, not an edit she made, and `touch:
+      // false` keeps it off the page's own modified time for the same reason.
+      get().updateNode(nodeId, { blocks }, { touch: false });
+    },
+
+    capturePage(input) {
+      const spec = capturedPropertySpec(crypto.randomUUID());
+      return get().addNode({
+        parentId: input.parentId,
+        templateKey: BLANK_TEMPLATE_KEY,
+        name: input.title,
+        // One tab, carrying the writing, so the page opens straight into it
+        // rather than into the template grid — it was made to hold three
+        // lines, not to be a Character yet. `hideTemplatePrompt` is the other
+        // half of the same thought; Add Block still offers a template.
+        tabs: [createTab({ id: crypto.randomUUID(), label: FIRST_TAB_LABEL, content: input.content })],
+        properties: { [spec.key]: input.stamp },
+        customProperties: [spec],
+        blocks: [newBlock("property", { propertyKey: spec.key })],
+        hideTemplatePrompt: true,
+      });
     },
 
     // Blank entries are dropped rather than stored: an empty alias would match

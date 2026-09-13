@@ -5085,6 +5085,41 @@ Phase 26, step 2. What binds the code:
   to have with her first, because `CLAUDE.md` draws that boundary strict at her
   request — not a judgement call to make while building something else.
 
+## Quick capture
+
+- **No page runs code, and a dashboard is made of block kinds.** Phase 30's
+  framing decision, and the one to hold when the next dashboard-shaped ask
+  arrives. The Obsidian dashboards this phase came from get their live content
+  from a scripting plugin; a shared file that runs a script is what makes them
+  fragile and occasionally unsafe. Anything a home page wants to show here is a
+  block anyone can add from the menu — the capture box, a Subpage index, and
+  the two more the phase adds — so it works in every theme and ships as a page
+  template. Reasoning in `docs/plan.md` § Phase 30.
+
+- **A code word moves the picker; it never bypasses it.** `parseCapture` in
+  `capture-service.ts` matches a destination's *whole* name before a dash, and
+  an unmatched word is left in the text — the reference version filed those
+  under "other" silently, and a typo vanishing into a bin is the failure this
+  design exists to avoid. Don't loosen the match to a prefix or add a fallback
+  bin; the picker is always the answer, and the block says *code word* on the
+  control while one is in effect so nothing routes quietly.
+
+- **`captureLast` is written without an undo entry, on purpose.**
+  `rememberCaptureDestination` goes straight to `updateNode` with `touch:
+  false`: it is the block remembering where the last thought went, not an edit
+  she made, and an undo that first un-remembered a preference and only then
+  un-made the page would read as broken. `setCaptureRoot` is the opposite —
+  a choice, through `editBlocks`, recorded — and it clears `captureLast`,
+  because the old answer was a child of the old root.
+
+- **A captured page is `blank` with one tab and `hideTemplatePrompt`.**
+  `capturePage` in the store is the only place a page is born with writing
+  already in it, and `addNode` grew `tabs`, `properties`, `customProperties`
+  and `hideTemplatePrompt` for it. The `Captured` field is an ordinary custom
+  `date` property named by `CAPTURED_PROPERTY_LABEL`, matched across pages by
+  label the way every custom column is — so a database under the destination
+  sorts by it with nothing special.
+
 ## The link index
 
 - **`link-index.ts` is the only answer to "what points at what", and Phase 24's

@@ -806,6 +806,8 @@ export function blockKindLabel(kind: BlockKind): string {
       return "the other names";
     case "meter":
       return "a meter";
+    case "capture":
+      return "a capture box";
   }
 }
 

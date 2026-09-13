@@ -42,6 +42,7 @@ import { TextProperty } from "../properties/TextProperty";
 import { TreePopover } from "../tree/TreePopover";
 import { AliasBlock } from "./AliasBlock";
 import { BlockShell } from "./BlockShell";
+import { CaptureBlock } from "./CaptureBlock";
 import { CollectionBlock } from "./CollectionBlock";
 import { IconPicker } from "./IconPicker";
 import { MeterBlock } from "./MeterBlock";
@@ -260,6 +261,13 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
             onAdd={() => addMeter(node.id, block.id)}
           />
         ),
+      };
+    }
+
+    if (block.kind === "capture") {
+      return {
+        natural: "Quick capture",
+        body: <CaptureBlock block={block} node={node} nodes={nodes} onOpen={(id) => selectNode(id)} />,
       };
     }
 

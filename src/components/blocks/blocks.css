@@ -2340,3 +2340,131 @@
   left: 100%;
   margin-left: var(--space-xs);
 }
+
+/* ---- Quick capture (Phase 30) ---- */
+
+.block-capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Bordered where a text block is not: this is a box to type *into*, and a
+   field with no edge reads as a note somebody already wrote. Three lines
+   before it grows, so an empty box is visibly a place for a thought and not a
+   one-line search field. */
+.block-capture-text {
+  min-height: calc(3 * var(--lh-normal, 1.5) * 1em + 2 * var(--space-sm));
+  border-color: var(--color-border);
+  background: var(--color-panel-edge);
+}
+
+.block-capture-text:focus {
+  border-color: var(--color-accent-faint-border);
+}
+
+.block-capture-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* The destination reads as a control: a dashed underline where a link would
+   be solid, because it opens a picker rather than going anywhere. */
+.block-capture-destination {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: 2px var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.block-capture-destination:hover {
+  background: var(--color-hover);
+  color: var(--color-text-primary);
+}
+
+.block-capture-destination-label {
+  color: var(--color-text-muted);
+}
+
+.block-capture-destination-name {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.block-capture-destination-chevron {
+  color: var(--color-text-muted);
+}
+
+/* The note that a code word chose the destination: a small chip rather than
+   a colour change, because the fact worth noticing is *why* it moved. */
+.block-capture-codeword,
+.block-capture-root-tag {
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-faint);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-2xs);
+  white-space: nowrap;
+}
+
+.block-capture-root-tag {
+  margin-left: auto;
+}
+
+.block-capture-button {
+  padding: var(--space-xs) var(--space-md);
+  gap: var(--space-xs);
+}
+
+.block-capture-saved,
+.block-capture-root {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-2xs);
+}
+
+/* Inline in a sentence, so it takes the sentence's size rather than the
+   inline link's own. */
+.block-capture-link {
+  font-size: inherit;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 2px;
+}
+
+.block-capture-link:hover {
+  color: var(--color-text-primary);
+}
+
+.block-capture-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.block-capture-search-icon {
+  position: absolute;
+  left: var(--space-sm);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.block-capture-search .property-field-input {
+  padding-left: calc(var(--space-sm) + 12px + var(--space-xs));
+}
+
+.block-link-results button.block-capture-current {
+  color: var(--color-accent-light);
+}

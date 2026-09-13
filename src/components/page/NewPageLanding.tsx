@@ -10,17 +10,12 @@
 // "Blank" isn't in the grid because the page already is blank. It's the skip
 // button underneath, and all it does is give the page somewhere to write —
 // which is the difference between an unanswered question and an answered one.
-import { BLANK_TEMPLATE_KEY, PAGE_TEMPLATE_KEYS, type Node } from "../../constants/schema";
+import { BLANK_TEMPLATE_KEY, FIRST_TAB_LABEL, PAGE_TEMPLATE_KEYS, type Node } from "../../constants/schema";
 import { X } from "lucide-react";
 import { getTemplateIcon } from "../../constants/icons";
 import { useCustomTemplates, useProjectActions } from "../../hooks/use-project";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
-
-// Matches the first tab every other template starts with, so a page that
-// skipped the templates and one that took the plainest of them don't disagree
-// about what the tab it's written in is called.
-const FIRST_TAB_LABEL = "Overview";
 
 export function NewPageLanding({ node }: { node: Node }) {
   const { applyTemplate, applyCustomTemplate, addTab, deleteTemplate } = useProjectActions();
