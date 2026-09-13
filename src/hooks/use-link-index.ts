@@ -6,6 +6,7 @@ import { linkIndex } from "../services/link-index";
 import { collectionRows, type CollectionRow } from "../services/collection-service";
 import { usePinnedIds } from "./use-project";
 import { useStorylines } from "./use-storyline";
+import { useBoards } from "./use-board";
 
 export type { CollectionRow } from "../services/collection-service";
 
@@ -23,10 +24,11 @@ export function useCollection(nodes: Record<string, Node>, node: Node | undefine
   // standing for a page is a connection, and every caller of this would
   // otherwise have to know that and pass it.
   const storylines = useStorylines();
+  const boards = useBoards();
   const pinnedIds = usePinnedIds();
   return useMemo(() => {
     if (!node) return [];
-    const index = linkIndex(nodes, storylines);
+    const index = linkIndex(nodes, storylines, boards);
     return collectionRows({ nodes, node, block, index, pinnedIds });
-  }, [nodes, node, block, storylines, pinnedIds]);
+  }, [nodes, node, block, storylines, boards, pinnedIds]);
 }

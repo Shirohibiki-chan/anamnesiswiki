@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-09 — storylines: pages you already have, and who's in a scene
+
+### Additions
+
+- **Put a page you already have on a storyline.** *Put a page on it* opens a search; pick a page and it goes on the canvas as a scene, pointing at the page rather than copying it. Nothing new is made, and the page keeps living where it lives. Half the scenes in a real storyline are events you've already written, so this is the other half of adding one.
+- **The box stays open after you pick.** Type the next name straight away — putting five pages on doesn't mean opening it five times. Click anywhere else, or press Escape, to put it away.
+- **It won't offer a page from another universe.** A storyline is one version of events, so a page belonging to a different universe isn't in the list. Pages in the shared universe, and pages that aren't in any universe, are offered as normal.
+- **A scene card shows who's in it.** Small icons along the bottom for whatever that scene's page points at — characters, places, things — read from the same reference index Backlinks uses, so it doesn't matter whether you named them in the writing, filled them into a field, or linked them from a block. Select a scene and the strip along the bottom names them, and each one takes you to its page.
+- **A page now knows it's on a storyline.** Being a scene counts as a connection, so the storyline turns up on that page's graph alongside everything else that points at it.
+
+### Notes
+
+- **This finishes storylines** (Phase 25). What the three parts built is in `docs/shipped.md`.
+- A card is a little taller than it was, to make room for the row of who's in the scene. The row is drawn whether or not anyone is in it, so cards stay one size and nothing shifts as you write.
+
 ## 2026-09-09 — storylines: notes, labels, and tidying up
 
 ### Additions

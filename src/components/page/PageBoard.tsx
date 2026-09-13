@@ -6,6 +6,7 @@
 import { Suspense, lazy, useState } from "react";
 import type { Node } from "../../constants/schema";
 import { useBoardView } from "../../hooks/use-board-view";
+import { useBoardLinks } from "../../hooks/use-board-links";
 import "./board.css";
 
 // Where the drawing library finds its fonts. Resolved against the page's own
@@ -26,6 +27,7 @@ export function PageBoard({ node }: { node: Node }) {
   const [expanded, setExpanded] = useState(false);
   const [surface, setSurface] = useState<HTMLDivElement | null>(null);
   const { initialData, theme, onChange } = useBoardView(node.id, surface);
+  const links = useBoardLinks(node.id);
 
   return (
     <div ref={setSurface} className={expanded ? "board board-expanded" : "board"} data-testid="board">
@@ -36,8 +38,16 @@ export function PageBoard({ node }: { node: Node }) {
           onChange={onChange}
           expanded={expanded}
           onToggleExpand={() => setExpanded((value) => !value)}
+          links={links}
         />
       </Suspense>
+      {/* A link that went nowhere, said once and briefly — the storyline's
+          refusal strip, in the same place for the same reason. */}
+      {links.notice && (
+        <p className="board-notice" role="status">
+          {links.notice}
+        </p>
+      )}
     </div>
   );
 }

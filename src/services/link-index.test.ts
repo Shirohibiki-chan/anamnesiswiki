@@ -140,6 +140,35 @@ describe("linkIndex", () => {
     expect(after.mentionsOf.get(scene.id)).toEqual([{ fromId: storyline.id, kind: "storyline" }]);
   });
 
+  it("sees a shape on a board pointing at a page, by id or by typed name (Board spike)", () => {
+    const target = page("Greyharbour");
+    const other = page("Longford");
+    const board = page("Where the rivers go", { templateKey: "board" });
+    const nodes = { [target.id]: target, [other.id]: other, [board.id]: board };
+
+    const before = linkIndex(nodes, {}, {});
+    expect(before.mentionsOf.get(target.id) ?? []).toHaveLength(0);
+
+    // A link written into a shape changes the index without touching a page,
+    // the storyline's case again — so the boards are part of the cache key.
+    const after = linkIndex(nodes, {}, {
+      [board.id]: {
+        version: 1,
+        elements: [
+          { id: "a", link: `anamnesis://page/${target.id}` },
+          { id: "b", link: `anamnesis://page/${target.id}` },
+          { id: "c", link: "longford" },
+          { id: "d", link: "https://example.org" },
+        ],
+        appState: {},
+        files: {},
+      },
+    });
+    expect(after).not.toBe(before);
+    expect(after.mentionsOf.get(target.id)).toEqual([{ fromId: board.id, kind: "board" }]);
+    expect(after.mentionsOf.get(other.id)).toEqual([{ fromId: board.id, kind: "board" }]);
+  });
+
   it("counts a page twice on one canvas as one connection", () => {
     const scene = page("A Scene");
     const storyline = page("The Storyline");
