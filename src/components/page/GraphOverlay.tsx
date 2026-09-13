@@ -115,7 +115,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // below reading as a description of the picture rather than of the hook.
   const { stageRef, nodes: drawnNodes, edges, bounds, sceneTransform, selectedId, select, zoom } = view;
   const { startNodeDrag, moveNodeDrag, endNodeDrag, startPan, movePan, endPan, handleWheel } = view;
-  const { hoveredId, hover, panning, forgetArrangement, hasMoved } = view;
+  const { hoveredId, hover, moving, forgetArrangement, hasMoved } = view;
 
   const preview = useGraphPreview(selectedId);
 
@@ -236,7 +236,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
               selectedId !== null ? "page-graph-scene-selected" : "",
-              panning ? "page-graph-scene-panning" : "",
+              moving ? "page-graph-scene-moving" : "",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -258,7 +258,10 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
             {labels !== "pointed" && (
               <GraphEdges edges={edges} bounds={bounds} labelled={labels === "all" && !namesQuiet} />
             )}
-            <GraphLitEdges edges={lit} bounds={bounds} labelled={!namesQuiet} />
+            {/* Its names only in the quiet mode — in *Names always* the line
+                underneath has written it already, and the same word drawn
+                twice in the same place is a heavier halo, not two words. */}
+            <GraphLitEdges edges={lit} bounds={bounds} labelled={!namesQuiet && labels !== "all"} />
 
             {drawnNodes.map((drawn) => (
               <GraphNodeButton

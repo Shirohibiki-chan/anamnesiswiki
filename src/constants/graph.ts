@@ -76,6 +76,16 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
 
 /**
+ * How long after the last wheel tick the picture is painted again, crisp.
+ *
+ * While the wheel is turning the scene scales the painting it already has —
+ * see `moving` in use-graph-view — so this is the longest the picture stays
+ * soft after her hand stops. Short enough not to be noticed as a delay,
+ * long enough that a wheel still turning does not repaint between ticks.
+ */
+export const GRAPH_ZOOM_SETTLE_MS = 160;
+
+/**
  * How many connections out the graph reaches by default.
  *
  * One, which is the page and the pages touching it. Two hops on a world of any

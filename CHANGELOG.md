@@ -7,6 +7,8 @@
 - **A big graph no longer stutters when you pan, zoom or point at it.** The whole layout was being worked out again from scratch on every mouse move — on eight hundred pages that was three-quarters of a second per pixel, and on a small graph a few milliseconds nobody noticed. Measured on an 831-page world: a pan step went from 770ms to 5ms, a hover from 1.7s to 11ms. The picture is also built once and only moved now, so pointing at a page redraws the dozen things it touches rather than the lot.
 
 - **The controls above a graph, an expanded board, an expanded storyline and a picture's lightbox can be clicked along their whole height.** Each of those covers the window's own title bar, and the strip you drag the window by was still catching clicks through them — so the top half of every button dragged the window and the dropdowns, being short, hardly opened at all.
+- **Zooming a big graph up close doesn't stutter.** While the wheel is turning the picture is scaled as it is and redrawn crisp a moment after it stops, instead of being redrawn on every tick.
+- **The page under the pointer is a solid disc.** Its hover tint was see-through, so the lines ran through it.
 - **A big graph can be zoomed all the way in.** The wheel used to stop at two and a half times the starting size, and on a world of hundreds of pages the starting size is tiny — so it stopped right where the names had just appeared.
 
 ### Changes

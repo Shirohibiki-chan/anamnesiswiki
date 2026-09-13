@@ -267,17 +267,18 @@
   transform-origin: 0 0;
 }
 
-/* **Only while the background is being dragged.** `will-change: transform`
-   makes the scene its own compositor layer, so a pan moves a picture that has
-   already been painted instead of repainting 835 buttons and thousands of
-   lines on every pointer move. Left on permanently it was a disaster: Chrome
-   keeps such a layer's painting at the size it was first drawn and scales
-   that bitmap for every zoom after, which is the "extremely pixellated" world
-   she photographed on 2026-09-13 — every line five pixels wide and every disc
-   a smear. Set on the press and dropped on the release, the picture is crisp
-   at rest and at every zoom, and borrows the cheap path only mid-pan, where
-   the scale does not change. */
-.page-graph-scene-panning {
+/* **Only mid-gesture: while the background is being dragged or the wheel is
+   turning.** `will-change: transform` makes the scene its own compositor
+   layer, so a pan moves a picture that has already been painted and a wheel
+   tick scales it, instead of repainting 835 buttons and thousands of lines on
+   every pointer move. Left on permanently it was a disaster: Chrome keeps
+   such a layer's painting at the size it was first drawn and scales that
+   bitmap for every zoom after, which is the "extremely pixellated" world she
+   photographed on 2026-09-13 — every line five pixels wide and every disc a
+   smear. Set on the press and dropped on the release, and set on a wheel tick
+   and dropped GRAPH_ZOOM_SETTLE_MS after the last, the picture is crisp at
+   rest and briefly soft only while it is actually moving. */
+.page-graph-scene-moving {
   will-change: transform;
 }
 
@@ -345,6 +346,23 @@
   opacity: var(--graph-dim-opacity, 0.5);
 }
 
+/* What a line is, where it knows — the field's own name, from a reference
+   property. Drawn with its own colour laid over a thick stroke of the page's
+   background, which is the standard way to keep small text legible over
+   whatever it happens to cross; there is nowhere on a graph to put a solid
+   plate behind a word without hiding the line it belongs to. */
+.page-graph-edge-label {
+  fill: var(--color-text-secondary);
+  stroke: var(--color-background);
+  stroke-width: 4;
+  paint-order: stroke;
+  font-size: 11px;
+  font-family: inherit;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
 .page-graph-node {
   position: absolute;
   display: flex;
@@ -388,8 +406,14 @@
   overflow-wrap: anywhere;
 }
 
+/* The hover tint is translucent, laid over the panel colour rather than
+   replacing it. On its own it let the lines show through the disc — barely,
+   until the page's own lines came up to full weight on hover, at which point
+   the disc under the pointer was a ring with lines running through it. */
 .page-graph-node:hover .page-graph-node-disc {
-  background: var(--color-hover);
+  background:
+    linear-gradient(var(--color-hover), var(--color-hover)),
+    var(--color-panel);
 }
 
 .page-graph-node:focus-visible {

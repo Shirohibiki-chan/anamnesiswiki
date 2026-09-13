@@ -9,6 +9,7 @@ import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
   GRAPH_ZOOM_SENSITIVITY,
+  GRAPH_ZOOM_SETTLE_MS,
 } from "../constants/graph";
 import { graphBounds } from "../services/graph-layout";
 import type { GraphEdge, GraphModel, GraphNode } from "../services/graph-service";
@@ -51,6 +52,17 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
    * see graph.css on why leaving it on pixellates every zoom.
    */
   const [panning, setPanning] = useState(false);
+  /**
+   * Whether the wheel is turning right now — true from a tick until
+   * GRAPH_ZOOM_SETTLE_MS after the last one. Styled the same way as panning:
+   * for that stretch the scene is a compositor layer and each tick scales the
+   * painting it already has, which is briefly soft and costs nothing; when it
+   * falls back to false the scene is painted again, crisp, once. Without it,
+   * every tick up close repainted every line and page crossing the window.
+   */
+  const [zooming, setZooming] = useState(false);
+  const zoomSettleRef = useRef<number | null>(null);
+  useEffect(() => () => window.clearTimeout(zoomSettleRef.current ?? undefined), []);
 
   /**
    * Nodes she has dragged somewhere, by id.
@@ -269,6 +281,9 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     setZoomFactor((prev) =>
       clamp(prev * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY), GRAPH_MIN_ZOOM / fit, GRAPH_MAX_ZOOM / fit),
     );
+    setZooming(true);
+    window.clearTimeout(zoomSettleRef.current ?? undefined);
+    zoomSettleRef.current = window.setTimeout(() => setZooming(false), GRAPH_ZOOM_SETTLE_MS);
   }, []);
 
   const hover = useCallback((id: string | null) => setHoveredId(id), []);
@@ -286,7 +301,8 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     selectedId,
     hoveredId,
     hover,
-    panning,
+    /** Whether the scene is mid-gesture, and may borrow the cheap path — see graph.css. */
+    moving: panning || zooming,
     forgetArrangement,
     hasMoved: Object.keys(moved).length > 0,
     select: setSelectedId,
