@@ -30,7 +30,7 @@
 // moves the picture; nothing inside it changes until a node is dragged.
 //
 // All of the behaviour is in hooks/use-graph-view.ts; this renders.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
@@ -48,7 +48,7 @@ import { useGraphView } from "../../hooks/use-graph-view";
 import { useGraphEdgeLabels, usePreferenceActions } from "../../hooks/use-preferences";
 import { useProject, useProjectActions, useProjectName } from "../../hooks/use-project";
 import { NodeIcon } from "../blocks/IconPicker";
-import { GraphEdges, GraphLitEdges } from "./GraphEdges";
+import { GraphEdgeLabels, GraphEdgeProbe, GraphEdgesCanvas, GraphLitEdges } from "./GraphEdges";
 import { GraphNodeButton } from "./GraphNodeButton";
 import { GraphToolbar } from "./GraphToolbar";
 import "./graph.css";
@@ -114,6 +114,8 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // markup, the same shape Lightbox takes from use-lightbox. It keeps the JSX
   // below reading as a description of the picture rather than of the hook.
   const { stageRef, nodes: drawnNodes, edges, bounds, sceneTransform, selectedId, select, zoom } = view;
+  // For the canvas to find the probe lines the stylesheet resolves on.
+  const sceneRef = useRef<HTMLDivElement>(null);
   const { startNodeDrag, moveNodeDrag, endNodeDrag, startPan, movePan, endPan, handleWheel } = view;
   const { hoveredId, hover, moving, forgetArrangement, hasMoved } = view;
 
@@ -231,7 +233,21 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           onPointerCancel={endPan}
           onWheel={handleWheel}
         >
+          {/* Under the scene, unscaled, the size of the stage. Nothing is
+              drawn in the quietest mode — see GRAPH_EDGE_LABELS. */}
+          {labels !== "pointed" && (
+            <GraphEdgesCanvas
+              edges={edges}
+              bounds={bounds}
+              view={view.view}
+              moving={moving}
+              sceneRef={sceneRef}
+              dimmed={selectedId !== null}
+            />
+          )}
+
           <div
+            ref={sceneRef}
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
@@ -249,15 +265,13 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               } as React.CSSProperties
             }
           >
-            {/* Drawn only while pointed at, in the quietest mode — see
-                GRAPH_EDGE_LABELS. A line's reason is held back while the
-                picture is small for the same reason every node's name is: a
-                whole world's worth of six-pixel words is noise standing where
-                the shape should be, and on a lit line it drew as a short grey
-                dash — the same stripe the selected node's name once did. */}
-            {labels !== "pointed" && (
-              <GraphEdges edges={edges} bounds={bounds} labelled={labels === "all" && !namesQuiet} />
-            )}
+            <GraphEdgeProbe />
+            {/* A line's reason is held back while the picture is small for
+                the same reason every node's name is: a whole world's worth of
+                six-pixel words is noise standing where the shape should be,
+                and on a lit line it drew as a short grey dash — the same
+                stripe the selected node's name once did. */}
+            {labels === "all" && !namesQuiet && <GraphEdgeLabels edges={edges} bounds={bounds} />}
             {/* Its names only in the quiet mode — in *Names always* the line
                 underneath has written it already, and the same word drawn
                 twice in the same place is a heavier halo, not two words. */}

@@ -288,6 +288,12 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
 
   const hover = useCallback((id: string | null) => setHoveredId(id), []);
 
+  /**
+   * The scene's transform in numbers, for the canvas the lines are drawn on.
+   * Memoised so a hover, which changes none of these, does not redraw them.
+   */
+  const view = useMemo(() => ({ pan, zoom, stageSize }), [pan, zoom, stageSize]);
+
   /** Forgets this session's drags. The stored arrangement is the caller's to clear. */
   const forgetArrangement = useCallback(() => setMoved({}), []);
 
@@ -298,6 +304,7 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     bounds,
     zoom,
     sceneTransform,
+    view,
     selectedId,
     hoveredId,
     hover,

@@ -58,8 +58,7 @@ const GRAPH = ".page-graph";
 const GRAPH_NODE = ".page-graph-node";
 const GRAPH_NODE_NAME = ".page-graph-node-name";
 const GRAPH_NODE_FOCUS = ".page-graph-node-focus";
-const GRAPH_EDGE_TREE = ".page-graph-edge-tree";
-const GRAPH_EDGE_WRITTEN = ".page-graph-edge-written";
+const GRAPH_EDGES_CANVAS = ".page-graph-edges-canvas";
 const GRAPH_PREVIEW = ".page-graph-preview";
 const GRAPH_PREVIEW_NAME = ".page-graph-preview-name";
 const GRAPH_EDGE_LABEL = ".page-graph-edge-label";
@@ -1483,9 +1482,12 @@ export async function graphFocusName(window: Page): Promise<string> {
  * exactly what a unit test on the model cannot check.
  */
 export async function graphEdgeCounts(window: Page): Promise<{ written: number; tree: number }> {
+  // The lines are painted on a canvas since the big-world pass, so they are
+  // counted from what it says it drew rather than from elements.
+  const canvas = window.locator(GRAPH_EDGES_CANVAS).first();
   return {
-    written: await window.locator(GRAPH_EDGE_WRITTEN).count(),
-    tree: await window.locator(GRAPH_EDGE_TREE).count(),
+    written: Number(await canvas.getAttribute("data-written")),
+    tree: Number(await canvas.getAttribute("data-tree")),
   };
 }
 
