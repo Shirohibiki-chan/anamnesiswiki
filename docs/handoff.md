@@ -466,6 +466,21 @@ Board spike, closed 2026-09-13. What binds the code:
   therefore needs the generation counter as well as clearing the pins: without
   it nothing moves, because nothing asked for a new layout.
 
+- **A big world is read by pointing, and the stylesheet cannot count.** On a
+  generated world of 835 pages every line drawn at its neighbourhood weight was
+  one solid mesh with the discs lost inside it. Three things now hold and all
+  three are in `GraphOverlay` plus `graph.css`: lines fade in proportion to how
+  many there are (`edgeOpacity`, handed to the stylesheet as
+  `--graph-edge-opacity` because a CSS rule has no way to know the count);
+  pointing at or selecting a node lights its own lines in the text colour,
+  draws them last so they sit on top, and fades every node and line not touching
+  it to `GRAPH_DIM_OPACITY`; and a third *Lines* mode, `pointed`, draws no line
+  at all until a node is pointed at. The fade keeps a graph of a page's
+  neighbourhood untouched — under `GRAPH_EDGE_FADE_FROM` lines nothing changes —
+  so do not "fix" a faint whole-world graph by raising the floor without looking
+  at a small one. The generated world is random links and will never show
+  clusters; a real world does, and that is the picture the fade is tuned for.
+
 ---
 
 ## Storage

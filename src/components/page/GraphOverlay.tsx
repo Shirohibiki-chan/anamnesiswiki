@@ -23,18 +23,19 @@
 // together.
 //
 // All of the behaviour is in hooks/use-graph-view.ts; this renders.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
   GRAPH_DEFAULT_DEPTH,
+  GRAPH_DIM_OPACITY,
   GRAPH_NAME_ZOOM,
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
 } from "../../constants/graph";
 import { getPaletteHex } from "../../constants/palette";
 import type { DatabaseFilter } from "../../constants/schema";
-import { graphPinKey } from "../../services/graph-service";
+import { edgeOpacity, graphPinKey, neighbourhoodOf } from "../../services/graph-service";
 import { usePageGraph, useGraphPins, useGraphPreview, useGraphScope } from "../../hooks/use-graph";
 import { useGraphOverlayActions, useOpenGraph } from "../../hooks/use-graph-overlay";
 import { useGraphView } from "../../hooks/use-graph-view";
@@ -114,6 +115,19 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // Whatever the graph is currently *about*, which is what the quiet label mode
   // follows: the thing under the pointer if there is one, else the selection.
   const inPlay = hoveredId ?? selectedId;
+  /**
+   * What stays lit while a page is in play: it, its neighbours and the lines
+   * between them. Everything else steps back, which is how a dense graph is
+   * read — on a world of hundreds of pages, pointing is the only way to see
+   * what one of them is joined to. Recomputed only when the pointer moves to a
+   * different node, not on every pan.
+   */
+  const near = useMemo(() => neighbourhoodOf(graph.model.edges, inPlay), [graph.model.edges, inPlay]);
+  const isLit = (edge: { sourceId: string; targetId: string }) =>
+    inPlay !== null && (edge.sourceId === inPlay || edge.targetId === inPlay);
+  const lit = edges.filter(isLit);
+  // Drawn only while pointed at, in the quietest mode — see GRAPH_EDGE_LABELS.
+  const rest = labels === "pointed" ? [] : edges.filter((edge) => !isLit(edge));
   const arranged = hasMoved || Object.keys(pins).length > 0;
   const empty = focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0;
   // Too far out for a name to be readable, so none of them are drawn — the
@@ -214,8 +228,21 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           onWheel={handleWheel}
         >
           <div
-            className={`page-graph-scene${namesQuiet ? " page-graph-scene-small" : ""}`}
-            style={{ transform: sceneTransform }}
+            className={[
+              "page-graph-scene",
+              namesQuiet ? "page-graph-scene-small" : "",
+              inPlay !== null ? "page-graph-scene-inplay" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            style={
+              {
+                transform: sceneTransform,
+                // Fainter the more of them there are — see edgeOpacity.
+                "--graph-edge-opacity": edgeOpacity(edges.length),
+                "--graph-dim-opacity": GRAPH_DIM_OPACITY,
+              } as React.CSSProperties
+            }
           >
             {/* Decorative: every relationship a line stands for is already
                 reachable through the buttons, so a reader going through them
@@ -231,10 +258,18 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               }}
               viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
             >
-              {edges.map((edge) => (
+              {/* The lit lines are drawn after the rest so they sit on top of
+                  them — SVG paints in order and has no z-index. */}
+              {[...rest, ...lit].map((edge) => (
                 <line
                   key={edge.id}
-                  className={`page-graph-edge page-graph-edge-${edge.kind === "tree" ? "tree" : "written"}`}
+                  className={[
+                    "page-graph-edge",
+                    `page-graph-edge-${edge.kind === "tree" ? "tree" : "written"}`,
+                    isLit(edge) ? "page-graph-edge-lit" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   x1={edge.x1}
                   y1={edge.y1}
                   x2={edge.x2}
@@ -247,13 +282,16 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
                   about a line it draws. Prose, manual links and the tree have no
                   name to write, so most lines carry nothing either way.
 
-                  Names always is dropped while the picture is small, for the
-                  same reason every node's name is: a whole world's worth of
-                  six-pixel words is noise standing where the shape should be. */}
+                  Dropped while the picture is small, for the same reason every
+                  node's name is: a whole world's worth of six-pixel words is
+                  noise standing where the shape should be. That held for
+                  *Names always* from the start and holds for the pointed-at
+                  lines too since the big-world pass — a label on a lit line at
+                  a fifth of its size drew as a short grey dash, the same stripe
+                  the selected node's name once did. */}
               {edges.map((edge) => {
-                if (!edge.label) return null;
-                const touching = inPlay !== null && (edge.sourceId === inPlay || edge.targetId === inPlay);
-                if (!(touching || (labels === "all" && !namesQuiet))) return null;
+                if (!edge.label || namesQuiet) return null;
+                if (!(isLit(edge) || labels === "all")) return null;
                 return (
                   <text
                     key={`${edge.id}-label`}
@@ -278,6 +316,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
                     drawn.depth === 0 ? "page-graph-node-focus" : "",
                     drawn.id === selectedId ? "page-graph-node-selected" : "",
                     drawn.id === hoveredId ? "page-graph-node-inplay" : "",
+                    near.has(drawn.id) ? "page-graph-node-near" : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}

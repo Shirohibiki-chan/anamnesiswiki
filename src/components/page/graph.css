@@ -285,6 +285,10 @@
 .page-graph-edge-written {
   stroke: var(--color-text-muted);
   stroke-width: 1.75;
+  /* Fainter the more lines there are — the scene sets this from the count.
+     A world of hundreds of pages drawn at full weight is one solid mesh with
+     the discs lost inside it; see edgeOpacity in graph-service. */
+  stroke-opacity: var(--graph-edge-opacity, 1);
 }
 
 /* Where she filed the page. A real relationship and a quieter claim than a
@@ -295,7 +299,29 @@
   stroke: var(--color-border-strong);
   stroke-width: 1.25;
   stroke-dasharray: 4 5;
-  opacity: 0.8;
+  stroke-opacity: calc(0.8 * var(--graph-edge-opacity, 1));
+}
+
+/* **Pointing at a page is how a dense graph is read.** While one is pointed at
+   or selected, its own lines come up to full weight in the text colour and sit
+   on top (the overlay draws them last), and every other line and every page
+   not joined to it steps back — so what it is connected to can be seen against
+   a picture that is still there rather than gone. See GRAPH_DIM_OPACITY. */
+.page-graph-scene-inplay .page-graph-edge:not(.page-graph-edge-lit) {
+  stroke-opacity: calc(var(--graph-dim-opacity, 0.35) * var(--graph-edge-opacity, 1));
+}
+
+.page-graph-edge-lit {
+  stroke: var(--color-text-primary);
+  stroke-opacity: 1;
+}
+
+.page-graph-edge-lit.page-graph-edge-written {
+  stroke-width: 2.25;
+}
+
+.page-graph-scene-inplay .page-graph-node:not(.page-graph-node-near) {
+  opacity: var(--graph-dim-opacity, 0.35);
 }
 
 /* What a line is, where it knows — the field's own name, from a reference

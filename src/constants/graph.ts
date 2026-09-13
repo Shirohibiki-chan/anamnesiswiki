@@ -140,3 +140,26 @@ export const GRAPH_NAME_ZOOM = 0.5;
  * anyone who arranges one would expect of the next.
  */
 export const GRAPH_WORLD_PIN_PREFIX = "universe:";
+
+/**
+ * Past this many lines, the lines start to fade.
+ *
+ * Found by looking at a generated world of 835 pages: every line drawn at the
+ * weight that suits a page's neighbourhood painted the whole window one solid
+ * mesh, with the discs barely showing through. At that scale the lines are a
+ * texture and the discs are the picture, so the lines step back in proportion
+ * — a graph of two hundred is untouched, one of two thousand is a faint haze.
+ */
+export const GRAPH_EDGE_FADE_FROM = 200;
+
+/** How faint a whole world's worth of lines is allowed to get. */
+export const GRAPH_EDGE_MIN_OPACITY = 0.2;
+
+/**
+ * How far the rest of the picture steps back while one page is pointed at.
+ *
+ * Pointing at a node is how a dense graph is read: its own lines come up to
+ * full weight and everything not touching it fades to this, so what the page
+ * is joined to can be seen against a background that is still there.
+ */
+export const GRAPH_DIM_OPACITY = 0.35;

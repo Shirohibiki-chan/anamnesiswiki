@@ -21,6 +21,7 @@ const REACH_LABELS: Record<GraphReach, string> = {
 };
 
 const LABEL_MODES: Record<GraphEdgeLabels, string> = {
+  pointed: "Only when pointed at",
   selected: "Names when pointed at",
   all: "Names always",
 };

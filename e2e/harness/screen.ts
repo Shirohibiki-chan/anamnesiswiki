@@ -1652,7 +1652,7 @@ export async function graphReachEnabled(window: Page): Promise<boolean> {
 }
 
 /** Chooses when a line says what it is — "selected" or "all". */
-export async function setGraphLabels(window: Page, mode: "selected" | "all"): Promise<void> {
+export async function setGraphLabels(window: Page, mode: "pointed" | "selected" | "all"): Promise<void> {
   await window.getByLabel("When to write what a line is").selectOption(mode);
 }
 

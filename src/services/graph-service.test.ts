@@ -3,16 +3,19 @@ import { createNode, createTab, type Node } from "../constants/schema";
 import { linkIndex } from "./link-index";
 import type { GraphModel } from "./graph-service";
 import {
+  edgeOpacity,
   graphAround,
   graphOfPages,
   graphOperatorsFor,
   graphPinKey,
+  neighbourhoodOf,
   pagesInUniverse,
   seedPosition,
   seedScatter,
   seededRandom,
   GRAPH_FILTER_FIELDS,
 } from "./graph-service";
+import { GRAPH_EDGE_FADE_FROM, GRAPH_EDGE_MIN_OPACITY } from "../constants/graph";
 
 function page(name: string, patch: Partial<Node> = {}): Node {
   return { ...createNode({ parentId: null, templateKey: "character", name }), ...patch };
@@ -422,5 +425,37 @@ describe("seedScatter", () => {
 
   it("puts two pages in different places", () => {
     expect(seedScatter("valera", 50)).not.toEqual(seedScatter("sampo", 50));
+  });
+});
+
+describe("edgeOpacity", () => {
+  it("draws a small graph's lines at full weight", () => {
+    expect(edgeOpacity(0)).toBe(1);
+    expect(edgeOpacity(GRAPH_EDGE_FADE_FROM)).toBe(1);
+  });
+
+  it("fades in proportion past the threshold", () => {
+    expect(edgeOpacity(GRAPH_EDGE_FADE_FROM * 2)).toBeCloseTo(0.5);
+  });
+
+  // A world of any size still has to show that its pages are joined.
+  it("never fades past the floor", () => {
+    expect(edgeOpacity(1_000_000)).toBe(GRAPH_EDGE_MIN_OPACITY);
+  });
+});
+
+describe("neighbourhoodOf", () => {
+  const edges = [
+    { id: "a|b", sourceId: "a", targetId: "b", kind: "prose" as const },
+    { id: "b|c", sourceId: "b", targetId: "c", kind: "tree" as const },
+    { id: "c|d", sourceId: "c", targetId: "d", kind: "prose" as const },
+  ];
+
+  it("is the page and every page a line joins it to, from either end", () => {
+    expect([...neighbourhoodOf(edges, "b")].sort()).toEqual(["a", "b", "c"]);
+  });
+
+  it("is empty when nothing is pointed at", () => {
+    expect(neighbourhoodOf(edges, null).size).toBe(0);
   });
 });
