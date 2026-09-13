@@ -267,6 +267,20 @@
   transform-origin: 0 0;
 }
 
+/* **Only while the background is being dragged.** `will-change: transform`
+   makes the scene its own compositor layer, so a pan moves a picture that has
+   already been painted instead of repainting 835 buttons and thousands of
+   lines on every pointer move. Left on permanently it was a disaster: Chrome
+   keeps such a layer's painting at the size it was first drawn and scales
+   that bitmap for every zoom after, which is the "extremely pixellated" world
+   she photographed on 2026-09-13 — every line five pixels wide and every disc
+   a smear. Set on the press and dropped on the release, the picture is crisp
+   at rest and at every zoom, and borrows the cheap path only mid-pan, where
+   the scale does not change. */
+.page-graph-scene-panning {
+  will-change: transform;
+}
+
 .page-graph-edges {
   position: absolute;
   overflow: visible;
@@ -302,43 +316,33 @@
   stroke-opacity: calc(0.8 * var(--graph-edge-opacity, 1));
 }
 
-/* **Pointing at a page is how a dense graph is read.** While one is pointed at
-   or selected, its own lines come up to full weight in the text colour and sit
-   on top (the overlay draws them last), and every other line and every page
-   not joined to it steps back — so what it is connected to can be seen against
-   a picture that is still there rather than gone. See GRAPH_DIM_OPACITY. */
-.page-graph-scene-inplay .page-graph-edge:not(.page-graph-edge-lit) {
-  stroke-opacity: calc(var(--graph-dim-opacity, 0.35) * var(--graph-edge-opacity, 1));
-}
-
+/* **Pointing at a page lights its own lines, and nothing else moves.** The
+   lit lines are drawn again on top in a second SVG (GraphLitEdges), in the
+   secondary text colour rather than the primary — on a dark theme the primary
+   drew as neon over a graph that had gone black, which is her screenshot of
+   2026-09-13. Hovering changes nothing about the other lines or the other
+   pages on purpose: on a dense graph the pointer crosses a page every few
+   pixels, and a picture that dims and undims on every crossing flickers, and
+   repaints all 835 pages each time it does. */
 .page-graph-edge-lit {
-  stroke: var(--color-text-primary);
+  stroke: var(--color-text-secondary);
   stroke-opacity: 1;
 }
 
 .page-graph-edge-lit.page-graph-edge-written {
-  stroke-width: 2.25;
+  stroke-width: 2;
 }
 
-.page-graph-scene-inplay .page-graph-node:not(.page-graph-node-near) {
-  opacity: var(--graph-dim-opacity, 0.35);
+/* **Selecting a page is when the rest steps back**, and only halfway. A click
+   is deliberate and rare where a hover is neither, and the card at the side
+   already says the graph is now about this one page; the rest fading behind it
+   is that said in the picture. See GRAPH_DIM_OPACITY. */
+.page-graph-scene-selected .page-graph-edge:not(.page-graph-edge-lit) {
+  stroke-opacity: calc(var(--graph-dim-opacity, 0.5) * var(--graph-edge-opacity, 1));
 }
 
-/* What a line is, where it knows — the field's own name, from a reference
-   property. Drawn with its own colour laid over a thick stroke of the page's
-   background, which is the standard way to keep small text legible over
-   whatever it happens to cross; there is nowhere on a graph to put a solid
-   plate behind a word without hiding the line it belongs to. */
-.page-graph-edge-label {
-  fill: var(--color-text-secondary);
-  stroke: var(--color-background);
-  stroke-width: 4;
-  paint-order: stroke;
-  font-size: 11px;
-  font-family: inherit;
-  text-anchor: middle;
-  dominant-baseline: middle;
-  pointer-events: none;
+.page-graph-scene-selected .page-graph-node:not(.page-graph-node-near) {
+  opacity: var(--graph-dim-opacity, 0.5);
 }
 
 .page-graph-node {

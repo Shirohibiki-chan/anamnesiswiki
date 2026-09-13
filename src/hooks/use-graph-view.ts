@@ -1,7 +1,7 @@
 // Everything the graph overlay *does*, so that PageGraph.tsx only draws. Same
 // split as use-lightbox.ts and for the same reason: pointer bookkeeping is the
 // part worth being able to read on its own.
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   GRAPH_DRAG_THRESHOLD,
   GRAPH_FIT_PADDING,
@@ -43,6 +43,14 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** The node under the pointer, which is what the quiet label mode follows. */
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  /**
+   * Whether the background is being dragged right now.
+   *
+   * State rather than a ref because the scene is styled on it: it takes
+   * `will-change: transform` for exactly the length of a pan and no longer —
+   * see graph.css on why leaving it on pixellates every zoom.
+   */
+  const [panning, setPanning] = useState(false);
 
   /**
    * Nodes she has dragged somewhere, by id.
@@ -136,6 +144,18 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
   // The wheel moves a factor and the fit stays the baseline, so resizing the
   // window refits without throwing away how far in she had zoomed.
   const zoom = clamp(fitZoom * zoomFactor, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM);
+  /**
+   * The zoom as a ref as well, for the drag handler to read.
+   *
+   * **So that the handler is the same function at every zoom.** Every node
+   * button holds it, and a handler remade on each wheel tick is a new prop to
+   * eight hundred memoised buttons — which is every one of them re-rendering
+   * for a zoom that the scene's transform already applies on its own.
+   */
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
 
   // Right-to-left, so: centre the box on the stage's middle, scale about it,
   // then apply whatever panning has been done. The scene element itself sits at
@@ -173,12 +193,13 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
       // Divided by the zoom because the pointer moves in window pixels and the
       // node lives in graph ones — without it a zoomed-out graph moves a node
       // several times as far as the hand went.
+      const zoom = zoomRef.current;
       setMoved((prev) => ({
         ...prev,
         [drag.id]: { x: Math.round(drag.atX + dx / zoom), y: Math.round(drag.atY + dy / zoom) },
       }));
     },
-    [zoom],
+    [],
   );
 
   const endNodeDrag = useCallback(
@@ -214,6 +235,7 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     const dx = event.clientX - drag.fromX;
     const dy = event.clientY - drag.fromY;
     if (!drag.moved && Math.hypot(dx, dy) < GRAPH_DRAG_THRESHOLD) return;
+    if (!drag.moved) setPanning(true);
     drag.moved = true;
     setPan((prev) => ({ x: prev.x + (dx - drag.atX), y: prev.y + (dy - drag.atY) }));
     drag.atX = dx;
@@ -226,6 +248,7 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    setPanning(false);
     // Clicking the empty background puts the preview away, the same gesture
     // that dismisses a popover anywhere else in the app.
     if (drag && !drag.moved) setSelectedId(null);
@@ -252,6 +275,7 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange }: GraphVi
     selectedId,
     hoveredId,
     hover,
+    panning,
     forgetArrangement,
     hasMoved: Object.keys(moved).length > 0,
     select: setSelectedId,

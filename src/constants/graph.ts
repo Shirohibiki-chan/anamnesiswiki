@@ -156,10 +156,11 @@ export const GRAPH_EDGE_FADE_FROM = 200;
 export const GRAPH_EDGE_MIN_OPACITY = 0.2;
 
 /**
- * How far the rest of the picture steps back while one page is pointed at.
+ * How far the rest of the picture steps back while one page is selected.
  *
- * Pointing at a node is how a dense graph is read: its own lines come up to
- * full weight and everything not touching it fades to this, so what the page
- * is joined to can be seen against a background that is still there.
+ * Halfway, not further: at 0.35 on her dark theme the graph went black behind
+ * the selection and read as having vanished. Selected rather than pointed at
+ * — a hover only lights the page's own lines, because dimming everything else
+ * on every hover flickers on a dense graph and repaints all of it each time.
  */
-export const GRAPH_DIM_OPACITY = 0.35;
+export const GRAPH_DIM_OPACITY = 0.5;

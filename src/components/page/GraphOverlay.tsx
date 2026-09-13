@@ -22,6 +22,13 @@
 // what SVG is for. Both sit inside one transformed scene, so they pan and zoom
 // together.
 //
+// **The lines and the pages are memoised pieces of their own** (GraphEdges,
+// GraphNodeButton), because this body re-renders on every pointer move while
+// panning, every wheel tick and every hover. Written inline they were rebuilt
+// each time — 835 buttons and two and a half thousand lines per mouse move on
+// the generated world, which is the lag she reported. The scene's transform
+// moves the picture; nothing inside it changes until a node is dragged.
+//
 // All of the behaviour is in hooks/use-graph-view.ts; this renders.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -33,7 +40,6 @@ import {
   GRAPH_REACH_EVERYTHING,
   type GraphReach,
 } from "../../constants/graph";
-import { getPaletteHex } from "../../constants/palette";
 import type { DatabaseFilter } from "../../constants/schema";
 import { edgeOpacity, graphPinKey, neighbourhoodOf } from "../../services/graph-service";
 import { usePageGraph, useGraphPins, useGraphPreview, useGraphScope } from "../../hooks/use-graph";
@@ -42,6 +48,8 @@ import { useGraphView } from "../../hooks/use-graph-view";
 import { useGraphEdgeLabels, usePreferenceActions } from "../../hooks/use-preferences";
 import { useProject, useProjectActions, useProjectName } from "../../hooks/use-project";
 import { NodeIcon } from "../blocks/IconPicker";
+import { GraphEdges, GraphLitEdges } from "./GraphEdges";
+import { GraphNodeButton } from "./GraphNodeButton";
 import { GraphToolbar } from "./GraphToolbar";
 import "./graph.css";
 
@@ -107,7 +115,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // below reading as a description of the picture rather than of the hook.
   const { stageRef, nodes: drawnNodes, edges, bounds, sceneTransform, selectedId, select, zoom } = view;
   const { startNodeDrag, moveNodeDrag, endNodeDrag, startPan, movePan, endPan, handleWheel } = view;
-  const { hoveredId, hover, forgetArrangement, hasMoved } = view;
+  const { hoveredId, hover, panning, forgetArrangement, hasMoved } = view;
 
   const preview = useGraphPreview(selectedId);
 
@@ -116,18 +124,14 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // follows: the thing under the pointer if there is one, else the selection.
   const inPlay = hoveredId ?? selectedId;
   /**
-   * What stays lit while a page is in play: it, its neighbours and the lines
-   * between them. Everything else steps back, which is how a dense graph is
-   * read — on a world of hundreds of pages, pointing is the only way to see
-   * what one of them is joined to. Recomputed only when the pointer moves to a
-   * different node, not on every pan.
+   * The lines touching the page in play are drawn again on top; the pages
+   * around the *selected* one stay at full strength while the rest step back.
+   * The neighbourhood is the selection's rather than the hover's on purpose:
+   * dimming on hover flickers on a dense graph and repaints every page each
+   * time the pointer crosses one. Recomputed only when the selection changes.
    */
-  const near = useMemo(() => neighbourhoodOf(graph.model.edges, inPlay), [graph.model.edges, inPlay]);
-  const isLit = (edge: { sourceId: string; targetId: string }) =>
-    inPlay !== null && (edge.sourceId === inPlay || edge.targetId === inPlay);
-  const lit = edges.filter(isLit);
-  // Drawn only while pointed at, in the quietest mode — see GRAPH_EDGE_LABELS.
-  const rest = labels === "pointed" ? [] : edges.filter((edge) => !isLit(edge));
+  const near = useMemo(() => neighbourhoodOf(graph.model.edges, selectedId), [graph.model.edges, selectedId]);
+  const lit = inPlay === null ? [] : edges.filter((edge) => edge.sourceId === inPlay || edge.targetId === inPlay);
   const arranged = hasMoved || Object.keys(pins).length > 0;
   const empty = focus ? graph.model.nodes.length <= 1 : graph.model.nodes.length === 0;
   // Too far out for a name to be readable, so none of them are drawn — the
@@ -231,7 +235,8 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
-              inPlay !== null ? "page-graph-scene-inplay" : "",
+              selectedId !== null ? "page-graph-scene-selected" : "",
+              panning ? "page-graph-scene-panning" : "",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -244,111 +249,31 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
               } as React.CSSProperties
             }
           >
-            {/* Decorative: every relationship a line stands for is already
-                reachable through the buttons, so a reader going through them
-                one at a time would otherwise hear the same thing twice. */}
-            <svg
-              className="page-graph-edges"
-              aria-hidden="true"
-              style={{
-                left: bounds.minX,
-                top: bounds.minY,
-                width: bounds.width,
-                height: bounds.height,
-              }}
-              viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
-            >
-              {/* The lit lines are drawn after the rest so they sit on top of
-                  them — SVG paints in order and has no z-index. */}
-              {[...rest, ...lit].map((edge) => (
-                <line
-                  key={edge.id}
-                  className={[
-                    "page-graph-edge",
-                    `page-graph-edge-${edge.kind === "tree" ? "tree" : "written"}`,
-                    isLit(edge) ? "page-graph-edge-lit" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  x1={edge.x1}
-                  y1={edge.y1}
-                  x2={edge.x2}
-                  y2={edge.y2}
-                />
-              ))}
+            {/* Drawn only while pointed at, in the quietest mode — see
+                GRAPH_EDGE_LABELS. A line's reason is held back while the
+                picture is small for the same reason every node's name is: a
+                whole world's worth of six-pixel words is noise standing where
+                the shape should be, and on a lit line it drew as a short grey
+                dash — the same stripe the selected node's name once did. */}
+            {labels !== "pointed" && (
+              <GraphEdges edges={edges} bounds={bounds} labelled={labels === "all" && !namesQuiet} />
+            )}
+            <GraphLitEdges edges={lit} bounds={bounds} labelled={!namesQuiet} />
 
-              {/* Only a reference property knows what to call itself — "Friends",
-                  "Enemies" — which is the one thing Obsidian's graph cannot say
-                  about a line it draws. Prose, manual links and the tree have no
-                  name to write, so most lines carry nothing either way.
-
-                  Dropped while the picture is small, for the same reason every
-                  node's name is: a whole world's worth of six-pixel words is
-                  noise standing where the shape should be. That held for
-                  *Names always* from the start and holds for the pointed-at
-                  lines too since the big-world pass — a label on a lit line at
-                  a fifth of its size drew as a short grey dash, the same stripe
-                  the selected node's name once did. */}
-              {edges.map((edge) => {
-                if (!edge.label || namesQuiet) return null;
-                if (!(isLit(edge) || labels === "all")) return null;
-                return (
-                  <text
-                    key={`${edge.id}-label`}
-                    className="page-graph-edge-label"
-                    x={(edge.x1 + edge.x2) / 2}
-                    y={(edge.y1 + edge.y2) / 2}
-                  >
-                    {edge.label}
-                  </text>
-                );
-              })}
-            </svg>
-
-            {drawnNodes.map((drawn) => {
-              const hex = getPaletteHex(drawn.color ?? undefined);
-              return (
-                <button
-                  key={drawn.id}
-                  type="button"
-                  className={[
-                    "page-graph-node",
-                    drawn.depth === 0 ? "page-graph-node-focus" : "",
-                    drawn.id === selectedId ? "page-graph-node-selected" : "",
-                    drawn.id === hoveredId ? "page-graph-node-inplay" : "",
-                    near.has(drawn.id) ? "page-graph-node-near" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  style={
-                    {
-                      left: drawn.x,
-                      top: drawn.y,
-                      ...(hex ? { "--graph-node-color": hex } : {}),
-                    } as React.CSSProperties
-                  }
-                  title={drawn.name}
-                  onPointerDown={(event) => startNodeDrag(event, drawn)}
-                  onPointerMove={moveNodeDrag}
-                  onPointerUp={(event) => endNodeDrag(event, drawn)}
-                  onPointerCancel={(event) => endNodeDrag(event, drawn)}
-                  onPointerEnter={() => hover(drawn.id)}
-                  onPointerLeave={() => hover(null)}
-                  // Only the keyboard's click reaches this — a mouse click is
-                  // decided in endNodeDrag, where a press that travelled can be
-                  // told from one that did not. `detail` is 0 exactly when the
-                  // click came from Enter or Space rather than a pointer.
-                  onClick={(event) => {
-                    if (event.detail === 0) select(drawn.id);
-                  }}
-                >
-                  <span className="page-graph-node-disc">
-                    <NodeIcon icon={drawn.icon} templateKey={drawn.templateKey} size={20} />
-                  </span>
-                  <span className="page-graph-node-name">{drawn.name}</span>
-                </button>
-              );
-            })}
+            {drawnNodes.map((drawn) => (
+              <GraphNodeButton
+                key={drawn.id}
+                drawn={drawn}
+                selected={drawn.id === selectedId}
+                hovered={drawn.id === hoveredId}
+                near={near.has(drawn.id)}
+                onStartDrag={startNodeDrag}
+                onMoveDrag={moveNodeDrag}
+                onEndDrag={endNodeDrag}
+                onHover={hover}
+                onSelect={select}
+              />
+            ))}
           </div>
 
           {empty && (

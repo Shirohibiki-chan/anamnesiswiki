@@ -472,14 +472,28 @@ Board spike, closed 2026-09-13. What binds the code:
   three are in `GraphOverlay` plus `graph.css`: lines fade in proportion to how
   many there are (`edgeOpacity`, handed to the stylesheet as
   `--graph-edge-opacity` because a CSS rule has no way to know the count);
-  pointing at or selecting a node lights its own lines in the text colour,
-  draws them last so they sit on top, and fades every node and line not touching
-  it to `GRAPH_DIM_OPACITY`; and a third *Lines* mode, `pointed`, draws no line
-  at all until a node is pointed at. The fade keeps a graph of a page's
+  pointing at a node draws its own lines again on top in a second SVG
+  (`GraphLitEdges`) and changes nothing else — dimming on hover flickered on a
+  dense graph and repainted every page each time the pointer crossed one;
+  *selecting* a node is what fades everything not touching it to
+  `GRAPH_DIM_OPACITY`; and a third *Lines* mode, `pointed`, draws no line at
+  all until a node is pointed at. The fade keeps a graph of a page's
   neighbourhood untouched — under `GRAPH_EDGE_FADE_FROM` lines nothing changes —
   so do not "fix" a faint whole-world graph by raising the floor without looking
   at a small one. The generated world is random links and will never show
   clusters; a real world does, and that is the picture the fade is tuned for.
+
+- **The lag on a big graph was the simulation, not the drawing — check memo
+  dependencies before optimising the renderer.** `useTemplates().getLabel` was
+  remade on every call, `usePageGraph` listed it as a dependency of the model,
+  and so `settleGraph` ran its 300 ticks on every pointer move: 770ms a move on
+  831 pages, measured. It is a module-level function now. The lines and the
+  buttons were memoised in the same pass (`GraphEdges`, `GraphNodeButton`) and
+  that is worth keeping, but it was worth a few milliseconds; the dependency
+  was worth the rest. And **never leave `will-change: transform` on the scene**:
+  Chrome keeps such a layer's painting at the scale it was first drawn and
+  scales the bitmap for every zoom after, which pixellated the whole world. It
+  is applied only while the background is being dragged.
 
 ---
 

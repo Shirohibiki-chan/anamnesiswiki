@@ -2,10 +2,14 @@
 
 ## 2026-09-13 — A big world's graph can be read
 
+### Fixes
+
+- **A big graph no longer stutters when you pan, zoom or point at it.** The whole layout was being worked out again from scratch on every mouse move — on eight hundred pages that was three-quarters of a second per pixel, and on a small graph a few milliseconds nobody noticed. Measured on an 831-page world: a pan step went from 770ms to 5ms, a hover from 1.7s to 11ms. The picture is also built once and only moved now, so pointing at a page redraws the dozen things it touches rather than the lot.
+
 ### Changes
 
 - **The lines on a big graph step back.** Past a couple of hundred lines they fade in proportion to how many there are, so a world of hundreds of pages drawn all at once shows its pages rather than one solid mesh. A page's own graph, with a handful of lines, looks the same as before.
-- **Point at a page and its connections light up.** Its own lines come up to full weight on top of everything else, and every page and line not joined to it fades back — so what one page is connected to can be seen on a graph of eight hundred. Selecting a page does the same for as long as it stays selected.
+- **Point at a page and its connections light up.** Its own lines come up to full weight on top of everything else, so what one page is connected to can be seen on a graph of eight hundred. Click it and the rest of the graph steps back to half strength for as long as it stays selected; it's the click that dims, not the pointer, so a picture that dense doesn't flicker as you move across it.
 - **A third *Lines* setting, *Only when pointed at*.** No lines are drawn until a page is pointed at, which on a very big world is the quietest picture there is. *Names when pointed at* is still the default.
 - **The name on a line is held back at the same zoom a page's name is.** Pointing at a page while zoomed far out used to write the reasons on its lines at a size that drew as short grey dashes.
 
