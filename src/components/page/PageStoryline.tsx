@@ -23,7 +23,7 @@
 //
 // All of the behaviour is in hooks/use-storyline-view.ts; this renders.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FilePlus2, Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } from "lucide-react";
+import { ChevronDown, FilePlus2, Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } from "lucide-react";
 import { getPaletteHex } from "../../constants/palette";
 import { STORYLINE_CAST_SHOWN, STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
 import type { Node } from "../../constants/schema";
@@ -84,7 +84,11 @@ export function PageStoryline({ node }: { node: Node }) {
   /** The "put an existing page on it" search, or null while it is closed. */
   const [picking, setPicking] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement | null>(null);
+  const pickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const pickerInputRef = useRef<HTMLInputElement | null>(null);
+  /** The narrow bar's *Add* menu, open or not. */
+  const [adding, setAdding] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement | null>(null);
   const candidates = useSceneCandidates(node.id, picking ?? "");
   const [refusal, setRefusal] = useState<string | null>(null);
   /**
@@ -172,11 +176,39 @@ export function PageStoryline({ node }: { node: Node }) {
   useEffect(() => {
     if (picking === null) return;
     function onPointerDown(event: PointerEvent) {
-      if (!pickerRef.current?.contains(event.target as globalThis.Node)) setPicking(null);
+      const target = event.target as globalThis.Node;
+      // The button that opens it is not "outside": a press there closes here
+      // and the click that follows would open it again, so it could never be
+      // put away from its own button.
+      if (pickerRef.current?.contains(target) || pickerButtonRef.current?.contains(target)) return;
+      setPicking(null);
     }
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [picking]);
+
+  // The Add menu goes away the same way, and on Escape.
+  useEffect(() => {
+    if (!adding) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!addMenuRef.current?.contains(event.target as globalThis.Node)) setAdding(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setAdding(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [adding]);
+
+  /** Runs one of the menu's actions and closes the menu. */
+  function fromMenu(action: () => void) {
+    setAdding(false);
+    action();
+  }
 
   // Escape leaves the expanded canvas, matching every other full-window surface
   // in the app. Only bound while expanded, so it never eats the key from
@@ -290,75 +322,132 @@ export function PageStoryline({ node }: { node: Node }) {
   return (
     <section className={`storyline${expanded ? " storyline-expanded" : ""}`} aria-label={`Storyline: ${node.name}`}>
       <div className="storyline-bar">
-        <button type="button" className="ui-btn ui-btn-secondary" onClick={addScene}>
-          <Plus size={15} />
-          Add a scene
-        </button>
-        {/* Its own button rather than a mode of the one above. Making a page
-            and pointing at one you already have are both first-class — the
-            plan is explicit about that — and hiding the second behind a menu
-            would make it the exception. */}
-        <div className="storyline-picker-anchor" ref={pickerRef}>
+        {/* **Two arrangements of the same four actions, and the stylesheet
+            picks one by the bar's width.** Wide enough, they are four buttons
+            with short words on them: "Add a scene", "Put a page on it", "Add
+            a note" and "Label a stretch" did not fit beside an ordinary
+            sidebar and the bar wrapped to two rows, which was reported as
+            looking broken (2026-09-13). Narrower, they fold into one *Add*
+            menu whose rows keep their words. Icons alone were tried in
+            between and refused the same evening — a row of pictograms says
+            nothing. The icon in front does the verb; the `title` says the
+            whole thing. */}
+        <div className="storyline-bar-adds">
+          <button type="button" className="ui-btn ui-btn-secondary" title="Add a scene" onClick={addScene}>
+            <Plus size={15} />
+            Scene
+          </button>
+          {/* Its own button rather than a mode of the one above. Making a page
+              and pointing at one you already have are both first-class — the
+              plan is explicit about that — and hiding the second behind a menu
+              would make it the exception. */}
           <button
             type="button"
             className="ui-btn ui-btn-secondary"
             aria-expanded={picking !== null}
+            title="Put a page you already have on this storyline"
+            ref={pickerButtonRef}
             onClick={() => setPicking((open) => (open === null ? "" : null))}
           >
             <FilePlus2 size={15} />
-            Put a page on it
+            Existing page
           </button>
+          <button type="button" className="ui-btn ui-btn-secondary" title="Add a note" onClick={addNote}>
+            <StickyNote size={15} />
+            Note
+          </button>
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary"
+            title="Label a stretch of the story"
+            onClick={addBand}
+          >
+            <SquareDashed size={15} />
+            Stretch
+          </button>
+        </div>
 
-          {picking !== null && (
-            <div className="storyline-picker" role="dialog" aria-label="Put an existing page on this storyline">
-              <input
-                type="text"
-                className="property-field-input"
-                placeholder="Search pages…"
-                aria-label="Search pages to put on this storyline"
-                value={picking}
-                autoFocus
-                ref={pickerInputRef}
-                onChange={(event) => setPicking(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") setPicking(null);
-                }}
-              />
-              {picking.trim() && candidates.length === 0 && (
-                <p className="storyline-picker-empty">
-                  No page by that name that isn&rsquo;t already here. Pages in other universes aren&rsquo;t
-                  offered — a storyline is one version of events.
-                </p>
-              )}
-              {candidates.map((candidate) => (
-                <button
-                  type="button"
-                  key={candidate.id}
-                  className="storyline-picker-row"
-                  onClick={() => putExistingPageOn(candidate.id)}
-                >
-                  <NodeIcon icon={candidate.icon} templateKey={candidate.templateKey} size={14} />
-                  <span className="storyline-picker-name">{candidate.name}</span>
-                </button>
-              ))}
+        <div className="storyline-bar-add-menu" ref={addMenuRef}>
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary"
+            aria-haspopup="menu"
+            aria-expanded={adding}
+            onClick={() => setAdding((open) => !open)}
+          >
+            <Plus size={15} />
+            Add
+            <ChevronDown size={14} />
+          </button>
+          {adding && (
+            <div className="storyline-add-menu" role="menu" aria-label="Add to this storyline">
+              <button type="button" role="menuitem" className="storyline-picker-row" onClick={() => fromMenu(addScene)}>
+                <Plus size={14} />
+                Scene
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="storyline-picker-row"
+                onClick={() => fromMenu(() => setPicking(""))}
+              >
+                <FilePlus2 size={14} />
+                Existing page
+              </button>
+              <button type="button" role="menuitem" className="storyline-picker-row" onClick={() => fromMenu(addNote)}>
+                <StickyNote size={14} />
+                Note
+              </button>
+              <button type="button" role="menuitem" className="storyline-picker-row" onClick={() => fromMenu(addBand)}>
+                <SquareDashed size={14} />
+                Stretch
+              </button>
             </div>
           )}
         </div>
 
-        <button type="button" className="ui-btn ui-btn-secondary" onClick={addNote}>
-          <StickyNote size={15} />
-          Add a note
-        </button>
-        <button type="button" className="ui-btn ui-btn-secondary" onClick={addBand}>
-          <SquareDashed size={15} />
-          Label a stretch
-        </button>
-
-        <span className="storyline-count">
-          {model.scenes.length === 0
-            ? "No scenes yet"
-            : `${model.scenes.length} ${model.scenes.length === 1 ? "scene" : "scenes"}`}
-        </span>
+        {/* Hangs under the bar's left end rather than under one button, since
+            the button it belongs to is in a different place in each of the
+            two arrangements above. */}
+        {picking !== null && (
+          <div
+            className="storyline-picker"
+            role="dialog"
+            aria-label="Put an existing page on this storyline"
+            ref={pickerRef}
+          >
+            <input
+              type="text"
+              className="property-field-input"
+              placeholder="Search pages…"
+              aria-label="Search pages to put on this storyline"
+              value={picking}
+              autoFocus
+              ref={pickerInputRef}
+              onChange={(event) => setPicking(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setPicking(null);
+              }}
+            />
+            {picking.trim() && candidates.length === 0 && (
+              <p className="storyline-picker-empty">
+                No page by that name that isn&rsquo;t already here. Pages in other universes aren&rsquo;t
+                offered — a storyline is one version of events.
+              </p>
+            )}
+            {candidates.map((candidate) => (
+              <button
+                type="button"
+                key={candidate.id}
+                className="storyline-picker-row"
+                onClick={() => putExistingPageOn(candidate.id)}
+              >
+                <NodeIcon icon={candidate.icon} templateKey={candidate.templateKey} size={14} />
+                <span className="storyline-picker-name">{candidate.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="storyline-bar-end">
           {/* Disabled rather than hidden once there is nothing to tidy: a button

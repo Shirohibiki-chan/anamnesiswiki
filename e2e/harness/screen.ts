@@ -80,6 +80,8 @@ const GRAPH_STAGE = ".page-graph-stage";
 // from — which is how a page becomes a storyline.
 const NEW_PAGE_GRID = ".new-page-landing-grid";
 const STORYLINE = ".storyline";
+const STORYLINE_BAR = ".storyline-bar";
+const STORYLINE_ADD_MENU = ".storyline-bar-add-menu";
 const STORYLINE_NODE = ".storyline-node";
 const STORYLINE_NODE_BODY = ".storyline-node-body";
 const STORYLINE_NODE_NAME = ".storyline-node-name";
@@ -1928,7 +1930,7 @@ export async function storylineIsShown(window: Page): Promise<boolean> {
 /** Adds a scene, which makes a page for it inside the storyline. */
 export async function addStorylineScene(window: Page): Promise<void> {
   const before = await window.locator(STORYLINE_NODE).count();
-  await window.locator(STORYLINE).getByRole("button", { name: "Add a scene" }).click();
+  await pressStorylineAdd(window, "Scene");
   await window
     .locator(STORYLINE_NODE)
     .nth(before)
@@ -2030,6 +2032,42 @@ export async function panStoryline(window: Page, byX: number, byY: number): Prom
   await window.mouse.up();
 }
 
+/**
+ * Presses one of the four "add" actions on the storyline's toolbar, whichever
+ * arrangement the bar is in: a button of its own when the bar is wide, a row
+ * of the *Add* menu when it is not. Scenarios say what they want added and
+ * never which arrangement they expect — the width decides that.
+ */
+async function pressStorylineAdd(window: Page, name: "Scene" | "Existing page" | "Note" | "Stretch"): Promise<void> {
+  const menu = window.locator(STORYLINE_ADD_MENU);
+  if (await menu.isVisible()) {
+    await menu.getByRole("button", { name: "Add", exact: true }).click();
+    await menu.getByRole("menuitem", { name, exact: true }).click();
+    return;
+  }
+  await window.locator(STORYLINE_BAR).getByRole("button", { name, exact: true }).click();
+}
+
+/**
+ * Whether the storyline's toolbar is one row with nothing cut off: no button
+ * sits lower than the first, and every one ends inside the bar. It wrapped to
+ * two rows at the page column's ordinary width beside a sidebar, and was
+ * reported as looking broken on 2026-09-13; a first fix kept one row by
+ * letting the right-hand buttons run off the edge, which this also catches.
+ */
+export async function storylineBarIsOneRow(window: Page): Promise<boolean> {
+  const bar = await window.locator(STORYLINE_BAR).boundingBox();
+  if (!bar) return false;
+  const tops: number[] = [];
+  for (const button of await window.locator(`${STORYLINE_BAR} button:visible`).all()) {
+    const box = await button.boundingBox();
+    if (!box) continue;
+    if (box.x + box.width > bar.x + bar.width + 0.5) return false;
+    tops.push(Math.round(box.y));
+  }
+  return tops.length > 0 && Math.max(...tops) - Math.min(...tops) <= 2;
+}
+
 /** Clicks empty canvas, which puts any selection away. */
 export async function clickStorylineBackground(window: Page): Promise<void> {
   await window.locator(STORYLINE_STAGE).click({ position: { x: 12, y: 12 } });
@@ -2093,7 +2131,7 @@ export async function renameSelectedScene(window: Page, name: string, how: "keep
 /** Adds a note, which opens straight into typing. */
 export async function addStorylineNote(window: Page, text: string): Promise<void> {
   const before = await window.locator(STORYLINE_NOTE).count();
-  await window.locator(STORYLINE).getByRole("button", { name: "Add a note" }).click();
+  await pressStorylineAdd(window, "Note");
   await window.locator(STORYLINE_NOTE_INPUT).waitFor({ state: "visible", timeout: WAIT_MS });
   await window.keyboard.type(text);
   // Committed by leaving it, which is the gesture the canvas is built around.
@@ -2126,7 +2164,7 @@ export async function followStorylineNoteLink(window: Page, name: string): Promi
 
 /** Adds a labelled stretch, which also opens straight into typing. */
 export async function addStorylineBand(window: Page, label: string): Promise<void> {
-  await window.locator(STORYLINE).getByRole("button", { name: "Label a stretch" }).click();
+  await pressStorylineAdd(window, "Stretch");
   await window.locator(STORYLINE_BAND_INPUT).waitFor({ state: "visible", timeout: WAIT_MS });
   await window.keyboard.type(label);
   await window.keyboard.press("Enter");
@@ -2218,7 +2256,7 @@ export async function storylineScenePlacements(window: Page): Promise<Record<str
 
 /** Opens the "put an existing page on it" search. */
 export async function openStorylinePicker(window: Page): Promise<void> {
-  await window.locator(STORYLINE).getByRole("button", { name: "Put a page on it" }).click();
+  await pressStorylineAdd(window, "Existing page");
   await window.locator(STORYLINE_PICKER).waitFor({ state: "visible", timeout: WAIT_MS });
 }
 

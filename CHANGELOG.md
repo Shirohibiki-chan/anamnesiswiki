@@ -24,6 +24,7 @@
 
 ### Changes
 
+- **The storyline's toolbar is one row, always.** Beside an ordinary sidebar it was wrapping *Tidy up* and the expand corner onto a second line. The four buttons say *Scene*, *Existing page*, *Note* and *Stretch* now (hover for the long version), and when the page column is too narrow even for those they fold into one *Add* menu with the same four rows — words kept, never icons alone. The scene count is gone from the bar; the canvas shows it.
 - **Scene cards on the storyline are one row.** Icon and name, 52 tall instead of 84. The bottom third of every card was kept empty for the little icons of who's in the scene, drawn whether or not anyone was — on a new storyline that was a name in a corner over a band of air. The icons now hang off the card's bottom-right corner as a small cluster of dots, and only when there is someone to show. Cards are still one fixed size, so nothing moves when a name is written into a page.
 - **A stretch's label is small caps, and a new stretch starts at half the size.** Room for two scenes side by side rather than four cards' worth of dashed box around whatever it landed on.
 - **Far out, a page is a dot.** At whole-world zoom a page is a filled dot in its colour rather than a ring with an unreadable icon in it; the ring, icon and name come back as you zoom in. Hundreds of dots are something the eye can take in, and drawing them is cheap enough that zooming repaints crisp on every tick — no more soft picture while the wheel turns.
