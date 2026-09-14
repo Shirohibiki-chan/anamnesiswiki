@@ -1512,6 +1512,9 @@ async function wheelOverGraph(window: Page, notches: number, delta: number): Pro
   if (!box) throw new Error("The graph has no stage to zoom");
   await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, delta);
+  // The wheel glides since the big-world pass; a read before it lands is a
+  // read of the middle of a movement.
+  await waitForGlide(window);
 }
 
 /**
