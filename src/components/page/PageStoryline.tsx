@@ -419,6 +419,17 @@ export function PageStoryline({ node }: { node: Node }) {
                 onPointerMove={moveBandDrag}
                 onPointerUp={(event) => endBandDrag(event, band)}
                 onPointerCancel={(event) => endBandDrag(event, band)}
+                // On the band itself, not on its label, and this is why the
+                // note's is on the note: the press captures the pointer to
+                // this element, so the release — and the click and the
+                // double-click built from it — are aimed here whatever was
+                // under the mouse. A handler on the label never heard one.
+                // "I cannot doubleclick to rename the stretch", 2026-09-13,
+                // reproduced with a real double-click in the app suite.
+                onDoubleClick={(event) => {
+                  if ((event.target as HTMLElement).closest(".storyline-band-corner")) return;
+                  setEditing({ kind: "band", id: band.id, draft: band.label });
+                }}
               >
                 {isEditing ? (
                   <input
@@ -435,12 +446,7 @@ export function PageStoryline({ node }: { node: Node }) {
                     }}
                   />
                 ) : (
-                  <span
-                    className="storyline-band-label"
-                    onDoubleClick={() => setEditing({ kind: "band", id: band.id, draft: band.label })}
-                  >
-                    {band.label || "Double-click to name this stretch"}
-                  </span>
+                  <span className="storyline-band-label">{band.label || "Double-click to name this stretch"}</span>
                 )}
 
                 {/* Bottom-right, where a resize handle goes everywhere else. */}

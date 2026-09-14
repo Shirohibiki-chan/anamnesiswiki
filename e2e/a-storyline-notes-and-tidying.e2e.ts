@@ -22,6 +22,7 @@ import {
   joinStorylineScenes,
   makeStoryline,
   pageTitle,
+  renameStorylineBand,
   searchTree,
   storylineBandLabels,
   storylineBrokenLinks,
@@ -105,6 +106,17 @@ describe("a storyline's notes and labels", () => {
 
   it("labels a stretch of the storyline", async () => {
     await addStorylineBand(app.window, "Act 2");
+    expect(await storylineBandLabels(app.window)).toEqual(["Act 2"]);
+  });
+
+  it("renames a stretch on a double-click, as its placeholder promises", async () => {
+    // The handler used to sit on the label, which never heard a double-click:
+    // the band captures the pointer on press, so the release and the clicks
+    // built from it are aimed at the band. Reported 2026-09-13.
+    await renameStorylineBand(app.window, 0, "Act Two");
+    expect(await storylineBandLabels(app.window)).toEqual(["Act Two"]);
+    // And back, so the restart below still finds the name it expects.
+    await renameStorylineBand(app.window, 0, "Act 2");
     expect(await storylineBandLabels(app.window)).toEqual(["Act 2"]);
   });
 
