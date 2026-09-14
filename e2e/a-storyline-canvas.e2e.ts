@@ -19,6 +19,7 @@ import {
   clickStorylineBackground,
   describeStorylineScene,
   dragStorylineScene,
+  fitStorylineOnScreen,
   joinStorylineScenes,
   makeStoryline,
   openSceneFromCard,
@@ -189,6 +190,7 @@ describe("a storyline's canvas", () => {
     // recomputed and every card shrank, then grew back on the click that put
     // the selection away. Reported 2026-09-13, in terms this file will not
     // repeat. The strip lies over the canvas now, so nothing moves.
+    await fitStorylineOnScreen(app.window);
     const before = await storylineScenePositions(app.window);
     await selectStorylineScene(app.window, 1);
     expect(await storylineScenePositions(app.window)).toEqual(before);
@@ -205,6 +207,7 @@ describe("a storyline's canvas", () => {
     // By id, since the cards' order in the document is not the order they
     // are drawn in left to right — the same reason `storylineSceneOrder` is
     // ids and not names.
+    await fitStorylineOnScreen(app.window);
     const placedBefore = await storylineScenePlacements(app.window);
     const written = (await storylineSceneOrder(app.window))[0];
     const index = Object.keys(placedBefore).indexOf(written);
