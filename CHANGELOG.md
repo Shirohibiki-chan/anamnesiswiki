@@ -4,6 +4,9 @@
 
 ### Additions
 
+- **A scene's card says what happens.** Double-click a card on the storyline and write the event into it — what you write is the scene's Summary, the same field on its page, so it's in both places and only lives in one. The card grows to fit however much you write; nothing else on the canvas moves while you type. Enter is a new line, Ctrl+Enter is done, Escape keeps what was there. The strip at the bottom has an *Edit what happens* button for the same thing.
+- **Every card has its own open-page button**, top-right corner. Double-clicking a card used to open its page; that's the description now, and the page has a button on the card rather than only at the bottom of the canvas. The strip's *Open this scene* button is gone with it.
+- **A scene with a banner shows it on its card**, behind the name, shaded dark near the words so they stay readable. A page with no banner but a picture of its own shows that instead.
 - **A character has Family, Friends, Allies, Rivals and Enemies fields by default.** Only Friends shipped before. They're reference fields, so each one is a line on the graph that says what it is.
 - **The graph's filter menu lists each relationship by name.** Under *Reference fields*: Friends, Enemies, Leader, Members — whatever the pages on this graph actually use — each one its own tick box.
 
@@ -24,6 +27,7 @@
 
 ### Changes
 
+- **Scene cards are wider (220), and Tidy up stacks cards edge to edge with a fixed space between**, since they're no longer all one height. Tidy up also stays quiet when a card is within a few pixels of where it would put it. The example world's storyline is re-spaced to match.
 - **The storyline's toolbar is one row, always.** Beside an ordinary sidebar it was wrapping *Tidy up* and the expand corner onto a second line. The four buttons say *Scene*, *Existing page*, *Note* and *Stretch* now (hover for the long version), and when the page column is too narrow even for those they fold into one *Add* menu with the same four rows — words kept, never icons alone. The scene count is gone from the bar; the canvas shows it.
 - **Scene cards on the storyline are one row.** Icon and name, 52 tall instead of 84. The bottom third of every card was kept empty for the little icons of who's in the scene, drawn whether or not anyone was — on a new storyline that was a name in a corner over a band of air. The icons now hang off the card's bottom-right corner as a small cluster of dots, and only when there is someone to show. Cards are still one fixed size, so nothing moves when a name is written into a page.
 - **A stretch's label is small caps, and a new stretch starts at half the size.** Room for two scenes side by side rather than four cards' worth of dashed box around whatever it landed on.

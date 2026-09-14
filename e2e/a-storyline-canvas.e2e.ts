@@ -17,10 +17,11 @@ import {
   addStorylineScene,
   clearTreeSearch,
   clickStorylineBackground,
+  describeStorylineScene,
   dragStorylineScene,
   joinStorylineScenes,
   makeStoryline,
-  openSelectedScene,
+  openSceneFromCard,
   pageTitle,
   panStoryline,
   renameSelectedScene,
@@ -31,8 +32,11 @@ import {
   storylineIsShown,
   storylineRefusal,
   storylineSceneOrder,
+  storylineSceneHeight,
+  storylineScenePlacements,
   storylineScenePositions,
   storylineScenesLeftToRight,
+  storylineSceneSummaries,
   takeSceneOffCanvas,
   treeRow,
   waitForWorld,
@@ -192,9 +196,40 @@ describe("a storyline's canvas", () => {
     expect(await storylineScenePositions(app.window)).toEqual(before);
   });
 
-  it("opens the page behind a scene", async () => {
-    await selectStorylineScene(app.window, 0);
-    await openSelectedScene(app.window);
+  it("says what happens in a scene, on the card, and the card grows to fit", async () => {
+    // The card is where the event is *said* — her words, 2026-09-14: the
+    // flowchart has to read as the sequence of events without opening
+    // anything. A double-click opens the words for typing in the card; they
+    // land on the page's Summary field. The card is as tall as they need,
+    // and the cards around it stay exactly where they were.
+    // By id, since the cards' order in the document is not the order they
+    // are drawn in left to right — the same reason `storylineSceneOrder` is
+    // ids and not names.
+    const placedBefore = await storylineScenePlacements(app.window);
+    const written = (await storylineSceneOrder(app.window))[0];
+    const index = Object.keys(placedBefore).indexOf(written);
+    const before = await storylineSceneHeight(app.window, index);
+    const said = "She takes the lantern down to the water and does not bring it back.";
+    await describeStorylineScene(app.window, index, said);
+    expect((await storylineSceneSummaries(app.window))[index]).toBe(said);
+    expect(await storylineSceneHeight(app.window, index)).toBeGreaterThan(before);
+    const placedAfter = await storylineScenePlacements(app.window);
+    for (const id of Object.keys(placedBefore)) expect(placedAfter[id]).toEqual(placedBefore[id]);
+
+    // Still there after a restart — it is on the page, not in the view.
+    await app.window.waitForTimeout(WRITTEN_MS);
+    await reload(app);
+    await searchTree(app.window, STORYLINE);
+    await treeRow(app.window, STORYLINE).first().click();
+    await clearTreeSearch(app.window);
+    expect(await storylineSceneSummaries(app.window)).toContain(said);
+  });
+
+  it("opens the page behind a scene, from the card's own corner", async () => {
+    // The corner button, not a double-click: the double-click writes the
+    // description now, and the page's button is on every card rather than
+    // in the strip at the bottom — her call, 2026-09-14.
+    await openSceneFromCard(app.window, 0);
     expect(await pageTitle(app.window)).toBe("Untitled");
   });
 
@@ -233,8 +268,7 @@ describe("a storyline's canvas", () => {
     await searchTree(app.window, "The Fall");
     expect(await treeRow(app.window, "The Fall").count()).toBe(1);
     await clearTreeSearch(app.window);
-    await selectStorylineScene(app.window, 0);
-    await openSelectedScene(app.window);
+    await openSceneFromCard(app.window, 0);
     expect(await pageTitle(app.window)).toBe("The Fall");
   });
 });

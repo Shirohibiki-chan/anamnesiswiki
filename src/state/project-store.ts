@@ -53,6 +53,7 @@ import {
   tidyUp,
   type ConnectRefusal,
   type SceneRefusal,
+  type SceneHeights,
 } from "../services/storyline-service";
 import { TEMPLATES_FILE } from "../constants/paths";
 import { EXAMPLE_WORLD_NAME } from "../constants/example-world";
@@ -897,7 +898,8 @@ export type ProjectStoreState = {
   ) => void;
   resizeStorylineBand: (storylineId: string, bandId: string, size: { width: number; height: number }) => void;
   removeStorylineBand: (storylineId: string, bandId: string) => void;
-  tidyStoryline: (storylineId: string) => void;
+  /** `heights` is each card's height on screen, so stacked cards clear each other. */
+  tidyStoryline: (storylineId: string, heights?: SceneHeights) => void;
   /**
    * The board's drawing (Board spike, 2026-09-13). Set and written together,
    * like `applyStoryline`. Called by the board component once the drawing has
@@ -4261,9 +4263,9 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
      * there is no gesture that puts an arrangement back by hand. It is the one
      * button here that can lose real work, so Ctrl+Z has to cover it.
      */
-    tidyStoryline(storylineId) {
+    tidyStoryline(storylineId, heights) {
       const before = storylineOf(storylineId);
-      const after = tidyUp(before);
+      const after = tidyUp(before, heights);
       if (after === before) return;
       applyStoryline(storylineId, after);
       record(

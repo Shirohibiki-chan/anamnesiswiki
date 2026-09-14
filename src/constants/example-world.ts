@@ -503,9 +503,9 @@ export const EXAMPLE_STORYLINES: ExampleStoryline[] = [
     page: "salt-tide",
     scenes: [
       { page: "scene-lantern", x: 0, y: 0 },
-      { page: "scene-boat", x: 260, y: -60 },
-      { page: "scene-chapel", x: 260, y: 60 },
-      { page: "scene-return", x: 520, y: 0 },
+      { page: "scene-boat", x: 320, y: -80 },
+      { page: "scene-chapel", x: 320, y: 80 },
+      { page: "scene-return", x: 640, y: 0 },
     ],
     edges: [
       ["scene-lantern", "scene-boat"],
@@ -519,12 +519,12 @@ export const EXAMPLE_STORYLINES: ExampleStoryline[] = [
         // drawn round the *scenes* — a note parked outside that is on the
         // canvas but off the screen until somebody drags the view, and this
         // world has to look right without being touched.
-        x: 400,
-        y: 120,
+        x: 480,
+        y: 160,
         width: 240,
         text: "Thessaly's version of this night is different, and she has never told it. [[The Drowned Chapel]]",
       },
     ],
-    bands: [{ x: -120, y: -170, width: 520, height: 340, label: "One night in Saltmere" }],
+    bands: [{ x: -130, y: -200, width: 600, height: 400, label: "One night in Saltmere" }],
   },
 ];

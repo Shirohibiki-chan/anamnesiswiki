@@ -23,7 +23,19 @@
 //
 // All of the behaviour is in hooks/use-storyline-view.ts; this renders.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, FilePlus2, Link2, Maximize2, Minimize2, Plus, StickyNote, SquareDashed, Wand2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  FilePlus2,
+  Link2,
+  Maximize2,
+  Minimize2,
+  Plus,
+  StickyNote,
+  SquareDashed,
+  Wand2,
+} from "lucide-react";
+import { STORYLINE_SUMMARY_KEY } from "../../services/storyline-service";
 import { getPaletteHex } from "../../constants/palette";
 import { STORYLINE_CAST_SHOWN, STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
 import type { Node } from "../../constants/schema";
@@ -37,6 +49,7 @@ import {
   type SceneRefusal,
 } from "../../hooks/use-storyline";
 import { useStorylineView } from "../../hooks/use-storyline-view";
+import { useNodeImage } from "../../hooks/use-node-image";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { NodeIcon } from "../blocks/IconPicker";
 import "./storyline.css";
@@ -69,12 +82,35 @@ const SCENE_REFUSALS: Record<SceneRefusal, string> = {
   "another-universe": "That page belongs to a different universe, and a storyline is one version of events.",
 };
 
+/**
+ * The picture behind a scene's card, when its page has one.
+ *
+ * Its own component because resolving a picture is a hook, and the card is
+ * drawn inside a `map`. Nothing at all while the page has no picture or the
+ * file is still being read — a card must never flash grey on the way in.
+ * The shade and the pale text that make the name readable over it are on
+ * the card (`storyline-node-pictured`), not here.
+ */
+function ScenePicture({ fileName, focusY }: { fileName: string | undefined; focusY: number | undefined }) {
+  const { url } = useNodeImage(fileName);
+  if (!url) return null;
+  return (
+    <img
+      className="storyline-node-picture"
+      src={url}
+      alt=""
+      draggable={false}
+      style={focusY !== undefined ? { objectPosition: `50% ${focusY}%` } : undefined}
+    />
+  );
+}
+
 export function PageStoryline({ node }: { node: Node }) {
   const model = useStoryline(node.id);
-  const untidy = useStorylineIsUntidy(node.id);
   const actions = useStorylineActions();
   const { addSceneToStoryline, addExistingPageToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
   const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline, renameNode } = actions;
+  const { updateNodeProperty } = actions;
   const { addStorylineNote, setStorylineNoteText, moveStorylineNote, removeStorylineNote } = actions;
   const { addStorylineBand, setStorylineBandLabel, moveStorylineBand } = actions;
   const { resizeStorylineBand, removeStorylineBand } = actions;
@@ -102,10 +138,18 @@ export function PageStoryline({ node }: { node: Node }) {
    * scene card is a page, so renaming it here is the same rename the tree does,
    * and the canvas has nothing of its own to write. The id is the canvas
    * node's, as for the other two; the page is looked up when the draft lands.
+   *
+   * **A summary is the fourth: what happens in the scene, typed into the card
+   * and landing on the page's Summary field.** This is the one the storyline
+   * exists for — her words, 2026-09-14: the flowchart has to be readable as
+   * "ah, I see the sequence of events" without opening anything, and a page
+   * of its own is where a scene is *elaborated*, not where it is said.
    */
-  const [editing, setEditing] = useState<{ kind: "note" | "band" | "scene"; id: string; draft: string } | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<{
+    kind: "note" | "band" | "scene" | "summary";
+    id: string;
+    draft: string;
+  } | null>(null);
 
   const onArrange = useCallback(
     (moved: Record<string, { x: number; y: number }>) => moveStorylineNodes(node.id, moved),
@@ -144,7 +188,8 @@ export function PageStoryline({ node }: { node: Node }) {
     onMoveBand,
     onResizeBand,
   });
-  const { stageRef, scenes, edges, notes, bands, bounds, sceneTransform, linking, zoom } = view;
+  const { stageRef, scenes, edges, notes, bands, bounds, sceneTransform, linking, zoom, heights, measureScene } = view;
+  const untidy = useStorylineIsUntidy(node.id, heights);
   const { selectedId, selectedEdgeId, selectedAnnotation, select, selectEdge, selectAnnotation } = view;
   const { startSceneDrag, moveSceneDrag, endSceneDrag, startLink, moveLink, endLink } = view;
   const { startNoteDrag, moveNoteDrag, endNoteDrag } = view;
@@ -262,7 +307,11 @@ export function PageStoryline({ node }: { node: Node }) {
     if (!editing) return;
     if (editing.kind === "note") setStorylineNoteText(node.id, editing.id, editing.draft);
     else if (editing.kind === "band") setStorylineBandLabel(node.id, editing.id, editing.draft);
-    else {
+    else if (editing.kind === "summary") {
+      const scene = scenes.find((candidate) => candidate.id === editing.id);
+      const summary = editing.draft.trim();
+      if (scene && summary !== scene.summary) updateNodeProperty(scene.pageId, STORYLINE_SUMMARY_KEY, summary);
+    } else {
       // A blank name is not a rename — the tree refuses it the same way — and
       // an unchanged one is not worth a write to the disk.
       const scene = scenes.find((candidate) => candidate.id === editing.id);
@@ -270,6 +319,18 @@ export function PageStoryline({ node }: { node: Node }) {
       if (scene && name && name !== scene.name) renameNode(scene.pageId, name);
     }
     setEditing(null);
+  }
+
+  /** Opens a scene's description for typing, in the card. */
+  function writeSummary(scene: { id: string; summary: string }) {
+    select(scene.id);
+    setEditing({ kind: "summary", id: scene.id, draft: scene.summary });
+  }
+
+  /** Grows a description box to fit what is in it, so nothing scrolls inside a card. */
+  function fitTextarea(element: HTMLTextAreaElement) {
+    element.style.height = "0";
+    element.style.height = `${element.scrollHeight}px`;
   }
 
   /** Opens the selected scene's name for typing. Also what F2 does. */
@@ -456,7 +517,7 @@ export function PageStoryline({ node }: { node: Node }) {
           <button
             type="button"
             className="ui-btn ui-btn-secondary"
-            onClick={() => tidyStoryline(node.id)}
+            onClick={() => tidyStoryline(node.id, heights)}
             disabled={!untidy}
             // **The key comes from the binding, never from a string here.**
             // Undo is Ctrl+Shift+Z rather than Ctrl+Z — her call, 2026-08-27,
@@ -623,60 +684,150 @@ export function PageStoryline({ node }: { node: Node }) {
           {scenes.map((scene) => {
             const hex = getPaletteHex(scene.color ?? undefined);
             const isRenaming = editing?.kind === "scene" && editing.id === scene.id;
+            const isWriting = editing?.kind === "summary" && editing.id === scene.id;
+            const cast = (
+              <span className="storyline-node-cast" aria-hidden="true">
+                {scene.cast.slice(0, STORYLINE_CAST_SHOWN).map((member) => (
+                  <span key={member.id} className="storyline-cast-dot" title={member.name}>
+                    <NodeIcon icon={member.icon} templateKey={member.templateKey} size={11} />
+                  </span>
+                ))}
+                {scene.cast.length > STORYLINE_CAST_SHOWN && (
+                  <span className="storyline-cast-more">+{scene.cast.length - STORYLINE_CAST_SHOWN}</span>
+                )}
+              </span>
+            );
             return (
               <div
                 key={scene.id}
-                className={`storyline-node${scene.id === selectedId ? " storyline-node-selected" : ""}`}
+                ref={measureScene(scene.id)}
+                className={`storyline-node${scene.id === selectedId ? " storyline-node-selected" : ""}${
+                  scene.picture ? " storyline-node-pictured" : ""
+                }${isWriting || isRenaming ? " storyline-node-writing" : ""}`}
                 style={
                   {
                     left: scene.x - STORYLINE_NODE_WIDTH / 2,
+                    // The point is the middle of the top row; the card runs
+                    // down from it as far as its description goes.
                     top: scene.y - STORYLINE_NODE_HEIGHT / 2,
                     ...(hex ? { "--storyline-node-color": hex } : {}),
                   } as React.CSSProperties
                 }
               >
-                {/* `data-scene-id` is how a dropped line finds what it landed
-                    on — see `endLink`, which reads the document because a
-                    pointer capture means nothing else is getting events. */}
+                {isWriting || isRenaming ? (
+                  // A plain box while the name or the description is being
+                  // typed, since a box to type in cannot live inside a
+                  // button. Same card, same picture — one part of it is live.
+                  <div className="storyline-node-body" data-scene-id={scene.id}>
+                    <ScenePicture fileName={scene.picture} focusY={scene.pictureFocusY} />
+                    <span className="storyline-node-icon">
+                      <NodeIcon icon={scene.icon} templateKey={scene.templateKey} size={16} />
+                    </span>
+                    {isRenaming ? (
+                      <input
+                        className="storyline-node-input"
+                        value={editing.draft}
+                        autoFocus
+                        aria-label="What this scene is called"
+                        onFocus={(event) => event.currentTarget.select()}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
+                        onBlur={commitEdit}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") event.currentTarget.blur();
+                          // Escape keeps the old name: this is a page's name,
+                          // and half a new one landing on it is worse than none.
+                          else if (event.key === "Escape") setEditing(null);
+                        }}
+                      />
+                    ) : (
+                      <span className="storyline-node-name">{scene.name}</span>
+                    )}
+                    {isRenaming && scene.summary && <span className="storyline-node-summary">{scene.summary}</span>}
+                    {isWriting && (
+                    <textarea
+                      className="storyline-node-summary-input"
+                      value={editing.draft}
+                      autoFocus
+                      rows={2}
+                      placeholder="What happens here?"
+                      aria-label={`What happens in ${scene.name}`}
+                      ref={(element) => {
+                        if (element) fitTextarea(element);
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onChange={(event) => {
+                        fitTextarea(event.currentTarget);
+                        setEditing({ ...editing, draft: event.target.value });
+                      }}
+                      onBlur={commitEdit}
+                      onKeyDown={(event) => {
+                        // Enter is a new line — this is prose. Ctrl+Enter is
+                        // done, and Escape keeps what the page already said.
+                        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) event.currentTarget.blur();
+                        else if (event.key === "Escape") setEditing(null);
+                      }}
+                    />
+                    )}
+                  </div>
+                ) : (
+                  /* `data-scene-id` is how a dropped line finds what it landed
+                     on — see `endLink`, which reads the document because a
+                     pointer capture means nothing else is getting events. */
+                  <button
+                    type="button"
+                    className="storyline-node-body"
+                    data-scene-id={scene.id}
+                    title={scene.name}
+                    onPointerDown={(event) => startSceneDrag(event, scene)}
+                    onPointerMove={moveSceneDrag}
+                    onPointerUp={(event) => endSceneDrag(event, scene)}
+                    onPointerCancel={(event) => endSceneDrag(event, scene)}
+                    // Only the keyboard's click reaches this — a mouse click is
+                    // decided in endSceneDrag, where a press that travelled can
+                    // be told from one that did not.
+                    onClick={(event) => {
+                      if (event.detail === 0) select(scene.id);
+                    }}
+                    // Writes the description, in the card. It used to open the
+                    // page; her call on 2026-09-14 was that the card is where
+                    // the event is *said* and the page is where it is
+                    // elaborated, so the double-click goes to the saying and
+                    // the page has a button of its own on every card.
+                    onDoubleClick={() => writeSummary(scene)}
+                  >
+                    <ScenePicture fileName={scene.picture} focusY={scene.pictureFocusY} />
+                    <span className="storyline-node-icon">
+                      <NodeIcon icon={scene.icon} templateKey={scene.templateKey} size={16} />
+                    </span>
+                    <span className="storyline-node-name">{scene.name}</span>
+                    {/* Wraps in full, however long — a description cut off
+                        on the canvas would defeat the canvas. A card with
+                        none is a name alone, and the strip below says how
+                        to give it one. */}
+                    {scene.summary && <span className="storyline-node-summary">{scene.summary}</span>}
+                  </button>
+                )}
+
+                {/* Who and what is in the scene, from the reference index —
+                    whatever its page points at, however it points. A cluster
+                    of dots off the card's corner, only when there is one; the
+                    names are in the tooltips and in the strip below. */}
+                {scene.cast.length > 0 && cast}
+
+                {/* The page, from the card. On every card rather than only in
+                    the strip at the bottom — her words, 2026-09-14 — because
+                    the thing she is looking at is the card, and the strip is
+                    somewhere else. */}
                 <button
                   type="button"
-                  className="storyline-node-body"
-                  data-scene-id={scene.id}
-                  title={scene.name}
-                  onPointerDown={(event) => startSceneDrag(event, scene)}
-                  onPointerMove={moveSceneDrag}
-                  onPointerUp={(event) => endSceneDrag(event, scene)}
-                  onPointerCancel={(event) => endSceneDrag(event, scene)}
-                  // Only the keyboard's click reaches this — a mouse click is
-                  // decided in endSceneDrag, where a press that travelled can
-                  // be told from one that did not.
-                  onClick={(event) => {
-                    if (event.detail === 0) select(scene.id);
-                  }}
-                  onDoubleClick={() => selectNode(scene.pageId)}
+                  className="storyline-node-open"
+                  aria-label={`Open ${scene.name}`}
+                  title="Open this scene's page"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => selectNode(scene.pageId)}
                 >
-                  <span className="storyline-node-icon">
-                    <NodeIcon icon={scene.icon} templateKey={scene.templateKey} size={16} />
-                  </span>
-                  <span className="storyline-node-name">{scene.name}</span>
-
-                  {/* Who and what is in the scene, from the reference index —
-                      whatever its page points at, however it points. **The row
-                      is always drawn, empty or not**, so a card is the same
-                      height whether or not anybody is in it: a canvas whose
-                      cards changed size as pages were written in would move
-                      under her every time. The names are in the tooltip and in
-                      the strip below; at this size only the icons fit. */}
-                  <span className="storyline-node-cast" aria-hidden="true">
-                    {scene.cast.slice(0, STORYLINE_CAST_SHOWN).map((member) => (
-                      <span key={member.id} className="storyline-cast-dot" title={member.name}>
-                        <NodeIcon icon={member.icon} templateKey={member.templateKey} size={11} />
-                      </span>
-                    ))}
-                    {scene.cast.length > STORYLINE_CAST_SHOWN && (
-                      <span className="storyline-cast-more">+{scene.cast.length - STORYLINE_CAST_SHOWN}</span>
-                    )}
-                  </span>
+                  <ArrowUpRight size={13} />
                 </button>
 
                 {/* Its own element rather than a modifier key on the card: the
@@ -696,28 +847,6 @@ export function PageStoryline({ node }: { node: Node }) {
                   <Link2 size={13} />
                 </button>
 
-                {/* Drawn over the name rather than in place of it, because the
-                    name sits inside a button and a box to type in cannot. The
-                    press that focuses it must not start dragging the card
-                    underneath — same as the band's box. */}
-                {isRenaming && (
-                  <input
-                    className="storyline-node-input"
-                    value={editing.draft}
-                    autoFocus
-                    aria-label="What this scene is called"
-                    onFocus={(event) => event.currentTarget.select()}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
-                    onBlur={commitEdit}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                      // Escape keeps the old name: this is a page's name, and
-                      // half a new one landing on it is worse than none.
-                      else if (event.key === "Escape") setEditing(null);
-                    }}
-                  />
-                )}
               </div>
             );
           })}
@@ -818,12 +947,12 @@ export function PageStoryline({ node }: { node: Node }) {
                   ))}
                 </span>
               )}
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => selectNode(selectedScene.pageId)}
-              >
-                Open this scene
+              {/* No "open" here: every card has the page's button in its own
+                  corner, and a second copy of it down here was one button too
+                  many for the strip's width. The same thing a double-click on
+                  the card does, for whoever did not know that: */}
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => writeSummary(selectedScene)}>
+                {selectedScene.summary ? "Edit what happens" : "Say what happens"}
               </button>
               {/* Renames the page — a scene *is* one — and reads "Rename"
                   like the band's button so the two are learnt once. */}

@@ -6,19 +6,25 @@
 // one silently retuning the other. What *is* shared with Phase 24 is the
 // surface itself: pan, zoom, and lines drawn in SVG under nodes drawn in HTML.
 
-/** A scene node's drawn size, in canvas units. The stylesheet matches these. */
-export const STORYLINE_NODE_WIDTH = 168;
 /**
- * One row: the icon and up to two lines of name.
+ * A scene card's width, in canvas units. The stylesheet matches it.
  *
- * **Still one number rather than two.** Step 3 made the card taller to keep a
- * strip along the bottom for who is in the scene, drawn whether or not anybody
- * was — so a card never grew the first time a name was written into its page.
- * The fixed size stays, since that reason stands; the empty strip does not.
- * With nothing linked yet, which is every card on a new storyline, it was a
- * name in a corner over a band of air ("it just looks really stupid",
- * 2026-09-13). The cast now hangs off the card's bottom edge as a cluster of
- * dots, outside its box, and only when there is one.
+ * Wide enough for a few lines of prose: since 2026-09-14 the card carries the
+ * scene's description under its name, and 168 was a width for names alone.
+ */
+export const STORYLINE_NODE_WIDTH = 220;
+/**
+ * A card's height with nothing but its name on it: the icon and up to two
+ * lines of name. **The card's anchor, not its size.** A scene's stored `y` is
+ * the middle of this much of it, so a card with a description grows
+ * downward from the same spot and its top row stays where she put it. The
+ * real height is measured on screen — `heights` in `use-storyline-view.ts` —
+ * and is what the lines, the fit and Tidy up work from.
+ *
+ * Fixed-size cards were the rule until 2026-09-14, so that nothing on the
+ * canvas moved when a page was written into. The description is the thing
+ * the card is *for* now — she reads the flowchart to follow what happened —
+ * so a card is as tall as what it says, and only its own bottom edge moves.
  */
 export const STORYLINE_NODE_HEIGHT = 52;
 
@@ -28,7 +34,7 @@ export const STORYLINE_NODE_HEIGHT = 52;
  * Four small icons is what 168 units of card has room for beside the name.
  * The full list is in the selection strip, where there is room for names.
  */
-export const STORYLINE_CAST_SHOWN = 4;
+export const STORYLINE_CAST_SHOWN = 5;
 
 /**
  * How far to the right of everything else a scene added from the button lands.
@@ -36,7 +42,7 @@ export const STORYLINE_CAST_SHOWN = 4;
  * Wider than a node so two in a row are visibly separate rather than touching,
  * and not so wide that adding five in a row walks off the edge of the window.
  */
-export const STORYLINE_NEW_NODE_GAP = 240;
+export const STORYLINE_NEW_NODE_GAP = 270;
 
 /**
  * A note's width when it is dropped, in canvas units.
@@ -101,8 +107,21 @@ export const STORYLINE_NEW_BAND_HEIGHT = 128;
 export const STORYLINE_MIN_BAND_SIZE = 80;
 
 /** How far apart *Tidy up* puts the columns and the rows. */
-export const STORYLINE_TIDY_COLUMN_GAP = 260;
-export const STORYLINE_TIDY_ROW_GAP = 120;
+export const STORYLINE_TIDY_COLUMN_GAP = 320;
+/**
+ * The clear space Tidy up leaves between two cards stacked in one column —
+ * edge to edge, since cards are as tall as their descriptions and a fixed
+ * pitch between centres would stack a long one onto the next.
+ */
+export const STORYLINE_TIDY_ROW_SPACE = 44;
+
+/**
+ * How far a card may sit from where Tidy up would put it and still count as
+ * tidy. Cards are as tall as their descriptions, so the tidy position moves
+ * with the type size and the words; a button lit up because a card is a few
+ * units from a spot that will move again is a button that is always lit.
+ */
+export const STORYLINE_TIDY_TOLERANCE = 40;
 
 /**
  * Empty margin left around the scenes when the canvas is fitted to the window.

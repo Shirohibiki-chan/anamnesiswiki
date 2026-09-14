@@ -86,6 +86,9 @@ const STORYLINE_NODE = ".storyline-node";
 const STORYLINE_NODE_BODY = ".storyline-node-body";
 const STORYLINE_NODE_NAME = ".storyline-node-name";
 const STORYLINE_NODE_INPUT = ".storyline-node-input";
+const STORYLINE_NODE_SUMMARY = ".storyline-node-summary";
+const STORYLINE_NODE_SUMMARY_INPUT = ".storyline-node-summary-input";
+const STORYLINE_NODE_OPEN = ".storyline-node-open";
 const STORYLINE_HANDLE = ".storyline-node-handle";
 const STORYLINE_EDGE = ".storyline-edge";
 const STORYLINE_SELECTION = ".storyline-selection";
@@ -2105,9 +2108,48 @@ export async function takeSceneOffCanvas(window: Page): Promise<void> {
   await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Take off the canvas" }).click();
 }
 
-/** Follows the selected scene through to its page. */
-export async function openSelectedScene(window: Page): Promise<void> {
-  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Open this scene" }).click();
+/** Opens a scene's page from the button in the card's own corner. */
+export async function openSceneFromCard(window: Page, index: number): Promise<void> {
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_OPEN).click();
+}
+
+/**
+ * Says what happens in a scene, the way she does it: a real double-click on
+ * the card, the words typed into the box that opens in it, Ctrl+Enter to
+ * finish. The words land on the page's Summary field; the card reads them
+ * back from there, which is what the wait at the end is for.
+ */
+export async function describeStorylineScene(window: Page, index: number, text: string): Promise<void> {
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).dblclick();
+  const input = window.locator(STORYLINE_NODE_SUMMARY_INPUT);
+  await input.waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.press("Control+a");
+  await window.keyboard.type(text);
+  await window.keyboard.press("Control+Enter");
+  await input.waitFor({ state: "hidden", timeout: WAIT_MS });
+  await window
+    .locator(STORYLINE_NODE)
+    .nth(index)
+    .locator(STORYLINE_NODE_SUMMARY)
+    .filter({ hasText: text })
+    .waitFor({ timeout: WAIT_MS });
+}
+
+/** What each scene's card says under its name, in DOM order; "" for a card that says nothing. */
+export async function storylineSceneSummaries(window: Page): Promise<string[]> {
+  const out: string[] = [];
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const summary = node.locator(STORYLINE_NODE_SUMMARY);
+    out.push((await summary.count()) > 0 ? normalize(await summary.first().textContent() ?? "") : "");
+  }
+  return out;
+}
+
+/** The height of a scene's card on screen, in window pixels. */
+export async function storylineSceneHeight(window: Page, index: number): Promise<number> {
+  const box = await window.locator(STORYLINE_NODE).nth(index).boundingBox();
+  if (!box) throw new Error(`No scene at index ${index}`);
+  return box.height;
 }
 
 /**
