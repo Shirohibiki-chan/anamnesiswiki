@@ -1474,6 +1474,20 @@ export async function zoomGraphOut(window: Page, notches = 4): Promise<void> {
   await wheelOverGraph(window, notches, 300);
 }
 
+/**
+ * Zooms in with the pointer held on one page, which is what the wheel is
+ * meant to zoom toward. Waits for the glide to land.
+ */
+export async function zoomGraphInAt(window: Page, name: string, notches: number): Promise<void> {
+  const at = await graphNodeCentre(window, name);
+  await window.mouse.move(at.x, at.y);
+  for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, -120);
+  await window.waitForTimeout(GLIDE_MS);
+}
+
+/** Long enough for the wheel's glide to land after its last notch. */
+const GLIDE_MS = 700;
+
 /** The other way. Same notches, same reason they are small. */
 export async function zoomGraphIn(window: Page, notches = 4): Promise<void> {
   await wheelOverGraph(window, notches, -300);

@@ -71,8 +71,10 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
    * once it lands. See GraphEdgesCanvas, and `handleWheel` for the glide.
    */
   const [zooming, setZooming] = useState(false);
-  const glideRef = useRef<{ target: number; anchor: Point; frame: number | null }>({
+  const glideRef = useRef<{ target: number; factor: number; pan: Point; anchor: Point; frame: number | null }>({
     target: 1,
+    factor: 1,
+    pan: { x: 0, y: 0 },
     anchor: { x: 0, y: 0 },
     frame: null,
   });
@@ -397,9 +399,20 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     const glide = glideRef.current;
     const rect = event.currentTarget.getBoundingClientRect();
     glide.anchor = { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 };
-    // A fresh glide starts from wherever the zoom is now — after a reset, a
-    // refit, anything — rather than from where the last glide ended.
-    if (glide.frame === null) glide.target = frameRef.current.zoom / fit;
+    // A fresh glide starts from wherever the view is now — after a reset, a
+    // refit, a drag, anything — and from then on keeps its own numbers.
+    // **Its own, not React's.** The first cut read the zoom back from the
+    // last render each frame, and the render lags the frames, so a step was
+    // worked out against a zoom one or two frames old and applied to a pan
+    // that was not: the point under the pointer drifted 180px in five
+    // notches and thousands by full zoom — "I end up in the middle of
+    // nowhere", 2026-09-14. The glide is the source of truth while it runs
+    // and React is told the results.
+    if (glide.frame === null) {
+      glide.factor = frameRef.current.zoom / fit;
+      glide.pan = { ...frameRef.current.pan };
+      glide.target = glide.factor;
+    }
     glide.target = clamp(
       glide.target * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY),
       minZoomRef.current / fit,
@@ -408,13 +421,15 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     if (glide.frame !== null) return;
     setZooming(true);
     const step = () => {
-      const current = frameRef.current.zoom / fitZoomRef.current;
+      const current = glide.factor;
       const remaining = glide.target - current;
       const landed = Math.abs(remaining) <= GRAPH_ZOOM_LANDED * Math.max(current, glide.target);
       const next = landed ? glide.target : current + remaining * GRAPH_ZOOM_EASE;
       const ratio = next / current;
       const { anchor } = glide;
-      setPan((prev) => ({ x: anchor.x - ratio * (anchor.x - prev.x), y: anchor.y - ratio * (anchor.y - prev.y) }));
+      glide.pan = { x: anchor.x - ratio * (anchor.x - glide.pan.x), y: anchor.y - ratio * (anchor.y - glide.pan.y) };
+      glide.factor = next;
+      setPan(glide.pan);
       setZoomFactor(next);
       if (landed) {
         glide.frame = null;

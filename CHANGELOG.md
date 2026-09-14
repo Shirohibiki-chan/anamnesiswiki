@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- **Zooming in really does zoom toward your pointer now.** It was meant to since yesterday, but each step of the glide was working from numbers a frame or two old, so the page under the pointer slid away as you zoomed — a few hundred pixels in five notches, off the screen by full zoom — and you landed in empty space. Measured now: the page under the pointer moves about ten pixels across the whole zoom range.
+
 - **Clicking Filter or Display while its menu is open closes it.** The press was closing the menu as a click outside it and the click that followed opened it again, so the button could only ever open. Same fix for the table's Filter, Sort and Columns buttons, which behaved the same way.
 - **The wheel zooms out far enough to see a whole big world.** The graph used to stop zooming out at a fixed size that happened to fit 835 pages before the ring of lone pages made worlds bigger; a large world couldn't be seen whole at all. The limit follows the world now — half the size the whole picture fits at, so there's air around it — and a small world keeps the old floor.
 
