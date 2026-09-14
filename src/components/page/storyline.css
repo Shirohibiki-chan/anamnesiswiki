@@ -34,19 +34,73 @@
   background: var(--color-background);
 }
 
+/* **One line, always.** It used to wrap, and at the width the page column has
+   beside an ordinary sidebar the right-hand pair landed on a second row under
+   the four buttons — a toolbar that is two rows tall reads as a mistake, and
+   was reported as one on 2026-09-13. Shorter words on the buttons is most of
+   the fix; below the width even those need, the four fold into one *Add*
+   menu (PageStoryline.tsx has both arrangements, and why not icons). The
+   scene count that used to sit here is gone; it said nothing the canvas does
+   not show. `position: relative` is for the picker, which hangs under the
+   bar's left end. */
 .storyline-bar {
+  container-type: inline-size;
+  position: relative;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-sm) var(--space-md);
+  flex-wrap: nowrap;
+  gap: var(--space-md);
   padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-panel);
 }
 
-.storyline-count {
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
+.storyline-bar .ui-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.storyline-bar-adds {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.storyline-bar-add-menu {
+  position: relative;
+  display: none;
+}
+
+/* 36rem is what the four buttons, Tidy up and the corner need with their
+   words, at the default type size, with a little to spare. In rem rather
+   than px so it survives her font-size setting the same way the buttons do
+   not — the words grow and the threshold does not, so the fold happens a
+   little early at large type rather than a little late. */
+@container (max-width: 36rem) {
+  .storyline-bar-adds {
+    display: none;
+  }
+
+  .storyline-bar-add-menu {
+    display: block;
+  }
+}
+
+/* The same box the picker is, under the Add button, holding four rows. */
+.storyline-add-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--space-xs));
+  z-index: 20;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  box-shadow: var(--elev-modal);
 }
 
 .storyline-bar-end {
@@ -317,16 +371,14 @@
 
 /* ---- Step 3: putting an existing page on, and who is in a scene ---- */
 
-.storyline-picker-anchor {
-  position: relative;
-}
-
-/* Hangs under its own button rather than in the middle of the window: it is a
-   search attached to one control, not a decision the whole app is waiting on. */
+/* Hangs under the bar rather than in the middle of the window: it is a search
+   attached to a control, not a decision the whole app is waiting on. Under the
+   bar's left end rather than under its own button, since that button is in a
+   different place in each of the bar's two arrangements. */
 .storyline-picker {
   position: absolute;
-  left: 0;
-  top: calc(100% + var(--space-xs));
+  left: var(--space-md);
+  top: calc(100% - var(--space-xs));
   z-index: 20;
   width: 20rem;
   max-height: 22rem;

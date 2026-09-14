@@ -12,7 +12,7 @@
 // The reload is the point of most of this file. A canvas that only exists in
 // memory looks identical to one that saved, right up until the morning after.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { launchApp, type RunningApp } from "./harness/launch-app";
+import { launchApp, MIN_WINDOW, resizeWindow, type RunningApp } from "./harness/launch-app";
 import {
   addStorylineScene,
   clearTreeSearch,
@@ -26,6 +26,7 @@ import {
   renameSelectedScene,
   searchTree,
   selectStorylineScene,
+  storylineBarIsOneRow,
   storylineEdgeCount,
   storylineIsShown,
   storylineRefusal,
@@ -85,6 +86,24 @@ describe("a storyline's canvas", () => {
     expect(await pageTitle(app.window)).toBe(STORYLINE);
     // Nothing on it yet, which is the state the empty message describes.
     expect(await storylineScenesLeftToRight(app.window)).toEqual([]);
+  });
+
+  it("keeps its toolbar on one row at any width, and still adds from it", async () => {
+    // Wide, and then the smallest window the app opens with the sidebar
+    // taking its share: every button stays on the first row at both, and
+    // nothing runs off the edge. At the narrow one the four actions have
+    // folded into a menu — adding a scene from there is the proof the menu
+    // is the same four actions and not a picture of them.
+    await resizeWindow(app, 1280, 800);
+    expect(await storylineBarIsOneRow(app.window)).toBe(true);
+
+    await resizeWindow(app, MIN_WINDOW.width, MIN_WINDOW.height);
+    expect(await storylineBarIsOneRow(app.window)).toBe(true);
+    await addStorylineScene(app.window);
+    expect(await storylineScenesLeftToRight(app.window)).toHaveLength(1);
+    await selectStorylineScene(app.window, 0);
+    await takeSceneOffCanvas(app.window);
+    await resizeWindow(app, 1280, 800);
   });
 
   it("makes a real page in the tree for every scene added", async () => {
