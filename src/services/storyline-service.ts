@@ -33,8 +33,21 @@ import {
   STORYLINE_NOTE_ROW,
   STORYLINE_NOTE_WIDTH,
   STORYLINE_TIDY_COLUMN_GAP,
-  STORYLINE_TIDY_ROW_GAP,
+  STORYLINE_TIDY_ROW_SPACE,
+  STORYLINE_TIDY_TOLERANCE,
 } from "../constants/storyline";
+
+/**
+ * How tall each card is on screen, by canvas-node id, in canvas units.
+ * Measured by the view; a card not in it is taken to be the bare height.
+ * Passed into anything that has to know where a card's bottom edge is.
+ */
+export type SceneHeights = Record<string, number>;
+
+/** A card's height, measured where it has been and the bare height where not. */
+export function sceneHeight(id: string, heights: SceneHeights | undefined): number {
+  return heights?.[id] ?? STORYLINE_NODE_HEIGHT;
+}
 
 export function createStoryline(): Storyline {
   return { version: 1, nodes: [], edges: [], notes: [], bands: [] };
@@ -386,6 +399,7 @@ export function addBand(
  */
 function sceneExtent(
   storyline: Storyline,
+  heights?: SceneHeights,
 ): { x: number; y: number; width: number; height: number } | null {
   if (storyline.nodes.length === 0) return null;
   let minX = Infinity;
@@ -396,7 +410,7 @@ function sceneExtent(
     minX = Math.min(minX, node.x - STORYLINE_NODE_WIDTH / 2);
     maxX = Math.max(maxX, node.x + STORYLINE_NODE_WIDTH / 2);
     minY = Math.min(minY, node.y - STORYLINE_NODE_HEIGHT / 2);
-    maxY = Math.max(maxY, node.y + STORYLINE_NODE_HEIGHT / 2);
+    maxY = Math.max(maxY, node.y - STORYLINE_NODE_HEIGHT / 2 + sceneHeight(node.id, heights));
   }
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
@@ -552,7 +566,7 @@ export function moveBand(
  * canvas, and there is no honest way to work out where that thought went. A
  * tidy-up that scattered her annotations is one nobody presses twice.
  */
-export function tidyUp(storyline: Storyline): Storyline {
+export function tidyUp(storyline: Storyline, heights?: SceneHeights): Storyline {
   if (storyline.nodes.length === 0) return storyline;
 
   const outgoing = new Map<string, string[]>();
@@ -595,13 +609,23 @@ export function tidyUp(storyline: Storyline): Storyline {
 
   const placed = new Map<string, { x: number; y: number }>();
   for (const [at, inColumn] of byColumn) {
-    const span = (inColumn.length - 1) * STORYLINE_TIDY_ROW_GAP;
+    // Stacked edge to edge with a fixed space between, since each card is as
+    // tall as its description. A node's y is the middle of its top row, so a
+    // card's top is y minus half the bare height and its bottom is that plus
+    // its measured height.
+    const tops: number[] = [];
+    let cursor = 0;
+    for (const node of inColumn) {
+      tops.push(cursor);
+      cursor += sceneHeight(node.id, heights) + STORYLINE_TIDY_ROW_SPACE;
+    }
+    const span = cursor - STORYLINE_TIDY_ROW_SPACE;
     inColumn.forEach((node, index) => {
       placed.set(node.id, {
         x: at * STORYLINE_TIDY_COLUMN_GAP,
         // Centred on the row, so a fork reads as one thread splitting either
         // side of the line rather than as everything hanging below it.
-        y: Math.round(index * STORYLINE_TIDY_ROW_GAP - span / 2),
+        y: Math.round(tops[index] - span / 2 + STORYLINE_NODE_HEIGHT / 2),
       });
     });
   }
@@ -613,11 +637,13 @@ export function tidyUp(storyline: Storyline): Storyline {
 }
 
 /** Whether tidying would move anything, so the button can say when it is spent. */
-export function needsTidying(storyline: Storyline): boolean {
+export function needsTidying(storyline: Storyline, heights?: SceneHeights): boolean {
   if (storyline.nodes.length === 0) return false;
-  const tidy = tidyUp(storyline);
+  const tidy = tidyUp(storyline, heights);
   return tidy.nodes.some(
-    (node, index) => node.x !== storyline.nodes[index].x || node.y !== storyline.nodes[index].y,
+    (node, index) =>
+      Math.abs(node.x - storyline.nodes[index].x) > STORYLINE_TIDY_TOLERANCE ||
+      Math.abs(node.y - storyline.nodes[index].y) > STORYLINE_TIDY_TOLERANCE,
   );
 }
 
@@ -729,11 +755,43 @@ export function sceneCast(pageId: string, nodes: Record<string, Node>, storyline
 }
 
 /** A scene on the canvas with the page it stands for resolved. */
+/** The key of the Scene template's Summary field, which the card reads. */
+export const STORYLINE_SUMMARY_KEY = "summary";
+
+/**
+ * What a scene's card says under its name.
+ *
+ * The Scene template's own Summary field, so the same words are on the page
+ * and in the card and there is one place they live. A page put on the canvas
+ * from another template may not have the field, and then the card says
+ * nothing until something is written into it — which creates the field.
+ */
+export function sceneSummary(page: Node): string {
+  const value = page.properties?.[STORYLINE_SUMMARY_KEY];
+  return typeof value === "string" ? value : "";
+}
+
 export type DrawnScene = StorylineNode & {
   name: string;
   templateKey: string;
   icon?: string;
   color?: string;
+  /**
+   * The picture behind the card: the page's banner, or its own picture when
+   * it has no banner. A filename in the project's assets, resolved by the
+   * component through `useNodeImage` like every other picture in the app.
+   * Asked for on 2026-09-14 — a card that is only a name is a card that
+   * looks like every other card.
+   */
+  picture?: string;
+  pictureFocusY?: number;
+  /**
+   * What happens in the scene, from the page's Summary field — the sentence
+   * or paragraph the card is read by. Written from the card, on the canvas,
+   * and it lands on the page: the card has no text of its own to drift from
+   * what the page says. Empty when nothing has been written yet.
+   */
+  summary: string;
   /** Who and what is in this scene, from the reference index. See `sceneCast`. */
   cast: Node[];
 };
@@ -778,6 +836,9 @@ export function storylineModel(
       templateKey: page.templateKey,
       icon: page.icon,
       color: page.color,
+      picture: page.banner ?? page.image,
+      pictureFocusY: page.banner ? page.bannerFocusY : page.imageFocusY,
+      summary: sceneSummary(page),
       cast: sceneCast(node.pageId, nodes, storylineId),
     });
   }

@@ -13,6 +13,7 @@ import {
   sceneCandidates,
   storylineModel,
   type StorylineModel,
+  type SceneHeights,
 } from "../services/storyline-service";
 import { useProjectStore } from "../state/project-store";
 
@@ -71,9 +72,9 @@ export function useStorylines(): Record<string, Storyline> {
  * every keystroke typed anywhere. Nothing about a page's name can make a canvas
  * untidy, so this only has to be asked when the canvas itself moves.
  */
-export function useStorylineIsUntidy(storylineId: string | null): boolean {
+export function useStorylineIsUntidy(storylineId: string | null, heights: SceneHeights): boolean {
   const storyline = useProjectStore((state) => (storylineId ? state.storylines[storylineId] : undefined));
-  return useMemo(() => (storyline ? needsTidying(storyline) : false), [storyline]);
+  return useMemo(() => (storyline ? needsTidying(storyline, heights) : false), [storyline, heights]);
 }
 
 /**
@@ -120,6 +121,7 @@ export function useStorylineActions() {
       tidyStoryline: state.tidyStoryline,
       selectNode: state.selectNode,
       renameNode: state.renameNode,
+      updateNodeProperty: state.updateNodeProperty,
     })),
   );
 }

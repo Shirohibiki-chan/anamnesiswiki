@@ -9,7 +9,7 @@
 // on top of it, while here the position is the only thing there ever was.
 // There is no `moved` map layered over a computed layout — a drag edits the
 // canvas, because the canvas is what she authored.
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   STORYLINE_DRAG_THRESHOLD,
   STORYLINE_EDGE_GAP,
@@ -24,7 +24,10 @@ import {
   STORYLINE_ZOOM_SENSITIVITY,
 } from "../constants/storyline";
 import type { StorylineBand, StorylineEdge } from "../constants/schema";
-import { scenesOnBand, type DrawnNote, type DrawnScene, type StorylineModel } from "../services/storyline-service";
+import { scenesOnBand, type DrawnNote, type DrawnScene, type StorylineModel,
+  sceneHeight,
+  type SceneHeights,
+} from "../services/storyline-service";
 
 type Point = { x: number; y: number };
 
@@ -44,7 +47,7 @@ function clamp(value: number, min: number, max: number): number {
  * and half of it hangs outside its own point — fitting to the centres alone
  * crops the leftmost and rightmost cards in half every time.
  */
-function sceneBounds(scenes: DrawnScene[], padding: number): StorylineBounds {
+function sceneBounds(scenes: { id: string; x: number; y: number }[], heights: SceneHeights, padding: number): StorylineBounds {
   if (scenes.length === 0) return { minX: -padding, minY: -padding, width: padding * 2, height: padding * 2 };
   let minX = Infinity;
   let minY = Infinity;
@@ -54,7 +57,7 @@ function sceneBounds(scenes: DrawnScene[], padding: number): StorylineBounds {
     minX = Math.min(minX, scene.x - STORYLINE_NODE_WIDTH / 2);
     maxX = Math.max(maxX, scene.x + STORYLINE_NODE_WIDTH / 2);
     minY = Math.min(minY, scene.y - STORYLINE_NODE_HEIGHT / 2);
-    maxY = Math.max(maxY, scene.y + STORYLINE_NODE_HEIGHT / 2);
+    maxY = Math.max(maxY, scene.y - STORYLINE_NODE_HEIGHT / 2 + sceneHeight(scene.id, heights));
   }
   return {
     minX: minX - padding,
@@ -79,19 +82,28 @@ function sceneBounds(scenes: DrawnScene[], padding: number): StorylineBounds {
  * back off by a few units so the arrow's tip sits clear of the border rather
  * than on it.
  */
-function meetsCard(from: Point, to: Point): Point {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
+function meetsCard(from: Point, to: Point, toHeight: number): Point {
+  // The card's middle, which is not the scene's point once it has a
+  // description: the point is the middle of the top row, and the card runs
+  // down from there. The line aims at the middle of the whole card.
+  const centre = { x: to.x, y: to.y - STORYLINE_NODE_HEIGHT / 2 + toHeight / 2 };
+  const dx = centre.x - from.x;
+  const dy = centre.y - from.y;
   const length = Math.hypot(dx, dy);
   // Two scenes stacked exactly on top of each other: there is no direction to
   // trim along, and any answer draws a line of zero length either way.
-  if (length === 0) return to;
+  if (length === 0) return centre;
   const halfWidth = STORYLINE_NODE_WIDTH / 2;
-  const halfHeight = STORYLINE_NODE_HEIGHT / 2;
+  const halfHeight = toHeight / 2;
   const toSide = Math.abs(dx) > 0 ? halfWidth / Math.abs(dx) : Infinity;
   const toTop = Math.abs(dy) > 0 ? halfHeight / Math.abs(dy) : Infinity;
   const reach = Math.min(toSide, toTop) + STORYLINE_EDGE_GAP / length;
-  return { x: to.x - dx * reach, y: to.y - dy * reach };
+  return { x: centre.x - dx * reach, y: centre.y - dy * reach };
+}
+
+/** The middle of a card, for aiming a line from it. */
+function cardCentre(scene: Point, height: number): Point {
+  return { x: scene.x, y: scene.y - STORYLINE_NODE_HEIGHT / 2 + height / 2 };
 }
 
 export type StorylineViewOptions = {
@@ -127,6 +139,63 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  /**
+   * Each card's height on screen, in canvas units, by canvas-node id.
+   *
+   * A card is as tall as its description, so its height is a fact about the
+   * rendered element and nothing else can know it. Every card reports its
+   * own through `measureScene` — a ref callback that watches the element —
+   * and the lines, the fit and Tidy up read from here. Not in the file: it
+   * is a measurement, and a different font size would make it wrong.
+   */
+  const [heights, setHeights] = useState<SceneHeights>({});
+  const observersRef = useRef(new Map<string, ResizeObserver>());
+  const sceneRefsRef = useRef(new Map<string, (element: HTMLElement | null) => void>());
+  /**
+   * The ref callback for one card, the same function every render.
+   *
+   * **Stable on purpose.** An inline arrow would be a new function each
+   * render, and React answers that by calling the old one with null and the
+   * new one with the element — which here meant "forget the height" then
+   * "measure it again", each a state change, each a render, forever. The
+   * first cut did exactly that, and the heights never settled.
+   */
+  const measureScene = useCallback((id: string) => {
+    const cached = sceneRefsRef.current.get(id);
+    if (cached) return cached;
+    const callback = (element: HTMLElement | null) => {
+      const observers = observersRef.current;
+      observers.get(id)?.disconnect();
+      observers.delete(id);
+      if (!element) {
+        sceneRefsRef.current.delete(id);
+        setHeights((prev) => {
+          if (!(id in prev)) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        return;
+      }
+      const observer = new ResizeObserver(([entry]) => {
+        // `offsetHeight` rather than the observed rect: the rect is scaled by
+        // the canvas's zoom and the height wanted here is in canvas units.
+        const height = Math.round((entry.target as HTMLElement).offsetHeight);
+        setHeights((prev) => (prev[id] === height ? prev : { ...prev, [id]: height }));
+      });
+      observer.observe(element);
+      observers.set(id, observer);
+    };
+    sceneRefsRef.current.set(id, callback);
+    return callback;
+  }, []);
+  useEffect(() => {
+    const observers = observersRef.current;
+    return () => {
+      for (const observer of observers.values()) observer.disconnect();
+      observers.clear();
+    };
+  }, []);
   /**
    * The note or band being worked on, if any.
    *
@@ -209,14 +278,18 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       if (!from || !to) continue;
       // Both ends trimmed to the cards, not only the arrow end: a line
       // starting under the card it leaves reads as a line that starts nowhere.
-      const start = meetsCard(to, from);
-      const end = meetsCard(from, to);
+      const fromHeight = sceneHeight(from.id, heights);
+      const toHeight = sceneHeight(to.id, heights);
+      const start = meetsCard(cardCentre(to, toHeight), from, fromHeight);
+      const end = meetsCard(cardCentre(from, fromHeight), to, toHeight);
       placed.push({ ...edge, x1: start.x, y1: start.y, x2: end.x, y2: end.y });
     }
     return placed;
-  }, [model.edges, scenes]);
+  }, [model.edges, scenes, heights]);
 
-  const bounds = useMemo(() => sceneBounds(scenes, STORYLINE_FIT_PADDING), [scenes]);
+  // Bare heights here too: this box is what the picture is centred on, and
+  // a card growing as words are typed into it must not slide the rest.
+  const bounds = useMemo(() => sceneBounds(scenes, {}, STORYLINE_FIT_PADDING), [scenes]);
 
   /**
    * The zoom that fits the whole canvas in the window it opened into.
@@ -227,7 +300,11 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
    * makes the same call and says so at greater length.
    */
   const fitZoom = useMemo(() => {
-    const box = sceneBounds(model.scenes, STORYLINE_FIT_PADDING);
+    // Bare heights on purpose, so a description typed into a card does not
+    // refit the picture and move every other card while she is typing — the
+    // view's own scenario checks exactly that. A tall card may run a little
+    // past the bottom of a fresh fit; the canvas pans.
+    const box = sceneBounds(model.scenes, {}, STORYLINE_FIT_PADDING);
     if (!stageSize.width || !stageSize.height || !box.width || !box.height) return 1;
     return clamp(
       Math.min(stageSize.width / box.width, stageSize.height / box.height),
@@ -631,6 +708,8 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     stageRef,
     scenes,
     edges,
+    heights,
+    measureScene,
     notes,
     bands,
     selectedAnnotation,

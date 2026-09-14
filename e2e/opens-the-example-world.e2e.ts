@@ -16,6 +16,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
+  canTidyStoryline,
   databaseRowNames,
   editorMentions,
   openPage,
@@ -94,6 +95,9 @@ describe("the example world", () => {
     expect(scenes[0]).toBe("The Lantern Goes Out");
     expect(scenes[3]).toBe("Two Tides Later");
     expect(await storylineEdgeCount(app.window)).toBe(4);
+    // Tidy as drawn — the cards are as tall as their descriptions, so this
+    // is only answerable here, with the real cards measured.
+    expect(await canTidyStoryline(app.window)).toBe(false);
     expect(await storylineBandLabels(app.window)).toContain("One night in Saltmere");
     // The note's wikilink resolving proves the canvas and the pages agree
     // about what exists — the note is written by name and matched at draw time.

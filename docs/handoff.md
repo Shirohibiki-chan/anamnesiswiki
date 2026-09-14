@@ -295,13 +295,21 @@ Phase 25, closed 2026-09-09. What binds the code:
   cast is asked of every scene on every redraw, and the canvas redraws whenever
   any page in the world changes.
 
-- **A card is one fixed size whether or not anybody is in the scene.** A card
-  that grew the first time a name was written into its page would move every
-  other card on the canvas, so `STORYLINE_NODE_HEIGHT` is one number. Until
-  2026-09-13 that was done by reserving a cast row inside every card, and on a
-  new storyline that row was air under every name. The cast now hangs off the
-  card's bottom edge, outside its box and only when there is one — the size
-  rule stands, the reserved space does not. Don't put the cast back inside.
+- **A card says what happens, and is as tall as that; nothing else on the
+  canvas moves when it grows.** Since 2026-09-14 the card carries the page's
+  Summary field under its name, written from the card (double-click) and
+  landing on the page — the storyline exists to be read as the sequence of
+  events without opening anything, and a page is where a scene is elaborated,
+  not where it is said. So a card's height is a fact about the rendered
+  element: the view measures it (`heights`, a `ResizeObserver` per card with
+  a *stable* ref callback — an inline one loops forever) and the lines, Tidy
+  up and the untidy check read from it. The two things that must *not* read
+  it are the fit and the picture's centring: those use bare heights so typing
+  into a card never slides the rest, which the canvas scenario checks. The
+  stored `y` is the middle of the bare top row and the card grows downward
+  from it. The cast hangs off the card's corner, outside its box, only when
+  there is one; and because the tidy position now moves with the type size,
+  `needsTidying` has a tolerance rather than an equality.
 
 - **A note and a band are annotations, and nothing in the code may quietly
   promote them.** No edges, no page behind them, never counted among the scenes,

@@ -86,6 +86,9 @@ const STORYLINE_NODE = ".storyline-node";
 const STORYLINE_NODE_BODY = ".storyline-node-body";
 const STORYLINE_NODE_NAME = ".storyline-node-name";
 const STORYLINE_NODE_INPUT = ".storyline-node-input";
+const STORYLINE_NODE_SUMMARY = ".storyline-node-summary";
+const STORYLINE_NODE_SUMMARY_INPUT = ".storyline-node-summary-input";
+const STORYLINE_NODE_OPEN = ".storyline-node-open";
 const STORYLINE_HANDLE = ".storyline-node-handle";
 const STORYLINE_EDGE = ".storyline-edge";
 const STORYLINE_SELECTION = ".storyline-selection";
@@ -2008,8 +2011,83 @@ export async function storylineEdgeCount(window: Page): Promise<number> {
   return await window.locator(STORYLINE_EDGE).count();
 }
 
+/**
+ * Zooms the canvas out until everything on it is inside the stage.
+ *
+ * **The canvas does not fit itself below 70%**, on purpose — a picture
+ * shrunk until its names are six-pixel marks is no use — so with four wide
+ * cards in a row the ends run off the stage's edges, and a helper aiming at a
+ * card out there presses on the page column instead. CI's window is narrower
+ * than a laptop's; this first showed up there and not here. Zooming about
+ * the stage's middle keeps the picture centred while it shrinks, so nothing
+ * moves except the scale. A no-op when it already fits, which is why every
+ * helper that aims at something on the canvas can call it first.
+ */
+/** `src/constants/storyline.ts`'s zoom sensitivity, repeated because the suite is outside the app. */
+const STORYLINE_ZOOM_SENSITIVITY = 0.0015;
+
+export async function fitStorylineOnScreen(window: Page): Promise<void> {
+  // Everything is measured in one call, in one frame, so the stage and the
+  // things on it are compared at the same instant — a loop of separate
+  // measurements with a timer between them read a half-drawn zoom on CI and
+  // kept zooming until the canvas hit its floor. The answer is how far out
+  // the picture has to go, as a factor, or 1 when it already fits.
+  const shortfall = () =>
+    window.evaluate(
+      ({ stage, items, margin }) => {
+        const frame = document.querySelector(stage)?.getBoundingClientRect();
+        if (!frame) return 1;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const element of document.querySelectorAll(items)) {
+          const box = element.getBoundingClientRect();
+          if (box.width === 0 && box.height === 0) continue;
+          minX = Math.min(minX, box.left);
+          minY = Math.min(minY, box.top);
+          maxX = Math.max(maxX, box.right);
+          maxY = Math.max(maxY, box.bottom);
+        }
+        if (minX === Infinity) return 1;
+        const fits =
+          minX >= frame.left + margin &&
+          minY >= frame.top + margin &&
+          maxX <= frame.right - margin &&
+          maxY <= frame.bottom - margin;
+        if (fits) return 1;
+        // The picture is centred on the stage, so what has to shrink is its
+        // reach from the middle, on whichever side reaches furthest.
+        const centreX = frame.left + frame.width / 2;
+        const centreY = frame.top + frame.height / 2;
+        const reachX = Math.max(centreX - minX, maxX - centreX);
+        const reachY = Math.max(centreY - minY, maxY - centreY);
+        const roomX = frame.width / 2 - margin;
+        const roomY = frame.height / 2 - margin;
+        return Math.min(roomX / reachX, roomY / reachY);
+      },
+      { stage: STORYLINE_STAGE, items: `${STORYLINE_NODE}, ${STORYLINE_BAND_LABEL}, ${STORYLINE_NOTE}`, margin: 6 },
+    );
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const factor = await shortfall();
+    if (factor >= 1) return;
+    const frame = await window.locator(STORYLINE_STAGE).boundingBox();
+    if (!frame) return;
+    // One wheel event for the whole distance: the canvas scales by
+    // exp(-deltaY × sensitivity), so the delta that gets there is worked out
+    // rather than stepped towards. A little past, for rounding.
+    const deltaY = Math.ceil(-Math.log(factor * 0.92) / STORYLINE_ZOOM_SENSITIVITY);
+    await window.mouse.move(frame.x + frame.width / 2, frame.y + frame.height / 2);
+    await window.mouse.wheel(0, deltaY);
+    // Two frames, so what is measured next has actually been drawn.
+    await window.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+  }
+}
+
 /** The middle of one scene's card, in window pixels. */
 async function storylineSceneCentre(window: Page, index: number): Promise<{ x: number; y: number }> {
+  await fitStorylineOnScreen(window);
   const box = await window.locator(STORYLINE_NODE).nth(index).boundingBox();
   if (!box) throw new Error(`No scene at index ${index}`);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -2020,6 +2098,7 @@ async function storylineSceneCentre(window: Page, index: number): Promise<{ x: n
  * onto the second's card — the gesture, not a shortcut through the store.
  */
 export async function joinStorylineScenes(window: Page, from: number, to: number): Promise<void> {
+  await fitStorylineOnScreen(window);
   const handle = await window.locator(STORYLINE_HANDLE).nth(from).boundingBox();
   if (!handle) throw new Error(`No handle on the scene at index ${from}`);
   const target = await storylineSceneCentre(window, to);
@@ -2116,6 +2195,7 @@ export async function storylineScenePositions(window: Page): Promise<{ x: number
 
 /** Clicks a scene's card, which selects it and shows what can be done with it. */
 export async function selectStorylineScene(window: Page, index: number): Promise<void> {
+  await fitStorylineOnScreen(window);
   await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).click();
   await window.locator(STORYLINE_SELECTION).waitFor({ state: "visible", timeout: WAIT_MS });
 }
@@ -2131,9 +2211,50 @@ export async function takeSceneOffCanvas(window: Page): Promise<void> {
   await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Take off the canvas" }).click();
 }
 
-/** Follows the selected scene through to its page. */
-export async function openSelectedScene(window: Page): Promise<void> {
-  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Open this scene" }).click();
+/** Opens a scene's page from the button in the card's own corner. */
+export async function openSceneFromCard(window: Page, index: number): Promise<void> {
+  await fitStorylineOnScreen(window);
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_OPEN).click();
+}
+
+/**
+ * Says what happens in a scene, the way she does it: a real double-click on
+ * the card, the words typed into the box that opens in it, Ctrl+Enter to
+ * finish. The words land on the page's Summary field; the card reads them
+ * back from there, which is what the wait at the end is for.
+ */
+export async function describeStorylineScene(window: Page, index: number, text: string): Promise<void> {
+  await fitStorylineOnScreen(window);
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).dblclick();
+  const input = window.locator(STORYLINE_NODE_SUMMARY_INPUT);
+  await input.waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.press("Control+a");
+  await window.keyboard.type(text);
+  await window.keyboard.press("Control+Enter");
+  await input.waitFor({ state: "hidden", timeout: WAIT_MS });
+  await window
+    .locator(STORYLINE_NODE)
+    .nth(index)
+    .locator(STORYLINE_NODE_SUMMARY)
+    .filter({ hasText: text })
+    .waitFor({ timeout: WAIT_MS });
+}
+
+/** What each scene's card says under its name, in DOM order; "" for a card that says nothing. */
+export async function storylineSceneSummaries(window: Page): Promise<string[]> {
+  const out: string[] = [];
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const summary = node.locator(STORYLINE_NODE_SUMMARY);
+    out.push((await summary.count()) > 0 ? normalize(await summary.first().textContent() ?? "") : "");
+  }
+  return out;
+}
+
+/** The height of a scene's card on screen, in window pixels. */
+export async function storylineSceneHeight(window: Page, index: number): Promise<number> {
+  const box = await window.locator(STORYLINE_NODE).nth(index).boundingBox();
+  if (!box) throw new Error(`No scene at index ${index}`);
+  return box.height;
 }
 
 /**
@@ -2185,6 +2306,7 @@ export async function storylineBrokenLinks(window: Page): Promise<string[]> {
 
 /** Follows a note's link through to the page it names. */
 export async function followStorylineNoteLink(window: Page, name: string): Promise<void> {
+  await fitStorylineOnScreen(window);
   await window.locator(STORYLINE_NOTE_LINK).filter({ hasText: name }).first().click();
 }
 
@@ -2207,6 +2329,7 @@ export async function addStorylineBand(window: Page, label: string): Promise<voi
  * thing a dispatched `dblclick` on the label could never have caught.
  */
 export async function renameStorylineBand(window: Page, index: number, label: string): Promise<void> {
+  await fitStorylineOnScreen(window);
   await window.locator(STORYLINE_BAND_LABEL).nth(index).dblclick();
   await window.locator(STORYLINE_BAND_INPUT).waitFor({ state: "visible", timeout: WAIT_MS });
   await window.keyboard.press("Control+a");
@@ -2229,6 +2352,7 @@ export async function storylineBandLabels(window: Page): Promise<string[]> {
 
 /** Drags a labelled stretch by a number of screen pixels. */
 export async function dragStorylineBand(window: Page, index: number, byX: number, byY: number): Promise<void> {
+  await fitStorylineOnScreen(window);
   const box = await window.locator(STORYLINE_BAND).nth(index).boundingBox();
   if (!box) throw new Error(`No band at index ${index}`);
   // Grabbed near the bottom edge, clear of the label and of any scene standing
