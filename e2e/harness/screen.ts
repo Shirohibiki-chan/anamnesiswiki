@@ -1482,11 +1482,25 @@ export async function zoomGraphInAt(window: Page, name: string, notches: number)
   const at = await graphNodeCentre(window, name);
   await window.mouse.move(at.x, at.y);
   for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, -120);
-  await window.waitForTimeout(GLIDE_MS);
+  await waitForGlide(window);
 }
 
-/** Long enough for the wheel's glide to land after its last notch. */
-const GLIDE_MS = 700;
+/** The zoom the picture is drawn at, read off the scene's transform. */
+export async function graphZoom(window: Page): Promise<number> {
+  const transform = await window.locator(GRAPH_SCENE).first().evaluate((scene) => (scene as HTMLElement).style.transform);
+  const scale = /scale\(([\d.]+)\)/.exec(transform);
+  if (!scale) throw new Error(`The scene's transform has no scale in it: ${transform}`);
+  return Number(scale[1]);
+}
+
+/**
+ * Waits for the wheel's glide to land. A fixed wait measured the middle of
+ * the movement on CI, where a window off the screen gets its animation
+ * frames late; the scene says when it has landed.
+ */
+export async function waitForGlide(window: Page): Promise<void> {
+  await window.locator(`${GRAPH_SCENE}[data-zooming="false"]`).first().waitFor({ state: "attached", timeout: WAIT_MS });
+}
 
 /** The other way. Same notches, same reason they are small. */
 export async function zoomGraphIn(window: Page, notches = 4): Promise<void> {

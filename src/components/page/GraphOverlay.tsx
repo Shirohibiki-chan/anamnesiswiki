@@ -279,6 +279,9 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
           <div
             ref={sceneRef}
             data-settled={graph.working ? "false" : "true"}
+            // For the app suite: a zoom is a glide of many frames, and a read
+            // taken before it lands is a read of the middle of a movement.
+            data-zooming={zooming ? "true" : "false"}
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",

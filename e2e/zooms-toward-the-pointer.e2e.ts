@@ -9,7 +9,15 @@
 // but the real app runs the frames in the browser's order, so it is asked.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { closePageGraph, graphNodeCentre, graphNodeNames, openWorldGraph, waitForWorld, zoomGraphInAt } from "./harness/screen";
+import {
+  closePageGraph,
+  graphNodeCentre,
+  graphNodeNames,
+  graphZoom,
+  openWorldGraph,
+  waitForWorld,
+  zoomGraphInAt,
+} from "./harness/screen";
 
 /**
  * How far the page under the pointer may move across twenty notches, in
@@ -38,10 +46,19 @@ describe("zooming toward the pointer", () => {
     const page = names[Math.floor(names.length / 3)];
     const before = await graphNodeCentre(app.window, page);
 
+    let lastZoom = await graphZoom(app.window);
     for (let round = 0; round < 4; round += 1) {
       await zoomGraphInAt(app.window, page, 5);
       const now = await graphNodeCentre(app.window, page);
-      expect(Math.hypot(now.x - before.x, now.y - before.y)).toBeLessThan(DRIFT_PX);
+      // The zoom in the message, so a failure says whether the glide ran at
+      // all — and checked to have moved, because a machine that never fires
+      // an animation frame would sit at the starting zoom with no drift and
+      // prove nothing.
+      const zoom = await graphZoom(app.window);
+      expect(Math.hypot(now.x - before.x, now.y - before.y), `at zoom ${zoom}`).toBeLessThan(DRIFT_PX);
+      // Unless it has already reached the top of the range.
+      if (lastZoom < 2.4) expect(zoom).toBeGreaterThan(lastZoom * 1.2);
+      lastZoom = zoom;
     }
 
     await closePageGraph(app.window);
