@@ -24,6 +24,8 @@
 
 ### Changes
 
+- **Scene cards on the storyline are one row.** Icon and name, 52 tall instead of 84. The bottom third of every card was kept empty for the little icons of who's in the scene, drawn whether or not anyone was — on a new storyline that was a name in a corner over a band of air. The icons now hang off the card's bottom-right corner as a small cluster of dots, and only when there is someone to show. Cards are still one fixed size, so nothing moves when a name is written into a page.
+- **A stretch's label is small caps, and a new stretch starts at half the size.** Room for two scenes side by side rather than four cards' worth of dashed box around whatever it landed on.
 - **Far out, a page is a dot.** At whole-world zoom a page is a filled dot in its colour rather than a ring with an unreadable icon in it; the ring, icon and name come back as you zoom in. Hundreds of dots are something the eye can take in, and drawing them is cheap enough that zooming repaints crisp on every tick — no more soft picture while the wheel turns.
 - **Pages nothing points at sit in a ring around the rest.** A page with no written connections (a mention, a reference field, a manual link) is placed on a band outside the connected pages instead of being mixed in with them — where it's filed doesn't count, since every page is filed somewhere. It's the picture Obsidian's physics happens to produce, done on purpose so it's the same every time.
 - **Pointing at a page lights its connections in the accent colour and the rest of the world steps back.** The page, the pages it touches and the lines between them stay at full strength; everything else fades. Clicking keeps it that way while the page is selected.

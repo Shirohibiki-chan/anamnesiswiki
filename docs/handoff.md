@@ -295,10 +295,13 @@ Phase 25, closed 2026-09-09. What binds the code:
   cast is asked of every scene on every redraw, and the canvas redraws whenever
   any page in the world changes.
 
-- **The cast row on a card is drawn whether or not anybody is in the scene.**
-  That is what keeps `STORYLINE_NODE_HEIGHT` one number: a card that grew the
-  first time a name was written into its page would move every other card on
-  the canvas.
+- **A card is one fixed size whether or not anybody is in the scene.** A card
+  that grew the first time a name was written into its page would move every
+  other card on the canvas, so `STORYLINE_NODE_HEIGHT` is one number. Until
+  2026-09-13 that was done by reserving a cast row inside every card, and on a
+  new storyline that row was air under every name. The cast now hangs off the
+  card's bottom edge, outside its box and only when there is one — the size
+  rule stands, the reserved space does not. Don't put the cast back inside.
 
 - **A note and a band are annotations, and nothing in the code may quietly
   promote them.** No edges, no page behind them, never counted among the scenes,
