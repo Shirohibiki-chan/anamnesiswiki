@@ -10,6 +10,7 @@
 ### Fixes
 
 - **A scene can be renamed on the storyline.** Select it and press *Rename* (or F2), type over the name on the card, and Enter keeps it — Escape keeps the old one. It's the page that gets renamed, the same as in the tree; the card only ever showed the page's name. Before this, the canvas had no way to do it at all: double-clicking a scene opens its page, and the only buttons were *Open this scene* and *Take off the canvas*.
+- **Double-clicking a stretch's label renames it, as the label says.** The double-click was being listened for on the words, but pressing on a stretch grabs the pointer for the stretch as a whole, so the words never heard it. The Rename button worked all along; now both do.
 - **Dragging the storyline's background pans it.** It had the graph's pan bug below, copied over before that was found: the step came out as zero, so the canvas sat still under the drag.
 - **Dragging the graph's background pans it — for real this time.** The pan was adding up its steps in a way React was free to apply late, and when it did, every step came out as zero. That's why a drag sometimes did nothing at all; it had nothing to do with what was under the pointer.
 - **The wheel glides and zooms toward your pointer.** A notch sets a target and the view eases to it over a dozen frames instead of jumping the whole notch at once, and the point under the pointer stays put — Obsidian's feel, both of them.

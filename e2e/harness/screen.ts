@@ -2123,6 +2123,24 @@ export async function addStorylineBand(window: Page, label: string): Promise<voi
   await window.locator(STORYLINE_BAND_LABEL).filter({ hasText: label }).first().waitFor({ timeout: WAIT_MS });
 }
 
+/**
+ * Renames a labelled stretch the way the placeholder says to: a real
+ * double-click on its label, then typing over the old name.
+ *
+ * A real one and not a dispatched event, because the band captures the
+ * pointer on press and a double-click built from a captured release is aimed
+ * at the band, not at whatever was under the mouse — which is exactly the
+ * thing a dispatched `dblclick` on the label could never have caught.
+ */
+export async function renameStorylineBand(window: Page, index: number, label: string): Promise<void> {
+  await window.locator(STORYLINE_BAND_LABEL).nth(index).dblclick();
+  await window.locator(STORYLINE_BAND_INPUT).waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.press("Control+a");
+  await window.keyboard.type(label);
+  await window.keyboard.press("Enter");
+  await window.locator(STORYLINE_BAND_LABEL).filter({ hasText: label }).first().waitFor({ timeout: WAIT_MS });
+}
+
 /** What every labelled stretch is called. */
 export async function storylineBandLabels(window: Page): Promise<string[]> {
   const labels = await window.locator(STORYLINE_BAND_LABEL).allInnerTexts();
