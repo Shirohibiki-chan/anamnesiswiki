@@ -119,11 +119,22 @@ export function GraphToolbar({
             onReach(chosen === GRAPH_REACH_EVERYTHING ? GRAPH_REACH_EVERYTHING : (Number(chosen) as GraphReach));
           }}
         >
-          {GRAPH_REACHES.map((option) => (
-            <option key={option} value={option}>
-              {REACH_LABELS[option]}
-            </option>
-          ))}
+          {/* Greyed with the reason written in it, not only on a tooltip. A
+              disabled control whose only explanation is a hover reads as a
+              broken one — she reported it as "still can't access Reach"
+              three times on 2026-09-13 and chose this over a line beside it,
+              which would have made the bar taller in one state than the
+              other. The option text is the one place the reason can sit
+              without moving anything. */}
+          {reachDisabled ? (
+            <option value={GRAPH_REACH_EVERYTHING}>{REACH_LABELS[GRAPH_REACH_EVERYTHING]} — open a page's graph to count from it</option>
+          ) : (
+            GRAPH_REACHES.map((option) => (
+              <option key={option} value={option}>
+                {REACH_LABELS[option]}
+              </option>
+            ))
+          )}
         </select>
       </label>
 
