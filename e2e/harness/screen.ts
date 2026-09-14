@@ -1997,29 +1997,65 @@ export async function storylineEdgeCount(window: Page): Promise<number> {
  * moves except the scale. A no-op when it already fits, which is why every
  * helper that aims at something on the canvas can call it first.
  */
+/** `src/constants/storyline.ts`'s zoom sensitivity, repeated because the suite is outside the app. */
+const STORYLINE_ZOOM_SENSITIVITY = 0.0015;
+
 export async function fitStorylineOnScreen(window: Page): Promise<void> {
-  const stage = window.locator(STORYLINE_STAGE);
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const frame = await stage.boundingBox();
+  // Everything is measured in one call, in one frame, so the stage and the
+  // things on it are compared at the same instant — a loop of separate
+  // measurements with a timer between them read a half-drawn zoom on CI and
+  // kept zooming until the canvas hit its floor. The answer is how far out
+  // the picture has to go, as a factor, or 1 when it already fits.
+  const shortfall = () =>
+    window.evaluate(
+      ({ stage, items, margin }) => {
+        const frame = document.querySelector(stage)?.getBoundingClientRect();
+        if (!frame) return 1;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const element of document.querySelectorAll(items)) {
+          const box = element.getBoundingClientRect();
+          if (box.width === 0 && box.height === 0) continue;
+          minX = Math.min(minX, box.left);
+          minY = Math.min(minY, box.top);
+          maxX = Math.max(maxX, box.right);
+          maxY = Math.max(maxY, box.bottom);
+        }
+        if (minX === Infinity) return 1;
+        const fits =
+          minX >= frame.left + margin &&
+          minY >= frame.top + margin &&
+          maxX <= frame.right - margin &&
+          maxY <= frame.bottom - margin;
+        if (fits) return 1;
+        // The picture is centred on the stage, so what has to shrink is its
+        // reach from the middle, on whichever side reaches furthest.
+        const centreX = frame.left + frame.width / 2;
+        const centreY = frame.top + frame.height / 2;
+        const reachX = Math.max(centreX - minX, maxX - centreX);
+        const reachY = Math.max(centreY - minY, maxY - centreY);
+        const roomX = frame.width / 2 - margin;
+        const roomY = frame.height / 2 - margin;
+        return Math.min(roomX / reachX, roomY / reachY);
+      },
+      { stage: STORYLINE_STAGE, items: `${STORYLINE_NODE}, ${STORYLINE_BAND_LABEL}, ${STORYLINE_NOTE}`, margin: 6 },
+    );
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const factor = await shortfall();
+    if (factor >= 1) return;
+    const frame = await window.locator(STORYLINE_STAGE).boundingBox();
     if (!frame) return;
-    let overflows = false;
-    for (const item of await window.locator(`${STORYLINE_NODE}, ${STORYLINE_BAND_LABEL}, ${STORYLINE_NOTE}`).all()) {
-      const box = await item.boundingBox();
-      if (!box) continue;
-      if (
-        box.x < frame.x + 4 ||
-        box.y < frame.y + 4 ||
-        box.x + box.width > frame.x + frame.width - 4 ||
-        box.y + box.height > frame.y + frame.height - 4
-      ) {
-        overflows = true;
-        break;
-      }
-    }
-    if (!overflows) return;
+    // One wheel event for the whole distance: the canvas scales by
+    // exp(-deltaY × sensitivity), so the delta that gets there is worked out
+    // rather than stepped towards. A little past, for rounding.
+    const deltaY = Math.ceil(-Math.log(factor * 0.92) / STORYLINE_ZOOM_SENSITIVITY);
     await window.mouse.move(frame.x + frame.width / 2, frame.y + frame.height / 2);
-    await window.mouse.wheel(0, 240);
-    await window.waitForTimeout(120);
+    await window.mouse.wheel(0, deltaY);
+    // Two frames, so what is measured next has actually been drawn.
+    await window.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
   }
 }
 
