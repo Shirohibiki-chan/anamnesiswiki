@@ -690,8 +690,8 @@ export function PageStoryline({ node }: { node: Node }) {
         )}
 
         {/* Read out rather than shown as a number to act on: how far in she is
-            zoomed is not something to fix. Inside the stage, so the selection
-            strip cannot be drawn over it. */}
+            zoomed is not something to fix. Top-right of the stage, clear of
+            the selection strip that lies over its bottom. */}
         <span className="storyline-zoom" aria-live="off">
           {Math.round(zoom * 100)}%
         </span>

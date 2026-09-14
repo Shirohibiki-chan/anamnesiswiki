@@ -22,8 +22,10 @@ import {
   joinStorylineScenes,
   makeStoryline,
   pageTitle,
+  panStoryline,
   renameStorylineBand,
   searchTree,
+  selectedText,
   storylineBandLabels,
   storylineBrokenLinks,
   storylineEdgeCount,
@@ -118,6 +120,15 @@ describe("a storyline's notes and labels", () => {
     // And back, so the restart below still finds the name it expects.
     await renameStorylineBand(app.window, 0, "Act 2");
     expect(await storylineBandLabels(app.window)).toEqual(["Act 2"]);
+  });
+
+  it("does not highlight a note or a label when the canvas is panned", async () => {
+    // A pan that swept across a note's sentence or a stretch's name used to
+    // paint the text highlight over them as it went — two gestures on one
+    // drag. Reported 2026-09-13. The sweep here crosses the whole picture.
+    await panStoryline(app.window, 500, 350);
+    expect(await selectedText(app.window)).toBe("");
+    await panStoryline(app.window, -500, -350);
   });
 
   it("keeps the notes and the label across a restart", async () => {
