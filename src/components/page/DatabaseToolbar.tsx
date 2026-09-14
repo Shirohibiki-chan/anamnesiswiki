@@ -52,6 +52,7 @@ export function DatabaseToolbar({ node }: { node: Node }) {
         // the moment a setting is doing something, so "the Filter button" is
         // called "Filter 1" half the time and cannot be found by its name.
         data-tool={menu}
+        aria-haspopup="menu"
         aria-expanded={open?.menu === menu}
         data-on={count > 0 ? "" : undefined}
         onClick={(event) => {
