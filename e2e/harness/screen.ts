@@ -1252,6 +1252,15 @@ export async function openDatabaseMenu(window: Page, tool: string): Promise<void
   await window.locator(DATABASE_MENU).first().waitFor({ state: "visible", timeout: WAIT_MS });
 }
 
+/**
+ * Presses a database menu's own button again, which is how a menu is closed
+ * by the hand that opened it, and waits for it to be gone.
+ */
+export async function closeDatabaseMenuFromItsButton(window: Page, tool: string): Promise<void> {
+  await window.locator(`${DATABASE_TOOL}[data-tool="${tool}"]`).click();
+  await window.locator(DATABASE_MENU).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
 /** Turns a database's first sort round, A–Z to Z–A or back. */
 export async function flipDatabaseSort(window: Page): Promise<void> {
   await window.locator(DATABASE_DIRECTION).first().click();
@@ -1750,6 +1759,23 @@ export async function addGraphFilter(
 }
 
 /** Closes whichever graph menu is open, without closing the graph. */
+/** Whether one of the graph's menus is up. */
+export async function graphMenuIsOpen(window: Page): Promise<boolean> {
+  return (await window.locator(GRAPH_MENU).count()) > 0;
+}
+
+/** The same, from the button that opened it rather than the Escape key. */
+export async function closeGraphMenuFromItsButton(window: Page, tool: "filter" | "display"): Promise<void> {
+  await window.locator(`${GRAPH_TOOL}[data-tool="${tool}"]`).click();
+  await window.locator(GRAPH_MENU).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
+/** Opens the graph's Display menu, the one with the names slider. */
+export async function openGraphDisplay(window: Page): Promise<void> {
+  await window.locator(`${GRAPH_TOOL}[data-tool="display"]`).click();
+  await window.locator(GRAPH_MENU).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
 export async function closeGraphMenu(window: Page): Promise<void> {
   await window.locator(GRAPH_MENU).first().press("Escape");
   await window.locator(GRAPH_MENU).waitFor({ state: "detached", timeout: WAIT_MS });

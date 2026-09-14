@@ -119,6 +119,21 @@ export const GRAPH_FIT_PADDING = 80;
  */
 export const GRAPH_MAX_FIT_ZOOM = 1.6;
 
+/**
+ * How far out the wheel can go, as a fraction of the zoom the whole picture
+ * fits at.
+ *
+ * **A fraction of the fit, not a number.** It was a number — 0.2 — chosen
+ * when a world of 835 pages happened to fit at exactly that, and the moment
+ * worlds grew (the ring of lone pages sits outside everything) a big world
+ * could no longer be seen whole at all: the wheel stopped before the edges
+ * came into view. Her report 2026-09-14. Half the fit is room to see the
+ * whole thing with air around it; GRAPH_MIN_ZOOM below is the floor for a
+ * small world, where half the fit would be silly.
+ */
+export const GRAPH_MIN_ZOOM_OF_FIT = 0.5;
+
+/** The wheel's floor on a small world, where the fit itself is large. */
 export const GRAPH_MIN_ZOOM = 0.2;
 export const GRAPH_MAX_ZOOM = 2.5;
 

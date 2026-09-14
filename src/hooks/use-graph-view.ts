@@ -10,6 +10,7 @@ import {
   GRAPH_MAX_FIT_ZOOM,
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
+  GRAPH_MIN_ZOOM_OF_FIT,
   GRAPH_ZOOM_EASE,
   GRAPH_ZOOM_LANDED,
   GRAPH_ZOOM_SENSITIVITY,
@@ -161,16 +162,20 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
   const fitZoom = useMemo(() => {
     const box = graphBounds(model.nodes, GRAPH_FIT_PADDING);
     if (!stageSize.width || !stageSize.height || !box.width || !box.height) return 1;
-    return clamp(
-      Math.min(stageSize.width / box.width, stageSize.height / box.height),
-      GRAPH_MIN_ZOOM,
-      GRAPH_MAX_FIT_ZOOM,
-    );
+    // No floor: a world that needs 0.1 to fit opens at 0.1. The floor below
+    // is on the wheel, and it follows the fit — see GRAPH_MIN_ZOOM_OF_FIT.
+    return Math.min(Math.min(stageSize.width / box.width, stageSize.height / box.height), GRAPH_MAX_FIT_ZOOM);
   }, [model.nodes, stageSize]);
+
+  /**
+   * How far out the wheel may go: half the fit on a big world, so the whole
+   * of it can be seen with air around it, and GRAPH_MIN_ZOOM on a small one.
+   */
+  const minZoom = Math.min(GRAPH_MIN_ZOOM, fitZoom * GRAPH_MIN_ZOOM_OF_FIT);
 
   // The wheel moves a factor and the fit stays the baseline, so resizing the
   // window refits without throwing away how far in she had zoomed.
-  const zoom = clamp(fitZoom * zoomFactor, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM);
+  const zoom = clamp(fitZoom * zoomFactor, minZoom, GRAPH_MAX_ZOOM);
   /**
    * The zoom as a ref as well, for the drag handler to read.
    *
@@ -181,10 +186,12 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
    */
   const zoomRef = useRef(zoom);
   const fitZoomRef = useRef(fitZoom);
+  const minZoomRef = useRef(minZoom);
   useEffect(() => {
     zoomRef.current = zoom;
     fitZoomRef.current = fitZoom;
-  }, [zoom, fitZoom]);
+    minZoomRef.current = minZoom;
+  }, [zoom, fitZoom, minZoom]);
 
   /**
    * Everything a pointer event needs to find the dot under it, kept current
@@ -395,7 +402,7 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     if (glide.frame === null) glide.target = frameRef.current.zoom / fit;
     glide.target = clamp(
       glide.target * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY),
-      GRAPH_MIN_ZOOM / fit,
+      minZoomRef.current / fit,
       GRAPH_MAX_ZOOM / fit,
     );
     if (glide.frame !== null) return;

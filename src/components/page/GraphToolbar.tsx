@@ -154,6 +154,7 @@ export function GraphToolbar({
         // moment a filter is on, so "the Filter button" is called "Filter 1"
         // half the time and cannot be found by its name.
         data-tool="filter"
+        aria-haspopup="menu"
         aria-expanded={filterRect !== null}
         data-on={hiding > 0 ? "" : undefined}
         // The rect is read here rather than inside the updater, which is the
@@ -180,6 +181,7 @@ export function GraphToolbar({
         type="button"
         className="graph-tool"
         data-tool="display"
+        aria-haspopup="menu"
         aria-expanded={displayRect !== null}
         onClick={(event) => {
           const rect = event.currentTarget.getBoundingClientRect();

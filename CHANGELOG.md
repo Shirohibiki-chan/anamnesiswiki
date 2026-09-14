@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-14 — A big graph can be zoomed out to the whole of it
+
+### Fixes
+
+- **Clicking Filter or Display while its menu is open closes it.** The press was closing the menu as a click outside it and the click that followed opened it again, so the button could only ever open. Same fix for the table's Filter, Sort and Columns buttons, which behaved the same way.
+- **The wheel zooms out far enough to see a whole big world.** The graph used to stop zooming out at a fixed size that happened to fit 835 pages before the ring of lone pages made worlds bigger; a large world couldn't be seen whole at all. The limit follows the world now — half the size the whole picture fits at, so there's air around it — and a small world keeps the old floor.
+
 ## 2026-09-13 — The graph learns from Obsidian
 
 ### Additions
@@ -288,11 +295,3 @@
 
 - **This finishes Phase 26.** The example world shows what a world is made of, the tour shows where things are, and this is the way back to either. What it deliberately does not do is wait for you to do something — no step says "now try making a page".
 - **Internal: there is now a test that fails when the app moves out from under the tour.** The tour points at four parts of the window, and if one of them is renamed or removed the test says so by name. It cannot check whether the words are still *true*, so there is a note about that where the rules for this project are kept.
-
-## 2026-09-09 — the example world is simply there
-
-### Changes
-
-- **A new install has the example world in its library from the start**, instead of only getting one if you asked for it on the start screen. It is the same world it was — an ordinary project on your disk — it just does not wait to be noticed. If the first thing you do is bring in a world of your own, Saltmere is still sitting there for the evening you wonder what else this thing does.
-- **Deleting it means deleting it.** It is not put back on the next launch, ever. The app only ever gives you one, once.
-- **Asking for it again still works**, from *The example world* on the start screen — that makes a fresh copy, so a Saltmere you have written all over is never overwritten by a new one.
