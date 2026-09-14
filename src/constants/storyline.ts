@@ -9,14 +9,18 @@
 /** A scene node's drawn size, in canvas units. The stylesheet matches these. */
 export const STORYLINE_NODE_WIDTH = 168;
 /**
- * Taller since step 3, to make room for the row of who is in the scene.
+ * One row: the icon and up to two lines of name.
  *
- * **The row is drawn whether or not anybody is in it**, so this is one number
- * rather than two: a card that grew the first time a name was written into its
- * page would move every other card on the canvas, which is the failure
- * `docs/handoff.md` records as reading like the app shifting underneath.
+ * **Still one number rather than two.** Step 3 made the card taller to keep a
+ * strip along the bottom for who is in the scene, drawn whether or not anybody
+ * was — so a card never grew the first time a name was written into its page.
+ * The fixed size stays, since that reason stands; the empty strip does not.
+ * With nothing linked yet, which is every card on a new storyline, it was a
+ * name in a corner over a band of air ("it just looks really stupid",
+ * 2026-09-13). The cast now hangs off the card's bottom edge as a cluster of
+ * dots, outside its box, and only when there is one.
  */
-export const STORYLINE_NODE_HEIGHT = 84;
+export const STORYLINE_NODE_HEIGHT = 52;
 
 /**
  * How many of a scene's cast fit on the card before the rest become "+3".
@@ -76,9 +80,16 @@ export const STORYLINE_PICKER_RESULTS = 8;
 /** How far clear of the scenes a new note or band is placed. */
 export const STORYLINE_ANNOTATION_GAP = 56;
 
-/** A band's size when it is dropped, before she pulls it over the scenes. */
-export const STORYLINE_NEW_BAND_WIDTH = 620;
-export const STORYLINE_NEW_BAND_HEIGHT = 320;
+/**
+ * A band's size when it is dropped, before she pulls it over the scenes.
+ *
+ * Room for two scenes side by side at the spacing the button adds them with,
+ * and the row they stand on. It was 620 by 320 — four cards' worth of dashed
+ * box around whatever it happened to land on — which read as the label
+ * taking the canvas rather than marking a stretch of it.
+ */
+export const STORYLINE_NEW_BAND_WIDTH = 460;
+export const STORYLINE_NEW_BAND_HEIGHT = 128;
 
 /**
  * The smallest a band can be dragged to.

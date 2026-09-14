@@ -2151,9 +2151,15 @@ export async function renameStorylineBand(window: Page, index: number, label: st
   await window.locator(STORYLINE_BAND_LABEL).filter({ hasText: label }).first().waitFor({ timeout: WAIT_MS });
 }
 
-/** What every labelled stretch is called. */
+/**
+ * What every labelled stretch is called.
+ *
+ * `textContent` rather than `innerText`: the label is drawn in small caps, and
+ * `innerText` hands back what is drawn — "ACT 2" for a stretch she named
+ * "Act 2". What she typed is the question.
+ */
 export async function storylineBandLabels(window: Page): Promise<string[]> {
-  const labels = await window.locator(STORYLINE_BAND_LABEL).allInnerTexts();
+  const labels = await window.locator(STORYLINE_BAND_LABEL).allTextContents();
   return labels.map((label) => normalize(label));
 }
 
