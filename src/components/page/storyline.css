@@ -89,6 +89,16 @@
   /* Says the background can be dragged before anyone tries it. */
   cursor: grab;
   touch-action: none;
+  /* A drag across the canvas is a pan, and a pan that also swept a blue
+     highlight over a label and a note's sentence was two gestures fighting
+     over one mouse. The boxes for typing switch it back on below. */
+  user-select: none;
+}
+
+.storyline-node-input,
+.storyline-band-input,
+.storyline-note-input {
+  user-select: text;
 }
 
 .storyline-stage:active {
@@ -638,11 +648,12 @@
 }
 
 /* Sits over the canvas rather than in the bar, so saying why a line was
-   refused does not make the toolbar taller and shift the picture under it. */
+   refused does not make the toolbar taller and shift the picture under it.
+   At the top, since the selection strip now has the bottom. */
 .storyline-refusal {
   position: absolute;
   left: 50%;
-  bottom: var(--space-md);
+  top: var(--space-md);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -660,8 +671,21 @@
 /* What can be done with the selected scene. A fixed strip along the bottom of
    the canvas rather than a popover beside the card: a panel that appeared in a
    different place depending on where the scene happened to sit is the thing
-   that reads as the app moving under her. */
+   that reads as the app moving under her.
+
+   **Laid over the canvas, never under it in the flow.** It used to be a row
+   below the stage, so every click took a strip off the stage's height, the
+   fit recomputed, and the whole picture shrank — and grew back on the click
+   that put the selection away. Her words on 2026-09-13 were stronger than
+   "annoying". The refusal toast made the same call for the same reason; this
+   was the one that had not. What sits behind it is the bottom of the canvas,
+   which she can pan. */
 .storyline-selection {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--space-md);
@@ -694,10 +718,13 @@
 /* Inside the stage rather than the section, so the selection strip below can
    never be drawn over the top of it — which is exactly what happened while it
    was positioned against the section. */
+/* Top-right rather than bottom-right: the selection strip lies over the
+   bottom of the stage, and a number that vanished whenever something was
+   selected would read as a bug. */
 .storyline-zoom {
   position: absolute;
   right: var(--space-sm);
-  bottom: var(--space-sm);
+  top: var(--space-sm);
   font-size: var(--fs-2xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);

@@ -16,6 +16,7 @@ import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
   addStorylineScene,
   clearTreeSearch,
+  clickStorylineBackground,
   dragStorylineScene,
   joinStorylineScenes,
   makeStoryline,
@@ -157,6 +158,19 @@ describe("a storyline's canvas", () => {
       expect(after[i].x - before[i].x).toBeCloseTo(150, 0);
       expect(after[i].y - before[i].y).toBeCloseTo(60, 0);
     }
+  });
+
+  it("holds the picture still while something is selected", async () => {
+    // The strip of buttons for the selection used to be a row under the
+    // stage: selecting anything took its height off the stage, the fit
+    // recomputed and every card shrank, then grew back on the click that put
+    // the selection away. Reported 2026-09-13, in terms this file will not
+    // repeat. The strip lies over the canvas now, so nothing moves.
+    const before = await storylineScenePositions(app.window);
+    await selectStorylineScene(app.window, 1);
+    expect(await storylineScenePositions(app.window)).toEqual(before);
+    await clickStorylineBackground(app.window);
+    expect(await storylineScenePositions(app.window)).toEqual(before);
   });
 
   it("opens the page behind a scene", async () => {

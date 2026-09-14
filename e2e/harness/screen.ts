@@ -2030,6 +2030,16 @@ export async function panStoryline(window: Page, byX: number, byY: number): Prom
   await window.mouse.up();
 }
 
+/** Clicks empty canvas, which puts any selection away. */
+export async function clickStorylineBackground(window: Page): Promise<void> {
+  await window.locator(STORYLINE_STAGE).click({ position: { x: 12, y: 12 } });
+}
+
+/** The highlighted text anywhere in the window, "" when nothing is. */
+export async function selectedText(window: Page): Promise<string> {
+  return await window.evaluate(() => window.getSelection()?.toString() ?? "");
+}
+
 /** Where each scene's card sits on screen, in DOM order. */
 export async function storylineScenePositions(window: Page): Promise<{ x: number; y: number }[]> {
   const positions: { x: number; y: number }[] = [];
