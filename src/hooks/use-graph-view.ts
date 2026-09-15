@@ -122,6 +122,14 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     setHoveredId(null);
     setZoomFactor(1);
   }
+  // The glide's own copy of the view follows a reset, in an effect because a
+  // ref may not be written during render. Nothing can turn the wheel between
+  // this render and its effect.
+  useEffect(() => {
+    glideRef.current.factor = 1;
+    glideRef.current.pan = { x: 0, y: 0 };
+    glideRef.current.target = 1;
+  }, [appliedKey]);
 
   /**
    * Measured rather than read once, so the picture refits when the window is
@@ -361,7 +369,11 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     const stepY = dy - drag.atY;
     drag.atX = dx;
     drag.atY = dy;
-    setPan((prev) => ({ x: prev.x + stepX, y: prev.y + stepY }));
+    // The glide's copy moves with the drag, so a wheel after a drag starts
+    // from where the picture is — see handleWheel on why it never asks React.
+    const glide = glideRef.current;
+    glide.pan = { x: glide.pan.x + stepX, y: glide.pan.y + stepY };
+    setPan(glide.pan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nearest]);
 
@@ -408,20 +420,19 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     const glide = glideRef.current;
     const rect = event.currentTarget.getBoundingClientRect();
     glide.anchor = { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 };
-    // A fresh glide starts from wherever the view is now — after a reset, a
-    // refit, a drag, anything — and from then on keeps its own numbers.
-    // **Its own, not React's.** The first cut read the zoom back from the
-    // last render each frame, and the render lags the frames, so a step was
-    // worked out against a zoom one or two frames old and applied to a pan
-    // that was not: the point under the pointer drifted 180px in five
-    // notches and thousands by full zoom — "I end up in the middle of
-    // nowhere", 2026-09-14. The glide is the source of truth while it runs
-    // and React is told the results.
-    if (glide.frame === null) {
-      glide.factor = frameRef.current.zoom / fit;
-      glide.pan = { ...frameRef.current.pan };
-      glide.target = glide.factor;
-    }
+    // **The glide's numbers are the view's numbers, and it never reads them
+    // back from React.** The first cut read the zoom from the last render on
+    // every frame, and the render lags the frames, so the point under the
+    // pointer drifted off the screen (2026-09-14). The second cut read them
+    // back only when a fresh glide began — and the render lags there too, by
+    // a frame or two in the slower development build she runs, so every
+    // fresh notch snapped the view back to where React had last drawn it and
+    // glided forward again: "jumping whenever I scroll" (2026-09-15). So the
+    // glide keeps the factor and pan itself, for good, and the other two
+    // writers of the pan — a drag, and a reset — keep its copy in step. The
+    // fit is the one thing read live, because a window resize changes it
+    // and the factor is relative to it.
+    if (glide.frame === null) glide.target = glide.factor;
     glide.target = clamp(
       glide.target * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY),
       minZoomRef.current / fit,
@@ -435,7 +446,11 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     setZooming(true);
     const step = (now: number) => {
       const current = glide.factor;
-      const t = Math.min(1, (now - glide.startedAt) / GRAPH_ZOOM_GLIDE_MS);
+      // Clamped below as well as above: the frame's clock can read a few
+      // milliseconds *before* the wheel event's, and a negative progress on
+      // an ease-out curve is a step backwards — one per notch, which was the
+      // "jumping whenever I scroll" of 2026-09-15.
+      const t = Math.min(1, Math.max(0, (now - glide.startedAt) / GRAPH_ZOOM_GLIDE_MS));
       const eased = 1 - (1 - t) ** 3;
       const landed = t >= 1;
       const next = landed ? glide.target : glide.from + (glide.target - glide.from) * eased;
