@@ -150,6 +150,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
   // preview card and the node's tooltip are where a name comes from at this
   // distance. See GRAPH_NAME_ZOOM.
   const namesQuiet = zoom < nameZoom;
+  const measured = view.view.stageSize.width > 0 && view.view.stageSize.height > 0;
 
   /**
    * What this graph is of, in the words its subject is known by.
@@ -278,13 +279,23 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
 
           <div
             ref={sceneRef}
-            data-settled={graph.working ? "false" : "true"}
+            // Not settled until the stage has been measured either: before
+            // the ResizeObserver reports, the fit is 1 and the first picture
+            // is drawn at the wrong size for a frame, then jumps. On CI that
+            // frame is long enough for a scenario to read a position from it
+            // — 545px of "drift" that was the refit. Hidden for that frame too,
+            // so nobody sees the jump.
+            data-settled={graph.working || !measured ? "false" : "true"}
+            // For the app suite: a zoom is a glide of many frames, and a read
+            // taken before it lands is a read of the middle of a movement.
+            data-zooming={zooming ? "true" : "false"}
             className={[
               "page-graph-scene",
               namesQuiet ? "page-graph-scene-small" : "",
               inPlay !== null ? "page-graph-scene-inplay" : "",
               selectedId !== null ? "page-graph-scene-selected" : "",
               moving ? "page-graph-scene-moving" : "",
+              measured ? "" : "page-graph-scene-unmeasured",
             ]
               .filter(Boolean)
               .join(" ")}

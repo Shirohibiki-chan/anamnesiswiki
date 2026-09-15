@@ -11,8 +11,7 @@ import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
   GRAPH_MIN_ZOOM_OF_FIT,
-  GRAPH_ZOOM_EASE,
-  GRAPH_ZOOM_LANDED,
+  GRAPH_ZOOM_GLIDE_MS,
   GRAPH_ZOOM_SENSITIVITY,
 } from "../constants/graph";
 import { graphBounds } from "../services/graph-layout";
@@ -71,8 +70,20 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
    * once it lands. See GraphEdgesCanvas, and `handleWheel` for the glide.
    */
   const [zooming, setZooming] = useState(false);
-  const glideRef = useRef<{ target: number; anchor: Point; frame: number | null }>({
+  const glideRef = useRef<{
+    target: number;
+    from: number;
+    startedAt: number;
+    factor: number;
+    pan: Point;
+    anchor: Point;
+    frame: number | null;
+  }>({
     target: 1,
+    from: 1,
+    startedAt: 0,
+    factor: 1,
+    pan: { x: 0, y: 0 },
     anchor: { x: 0, y: 0 },
     frame: null,
   });
@@ -397,24 +408,42 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
     const glide = glideRef.current;
     const rect = event.currentTarget.getBoundingClientRect();
     glide.anchor = { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 };
-    // A fresh glide starts from wherever the zoom is now — after a reset, a
-    // refit, anything — rather than from where the last glide ended.
-    if (glide.frame === null) glide.target = frameRef.current.zoom / fit;
+    // A fresh glide starts from wherever the view is now — after a reset, a
+    // refit, a drag, anything — and from then on keeps its own numbers.
+    // **Its own, not React's.** The first cut read the zoom back from the
+    // last render each frame, and the render lags the frames, so a step was
+    // worked out against a zoom one or two frames old and applied to a pan
+    // that was not: the point under the pointer drifted 180px in five
+    // notches and thousands by full zoom — "I end up in the middle of
+    // nowhere", 2026-09-14. The glide is the source of truth while it runs
+    // and React is told the results.
+    if (glide.frame === null) {
+      glide.factor = frameRef.current.zoom / fit;
+      glide.pan = { ...frameRef.current.pan };
+      glide.target = glide.factor;
+    }
     glide.target = clamp(
       glide.target * Math.exp(-event.deltaY * GRAPH_ZOOM_SENSITIVITY),
       minZoomRef.current / fit,
       GRAPH_MAX_ZOOM / fit,
     );
+    // Each notch restarts the glide from wherever the zoom is, toward the
+    // new target, over the same length of time.
+    glide.from = glide.factor;
+    glide.startedAt = performance.now();
     if (glide.frame !== null) return;
     setZooming(true);
-    const step = () => {
-      const current = frameRef.current.zoom / fitZoomRef.current;
-      const remaining = glide.target - current;
-      const landed = Math.abs(remaining) <= GRAPH_ZOOM_LANDED * Math.max(current, glide.target);
-      const next = landed ? glide.target : current + remaining * GRAPH_ZOOM_EASE;
+    const step = (now: number) => {
+      const current = glide.factor;
+      const t = Math.min(1, (now - glide.startedAt) / GRAPH_ZOOM_GLIDE_MS);
+      const eased = 1 - (1 - t) ** 3;
+      const landed = t >= 1;
+      const next = landed ? glide.target : glide.from + (glide.target - glide.from) * eased;
       const ratio = next / current;
       const { anchor } = glide;
-      setPan((prev) => ({ x: anchor.x - ratio * (anchor.x - prev.x), y: anchor.y - ratio * (anchor.y - prev.y) }));
+      glide.pan = { x: anchor.x - ratio * (anchor.x - glide.pan.x), y: anchor.y - ratio * (anchor.y - glide.pan.y) };
+      glide.factor = next;
+      setPan(glide.pan);
       setZoomFactor(next);
       if (landed) {
         glide.frame = null;

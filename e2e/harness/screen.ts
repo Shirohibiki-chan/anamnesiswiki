@@ -1474,6 +1474,34 @@ export async function zoomGraphOut(window: Page, notches = 4): Promise<void> {
   await wheelOverGraph(window, notches, 300);
 }
 
+/**
+ * Zooms in with the pointer held on one page, which is what the wheel is
+ * meant to zoom toward. Waits for the glide to land.
+ */
+export async function zoomGraphInAt(window: Page, name: string, notches: number): Promise<void> {
+  const at = await graphNodeCentre(window, name);
+  await window.mouse.move(at.x, at.y);
+  for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, -120);
+  await waitForGlide(window);
+}
+
+/** The zoom the picture is drawn at, read off the scene's transform. */
+export async function graphZoom(window: Page): Promise<number> {
+  const transform = await window.locator(GRAPH_SCENE).first().evaluate((scene) => (scene as HTMLElement).style.transform);
+  const scale = /scale\(([\d.]+)\)/.exec(transform);
+  if (!scale) throw new Error(`The scene's transform has no scale in it: ${transform}`);
+  return Number(scale[1]);
+}
+
+/**
+ * Waits for the wheel's glide to land. A fixed wait measured the middle of
+ * the movement on CI, where a window off the screen gets its animation
+ * frames late; the scene says when it has landed.
+ */
+export async function waitForGlide(window: Page): Promise<void> {
+  await window.locator(`${GRAPH_SCENE}[data-zooming="false"]`).first().waitFor({ state: "attached", timeout: WAIT_MS });
+}
+
 /** The other way. Same notches, same reason they are small. */
 export async function zoomGraphIn(window: Page, notches = 4): Promise<void> {
   await wheelOverGraph(window, notches, -300);
@@ -1484,6 +1512,9 @@ async function wheelOverGraph(window: Page, notches: number, delta: number): Pro
   if (!box) throw new Error("The graph has no stage to zoom");
   await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   for (let i = 0; i < notches; i += 1) await window.mouse.wheel(0, delta);
+  // The wheel glides since the big-world pass; a read before it lands is a
+  // read of the middle of a movement.
+  await waitForGlide(window);
 }
 
 /**

@@ -150,19 +150,21 @@ export const GRAPH_DRAG_THRESHOLD = 4;
 export const GRAPH_ZOOM_SENSITIVITY = 0.0016;
 
 /**
- * How much of the way to the wheel's target the zoom moves each frame.
+ * How long the zoom takes to glide from where it is to the wheel's target.
  *
  * **A wheel notch sets a target and the view glides to it** — Obsidian's
  * feel, and the difference between a zoom that is smooth and one that is
  * merely fast: at sixty frames a second, a notch applied all at once is
- * still a staircase. A quarter per frame is a glide of a dozen frames that
- * still feels like the hand's own movement. The glide is also when the
- * canvas paints light (see `zooming`); it paints fully once it lands.
+ * still a staircase. **In time, not in frames.** The first cut moved a
+ * quarter of the way per animation frame, which is a different glide on a
+ * 60Hz and a 144Hz monitor, and on CI's off-screen window — where Chromium
+ * hands out about one frame a second — never landed at all. A fixed length
+ * eases out over the same fifth of a second everywhere, and a slow machine
+ * simply shows fewer of its frames. A notch arriving mid-glide restarts the
+ * glide from wherever the zoom is. The glide is also when the canvas paints
+ * light (see `zooming`); it paints fully once it lands.
  */
-export const GRAPH_ZOOM_EASE = 0.25;
-
-/** Close enough to the target to land on it and stop the glide. */
-export const GRAPH_ZOOM_LANDED = 0.002;
+export const GRAPH_ZOOM_GLIDE_MS = 220;
 
 /**
  * How many connections out the graph reaches by default.

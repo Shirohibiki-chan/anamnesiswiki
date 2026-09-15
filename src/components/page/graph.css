@@ -332,6 +332,12 @@
   will-change: transform;
 }
 
+/* Until the stage has reported its size the fit is a guess of 1, and the
+   picture would be drawn at the wrong size for a frame and then jump. */
+.page-graph-scene-unmeasured {
+  visibility: hidden;
+}
+
 .page-graph-edges {
   position: absolute;
   overflow: visible;
