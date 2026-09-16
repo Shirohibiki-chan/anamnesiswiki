@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-09 — a way back to the tour and the example world
+
+### Additions
+
+- **Settings has a Getting started section.** It holds the two things that only ever turn up once: the tour, and the example world. Both are searchable from the settings search box.
+- **Take the tour again.** The same four steps, whenever you want them. It needs a world open, since every step points at part of one — from the start screen it says so rather than doing nothing.
+- **Make a fresh copy of the example world.** A new one every time, so a Saltmere you have written all over is never replaced. It tells you which copy it just made.
+
+### Notes
+
+- **This finishes Phase 26.** The example world shows what a world is made of, the tour shows where things are, and this is the way back to either. What it deliberately does not do is wait for you to do something — no step says "now try making a page".
+- **Internal: there is now a test that fails when the app moves out from under the tour.** The tour points at four parts of the window, and if one of them is renamed or removed the test says so by name. It cannot check whether the words are still *true*, so there is a note about that where the rules for this project are kept.
+
 ## 2026-09-09 — the example world is simply there
 
 ### Changes

@@ -1485,6 +1485,34 @@ export async function zoomGraphInAt(window: Page, name: string, notches: number)
   await waitForGlide(window);
 }
 
+/**
+ * Starts recording the zoom the picture is drawn at, once per animation
+ * frame, until `graphZoomFrames` collects it. For asking whether a glide ever
+ * moved the wrong way, which a read at the end cannot answer.
+ */
+export async function recordGraphZoomFrames(window: Page): Promise<void> {
+  await window.locator(GRAPH_SCENE).first().evaluate((scene) => {
+    const log: number[] = [];
+    (window as unknown as { __graphZoomFrames: number[] }).__graphZoomFrames = log;
+    const tick = () => {
+      const scale = /scale\(([\d.]+)\)/.exec((scene as HTMLElement).style.transform);
+      if (scale) log.push(Number(scale[1]));
+      if ((window as unknown as { __graphZoomFrames?: number[] }).__graphZoomFrames === log) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+/** The zooms recorded since `recordGraphZoomFrames`, and stops recording. */
+export async function graphZoomFrames(window: Page): Promise<number[]> {
+  return window.evaluate(() => {
+    const holder = window as unknown as { __graphZoomFrames?: number[] };
+    const log = holder.__graphZoomFrames ?? [];
+    delete holder.__graphZoomFrames;
+    return log;
+  });
+}
+
 /** The zoom the picture is drawn at, read off the scene's transform. */
 export async function graphZoom(window: Page): Promise<number> {
   const transform = await window.locator(GRAPH_SCENE).first().evaluate((scene) => (scene as HTMLElement).style.transform);
