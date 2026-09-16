@@ -29,6 +29,8 @@ import {
   STORYLINE_NEW_BAND_WIDTH,
   STORYLINE_NEW_NODE_GAP,
   STORYLINE_NODE_HEIGHT,
+  STORYLINE_MAX_NODE_WIDTH,
+  STORYLINE_MIN_NODE_WIDTH,
   STORYLINE_NODE_WIDTH,
   STORYLINE_NOTE_ROW,
   STORYLINE_NOTE_WIDTH,
@@ -47,6 +49,20 @@ export type SceneHeights = Record<string, number>;
 /** A card's height, measured where it has been and the bare height where not. */
 export function sceneHeight(id: string, heights: SceneHeights | undefined): number {
   return heights?.[id] ?? STORYLINE_NODE_HEIGHT;
+}
+
+/** A card's width: hers where she dragged the corner, the default where not. */
+export function sceneWidth(node: { width?: number }): number {
+  return node.width ?? STORYLINE_NODE_WIDTH;
+}
+
+/** Sets a card's width, held between the floor and the ceiling. */
+export function resizeNode(storyline: Storyline, nodeId: string, width: number): Storyline {
+  const clamped = Math.round(Math.min(STORYLINE_MAX_NODE_WIDTH, Math.max(STORYLINE_MIN_NODE_WIDTH, width)));
+  return {
+    ...storyline,
+    nodes: storyline.nodes.map((node) => (node.id === nodeId ? { ...node, width: clamped } : node)),
+  };
 }
 
 export function createStoryline(): Storyline {
@@ -78,6 +94,7 @@ export function readStoryline(raw: unknown): Storyline {
       pageId: node.pageId,
       x: typeof node.x === "number" && Number.isFinite(node.x) ? node.x : 0,
       y: typeof node.y === "number" && Number.isFinite(node.y) ? node.y : 0,
+      ...(typeof node.width === "number" && node.width > 0 ? { width: node.width } : {}),
     });
   }
   const readEdges: StorylineEdge[] = [];
@@ -407,8 +424,8 @@ function sceneExtent(
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const node of storyline.nodes) {
-    minX = Math.min(minX, node.x - STORYLINE_NODE_WIDTH / 2);
-    maxX = Math.max(maxX, node.x + STORYLINE_NODE_WIDTH / 2);
+    minX = Math.min(minX, node.x - sceneWidth(node) / 2);
+    maxX = Math.max(maxX, node.x + sceneWidth(node) / 2);
     minY = Math.min(minY, node.y - STORYLINE_NODE_HEIGHT / 2);
     maxY = Math.max(maxY, node.y - STORYLINE_NODE_HEIGHT / 2 + sceneHeight(node.id, heights));
   }

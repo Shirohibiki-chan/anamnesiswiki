@@ -47,6 +47,7 @@ import {
   removeNode,
   removeNote,
   resizeBand,
+  resizeNode,
   setBandLabel,
   sceneRefusal,
   setNoteText,
@@ -898,6 +899,8 @@ export type ProjectStoreState = {
   ) => void;
   resizeStorylineBand: (storylineId: string, bandId: string, size: { width: number; height: number }) => void;
   removeStorylineBand: (storylineId: string, bandId: string) => void;
+  /** Sets a card's width, from its corner. Not recorded for undo, like a band's. */
+  resizeStorylineNode: (storylineId: string, nodeId: string, width: number) => void;
   /** `heights` is each card's height on screen, so stacked cards clear each other. */
   tidyStoryline: (storylineId: string, heights?: SceneHeights) => void;
   /**
@@ -4240,6 +4243,10 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
 
     resizeStorylineBand(storylineId, bandId, size) {
       applyStoryline(storylineId, resizeBand(storylineOf(storylineId), bandId, size));
+    },
+
+    resizeStorylineNode(storylineId, nodeId, width) {
+      applyStoryline(storylineId, resizeNode(storylineOf(storylineId), nodeId, width));
     },
 
     removeStorylineBand(storylineId, bandId) {

@@ -265,8 +265,8 @@
   row-gap: 3px;
   width: 100%;
   min-height: 52px;
-  /* Room on the right for the open-page button in the corner. */
-  padding: var(--space-xs) calc(var(--space-md) + 14px) var(--space-sm) var(--space-md);
+  /* Room on the right for the two corner buttons. */
+  padding: var(--space-xs) calc(var(--space-md) + 36px) var(--space-sm) var(--space-md);
   border: 2px solid var(--storyline-node-color);
   border-radius: var(--radius-md);
   background: var(--color-panel);
@@ -402,15 +402,22 @@
     0 1px 3px rgba(0, 0, 0, 0.14);
 }
 
-/* Opens the page, from the card's own corner. Quiet until pointed at, but
-   always drawn — a control that only appears on hover is one she has to
-   find, and a page she cannot find the way into is the report that comes
-   next. Kept clear of the drag: its press does not reach the card. */
-.storyline-node-open {
+/* The card's own controls — the page, and the menu with everything else —
+   in its top-right corner. Quiet until pointed at, but always drawn: a
+   control that only appears on hover is one she has to find, and a page she
+   cannot find the way into is the report that comes next. Kept clear of the
+   drag: a press on either does not reach the card. */
+.storyline-node-corner {
   position: absolute;
   right: 4px;
   top: 4px;
   z-index: 1;
+  display: inline-flex;
+  gap: 1px;
+}
+
+.storyline-node-open,
+.storyline-node-more {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -424,18 +431,21 @@
   cursor: pointer;
 }
 
-.storyline-node-open:hover {
+.storyline-node-open:hover,
+.storyline-node-more:hover {
   border-color: var(--color-border-strong);
   background: var(--color-panel);
   color: var(--color-text-primary);
 }
 
-.storyline-node-open:focus-visible {
+.storyline-node-open:focus-visible,
+.storyline-node-more:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 1px;
 }
 
-.storyline-node-pictured .storyline-node-open {
+.storyline-node-pictured .storyline-node-open,
+.storyline-node-pictured .storyline-node-more {
   color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
 }
@@ -443,6 +453,42 @@
 .storyline-node-pictured .storyline-node-summary,
 .storyline-node-pictured .storyline-node-summary-input {
   color: rgba(255, 255, 255, 0.88);
+}
+
+/* Bottom-right, where a resize handle goes everywhere else, and the same
+   corner a band has. Drawn small and quiet; the cursor says what it is. */
+.storyline-node-resize {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  background: var(--color-panel);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.storyline-node-resize:hover {
+  border-color: var(--color-accent-light);
+}
+
+.storyline-node-resize:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+/* The right-click menu's rows, on top of the tree menu's look. The cast rows
+   are indented under their heading so they read as a list, not as actions. */
+.storyline-menu {
+  min-width: 12rem;
+}
+
+.storyline-menu .storyline-menu-cast {
+  padding-left: calc(var(--space-md) + var(--space-sm));
 }
 
 /* Takes the name's own cell in the card's grid — same size, same place — so
@@ -621,40 +667,6 @@
   font-size: var(--fs-2xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
-}
-
-/* The same cast in the strip, with room for names. */
-.storyline-selection-cast {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  min-width: 0;
-  /* Takes the slack, so the buttons stay at the right edge. */
-  margin-right: auto;
-}
-
-.storyline-cast-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  padding: 2px var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-panel-alt);
-  color: var(--color-text-secondary);
-  font-size: var(--fs-xs);
-  cursor: pointer;
-}
-
-.storyline-cast-chip:hover {
-  border-color: var(--color-accent-light);
-  color: var(--color-text-primary);
-}
-
-.storyline-cast-chip:focus-visible {
-  outline: 2px solid var(--color-ring);
-  outline-offset: 2px;
 }
 
 /* ---- Notes and bands: what is written on the canvas but is not the story ----
@@ -885,60 +897,6 @@
   box-shadow: var(--elev-modal);
   font-size: var(--fs-sm);
   color: var(--color-text-primary);
-}
-
-/* What can be done with the selected scene. A fixed strip along the bottom of
-   the canvas rather than a popover beside the card: a panel that appeared in a
-   different place depending on where the scene happened to sit is the thing
-   that reads as the app moving under her.
-
-   **Laid over the canvas, never under it in the flow.** It used to be a row
-   below the stage, so every click took a strip off the stage's height, the
-   fit recomputed, and the whole picture shrank — and grew back on the click
-   that put the selection away. Her words on 2026-09-13 were stronger than
-   "annoying". The refusal toast made the same call for the same reason; this
-   was the one that had not. What sits behind it is the bottom of the canvas,
-   which she can pan. */
-.storyline-selection {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  /* The first button takes the slack when the selection has no cast to show. */
-  padding: var(--space-sm) var(--space-md);
-  border-top: 1px solid var(--color-border);
-  background: var(--color-panel);
-}
-
-.storyline-selection > .ui-btn:first-of-type {
-  margin-left: auto;
-}
-
-/* The buttons keep their words on one line; it is the cast, which wraps,
-   that gives way when the strip is narrow. */
-.storyline-selection > .ui-btn {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.storyline-selection-cast ~ .ui-btn:first-of-type {
-  margin-left: 0;
-}
-
-.storyline-selection-name {
-  min-width: 0;
-  /* Does not grow: the cast sits beside the name it belongs to, and the gap
-     before the buttons is pushed by the cast instead — otherwise the two
-     halves of "what is selected" end up at opposite ends of the strip. */
-  flex: 0 1 auto;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  overflow-wrap: anywhere;
 }
 
 /* Inside the stage rather than the section, so the selection strip below can

@@ -91,7 +91,10 @@ const STORYLINE_NODE_SUMMARY_INPUT = ".storyline-node-summary-input";
 const STORYLINE_NODE_OPEN = ".storyline-node-open";
 const STORYLINE_HANDLE = ".storyline-node-handle";
 const STORYLINE_EDGE = ".storyline-edge";
-const STORYLINE_SELECTION = ".storyline-selection";
+const STORYLINE_MENU = ".storyline-menu";
+const STORYLINE_MENU_CAST = ".storyline-menu-cast";
+const STORYLINE_NODE_RESIZE = ".storyline-node-resize";
+const STORYLINE_NODE_NAME_TEXT = ".storyline-node-name";
 const STORYLINE_REFUSAL = ".storyline-refusal";
 // Phase 25 step 2: the annotations.
 const STORYLINE_NOTE = ".storyline-note";
@@ -108,7 +111,6 @@ const STORYLINE_PICKER_ROW = ".storyline-picker-row";
 const STORYLINE_PICKER_NAME = ".storyline-picker-name";
 const STORYLINE_PICKER_EMPTY = ".storyline-picker-empty";
 const STORYLINE_CAST_DOT = ".storyline-cast-dot";
-const STORYLINE_CAST_CHIP = ".storyline-cast-chip";
 const EDITOR = ".editor-shell .bn-editor";
 const EDITOR_MENTION = ".editor-mention";
 // Phase 19.5: the `#` on a chip that goes to one block rather than to the top
@@ -2202,7 +2204,7 @@ export async function panStoryline(window: Page, byX: number, byY: number): Prom
  * of the *Add* menu when it is not. Scenarios say what they want added and
  * never which arrangement they expect — the width decides that.
  */
-async function pressStorylineAdd(window: Page, name: "Scene" | "Existing page" | "Note" | "Stretch"): Promise<void> {
+async function pressStorylineAdd(window: Page, name: "Scene" | "Existing Page" | "Note" | "Stretch"): Promise<void> {
   const menu = window.locator(STORYLINE_ADD_MENU);
   if (await menu.isVisible()) {
     await menu.getByRole("button", { name: "Add", exact: true }).click();
@@ -2252,11 +2254,63 @@ export async function storylineScenePositions(window: Page): Promise<{ x: number
   return positions;
 }
 
-/** Clicks a scene's card, which selects it and shows what can be done with it. */
+/** Clicks a scene's card, which selects it. */
 export async function selectStorylineScene(window: Page, index: number): Promise<void> {
   await fitStorylineOnScreen(window);
-  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).click();
-  await window.locator(STORYLINE_SELECTION).waitFor({ state: "visible", timeout: WAIT_MS });
+  const node = window.locator(STORYLINE_NODE).nth(index);
+  await node.locator(STORYLINE_NODE_BODY).click();
+  await node.and(window.locator(".storyline-node-selected")).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * Opens a scene's menu by right-clicking its card — everything that can be
+ * done to a scene is on the scene itself since 2026-09-15, and the menu is
+ * the list of it. The same menu opens from the card's corner button.
+ */
+export async function openStorylineSceneMenu(window: Page, index: number): Promise<void> {
+  await fitStorylineOnScreen(window);
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).click({ button: "right" });
+  await window.locator(STORYLINE_MENU).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Presses one row of the open scene menu. */
+async function pressStorylineMenuRow(window: Page, name: string): Promise<void> {
+  await window.locator(STORYLINE_MENU).getByRole("menuitem", { name, exact: true }).click();
+  await window.locator(STORYLINE_MENU).waitFor({ state: "hidden", timeout: WAIT_MS });
+}
+
+/** Drags a card's bottom-right corner by a number of screen pixels. */
+export async function resizeStorylineScene(window: Page, index: number, byX: number): Promise<void> {
+  await fitStorylineOnScreen(window);
+  const corner = await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_RESIZE).boundingBox();
+  if (!corner) throw new Error(`No resize corner on the scene at index ${index}`);
+  const from = { x: corner.x + corner.width / 2, y: corner.y + corner.height / 2 };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + byX, from.y, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** A card's width on screen, in window pixels. */
+export async function storylineSceneWidth(window: Page, index: number): Promise<number> {
+  const box = await window.locator(STORYLINE_NODE).nth(index).boundingBox();
+  if (!box) throw new Error(`No scene at index ${index}`);
+  return box.width;
+}
+
+/**
+ * Removes the line at `index` through its right-click menu.
+ *
+ * Aimed at the middle of the drawn line by hand: an SVG group has no box of
+ * its own for Playwright to call visible, and the wide hit line under the
+ * drawn one is transparent, which it reads the same way.
+ */
+export async function removeStorylineLine(window: Page, index: number): Promise<void> {
+  await fitStorylineOnScreen(window);
+  const box = await window.locator(`${STORYLINE_EDGE} .storyline-edge-line`).nth(index).boundingBox();
+  if (!box) throw new Error(`No line at index ${index}`);
+  await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: "right" });
+  await pressStorylineMenuRow(window, "Remove Line");
 }
 
 /** What the canvas said when it would not draw a line, or null while it is quiet. */
@@ -2265,9 +2319,10 @@ export async function storylineRefusal(window: Page): Promise<string | null> {
   return normalize(await window.locator(STORYLINE_REFUSAL).first().innerText());
 }
 
-/** Takes the selected scene off the canvas, leaving its page in the tree. */
-export async function takeSceneOffCanvas(window: Page): Promise<void> {
-  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Take off the canvas" }).click();
+/** Takes a scene off the canvas through its menu, leaving its page in the tree. */
+export async function takeSceneOffCanvas(window: Page, index: number): Promise<void> {
+  await openStorylineSceneMenu(window, index);
+  await pressStorylineMenuRow(window, "Take Off the Canvas");
 }
 
 /** Opens a scene's page from the button in the card's own corner. */
@@ -2284,12 +2339,18 @@ export async function openSceneFromCard(window: Page, index: number): Promise<vo
  */
 export async function describeStorylineScene(window: Page, index: number, text: string): Promise<void> {
   await fitStorylineOnScreen(window);
-  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY).dblclick();
+  // Low and to the left, clear of the name: a double-click on the name
+  // itself renames, and on a one-row card the name covers the middle.
+  const body = window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_BODY);
+  const box = await body.boundingBox();
+  if (!box) throw new Error(`No scene at index ${index}`);
+  await body.dblclick({ position: { x: 8, y: box.height - 6 } });
   const input = window.locator(STORYLINE_NODE_SUMMARY_INPUT);
   await input.waitFor({ state: "visible", timeout: WAIT_MS });
   await window.keyboard.press("Control+a");
   await window.keyboard.type(text);
-  await window.keyboard.press("Control+Enter");
+  // Enter is done; Shift+Enter would be a new line.
+  await window.keyboard.press("Enter");
   await input.waitFor({ state: "hidden", timeout: WAIT_MS });
   await window
     .locator(STORYLINE_NODE)
@@ -2317,14 +2378,22 @@ export async function storylineSceneHeight(window: Page, index: number): Promise
 }
 
 /**
- * Renames the selected scene from the canvas, or gives up on it.
+ * Renames a scene from the canvas, or gives up on it: a real double-click on
+ * the name itself, which is where a name is renamed since 2026-09-15 (a
+ * double-click anywhere else on the card writes the description).
  *
- * The box opens over the card's name with the old name selected, so typing
+ * The box opens in the name's place with the old name selected, so typing
  * replaces it. Enter keeps the new name; Escape keeps the old one, which is
  * the half of this that a rename box is most often wrong about.
  */
-export async function renameSelectedScene(window: Page, name: string, how: "keep" | "give-up" = "keep"): Promise<void> {
-  await window.locator(STORYLINE_SELECTION).getByRole("button", { name: "Rename" }).click();
+export async function renameStorylineScene(
+  window: Page,
+  index: number,
+  name: string,
+  how: "keep" | "give-up" = "keep",
+): Promise<void> {
+  await fitStorylineOnScreen(window);
+  await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_NAME_TEXT).dblclick();
   const input = window.locator(STORYLINE_NODE_INPUT);
   await input.waitFor({ state: "visible", timeout: WAIT_MS });
   await window.keyboard.type(name);
@@ -2435,12 +2504,12 @@ export async function storylineNotePlacements(window: Page): Promise<{ x: number
 
 /** Lines the scenes up. */
 export async function tidyStoryline(window: Page): Promise<void> {
-  await window.locator(STORYLINE).getByRole("button", { name: "Tidy up" }).click();
+  await window.locator(STORYLINE).getByRole("button", { name: "Tidy Up" }).click();
 }
 
 /** Whether *Tidy up* still has anything to do. */
 export async function canTidyStoryline(window: Page): Promise<boolean> {
-  return await window.locator(STORYLINE).getByRole("button", { name: "Tidy up" }).isEnabled();
+  return await window.locator(STORYLINE).getByRole("button", { name: "Tidy Up" }).isEnabled();
 }
 
 /**
@@ -2465,7 +2534,7 @@ export async function storylineScenePlacements(window: Page): Promise<Record<str
 
 /** Opens the "put an existing page on it" search. */
 export async function openStorylinePicker(window: Page): Promise<void> {
-  await pressStorylineAdd(window, "Existing page");
+  await pressStorylineAdd(window, "Existing Page");
   await window.locator(STORYLINE_PICKER).waitFor({ state: "visible", timeout: WAIT_MS });
 }
 
@@ -2500,15 +2569,19 @@ export async function storylineSceneCastCount(window: Page, index: number): Prom
   return await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_CAST_DOT).count();
 }
 
-/** The names in the selection strip's cast, for whatever is selected. */
-export async function storylineSelectionCast(window: Page): Promise<string[]> {
-  const names = await window.locator(STORYLINE_CAST_CHIP).allInnerTexts();
+/** The names of who is in a scene, read from its menu, which is then put away. */
+export async function storylineSceneCast(window: Page, index: number): Promise<string[]> {
+  await openStorylineSceneMenu(window, index);
+  const names = await window.locator(STORYLINE_MENU_CAST).allInnerTexts();
+  await window.keyboard.press("Escape");
+  await window.locator(STORYLINE_MENU).waitFor({ state: "hidden", timeout: WAIT_MS });
   return names.map((name) => normalize(name));
 }
 
-/** Follows one of those names to its page. */
-export async function openStorylineCastMember(window: Page, name: string): Promise<void> {
-  await window.locator(STORYLINE_CAST_CHIP).filter({ hasText: name }).first().click();
+/** Follows one of those names to its page, through the scene's menu. */
+export async function openStorylineCastMember(window: Page, index: number, name: string): Promise<void> {
+  await openStorylineSceneMenu(window, index);
+  await pressStorylineMenuRow(window, name);
 }
 
 // ---- Quick capture (Phase 30) ----

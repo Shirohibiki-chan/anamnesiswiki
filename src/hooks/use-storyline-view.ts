@@ -20,12 +20,12 @@ import {
   STORYLINE_MIN_FIT_ZOOM,
   STORYLINE_MIN_ZOOM,
   STORYLINE_NODE_HEIGHT,
-  STORYLINE_NODE_WIDTH,
   STORYLINE_ZOOM_SENSITIVITY,
 } from "../constants/storyline";
 import type { StorylineBand, StorylineEdge } from "../constants/schema";
 import { scenesOnBand, type DrawnNote, type DrawnScene, type StorylineModel,
   sceneHeight,
+  sceneWidth,
   type SceneHeights,
 } from "../services/storyline-service";
 
@@ -47,15 +47,19 @@ function clamp(value: number, min: number, max: number): number {
  * and half of it hangs outside its own point — fitting to the centres alone
  * crops the leftmost and rightmost cards in half every time.
  */
-function sceneBounds(scenes: { id: string; x: number; y: number }[], heights: SceneHeights, padding: number): StorylineBounds {
+function sceneBounds(
+  scenes: { id: string; x: number; y: number; width?: number }[],
+  heights: SceneHeights,
+  padding: number,
+): StorylineBounds {
   if (scenes.length === 0) return { minX: -padding, minY: -padding, width: padding * 2, height: padding * 2 };
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const scene of scenes) {
-    minX = Math.min(minX, scene.x - STORYLINE_NODE_WIDTH / 2);
-    maxX = Math.max(maxX, scene.x + STORYLINE_NODE_WIDTH / 2);
+    minX = Math.min(minX, scene.x - sceneWidth(scene) / 2);
+    maxX = Math.max(maxX, scene.x + sceneWidth(scene) / 2);
     minY = Math.min(minY, scene.y - STORYLINE_NODE_HEIGHT / 2);
     maxY = Math.max(maxY, scene.y - STORYLINE_NODE_HEIGHT / 2 + sceneHeight(scene.id, heights));
   }
@@ -82,7 +86,7 @@ function sceneBounds(scenes: { id: string; x: number; y: number }[], heights: Sc
  * back off by a few units so the arrow's tip sits clear of the border rather
  * than on it.
  */
-function meetsCard(from: Point, to: Point, toHeight: number): Point {
+function meetsCard(from: Point, to: Point, toWidth: number, toHeight: number): Point {
   // The card's middle, which is not the scene's point once it has a
   // description: the point is the middle of the top row, and the card runs
   // down from there. The line aims at the middle of the whole card.
@@ -93,7 +97,7 @@ function meetsCard(from: Point, to: Point, toHeight: number): Point {
   // Two scenes stacked exactly on top of each other: there is no direction to
   // trim along, and any answer draws a line of zero length either way.
   if (length === 0) return centre;
-  const halfWidth = STORYLINE_NODE_WIDTH / 2;
+  const halfWidth = toWidth / 2;
   const halfHeight = toHeight / 2;
   const toSide = Math.abs(dx) > 0 ? halfWidth / Math.abs(dx) : Infinity;
   const toTop = Math.abs(dy) > 0 ? halfHeight / Math.abs(dy) : Infinity;
@@ -128,12 +132,14 @@ export type StorylineViewOptions = {
    * where the band is somewhere else and the answer would be a different set.
    */
   onMoveBand: (bandId: string, to: Point, carried: string[]) => void;
+  /** Called on letting go of a card's corner, with its new width. */
+  onResizeScene: (sceneId: string, width: number) => void;
   /** Called on letting go of a band's corner. */
   onResizeBand: (bandId: string, size: { width: number; height: number }) => void;
 };
 
 export function useStorylineView(model: StorylineModel, options: StorylineViewOptions) {
-  const { resetKey, onArrange, onConnect, onMoveNote, onMoveBand, onResizeBand } = options;
+  const { resetKey, onArrange, onConnect, onMoveNote, onMoveBand, onResizeBand, onResizeScene } = options;
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [zoomFactor, setZoomFactor] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
@@ -233,6 +239,9 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
    * at.
    */
   const [resizing, setResizing] = useState<{ id: string; size: { width: number; height: number } } | null>(null);
+  /** A card whose corner is being dragged, and the width it is at. */
+  const [sizing, setSizing] = useState<{ id: string; width: number } | null>(null);
+  const sizingRef = useRef<{ id: string; fromX: number; atWidth: number } | null>(null);
 
   // React's documented alternative to an effect that syncs state: adjust during
   // render, keyed on the value that changed. An effect here would set five
@@ -265,8 +274,13 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
   }, []);
 
   const scenes = useMemo<DrawnScene[]>(
-    () => model.scenes.map((scene) => ({ ...scene, ...(dragging[scene.id] ?? {}) })),
-    [model.scenes, dragging],
+    () =>
+      model.scenes.map((scene) => ({
+        ...scene,
+        ...(dragging[scene.id] ?? {}),
+        ...(sizing && sizing.id === scene.id ? { width: sizing.width } : {}),
+      })),
+    [model.scenes, dragging, sizing],
   );
 
   const edges = useMemo<PlacedStorylineEdge[]>(() => {
@@ -280,8 +294,8 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       // starting under the card it leaves reads as a line that starts nowhere.
       const fromHeight = sceneHeight(from.id, heights);
       const toHeight = sceneHeight(to.id, heights);
-      const start = meetsCard(cardCentre(to, toHeight), from, fromHeight);
-      const end = meetsCard(cardCentre(from, fromHeight), to, toHeight);
+      const start = meetsCard(cardCentre(to, toHeight), from, sceneWidth(from), fromHeight);
+      const end = meetsCard(cardCentre(from, fromHeight), to, sceneWidth(to), toHeight);
       placed.push({ ...edge, x1: start.x, y1: start.y, x2: end.x, y2: end.y });
     }
     return placed;
@@ -692,6 +706,37 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     [resizing, onResizeBand],
   );
 
+  const startSceneResize = useCallback((event: React.PointerEvent<HTMLElement>, scene: DrawnScene) => {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    sizingRef.current = { id: scene.id, fromX: event.clientX, atWidth: sceneWidth(scene) };
+    setSizing({ id: scene.id, width: sceneWidth(scene) });
+  }, []);
+
+  const moveSceneResize = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const drag = sizingRef.current;
+      if (!drag) return;
+      // The card is centred on its point, so pulling the right corner out by
+      // one unit widens the card by two — it grows both ways to stay put.
+      setSizing({ id: drag.id, width: Math.round(drag.atWidth + (2 * (event.clientX - drag.fromX)) / zoom) });
+    },
+    [zoom],
+  );
+
+  const endSceneResize = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const drag = sizingRef.current;
+      sizingRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (drag && sizing && sizing.id === drag.id) onResizeScene(drag.id, sizing.width);
+      setSizing(null);
+    },
+    [sizing, onResizeScene],
+  );
+
   const selectAnnotation = useCallback((selection: { kind: "note" | "band"; id: string } | null) => {
     setSelectedAnnotation(selection);
     setSelectedId(null);
@@ -734,6 +779,9 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     startSceneDrag,
     moveSceneDrag,
     endSceneDrag,
+    startSceneResize,
+    moveSceneResize,
+    endSceneResize,
     startLink,
     moveLink,
     endLink,
