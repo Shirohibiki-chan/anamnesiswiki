@@ -309,7 +309,22 @@ Phase 25, closed 2026-09-09. What binds the code:
   stored `y` is the middle of the bare top row and the card grows downward
   from it. The cast hangs off the card's corner, outside its box, only when
   there is one; and because the tidy position now moves with the type size,
-  `needsTidying` has a tolerance rather than an equality.
+  `needsTidying` has a tolerance rather than an equality. A card's *width* is
+  hers (`StorylineNode.width`, from the corner; absent means the default) and
+  is in the file, unlike the height.
+
+- **Everything that can be done to a thing on the canvas is done on the
+  thing — its corner buttons and its right-click menu — and there is no
+  panel elsewhere listing the selection's actions.** There was a strip along
+  the bottom of the canvas; her verdict on 2026-09-15 was that a bar
+  somewhere else for the thing she is looking at is useless. Don't bring one
+  back for a new kind of thing: give it a right-click menu like the other
+  four (`menu` in `PageStoryline.tsx`, one `TreePopover` for all of them).
+  Double-click on a scene card renames when the pointer is over the name
+  and writes the description otherwise — decided by the pointer's position,
+  not the event's target, because the press captures the pointer to the card
+  and the target is then always the card. Enter finishes a description and
+  Shift+Enter is a new line, her call the same day.
 
 - **A note and a band are annotations, and nothing in the code may quietly
   promote them.** No edges, no page behind them, never counted among the scenes,

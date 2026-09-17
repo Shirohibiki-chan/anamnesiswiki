@@ -14,6 +14,14 @@
  */
 export const STORYLINE_NODE_WIDTH = 220;
 /**
+ * How narrow and how wide a card can be dragged. The floor keeps an icon, a
+ * name and the corner buttons on one row; the ceiling is a paragraph's
+ * comfortable measure at this type size, past which a description reads as
+ * a line rather than a block.
+ */
+export const STORYLINE_MIN_NODE_WIDTH = 160;
+export const STORYLINE_MAX_NODE_WIDTH = 520;
+/**
  * A card's height with nothing but its name on it: the icon and up to two
  * lines of name. **The card's anchor, not its size.** A scene's stored `y` is
  * the middle of this much of it, so a card with a description grows

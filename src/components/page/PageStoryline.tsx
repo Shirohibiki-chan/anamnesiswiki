@@ -27,17 +27,23 @@ import {
   ArrowUpRight,
   ChevronDown,
   FilePlus2,
+  ImageIcon,
+  ImageOff,
   Link2,
   Maximize2,
   Minimize2,
+  MoreHorizontal,
+  PencilLine,
   Plus,
   StickyNote,
   SquareDashed,
+  Trash2,
+  Unlink,
   Wand2,
 } from "lucide-react";
-import { STORYLINE_SUMMARY_KEY } from "../../services/storyline-service";
+import { STORYLINE_SUMMARY_KEY, sceneWidth } from "../../services/storyline-service";
 import { getPaletteHex } from "../../constants/palette";
-import { STORYLINE_CAST_SHOWN, STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../../constants/storyline";
+import { STORYLINE_CAST_SHOWN, STORYLINE_NODE_HEIGHT } from "../../constants/storyline";
 import type { Node } from "../../constants/schema";
 import {
   useSceneCandidates,
@@ -51,7 +57,9 @@ import {
 import { useStorylineView } from "../../hooks/use-storyline-view";
 import { useNodeImage } from "../../hooks/use-node-image";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
+import { useDialogs } from "../../hooks/use-dialogs";
 import { NodeIcon } from "../blocks/IconPicker";
+import { TreePopover } from "../tree/TreePopover";
 import "./storyline.css";
 
 /**
@@ -110,7 +118,8 @@ export function PageStoryline({ node }: { node: Node }) {
   const actions = useStorylineActions();
   const { addSceneToStoryline, addExistingPageToStoryline, moveStorylineNodes, connectStorylineNodes } = actions;
   const { disconnectStorylineEdge, removeStorylineNode, selectNode, tidyStoryline, renameNode } = actions;
-  const { updateNodeProperty } = actions;
+  const { updateNodeProperty, resizeStorylineNode, setNodeBannerFromLibrary, clearNodeBanner } = actions;
+  const { requestAssetPick } = useDialogs();
   const { addStorylineNote, setStorylineNoteText, moveStorylineNote, removeStorylineNote } = actions;
   const { addStorylineBand, setStorylineBandLabel, moveStorylineBand } = actions;
   const { resizeStorylineBand, removeStorylineBand } = actions;
@@ -180,6 +189,11 @@ export function PageStoryline({ node }: { node: Node }) {
     [resizeStorylineBand, node.id],
   );
 
+  const onResizeScene = useCallback(
+    (sceneId: string, width: number) => resizeStorylineNode(node.id, sceneId, width),
+    [resizeStorylineNode, node.id],
+  );
+
   const view = useStorylineView(model, {
     resetKey: node.id,
     onArrange,
@@ -187,11 +201,13 @@ export function PageStoryline({ node }: { node: Node }) {
     onMoveNote,
     onMoveBand,
     onResizeBand,
+    onResizeScene,
   });
   const { stageRef, scenes, edges, notes, bands, bounds, sceneTransform, linking, zoom, heights, measureScene } = view;
   const untidy = useStorylineIsUntidy(node.id, heights);
   const { selectedId, selectedEdgeId, selectedAnnotation, select, selectEdge, selectAnnotation } = view;
   const { startSceneDrag, moveSceneDrag, endSceneDrag, startLink, moveLink, endLink } = view;
+  const { startSceneResize, moveSceneResize, endSceneResize } = view;
   const { startNoteDrag, moveNoteDrag, endNoteDrag } = view;
   const { startBandDrag, moveBandDrag, endBandDrag, startBandResize, moveBandResize, endBandResize } = view;
   const { startPan, movePan, endPan, handleWheel } = view;
@@ -333,26 +349,111 @@ export function PageStoryline({ node }: { node: Node }) {
     element.style.height = `${element.scrollHeight}px`;
   }
 
-  /** Opens the selected scene's name for typing. Also what F2 does. */
-  function renameSelectedScene() {
-    if (!selectedScene) return;
-    setEditing({ kind: "scene", id: selectedScene.id, draft: selectedScene.name });
+  /**
+   * The right-click menu, and what it was opened on.
+   *
+   * **Everything that can be done to a thing on the canvas is done on the
+   * thing** — from its own corner, or by right-clicking it. There used to be
+   * a strip along the bottom that listed the selection's actions, and her
+   * verdict on 2026-09-15 was that a bar somewhere else for the thing she
+   * is looking at is useless. One menu component for all four kinds, since
+   * the rows differ and the box does not.
+   */
+  const [menu, setMenu] = useState<{
+    kind: "scene" | "note" | "band" | "edge";
+    id: string;
+    rect: DOMRect;
+  } | null>(null);
+
+  function openMenu(kind: "scene" | "note" | "band" | "edge", id: string, rect: DOMRect) {
+    if (kind === "scene") select(id);
+    else if (kind === "edge") selectEdge(id);
+    else selectAnnotation({ kind, id });
+    setMenu({ kind, id, rect });
   }
 
-  // F2 renames the selected scene, as it does a file in every file manager.
-  // Only while a scene is selected and nothing is being typed into, so it is
-  // never taken from a note mid-sentence.
-  useEffect(() => {
-    if (!selectedScene || editing) return;
-    const { id, name } = selectedScene;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "F2") return;
+  /** Right-click on a thing: its menu, where the pointer is. */
+  function onContextMenuFor(kind: "scene" | "note" | "band" | "edge", id: string) {
+    return (event: React.MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      // A box being typed into keeps its own menu — cut, copy and paste.
+      if (target?.closest("input, textarea")) return;
       event.preventDefault();
-      setEditing({ kind: "scene", id, draft: name });
+      event.stopPropagation();
+      openMenu(kind, id, new DOMRect(event.clientX, event.clientY, 0, 0));
+    };
+  }
+
+  /** Runs a menu row's action and closes the menu. */
+  function fromContextMenu(action: () => void) {
+    setMenu(null);
+    action();
+  }
+
+  /** Opens a scene's name for typing. */
+  function renameScene(scene: { id: string; name: string }) {
+    select(scene.id);
+    setEditing({ kind: "scene", id: scene.id, draft: scene.name });
+  }
+
+  /** Chooses a picture for the scene's page — its banner — from the library. */
+  async function pickScenePicture(pageId: string) {
+    const picked = await requestAssetPick("Choose a picture for this scene");
+    if (picked) setNodeBannerFromLibrary(pageId, picked);
+  }
+
+  const menuScene = menu?.kind === "scene" ? scenes.find((scene) => scene.id === menu.id) : undefined;
+  const menuNote = menu?.kind === "note" ? notes.find((note) => note.id === menu.id) : undefined;
+  const menuBand = menu?.kind === "band" ? bands.find((band) => band.id === menu.id) : undefined;
+
+  // F2 renames the selected scene, as it does a file in every file manager,
+  // and Delete takes whatever is selected off the canvas — a line, a note, a
+  // label, or a scene (its page stays). Only while nothing is being typed
+  // into, so neither key is taken from a note mid-sentence.
+  useEffect(() => {
+    if (editing || menu) return;
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      if (event.key === "F2" && selectedScene) {
+        event.preventDefault();
+        setEditing({ kind: "scene", id: selectedScene.id, draft: selectedScene.name });
+        return;
+      }
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (selectedScene) {
+        removeStorylineNode(node.id, selectedScene.id);
+        select(null);
+      } else if (selectedNote) {
+        removeStorylineNote(node.id, selectedNote.id);
+        selectAnnotation(null);
+      } else if (selectedBand) {
+        removeStorylineBand(node.id, selectedBand.id);
+        selectAnnotation(null);
+      } else if (selectedEdgeId) {
+        disconnectStorylineEdge(node.id, selectedEdgeId);
+        selectEdge(null);
+      } else return;
+      event.preventDefault();
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [selectedScene, editing]);
+  }, [
+    editing,
+    menu,
+    selectedScene,
+    selectedNote,
+    selectedBand,
+    selectedEdgeId,
+    node.id,
+    removeStorylineNode,
+    removeStorylineNote,
+    removeStorylineBand,
+    disconnectStorylineEdge,
+    select,
+    selectAnnotation,
+    selectEdge,
+  ]);
 
   /** A note's text with its links drawn as links. */
   function noteBody(note: DrawnNote) {
@@ -411,7 +512,7 @@ export function PageStoryline({ node }: { node: Node }) {
             onClick={() => setPicking((open) => (open === null ? "" : null))}
           >
             <FilePlus2 size={15} />
-            Existing page
+            Existing Page
           </button>
           <button type="button" className="ui-btn ui-btn-secondary" title="Add a note" onClick={addNote}>
             <StickyNote size={15} />
@@ -453,7 +554,7 @@ export function PageStoryline({ node }: { node: Node }) {
                 onClick={() => fromMenu(() => setPicking(""))}
               >
                 <FilePlus2 size={14} />
-                Existing page
+                Existing Page
               </button>
               <button type="button" role="menuitem" className="storyline-picker-row" onClick={() => fromMenu(addNote)}>
                 <StickyNote size={14} />
@@ -532,7 +633,7 @@ export function PageStoryline({ node }: { node: Node }) {
             }
           >
             <Wand2 size={15} />
-            Tidy up
+            Tidy Up
           </button>
           <button
             type="button"
@@ -569,6 +670,7 @@ export function PageStoryline({ node }: { node: Node }) {
                 onPointerMove={moveBandDrag}
                 onPointerUp={(event) => endBandDrag(event, band)}
                 onPointerCancel={(event) => endBandDrag(event, band)}
+                onContextMenu={onContextMenuFor("band", band.id)}
                 // On the band itself, not on its label, and this is why the
                 // note's is on the note: the press captures the pointer to
                 // this element, so the release — and the click and the
@@ -651,6 +753,7 @@ export function PageStoryline({ node }: { node: Node }) {
                   event.stopPropagation();
                   selectEdge(edge.id === selectedEdgeId ? null : edge.id);
                 }}
+                onContextMenu={onContextMenuFor("edge", edge.id)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") selectEdge(edge.id);
                 }}
@@ -704,9 +807,11 @@ export function PageStoryline({ node }: { node: Node }) {
                 className={`storyline-node${scene.id === selectedId ? " storyline-node-selected" : ""}${
                   scene.picture ? " storyline-node-pictured" : ""
                 }${isWriting || isRenaming ? " storyline-node-writing" : ""}`}
+                onContextMenu={onContextMenuFor("scene", scene.id)}
                 style={
                   {
-                    left: scene.x - STORYLINE_NODE_WIDTH / 2,
+                    left: scene.x - sceneWidth(scene) / 2,
+                    width: sceneWidth(scene),
                     // The point is the middle of the top row; the card runs
                     // down from it as far as its description goes.
                     top: scene.y - STORYLINE_NODE_HEIGHT / 2,
@@ -762,10 +867,15 @@ export function PageStoryline({ node }: { node: Node }) {
                       }}
                       onBlur={commitEdit}
                       onKeyDown={(event) => {
-                        // Enter is a new line — this is prose. Ctrl+Enter is
-                        // done, and Escape keeps what the page already said.
-                        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) event.currentTarget.blur();
-                        else if (event.key === "Escape") setEditing(null);
+                        // Enter is done and Shift+Enter is a new line — the
+                        // box is on a card, not in the editor, and her call
+                        // (2026-09-15) was that Enter should behave as it
+                        // does in every other box that size. Escape keeps
+                        // what the page already said.
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          event.currentTarget.blur();
+                        } else if (event.key === "Escape") setEditing(null);
                       }}
                     />
                     )}
@@ -789,18 +899,35 @@ export function PageStoryline({ node }: { node: Node }) {
                     onClick={(event) => {
                       if (event.detail === 0) select(scene.id);
                     }}
-                    // Writes the description, in the card. It used to open the
-                    // page; her call on 2026-09-14 was that the card is where
-                    // the event is *said* and the page is where it is
-                    // elaborated, so the double-click goes to the saying and
-                    // the page has a button of its own on every card.
-                    onDoubleClick={() => writeSummary(scene)}
+                    // A double-click on the name renames; anywhere else on the
+                    // card writes the description. It used to open the page;
+                    // her call on 2026-09-14 was that the card is where the
+                    // event is *said* and the page is where it is elaborated,
+                    // and on 2026-09-15 that the name should be typeable
+                    // where it is rather than through a button elsewhere.
+                    onDoubleClick={(event) => {
+                      // By where the pointer is, not by the event's target:
+                      // the press captured the pointer to the card, so the
+                      // double-click is delivered to the card whatever was
+                      // under the mouse (see the band's handler).
+                      const name = event.currentTarget.querySelector(".storyline-node-name")?.getBoundingClientRect();
+                      const onName =
+                        name !== undefined &&
+                        event.clientX >= name.left &&
+                        event.clientX <= name.right &&
+                        event.clientY >= name.top &&
+                        event.clientY <= name.bottom;
+                      if (onName) renameScene(scene);
+                      else writeSummary(scene);
+                    }}
                   >
                     <ScenePicture fileName={scene.picture} focusY={scene.pictureFocusY} />
                     <span className="storyline-node-icon">
                       <NodeIcon icon={scene.icon} templateKey={scene.templateKey} size={16} />
                     </span>
-                    <span className="storyline-node-name">{scene.name}</span>
+                    <span className="storyline-node-name" title="Double-click to rename">
+                      {scene.name}
+                    </span>
                     {/* Wraps in full, however long — a description cut off
                         on the canvas would defeat the canvas. A card with
                         none is a name alone, and the strip below says how
@@ -815,20 +942,48 @@ export function PageStoryline({ node }: { node: Node }) {
                     names are in the tooltips and in the strip below. */}
                 {scene.cast.length > 0 && cast}
 
-                {/* The page, from the card. On every card rather than only in
-                    the strip at the bottom — her words, 2026-09-14 — because
-                    the thing she is looking at is the card, and the strip is
-                    somewhere else. */}
+                {/* The card's own controls, in its top-right corner: the page,
+                    and the menu with everything else. On every card rather
+                    than in a strip somewhere else — her words, 2026-09-14 and
+                    again 2026-09-15 — because the thing she is looking at is
+                    the card. */}
+                <span className="storyline-node-corner">
+                  <button
+                    type="button"
+                    className="storyline-node-open"
+                    aria-label={`Open ${scene.name}`}
+                    title="Open this scene's page"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => selectNode(scene.pageId)}
+                  >
+                    <ArrowUpRight size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="storyline-node-more"
+                    aria-label={`More for ${scene.name}`}
+                    aria-haspopup="menu"
+                    title="Everything you can do with this scene"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => openMenu("scene", scene.id, event.currentTarget.getBoundingClientRect())}
+                  >
+                    <MoreHorizontal size={13} />
+                  </button>
+                </span>
+
+                {/* Bottom-right, where a resize handle goes everywhere else,
+                    and the same corner a band has. Width only: the height is
+                    the description's. */}
                 <button
                   type="button"
-                  className="storyline-node-open"
-                  aria-label={`Open ${scene.name}`}
-                  title="Open this scene's page"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => selectNode(scene.pageId)}
-                >
-                  <ArrowUpRight size={13} />
-                </button>
+                  className="storyline-node-resize"
+                  aria-label={`Resize ${scene.name}`}
+                  title="Drag to make this card wider or narrower"
+                  onPointerDown={(event) => startSceneResize(event, scene)}
+                  onPointerMove={moveSceneResize}
+                  onPointerUp={endSceneResize}
+                  onPointerCancel={endSceneResize}
+                />
 
                 {/* Its own element rather than a modifier key on the card: the
                     two things you do to a scene are move it and join it, and
@@ -864,6 +1019,7 @@ export function PageStoryline({ node }: { node: Node }) {
                 onPointerMove={moveNoteDrag}
                 onPointerUp={(event) => endNoteDrag(event, note)}
                 onPointerCancel={(event) => endNoteDrag(event, note)}
+                onContextMenu={onContextMenuFor("note", note.id)}
                 onDoubleClick={() => setEditing({ kind: "note", id: note.id, draft: note.text })}
               >
                 {isEditing ? (
@@ -915,125 +1071,151 @@ export function PageStoryline({ node }: { node: Node }) {
         </span>
       </div>
 
-      {/* One strip, in one place, whatever is selected. A panel that appeared
-          beside whichever thing was clicked would sit somewhere different every
-          time, which is the thing that reads as the app moving underneath. */}
-      {(selectedScene || selectedNote || selectedBand || selectedEdgeId) && (
-        <div className="storyline-selection">
-          <span className="storyline-selection-name">
-            {selectedScene?.name ??
-              (selectedNote ? "Note" : undefined) ??
-              (selectedBand ? selectedBand.label || "Unnamed stretch" : undefined) ??
-              "Line between two scenes"}
-          </span>
-
-          {selectedScene && (
-            <>
-              {/* The names, where there is room for them — the card only had
-                  space for icons. Each one goes to its page, which is the
-                  useful thing to do with "who is in this scene". */}
-              {selectedScene.cast.length > 0 && (
-                <span className="storyline-selection-cast">
-                  {selectedScene.cast.map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      className="storyline-cast-chip"
-                      onClick={() => selectNode(member.id)}
-                    >
-                      <NodeIcon icon={member.icon} templateKey={member.templateKey} size={12} />
-                      {member.name}
-                    </button>
-                  ))}
-                </span>
-              )}
-              {/* No "open" here: every card has the page's button in its own
-                  corner, and a second copy of it down here was one button too
-                  many for the strip's width. The same thing a double-click on
-                  the card does, for whoever did not know that: */}
-              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => writeSummary(selectedScene)}>
-                {selectedScene.summary ? "Edit what happens" : "Say what happens"}
-              </button>
-              {/* Renames the page — a scene *is* one — and reads "Rename"
-                  like the band's button so the two are learnt once. */}
-              <button type="button" className="ui-btn ui-btn-secondary" onClick={renameSelectedScene}>
-                Rename
-              </button>
-              {/* Says "off the canvas", never "delete": the page keeps
-                  existing, in the tree, with everything written in it. */}
+      {menu && (
+        <TreePopover anchorRect={menu.rect} onClose={() => setMenu(null)}>
+          <div className="tree-context-menu storyline-menu" role="menu">
+            {menuScene && (
+              <>
+                <div className="tree-context-menu-heading">{menuScene.name}</div>
+                <button type="button" role="menuitem" onClick={() => fromContextMenu(() => selectNode(menuScene.pageId))}>
+                  <ArrowUpRight size={13} />
+                  Open Page
+                </button>
+                <button type="button" role="menuitem" onClick={() => fromContextMenu(() => renameScene(menuScene))}>
+                  <PencilLine size={13} />
+                  Rename
+                </button>
+                <button type="button" role="menuitem" onClick={() => fromContextMenu(() => writeSummary(menuScene))}>
+                  <StickyNote size={13} />
+                  {menuScene.summary ? "Edit Description" : "Add Description"}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => fromContextMenu(() => void pickScenePicture(menuScene.pageId))}
+                >
+                  <ImageIcon size={13} />
+                  {menuScene.picture ? "Change Picture…" : "Set Picture…"}
+                </button>
+                {menuScene.picture && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => fromContextMenu(() => clearNodeBanner(menuScene.pageId))}
+                  >
+                    <ImageOff size={13} />
+                    Remove Picture
+                  </button>
+                )}
+                {/* Who is in the scene, with room for names — the card only
+                    has room for dots. Each goes to its page. */}
+                {menuScene.cast.length > 0 && (
+                  <>
+                    <div className="tree-context-menu-heading">In This Scene</div>
+                    {menuScene.cast.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        role="menuitem"
+                        className="storyline-menu-cast"
+                        onClick={() => fromContextMenu(() => selectNode(member.id))}
+                      >
+                        <NodeIcon icon={member.icon} templateKey={member.templateKey} size={13} />
+                        {member.name}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {/* Says "off the canvas", never "delete": the page keeps
+                    existing, in the tree, with everything written in it. */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="tree-context-menu-danger"
+                  onClick={() =>
+                    fromContextMenu(() => {
+                      removeStorylineNode(node.id, menuScene.id);
+                      select(null);
+                    })
+                  }
+                >
+                  <Trash2 size={13} />
+                  Take Off the Canvas
+                </button>
+              </>
+            )}
+            {menuNote && (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => fromContextMenu(() => setEditing({ kind: "note", id: menuNote.id, draft: menuNote.text }))}
+                >
+                  <PencilLine size={13} />
+                  Edit Note
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="tree-context-menu-danger"
+                  onClick={() =>
+                    fromContextMenu(() => {
+                      removeStorylineNote(node.id, menuNote.id);
+                      selectAnnotation(null);
+                    })
+                  }
+                >
+                  <Trash2 size={13} />
+                  Remove Note
+                </button>
+              </>
+            )}
+            {menuBand && (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => fromContextMenu(() => setEditing({ kind: "band", id: menuBand.id, draft: menuBand.label }))}
+                >
+                  <PencilLine size={13} />
+                  Rename
+                </button>
+                {/* The scenes are not "in" it, so removing it removes a label. */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="tree-context-menu-danger"
+                  onClick={() =>
+                    fromContextMenu(() => {
+                      removeStorylineBand(node.id, menuBand.id);
+                      selectAnnotation(null);
+                    })
+                  }
+                >
+                  <Trash2 size={13} />
+                  Remove Label
+                </button>
+              </>
+            )}
+            {menu.kind === "edge" && (
               <button
                 type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => {
-                  removeStorylineNode(node.id, selectedScene.id);
-                  select(null);
-                }}
+                role="menuitem"
+                className="tree-context-menu-danger"
+                onClick={() =>
+                  fromContextMenu(() => {
+                    disconnectStorylineEdge(node.id, menu.id);
+                    selectEdge(null);
+                  })
+                }
               >
-                Take off the canvas
+                <Unlink size={13} />
+                Remove Line
               </button>
-            </>
-          )}
-
-          {selectedNote && (
-            <>
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => setEditing({ kind: "note", id: selectedNote.id, draft: selectedNote.text })}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => {
-                  removeStorylineNote(node.id, selectedNote.id);
-                  selectAnnotation(null);
-                }}
-              >
-                Remove this note
-              </button>
-            </>
-          )}
-
-          {selectedBand && (
-            <>
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => setEditing({ kind: "band", id: selectedBand.id, draft: selectedBand.label })}
-              >
-                Rename
-              </button>
-              {/* The scenes are not "in" it, so removing it removes a label. */}
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => {
-                  removeStorylineBand(node.id, selectedBand.id);
-                  selectAnnotation(null);
-                }}
-              >
-                Remove this label
-              </button>
-            </>
-          )}
-
-          {selectedEdgeId && !selectedScene && !selectedNote && !selectedBand && (
-            <button
-              type="button"
-              className="ui-btn ui-btn-secondary"
-              onClick={() => {
-                disconnectStorylineEdge(node.id, selectedEdgeId);
-                selectEdge(null);
-              }}
-            >
-              Remove this line
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        </TreePopover>
       )}
-
     </section>
   );
 }

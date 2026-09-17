@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-15 — Everything a bubble can do is on the bubble
+
+### Additions
+
+- **Right-click a scene on the storyline for everything you can do with it** — Open Page, Rename, Edit Description, Set Picture…, who's in the scene (each name opens its page), and Take Off the Canvas. The `⋯` in the bubble's corner opens the same menu. Notes, stretches and lines have their own right-click menus (edit or remove; remove). The strip of buttons along the bottom of the canvas is gone — it listed actions for the thing you were looking at somewhere other than the thing.
+- **Delete takes whatever's selected off the canvas.** A line, a note, a stretch, or a scene — a scene's page stays in the tree, as always.
+- **Give a scene a picture from its menu.** *Set Picture…* opens the picture library; the picture is the page's banner, so it's on the page too. *Remove Picture* clears it.
+- **Bubbles can be resized.** Drag the bottom-right corner to make one wider or narrower; the height follows the words. Kept with the canvas.
+
+### Changes
+
+- **Double-click a bubble's name to rename it.** Double-clicking anywhere else on the bubble edits the description, as before; renaming no longer needs a button.
+- **Enter finishes a description; Shift+Enter is a new line.** It was the other way round with Ctrl+Enter to finish, which is not what a box that size does anywhere else.
+- **The storyline's buttons and menu rows are Title Case** — *Existing Page*, *Tidy Up*, *Open Page*, *Take Off the Canvas*. Buttons and menu items across the app are meant to be Title Case; this is the storyline's share of that, and the rest of the app follows in its own change.
+
 ## 2026-09-15 — The wheel stops jumping
 
 ### Fixes
@@ -290,11 +305,3 @@
 - **Blocks that have no markdown come out as plain writing**: a meter becomes a line with its number, an index or a database becomes a list of links, side-by-side columns run one after the other. The export counts these and says so, separately from the handful of things that had nothing to write down at all.
 - **Pictures are copied in and every reference is pointed at the copy**, so the folder is complete on its own. A picture you embedded by web address is left exactly as it is.
 - **Callouts, checklists and toggles use Obsidian's own syntax**, so they still look like callouts, checklists and toggles over there rather than arriving as plain paragraphs.
-
-## 2026-09-10 — one walk behind every export
-
-### Notes
-
-- **Internal tidy-up, nothing visible in the app.** Exporting to LegendKeeper does exactly what it did before — the file it writes is identical, which was checked by building the same export with the old code and the new one and comparing them line for line.
-- **What moved is underneath it.** The part that walks through your pages working out what goes into an export, in what order, and which pictures can travel, now lives in one place of its own instead of being wound through LegendKeeper's file format.
-- **This is the groundwork for the rest of Phase 28.** The Markdown export, the one-big-file version and the website publisher all have to walk your pages the same way, and they can now share that instead of each writing it again — which is where the same bug would otherwise have been fixed three times.

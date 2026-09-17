@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — one walk behind every export
+
+### Notes
+
+- **Internal tidy-up, nothing visible in the app.** Exporting to LegendKeeper does exactly what it did before — the file it writes is identical, which was checked by building the same export with the old code and the new one and comparing them line for line.
+- **What moved is underneath it.** The part that walks through your pages working out what goes into an export, in what order, and which pictures can travel, now lives in one place of its own instead of being wound through LegendKeeper's file format.
+- **This is the groundwork for the rest of Phase 28.** The Markdown export, the one-big-file version and the website publisher all have to walk your pages the same way, and they can now share that instead of each writing it again — which is where the same bug would otherwise have been fixed three times.
+
 ## 2026-09-09 — a way back to the tour and the example world
 
 ### Additions

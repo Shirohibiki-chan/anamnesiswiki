@@ -26,8 +26,7 @@ import {
   storylinePickerEmptyMessage,
   storylineSceneCastCount,
   storylineScenesLeftToRight,
-  storylineSelectionCast,
-  selectStorylineScene,
+  storylineSceneCast,
   treeRow,
   waitForWorld,
 } from "./harness/screen";
@@ -185,12 +184,11 @@ describe("who is in a scene", () => {
     expect(await storylineSceneCastCount(app.window, 1)).toBeGreaterThan(0);
   });
 
-  it("names them in the strip, and each one goes to its page", async () => {
-    await selectStorylineScene(app.window, 1);
-    const cast = await storylineSelectionCast(app.window);
+  it("names them in the scene's menu, and each one goes to its page", async () => {
+    const cast = await storylineSceneCast(app.window, 1);
     expect(cast.length).toBeGreaterThan(0);
 
-    await openStorylineCastMember(app.window, cast[0]);
+    await openStorylineCastMember(app.window, 1, cast[0]);
     expect(await pageTitle(app.window)).toBe(cast[0]);
   });
 });

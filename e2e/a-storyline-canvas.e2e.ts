@@ -25,7 +25,9 @@ import {
   openSceneFromCard,
   pageTitle,
   panStoryline,
-  renameSelectedScene,
+  removeStorylineLine,
+  renameStorylineScene,
+  resizeStorylineScene,
   searchTree,
   selectStorylineScene,
   storylineBarIsOneRow,
@@ -38,6 +40,7 @@ import {
   storylineScenePositions,
   storylineScenesLeftToRight,
   storylineSceneSummaries,
+  storylineSceneWidth,
   takeSceneOffCanvas,
   treeRow,
   waitForWorld,
@@ -106,8 +109,7 @@ describe("a storyline's canvas", () => {
     expect(await storylineBarIsOneRow(app.window)).toBe(true);
     await addStorylineScene(app.window);
     expect(await storylineScenesLeftToRight(app.window)).toHaveLength(1);
-    await selectStorylineScene(app.window, 0);
-    await takeSceneOffCanvas(app.window);
+    await takeSceneOffCanvas(app.window, 0);
     await resizeWindow(app, 1280, 800);
   });
 
@@ -135,6 +137,16 @@ describe("a storyline's canvas", () => {
     await joinStorylineScenes(app.window, 1, 0);
     expect(await storylineEdgeCount(app.window)).toBe(1);
     expect(await storylineRefusal(app.window)).toContain("already joined");
+  });
+
+  it("removes a line from its right-click menu", async () => {
+    // A line is a thing on the canvas, so what can be done to it is on it —
+    // there is no strip at the bottom listing the selection's actions any
+    // more (2026-09-15). Remove it, then draw it again for the tests below.
+    await removeStorylineLine(app.window, 0);
+    expect(await storylineEdgeCount(app.window)).toBe(0);
+    await joinStorylineScenes(app.window, 0, 1);
+    expect(await storylineEdgeCount(app.window)).toBe(1);
   });
 
   it("refuses a line that would send the story back on itself", async () => {
@@ -228,6 +240,24 @@ describe("a storyline's canvas", () => {
     expect(await storylineSceneSummaries(app.window)).toContain(said);
   });
 
+  it("makes a card wider from its corner, and keeps it so", async () => {
+    // Against the card beside it rather than in pixels, since the canvas
+    // refits its zoom on reopening and every card scales with it.
+    const ratio = async () =>
+      (await storylineSceneWidth(app.window, 0)) / (await storylineSceneWidth(app.window, 1));
+    const before = await ratio();
+    await resizeStorylineScene(app.window, 0, 60);
+    const after = await ratio();
+    expect(after).toBeGreaterThan(before * 1.2);
+
+    await app.window.waitForTimeout(WRITTEN_MS);
+    await reload(app);
+    await searchTree(app.window, STORYLINE);
+    await treeRow(app.window, STORYLINE).first().click();
+    await clearTreeSearch(app.window);
+    expect(await ratio()).toBeCloseTo(after, 1);
+  });
+
   it("opens the page behind a scene, from the card's own corner", async () => {
     // The corner button, not a double-click: the double-click writes the
     // description now, and the page's button is on every card rather than
@@ -242,8 +272,7 @@ describe("a storyline's canvas", () => {
     await clearTreeSearch(app.window);
 
     const before = await storylineScenesLeftToRight(app.window);
-    await selectStorylineScene(app.window, 0);
-    await takeSceneOffCanvas(app.window);
+    await takeSceneOffCanvas(app.window, 0);
     expect((await storylineScenesLeftToRight(app.window)).length).toBe(before.length - 1);
 
     // The page it stood for is still in the tree. This is the whole difference
@@ -254,15 +283,13 @@ describe("a storyline's canvas", () => {
     await clearTreeSearch(app.window);
   });
 
-  it("renames a scene from the canvas, and that renames its page", async () => {
-    await selectStorylineScene(app.window, 0);
-    await renameSelectedScene(app.window, "The Fall");
+  it("renames a scene by double-clicking its name, and that renames its page", async () => {
+    await renameStorylineScene(app.window, 0, "The Fall");
     expect(await storylineScenesLeftToRight(app.window)).toContain("The Fall");
 
     // Escape keeps the old name. Half a name landing on a page because the
     // box committed on the way out would be worse than no rename at all.
-    await selectStorylineScene(app.window, 1);
-    await renameSelectedScene(app.window, "Not this", "give-up");
+    await renameStorylineScene(app.window, 1, "Not this", "give-up");
     expect(await storylineScenesLeftToRight(app.window)).not.toContain("Not this");
 
     // The card is a page, so the name reached the tree — and the page behind
