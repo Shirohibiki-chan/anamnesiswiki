@@ -1,7 +1,7 @@
 // The controls above a graph. Phase 24, step 2.
 //
 // **One fixed row, the same rule DatabaseToolbar states.** Nothing here appears
-// or disappears with the state of the graph — *Put it back* is present and
+// or disappears with the state of the graph — *Reset positions* is present and
 // disabled until something has been moved, rather than arriving and shoving the
 // other controls sideways. A row of controls that sits somewhere different
 // depending on what the page holds is the thing that reads as chaos.
@@ -206,13 +206,21 @@ export function GraphToolbar({
       <button
         type="button"
         className="graph-tool"
+        // The hook keeps its old name: the suite and this file know it, and
+        // a rename buys nothing.
         data-tool="put-back"
         disabled={!arranged}
-        title={arranged ? "Lay the graph out again" : "Nothing has been moved on this graph"}
+        title={
+          arranged
+            ? "Forget where pages were dragged and lay the graph out again"
+            : "No page has been dragged on this graph"
+        }
         onClick={onPutBack}
       >
         <Undo2 size={13} />
-        Put it back
+        {/* "Put it back" until 2026-09-15 — hers: it did not say what it put
+            back. This names the thing it resets. */}
+        Reset positions
       </button>
 
       {filterRect && (

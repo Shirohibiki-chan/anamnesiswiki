@@ -25,6 +25,10 @@
 
 ## 2026-09-15 — The wheel stops jumping
 
+### Renames
+
+- **The graph's *Put it back* is *Reset positions*.** It forgets where you dragged pages and lays the graph out again, and the old name didn't say what it put back.
+
 ### Fixes
 
 - **Scrolling the graph no longer jumps.** Every notch was taking one small step backwards before gliding forward — the animation's clock can read a few milliseconds earlier than the wheel event's, and the glide treated that as negative progress. The glide also no longer reads the view back from the screen when a notch arrives, which on a slower machine was a frame behind and snapped the picture back before gliding on.

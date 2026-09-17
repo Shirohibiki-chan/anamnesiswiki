@@ -553,7 +553,7 @@ Board spike, closed 2026-09-13. What binds the code:
   with the snapshot restored, setting a shortcut and reloading loses it, and so
   does removing one in the moment a page is opened.
 
-  Found 2026-09-07 through the graph's *Put it back*, which is only the easiest
+  Found 2026-09-07 through the graph's *Reset positions* (then *Put it back*), which is only the easiest
   one to reach. The same window covered the pinned shortcuts, the home page, a
   restored arrangement, and the ordering written after a move, a delete or a
   duplicate. `e2e/keeps-a-change-made-just-after-navigating.e2e.ts` is the guard,
