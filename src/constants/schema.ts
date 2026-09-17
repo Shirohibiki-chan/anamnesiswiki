@@ -1158,12 +1158,14 @@ export type StorylineNode = {
   x: number;
   y: number;
   /**
-   * The card's width in canvas units, when she has dragged its corner.
-   * Absent means the default (`STORYLINE_NODE_WIDTH`), which is every card
-   * written before 2026-09-15. Height is never stored: a card is as tall as
-   * what is written on it.
+   * The card's size in canvas units, when she has dragged its corner. Absent
+   * means the default width (`STORYLINE_NODE_WIDTH`) and no set height,
+   * which is every card written before 2026-09-15. A set height is a floor:
+   * the card is never shorter than what is written on it, so dragging the
+   * corner up past the words leaves the card at the words.
    */
   width?: number;
+  height?: number;
 };
 
 /**

@@ -248,6 +248,8 @@
    moves when something is written into it. */
 .storyline-node {
   position: absolute;
+  display: flex;
+  flex-direction: column;
   width: 220px;
   min-height: 52px;
   /* Falls back to the ordinary border colour for a scene whose page has no
@@ -264,7 +266,9 @@
   column-gap: var(--space-sm);
   row-gap: 3px;
   width: 100%;
-  min-height: 52px;
+  /* Fills the card, so one dragged taller than its words is one box rather
+     than a short one over empty space — the card is a column for this. */
+  flex: 1 0 auto;
   /* Room on the right for the two corner buttons. */
   padding: var(--space-xs) calc(var(--space-md) + 36px) var(--space-sm) var(--space-md);
   border: 2px solid var(--storyline-node-color);
@@ -468,7 +472,7 @@
   border: 1px solid var(--color-border-strong);
   border-radius: 3px;
   background: var(--color-panel);
-  cursor: ew-resize;
+  cursor: nwse-resize;
   touch-action: none;
 }
 

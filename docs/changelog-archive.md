@@ -2,6 +2,18 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — a world written out as markdown
+
+### Notes
+
+- **Groundwork, with nothing to press yet.** This is the part that turns your world into a folder of markdown files — what each page becomes, what each file is called, where the pictures go and what every link has to say to find its page. Saving that folder to disk, and the button that starts it, are the next piece; nothing in the app has changed today.
+- **A page with pages under it becomes a file beside a folder of the same name**, which is how Obsidian does it too — `Kaine.md` next to a `Kaine` folder holding what is inside her.
+- **Your tabs become headings running down the one file**, so a page stays a page. A page with only one tab gets no heading at all, since printing "Main" over every note would say nothing. Headings you wrote inside a tab shift down a level so the note's outline still reads top to bottom.
+- **Properties go to the top of the file** in the block Obsidian shows as a note's properties — with the words you chose rather than anything internal, and a link to another page still a link.
+- **Blocks that have no markdown come out as plain writing**: a meter becomes a line with its number, an index or a database becomes a list of links, side-by-side columns run one after the other. The export counts these and says so, separately from the handful of things that had nothing to write down at all.
+- **Pictures are copied in and every reference is pointed at the copy**, so the folder is complete on its own. A picture you embedded by web address is left exactly as it is.
+- **Callouts, checklists and toggles use Obsidian's own syntax**, so they still look like callouts, checklists and toggles over there rather than arriving as plain paragraphs.
+
 ## 2026-09-10 — one walk behind every export
 
 ### Notes

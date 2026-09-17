@@ -2280,15 +2280,26 @@ async function pressStorylineMenuRow(window: Page, name: string): Promise<void> 
 }
 
 /** Drags a card's bottom-right corner by a number of screen pixels. */
-export async function resizeStorylineScene(window: Page, index: number, byX: number): Promise<void> {
+export async function resizeStorylineScene(window: Page, index: number, byX: number, byY = 0): Promise<void> {
   await fitStorylineOnScreen(window);
   const corner = await window.locator(STORYLINE_NODE).nth(index).locator(STORYLINE_NODE_RESIZE).boundingBox();
   if (!corner) throw new Error(`No resize corner on the scene at index ${index}`);
   const from = { x: corner.x + corner.width / 2, y: corner.y + corner.height / 2 };
   await window.mouse.move(from.x, from.y);
   await window.mouse.down();
-  await window.mouse.move(from.x + byX, from.y, { steps: 10 });
+  await window.mouse.move(from.x + byX, from.y + byY, { steps: 10 });
   await window.mouse.up();
+}
+
+/** Every card's size on screen by scene id, in window pixels. */
+export async function storylineSceneSizes(window: Page): Promise<Record<string, { width: number; height: number }>> {
+  const sizes: Record<string, { width: number; height: number }> = {};
+  for (const node of await window.locator(STORYLINE_NODE).all()) {
+    const box = await node.boundingBox();
+    const id = await node.locator(STORYLINE_NODE_BODY).getAttribute("data-scene-id");
+    if (box && id) sizes[id] = { width: box.width, height: box.height };
+  }
+  return sizes;
 }
 
 /** A card's width on screen, in window pixels. */

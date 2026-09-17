@@ -21,6 +21,8 @@ export const STORYLINE_NODE_WIDTH = 220;
  */
 export const STORYLINE_MIN_NODE_WIDTH = 160;
 export const STORYLINE_MAX_NODE_WIDTH = 520;
+/** How tall a card can be dragged. The floor is the bare row; the words set a higher one. */
+export const STORYLINE_MAX_NODE_HEIGHT = 720;
 /**
  * A card's height with nothing but its name on it: the icon and up to two
  * lines of name. **The card's anchor, not its size.** A scene's stored `y` is

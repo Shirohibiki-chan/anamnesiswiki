@@ -39,8 +39,8 @@ import {
   storylineScenePlacements,
   storylineScenePositions,
   storylineScenesLeftToRight,
+  storylineSceneSizes,
   storylineSceneSummaries,
-  storylineSceneWidth,
   takeSceneOffCanvas,
   treeRow,
   waitForWorld,
@@ -240,22 +240,38 @@ describe("a storyline's canvas", () => {
     expect(await storylineSceneSummaries(app.window)).toContain(said);
   });
 
-  it("makes a card wider from its corner, and keeps it so", async () => {
-    // Against the card beside it rather than in pixels, since the canvas
-    // refits its zoom on reopening and every card scales with it.
-    const ratio = async () =>
-      (await storylineSceneWidth(app.window, 0)) / (await storylineSceneWidth(app.window, 1));
-    const before = await ratio();
-    await resizeStorylineScene(app.window, 0, 60);
-    const after = await ratio();
-    expect(after).toBeGreaterThan(before * 1.2);
+  it("makes a card bigger from its corner, both ways, and keeps it so", async () => {
+    // Sizes by id and against another card, since the cards' order in the
+    // document changes on reopening and the canvas refits its zoom, which
+    // scales every card. The resized card is whichever is drawn first.
+    const [grown, other] = await storylineSceneOrder(app.window);
+    const sizes = await storylineSceneSizes(app.window);
+    const index = Object.keys(sizes).indexOf(grown);
+    const ratio = (all: Record<string, { width: number; height: number }>) => ({
+      wide: all[grown].width / all[other].width,
+      tall: all[grown].height / all[other].height,
+    });
+    const before = ratio(sizes);
+    await resizeStorylineScene(app.window, index, 60, 50);
+    const after = ratio(await storylineSceneSizes(app.window));
+    expect(after.wide).toBeGreaterThan(before.wide * 1.2);
+    expect(after.tall).toBeGreaterThan(before.tall * 1.5);
+
+    // And narrower than the floor collapses nothing: a drag well past the
+    // narrowest a card can be lands at the floor, mid-drag and after.
+    await resizeStorylineScene(app.window, index, -400, -400);
+    expect(ratio(await storylineSceneSizes(app.window)).wide).toBeGreaterThan(0.6);
+    await resizeStorylineScene(app.window, index, 60, 50);
+    const kept = ratio(await storylineSceneSizes(app.window));
 
     await app.window.waitForTimeout(WRITTEN_MS);
     await reload(app);
     await searchTree(app.window, STORYLINE);
     await treeRow(app.window, STORYLINE).first().click();
     await clearTreeSearch(app.window);
-    expect(await ratio()).toBeCloseTo(after, 1);
+    const back = ratio(await storylineSceneSizes(app.window));
+    expect(back.wide).toBeCloseTo(kept.wide, 1);
+    expect(back.tall).toBeCloseTo(kept.tall, 1);
   });
 
   it("opens the page behind a scene, from the card's own corner", async () => {
