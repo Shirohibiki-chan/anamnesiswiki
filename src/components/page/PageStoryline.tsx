@@ -22,7 +22,7 @@
 // most of what the markup below is doing.
 //
 // All of the behaviour is in hooks/use-storyline-view.ts; this renders.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   ArrowUpRight,
   ChevronDown,
@@ -318,8 +318,14 @@ export function PageStoryline({ node }: { node: Node }) {
     selectAnnotation({ kind: "band", id });
   }
 
-  /** Writes the draft away and stops editing. Called on blur and on Escape. */
-  function commitEdit() {
+  type Editing = NonNullable<typeof editing>;
+
+  /**
+   * Writes the draft away and stops editing — or, given `next`, moves
+   * straight into another box instead of closing. Called on blur and on
+   * Escape; Tab on a card is what passes `next`.
+   */
+  function commitEdit(next: Editing | null = null) {
     if (!editing) return;
     if (editing.kind === "note") setStorylineNoteText(node.id, editing.id, editing.draft);
     else if (editing.kind === "band") setStorylineBandLabel(node.id, editing.id, editing.draft);
@@ -334,7 +340,27 @@ export function PageStoryline({ node }: { node: Node }) {
       const name = editing.draft.trim();
       if (scene && name && name !== scene.name) renameNode(scene.pageId, name);
     }
-    setEditing(null);
+    setEditing(next);
+  }
+
+  /**
+   * Tab on a scene's card: the name box hands over to the description and
+   * Shift+Tab hands back, the way two fields on a form do. The card only ever
+   * shows one box at a time, so without this Tab just left — saved, closed,
+   * and put focus on the next card — which read as Tab doing nothing (her
+   * report, 2026-09-17). Tab does not cross to another card: a canvas has no
+   * order for it to follow. The other direction on each box is left to the
+   * browser, so leaving still saves.
+   */
+  function tabWithinCard(event: ReactKeyboardEvent, scene: { id: string; name: string; summary: string }) {
+    if (event.key !== "Tab" || !editing) return;
+    if (editing.kind === "scene" && !event.shiftKey) {
+      event.preventDefault();
+      commitEdit({ kind: "summary", id: scene.id, draft: scene.summary });
+    } else if (editing.kind === "summary" && event.shiftKey) {
+      event.preventDefault();
+      commitEdit({ kind: "scene", id: scene.id, draft: scene.name });
+    }
   }
 
   /** Opens a scene's description for typing, in the card. */
@@ -692,7 +718,7 @@ export function PageStoryline({ node }: { node: Node }) {
                     aria-label="What this stretch is called"
                     onPointerDown={(event) => event.stopPropagation()}
                     onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
-                    onBlur={commitEdit}
+                    onBlur={() => commitEdit()}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
                     }}
@@ -839,12 +865,13 @@ export function PageStoryline({ node }: { node: Node }) {
                         onFocus={(event) => event.currentTarget.select()}
                         onPointerDown={(event) => event.stopPropagation()}
                         onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
-                        onBlur={commitEdit}
+                        onBlur={() => commitEdit()}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.currentTarget.blur();
                           // Escape keeps the old name: this is a page's name,
                           // and half a new one landing on it is worse than none.
                           else if (event.key === "Escape") setEditing(null);
+                          else tabWithinCard(event, scene);
                         }}
                       />
                     ) : (
@@ -867,7 +894,7 @@ export function PageStoryline({ node }: { node: Node }) {
                         fitTextarea(event.currentTarget);
                         setEditing({ ...editing, draft: event.target.value });
                       }}
-                      onBlur={commitEdit}
+                      onBlur={() => commitEdit()}
                       onKeyDown={(event) => {
                         // Enter is done and Shift+Enter is a new line — the
                         // box is on a card, not in the editor, and her call
@@ -878,6 +905,7 @@ export function PageStoryline({ node }: { node: Node }) {
                           event.preventDefault();
                           event.currentTarget.blur();
                         } else if (event.key === "Escape") setEditing(null);
+                        else tabWithinCard(event, scene);
                       }}
                     />
                     )}
@@ -1034,7 +1062,7 @@ export function PageStoryline({ node }: { node: Node }) {
                     placeholder="Continued in [[another page]]"
                     onPointerDown={(event) => event.stopPropagation()}
                     onChange={(event) => setEditing({ ...editing, draft: event.target.value })}
-                    onBlur={commitEdit}
+                    onBlur={() => commitEdit()}
                     // Escape commits and leaves rather than throwing the
                     // sentence away — a note is writing, and the app does not
                     // discard writing on a keystroke anywhere else either.

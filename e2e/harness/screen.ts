@@ -2483,6 +2483,43 @@ export async function renameStorylineScene(
   await input.waitFor({ state: "hidden", timeout: WAIT_MS });
 }
 
+/**
+ * Names a scene and says what happens in it in one go, with Tab between the
+ * two boxes: a double-click on the name, the name typed, Tab, the description
+ * typed, Enter. Then Shift+Tab from the description back to the name, to
+ * prove the road runs both ways. Returns whether each box opened when asked.
+ */
+export async function tabThroughStorylineScene(
+  window: Page,
+  index: number,
+  name: string,
+  summary: string,
+): Promise<{ tabOpenedDescription: boolean; shiftTabOpenedName: boolean }> {
+  await fitStorylineOnScreen(window);
+  const node = window.locator(STORYLINE_NODE).nth(index);
+  await node.locator(STORYLINE_NODE_NAME_TEXT).dblclick();
+  const nameInput = window.locator(STORYLINE_NODE_INPUT);
+  await nameInput.waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.type(name);
+  await window.keyboard.press("Tab");
+  const summaryInput = window.locator(STORYLINE_NODE_SUMMARY_INPUT);
+  const tabOpenedDescription = await summaryInput
+    .waitFor({ state: "visible", timeout: WAIT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (!tabOpenedDescription) return { tabOpenedDescription, shiftTabOpenedName: false };
+  await window.keyboard.press("Control+a");
+  await window.keyboard.type(summary);
+  await window.keyboard.press("Shift+Tab");
+  const shiftTabOpenedName = await nameInput
+    .waitFor({ state: "visible", timeout: WAIT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (shiftTabOpenedName) await window.keyboard.press("Enter");
+  await nameInput.waitFor({ state: "hidden", timeout: WAIT_MS });
+  return { tabOpenedDescription, shiftTabOpenedName };
+}
+
 // ---- Phase 25 step 2: notes, labelled stretches, and tidying up ----
 
 /** Adds a note, which opens straight into typing. */

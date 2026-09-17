@@ -42,6 +42,7 @@ import {
   storylineSceneNameOffset,
   storylineSceneSizes,
   storylineSceneSummaries,
+  tabThroughStorylineScene,
   takeSceneOffCanvas,
   treeRow,
   waitForWorld,
@@ -321,5 +322,23 @@ describe("a storyline's canvas", () => {
     await clearTreeSearch(app.window);
     await openSceneFromCard(app.window, 0);
     expect(await pageTitle(app.window)).toBe("The Fall");
+  });
+
+  it("Tab on a card moves from the name to the description and Shift+Tab back, keeping both", async () => {
+    // Her report, 2026-09-17: Tab in a card's box did nothing. It left — the
+    // card only ever shows one box, so leaving saved and closed it — and
+    // there was no next box for it to reach. Now the name hands over to the
+    // description and the description hands back, and neither hand-over
+    // loses what was typed. Tab never crosses to another card.
+    await searchTree(app.window, STORYLINE);
+    await treeRow(app.window, STORYLINE).first().click();
+    await clearTreeSearch(app.window);
+    // Card 0 in the document is "The Fall" from the rename above.
+    const said = "The lantern goes out.";
+    const result = await tabThroughStorylineScene(app.window, 0, "The Descent", said);
+    expect(result).toEqual({ tabOpenedDescription: true, shiftTabOpenedName: true });
+    expect(await storylineScenesLeftToRight(app.window)).toContain("The Descent");
+    expect(await storylineScenesLeftToRight(app.window)).not.toContain("The Fall");
+    expect(await storylineSceneSummaries(app.window)).toContain(said);
   });
 });
