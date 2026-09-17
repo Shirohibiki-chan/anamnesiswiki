@@ -709,27 +709,52 @@ is built; it is all checked as present and not switched off.
    LK's rule is the better one: a *locked* shape with a link opens on a
    click anywhere on it, since a locked shape cannot be moved or edited and
    a click on it can mean nothing else.
-3. **Pictures through the world's library.** A picture dropped on a board
+3. **Frames that nest and turn.** LK's frames panel: a frame inside a frame,
+   and a frame at an angle — the tutorial's own example is a diamond-shaped
+   frame with a straight frame inside it. Neither is in the library: it
+   refuses a frame as a child of a frame (`addElementsToFrame` skips
+   frame-like elements; upstream issue #8359, open), and it refuses to
+   rotate one (`angle` is locked on frames and the resize handles hide
+   the rotation grip). First written up here 2026-09-17 as not worth a
+   fork; she overruled that the same day, and rightly — a frame is how a
+   board gets its Canva-like layouts, and a frame that has to be straight
+   and cannot hold another is a frame with the useful half missing. So
+   this is the one step that patches the library rather than building
+   beside it: `pnpm patch` on the package, kept small and named, with a
+   scenario that fails the day an upgrade drops it. What the patch has to
+   deliver: a frame dragged into a frame becomes its child; the parent
+   moves, duplicates and deletes it with everything in it; the child is
+   clipped by the parent as any other child is; a frame rotates with its
+   label and clips its contents to the turned box. Third rather than last
+   because the same patching path is what step 9 needs, and it should be
+   proven on the step that matters more.
+4. **Pictures through the world's library.** A picture dropped on a board
    is held inside `_board.json` as a data URL — three photos make a
    three-megabyte file, and Assets cannot see them. The ideas list has had
-   this since the spike; it is step 3 because page cards and bookmark cards
+   this since the spike; it is step 4 because page cards and bookmark cards
    both draw pictures and should land on the right mechanism, not the
    temporary one. The Assets panel already drags a picture into a page;
    the board takes the same drag.
-4. **Bookmark cards.** Paste a web address and get a card with the page's
+5. **Bookmark cards.** Paste a web address and get a card with the page's
    title, description and picture; click it and the address opens in the
    browser. Today a pasted address is a line of text with a link on it.
-5. **A page opened on the board.** LK's "nested article": stretch a page
+6. **A page opened on the board.** LK's "nested article": stretch a page
    card past a threshold and it stops being a card and shows the page's
    writing, editable, in the board. The biggest step and the one with the
    open question — see below.
-6. **Boards in the exports.** A board is not in the Markdown, website or LK
+7. **Boards in the exports.** A board is not in the Markdown, website or LK
    export. The Markdown and site exports carry a picture of it (the library
    draws PNG and SVG); the LK export names it in its lossy list, since LK's
    file has no shape for a drawing.
-7. **Theme follows while open.** A board reads light or dark once, when it
+8. **Theme follows while open.** A board reads light or dark once, when it
    is opened; a theme switched with a board open is caught on the next
-   visit. Small, and last because nobody has noticed.
+   visit. Small, and nobody has noticed.
+9. **A moving GIF moves.** The library draws pictures to a canvas, so an
+   animated one shows its first frame; LK's tutorial has one playing. The
+   same kind of change as step 3 — the library's drawing, not the app —
+   decoding the frames (Electron's engine has `ImageDecoder`) and
+   redrawing while one is on screen. Last because it rides on step 3's
+   patching path and nothing rides on it.
 
 **Not in this phase, and why, so it is not re-asked:**
 
@@ -739,16 +764,11 @@ is built; it is all checked as present and not switched off.
   than deferred: nothing here is shaped for it.
 - **Cursor chat and permissions.** Both panels are about several people on
   one board. This is one person's world on one disk.
-- **Frames inside frames.** LK's do; the library's do not, and a frame is a
-  labelled region for tidying, so a frame in a frame is a nicety rather
-  than a way of working. Not worth carrying a fork of the library for.
-- **A moving GIF.** The library draws pictures to a canvas, so an animated
-  one shows its first frame. Same answer: not worth a fork.
 - **Nesting a board in a board.** LK's tutorial says theirs cannot either.
 
 ### How page cards and bookmark cards are built
 
-Decided up front so steps 1, 4 and 5 are one mechanism, not three. The
+Decided up front so steps 1, 5 and 6 are one mechanism, not three. The
 library has an *embed* element — a rectangle that holds a web page, drawn
 by a host-supplied component when the host says the address is one it
 knows how to draw (`renderEmbeddable`, `validateEmbeddable`). A page card
@@ -776,12 +796,12 @@ the picture with the name over it, in the style of the tree's own rows and
 the page's banner. So resizing changes the presentation with nothing to
 set, which is what LK's "resize the card" arrow means.
 
-**The open question — step 5.** A page shown editable inside a board is a
+**The open question — step 6.** A page shown editable inside a board is a
 second editor open on a second page while the board's page is also open,
 which is the situation Phase 21.5 (Split Panes) was deferred over. Two
 answers on the table: show the page read-only in the card with an *Edit*
 that opens it properly (cheap, and honest), or mount the real editor in
-the card (what LK does, and what the panel promises). Step 5 starts with
+the card (what LK does, and what the panel promises). Step 6 starts with
 the read-only card and the question is put to her *with the card running*,
 which is how design questions get answered here.
 
@@ -795,11 +815,12 @@ rather than the way in, which is the fix available without forking.
 
 ### Order
 
-1 → 2 → 3 → 4 → 5 → 6 → 7, each its own PR. Steps 1 and 2 are the tutorial's
-two big panels and ship first; step 3 before step 4 so bookmark pictures
-never touch the data-URL path; step 5 after the question above is
-answered on a running card. Steps 6 and 7 are small and independent and
-can go in either order.
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, each its own PR. Steps 1 and 2 are the
+tutorial's two big panels and ship first; step 3 is the first patch on the
+library and proves that path before anything else leans on it; step 4
+before step 5 so bookmark pictures never touch the data-URL path; step 6
+after the question above is answered on a running card. Steps 7 and 8 are
+small and independent and can go in either order; step 9 is last.
 
 ---
 
