@@ -41,7 +41,7 @@ describe("keeping earlier versions of a page", () => {
   // the row's ⋯ button opens the same menu and only appears on hover.
   async function openHistory(): Promise<void> {
     await treeRow(app.window, PAGE).first().click({ button: "right" });
-    await app.window.getByRole("button", { name: "Earlier versions" }).click();
+    await app.window.getByRole("button", { name: "Earlier Versions" }).click();
     await app.window.locator(PANEL).waitFor({ state: "visible", timeout: 20_000 });
     // The panel paints before its list arrives — reading the folder is a disk
     // round trip. Waiting for whichever of the two outcomes lands stops a

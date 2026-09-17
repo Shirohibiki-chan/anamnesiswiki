@@ -42,14 +42,14 @@ export function PageBanner({ node }: { node: Node }) {
   }
 
   // Hold the space while the bytes are being read, rather than flashing the
-  // empty "Add banner" prompt on every page switch.
+  // empty "Add Banner" prompt on every page switch.
   if (bannerStatus === "loading") return <div className="page-banner page-banner-loading" />;
 
   if (!bannerUrl) {
     return (
       <div className="page-banner-empty">
         <button type="button" className="page-banner-add" onClick={() => void pickBanner()}>
-          <ImageIcon size={13} /> {bannerStatus === "error" ? "Banner file missing — add another" : "Add banner"}
+          <ImageIcon size={13} /> {bannerStatus === "error" ? "Banner file missing — add another" : "Add Banner"}
         </button>
       </div>
     );

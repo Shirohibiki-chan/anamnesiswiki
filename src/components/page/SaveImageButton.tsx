@@ -38,8 +38,8 @@ export function SaveImageButton() {
   return (
     <Components.FormattingToolbar.Button
       className="bn-button"
-      label={isLocal ? "Save a copy" : "Open in browser"}
-      mainTooltip={isLocal ? "Save a copy" : "Open in browser — this picture lives on a website"}
+      label={isLocal ? "Save a Copy" : "Open in Browser"}
+      mainTooltip={isLocal ? "Save a Copy" : "Open in browser — this picture lives on a website"}
       icon={<Download size={16} />}
       onClick={() => void saveCopy(url, name)}
     />

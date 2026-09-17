@@ -100,7 +100,7 @@ export function NewThemeButton() {
       onClick={() => void create()}
     >
       <Plus size={14} />
-      {busy ? "Making…" : "New theme"}
+      {busy ? "Making…" : "New Theme"}
     </button>
   );
 }

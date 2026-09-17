@@ -86,7 +86,7 @@ describe("Settings sits beside the app instead of over it", () => {
    * font picker looking cut in half.
    */
   it("leaves room for a focus ring inside the scrolling panel", async () => {
-    await openSettingsSection(app.window, "Fonts and text");
+    await openSettingsSection(app.window, "Fonts and Text");
     const gutters = await app.window.locator(".settings-panel").evaluate((panel) => {
       const control = panel.querySelector("select, input, button");
       if (!control) return null;

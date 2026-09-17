@@ -38,10 +38,10 @@ describe("filling a home page", () => {
   });
 
   it("adds both blocks", async () => {
-    await addBlockToPanel(app.window, "Recently edited");
+    await addBlockToPanel(app.window, "Recently Edited");
     await addBlockToPanel(app.window, "Shortcuts");
     const titles = await panelBlockTitles(app.window);
-    expect(titles).toContain("Recently edited");
+    expect(titles).toContain("Recently Edited");
     expect(titles).toContain("Shortcuts");
   });
 
@@ -58,18 +58,18 @@ describe("filling a home page", () => {
     await typeInEditor(app.window, "a fresh line");
     await app.window.waitForTimeout(600);
     await openPage(app.window, HOME);
-    const rows = await panelBlockRows(app.window, "Recently edited");
+    const rows = await panelBlockRows(app.window, "Recently Edited");
     expect(rows[0]).toBe(EDITED);
     // The home page itself never appears, however often its dashboard moves.
     expect(rows).not.toContain(HOME);
   });
 
   it("shows the count it is set to", async () => {
-    expect((await panelBlockRows(app.window, "Recently edited")).length).toBe(8);
-    await openBlockMenu(app.window, "Recently edited");
+    expect((await panelBlockRows(app.window, "Recently Edited")).length).toBe(8);
+    await openBlockMenu(app.window, "Recently Edited");
     await app.window.getByRole("button", { name: "5", exact: true }).click();
     await app.window.waitForTimeout(300);
-    expect((await panelBlockRows(app.window, "Recently edited")).length).toBe(5);
+    expect((await panelBlockRows(app.window, "Recently Edited")).length).toBe(5);
   });
 
   it("keeps both after a reload", async () => {
@@ -77,6 +77,6 @@ describe("filling a home page", () => {
     await waitForWorld(app.window);
     await openPage(app.window, HOME);
     expect(await panelBlockRows(app.window, "Shortcuts")).toEqual([PINNED_FIRST, PINNED_SECOND]);
-    expect((await panelBlockRows(app.window, "Recently edited")).length).toBe(5);
+    expect((await panelBlockRows(app.window, "Recently Edited")).length).toBe(5);
   });
 });

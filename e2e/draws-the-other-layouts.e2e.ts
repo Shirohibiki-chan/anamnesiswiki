@@ -64,7 +64,7 @@ describe("the other layouts", () => {
     await searchTree(app.window, SECTION);
     await treeRow(app.window, SECTION).first().click({ button: "right" });
     await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
-    await app.window.getByRole("button", { name: "Turn into", exact: true }).click();
+    await app.window.getByRole("button", { name: "Turn Into", exact: true }).click();
     await app.window.getByRole("button", { name: "Table", exact: true }).click();
     await app.window.waitForTimeout(WRITTEN_MS);
     await clearTreeSearch(app.window);

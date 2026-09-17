@@ -26,7 +26,7 @@ describe("keeping earlier versions of the tree", () => {
 
   async function openTreeHistory(): Promise<void> {
     await app.window.locator(".tree-project-header").click({ button: "right" });
-    await app.window.getByRole("button", { name: "Earlier versions of the tree" }).click();
+    await app.window.getByRole("button", { name: "Earlier Versions of the Tree" }).click();
     await app.window.locator(PANEL).waitFor({ state: "visible", timeout: 20_000 });
     // The panel paints before the folder has been read — same disk round trip
     // the page panel waits on, and the same two outcomes to wait for.

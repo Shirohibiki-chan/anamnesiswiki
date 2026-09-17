@@ -81,7 +81,7 @@ export function TemplateView({ template }: { template: Node }) {
         <div className={`template-view-bar${builtInKey ? " template-view-bar-resettable" : ""}`}>
           <button type="button" className="template-view-back" onClick={() => openTemplate(null)}>
             <ArrowLeft size={14} />
-            Back to templates
+            Back to Templates
           </button>
           {/* Offered here as well as in the sidebar because this is where she'd
               be when she decides the edit was a mistake, and the sidebar row is
@@ -89,7 +89,7 @@ export function TemplateView({ template }: { template: Node }) {
           {builtInKey && (
             <button type="button" className="template-view-reset" onClick={() => void handleReset(builtInKey)}>
               <RotateCcw size={13} />
-              Put back to the original
+              Put Back to the Original
             </button>
           )}
           {/* Said plainly because "template" reads like a live link and isn't
@@ -133,7 +133,7 @@ export function TemplateView({ template }: { template: Node }) {
             onClick={(e) => setStyleAnchor(e.currentTarget.getBoundingClientRect())}
           >
             <Brush size={12} />
-            {template.styleClass ? <code>{template.styleClass}</code> : "Style name"}
+            {template.styleClass ? <code>{template.styleClass}</code> : "Style Name"}
           </button>
         </div>
 
@@ -155,7 +155,7 @@ export function TemplateView({ template }: { template: Node }) {
           <div className="page-view-no-tabs">
             <p>This template doesn't have any tabs yet.</p>
             <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={handleAddTab}>
-              Add a tab
+              Add a Tab
             </button>
           </div>
         ) : (

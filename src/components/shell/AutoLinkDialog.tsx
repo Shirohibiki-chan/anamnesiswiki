@@ -73,7 +73,7 @@ function AutoLinkChooser({
   return createPortal(
     <div className="ui-backdrop" onClick={() => onResolve(null)}>
       <div className="ui-modal ui-modal-lg auto-link-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2 className="confirm-dialog-title">Link page names</h2>
+        <h2 className="confirm-dialog-title">Link Page Names</h2>
         <p className="auto-link-intro">
           {matches.length === 1
             ? "One name on this page isn't a link yet."
@@ -120,7 +120,7 @@ function AutoLinkChooser({
             onClick={() => onResolve(chosen)}
           >
             {chosen.length === matches.length
-              ? "Link them"
+              ? "Link Them"
               : `Link ${chosen.length} of ${matches.length}`}
           </button>
         </div>

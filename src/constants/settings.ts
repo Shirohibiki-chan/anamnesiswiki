@@ -33,7 +33,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
   {
     id: "fonts",
     group: "look",
-    label: "Fonts and text",
+    label: "Fonts and Text",
     blurb: "Which typefaces to use, and how big.",
   },
   {
@@ -49,7 +49,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     // answer.
     id: "getting-started",
     group: "app",
-    label: "Getting started",
+    label: "Getting Started",
     blurb: "The tour of the app, and the example world — both of them offer themselves once, and this is the way back.",
   },
   {
@@ -97,7 +97,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
   {
     id: "report",
     group: "app",
-    label: "Report a bug",
+    label: "Report a Bug",
     blurb: "Send a bug report, and the crash log that goes with it.",
   },
   {
@@ -135,14 +135,14 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "take-the-tour",
     tabId: "getting-started",
-    label: "Take the tour again",
+    label: "Take the Tour Again",
     hint: "the four steps shown the first time a world was open — the rail, the tree, the page, the panel on the right",
     keywords: ["tutorial", "tour", "onboarding", "walkthrough", "help", "guide", "how do i", "getting started", "again"],
   },
   {
     id: "example-world",
     tabId: "getting-started",
-    label: "The example world",
+    label: "The Example World",
     hint: "Saltmere, the little world that comes with Anamnesis — make another copy to look around",
     // **The wording here is load-bearing and was cut back twice.** An earlier
     // hint ("the small world already written… make a fresh copy of it") and the
@@ -154,9 +154,19 @@ export const DECLARED_SETTINGS: readonly {
     keywords: ["example", "demo", "saltmere", "tutorial world", "test world"],
   },
   {
+    id: "properties-panel",
+    tabId: "sidebar",
+    label: "The Properties Panel",
+    hint: "shown or hidden to begin with, until toggled on a given page",
+    // Short on purpose — see the formatting bar's note below on what a stray
+    // keyword costs the query "where are my files saved"; "fields" is one
+    // edit from "files" and dragged this row into that answer.
+    keywords: ["properties", "panel", "collapse", "infobox"],
+  },
+  {
     id: "formatting-bar",
     tabId: "writing",
-    label: "The formatting bar",
+    label: "The Formatting Bar",
     hint: "whether the bold/italic strip appears over the text when you select some, or stays at the top of the page",
     // "toolbar" is the word most people have for it and appears nowhere in the
     // label; "bold" and "italic" are what somebody is actually looking at when
@@ -173,7 +183,7 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "bug-report",
     tabId: "report",
-    label: "Report a bug",
+    label: "Report a Bug",
     // No "filled in": the search is fuzzy, and "filled" lands two edits from
     // "files", which put this row into the results for "where are my files
     // saved" — the exact trap the crash-log row below documents.
@@ -183,7 +193,7 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "crash-log",
     tabId: "report",
-    label: "If something goes wrong",
+    label: "If Something Goes Wrong",
     hint: "the crash log kept on your own computer, and how to copy the last one",
     // No "white screen" and no "crashed", though both are what somebody would
     // actually type. The search is fuzzy and ignores position, so a five-letter
@@ -203,42 +213,42 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "theme-new",
     tabId: "theme",
-    label: "New theme",
+    label: "New Theme",
     hint: "copy the theme you're on into a file of your own",
     keywords: ["create", "duplicate", "custom", "make", "copy"],
   },
   {
     id: "theme-import",
     tabId: "theme",
-    label: "Import a theme",
+    label: "Import a Theme",
     hint: "take a .css theme or a .json palette from somewhere else",
     keywords: ["load", "css", "json", "palette", "bring in", "another app"],
   },
   {
     id: "theme-folder",
     tabId: "theme",
-    label: "Themes folder",
+    label: "Themes Folder",
     hint: "where your own theme files live",
     keywords: ["where", "location", "files", "open", "explorer", "folder"],
   },
   {
     id: "muted-covers",
     tabId: "theme",
-    label: "Mute project covers",
+    label: "Mute Project Covers",
     hint: "desaturate every cover on the start screen",
     keywords: ["cover", "project", "start screen", "saturation", "vibrant", "colour", "color", "contrast", "gray", "grey"],
   },
   {
     id: "text-size-writing",
     tabId: "fonts",
-    label: "Writing size",
+    label: "Writing Size",
     hint: "how big the text on a page is",
     keywords: ["bigger", "smaller", "zoom", "scale", "font size", "prose", "body"],
   },
   {
     id: "text-size-interface",
     tabId: "fonts",
-    label: "Interface size",
+    label: "Interface Size",
     hint: "how big everything that isn't a page is",
     keywords: ["bigger", "smaller", "zoom", "scale", "font size", "ui", "menus", "sidebar"],
   },
@@ -252,7 +262,7 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "tree-double-click",
     tabId: "sidebar",
-    label: "Double-click in the sidebar",
+    label: "Double-Click in the Sidebar",
     hint: "whether it opens a page or renames it",
     keywords: ["double click", "rename", "expand", "open", "tree", "folder", "sidebar", "two clicks"],
   },
@@ -301,7 +311,7 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "list-paging",
     tabId: "lists",
-    label: "Pages or scrolling",
+    label: "Pages or Scrolling",
     hint: "whether a long list comes in pages, or is one endless scroll",
     keywords: [
       "pagination",
@@ -322,21 +332,21 @@ export const DECLARED_SETTINGS: readonly {
   {
     id: "projects-folder",
     tabId: "projects",
-    label: "Projects folder",
+    label: "Projects Folder",
     hint: "where new and imported projects get saved",
     keywords: ["where", "save", "saved", "location", "files", "disk", "storage", "path", "documents", "move"],
   },
   {
     id: "update-check",
     tabId: "updates",
-    label: "Check for updates",
+    label: "Check for Updates",
     hint: "only ever when you press the button",
     keywords: ["version", "new", "upgrade", "download", "install", "latest"],
   },
   {
     id: "patch-notes",
     tabId: "patch-notes",
-    label: "Patch notes",
+    label: "Patch Notes",
     hint: "what changed in the last few versions",
     keywords: ["changelog", "changes", "release notes", "what's new", "history", "version"],
   },

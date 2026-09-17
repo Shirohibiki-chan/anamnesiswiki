@@ -43,7 +43,7 @@ function ReportSetting() {
       {/* Not "Report a bug" again: the panel's own heading two lines above
           already says that, and a section titled the same as the screen it is
           on reads like a rendering mistake. */}
-      <h3 className="sidebar-setting-label">Sending one</h3>
+      <h3 className="sidebar-setting-label">Sending One</h3>
       <p className="sidebar-setting-blurb">
         If Anamnesis does something wrong — it looks broken, it loses your place, it stops — this is where to say so.
         The button opens a form in your browser with a box to describe what happened. Which version you're running,
@@ -65,12 +65,12 @@ function ReportSetting() {
       <p className="appearance-actions">
         <button type="button" className="ui-btn ui-btn-primary" onClick={() => void report()} disabled={details === null}>
           <Bug size={14} />
-          Open a bug report
+          Open a Bug Report
           <ExternalLink size={12} />
         </button>
         <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void copy()} disabled={details === null}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy the details"}
+          {copied ? "Copied" : "Copy the Details"}
         </button>
       </p>
       {details !== null && <pre className="bug-report-details">{details}</pre>}
@@ -116,7 +116,7 @@ function CrashLogSetting() {
 
   return (
     <section className="sidebar-setting" data-setting="crash-log">
-      <h3 className="sidebar-setting-label">If something goes wrong</h3>
+      <h3 className="sidebar-setting-label">If Something Goes Wrong</h3>
       <p className="sidebar-setting-blurb">
         When Anamnesis hits a problem it can't carry on from, it writes down what happened — the error, the version
         and which operating system — in a file called <code>crash-log.json</code>, kept alongside your settings. The
@@ -134,7 +134,7 @@ function CrashLogSetting() {
       {latest && (
         <button type="button" className="ui-btn" onClick={() => void copyLatest()}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy the last one"}
+          {copied ? "Copied" : "Copy the Last One"}
         </button>
       )}
     </section>

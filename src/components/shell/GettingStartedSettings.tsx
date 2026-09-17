@@ -52,7 +52,7 @@ export function GettingStartedSettings({ onClose }: GettingStartedSettingsProps)
   return (
     <div className="getting-started">
       <section className="getting-started-item">
-        <p className="getting-started-label">The tour</p>
+        <p className="getting-started-label">The Tour</p>
         <p className="getting-started-note">
           The four steps you were shown the first time a world was open — the rail, your world, the page, and the panel
           on the right.
@@ -70,13 +70,13 @@ export function GettingStartedSettings({ onClose }: GettingStartedSettingsProps)
             startTour();
           }}
         >
-          Take the tour again
+          Take the Tour Again
         </button>
         {!isLoaded && <p className="getting-started-note">Open a world first — the tour points at the parts of one.</p>}
       </section>
 
       <section className="getting-started-item">
-        <p className="getting-started-label">The example world</p>
+        <p className="getting-started-label">The Example World</p>
         <p className="getting-started-note">
           Saltmere: a small world already written, to look around. You were given one when you installed Anamnesis, and
           it is in your projects list unless you deleted it.
@@ -87,7 +87,7 @@ export function GettingStartedSettings({ onClose }: GettingStartedSettingsProps)
           disabled={made.kind === "busy"}
           onClick={() => void makeAnother()}
         >
-          {made.kind === "busy" ? "Making it…" : "Make a fresh copy"}
+          {made.kind === "busy" ? "Making it…" : "Make a Fresh Copy"}
         </button>
         {/* A fresh copy every time rather than finding the old one: somebody
             asking for this has usually written all over theirs, and the point

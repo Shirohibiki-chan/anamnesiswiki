@@ -21,9 +21,13 @@ export function NewPageLanding({ node }: { node: Node }) {
   const { applyTemplate, applyCustomTemplate, addTab, deleteTemplate } = useProjectActions();
   const customTemplates = useCustomTemplates();
   const { confirmDestructive } = useDialogs();
-  const { getLabel } = useTemplates();
+  const { templates, getLabel } = useTemplates();
 
-  const choices = PAGE_TEMPLATE_KEYS.filter((key) => key !== BLANK_TEMPLATE_KEY);
+  // The special kinds first — a canvas, a drawing, a container, a home page,
+  // a plain note — drawn as wide cards that say what each one is, then the
+  // templates as the plain grid. Which is which is the registry's to say.
+  const special = PAGE_TEMPLATE_KEYS.filter((key) => key !== BLANK_TEMPLATE_KEY && templates[key]?.special);
+  const choices = PAGE_TEMPLATE_KEYS.filter((key) => key !== BLANK_TEMPLATE_KEY && !templates[key]?.special);
 
   // Asked before it happens, unlike most things here — every other button on
   // this screen is a choice you can change by pressing a different one, and
@@ -43,6 +47,33 @@ export function NewPageLanding({ node }: { node: Node }) {
         your own, at any point.
       </p>
 
+      <h3 className="new-page-landing-heading">Special Pages</h3>
+      <div className="new-page-landing-special">
+        {special.map((key) => {
+          const Icon = getTemplateIcon(key);
+          return (
+            <button
+              key={key}
+              type="button"
+              className="new-page-landing-special-choice"
+              // The name alone, so the card is "Board" to a screen reader and
+              // to the suite rather than its name run into its blurb.
+              aria-label={getLabel(key)}
+              onClick={() => void applyTemplate(node.id, key)}
+            >
+              <span className="new-page-landing-special-icon">
+                <Icon size={22} />
+              </span>
+              <span className="new-page-landing-special-text">
+                <span className="new-page-landing-special-name">{getLabel(key)}</span>
+                <span className="new-page-landing-special-blurb">{templates[key]?.special?.blurb}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <h3 className="new-page-landing-heading">Templates</h3>
       <div className="new-page-landing-grid">
         {choices.map((key) => {
           const Icon = getTemplateIcon(key);

@@ -206,7 +206,7 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
   return createPortal(
     <div className="ui-backdrop" onClick={isBusy ? undefined : onClose}>
       <div className="ui-modal ui-modal-lg import-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="import-modal-title">Import a project</h2>
+        <h2 className="import-modal-title">Import a Project</h2>
 
         {(status === "idle" || status === "picking" || status === "parsing" || status === "error") && (
           <div className="import-modal-pick">
@@ -224,10 +224,10 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
                 button looks like from the outside. */}
             <div className="import-modal-buttons">
               <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handlePick("file")} disabled={isBusy}>
-                {status === "picking" ? "Waiting for the picker…" : status === "parsing" ? "Reading…" : "Choose a file"}
+                {status === "picking" ? "Waiting for the picker…" : status === "parsing" ? "Reading…" : "Choose a File"}
               </button>
               <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void handlePick("folder")} disabled={isBusy}>
-                Choose a folder
+                Choose a Folder
               </button>
             </div>
             {/* The picker is an OS window this app doesn't draw, so when it

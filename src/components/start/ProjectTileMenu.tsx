@@ -187,7 +187,7 @@ export function ProjectTileMenu({
               }}
             >
               {coverUrl ? <X size={13} /> : <ImagePlus size={13} />}
-              {coverUrl ? "Remove cover" : "Set cover"}
+              {coverUrl ? "Remove Cover" : "Set Cover"}
             </button>
 
             {/* Above the groups, with the cover: both are things done to the
@@ -307,7 +307,7 @@ export function ProjectTileMenu({
               }}
             >
               {isArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
-              {isArchived ? "Bring back" : "Archive"}
+              {isArchived ? "Bring Back" : "Archive"}
             </button>
 
             {/* Last, and the only item on this menu that destroys anything, so

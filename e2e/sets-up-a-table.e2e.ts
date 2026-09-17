@@ -87,7 +87,7 @@ describe("setting up a table", () => {
     const before = (await databaseRowNames(app.window)).length;
 
     await openDatabaseMenu(app.window, "filter");
-    await app.window.getByRole("button", { name: "Add a filter" }).click();
+    await app.window.getByRole("button", { name: "Add a Filter" }).click();
     await app.window.getByLabel("What to filter on").selectOption("name");
     await app.window.getByLabel("How to compare it").selectOption("contains");
     await app.window.getByLabel("What to look for").fill("kalla");
@@ -114,7 +114,7 @@ describe("setting up a table", () => {
 
   it("sorts the rows it kept, and turns them over on the second click", async () => {
     await openDatabaseMenu(app.window, "sort");
-    await app.window.getByRole("button", { name: "Add a sort" }).click();
+    await app.window.getByRole("button", { name: "Add a Sort" }).click();
     await app.window.getByLabel("What to sort by").selectOption("name");
     await closeMenu(app);
 

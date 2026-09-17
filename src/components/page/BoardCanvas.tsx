@@ -112,7 +112,7 @@ export default function BoardCanvas({ initialData, theme, onChange, expanded, on
                   aria-label={linked ? `Linked to ${linked.name}` : "Link this shape to a page"}
                 >
                   <Link2 size={16} />
-                  <span className="board-link-label">{linked ? linked.name : "Link to page"}</span>
+                  <span className="board-link-label">{linked ? linked.name : "Link to Page"}</span>
                 </button>
                 {picking !== null && (
                   <div className="board-picker" role="dialog" aria-label="Link this shape to a page">

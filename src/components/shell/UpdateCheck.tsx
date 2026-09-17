@@ -19,7 +19,7 @@ export function UpdateCheck() {
         <p className="update-check-line">
           {currentVersion && <span className="update-check-version">Anamnesis {currentVersion}</span>}
           <button type="button" className="ui-link" onClick={() => void check()}>
-            Check for updates
+            Check for Updates
           </button>
         </p>
       )}
@@ -51,10 +51,10 @@ export function UpdateCheck() {
           <p className="update-check-reassurance">Your projects aren't touched — updating only replaces the app itself.</p>
           <div className="update-check-buttons">
             <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void install(state.update)}>
-              Download and install
+              Download and Install
             </button>
             <button type="button" className="ui-btn ui-btn-secondary" onClick={dismiss}>
-              Not now
+              Not Now
             </button>
           </div>
 
@@ -107,7 +107,7 @@ export function UpdateCheck() {
           <p className="update-check-notes">Restart Anamnesis to start using it.</p>
           <div className="update-check-buttons">
             <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void restart()}>
-              Restart now
+              Restart Now
             </button>
           </div>
         </div>
@@ -118,7 +118,7 @@ export function UpdateCheck() {
           <p className="update-check-notes">{state.message}</p>
           <div className="update-check-buttons">
             <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void check()}>
-              Try again
+              Try Again
             </button>
             <button type="button" className="ui-btn ui-btn-secondary" onClick={dismiss}>
               Close

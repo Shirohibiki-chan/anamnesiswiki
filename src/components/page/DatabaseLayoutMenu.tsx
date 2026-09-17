@@ -17,7 +17,7 @@ const LAYOUT_LABELS: Record<DatabaseLayout, string> = {
 const LAYOUT_HINTS: Record<DatabaseLayout, string> = {
   table: "A row per page, and the only one you can type into",
   cards: "A picture and a name each",
-  board: "Columns you can drag between",
+  board: "Columns You Can Drag Between",
   list: "A name a line, quietly",
 };
 

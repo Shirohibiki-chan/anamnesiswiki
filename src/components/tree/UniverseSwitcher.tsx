@@ -156,7 +156,7 @@ export function UniverseSwitcher() {
                     reason the "+" exists: a designation reachable only from a
                     right-click is one nobody finds. */}
                 <button type="button" className="tree-context-menu-submenu" onClick={() => setOpenMenu("shared")}>
-                  <Layers size={13} /> Shared universe
+                  <Layers size={13} /> Shared Universe
                   <ChevronRight size={13} className="tree-context-menu-chevron" />
                 </button>
                 {/* The other half of the "+", and it belongs in the same place
@@ -165,7 +165,7 @@ export function UniverseSwitcher() {
                     exists in the all-universes view, so from inside a universe
                     there was no way out of it at all. Reported 2026-09-06. */}
                 <button type="button" className="tree-context-menu-submenu" onClick={() => setOpenMenu("remove")}>
-                  <Folder size={13} /> Remove a universe
+                  <Folder size={13} /> Remove a Universe
                   <ChevronRight size={13} className="tree-context-menu-chevron" />
                 </button>
               </>
@@ -186,7 +186,7 @@ export function UniverseSwitcher() {
         <TreePopover anchorRect={anchorRect} onClose={close}>
           <div className="tree-context-menu tree-universe-menu">
             <button type="button" className="tree-context-menu-back" onClick={() => setOpenMenu("switch")}>
-              <ArrowLeft size={13} /> Shared universe
+              <ArrowLeft size={13} /> Shared Universe
             </button>
             {/* Said in the menu rather than assumed known. "Shared" is a word
                 that could mean shared with other people, which is the one thing
@@ -216,7 +216,7 @@ export function UniverseSwitcher() {
         <TreePopover anchorRect={anchorRect} onClose={close}>
           <div className="tree-context-menu tree-universe-menu">
             <button type="button" className="tree-context-menu-back" onClick={() => setOpenMenu("switch")}>
-              <ArrowLeft size={13} /> Remove a universe
+              <ArrowLeft size={13} /> Remove a Universe
             </button>
             {/* Said before the click rather than in a dialog after it.
                 "Remove" reads as destructive, and this is the opposite of

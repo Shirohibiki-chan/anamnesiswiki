@@ -9,11 +9,11 @@ import { FORMATTING_BAR_MODES, type FormattingBarMode } from "../../services/pre
 
 const BAR_LABELS: Record<FormattingBarMode, { label: string; hint: string }> = {
   floating: {
-    label: "Appears when you select something",
+    label: "Appears When You Select Something",
     hint: "It shows up over the text you've selected and goes away again. Out of the way while you're writing.",
   },
   fixed: {
-    label: "Stays at the top of the page",
+    label: "Stays at the Top of the Page",
     hint: "Always there, above what you're writing, whether anything is selected or not. The buttons still act on whatever you've selected.",
   },
 };

@@ -210,7 +210,7 @@ export function AllPropertiesModal({ onClose }: { onClose: () => void }) {
     <div className="ui-backdrop" onMouseDown={onClose}>
       <div className="ui-modal ui-modal-xl all-properties" onMouseDown={(e) => e.stopPropagation()}>
         <header className="all-properties-header">
-          <h2 className="all-properties-title">All properties &amp; tags</h2>
+          <h2 className="all-properties-title">All Properties &amp; Tags</h2>
           <p className="all-properties-blurb">
             Everything this world uses, and how much of it. Renaming or deleting here changes every page at once — and
             every one of those can be undone.
@@ -369,10 +369,10 @@ function IndexRow({
               {row.canEdit && (
                 <>
                   <button type="button" className="ui-btn ui-btn-secondary" onClick={startRename}>
-                    Rename everywhere
+                    Rename Everywhere
                   </button>
                   <button type="button" className="ui-btn ui-btn-danger" onClick={onDelete}>
-                    Delete everywhere
+                    Delete Everywhere
                   </button>
                 </>
               )}
@@ -406,7 +406,7 @@ function IndexRow({
                 Cancel
               </button>
               <button type="submit" className="ui-btn ui-btn-primary">
-                {warning ? "Rename anyway" : "Rename"}
+                {warning ? "Rename Anyway" : "Rename"}
               </button>
               {warning && <p className="all-properties-warning">{warning}</p>}
             </form>

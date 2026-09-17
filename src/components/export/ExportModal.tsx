@@ -150,7 +150,7 @@ export function ExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: 
                 onClick={() => void handleExport()}
                 disabled={status === "saving"}
               >
-                {status === "saving" ? "Writing…" : "Choose where to save"}
+                {status === "saving" ? "Writing…" : "Choose Where to Save"}
               </button>
             </div>
           </>

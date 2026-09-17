@@ -18,7 +18,7 @@ import { BlockAnchorContext } from "../../hooks/use-editor";
 const ARRIVAL_MS = 2000;
 
 /**
- * **Copy link to this block**, in the block's own menu.
+ * **Copy Link to This Block**, in the block's own menu.
  *
  * **In the menu rather than as a third icon in the row beside the block, and
  * that is a measurement rather than a preference.** The gutter a block's hover
@@ -54,7 +54,7 @@ export function BlockAnchorMenuItem() {
 
   return (
     <Components.Generic.Menu.Item className="bn-menu-item" onClick={copy}>
-      Copy link to this block
+      Copy Link to This Block
     </Components.Generic.Menu.Item>
   );
 }

@@ -41,7 +41,7 @@ export function MoveMenu({ destinations, onSelect, nowhereNote, onBack }: MoveMe
   return (
     <div className="tree-context-menu tree-move-menu">
       <button type="button" className="tree-context-menu-back" onClick={onBack}>
-        <ArrowLeft size={13} /> Move to
+        <ArrowLeft size={13} /> Move To
       </button>
 
       <div className="tree-move-search">

@@ -1,4 +1,4 @@
-// The "Style name" submenu. Phase 30, step 2. Swaps into the popover the
+// The "Style Name" submenu. Phase 30, step 2. Swaps into the popover the
 // context menu was in, the way Move to and Sort sub-pages do — see SortMenu
 // for why a second layer is avoided.
 //
@@ -44,7 +44,7 @@ export function StyleMenu({ current, inUse, inherited, onSelect, onBack }: Style
   return (
     <div className="tree-context-menu tree-style-menu">
       <button type="button" className="tree-context-menu-back" onClick={onBack}>
-        <ArrowLeft size={13} /> Style name
+        <ArrowLeft size={13} /> Style Name
       </button>
 
       <div className="tree-style-field">
@@ -92,7 +92,7 @@ export function StyleMenu({ current, inUse, inherited, onSelect, onBack }: Style
 
       {current && (
         <button type="button" className="tree-style-clear" onClick={() => onSelect(undefined)}>
-          <X size={13} /> {inherited ? `Clear — back to "${inherited}"` : "Clear the name"}
+          <X size={13} /> {inherited ? `Clear — back to "${inherited}"` : "Clear the Name"}
         </button>
       )}
     </div>

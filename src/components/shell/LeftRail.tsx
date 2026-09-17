@@ -100,7 +100,7 @@ export function LeftRail({ panel, onSelectPanel, onOpenSearch, onSwitchProject }
           Icon={Waypoints}
           onClick={openWorldGraph}
         />
-        <RailButton label="Switch project" Icon={FolderOpen} onClick={onSwitchProject} />
+        <RailButton label="Switch Project" Icon={FolderOpen} onClick={onSwitchProject} />
         <SettingsButton className="icon-word-btn" label="Settings" />
       </div>
     </nav>

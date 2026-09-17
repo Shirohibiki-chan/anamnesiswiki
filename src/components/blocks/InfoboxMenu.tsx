@@ -21,7 +21,7 @@ type InfoboxMenuProps = {
   centred: boolean;
   /** "left", "right", or empty — which side the writing goes round. */
   wrap: string;
-  /** Already the whole column, so "Full width" has nothing to do. */
+  /** Already the whole column, so "Full Width" has nothing to do. */
   isFullWidth: boolean;
   onColor: (color: string | undefined) => void;
   onAutoWidth: (auto: boolean) => void;
@@ -89,7 +89,7 @@ export function InfoboxMenu({
       {/* Disabled rather than hidden when it would do nothing: a menu whose
           items come and go is a menu you have to re-read every time. */}
       <button type="button" disabled={isFullWidth && !autoWidth} onClick={onFullWidth}>
-        <Maximize2 size={13} /> Full width
+        <Maximize2 size={13} /> Full Width
       </button>
       <button
         type="button"
@@ -98,11 +98,11 @@ export function InfoboxMenu({
         onClick={() => onCentred(!centred)}
       >
         {centred ? <AlignLeft size={13} /> : <AlignCenter size={13} />}
-        {centred ? "Align left" : "Align centre"}
+        {centred ? "Align Left" : "Align Centre"}
       </button>
       {/* **Both sides, and clicking the one that is on turns it off** — the
           same shape as Align centre above it, and the only way back to a frame
-          that takes a line of its own without going through Full width. */}
+          that takes a line of its own without going through Full Width. */}
       {(["left", "right"] as const).map((side) => (
         <button
           key={side}
@@ -139,7 +139,7 @@ export function InfoboxMenu({
       <button type="button" className="tree-context-menu-danger" onClick={onRemove}>
         <Trash2 size={13} />
         <span className="block-source-label">
-          Remove infobox
+          Remove Infobox
           {/* BlockNote's own handle already offers "Delete", which does the same
               thing and says nothing about what happens to the blocks. Nothing
               is lost here, and the frame is the only part that goes. */}

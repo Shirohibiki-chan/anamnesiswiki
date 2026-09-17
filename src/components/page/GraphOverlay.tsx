@@ -390,7 +390,7 @@ function GraphOverlayBody({ focusId }: { focusId: string | null }) {
             {/* Going to the page is a second, deliberate action — clicking a
                 node must not throw the graph away. See docs/shipped.md Phase 24. */}
             <button type="button" className="ui-btn ui-btn-secondary" onClick={openSelected}>
-              Open this page
+              Open This Page
             </button>
           </aside>
         )}

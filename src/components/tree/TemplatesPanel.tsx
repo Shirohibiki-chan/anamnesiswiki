@@ -55,7 +55,11 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
   const openTemplateId = useOpenTemplateId();
   const builtInStates = useBuiltInTemplateStates();
   const { confirmDestructive, showNotice, pickPageTemplateFile } = useDialogs();
-  const { getLabel } = useTemplates();
+  const { templates: registry, getLabel } = useTemplates();
+  // The special kinds apart from the templates, here as on the New Page
+  // landing — the registry says which is which.
+  const specialKeys = PAGE_TEMPLATE_KEYS.filter((key) => registry[key]?.special);
+  const templateKeys = PAGE_TEMPLATE_KEYS.filter((key) => !registry[key]?.special);
   const createPageFromTemplate = useCreatePageFromTemplate();
 
   // Which templates are showing their sub-pages. Collapsed to start: the list
@@ -160,13 +164,12 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
 
   return (
     <div className="tree-templates">
-      <h3 className="tree-templates-heading">Built in</h3>
+      <h3 className="tree-templates-heading">Special Pages</h3>
       <p className="tree-templates-note">
-        The kinds a new page can start as. Edit one and you&rsquo;re editing this world&rsquo;s version of it — other
-        worlds keep the original.
+        A canvas, a drawing, a container, a home page, a plain note — kinds of page rather than templates for one.
       </p>
       <ul className="tree-templates-list">
-        {PAGE_TEMPLATE_KEYS.map((key) => {
+        {specialKeys.map((key) => {
           const state = builtInStates[key];
           return (
             <BuiltInRow
@@ -183,7 +186,30 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
         })}
       </ul>
 
-      <h3 className="tree-templates-heading">This world&rsquo;s own</h3>
+      <h3 className="tree-templates-heading">Built In</h3>
+      <p className="tree-templates-note">
+        The kinds a new page can start as. Edit one and you&rsquo;re editing this world&rsquo;s version of it — other
+        worlds keep the original.
+      </p>
+      <ul className="tree-templates-list">
+        {templateKeys.map((key) => {
+          const state = builtInStates[key];
+          return (
+            <BuiltInRow
+              key={key}
+              templateKey={key}
+              label={getLabel(key)}
+              isModified={state?.modified ?? false}
+              isOpen={!!state && state.nodeId === openTemplateId}
+              onOpen={openBuiltInTemplate}
+              onReset={handleReset}
+              onCreate={handleCreate}
+            />
+          );
+        })}
+      </ul>
+
+      <h3 className="tree-templates-heading">This World&rsquo;s Own</h3>
       {templates.length === 0 ? (
         <p className="tree-templates-note">
           None yet. Build a page the way you want that kind of page to start — its headings, its properties, even its
@@ -224,7 +250,7 @@ export function TemplatesPanel({ onPageCreated }: { onPageCreated: () => void })
           appears somewhere different depending on what she has is the thing
           that reads as the app moving under her. */}
       <button type="button" className="tree-templates-open-file" onClick={() => void handleOpenFile()}>
-        <FolderOpen size={13} /> Open a template file
+        <FolderOpen size={13} /> Open a Template File
       </button>
 
       {sharing && <PageTemplateModal plan={sharing} onClose={() => setSharing(null)} />}

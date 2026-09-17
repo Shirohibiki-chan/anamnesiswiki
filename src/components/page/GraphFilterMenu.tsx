@@ -38,12 +38,12 @@ type GraphFilterMenuProps = {
  * page is filed.
  */
 const KIND_LABELS: Record<GraphEdgeKind, string> = {
-  prose: "Mentions in the writing",
-  property: "Reference fields",
-  manual: "Manual links",
+  prose: "Mentions in the Writing",
+  property: "Reference Fields",
+  manual: "Manual Links",
   storyline: "Storylines",
   board: "Boards",
-  tree: "Filed under",
+  tree: "Filed Under",
 };
 
 export function GraphFilterMenu({
@@ -167,7 +167,7 @@ export function GraphFilterMenu({
       })}
 
       <button type="button" className="graph-menu-add" onClick={add}>
-        <Plus size={13} /> Add a filter
+        <Plus size={13} /> Add a Filter
       </button>
 
       {/* Obsidian's Orphans switch, hers 2026-09-13. A checkbox rather than a

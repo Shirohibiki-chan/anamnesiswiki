@@ -1,6 +1,6 @@
 // Three-column app frame — left tree / center page / right properties.
 import { useCallback, useState } from "react";
-import { useProject, useProjectRootPath, useSaveNow } from "../../hooks/use-project";
+import { useProject, useProjectRootPath, usePropertiesPanelOpen, useSaveNow } from "../../hooks/use-project";
 import { useHoldProjectClaim } from "../../hooks/use-project-claim";
 import { useAppSettings } from "../../hooks/use-app-settings";
 import { useDialogs } from "../../hooks/use-dialogs";
@@ -35,7 +35,7 @@ import { PageControls } from "./PageControls";
 import "./shell.css";
 
 export function AppLayout() {
-  const { project, closeProject } = useProject();
+  const { project, closeProject, setPropertiesPanel } = useProject();
   // This component exists exactly while a project is open, which makes it the
   // honest place to hold the marker that says so — no separate bookkeeping to
   // keep in step, and no path that closes a project without releasing it.
@@ -47,7 +47,10 @@ export function AppLayout() {
   // Raised from a tree row's right-click menu, rendered here — react-arborist
   // owns row rendering, so there's nothing to thread a callback through.
   const { exportRequest, closeExport } = useDialogs();
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  // Per page, remembered in the world, with a preference for the default —
+  // not one switch for the whole app. See `Project.propertiesPanel`.
+  const isRightPanelOpen = usePropertiesPanelOpen();
+  const selectedPageId = project?.selectedId ?? null;
   // Which of the three panels the sidebar is showing. It lived in TreeSidebar
   // until Phase 21 and moved up here because two components need it now: the
   // rail draws the selection, the sidebar draws the panel.
@@ -192,7 +195,9 @@ export function AppLayout() {
         <div className="app-layout-center">
           <PageControls
             isRightPanelOpen={isRightPanelOpen}
-            onToggleRightPanel={() => setIsRightPanelOpen((open) => !open)}
+            onToggleRightPanel={() => {
+              if (selectedPageId) setPropertiesPanel(selectedPageId, !isRightPanelOpen);
+            }}
           />
           <LoadWarning />
           <RecoveryNotice />

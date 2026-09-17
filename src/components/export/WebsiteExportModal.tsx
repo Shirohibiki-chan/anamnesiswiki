@@ -76,7 +76,7 @@ export function WebsiteExportModal({ rootIds, onClose }: { rootIds: string[]; on
   return createPortal(
     <div className="ui-backdrop" onClick={status === "saving" ? undefined : onClose}>
       <div className="ui-modal ui-modal-lg export-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="export-modal-title">Publish as a website</h2>
+        <h2 className="export-modal-title">Publish as a Website</h2>
 
         {!site && <p className="export-modal-error">There's nothing to publish.</p>}
 
@@ -111,7 +111,7 @@ export function WebsiteExportModal({ rootIds, onClose }: { rootIds: string[]; on
                 onClick={() => void handleExport()}
                 disabled={status === "saving" || !theme}
               >
-                {status === "saving" ? "Writing…" : theme ? "Choose where to save" : "Reading your theme…"}
+                {status === "saving" ? "Writing…" : theme ? "Choose Where to Save" : "Reading your theme…"}
               </button>
             </div>
           </>
@@ -135,7 +135,7 @@ export function WebsiteExportModal({ rootIds, onClose }: { rootIds: string[]; on
                 Show in {fileManagerName()}
               </button>
               <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void previewSite(savedTo)}>
-                Open in browser
+                Open in Browser
               </button>
               <button type="button" className="ui-btn ui-btn-primary" onClick={onClose}>
                 Done

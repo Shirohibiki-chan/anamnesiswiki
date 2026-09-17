@@ -61,7 +61,7 @@ describe("moving and deleting a page", () => {
 
   it("files a page into a folder, and it is still there after a reload", async () => {
     await openRowMenu(app, page);
-    await app.window.getByRole("button", { name: "Move to" }).click();
+    await app.window.getByRole("button", { name: "Move To" }).click();
     const search = app.window.locator(".tree-move-search-input");
     await search.waitFor({ state: "visible", timeout: 10_000 });
     await search.fill(folder);

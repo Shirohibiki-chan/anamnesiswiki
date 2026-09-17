@@ -18,7 +18,7 @@ const PAGING_LABELS: Record<ListPagingMode, { label: string; hint: string }> = {
     hint: "A set number at a time, with arrows to move between them. A page scrolls if it's taller than the window — how many go on one is yours to pick, below.",
   },
   scroll: {
-    label: "One long scroll",
+    label: "One Long Scroll",
     hint: "Everything in one list you scroll through, with no page breaks.",
   },
 };

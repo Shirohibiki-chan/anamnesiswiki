@@ -107,7 +107,7 @@ export function AssetFolderStrip({
       ? { label: "Unsorted", count: counts.unsorted }
       : filter.kind === "folder" && selected
         ? { label: selected.name, count: counts.byFolder[selected.id] ?? 0 }
-        : { label: "All pictures", count: counts.all };
+        : { label: "All Pictures", count: counts.all };
 
   // Renaming replaces the line rather than opening the menu to reach a box
   // inside it. The line already names the folder Rename was pressed for, so
@@ -373,7 +373,7 @@ function FolderMenu({
   // — it's a place pictures are, and a row that survives every query is a row
   // that looks like a bug once the others have gone.
   const fixedRows: { key: string; label: string; count: number; active: boolean; target: FolderFilter }[] = [
-    { key: "all", label: "All pictures", count: counts.all, active: filter.kind === "all", target: ALL_PICTURES },
+    { key: "all", label: "All Pictures", count: counts.all, active: filter.kind === "all", target: ALL_PICTURES },
   ];
   // Only once filing something has actually made a difference. With nothing
   // filed yet, Unsorted holds every picture there is, so the row is a second

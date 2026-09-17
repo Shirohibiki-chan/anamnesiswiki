@@ -2,6 +2,18 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — the whole world in one file, and an Export menu
+
+### Additions
+
+- **Export as one Markdown file.** Every page as a heading in a single `.md`, nested as deeply as it sits in your tree — so an editor's outline pane shows your world. It's for handing somebody the whole thing to read in one scroll; links between pages jump down the document instead of opening anything.
+- **Pictures from your own computer aren't in it**, because one file means one file and there's no folder beside it to put them in. Captions stay, and pictures you added by web address still show. The export says how many were left behind, and the Markdown *folder* export takes them all.
+- **All the export formats now sit behind one Export entry**, on both the project menu and a page's right-click menu. Three formats in a menu that long were three lines nobody would read, and there are two more coming.
+
+### Notes
+
+- **Properties come out as a short list under each page's heading**, since a single file can only carry one properties block and it has to be at the very top.
+
 ## 2026-09-10 — Export as Markdown
 
 ### Additions

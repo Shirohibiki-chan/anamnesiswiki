@@ -5,7 +5,7 @@
 // what a fresh load finds on disk.** A project carries a marker saying somebody
 // has it open, and a reload is not a close — so if the key does not clear that
 // marker on the way out, the page that comes back reads the one the page before
-// it left and refuses to open the world, with "Open it anyway" as the only way
+// it left and refuses to open the world, with "Open It Anyway" as the only way
 // past. Nothing below asserts that directly: the world simply has to come back,
 // and it cannot if the claim was left behind.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

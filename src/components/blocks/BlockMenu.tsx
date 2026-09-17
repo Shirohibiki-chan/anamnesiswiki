@@ -1,4 +1,4 @@
-// The per-block menu: Title / No title, a colour row, Duplicate, Move up/down,
+// The per-block menu: Title / No title, a colour row, Duplicate, Move Up/down,
 // Remove. Phase 18a. Positioning and portaling are the TreePopover wrapper's
 // job, the same as every other menu in the app — see tree/ContextMenu.tsx,
 // whose idiom this follows so two menus in the same window don't behave
@@ -202,23 +202,23 @@ export function BlockMenu({
 
           <div className="block-menu-separator" />
           <button type="button" onClick={meter.onAdd}>
-            <Plus size={13} /> Add meter
+            <Plus size={13} /> Add Meter
           </button>
           {meter.onDuplicateMeter && (
             <button type="button" onClick={meter.onDuplicateMeter}>
-              <Copy size={13} /> Duplicate meter
+              <Copy size={13} /> Duplicate Meter
             </button>
           )}
           {meter.onRemoveMeter && (
             <button type="button" className="tree-context-menu-danger" onClick={meter.onRemoveMeter}>
-              <Trash2 size={13} /> Delete meter
+              <Trash2 size={13} /> Delete Meter
             </button>
           )}
           {/* Ticked rather than worded as the opposite action, because these
               are states rather than commands — "Hide text" beside a meter that
               is already hiding it reads as a question. */}
           <button type="button" onClick={meter.onToggleText}>
-            <Check size={13} className={meter.textShown ? "" : "block-menu-unchecked"} /> Show text
+            <Check size={13} className={meter.textShown ? "" : "block-menu-unchecked"} /> Show Text
           </button>
           {/* A pie has no maximum to show — the same toggle hides the share of
               the whole instead, which is the same job: whether the number gets
@@ -227,12 +227,12 @@ export function BlockMenu({
               **A spectrum has no number anywhere**, so the row is not shown at
               all rather than left there doing nothing. Its setting is kept, not
               cleared: switch the block back to a bar and it means what it did.
-              "Show text" stays, because that hides the reading's *name*, which
+              "Show Text" stays, because that hides the reading's *name*, which
               a spectrum does have — the two words at its ends are not it. */}
           {meter.style !== "spectrum" && (
             <button type="button" onClick={meter.onToggleMax}>
               <Check size={13} className={meter.maxShown ? "" : "block-menu-unchecked"} />{" "}
-              {meter.style === "pie" ? "Show share" : "Show max"}
+              {meter.style === "pie" ? "Show Share" : "Show Max"}
             </button>
           )}
           {/* **Opened on one reading, this sets that reading; opened from the
@@ -250,7 +250,7 @@ export function BlockMenu({
               that makes it belong to a world rather than to a review site. */}
           {meter.onPickPip && (
             <button type="button" onClick={meter.onPickPip}>
-              <MeterIcon icon={meter.pip} size={13} /> Rating symbol
+              <MeterIcon icon={meter.pip} size={13} /> Rating Symbol
             </button>
           )}
           {/* What sits inside a dial. Three tiles rather than three rows,
@@ -285,7 +285,7 @@ export function BlockMenu({
             disabled={pageImage.isPageImage}
             onClick={pageImage.onUse}
           >
-            <ImageIcon size={13} /> {pageImage.isPageImage ? "The page's picture" : "Use as the page's picture"}
+            <ImageIcon size={13} /> {pageImage.isPageImage ? "The Page's Picture" : "Use as the Page's Picture"}
             {pageImage.isPageImage && <Check size={13} className="block-menu-trailing-check" />}
           </button>
         </>
@@ -301,10 +301,10 @@ export function BlockMenu({
         <Copy size={13} /> Duplicate
       </button>
       <button type="button" disabled={!canMoveUp} onClick={() => onMove(-1)}>
-        <ArrowUp size={13} /> Move up
+        <ArrowUp size={13} /> Move Up
       </button>
       <button type="button" disabled={!canMoveDown} onClick={() => onMove(1)}>
-        <ArrowDown size={13} /> Move down
+        <ArrowDown size={13} /> Move Down
       </button>
 
       <div className="block-menu-separator" />
@@ -316,11 +316,11 @@ export function BlockMenu({
           removal into this menu and left nothing anywhere that could delete a
           property she had added. */}
       <button type="button" onClick={onRemove}>
-        <EyeOff size={13} /> Remove block
+        <EyeOff size={13} /> Remove Block
       </button>
       {onDeleteProperty && (
         <button type="button" className="tree-context-menu-danger" onClick={onDeleteProperty}>
-          <Trash2 size={13} /> Delete property
+          <Trash2 size={13} /> Delete Property
         </button>
       )}
     </div>

@@ -96,7 +96,7 @@ export function DatabaseSortMenu({ node }: { node: Node }) {
           className="database-menu-add"
           onClick={() => write([...sorts, { field: spare[0], direction: "asc" }])}
         >
-          <Plus size={13} /> Add a sort
+          <Plus size={13} /> Add a Sort
         </button>
       )}
 

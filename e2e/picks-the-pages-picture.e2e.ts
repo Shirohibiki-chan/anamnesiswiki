@@ -25,8 +25,8 @@ import {
 } from "./harness/screen";
 
 const PAGE = "Quietgate";
-const MINE = "The page's picture";
-const TAKE_IT = "Use as the page's picture";
+const MINE = "The Page's Picture";
+const TAKE_IT = "Use as the Page's Picture";
 
 async function closeMenu(app: RunningApp): Promise<void> {
   await app.window.keyboard.press("Escape");

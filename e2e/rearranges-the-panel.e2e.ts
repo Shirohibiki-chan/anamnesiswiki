@@ -40,7 +40,7 @@ describe("rearranging the right-hand panel", () => {
 
     const [first, second] = before;
     await openBlockMenu(app.window, second);
-    await app.window.getByRole("button", { name: "Move up" }).click();
+    await app.window.getByRole("button", { name: "Move Up" }).click();
     await app.window.waitForTimeout(500);
 
     const after = await panelBlockTitles(app.window);

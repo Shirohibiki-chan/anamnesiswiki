@@ -150,7 +150,7 @@ export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () =
               onClick={() => void restore().then((ok) => ok && onClose())}
             >
               <RotateCcw size={14} />
-              {isRestoring ? "Restoring…" : "Restore this version"}
+              {isRestoring ? "Restoring…" : "Restore This Version"}
             </button>
           </div>
         </footer>

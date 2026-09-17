@@ -66,12 +66,12 @@ export function CrashScreen({ record, onRestart }: { record: CrashRecord; onRest
           </button>
           <button type="button" className="ui-btn" onClick={() => void report()}>
             <Bug size={14} />
-            Report this
+            Report This
             <ExternalLink size={12} />
           </button>
           <button type="button" className="ui-btn" onClick={() => void copy()}>
             {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? "Copied" : "Copy the details"}
+            {copied ? "Copied" : "Copy the Details"}
           </button>
         </div>
 

@@ -63,7 +63,7 @@ export function PageDatabase({ node }: { node: Node }) {
           `docs/shipped.md` Phase 23. */}
       {scope === "subpages" && (
         <button type="button" className="ui-btn ui-btn-secondary database-add" onClick={() => createPageIn(node.id)}>
-          Add a page
+          Add a Page
         </button>
       )}
     </div>

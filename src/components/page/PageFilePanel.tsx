@@ -65,7 +65,7 @@ function LibraryTab({ blockId }: { blockId: string }) {
     <div className="file-panel-library">
       <p className="file-panel-library-note">Pictures this world already has, including the ones on other pages.</p>
       <button type="button" className="ui-btn ui-btn-primary" onClick={() => void pick()}>
-        Browse the library
+        Browse the Library
       </button>
     </div>
   );

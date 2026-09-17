@@ -157,7 +157,7 @@ export function BlockPanel() {
             className="ui-btn ui-btn-secondary"
             onClick={(e) => setTemplateRect(e.currentTarget.getBoundingClientRect())}
           >
-            Apply a template
+            Apply a Template
           </button>
         </div>
       )}

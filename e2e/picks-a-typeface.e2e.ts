@@ -31,7 +31,7 @@ describe("picking a typeface", () => {
     await resizeWindow(app, 1600, 950);
     await openPage(app.window, "Locations");
     await openSettings(app.window);
-    await openSettingsSection(app.window, "Fonts and text");
+    await openSettingsSection(app.window, "Fonts and Text");
     // The four pickers only exist once the faces are hers rather than the
     // built-in theme's, and this world starts on a built-in.
     if ((await app.window.locator(TRIGGER).count()) === 0) {

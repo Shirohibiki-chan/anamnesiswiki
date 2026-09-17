@@ -18,13 +18,13 @@ export type CollectionSourceOption = {
 };
 
 export const COLLECTION_SOURCES: CollectionSourceOption[] = [
-  { key: "manual", label: "Manual links", hint: "A list you curate yourself", icon: Link2 },
-  { key: "subpages", label: "Subpage index", hint: "This page's children", icon: ListTree },
-  { key: "tags", label: "Tag index", hint: "Pages carrying tags you pick", icon: TagsIcon },
+  { key: "manual", label: "Manual Links", hint: "A list you curate yourself", icon: Link2 },
+  { key: "subpages", label: "Subpage Index", hint: "This page's children", icon: ListTree },
+  { key: "tags", label: "Tag Index", hint: "Pages carrying tags you pick", icon: TagsIcon },
   { key: "mentions", label: "Backlinks", hint: "Pages that mention this one", icon: Sparkles },
   // Phase 30: the two a home page was missing. Both read orders the app
   // already keeps, so nothing has to be maintained by hand for either.
-  { key: "recent", label: "Recently edited", hint: "The pages touched last, newest first", icon: History },
+  { key: "recent", label: "Recently Edited", hint: "The pages touched last, newest first", icon: History },
   // "Shortcuts", because that is the word on the right-click menu and over
   // the rail — the source key says "pinned" and the person never sees it.
   { key: "pinned", label: "Shortcuts", hint: "The pages set as shortcuts, in the rail's order", icon: Pin },

@@ -86,7 +86,7 @@ export function ImageSlot({ nodeId, blockId, image, imageAlt, imageFocusY, hasBa
   // fix for a bug worth not reintroducing: capturing the pointer on the frame
   // captured it for presses on the buttons *inside* the frame too, and a
   // captured pointer redirects the click that follows to the capturing element.
-  // So "Show whole image" and "Done" were unreachable the entire time
+  // So "Show Whole Image" and "Done" were unreachable the entire time
   // repositioning was on — the only time they're shown.
   function handlePointerDown(e: PointerEvent<HTMLImageElement>) {
     if (!isRepositioning) return;
@@ -179,7 +179,7 @@ export function ImageSlot({ nodeId, blockId, image, imageAlt, imageFocusY, hasBa
                       setIsRepositioning(false);
                     }}
                   >
-                    Show whole image
+                    Show Whole Image
                   </button>
                   <button type="button" className="property-image-reposition-btn" onClick={() => setIsRepositioning(false)}>
                     Done

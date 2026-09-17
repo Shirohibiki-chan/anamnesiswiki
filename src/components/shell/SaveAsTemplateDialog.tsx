@@ -20,7 +20,7 @@ export function SaveAsTemplateDialog() {
           buttons need 343px side by side and `ui-modal-sm` leaves about 304px
           between its padding, so they wrapped 2-and-1. Measured, not guessed. */}
       <div className="ui-modal confirm-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2 className="confirm-dialog-title">Save as template</h2>
+        <h2 className="confirm-dialog-title">Save as Template</h2>
         {/* Says what it won't do as well as what it will. "Convert" is the
             word every other app uses for this and it reads as one-way — the
             page is copied and stays exactly where it is. */}
@@ -34,10 +34,10 @@ export function SaveAsTemplateDialog() {
             Cancel
           </button>
           <button type="button" className="ui-btn ui-btn-secondary" onClick={() => resolveTemplateScope("all")}>
-            Include sub-pages
+            Include Sub-pages
           </button>
           <button type="button" className="ui-btn ui-btn-primary" onClick={() => resolveTemplateScope("one")}>
-            Just this page
+            Just This Page
           </button>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../state/project-store";
+import { usePreferencesStore } from "../state/preferences-store";
 import { buildTemplateTree, listTemplates, type TemplateTreeItem } from "../services/template-library";
 import { convertibleToUniverse, listUniverses, selectedUniverse, sharedUniverse } from "../services/tree-service";
 import type { Node } from "../constants/schema";
@@ -58,8 +59,23 @@ export function useProjectActions() {
       setSelectedUniverse: state.setSelectedUniverse,
       setSharedUniverse: state.setSharedUniverse,
       setExpanded: state.setExpanded,
+      setPropertiesPanel: state.setPropertiesPanel,
     })),
   );
+}
+
+/**
+ * Whether the properties panel is shown on the selected page: what she set
+ * on this page if she ever did, otherwise the preference. Nothing selected
+ * — the start of a world — follows the preference too.
+ */
+export function usePropertiesPanelOpen(): boolean {
+  const selectedId = useProjectStore((state) => state.project?.selectedId ?? null);
+  const remembered = useProjectStore((state) =>
+    selectedId ? state.project?.propertiesPanel?.[selectedId] : undefined,
+  );
+  const fallback = usePreferencesStore((state) => state.preferences.propertiesPanel);
+  return (remembered ?? fallback) === "open";
 }
 
 /**

@@ -919,6 +919,8 @@ export type ProjectStoreState = {
    */
   restoreProjectArrangement: (patch: Partial<Project>) => void;
   setExpanded: (id: string, isOpen: boolean) => void;
+  /** Remembers, for this page alone, whether the properties panel is shown. */
+  setPropertiesPanel: (pageId: string, open: boolean) => void;
 };
 
 // Debounce key for project.json metadata writes (selection, expanded state)
@@ -4287,6 +4289,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     // inside the board goes to Excalidraw, not to the app.
     setBoard(boardId, board) {
       applyBoard(boardId, board);
+    },
+
+    setPropertiesPanel(pageId, open) {
+      const { rootPath, project } = get();
+      if (!rootPath || !project) return;
+      const propertiesPanel = { ...project.propertiesPanel, [pageId]: open ? "open" : "closed" } as const;
+      set({ project: { ...project, propertiesPanel } });
+      scheduleProjectSave(rootPath);
     },
 
     setExpanded(id, isOpen) {

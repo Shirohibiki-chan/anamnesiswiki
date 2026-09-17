@@ -76,7 +76,7 @@ export function PinnedRow({ pinned, total, now, disabled, onOpen, onManage }: Pi
         </span>
         <span className="start-label-right">
           <button type="button" className="start-pill" onClick={onManage}>
-            Manage pins
+            Manage Pins
           </button>
         </span>
       </p>
@@ -126,7 +126,7 @@ export function PinnedRow({ pinned, total, now, disabled, onOpen, onManage }: Pi
           {showAddHere && (
             <button type="button" className="start-addpin" onClick={onManage}>
               <Plus size={18} aria-hidden />
-              {pinned.length === 0 ? "Pin a project" : "Pin another"}
+              {pinned.length === 0 ? "Pin a Project" : "Pin Another"}
             </button>
           )}
         </div>

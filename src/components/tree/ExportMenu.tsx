@@ -36,13 +36,13 @@ type ExportMenuProps = {
 const FORMATS: { format: ExportFormat; label: string; Icon: typeof Upload; projectOnly?: true }[] = [
   { format: "lk", label: "To LegendKeeper", Icon: Upload },
   { format: "markdown", label: "As Markdown", Icon: Files },
-  { format: "markdown-single", label: "As one Markdown file", Icon: FileText },
+  { format: "markdown-single", label: "As One Markdown File", Icon: FileText },
   // Labelled JSON rather than Zip, her call: people arriving from other tools
   // look for the word, and the extension is the detail.
   { format: "json-zip", label: "As JSON (.zip)", Icon: FileArchive, projectOnly: true },
   // Phase 1.5. Last because it is the odd one out: the others hand her a file
   // to keep, this hands her a folder to put online.
-  { format: "website", label: "As a website", Icon: Globe },
+  { format: "website", label: "As a Website", Icon: Globe },
 ];
 
 export function ExportMenu({ onSelect, onBack, scope }: ExportMenuProps) {

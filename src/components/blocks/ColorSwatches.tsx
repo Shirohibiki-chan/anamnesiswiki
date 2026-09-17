@@ -112,7 +112,7 @@ export function ColorSwatches({ value, onPick, previewTarget }: ColorSwatchesPro
       <input
         ref={commitOnClose}
         type="color"
-        aria-label="Mix a colour"
+        aria-label="Mix a Colour"
         defaultValue={value && isHexColor(value) ? value : "#8b5cf6"}
         onChange={(e) => previewTarget && preview(previewTarget, e.target.value)}
         // A dialog dismissed rather than accepted still ends with focus coming
@@ -152,7 +152,7 @@ export function ColorSwatches({ value, onPick, previewTarget }: ColorSwatchesPro
     return (
       <div className="color-swatch-all">
         <button type="button" className="color-swatch-back" onClick={() => setShowAll(false)}>
-          <ChevronLeft size={13} /> Fewer colours
+          <ChevronLeft size={13} /> Fewer Colours
         </button>
         <div className="color-swatch-grid">{named.map((color) => swatch(color))}</div>
 
@@ -175,7 +175,7 @@ export function ColorSwatches({ value, onPick, previewTarget }: ColorSwatchesPro
         type="button"
         className={`color-swatch color-swatch-none${value ? "" : " color-swatch-active"}`}
         title="No colour"
-        aria-label="No colour"
+        aria-label="No Colour"
         aria-pressed={!value}
         onClick={() => onPick(undefined)}
       >
@@ -189,7 +189,7 @@ export function ColorSwatches({ value, onPick, previewTarget }: ColorSwatchesPro
         className={`color-swatch color-swatch-more${elsewhereHex ? " color-swatch-carrying" : ""}`}
         style={elsewhereHex ? { backgroundColor: elsewhereHex } : undefined}
         title="More colours"
-        aria-label="More colours"
+        aria-label="More Colours"
         onClick={() => setShowAll(true)}
       >
         <Plus size={14} />

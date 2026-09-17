@@ -768,13 +768,36 @@
   stroke-linecap: butt;
 }
 
-/* On a bar, the same idea as a gradient over both the fill and the track, so
-   the segments stay in step as the fill moves across them. */
-.block-meter-track.block-meter-segmented,
-.block-meter-track.block-meter-segmented .block-meter-fill,
-.block-meter-track.block-meter-segmented .block-meter-pending {
+/* On a bar, the segments are cut by a mask on the track alone. **Only the
+   track**: a mask on an element clips everything drawn inside it, so the
+   fill and the pending band are cut by the same mask without one of their
+   own — and each of those used to carry a copy, measured from its own left
+   edge. The pending band starts wherever the value is, so its copy was out
+   of step with the track's by whatever the value happened to be, and the
+   pulsing preview drew a second set of segments sliding over the first
+   (her screenshots, 2026-09-17).
+
+   One segment per point when the meter is small enough to draw that way —
+   `--meter-segments` is set by MeterBlock for a maximum up to sixty — so a
+   value is always a whole number of segments. Bigger than that, or with no
+   number set, a fixed pitch. */
+.block-meter-track.block-meter-segmented {
   border-radius: 2px;
   mask-image: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 13px);
+}
+
+.block-meter-track.block-meter-segmented[style*="--meter-segments"] {
+  --meter-pitch: calc(100% / var(--meter-segments));
+  mask-image: repeating-linear-gradient(
+    90deg,
+    #000 0 calc(var(--meter-pitch) - 3px),
+    transparent calc(var(--meter-pitch) - 3px) var(--meter-pitch)
+  );
+}
+
+.block-meter-track.block-meter-segmented .block-meter-fill,
+.block-meter-track.block-meter-segmented .block-meter-pending {
+  border-radius: 0;
 }
 
 /* ---- Spectrum: a marker between two words (2026-08-25) ---- */

@@ -1,6 +1,6 @@
-// Right-click menu content: New page inside / Rename / Duplicate / Move to /
-// Set color / Earlier versions /
-// Save as template / Turn into a universe / Use as shared universe / Turn into ▸ / Sort sub-pages / Expand all inside / Collapse all inside / Focus here / Hide
+// Right-click menu content: New Page Inside / Rename / Duplicate / Move to /
+// Set Color / Earlier Versions /
+// Save as Template / Turn Into a Universe / Use as shared universe / Turn into ▸ / Sort Sub-pages / Expand All Inside / Collapse All Inside / Focus Here / Hide
 // from readers / Set as project home / Show in the file manager / Export ▸ /
 // Delete. Also reached from the row's own "..." button — see TreeItem.
 // Delete is confirmed before it runs — via the
@@ -44,7 +44,7 @@ type ContextMenuProps = {
   /**
    * Whether the row the menu was opened on is hidden — which is what the item
    * offers to undo. On a multi-selection it applies that answer to the whole
-   * selection, the way "Set color" applies one swatch: the row under the
+   * selection, the way "Set Color" applies one swatch: the row under the
    * pointer is the one whose state is on screen, so it's the one to read.
    */
   isHidden: boolean;
@@ -56,7 +56,7 @@ type ContextMenuProps = {
   /** The OS's own word for its file manager — see dialog-service. */
   fileManagerName: string;
   /**
-   * Whether this row has anything inside it. "Focus here" is hidden when it
+   * Whether this row has anything inside it. "Focus Here" is hidden when it
    * doesn't: focusing an empty page shows an empty tree with a path bar over
    * it, which looks exactly like the project having disappeared.
    */
@@ -114,7 +114,7 @@ type ContextMenuProps = {
   onToggleProjectHome: () => void;
   onTogglePinned: () => void;
   onToggleHidden: () => void;
-  /** Earlier versions of this page (Phase 19). Single selection only. */
+  /** Earlier Versions of this page (Phase 19). Single selection only. */
   onShowHistory: () => void;
   /**
    * How many copies this page has, or null while the folder is still being
@@ -170,12 +170,12 @@ export function ContextMenu({
   // out of the way. Two items are bound directly instead, and adding a new one
   // means deciding which kind it is:
   //
-  //   "Set color"        swaps this popover's contents for the picker, so
-  //   "Sort sub-pages"   closing after it would shut what it just opened.
-  //   "New page inside"  is shared with the row's own "+" button and closes
+  //   "Set Color"        swaps this popover's contents for the picker, so
+  //   "Sort Sub-pages"   closing after it would shut what it just opened.
+  //   "New Page Inside"  is shared with the row's own "+" button and closes
   //                      the menu from inside its own handler.
   //
-  // "New page inside" was wrapped in here from Phase 3 until 2026-08-10, back
+  // "New Page Inside" was wrapped in here from Phase 3 until 2026-08-10, back
   // when it opened a picker: it set the picker and unset it in the same batch,
   // which made the item look inert.
   function run(action: () => void) {
@@ -191,7 +191,7 @@ export function ContextMenu({
 
       {!isMultiple && (
         <button type="button" onClick={onAddChild}>
-          <Plus size={13} /> New page inside
+          <Plus size={13} /> New Page Inside
         </button>
       )}
       {!isMultiple && (
@@ -212,18 +212,18 @@ export function ContextMenu({
           because it answers the same kind of question — where this page
           lives — rather than what's written in it. */}
       <button type="button" className="tree-context-menu-submenu" onClick={onMoveTo}>
-        <FolderInput size={13} /> Move to
+        <FolderInput size={13} /> Move To
         <ChevronRight size={13} className="tree-context-menu-chevron" />
       </button>
       <button type="button" onClick={onSetColor}>
-        <Palette size={13} /> Set color
+        <Palette size={13} /> Set Color
       </button>
-      {/* Swaps this popover for the picker, like Set color — so it is bound
+      {/* Swaps this popover for the picker, like Set Color — so it is bound
           directly rather than through `run`, which would close what it opens.
           Multi-selection included: giving a folder's worth of pages one icon
           is the same errand as giving them one colour. */}
       <button type="button" onClick={onSetIcon}>
-        <Smile size={13} /> Set icon
+        <Smile size={13} /> Set Icon
       </button>
       {/* Single selection only, beside colour and icon because it is the
           third thing about how a page looks — except this one is a name a
@@ -231,7 +231,7 @@ export function ContextMenu({
           like the two above it, so bound directly. */}
       {!isMultiple && (
         <button type="button" className="tree-context-menu-submenu" onClick={onSetStyle}>
-          <Brush size={13} /> Style name
+          <Brush size={13} /> Style Name
           <ChevronRight size={13} className="tree-context-menu-chevron" />
         </button>
       )}
@@ -240,11 +240,11 @@ export function ContextMenu({
           pick one or make three, and neither is what the click looked like. */}
       {!isMultiple && (
         <button type="button" onClick={() => run(onSaveAsTemplate)}>
-          <FileStack size={13} /> Save as template
+          <FileStack size={13} /> Save as Template
         </button>
       )}
       {/* Single selection only, top-level rows only — see `universeAction`.
-          It sits beside Save as template because both answer what this page
+          It sits beside Save as Template because both answer what this page
           *is* rather than what is written in it. Turning back gives a folder
           rather than whatever the page used to be: the pages it collected are
           the point, and any other kind is a choice for the properties panel's
@@ -253,11 +253,11 @@ export function ContextMenu({
         <button type="button" onClick={() => run(onToggleUniverse)}>
           {universeAction === "make" ? (
             <>
-              <Globe size={13} /> Turn into a universe
+              <Globe size={13} /> Turn Into a Universe
             </>
           ) : (
             <>
-              <Folder size={13} /> Turn back into a folder
+              <Folder size={13} /> Turn Back Into a Folder
             </>
           )}
         </button>
@@ -269,12 +269,12 @@ export function ContextMenu({
           pointer, so two cannot both claim it. */}
       {!isMultiple && sharedAction && (
         <button type="button" onClick={() => run(onToggleShared)}>
-          <Layers size={13} /> {sharedAction === "set" ? "Use as shared universe" : "Stop using as shared"}
+          <Layers size={13} /> {sharedAction === "set" ? "Use as Shared Universe" : "Stop Using as Shared"}
         </button>
       )}
       {/* Single selection only, and in this group because it answers what the
           page *is* rather than what is written in it — the same question Save
-          as template and Turn into a universe answer.
+          as template and Turn Into a Universe answer.
 
           The wording of the reverse is deliberate. "Turn back into a page"
           would describe a conversion, and nothing was converted: the pages
@@ -285,14 +285,14 @@ export function ContextMenu({
       {!isMultiple &&
         (isDatabase ? (
           <button type="button" onClick={() => run(onToggleDatabase)}>
-            <FileText size={13} /> Stop showing as a database
+            <FileText size={13} /> Stop Showing as a Database
           </button>
         ) : (
           // A submenu now that there are four layouts to pick from. It was one
           // flat item while Table was the only one, because a submenu holding
           // one thing is a click for nothing.
           <button type="button" className="tree-context-menu-submenu" onClick={onPickLayout}>
-            <Table size={13} /> Turn into
+            <Table size={13} /> Turn Into
             <ChevronRight size={13} className="tree-context-menu-chevron" />
           </button>
         ))}
@@ -301,7 +301,7 @@ export function ContextMenu({
           menu click — nothing on screen would show which one went wrong. */}
       {!isMultiple && canSort && (
         <button type="button" className="tree-context-menu-submenu" onClick={onSortChildren}>
-          <ArrowDownUp size={13} /> Sort sub-pages
+          <ArrowDownUp size={13} /> Sort Sub-pages
           <ChevronRight size={13} className="tree-context-menu-chevron" />
         </button>
       )}
@@ -311,10 +311,10 @@ export function ContextMenu({
       {hasChildren && (
         <>
           <button type="button" onClick={() => run(onExpandAll)}>
-            <ChevronsUpDown size={13} /> Expand all inside
+            <ChevronsUpDown size={13} /> Expand All Inside
           </button>
           <button type="button" onClick={() => run(onCollapseAll)}>
-            <ChevronsDownUp size={13} /> Collapse all inside
+            <ChevronsDownUp size={13} /> Collapse All Inside
           </button>
         </>
       )}
@@ -323,7 +323,7 @@ export function ContextMenu({
           three" that isn't just a different feature. */}
       {!isMultiple && hasChildren && (
         <button type="button" onClick={() => run(onFocusHere)}>
-          <Crosshair size={13} /> Focus here
+          <Crosshair size={13} /> Focus Here
         </button>
       )}
       {/* Multi-selection included: hiding a run of pages is most of why anyone
@@ -331,11 +331,11 @@ export function ContextMenu({
           done ten times as it does done once. */}
       <button type="button" onClick={() => run(onToggleHidden)}>
         {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}{" "}
-        {isHidden ? "Show to readers" : "Hide from readers"}
+        {isHidden ? "Show to Readers" : "Hide from Readers"}
       </button>
       {!isMultiple && (
         <button type="button" onClick={() => run(onToggleProjectHome)}>
-          <Home size={13} /> {isProjectHome ? "Remove as project home" : "Set as project home"}
+          <Home size={13} /> {isProjectHome ? "Remove as Project Home" : "Set as Project Home"}
         </button>
       )}
       {/* Single selection only. Pinning a run of pages at once would fill the
@@ -344,7 +344,7 @@ export function ContextMenu({
       {!isMultiple && (
         <button type="button" onClick={() => run(onTogglePinned)}>
           {isPinned ? <PinOff size={13} /> : <Pin size={13} />}{" "}
-          {isPinned ? "Remove shortcut" : "Set as shortcut"}
+          {isPinned ? "Remove Shortcut" : "Set as Shortcut"}
         </button>
       )}
       {/* Single selection only, for the same reason Reveal is: the panel is
@@ -352,7 +352,7 @@ export function ContextMenu({
           about six of them at once. */}
       {!isMultiple && (
         <button type="button" onClick={() => run(onShowHistory)}>
-          <History size={13} /> Earlier versions
+          <History size={13} /> Earlier Versions
           {historyCount !== null && (
             <span className="tree-context-menu-count">{historyCount === 0 ? "none yet" : historyCount}</span>
           )}
@@ -369,7 +369,7 @@ export function ContextMenu({
       {/* A submenu now that there are three formats, with two more to come.
           This menu is already long, and five export lines in it would be five
           lines nobody reads — a person exporting looks for the word rather
-          than for a format. Same swap as Move to and Sort sub-pages. Her
+          than for a format. Same swap as Move to and Sort Sub-pages. Her
           call, 2026-09-10. */}
       <button type="button" className="tree-context-menu-submenu" onClick={onExport}>
         <Upload size={13} /> Export

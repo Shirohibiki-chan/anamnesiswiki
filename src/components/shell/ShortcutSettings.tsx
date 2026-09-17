@@ -136,7 +136,7 @@ export function ShortcutSettings() {
 
       {hasAnyOverride && (
         <button type="button" className="ui-link shortcut-reset-all" onClick={() => resetAll().catch(() => setProblem(SAVE_FAILED_MESSAGE))}>
-          Reset all to defaults
+          Reset All to Defaults
         </button>
       )}
     </div>

@@ -87,10 +87,10 @@ describe("sharing a page template", () => {
     // A template of a real page, made the way she would make one.
     await searchTree(app.window, "Verity Jiang");
     await treeRow(app.window, "Verity Jiang").first().click({ button: "right" });
-    await app.window.getByText("Save as template", { exact: true }).click();
+    await app.window.getByText("Save as Template", { exact: true }).click();
     // It asks whether the pages inside come too; take them, so the round trip
     // below has a subtree to carry.
-    await app.window.getByRole("button", { name: "Include sub-pages", exact: true }).click();
+    await app.window.getByRole("button", { name: "Include Sub-pages", exact: true }).click();
     await openRailPanel(app.window, "Templates");
   }, 180_000);
 
@@ -110,7 +110,7 @@ describe("sharing a page template", () => {
     // is built before the modal opens.
     expect(await modal.locator(".export-modal-summary").innerText()).toMatch(/\d+ pages?/);
 
-    await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
+    await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).click();
     await expect.poll(() => modal.locator(".export-modal-path").count(), { timeout: 30_000 }).toBe(1);
     await app.window.getByRole("button", { name: "Done", exact: true }).click();
     await modal.waitFor({ state: "detached", timeout: 10_000 });
@@ -122,7 +122,7 @@ describe("sharing a page template", () => {
     const before = await ownTemplateCount(app);
 
     await answerOpenWith(app, saved);
-    await app.window.getByRole("button", { name: "Open a template file", exact: true }).click();
+    await app.window.getByRole("button", { name: "Open a Template File", exact: true }).click();
 
     // It says what landed rather than leaving her to go and look.
     const notice = app.window.locator(".confirm-dialog-message");

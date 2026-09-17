@@ -45,6 +45,7 @@ import { useEditorImageLightbox } from "../../hooks/use-lightbox";
 import { useFormattingBar } from "../../hooks/use-preferences";
 import { EditorIconPicker } from "../blocks/EditorIconPicker";
 import { BlockAnchorArrival, BlockAnchorMenuItem } from "./BlockAnchor";
+import { CalloutColorMenuItem } from "./CalloutColorMenuItem";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
@@ -220,10 +221,11 @@ function PageSideMenu(props: SideMenuProps) {
       <AddBlockButton />
       <DragHandleButton {...props}>
         <BlockAnchorMenuItem />
+        <CalloutColorMenuItem />
         <RemoveBlockItem>Delete</RemoveBlockItem>
         <BlockColorsItem>Colors</BlockColorsItem>
-        <TableRowHeaderItem>Header row</TableRowHeaderItem>
-        <TableColumnHeaderItem>Header column</TableColumnHeaderItem>
+        <TableRowHeaderItem>Header Row</TableRowHeaderItem>
+        <TableColumnHeaderItem>Header Column</TableColumnHeaderItem>
       </DragHandleButton>
     </SideMenu>
   );

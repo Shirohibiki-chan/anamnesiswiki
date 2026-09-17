@@ -40,6 +40,15 @@ export type TemplateDefinition = {
    * read as a restriction that no longer exists.
    */
   alwaysDirectory: boolean;
+  /**
+   * Set on the kinds of page that are not a page of writing with headings:
+   * a canvas, a drawing, a container, a home page, a plain note. The New
+   * Page landing lists these apart from the templates and says what each
+   * one is — her call, 2026-09-15: a storyline beside Character and Race in
+   * one grid of identical buttons read as a mess. The blurb is the one
+   * line under its name there.
+   */
+  special?: { blurb: string };
   tabs: TabSeed[];
   properties: PropertySpec[];
   /**
@@ -169,6 +178,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   storyline: {
     key: "storyline",
     label: "Storyline",
+    special: { blurb: "A canvas of scenes, joined by what leads to what." },
     alwaysDirectory: true,
     tabs: [],
     properties: [],
@@ -179,6 +189,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   board: {
     key: "board",
     label: "Board",
+    special: { blurb: "A whiteboard to draw and pin things on." },
     alwaysDirectory: true,
     tabs: [],
     properties: [],
@@ -186,6 +197,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   folder: {
     key: "folder",
     label: "Folder",
+    special: { blurb: "Holds other pages, and nothing else." },
     alwaysDirectory: true,
     tabs: [],
     properties: [],
@@ -736,6 +748,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   dashboard: {
     key: "dashboard",
     label: "Dashboard",
+    special: { blurb: "A home page: capture box, recent pages, shortcuts." },
     alwaysDirectory: false,
     tabs: [
       {
@@ -756,6 +769,7 @@ export const TEMPLATE_REGISTRY: Record<TemplateKey, TemplateDefinition> = {
   note: {
     key: "note",
     label: "Note",
+    special: { blurb: "Plain writing, with no fields to fill." },
     alwaysDirectory: false,
     tabs: [
       {
