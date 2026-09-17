@@ -24,6 +24,7 @@ import {
 } from "../constants/storyline";
 import type { StorylineBand, StorylineEdge } from "../constants/schema";
 import { scenesOnBand, type DrawnNote, type DrawnScene, type StorylineModel,
+  clampNodeSize,
   sceneHeight,
   sceneWidth,
   type SceneHeights,
@@ -133,7 +134,7 @@ export type StorylineViewOptions = {
    */
   onMoveBand: (bandId: string, to: Point, carried: string[]) => void;
   /** Called on letting go of a card's corner, with its new width. */
-  onResizeScene: (sceneId: string, width: number) => void;
+  onResizeScene: (sceneId: string, size: { width: number; height: number }) => void;
   /** Called on letting go of a band's corner. */
   onResizeBand: (bandId: string, size: { width: number; height: number }) => void;
 };
@@ -239,9 +240,11 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
    * at.
    */
   const [resizing, setResizing] = useState<{ id: string; size: { width: number; height: number } } | null>(null);
-  /** A card whose corner is being dragged, and the width it is at. */
-  const [sizing, setSizing] = useState<{ id: string; width: number } | null>(null);
-  const sizingRef = useRef<{ id: string; fromX: number; atWidth: number } | null>(null);
+  /** A card whose corner is being dragged, and the size it is at. */
+  const [sizing, setSizing] = useState<{ id: string; width: number; height: number } | null>(null);
+  const sizingRef = useRef<{ id: string; fromX: number; fromY: number; atWidth: number; atHeight: number } | null>(
+    null,
+  );
 
   // React's documented alternative to an effect that syncs state: adjust during
   // render, keyed on the value that changed. An effect here would set five
@@ -278,7 +281,7 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       model.scenes.map((scene) => ({
         ...scene,
         ...(dragging[scene.id] ?? {}),
-        ...(sizing && sizing.id === scene.id ? { width: sizing.width } : {}),
+        ...(sizing && sizing.id === scene.id ? { width: sizing.width, height: sizing.height } : {}),
       })),
     [model.scenes, dragging, sizing],
   );
@@ -706,20 +709,42 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     [resizing, onResizeBand],
   );
 
-  const startSceneResize = useCallback((event: React.PointerEvent<HTMLElement>, scene: DrawnScene) => {
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    sizingRef.current = { id: scene.id, fromX: event.clientX, atWidth: sceneWidth(scene) };
-    setSizing({ id: scene.id, width: sceneWidth(scene) });
-  }, []);
+  const startSceneResize = useCallback(
+    (event: React.PointerEvent<HTMLElement>, scene: DrawnScene) => {
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      // From the height it is drawn at, so the corner starts under the hand
+      // whether the card's height is the words' or one she set.
+      const atHeight = Math.max(scene.height ?? 0, sceneHeight(scene.id, heights));
+      sizingRef.current = {
+        id: scene.id,
+        fromX: event.clientX,
+        fromY: event.clientY,
+        atWidth: sceneWidth(scene),
+        atHeight,
+      };
+      setSizing({ id: scene.id, width: sceneWidth(scene), height: atHeight });
+    },
+    [heights],
+  );
 
   const moveSceneResize = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       const drag = sizingRef.current;
       if (!drag) return;
       // The card is centred on its point, so pulling the right corner out by
-      // one unit widens the card by two — it grows both ways to stay put.
-      setSizing({ id: drag.id, width: Math.round(drag.atWidth + (2 * (event.clientX - drag.fromX)) / zoom) });
+      // one unit widens the card by two — it grows both ways to stay put. The
+      // top edge stays where it is, so the height grows one for one. Held
+      // between the floors and the ceilings *while* dragging: the first cut
+      // only clamped on release, and a card dragged narrow collapsed into a
+      // column of single letters until the mouse came up.
+      setSizing({
+        id: drag.id,
+        ...clampNodeSize({
+          width: drag.atWidth + (2 * (event.clientX - drag.fromX)) / zoom,
+          height: drag.atHeight + (event.clientY - drag.fromY) / zoom,
+        }),
+      });
     },
     [zoom],
   );
@@ -731,7 +756,7 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
-      if (drag && sizing && sizing.id === drag.id) onResizeScene(drag.id, sizing.width);
+      if (drag && sizing && sizing.id === drag.id) onResizeScene(drag.id, { width: sizing.width, height: sizing.height });
       setSizing(null);
     },
     [sizing, onResizeScene],

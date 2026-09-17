@@ -190,7 +190,7 @@ export function PageStoryline({ node }: { node: Node }) {
   );
 
   const onResizeScene = useCallback(
-    (sceneId: string, width: number) => resizeStorylineNode(node.id, sceneId, width),
+    (sceneId: string, size: { width: number; height: number }) => resizeStorylineNode(node.id, sceneId, size),
     [resizeStorylineNode, node.id],
   );
 
@@ -812,6 +812,8 @@ export function PageStoryline({ node }: { node: Node }) {
                   {
                     left: scene.x - sceneWidth(scene) / 2,
                     width: sceneWidth(scene),
+                    // A set height is a floor under the words, never a cap.
+                    ...(scene.height ? { minHeight: scene.height } : {}),
                     // The point is the middle of the top row; the card runs
                     // down from it as far as its description goes.
                     top: scene.y - STORYLINE_NODE_HEIGHT / 2,
@@ -978,7 +980,7 @@ export function PageStoryline({ node }: { node: Node }) {
                   type="button"
                   className="storyline-node-resize"
                   aria-label={`Resize ${scene.name}`}
-                  title="Drag to make this card wider or narrower"
+                  title="Drag to resize this card"
                   onPointerDown={(event) => startSceneResize(event, scene)}
                   onPointerMove={moveSceneResize}
                   onPointerUp={endSceneResize}

@@ -29,6 +29,7 @@ import {
   STORYLINE_NEW_BAND_WIDTH,
   STORYLINE_NEW_NODE_GAP,
   STORYLINE_NODE_HEIGHT,
+  STORYLINE_MAX_NODE_HEIGHT,
   STORYLINE_MAX_NODE_WIDTH,
   STORYLINE_MIN_NODE_WIDTH,
   STORYLINE_NODE_WIDTH,
@@ -56,12 +57,30 @@ export function sceneWidth(node: { width?: number }): number {
   return node.width ?? STORYLINE_NODE_WIDTH;
 }
 
-/** Sets a card's width, held between the floor and the ceiling. */
-export function resizeNode(storyline: Storyline, nodeId: string, width: number): Storyline {
-  const clamped = Math.round(Math.min(STORYLINE_MAX_NODE_WIDTH, Math.max(STORYLINE_MIN_NODE_WIDTH, width)));
+/** A card's size held between the floors and the ceilings — used mid-drag too, so a card never collapses on the way. */
+export function clampNodeSize(size: { width: number; height: number }): { width: number; height: number } {
+  return {
+    width: Math.round(Math.min(STORYLINE_MAX_NODE_WIDTH, Math.max(STORYLINE_MIN_NODE_WIDTH, size.width))),
+    height: Math.round(Math.min(STORYLINE_MAX_NODE_HEIGHT, Math.max(STORYLINE_NODE_HEIGHT, size.height))),
+  };
+}
+
+/**
+ * Sets a card's size from its corner. The height stored is a floor under the
+ * words, so dragging back down to the bare row clears it rather than storing
+ * a number that changes nothing.
+ */
+export function resizeNode(storyline: Storyline, nodeId: string, size: { width: number; height: number }): Storyline {
+  const clamped = clampNodeSize(size);
   return {
     ...storyline,
-    nodes: storyline.nodes.map((node) => (node.id === nodeId ? { ...node, width: clamped } : node)),
+    nodes: storyline.nodes.map((node) => {
+      if (node.id !== nodeId) return node;
+      const next: StorylineNode = { ...node, width: clamped.width };
+      if (clamped.height > STORYLINE_NODE_HEIGHT) next.height = clamped.height;
+      else delete next.height;
+      return next;
+    }),
   };
 }
 
@@ -95,6 +114,7 @@ export function readStoryline(raw: unknown): Storyline {
       x: typeof node.x === "number" && Number.isFinite(node.x) ? node.x : 0,
       y: typeof node.y === "number" && Number.isFinite(node.y) ? node.y : 0,
       ...(typeof node.width === "number" && node.width > 0 ? { width: node.width } : {}),
+      ...(typeof node.height === "number" && node.height > 0 ? { height: node.height } : {}),
     });
   }
   const readEdges: StorylineEdge[] = [];
