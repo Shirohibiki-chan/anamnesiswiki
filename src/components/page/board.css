@@ -2,12 +2,14 @@
    The sizing is the storyline's: a fixed height in the page, the whole window
    when expanded, and one element either way. */
 
+/* The rest of the page to its bottom edge, out past the gutters — the same
+   call the storyline makes, and page.css says why. */
 .board {
   position: relative;
-  height: 32rem;
-  margin-bottom: var(--space-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  flex: 1 1 auto;
+  min-height: 24rem;
+  margin: var(--space-md) calc(-1 * var(--page-gutter)) 0;
+  border-top: 1px solid var(--color-border);
   background: var(--color-background);
   overflow: hidden;
 }

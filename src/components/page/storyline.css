@@ -8,14 +8,17 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  /* Tall enough to arrange something in without swallowing the page. The page
-     column scrolls; this does not grow with the number of scenes, because a
-     canvas that got taller as the story got longer would push everything under
-     it off the screen. Expand is how you get the rest of the monitor. */
-  height: 32rem;
-  margin-bottom: var(--space-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  /* The rest of the page, to its bottom edge, and out to the column's edges
+     past the gutters — the canvas *is* the page since 2026-09-17 (see
+     page.css). Never shorter than 24rem, so a short window still has a
+     canvas rather than a slot; the column scrolls then. It does not grow
+     with the number of scenes: a canvas that got taller as the story got
+     longer would be the page moving under her. Expand still takes the
+     whole window, sidebars and all. */
+  flex: 1 1 auto;
+  min-height: 24rem;
+  margin: var(--space-md) calc(-1 * var(--page-gutter)) 0;
+  border-top: 1px solid var(--color-border);
   background: var(--color-background);
   overflow: hidden;
 }

@@ -40,6 +40,39 @@
   padding-top: var(--space-md);
 }
 
+/* **A canvas page is the whole page.** A storyline or a board is not writing
+   in a reading column: its body is a surface she arranges things on, and
+   boxing it into 32rem inside a 60rem column left it a small window on a big
+   empty page — her comparison on 2026-09-17 was to how a board fills the
+   window elsewhere, title at the top, canvas to every edge. So the shell
+   takes the column's full height, the reading width is lifted, and the
+   canvas (`.storyline`, `.board`) grows to the bottom edge and bleeds to the
+   gutters. The title, breadcrumb and banner stay above it, tighter. A
+   dashboard is the same width without the height: it is blocks, not a
+   canvas, and it should use the room. */
+.page-view-shell[data-template="storyline"],
+.page-view-shell[data-template="board"] {
+  height: 100%;
+}
+
+.page-view-shell[data-template="storyline"] > .page-view,
+.page-view-shell[data-template="board"] > .page-view,
+.page-view-shell[data-template="dashboard"] > .page-view {
+  max-width: none;
+}
+
+.page-view-shell[data-template="storyline"] > .page-view,
+.page-view-shell[data-template="board"] > .page-view {
+  min-height: 0;
+  padding-top: var(--space-xl);
+  padding-bottom: 0;
+}
+
+.page-view-shell[data-template="storyline"] > .page-banner + .page-view,
+.page-view-shell[data-template="board"] > .page-banner + .page-view {
+  padding-top: var(--space-md);
+}
+
 .page-banner-empty + .page-view {
   padding-top: var(--space-lg);
 }
