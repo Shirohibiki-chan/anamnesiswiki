@@ -39,6 +39,7 @@ import {
   storylineScenePlacements,
   storylineScenePositions,
   storylineScenesLeftToRight,
+  storylineSceneNameOffset,
   storylineSceneSizes,
   storylineSceneSummaries,
   takeSceneOffCanvas,
@@ -256,6 +257,10 @@ describe("a storyline's canvas", () => {
     const after = ratio(await storylineSceneSizes(app.window));
     expect(after.wide).toBeGreaterThan(before.wide * 1.2);
     expect(after.tall).toBeGreaterThan(before.tall * 1.5);
+    // The words stay at the top of a taller card; the room is at the bottom.
+    // A grid shares spare height between its rows unless told not to, which
+    // floated the name halfway down — her screenshot, 2026-09-17.
+    expect(await storylineSceneNameOffset(app.window, index)).toBeLessThan(24);
 
     // And narrower than the floor collapses nothing: a drag well past the
     // narrowest a card can be lands at the floor, mid-drag and after.

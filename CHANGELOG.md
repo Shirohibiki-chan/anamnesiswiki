@@ -5,6 +5,7 @@
 ### Fixes
 
 - **Dragging a bubble narrower no longer collapses it into a column of single letters on the way.** The narrowest a bubble can be was only enforced when you let go; now it holds while you drag.
+- **A bubble made taller keeps its words at the top.** The name was floating halfway down and the description sitting at the bottom, with the empty room split between them.
 - **The corner resizes height as well as width.** Drag down to make a bubble taller. A bubble is never shorter than its words — drag up past them and it stays at the words — and dragging back down to the plain one-row size clears the height rather than remembering a number that changes nothing.
 
 ## 2026-09-15 — Everything a bubble can do is on the bubble

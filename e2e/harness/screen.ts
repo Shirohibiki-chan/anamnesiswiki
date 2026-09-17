@@ -2302,6 +2302,15 @@ export async function storylineSceneSizes(window: Page): Promise<Record<string, 
   return sizes;
 }
 
+/** How far down a card its name sits, in window pixels — its top stays near the card's top however tall the card. */
+export async function storylineSceneNameOffset(window: Page, index: number): Promise<number> {
+  const node = window.locator(STORYLINE_NODE).nth(index);
+  const card = await node.boundingBox();
+  const name = await node.locator(STORYLINE_NODE_NAME_TEXT).boundingBox();
+  if (!card || !name) throw new Error(`No scene at index ${index}`);
+  return name.y - card.y;
+}
+
 /** A card's width on screen, in window pixels. */
 export async function storylineSceneWidth(window: Page, index: number): Promise<number> {
   const box = await window.locator(STORYLINE_NODE).nth(index).boundingBox();
