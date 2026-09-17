@@ -259,9 +259,14 @@
 
 .storyline-node-body {
   position: relative;
-  /* Icon and name on the first row, the description under both. */
+  /* Icon and name on the first row, the description under both. Packed to
+     the top: a card dragged taller than its words is a box with room at the
+     bottom, not a name floating halfway up and the words at the floor —
+     which is what a grid does with spare height when it is not told
+     otherwise, and what her screenshot showed on 2026-09-17. */
   display: grid;
   grid-template-columns: auto 1fr;
+  align-content: start;
   align-items: center;
   column-gap: var(--space-sm);
   row-gap: 3px;
