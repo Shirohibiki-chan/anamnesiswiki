@@ -541,6 +541,60 @@
   --bn-font-family: var(--font-prose) !important;
 }
 
+/* --- The text and background colour menu ---
+
+   **The colours the menu paints with have to reach the menu.** The library
+   sets its `--bn-colors-highlights-*` on `.bn-root`, and the kept-on-screen
+   formatting bar is portaled out of it (see above), so every colour row in
+   *its* menu resolved to nothing and drew a white "A" — her screenshot,
+   2026-09-17: eighteen rows of the same letter with no clue what any of them
+   would do. The library's dark set is put on the root so the menu finds it
+   wherever it opens; inside the editor the library's own values still win.
+
+   **And the swatch is a swatch.** A 12px letter in the colour was not
+   readable as a colour even where it worked — grey, green and brown on a
+   dark panel were near-invisible. Each row's tile is a filled square now: a
+   text colour tints the tile and draws the letter in the colour, a
+   background colour fills it and draws the letter white. */
+:root {
+  --bn-colors-highlights-gray-text: #bebdb8;
+  --bn-colors-highlights-gray-background: #9b9a97;
+  --bn-colors-highlights-brown-text: #b07a62;
+  --bn-colors-highlights-brown-background: #64473a;
+  --bn-colors-highlights-red-text: #ec4040;
+  --bn-colors-highlights-red-background: #be3434;
+  --bn-colors-highlights-orange-text: #e3790d;
+  --bn-colors-highlights-orange-background: #b7600a;
+  --bn-colors-highlights-yellow-text: #dfab01;
+  --bn-colors-highlights-yellow-background: #b58b00;
+  --bn-colors-highlights-green-text: #6fb3a8;
+  --bn-colors-highlights-green-background: #4d6461;
+  --bn-colors-highlights-blue-text: #2f9fd6;
+  --bn-colors-highlights-blue-background: #0b6e99;
+  --bn-colors-highlights-purple-text: #9a6ae6;
+  --bn-colors-highlights-purple-background: #6940a5;
+  --bn-colors-highlights-pink-text: #e0409f;
+  --bn-colors-highlights-pink-background: #ad1a72;
+}
+
+.bn-color-icon {
+  width: 20px !important;
+  height: 20px !important;
+  line-height: 20px !important;
+  font-size: 12px !important;
+  font-weight: 700;
+  border-radius: 4px !important;
+  border: 1px solid color-mix(in srgb, currentcolor 45%, transparent) !important;
+  background: color-mix(in srgb, currentcolor 30%, transparent);
+}
+
+/* A background colour's tile is the colour itself, with a white letter on
+   it — the library sets the background from the same variable. */
+.bn-color-icon:not([data-background-color="default"]) {
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
 /* --- The formatting bar, kept on screen (Settings -> Writing) ---
 
    Sticky rather than fixed, so it stays with the page column as it scrolls
