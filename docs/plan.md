@@ -675,6 +675,134 @@ step that touches her own world.
 
 ---
 
+## Phase 32 — Boards, Full Pass
+
+Scoped 2026-09-17, from LegendKeeper's own board tutorial ("Board Bastion",
+nine panels). The ask: our boards have everything on it. The spike (shipped
+2026-09-13, `docs/shipped.md` § Board spike) put Excalidraw in a page; this
+phase is what sits between that and parity, audited panel by panel against
+the library at 0.18.1 rather than from memory.
+
+**Most of the tutorial is already there, because the library is.** Zoom on
+Ctrl+wheel and pan on the wheel; the right-click menu with copy, paste,
+select all, lock and unlock, unlock all, group, bring forward and back;
+locking with Ctrl+Shift+L; every style on LK's panel — colours, fill
+pattern, stroke width and style, font size S to XL — and several LK does
+not offer; freehand, arrows, lines, shapes, text; pictures by drop, paste or
+the tool, with cropping (double-click a picture; LK holds Ctrl while
+resizing, the library has its own gesture, and either is fine); frames on F
+with a label; grouping on Ctrl+G; save as PNG or SVG. A sticky note is a
+filled rectangle with words in it, which is what LK's is too. Nothing here
+is built; it is all checked as present and not switched off.
+
+**What is not there, in the order it would matter to her:**
+
+1. **Page cards.** LK's centrepiece: a page put on the board becomes a live
+   card — icon, name and the page's picture — that reads its page rather
+   than copying it, so a rename or a new picture shows up on the board. The
+   card is resized into three presentations: small is the icon alone, medium
+   is icon and name, large adds the picture. Today a shape can *link* to a
+   page (the spike's second day); nothing on the board *is* a page.
+2. **A card is a button.** Click a card and the page opens. Today a link is
+   followed only through the small link mark at a shape's corner, because the
+   library opens a link from the shape itself in its read-only mode alone.
+   LK's rule is the better one: a *locked* shape with a link opens on a
+   click anywhere on it, since a locked shape cannot be moved or edited and
+   a click on it can mean nothing else.
+3. **Pictures through the world's library.** A picture dropped on a board
+   is held inside `_board.json` as a data URL — three photos make a
+   three-megabyte file, and Assets cannot see them. The ideas list has had
+   this since the spike; it is step 3 because page cards and bookmark cards
+   both draw pictures and should land on the right mechanism, not the
+   temporary one. The Assets panel already drags a picture into a page;
+   the board takes the same drag.
+4. **Bookmark cards.** Paste a web address and get a card with the page's
+   title, description and picture; click it and the address opens in the
+   browser. Today a pasted address is a line of text with a link on it.
+5. **A page opened on the board.** LK's "nested article": stretch a page
+   card past a threshold and it stops being a card and shows the page's
+   writing, editable, in the board. The biggest step and the one with the
+   open question — see below.
+6. **Boards in the exports.** A board is not in the Markdown, website or LK
+   export. The Markdown and site exports carry a picture of it (the library
+   draws PNG and SVG); the LK export names it in its lossy list, since LK's
+   file has no shape for a drawing.
+7. **Theme follows while open.** A board reads light or dark once, when it
+   is opened; a theme switched with a board open is caught on the next
+   visit. Small, and last because nobody has noticed.
+
+**Not in this phase, and why, so it is not re-asked:**
+
+- **A map on a board.** LK nests its interactive maps with clickable pins.
+  Anamnesis has no maps at all — not the template, not the pins — and a
+  map is its own phase before it can be anything's card. Left out rather
+  than deferred: nothing here is shaped for it.
+- **Cursor chat and permissions.** Both panels are about several people on
+  one board. This is one person's world on one disk.
+- **Frames inside frames.** LK's do; the library's do not, and a frame is a
+  labelled region for tidying, so a frame in a frame is a nicety rather
+  than a way of working. Not worth carrying a fork of the library for.
+- **A moving GIF.** The library draws pictures to a canvas, so an animated
+  one shows its first frame. Same answer: not worth a fork.
+- **Nesting a board in a board.** LK's tutorial says theirs cannot either.
+
+### How page cards and bookmark cards are built
+
+Decided up front so steps 1, 4 and 5 are one mechanism, not three. The
+library has an *embed* element — a rectangle that holds a web page, drawn
+by a host-supplied component when the host says the address is one it
+knows how to draw (`renderEmbeddable`, `validateEmbeddable`). A page card
+is an embed whose address is `anamnesis://page/<id>`, the link form the
+spike already writes, drawn by a small React card that reads the page live
+from the store; a bookmark is an embed holding the web address, drawn from
+the title, description and picture fetched once and kept on the element
+(`customData`), so it draws whole with the internet off — Phase 31's rule
+for players, applied here. The library owns the element's box, moving,
+resizing, locking, grouping, undo and the file on disk; the app owns only
+what is drawn inside it. That keeps `docs/handoff.md` § Boards' first rule
+— the app never reads inside an element — with one named exception: an
+embed's address and its `customData`, which are the app's own.
+
+**Putting a page on a board, two ways.** *Put a page on it* in the board's
+top-right slot, the storyline's search box exactly, staying open for
+several picks. And dragging a row out of the tree onto the board — the
+tree's rows already drag for reordering, so the drop side is what is new.
+The search box is the sure path and ships first; the drag is the one LK
+leads with and follows in the same step.
+
+**The card's three sizes are read off its box**, never stored: below one
+width it is the icon, below another it is icon and name, above that it is
+the picture with the name over it, in the style of the tree's own rows and
+the page's banner. So resizing changes the presentation with nothing to
+set, which is what LK's "resize the card" arrow means.
+
+**The open question — step 5.** A page shown editable inside a board is a
+second editor open on a second page while the board's page is also open,
+which is the situation Phase 21.5 (Split Panes) was deferred over. Two
+answers on the table: show the page read-only in the card with an *Edit*
+that opens it properly (cheap, and honest), or mount the real editor in
+the card (what LK does, and what the panel promises). Step 5 starts with
+the read-only card and the question is put to her *with the card running*,
+which is how design questions get answered here.
+
+**What is verified before step 1 is called done, because the library's
+embed has habits of its own:** an embed takes a first click to select and
+a second to wake; a page card has to open on the second click and a locked
+one on the first, or the "button" panel is not delivered. The library's
+own link popup still shows the raw `anamnesis://page/…` string on a linked
+shape (known since the spike); page cards make that popup a corner case
+rather than the way in, which is the fix available without forking.
+
+### Order
+
+1 → 2 → 3 → 4 → 5 → 6 → 7, each its own PR. Steps 1 and 2 are the tutorial's
+two big panels and ship first; step 3 before step 4 so bookmark pictures
+never touch the data-URL path; step 5 after the question above is
+answered on a running card. Steps 6 and 7 are small and independent and
+can go in either order.
+
+---
+
 ## Open Questions — Phases 27 & 28
 
 **All closed 2026-08-14.** Kept as a record of what was decided and where the
