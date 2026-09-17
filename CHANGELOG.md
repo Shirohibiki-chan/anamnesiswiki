@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-17 — Canvas pages are the whole page
+
+### Changes
+
+- **A storyline or a board fills the page.** Title and breadcrumb at the top, then the canvas to the bottom edge and out to the column's edges — the way a board fills the window elsewhere — instead of a fixed-height box inside the reading column with empty page around it. Never shorter than 24rem in a short window; the page scrolls then. *Fill the window* still takes the sidebars too.
+- **A dashboard uses the full width of the page** rather than the reading column.
+
 ## 2026-09-16 — Bubbles resize both ways
 
 ### Fixes
@@ -291,17 +298,3 @@
 ### Notes
 
 - **Properties come out as a short list under each page's heading**, since a single file can only carry one properties block and it has to be at the very top.
-
-## 2026-09-10 — Export as Markdown
-
-### Additions
-
-- **Export as Markdown**, on the project menu and on any page's right-click menu, beside the LegendKeeper one. It writes your world as a folder of `.md` files you can open as an Obsidian vault, or read in anything else that reads markdown.
-- **It says what it's about to do before it does it** — how many pages, how many pictures it will copy, and which blocks come out as plain writing rather than staying live.
-- **A new folder every time.** Pick where it goes and it makes a folder named after your project inside it; export twice and the second is *(2)*. It never writes over a folder that's already there, because an export isn't a sync and it has no way of knowing what belongs to the last one.
-- **A button to open the folder when it's done**, rather than a path you'd have to type out.
-
-### Notes
-
-- **A picture that won't read is reported, not fatal.** The rest of the export still lands, and the modal says how many were missed — losing one picture is bad, losing the whole export because of one is worse.
-- **Nothing is asked of you beyond where to put it.** The LegendKeeper export has a picture switch because that format can't hold pictures; a markdown folder just takes them, because a folder pointing back at your project folder wouldn't be much of a way out.
