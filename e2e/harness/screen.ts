@@ -1902,11 +1902,38 @@ const BOARD_PICKER_INPUT = ".board-picker input";
 const BOARD_HYPERLINK = ".excalidraw-hyperlinkContainer-link";
 
 /**
+ * Waits for a just-typed page name to have left its box and been drawn as
+ * the heading, before anything under it is aimed at.
+ *
+ * **Enter moves the grid.** The name is typed into a one-line box; on Enter
+ * it becomes a heading, and a heading long enough to wrap is taller than the
+ * box was — so everything under it shifts down a line, after Playwright has
+ * decided where the button is and before the press lands. On a wide window
+ * nothing wraps and nothing moves; on CI's narrower one the click went into
+ * the hint above the grid and the page stayed blank. Found through #449's
+ * board scenario, 2026-09-17.
+ */
+async function titleSettled(window: Page): Promise<void> {
+  const input = window.locator(".page-title-input");
+  // **The Enter a scenario pressed straight after typing the name may not
+  // have counted.** Traced 2026-09-17: it reaches the window, but React's
+  // handler on the box never fires for it — the first key after
+  // `keyboard.type` arrives looking like part of the typing — while a
+  // second Enter commits. Until now the click on a kind was what committed
+  // the name, by taking focus off the box; when that click's target then
+  // moved, nothing did. So: if the box is still there, press Enter *on it*.
+  if (await input.isVisible()) await input.press("Enter");
+  await input.waitFor({ state: "hidden", timeout: WAIT_MS });
+  await window.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+}
+
+/**
  * Turns the open page into a board, from the template grid a blank page
  * shows, and waits for the drawing library to have loaded — it comes in late,
  * on first use, so the grid button click is not the end of it.
  */
 export async function makeBoard(window: Page): Promise<void> {
+  await titleSettled(window);
   await window.locator(NEW_PAGE_GRID).getByRole("button", { name: "Board", exact: true }).click();
   await window.locator(BOARD_CANVAS).first().waitFor({ state: "visible", timeout: WAIT_MS });
 }
@@ -1942,9 +1969,18 @@ export async function drawBoardRectangle(window: Page): Promise<void> {
 }
 
 /**
- * Selects the shape `drawBoardRectangle` drew, by clicking its left edge with
- * the selection tool. The edge and not the middle: a shape with no fill is
- * hollow to the library, and a click inside it lands on the canvas.
+ * Selects the shape `drawBoardRectangle` drew, by clicking its left edge
+ * with the selection tool. The edge and not the middle: a shape with no fill
+ * is hollow to the library, and a click inside it lands on the canvas.
+ *
+ * **The edge is found by looking, not assumed.** It used to click at a
+ * fraction of the canvas — where the shape had been drawn — and the canvas
+ * does not stay put: filling the window and coming back, or CI's narrower
+ * window, leaves the drawing scrolled so that spot is empty, the click
+ * selected nothing and the link button never came (#449). Select-all does
+ * select it but the library only shows a linked shape's popup for a click,
+ * so the drawn pixels are read off the static canvas to find where the
+ * shape actually is.
  */
 export async function selectBoardShape(window: Page): Promise<void> {
   const canvas = window.locator(BOARD_CANVAS).first();
@@ -1952,7 +1988,30 @@ export async function selectBoardShape(window: Page): Promise<void> {
   if (!box) throw new Error("the board's canvas has no size");
   await window.keyboard.press("Escape");
   await window.keyboard.press("v");
-  await canvas.click({ position: { x: box.width * 0.3, y: box.height * 0.45 } });
+  const edge = await window.evaluate(() => {
+    const drawn = document.querySelector<HTMLCanvasElement>(".board .excalidraw__canvas.static");
+    if (!drawn) return null;
+    const context = drawn.getContext("2d");
+    if (!context) return null;
+    const { width, height } = drawn;
+    const pixels = context.getImageData(0, 0, width, height).data;
+    // The background is whatever the top-left pixel is; the shape is the
+    // first run of anything else, scanning rows from a third of the way down.
+    const bg = [pixels[0], pixels[1], pixels[2]];
+    const differs = (i: number) =>
+      Math.abs(pixels[i] - bg[0]) + Math.abs(pixels[i + 1] - bg[1]) + Math.abs(pixels[i + 2] - bg[2]) > 60;
+    for (let y = Math.floor(height * 0.3); y < height; y += 4) {
+      for (let x = 0; x < width; x += 1) {
+        if (differs((y * width + x) * 4)) {
+          const scale = drawn.width / drawn.getBoundingClientRect().width;
+          return { x: x / scale, y: y / scale };
+        }
+      }
+    }
+    return null;
+  });
+  if (!edge) throw new Error("no shape drawn on the board");
+  await canvas.click({ position: { x: edge.x + 1, y: edge.y } });
   await window.locator(BOARD_LINK_BUTTON).waitFor({ state: "visible", timeout: WAIT_MS });
 }
 
@@ -2008,6 +2067,7 @@ export async function toggleBoardExpand(window: Page): Promise<void> {
  * page made a moment ago is.
  */
 export async function makeStoryline(window: Page): Promise<void> {
+  await titleSettled(window);
   await window.locator(NEW_PAGE_GRID).getByRole("button", { name: "Storyline", exact: true }).click();
   await window.locator(STORYLINE).first().waitFor({ state: "visible", timeout: WAIT_MS });
 }
@@ -2760,6 +2820,7 @@ export async function makePageOfTemplate(window: Page, name: string, template: s
   await window.keyboard.press("Control+n");
   await window.keyboard.type(name);
   await window.keyboard.press("Enter");
+  await titleSettled(window);
   await window.locator(NEW_PAGE_GRID).getByRole("button", { name: template, exact: true }).click();
   await waitForPageTitle(window, name);
   await window.waitForTimeout(500);
