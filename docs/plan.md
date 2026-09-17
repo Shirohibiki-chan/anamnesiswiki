@@ -753,8 +753,52 @@ is built; it is all checked as present and not switched off.
    animated one shows its first frame; LK's tutorial has one playing. The
    same kind of change as step 3 — the library's drawing, not the app —
    decoding the frames (Electron's engine has `ImageDecoder`) and
-   redrawing while one is on screen. Last because it rides on step 3's
-   patching path and nothing rides on it.
+   redrawing while one is on screen. Rides on step 3's patching path;
+   nothing rides on it.
+
+**Five more, added 2026-09-17 after the second look.** LK's boards turned
+out to be built on tldraw rather than Excalidraw (the twelve-colour grid,
+S/M/L/XL, `/` for cursor chat, F for frames, Ctrl to crop — all tldraw's
+stock UI), and tldraw is out for Anamnesis on licence alone: v1 is MIT but
+dead since 2023, v2 is non-commercial and share-alike, v3 onward needs a
+licence key with a watermark or a fee. So the question became what tldraw
+gives LK that our library does not, and her answer was all of it, minus
+other people's cursors. In the order they would matter:
+
+10. **Sticky notes are a real thing.** Today a sticky is a filled box with
+    words in it, which draws right and feels wrong: no colour swatch made
+    for it, no growing as you type, no rich text. A *Note* tool in the
+    board's top-right slot puts down a note in one of the twelve colours;
+    it grows with its words; its words take bold, italic and links, a page
+    link among them. Built as an embed drawn by the app (§ How page cards
+    and bookmark cards are built), which is what makes rich text possible
+    without touching the library's own text drawing.
+11. **A highlighter.** A pen that is wide, see-through and drawn under the
+    ink, for marking a region rather than writing in it. The library's pen
+    with a preset — wide, half-opacity, multiply blend — offered as its
+    own tool with its own shortcut (H), so it is a tool she picks and not
+    three settings she remembers.
+12. **Video on the board.** A video file dropped on the board — through the
+    world's library, step 4's mechanism — plays where it lands, in a
+    player drawn by the app inside an embed; a YouTube address pasted on
+    the board already plays through the library's own embed. Phase 31's
+    look applies: a still with a play mark until played, the page's frame
+    around it.
+13. **Several pages in one board.** tldraw's boards have tabs along the
+    bottom, sheets in a workbook. Here a board is already a page that
+    holds pages (`CLAUDE.md`'s standing rule — a board's sub-boards are
+    in the tree like anything else), so the tabs are drawn
+    from that rather than invented: a strip along the bottom of a board
+    listing the boards directly inside it, with a + that makes one, and
+    clicking a tab opens that board in place. No second notion of "page",
+    nothing new on disk, and the tree stays the truth.
+14. **Bold, italic and links in ordinary text.** The one on this list that
+    is the library's own text drawing and so a patch, like step 3: the
+    library lays text out on a canvas from one style per box. Notes (step
+    10) carry rich text from the start, which covers the sticky-note case
+    and most of what she would reach for; this step is the plain text box
+    catching up, and comes last because it is the heaviest patch of the
+    phase for the smallest visible change.
 
 **Not in this phase, and why, so it is not re-asked:**
 
@@ -762,8 +806,9 @@ is built; it is all checked as present and not switched off.
   Anamnesis has no maps at all — not the template, not the pins — and a
   map is its own phase before it can be anything's card. Left out rather
   than deferred: nothing here is shaped for it.
-- **Cursor chat and permissions.** Both panels are about several people on
-  one board. This is one person's world on one disk.
+- **Cursor chat, other people's cursors, and permissions.** All about
+  several people on one board. This is one person's world on one disk;
+  her call 2026-09-17 to leave these out when everything else went in.
 - **Nesting a board in a board.** LK's tutorial says theirs cannot either.
 
 ### How page cards and bookmark cards are built
@@ -815,12 +860,16 @@ rather than the way in, which is the fix available without forking.
 
 ### Order
 
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, each its own PR. Steps 1 and 2 are the
-tutorial's two big panels and ship first; step 3 is the first patch on the
-library and proves that path before anything else leans on it; step 4
-before step 5 so bookmark pictures never touch the data-URL path; step 6
-after the question above is answered on a running card. Steps 7 and 8 are
-small and independent and can go in either order; step 9 is last.
+1 → 2 → 3 → 4 → 5 → 10 → 6 → 11 → 12 → 13 → 7 → 8 → 9 → 14, each its own
+PR. Steps 1 and 2 are the tutorial's two big panels and ship first; step 3
+is the first patch on the library and proves that path before anything
+else leans on it; step 4 before step 5 so bookmark pictures never touch
+the data-URL path; step 10 right after 5 because notes are the third
+thing drawn by the app inside an embed and should be built while that
+mechanism is fresh; step 6 after the question above is answered on a
+running card. Steps 11 to 13 are independent of each other and of the
+patches. Steps 7 and 8 are small and can go in either order. Steps 9 and
+14 are the two remaining patches on the library and go last.
 
 ---
 
