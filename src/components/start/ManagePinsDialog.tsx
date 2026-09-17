@@ -97,7 +97,7 @@ export function ManagePinsDialog({
             </DndContext>
           )}
 
-          <h3 className="manage-pins-subhead">Everything else</h3>
+          <h3 className="manage-pins-subhead">Everything Else</h3>
           {unpinned.length === 0 ? (
             <p className="manage-pins-empty">Every project you have is pinned.</p>
           ) : (

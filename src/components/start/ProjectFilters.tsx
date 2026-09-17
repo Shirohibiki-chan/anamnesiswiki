@@ -108,7 +108,7 @@ export function ProjectFilters({
       ) : (
         <button type="button" className="start-scope start-scope-add" onClick={() => setIsAdding(true)}>
           <Plus size={12} />
-          New group
+          New Group
         </button>
       )}
     </div>
@@ -225,7 +225,7 @@ function GroupChip({
             }}
           >
             <Trash2 size={13} />
-            Delete group
+            Delete Group
           </button>
         </div>
       )}

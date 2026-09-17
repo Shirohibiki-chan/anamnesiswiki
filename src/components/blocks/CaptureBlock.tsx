@@ -74,7 +74,7 @@ export function CaptureBlock({ block, node, nodes, onOpen, autoFocus }: CaptureB
         <div className="block-collection-empty">
           The page this filed under is gone.{" "}
           <button type="button" className="block-inline-link block-capture-link" onClick={() => setRoot(undefined)}>
-            File under this page instead
+            File Under This Page Instead
           </button>
         </div>
       </div>

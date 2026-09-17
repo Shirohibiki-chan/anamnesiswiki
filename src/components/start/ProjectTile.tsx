@@ -127,8 +127,8 @@ export function ProjectTile({
       <button
         type="button"
         className="ui-icon-btn ui-icon-btn-lg project-tile-cover-btn"
-        aria-label={coverUrl ? "Remove cover" : "Set cover"}
-        title={coverUrl ? "Remove cover" : "Set cover"}
+        aria-label={coverUrl ? "Remove Cover" : "Set Cover"}
+        title={coverUrl ? "Remove Cover" : "Set Cover"}
         disabled={disabled}
         onClick={coverUrl ? onRemoveCover : onSetCover}
       >

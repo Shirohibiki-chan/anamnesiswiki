@@ -69,7 +69,7 @@ export function MarkdownExportModal({ rootIds, single, onClose }: { rootIds: str
   return createPortal(
     <div className="ui-backdrop" onClick={status === "saving" ? undefined : onClose}>
       <div className="ui-modal ui-modal-lg export-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="export-modal-title">{single ? "Export as one Markdown file" : "Export as Markdown"}</h2>
+        <h2 className="export-modal-title">{single ? "Export as One Markdown File" : "Export as Markdown"}</h2>
 
         {!plan && <p className="export-modal-error">There's nothing to export.</p>}
 
@@ -115,7 +115,7 @@ export function MarkdownExportModal({ rootIds, single, onClose }: { rootIds: str
                 onClick={() => void handleExport()}
                 disabled={status === "saving"}
               >
-                {status === "saving" ? "Writing…" : "Choose where to save"}
+                {status === "saving" ? "Writing…" : "Choose Where to Save"}
               </button>
             </div>
           </>

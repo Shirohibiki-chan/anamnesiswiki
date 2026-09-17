@@ -74,7 +74,7 @@ export function AddBlockMenu({
       {onApplyTemplate && (
         <>
           <button type="button" onClick={onApplyTemplate}>
-            <LayoutTemplate size={13} /> Apply a template
+            <LayoutTemplate size={13} /> Apply a Template
           </button>
           <div className="block-menu-separator" />
         </>
@@ -87,19 +87,19 @@ export function AddBlockMenu({
 
       <div className="tree-context-menu-heading">Blocks</div>
       <button type="button" onClick={() => onAdd("text")}>
-        <FileText size={13} /> Text block
+        <FileText size={13} /> Text Block
       </button>
       <button type="button" onClick={() => onAdd("tags")}>
         <Tags size={13} /> Tags
       </button>
       <button type="button" onClick={() => onAddCollection("manual")}>
-        <Link2 size={13} /> Manual links
+        <Link2 size={13} /> Manual Links
       </button>
       <button type="button" onClick={() => onAddCollection("subpages")}>
-        <ListTree size={13} /> Subpage index
+        <ListTree size={13} /> Subpage Index
       </button>
       <button type="button" onClick={() => onAddCollection("tags")}>
-        <TagsIcon size={13} /> Tag index
+        <TagsIcon size={13} /> Tag Index
       </button>
       {/* Named Backlinks rather than Mentions because that is the word she
           went looking for. Same block, same source picker underneath. */}
@@ -109,7 +109,7 @@ export function AddBlockMenu({
       {/* Phase 30: the two a home page was missing. Same block as the four
           above, with a source that reads an order the app already keeps. */}
       <button type="button" onClick={() => onAddCollection("recent")}>
-        <History size={13} /> Recently edited
+        <History size={13} /> Recently Edited
       </button>
       <button type="button" onClick={() => onAddCollection("pinned")}>
         <Pin size={13} /> Shortcuts
@@ -118,7 +118,7 @@ export function AddBlockMenu({
         <AtSign size={13} /> Alias
       </button>
       <button type="button" onClick={() => onAdd("capture")}>
-        <Inbox size={13} /> Quick capture
+        <Inbox size={13} /> Quick Capture
       </button>
 
       <div className="tree-context-menu-heading">Meters</div>

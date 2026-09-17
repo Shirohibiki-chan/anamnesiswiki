@@ -48,7 +48,7 @@ describe("keeping the formatting bar on screen", () => {
   });
 
   it("keeps the bar up with nothing selected once it is set to", async () => {
-    await chooseBar(/Stays at the top/);
+    await chooseBar(/Stays at the Top/);
     expect(await formattingBarShown(app.window)).toBe(true);
 
     // And it is *above* the writing, not after it. This is the assertion that
@@ -100,7 +100,7 @@ describe("keeping the formatting bar on screen", () => {
   });
 
   it("goes back to appearing on a selection", async () => {
-    await chooseBar(/Appears when you select/);
+    await chooseBar(/Appears When You Select/);
     expect(await formattingBarShown(app.window)).toBe(false);
   });
 });

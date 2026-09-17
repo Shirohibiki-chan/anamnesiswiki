@@ -122,7 +122,7 @@ export function ProjectHistory({ onClose }: { onClose: () => void }) {
                   )}
 
                   <section className="page-history-tab">
-                    <h4 className="page-history-tab-name">Home page</h4>
+                    <h4 className="page-history-tab-name">Home Page</h4>
                     <p className="page-history-tab-text">
                       {selected.project.homeNodeId ? (
                         (nameOf(selected.project.homeNodeId) ?? <em>a page that no longer exists</em>)
@@ -140,7 +140,7 @@ export function ProjectHistory({ onClose }: { onClose: () => void }) {
                   </section>
 
                   <section className="page-history-tab">
-                    <h4 className="page-history-tab-name">Top level, in order</h4>
+                    <h4 className="page-history-tab-name">Top Level, in Order</h4>
                     <p className="page-history-tab-text">
                       {selected.project.rootOrder.map(nameOf).filter(Boolean).join(", ") || <em>Empty</em>}
                     </p>
@@ -170,7 +170,7 @@ export function ProjectHistory({ onClose }: { onClose: () => void }) {
               onClick={() => void restore().then((ok) => ok && onClose())}
             >
               <RotateCcw size={14} />
-              {isRestoring ? "Restoring…" : "Restore this version"}
+              {isRestoring ? "Restoring…" : "Restore This Version"}
             </button>
           </div>
         </footer>

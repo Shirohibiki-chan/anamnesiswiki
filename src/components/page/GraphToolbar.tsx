@@ -29,9 +29,9 @@ const REACH_LABELS: Record<GraphReach, string> = {
 };
 
 const LABEL_MODES: Record<GraphEdgeLabels, string> = {
-  pointed: "Only when pointed at",
-  selected: "Names when pointed at",
-  all: "Names always",
+  pointed: "Only When Pointed At",
+  selected: "Names When Pointed At",
+  all: "Names Always",
 };
 
 type GraphToolbarProps = {
@@ -220,7 +220,7 @@ export function GraphToolbar({
         <Undo2 size={13} />
         {/* "Put it back" until 2026-09-15 — hers: it did not say what it put
             back. This names the thing it resets. */}
-        Reset positions
+        Reset Positions
       </button>
 
       {filterRect && (

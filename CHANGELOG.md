@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-17 — Title Case, a panel that remembers, and special pages set apart
+
+### Additions
+
+- **Each page remembers whether the properties panel is showing.** Hide it on one page and only that page stays hidden; every other page keeps its own answer. Kept with the world, so it's the same after a restart. A new setting under Settings → Sidebar, *The Properties Panel*, picks what a page does before you've decided there: *Open by Default* or *Closed by Default*.
+- **Special pages are set apart from the templates.** On a new page, Storyline, Board, Folder, Dashboard and Note are wide cards under their own heading, each with a line saying what it is; the templates keep their grid below. The Templates panel in the sidebar lists them under *Special Pages* above *Built In* the same way.
+
+### Fixes
+
+- **A segmented meter's segments line up with its number.** A bar with a maximum of ten is cut into ten segments, so 7 of 10 is seven whole segments — it was cut into however many 13px pieces fit, and a value landed mid-segment every time. The pulsing preview drew a second set of segments out of step with the first, sliding over it; it's cut by the same segments now.
+
+### Changes
+
+- **Every button, menu row, tab and option in the app is Title Case.** *Add a Page*, *New Page Inside*, *Save as Template*, *Check for Updates*, *Choose Where to Save* — about two hundred labels that had drifted into sentence case. Tooltips and explanations stay sentences.
+
 ## 2026-09-17 — Canvas pages are the whole page
 
 ### Changes
@@ -286,15 +301,3 @@
 
 - **This is the nearest thing to a PDF export**, and it costs one stylesheet — Print to PDF in the print dialog does the rest.
 - **Untested on Linux.** Print styling is exactly what renders differently on the engine the Linux build uses, so it's built cautiously — plain boxes rather than the flexible ones the screen uses, and the older spelling of the page-break rules alongside the modern one. Worth someone actually trying it there.
-
-## 2026-09-10 — the whole world in one file, and an Export menu
-
-### Additions
-
-- **Export as one Markdown file.** Every page as a heading in a single `.md`, nested as deeply as it sits in your tree — so an editor's outline pane shows your world. It's for handing somebody the whole thing to read in one scroll; links between pages jump down the document instead of opening anything.
-- **Pictures from your own computer aren't in it**, because one file means one file and there's no folder beside it to put them in. Captions stay, and pictures you added by web address still show. The export says how many were left behind, and the Markdown *folder* export takes them all.
-- **All the export formats now sit behind one Export entry**, on both the project menu and a page's right-click menu. Three formats in a menu that long were three lines nobody would read, and there are two more coming.
-
-### Notes
-
-- **Properties come out as a short list under each page's heading**, since a single file can only carry one properties block and it has to be at the very top.

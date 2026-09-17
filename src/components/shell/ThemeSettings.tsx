@@ -154,15 +154,15 @@ export function ThemeSettings() {
         </span>
         <button type="button" className="ui-btn ui-btn-secondary" data-setting="theme-import" onClick={() => void importTheme()}>
           <Import size={14} />
-          Import a theme
+          Import a Theme
         </button>
         <button type="button" className="ui-btn ui-btn-secondary" data-setting="theme-folder" onClick={() => void openThemesFolder()}>
           <FolderOpen size={14} />
-          Open themes folder
+          Open Themes Folder
         </button>
         <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void scanFolders()} disabled={isScanning}>
           <RefreshCw size={14} />
-          {isScanning ? "Looking…" : "Check for new ones"}
+          {isScanning ? "Looking…" : "Check for New Ones"}
         </button>
       </p>
 
@@ -200,7 +200,7 @@ export function ThemeSettings() {
           panel happened to be last. */}
       <p className="appearance-reset">
         <button type="button" className="ui-link" onClick={() => void resetAppearance()}>
-          Put everything back to default
+          Put Everything Back to Default
         </button>
         <span className="appearance-note">
           Theme, fonts, text size, snippets and muted covers. Files you've made stay in their folders.

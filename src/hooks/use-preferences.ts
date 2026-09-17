@@ -12,6 +12,7 @@ import type {
   ProjectView,
   FormattingBarMode,
   GraphEdgeLabels,
+  PropertiesPanelDefault,
   TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -27,6 +28,11 @@ export function useTreeDoubleClick(): TreeDoubleClickAction {
 
 export function useFormattingBar(): FormattingBarMode {
   return usePreferencesStore((state) => state.preferences.formattingBar);
+}
+
+/** What the properties panel does on a page she has never toggled it on. */
+export function usePropertiesPanelDefault(): PropertiesPanelDefault {
+  return usePreferencesStore((state) => state.preferences.propertiesPanel);
 }
 
 /**
@@ -110,6 +116,7 @@ export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({
       setTreeDoubleClick: state.setTreeDoubleClick,
+      setPropertiesPanelDefault: state.setPropertiesPanelDefault,
       setFormattingBar: state.setFormattingBar,
       setListPaging: state.setListPaging,
       setListPageSize: state.setListPageSize,

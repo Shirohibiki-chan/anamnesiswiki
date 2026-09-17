@@ -21,7 +21,7 @@ const MODAL = ".export-modal";
 
 async function openProjectExports(app: RunningApp): Promise<void> {
   await app.window.locator(".tree-project-header").first().click({ button: "right" });
-  await app.window.getByText("Export project", { exact: true }).click();
+  await app.window.getByText("Export Project", { exact: true }).click();
   await app.window.getByText("As JSON (.zip)", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
 }
 
@@ -101,7 +101,7 @@ describe("exporting the world as JSON", () => {
       await app.window.getByText("As JSON (.zip)", { exact: true }).click();
       const modal = app.window.locator(MODAL);
       await modal.waitFor({ state: "visible", timeout: 10_000 });
-      const save = app.window.getByRole("button", { name: "Choose where to save", exact: true });
+      const save = app.window.getByRole("button", { name: "Choose Where to Save", exact: true });
       await save.waitFor({ state: "visible", timeout: 20_000 });
       await save.click();
 

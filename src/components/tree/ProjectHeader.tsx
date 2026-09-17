@@ -70,7 +70,7 @@ export function ProjectHeader() {
         <button
           type="button"
           className="ui-icon-btn ui-icon-btn-sm"
-          title={currentUniverse ? `Add page in ${currentUniverse.name}` : "Add top-level page"}
+          title={currentUniverse ? `Add page in ${currentUniverse.name}` : "Add Top-Level Page"}
           onClick={() => createPageIn(currentUniverse?.id ?? null)}
         >
           <Plus size={12} />
@@ -92,7 +92,7 @@ export function ProjectHeader() {
                 "export" looks for the word rather than for a particular
                 format. Her call, 2026-09-10. */}
             <button type="button" className="tree-context-menu-submenu" onClick={() => setShowingExports(true)}>
-              <Upload size={13} /> Export project
+              <Upload size={13} /> Export Project
               <ChevronRight size={13} className="tree-context-menu-chevron" />
             </button>
             {/* The tree's own history, in the same place a page's is: on the
@@ -105,7 +105,7 @@ export function ProjectHeader() {
                 openProjectHistory();
               }}
             >
-              <History size={13} /> Earlier versions of the tree
+              <History size={13} /> Earlier Versions of the Tree
             </button>
           </div>
         </TreePopover>

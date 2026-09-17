@@ -29,7 +29,7 @@ type IconPickerProps = {
   value: string | undefined;
   onPick: (icon: string | undefined) => void;
   /**
-   * A second answer beside "No icon", for a control whose blank state means
+   * A second answer beside "No Icon", for a control whose blank state means
    * something rather than nothing.
    *
    * **A callout is the case this exists for** (Phase 19.5): its blank state is
@@ -132,7 +132,7 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
       {(value || defaultAction) && (
         <div className="icon-picker-clears">
           <button type="button" className="icon-picker-clear" onClick={() => onPick(undefined)}>
-            <X size={12} /> No icon
+            <X size={12} /> No Icon
           </button>
           {defaultAction && (
             <button type="button" className="icon-picker-clear" onClick={defaultAction.onPick}>
@@ -228,7 +228,7 @@ export function IconPicker({ value, onPick, defaultAction }: IconPickerProps) {
         {showGlyphs && rest.length > 0 && (
           <div>
             <div className="ui-eyebrow icon-picker-heading">
-              {searching ? "Everything else" : "All icons"}
+              {searching ? "Everything Else" : "All Icons"}
             </div>
             <div className="icon-picker-grid">
               {restShown.map((glyph) => {

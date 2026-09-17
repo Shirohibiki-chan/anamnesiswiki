@@ -48,7 +48,7 @@ describe("capturing from anywhere", () => {
   });
 
   it("opens the world's box from another page, and says whose it is", async () => {
-    await addBlockToPanel(app.window, "Quick capture");
+    await addBlockToPanel(app.window, "Quick Capture");
     await openPage(app.window, OTHER);
 
     await openQuickCapture(app.window);
@@ -69,7 +69,7 @@ describe("capturing from anywhere", () => {
 
   it("is reachable from the search palette too", async () => {
     await openSearchPalette(app.window);
-    await app.window.getByRole("button", { name: /Quick capture/ }).click();
+    await app.window.getByRole("button", { name: /Quick Capture/ }).click();
     await app.window.waitForTimeout(300);
     expect(await quickCaptureOpen(app.window)).toBe(true);
     // The palette handed over rather than stacking.

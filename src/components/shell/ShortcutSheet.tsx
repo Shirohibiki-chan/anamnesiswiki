@@ -42,7 +42,7 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
       >
         <header className="shortcut-sheet-header">
           <h2 id="shortcut-sheet-title" className="shortcut-sheet-title">
-            Keyboard shortcuts
+            Keyboard Shortcuts
           </h2>
           <button ref={closeRef} type="button" className="ui-icon-btn ui-icon-btn-lg" aria-label="Close" onClick={onClose}>
             <X size={15} />

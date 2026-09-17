@@ -176,7 +176,7 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
         <div className="asset-picker-actions">
           <button type="button" className="ui-btn ui-btn-secondary" onClick={() => inputRef.current?.click()}>
             <ImagePlus size={13} />
-            Add from computer
+            Add from Computer
           </button>
           <span className="asset-picker-spacer" />
           <button type="button" className="ui-btn ui-btn-secondary" onClick={() => onResolve(null)}>
@@ -188,7 +188,7 @@ function AssetPicker({ title, onResolve }: { title: string; onResolve: (fileName
             disabled={!selected}
             onClick={() => selected && onResolve(selected)}
           >
-            Use this picture
+            Use This Picture
           </button>
         </div>
 

@@ -43,11 +43,11 @@ describe("importing a folder of notes", () => {
     destination = await mkdtemp(join(tmpdir(), "anamnesis-import-"));
     await answerNextOpenDialog(app, destination);
     await app.window.locator(".tree-project-header").first().click({ button: "right" });
-    await app.window.getByText("Export project", { exact: true }).click();
+    await app.window.getByText("Export Project", { exact: true }).click();
     await app.window.getByText("As Markdown", { exact: true }).click();
     const modal = app.window.locator(".export-modal");
     await modal.waitFor({ state: "visible", timeout: 10_000 });
-    await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
+    await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).click();
     await modal.locator(".export-modal-path").waitFor({ state: "visible", timeout: 20_000 });
     vault = (await modal.locator(".export-modal-path").innerText()).trim();
     await app.window.getByRole("button", { name: "Done", exact: true }).click();
@@ -66,14 +66,14 @@ describe("importing a folder of notes", () => {
 
     const modal = app.window.locator(".import-modal");
     await modal.waitFor({ state: "visible", timeout: 10_000 });
-    await expect.poll(() => modal.getByRole("button", { name: "Choose a file", exact: true }).count()).toBe(1);
-    await expect.poll(() => modal.getByRole("button", { name: "Choose a folder", exact: true }).count()).toBe(1);
+    await expect.poll(() => modal.getByRole("button", { name: "Choose a File", exact: true }).count()).toBe(1);
+    await expect.poll(() => modal.getByRole("button", { name: "Choose a Folder", exact: true }).count()).toBe(1);
   });
 
   it("reads the exported vault and previews what it found", async () => {
     const modal = app.window.locator(".import-modal");
     await answerNextOpenDialog(app, vault);
-    await modal.getByRole("button", { name: "Choose a folder", exact: true }).click();
+    await modal.getByRole("button", { name: "Choose a Folder", exact: true }).click();
 
     await modal.locator(".import-modal-summary").waitFor({ state: "visible", timeout: 30_000 });
     const summary = (await modal.locator(".import-modal-summary").innerText()).trim();

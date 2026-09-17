@@ -305,7 +305,7 @@ export function StartScreen() {
               <>
                 {" "}
                 <button type="button" className="ui-link" onClick={() => void actions.openAnyway?.()}>
-                  Open it anyway
+                  Open It Anyway
                 </button>
               </>
             )}
@@ -386,7 +386,7 @@ export function StartScreen() {
               ))}
             </ul>
             <button type="button" className="ui-link" onClick={actions.dismissChoices}>
-              Never mind
+              Never Mind
             </button>
           </div>
         )}

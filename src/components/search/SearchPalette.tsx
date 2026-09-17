@@ -21,13 +21,13 @@ const PALETTE_SCOPES = [
   { value: "all", label: "Everything", hint: "names, tags and page text" },
   { value: "name", label: "Names", hint: "page and folder names only" },
   { value: "tag", label: "Tags", hint: "tags only — the same as typing #" },
-  { value: "text", label: "Page text", hint: "the words written on a page" },
+  { value: "text", label: "Page Text", hint: "the words written on a page" },
 ] as const;
 
 const PLACEHOLDERS: Record<SearchScopeMode, string> = {
   all: "Search every page — name, #tag, or anything written on one",
   name: "Search page and folder names",
-  tag: "Search tags",
+  tag: "Search Tags",
   text: "Search the text written on every page",
 };
 
@@ -249,7 +249,7 @@ export function SearchPalette({
               onOpenQuickCapture();
             }}
           >
-            Quick capture
+            Quick Capture
             <kbd>{quickCaptureKeys}</kbd>
           </button>
         </div>

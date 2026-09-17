@@ -107,8 +107,8 @@ function GradientRow({
               value={gradient.type}
               onChange={(event) => edit({ type: event.target.value as Gradient["type"] })}
             >
-              <option value="linear">Straight line</option>
-              <option value="radial">Glow from a point</option>
+              <option value="linear">Straight Line</option>
+              <option value="radial">Glow from a Point</option>
             </select>
           </div>
 

@@ -188,6 +188,10 @@ Pushing a `v*` tag builds and drafts a release for all four platforms — nothin
 
 When an Edit fails on unicode (em-dashes, curly quotes in placeholder copy), use targeted `sed` — don't load and rewrite the whole file through Python, which dumps its full contents into context. The template registry is large by design; edit it with targeted Edit calls, never a full rewrite.
 
+## Labels
+
+**Every control is Title Case: buttons, menu rows, tabs, dropdown options, dialog action buttons, dialog and panel headings** — "Existing Page", "Tidy Up", "Take Off the Canvas", "Save as Template". Small words (a, an, the, of, to, on, in, as, or, and, by) stay lowercase mid-label. Sentence case on a control is a defect she reports as unprofessional (2026-09-15); the whole app was swept that week. Tooltips, placeholders, hints, blurbs, toasts and prose stay sentences. The one exception is the properties panel's block headings, which may be ALL CAPS.
+
 ## Communication
 
 The user (shiro) is non-technical. Explain choices in plain language, not just code. She knows her use case — LK workflow, worldbuilding habits, how she and her co-writers actually work — better than the codebase implies. When she pushes back with non-technical reasoning, that's information about the product, not a preference to override.

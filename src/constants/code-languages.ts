@@ -38,11 +38,11 @@
 export type CodeLanguage = { name: string; aliases?: string[] };
 
 export const CODE_LANGUAGES: Readonly<Record<string, CodeLanguage>> = {
-  text: { name: "Plain text", aliases: ["txt", "plaintext", "plain", "none"] },
+  text: { name: "Plain Text", aliases: ["txt", "plaintext", "plain", "none"] },
   json: { name: "JSON" },
   jsonc: { name: "JSON with comments" },
   yaml: { name: "YAML", aliases: ["yml"] },
-  regexp: { name: "Regular expression", aliases: ["regex"] },
+  regexp: { name: "Regular Expression", aliases: ["regex"] },
   markdown: { name: "Markdown", aliases: ["md"] },
   xml: { name: "XML" },
   html: { name: "HTML" },

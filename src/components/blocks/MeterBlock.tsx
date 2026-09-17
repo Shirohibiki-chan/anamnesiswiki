@@ -165,10 +165,10 @@ export function MeterBlock({ block, onEdit, onEditMany, onRemove, onAdd }: Meter
   return (
     <div className={`block-meter block-meter-${style}`}>
       {entries.length === 0 ? (
-        // The block's own menu has Add meter too, but an empty block needs the
+        // The block's own menu has Add Meter too, but an empty block needs the
         // way back to be visible rather than two clicks inside a menu.
         <button type="button" className="block-inline-link" onClick={onAdd}>
-          <Plus size={12} /> Add meter
+          <Plus size={12} /> Add Meter
         </button>
       ) : (
         <div className="block-meter-list">
@@ -188,10 +188,10 @@ export function MeterBlock({ block, onEdit, onEditMany, onRemove, onAdd }: Meter
             />
           ))}
           {/* The same + the pie's legend carries, and for the same reason:
-              Add meter lived only in the block's `⋯` menu, which is not where
+              Add Meter lived only in the block's `⋯` menu, which is not where
               anybody looks to put a second dial under the first. */}
           <button type="button" className="block-inline-link block-meter-add" onClick={onAdd}>
-            <Plus size={12} /> Add meter
+            <Plus size={12} /> Add Meter
           </button>
         </div>
       )}
@@ -523,6 +523,11 @@ function MeterReading({
           {...slider}
           ref={track}
           className={`block-meter-track${segmented ? " block-meter-segmented" : ""}`}
+          // One segment per point of the meter, so 7 of 10 is seven whole
+          // segments — the stylesheet cuts the bar into `--meter-segments`
+          // pieces. A fixed pitch cut the bar into however many 13px
+          // segments fit, and a value landed mid-segment every time.
+          style={segmented && max <= 60 ? ({ ["--meter-segments" as string]: max } as CSSProperties) : undefined}
           onPointerDown={(e) => {
             capture(e);
             const next = barValueAt(e);
@@ -756,7 +761,7 @@ function MeterIconButton({ icon, onPick, className, size, plusSize = 12, stopPoi
       <button
         type="button"
         className={`${className}${icon ? "" : ` ${className}-empty`}`}
-        aria-label={icon ? "Change icon" : "Add an icon"}
+        aria-label={icon ? "Change Icon" : "Add an Icon"}
         onPointerDown={stopPointer ? (e) => e.stopPropagation() : undefined}
         onClick={(e) => {
           if (stopPointer) e.stopPropagation();
@@ -1006,11 +1011,11 @@ function MeterPieChart({ block, entries, onEdit, onEditMany, onRemove, onAdd }: 
           />
         ))}
         {/* **A slice is added from here, not from a menu.** The block's `⋯`
-            menu has Add meter and always did, and it was not a thing anybody
+            menu has Add Meter and always did, and it was not a thing anybody
             would think to go looking for to get another wedge — her words, and
             fair. A chart with a list under it wants a + at the end of the list. */}
         <button type="button" className="block-inline-link block-meter-add" onClick={onAdd}>
-          <Plus size={12} /> Add slice
+          <Plus size={12} /> Add Slice
         </button>
       </div>
     </>

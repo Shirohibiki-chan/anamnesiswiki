@@ -97,7 +97,7 @@ export function PageTemplateModal({ plan, onClose }: { plan: PageTemplatePlan; o
                 Cancel
               </button>
               <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handleSave()} disabled={status === "saving"}>
-                {status === "saving" ? "Saving…" : "Choose where to save"}
+                {status === "saving" ? "Saving…" : "Choose Where to Save"}
               </button>
             </div>
           </>

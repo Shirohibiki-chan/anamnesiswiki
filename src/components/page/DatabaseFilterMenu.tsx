@@ -26,9 +26,9 @@ import {
 import { useTemplates } from "../../hooks/use-templates";
 
 const SCOPE_LABELS: Record<DatabaseScope, string> = {
-  subpages: "The pages inside this one",
-  universe: "This universe",
-  everywhere: "Everywhere in this world",
+  subpages: "The Pages Inside This One",
+  universe: "This Universe",
+  everywhere: "Everywhere in This World",
 };
 
 export function DatabaseFilterMenu({ node }: { node: Node }) {
@@ -205,7 +205,7 @@ export function DatabaseFilterMenu({ node }: { node: Node }) {
       })}
 
       <button type="button" className="database-menu-add" onClick={add}>
-        <Plus size={13} /> Add a filter
+        <Plus size={13} /> Add a Filter
       </button>
     </div>
   );

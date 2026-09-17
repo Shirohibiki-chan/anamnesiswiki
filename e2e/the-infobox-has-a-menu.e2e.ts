@@ -34,7 +34,7 @@ describe("the infobox's own menu", () => {
     await typeAtLineStartInEditor(app.window, "/infobox");
     await app.window.getByText("A framed group of blocks, with its own Add Block").first().click();
     await app.window.waitForTimeout(800);
-    await addBlockToInfobox(app.window, "Text block");
+    await addBlockToInfobox(app.window, "Text Block");
     await app.window.waitForTimeout(500);
   });
 

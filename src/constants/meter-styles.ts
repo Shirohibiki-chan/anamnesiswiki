@@ -27,14 +27,14 @@ export type MeterStyleOption = {
 };
 
 export const METER_STYLES: MeterStyleOption[] = [
-  { key: "bar", label: "Progress bar", hint: "A filled track", icon: RectangleHorizontal },
+  { key: "bar", label: "Progress Bar", hint: "A filled track", icon: RectangleHorizontal },
   { key: "spectrum", label: "Spectrum", hint: "A marker between two words", icon: GitCommitHorizontal },
   { key: "circle", label: "Circle", hint: "A full ring", icon: Circle },
   { key: "semicircle", label: "Semi-circle", hint: "An arc over the top", icon: Donut },
   { key: "gauge", label: "Gauge", hint: "A dial with a gap at the bottom", icon: Gauge },
-  { key: "pie", label: "Pie chart", hint: "A solid wedge of a circle", icon: ChartPie },
+  { key: "pie", label: "Pie Chart", hint: "A solid wedge of a circle", icon: ChartPie },
   { key: "rating", label: "Rating", hint: "Stars you set a level with", icon: Star },
-  { key: "pool", label: "Token pool", hint: "Tokens you spend one at a time", icon: Coins },
+  { key: "pool", label: "Token Pool", hint: "Tokens you spend one at a time", icon: Coins },
 ];
 
 export function getMeterStyleOption(style: MeterStyle | undefined): MeterStyleOption {

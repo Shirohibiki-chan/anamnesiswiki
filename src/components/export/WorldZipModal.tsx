@@ -113,7 +113,7 @@ export function WorldZipModal({ onClose }: { onClose: () => void }) {
                 onClick={() => void handleExport()}
                 disabled={status === "saving"}
               >
-                {status === "saving" ? "Zipping…" : "Choose where to save"}
+                {status === "saving" ? "Zipping…" : "Choose Where to Save"}
               </button>
             </div>
           </>

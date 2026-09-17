@@ -33,7 +33,7 @@ export function SnippetSettings() {
       <p className="appearance-actions">
         <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void openSnippetsFolder()}>
           <FolderOpen size={14} />
-          Open snippets folder
+          Open Snippets Folder
         </button>
       </p>
 

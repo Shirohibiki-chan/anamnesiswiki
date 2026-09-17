@@ -46,7 +46,7 @@ export function QuickCaptureDialog({ onClose }: { onClose: () => void }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="quick-capture-dialog-head">
-          <h2 className="quick-capture-dialog-title">Quick capture</h2>
+          <h2 className="quick-capture-dialog-title">Quick Capture</h2>
           {source && (
             <span className="quick-capture-dialog-from">
               {source.isHome ? "The box on your home page" : `The box on ${source.node.name || "Untitled"}`}

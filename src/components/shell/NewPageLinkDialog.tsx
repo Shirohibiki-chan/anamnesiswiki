@@ -103,7 +103,7 @@ function NewPageLinkForm({
   return createPortal(
     <div className="ui-backdrop" onClick={() => onResolve(null)}>
       <div className="ui-modal ui-modal-sm new-page-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2 className="confirm-dialog-title">New page</h2>
+        <h2 className="confirm-dialog-title">New Page</h2>
         <form onSubmit={submit}>
           <label className="new-page-field">
             <span className="ui-eyebrow new-page-label">Name</span>
@@ -194,7 +194,7 @@ function NewPageLinkForm({
               Cancel
             </button>
             <button type="submit" className="ui-btn ui-btn-primary" disabled={!trimmed}>
-              Make the page
+              Make the Page
             </button>
           </div>
         </form>

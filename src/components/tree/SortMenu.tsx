@@ -1,4 +1,4 @@
-// The "Sort sub-pages" submenu. Swaps into the same popover the context menu
+// The "Sort Sub-pages" submenu. Swaps into the same popover the context menu
 // was in, the way the color picker does, rather than flying out sideways: the
 // popover is portaled to document.body and positioned from the trigger's rect
 // (see TreePopover), so a second layer would need its own flip-and-clamp pass
@@ -19,7 +19,7 @@ export function SortMenu({ onSelect, onBack }: SortMenuProps) {
   return (
     <div className="tree-context-menu">
       <button type="button" className="tree-context-menu-back" onClick={onBack}>
-        <ArrowLeft size={13} /> Sort sub-pages
+        <ArrowLeft size={13} /> Sort Sub-pages
       </button>
       {SIBLING_SORTS.map((sort) => (
         <button key={sort} type="button" onClick={() => onSelect(sort)}>

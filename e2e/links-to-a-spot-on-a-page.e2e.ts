@@ -40,7 +40,7 @@ describe("linking to a spot on a page", () => {
   });
 
   it("offers the link in a block's own menu", async () => {
-    expect(await editorBlockMenuItems(app.window, 1)).toContain("Copy link to this block");
+    expect(await editorBlockMenuItems(app.window, 1)).toContain("Copy Link to This Block");
   });
 
   it("says on the chip that it goes to a spot rather than to the page", async () => {

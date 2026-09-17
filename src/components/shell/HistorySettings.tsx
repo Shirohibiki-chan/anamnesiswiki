@@ -19,16 +19,16 @@ import {
 } from "../../services/preferences-service";
 
 const INTERVAL_LABELS: Record<HistoryIntervalMinutes, string> = {
-  1: "Every minute",
+  1: "Every Minute",
   5: "Every 5 minutes",
   15: "Every 15 minutes",
-  30: "Every half hour",
+  30: "Every Half Hour",
 };
 
 const KEEP_LABELS: Record<HistoryKeepDays, string> = {
   7: "A week",
   30: "A month",
-  90: "Three months",
+  90: "Three Months",
   365: "A year",
 };
 

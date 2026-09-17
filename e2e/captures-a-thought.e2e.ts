@@ -44,8 +44,8 @@ describe("capturing a thought", () => {
   });
 
   it("adds the block, filing under the page itself", async () => {
-    await addBlockToPanel(app.window, "Quick capture");
-    expect(await panelBlockTitles(app.window)).toContain("Quick capture");
+    await addBlockToPanel(app.window, "Quick Capture");
+    expect(await panelBlockTitles(app.window)).toContain("Quick Capture");
     expect(await captureDestination(app.window)).toContain(PAGE);
   });
 
@@ -98,7 +98,7 @@ describe("capturing a thought", () => {
     await openPage(app.window, PAGE);
     await app.window.waitForTimeout(800);
 
-    expect(await panelBlockTitles(app.window)).toContain("Quick capture");
+    expect(await panelBlockTitles(app.window)).toContain("Quick Capture");
     expect(await captureDestination(app.window)).toContain("Magic");
   });
 });

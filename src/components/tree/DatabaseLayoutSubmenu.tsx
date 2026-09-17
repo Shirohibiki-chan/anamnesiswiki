@@ -26,7 +26,7 @@ export function DatabaseLayoutSubmenu({ onSelect, onBack }: Props) {
   return (
     <div className="tree-context-menu">
       <button type="button" className="tree-context-menu-back" onClick={onBack}>
-        <ArrowLeft size={13} /> Turn into
+        <ArrowLeft size={13} /> Turn Into
       </button>
       {DATABASE_LAYOUTS.map((layout) => (
         <button key={layout} type="button" onClick={() => onSelect(layout)}>

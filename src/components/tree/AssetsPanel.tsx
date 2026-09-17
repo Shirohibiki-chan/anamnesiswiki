@@ -155,7 +155,7 @@ export function AssetsPanel() {
         onClick={() => fileInputRef.current?.click()}
       >
         <ImagePlus size={14} />
-        Add picture
+        Add Picture
       </button>
       {/* Its own control up here rather than a cell at the end of the folder
           grid. Down there it sat immediately after a folder called "New

@@ -41,7 +41,7 @@ describe("removing a universe", () => {
     await searchTree(app.window, UNIVERSE);
     await treeRow(app.window, UNIVERSE).first().click({ button: "right" });
     await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
-    await app.window.getByRole("button", { name: "Turn into a universe" }).click();
+    await app.window.getByRole("button", { name: "Turn Into a Universe" }).click();
     await app.window.waitForTimeout(WRITTEN_MS);
     await clearTreeSearch(app.window);
   });
@@ -59,13 +59,13 @@ describe("removing a universe", () => {
     expect(await switcherLabel(app)).toBe(UNIVERSE);
 
     await openSwitcher(app);
-    expect(await app.window.getByRole("button", { name: "Remove a universe" }).count()).toBe(1);
+    expect(await app.window.getByRole("button", { name: "Remove a Universe" }).count()).toBe(1);
     await app.window.keyboard.press("Escape");
   });
 
   it("keeps every page, and puts the folder back at the top level", async () => {
     await openSwitcher(app);
-    await app.window.getByRole("button", { name: "Remove a universe" }).click();
+    await app.window.getByRole("button", { name: "Remove a Universe" }).click();
     await app.window.locator(".tree-universe-list").waitFor({ state: "visible", timeout: 10_000 });
     await app.window.locator(".tree-universe-list button").filter({ hasText: UNIVERSE }).first().click();
     await app.window.waitForTimeout(WRITTEN_MS);

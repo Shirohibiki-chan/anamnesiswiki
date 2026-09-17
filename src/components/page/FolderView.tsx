@@ -51,7 +51,7 @@ export function FolderView({ node }: { node: Node }) {
           folder keeps the things you can do to it. */}
       <div className="folder-view-actions">
         <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={() => createPageIn(node.id)}>
-          Add a page
+          Add a Page
         </button>
         <button
           type="button"
@@ -59,7 +59,7 @@ export function FolderView({ node }: { node: Node }) {
           title="See what this folder is connected to"
           onClick={() => openPageGraph(node.id)}
         >
-          <Waypoints size={16} /> See connections
+          <Waypoints size={16} /> See Connections
         </button>
       </div>
     </div>

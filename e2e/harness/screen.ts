@@ -76,9 +76,11 @@ const GRAPH_FILTER_ROW = ".graph-filter-row";
 const GRAPH_HEADING = ".page-graph-heading";
 const GRAPH_SCENE = ".page-graph-scene";
 const GRAPH_STAGE = ".page-graph-stage";
-// Phase 25: the storyline canvas, and the grid a blank page offers templates
-// from — which is how a page becomes a storyline.
-const NEW_PAGE_GRID = ".new-page-landing-grid";
+// Phase 25: the storyline canvas, and the landing a blank page offers its
+// kinds from — which is how a page becomes a storyline. The whole landing,
+// since 2026-09-17: the special kinds (a storyline, a board) are cards in a
+// section of their own above the templates' grid.
+const NEW_PAGE_GRID = ".new-page-landing";
 const STORYLINE = ".storyline";
 const STORYLINE_BAR = ".storyline-bar";
 const STORYLINE_ADD_MENU = ".storyline-bar-add-menu";
@@ -628,7 +630,7 @@ export async function draggedBlockShape(window: Page): Promise<{ height: number;
 }
 
 /**
- * The pages the "Link page names" dialog is offering, with how many times each
+ * The pages the "Link Page Names" dialog is offering, with how many times each
  * is written on the page. Phase 19.5.
  */
 export async function autoLinkOffers(window: Page): Promise<string[]> {
@@ -1369,14 +1371,14 @@ export async function turnIntoDatabase(window: Page, rowName: string, layout = "
   // toolbar above an open database wears the name of the layout it is showing,
   // so a bare "Table" matches two things the moment one is open behind the tree.
   const menu = window.locator(TREE_CONTEXT_MENU).first();
-  await menu.getByRole("button", { name: "Turn into", exact: true }).click();
+  await menu.getByRole("button", { name: "Turn Into", exact: true }).click();
   await menu.getByRole("button", { name: layout, exact: true }).click();
 }
 
 /** Puts a database back to being an ordinary page. */
 export async function stopShowingAsDatabase(window: Page, rowName: string): Promise<void> {
   await openTreeRowMenu(window, rowName);
-  await window.locator(TREE_CONTEXT_MENU).first().getByRole("button", { name: "Stop showing as a database" }).click();
+  await window.locator(TREE_CONTEXT_MENU).first().getByRole("button", { name: "Stop Showing as a Database" }).click();
 }
 
 /**
@@ -1384,7 +1386,7 @@ export async function stopShowingAsDatabase(window: Page, rowName: string): Prom
  * folder has no title row to carry the button every other page uses.
  */
 export async function openFolderGraph(window: Page): Promise<void> {
-  await window.getByRole("button", { name: "See connections" }).click();
+  await window.getByRole("button", { name: "See Connections" }).click();
   await window.locator(GRAPH).waitFor({ state: "visible", timeout: WAIT_MS });
   await waitForGraphSettled(window);
 }
@@ -1766,7 +1768,7 @@ export async function closeGraphPreview(window: Page): Promise<void> {
 
 /** Follows the preview’s way through to the page it describes. */
 export async function openGraphPreviewPage(window: Page): Promise<void> {
-  await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Open this page" }).click();
+  await window.locator(GRAPH_PREVIEW).getByRole("button", { name: "Open This Page" }).click();
   await window.locator(GRAPH).waitFor({ state: "detached", timeout: WAIT_MS });
 }
 
@@ -2740,7 +2742,7 @@ export async function pageTemplateHook(window: Page): Promise<string | null> {
 /** Opens a row's menu, goes into Style name, and types a name in. Enter saves it. */
 export async function setStyleName(window: Page, rowName: string, name: string): Promise<void> {
   await openTreeRowMenu(window, rowName);
-  await window.getByRole("button", { name: /^Style name/ }).click();
+  await window.getByRole("button", { name: /^Style Name/ }).click();
   const box = window.getByPlaceholder("e.g. dashboard");
   await box.fill(name);
   await box.press("Enter");
@@ -2751,7 +2753,7 @@ export async function setStyleName(window: Page, rowName: string, name: string):
 /** The names the Style name submenu is offering under "Already in use", once it is open. */
 export async function styleNamesOffered(window: Page, rowName: string): Promise<string[]> {
   await openTreeRowMenu(window, rowName);
-  await window.getByRole("button", { name: /^Style name/ }).click();
+  await window.getByRole("button", { name: /^Style Name/ }).click();
   const menu = window.locator(".tree-style-menu");
   const heading = menu.locator(".tree-context-menu-heading");
   if ((await heading.count()) === 0) return [];
@@ -2807,7 +2809,7 @@ export async function panelBlockRows(window: Page, title: string): Promise<strin
 /** Sets a page as a shortcut from its row menu — the rail's pin. */
 export async function setAsShortcut(window: Page, rowName: string): Promise<void> {
   await openTreeRowMenu(window, rowName);
-  await window.getByRole("button", { name: "Set as shortcut", exact: true }).click();
+  await window.getByRole("button", { name: "Set as Shortcut", exact: true }).click();
   await clearTreeSearch(window);
   await window.waitForTimeout(200);
 }

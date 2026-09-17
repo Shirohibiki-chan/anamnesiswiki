@@ -142,8 +142,8 @@ describe("the door back to it", () => {
 
   it("takes the tour again from Settings", async () => {
     await openSettings(app.window);
-    await openSettingsSection(app.window, "Getting started");
-    await app.window.getByRole("button", { name: "Take the tour again" }).click();
+    await openSettingsSection(app.window, "Getting Started");
+    await app.window.getByRole("button", { name: "Take the Tour Again" }).click();
 
     // The dialog has to be gone before the tour draws, or the first thing it
     // points at is behind the window that started it.
@@ -157,7 +157,7 @@ describe("the door back to it", () => {
 
   it("makes a fresh copy of the example world, and says which one", async () => {
     await openSettings(app.window);
-    await openSettingsSection(app.window, "Getting started");
+    await openSettingsSection(app.window, "Getting Started");
     await app.window.getByRole("button", { name: "Make a fresh copy" }).click();
     const said = app.window.locator(".getting-started-done");
     await said.waitFor({ state: "visible", timeout: 30_000 });

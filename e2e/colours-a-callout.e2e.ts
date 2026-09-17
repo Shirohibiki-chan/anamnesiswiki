@@ -110,7 +110,7 @@ describe("colouring a callout", () => {
     // button you can see now, and this is what proves it stays one.
     await callout().hover();
     await icon().click();
-    await app.window.getByRole("button", { name: "No icon" }).click();
+    await app.window.getByRole("button", { name: "No Icon" }).click();
     await app.window.waitForTimeout(600);
     expect(await icon().count()).toBe(0);
 

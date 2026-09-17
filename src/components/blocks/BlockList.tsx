@@ -268,7 +268,7 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
 
     if (block.kind === "capture") {
       return {
-        natural: "Quick capture",
+        natural: "Quick Capture",
         body: <CaptureBlock block={block} node={node} nodes={nodes} onOpen={(id) => selectNode(id)} />,
       };
     }

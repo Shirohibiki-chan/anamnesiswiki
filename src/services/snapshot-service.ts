@@ -221,6 +221,8 @@ const PROJECT_KEPT_FROM_CURRENT = new Set([
   "coverImage",
   "selectedId",
   "selectedName",
+  // How she looks at each page, not what the world held at the time.
+  "propertiesPanel",
 ]);
 
 /** The ids a restored arrangement is allowed to mention. */

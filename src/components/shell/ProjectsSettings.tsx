@@ -39,11 +39,11 @@ export function ProjectsSettings() {
 
       <p className="projects-settings-line">
         <button type="button" className="ui-link" onClick={() => void handleChange()} disabled={!projectsDir}>
-          Change folder
+          Change Folder
         </button>
         {isCustomProjectsDir && (
           <button type="button" className="ui-link" onClick={() => void changeProjectsDir(null)}>
-            Reset to default
+            Reset to Default
           </button>
         )}
       </p>

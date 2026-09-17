@@ -216,9 +216,14 @@ export function clampGraphNameZoom(value: unknown): number {
 export const FORMATTING_BAR_MODES = ["floating", "fixed"] as const;
 export type FormattingBarMode = (typeof FORMATTING_BAR_MODES)[number];
 
+/** What the properties panel does on a page she has never toggled it on. */
+export const PROPERTIES_PANEL_DEFAULTS = ["open", "closed"] as const;
+export type PropertiesPanelDefault = (typeof PROPERTIES_PANEL_DEFAULTS)[number];
+
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
   formattingBar: FormattingBarMode;
+  propertiesPanel: PropertiesPanelDefault;
   listPaging: ListPagingMode;
   listPageSize: ListPageSize;
   projectView: ProjectView;
@@ -267,6 +272,7 @@ export type Preferences = {
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
   formattingBar: "floating",
+  propertiesPanel: "open",
   listPaging: "pages",
   listPageSize: 20,
   projectView: "grid",
@@ -330,6 +336,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const source = raw as Record<string, unknown>;
   const treeDoubleClick = source.treeDoubleClick;
   const formattingBar = source.formattingBar;
+  const propertiesPanel = source.propertiesPanel;
   const listPaging = source.listPaging;
   const listPageSize = source.listPageSize;
   const projectView = source.projectView;
@@ -347,6 +354,9 @@ export function parsePreferences(raw: unknown): Preferences {
     formattingBar: FORMATTING_BAR_MODES.includes(formattingBar as FormattingBarMode)
       ? (formattingBar as FormattingBarMode)
       : DEFAULT_PREFERENCES.formattingBar,
+    propertiesPanel: PROPERTIES_PANEL_DEFAULTS.includes(propertiesPanel as PropertiesPanelDefault)
+      ? (propertiesPanel as PropertiesPanelDefault)
+      : DEFAULT_PREFERENCES.propertiesPanel,
     listPaging: LIST_PAGING_MODES.includes(listPaging as ListPagingMode)
       ? (listPaging as ListPagingMode)
       : DEFAULT_PREFERENCES.listPaging,

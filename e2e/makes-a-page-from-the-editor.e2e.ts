@@ -44,11 +44,11 @@ describe("making a page from inside the editor", () => {
     await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
 
-    const dialog = app.window.getByRole("heading", { name: "New page" });
+    const dialog = app.window.getByRole("heading", { name: "New Page" });
     await dialog.waitFor({ state: "visible", timeout: 10_000 });
 
     await app.window.keyboard.type(MADE);
-    await app.window.getByRole("button", { name: "Make the page" }).click();
+    await app.window.getByRole("button", { name: "Make the Page" }).click();
     await app.window.waitForTimeout(800);
 
     // The link is in the document...
@@ -62,11 +62,11 @@ describe("making a page from inside the editor", () => {
     await openPage(app.window, PAGE);
     await typeInEditor(app.window, `[[${BRACKETED}]]`);
 
-    await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });
+    await app.window.getByRole("heading", { name: "New Page" }).waitFor({ state: "visible", timeout: 10_000 });
 
     // Pre-filled with what she already typed — being asked for the name a
     // second time is the feature failing to notice.
-    await app.window.getByRole("button", { name: "Make the page" }).click();
+    await app.window.getByRole("button", { name: "Make the Page" }).click();
     await app.window.waitForTimeout(800);
 
     expect(await editorMentions(app.window)).toContain(BRACKETED);
@@ -77,7 +77,7 @@ describe("making a page from inside the editor", () => {
   it("leaves what she typed alone when she backs out, and does not ask twice", async () => {
     await openPage(app.window, PAGE);
     await typeInEditor(app.window, `[[${DECLINED}]]`);
-    await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });
+    await app.window.getByRole("heading", { name: "New Page" }).waitFor({ state: "visible", timeout: 10_000 });
 
     await app.window.keyboard.press("Escape");
     await app.window.waitForTimeout(600);
@@ -91,7 +91,7 @@ describe("making a page from inside the editor", () => {
     // which is a page she cannot type on.
     await app.window.keyboard.type(" and on she goes", { delay: 20 });
     await app.window.waitForTimeout(800);
-    expect(await app.window.getByRole("heading", { name: "New page" }).count()).toBe(0);
+    expect(await app.window.getByRole("heading", { name: "New Page" }).count()).toBe(0);
     expect(await editorText(app.window)).toContain("and on she goes");
   });
 
@@ -100,11 +100,11 @@ describe("making a page from inside the editor", () => {
     // At the start of a line: a slash only means a command there.
     await typeAtLineStartInEditor(app.window, "/new page");
     await app.window.getByText("Make a page and link to it from here").click();
-    await app.window.getByRole("heading", { name: "New page" }).waitFor({ state: "visible", timeout: 10_000 });
+    await app.window.getByRole("heading", { name: "New Page" }).waitFor({ state: "visible", timeout: 10_000 });
 
     await app.window.keyboard.type(NAMED);
     await app.window.getByLabel("Link text").fill(READS_AS);
-    await app.window.getByRole("button", { name: "Make the page" }).click();
+    await app.window.getByRole("button", { name: "Make the Page" }).click();
     await app.window.waitForTimeout(800);
 
     // The chip says what she asked for...

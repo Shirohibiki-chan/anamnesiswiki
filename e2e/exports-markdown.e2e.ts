@@ -37,7 +37,7 @@ async function openRowExports(app: RunningApp, name: string): Promise<void> {
 /** The same, from the project row rather than a page. */
 async function openProjectExports(app: RunningApp): Promise<void> {
   await app.window.locator(".tree-project-header").first().click({ button: "right" });
-  await app.window.getByText("Export project", { exact: true }).click();
+  await app.window.getByText("Export Project", { exact: true }).click();
   await app.window.getByText("As Markdown", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
 }
 
@@ -62,7 +62,7 @@ describe("exporting a world as markdown", () => {
     await openRowExports(app, "Deliberately Empty Page");
     const panel = app.window.locator(".tree-context-menu").first();
     const entries = (await panel.locator("button").allInnerTexts()).map((entry) => entry.trim());
-    expect(entries).toEqual(expect.arrayContaining(["To LegendKeeper", "As Markdown", "As one Markdown file"]));
+    expect(entries).toEqual(expect.arrayContaining(["To LegendKeeper", "As Markdown", "As One Markdown File"]));
 
     // The back row returns to the menu it came from rather than closing —
     // a submenu you cannot leave is worse than no submenu.
@@ -124,7 +124,7 @@ describe("exporting a world as markdown", () => {
       await app.window.getByText("As Markdown", { exact: true }).click();
       const modal = app.window.locator(MODAL);
       await modal.waitFor({ state: "visible", timeout: 10_000 });
-      await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
+      await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).click();
 
       // The done panel names where it went, which is the one thing she has to
       // be able to act on afterwards.
@@ -164,10 +164,10 @@ describe("exporting a world as markdown", () => {
       }, target);
 
       await openProjectExports(app);
-      await app.window.getByText("As one Markdown file", { exact: true }).click();
+      await app.window.getByText("As One Markdown File", { exact: true }).click();
       const modal = app.window.locator(MODAL);
       await modal.waitFor({ state: "visible", timeout: 10_000 });
-      await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
+      await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).click();
 
       await expect.poll(() => modal.locator(".export-modal-path").count(), { timeout: 20_000 }).toBe(1);
 

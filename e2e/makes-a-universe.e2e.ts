@@ -68,20 +68,20 @@ describe("making a universe", () => {
 
   it("offers the conversion on a top-level page and nowhere else", async () => {
     await openRowMenu(app, TOP_LEVEL);
-    expect(await menuItems(app)).toContain("Turn into a universe");
+    expect(await menuItems(app)).toContain("Turn Into a Universe");
     await closeMenu(app);
 
     await openRowMenu(app, NESTED);
     // The whole point of the word: a universe that could sit inside something
     // would be a folder, which is the shape it replaces.
-    expect(await menuItems(app)).not.toContain("Turn into a universe");
+    expect(await menuItems(app)).not.toContain("Turn Into a Universe");
     await closeMenu(app);
     await clearTreeSearch(app.window);
   });
 
   it("turns a page into one, and it is still one after a reload", async () => {
     await openRowMenu(app, TOP_LEVEL);
-    await app.window.getByRole("button", { name: "Turn into a universe" }).click();
+    await app.window.getByRole("button", { name: "Turn Into a Universe" }).click();
     await app.window.waitForTimeout(WRITTEN_MS);
 
     await reload(app);
@@ -89,14 +89,14 @@ describe("making a universe", () => {
     await openRowMenu(app, TOP_LEVEL);
     // Only a row that already is one offers the way back, so this is the
     // template key having survived the trip to disk and home again.
-    expect(await menuItems(app)).toContain("Turn back into a folder");
+    expect(await menuItems(app)).toContain("Turn Back Into a Folder");
     await closeMenu(app);
     await clearTreeSearch(app.window);
   });
 
   it("will not file a universe inside anything", async () => {
     await openRowMenu(app, TOP_LEVEL);
-    await app.window.getByRole("button", { name: "Move to" }).click();
+    await app.window.getByRole("button", { name: "Move To" }).click();
     const list = app.window.locator(".tree-move-list");
     await list.waitFor({ state: "visible", timeout: 10_000 });
     // Not "nowhere to put this yet" — the emptiness is the rule, and the
@@ -108,13 +108,13 @@ describe("making a universe", () => {
 
   it("turns back into a folder, and stays one after a reload", async () => {
     await openRowMenu(app, TOP_LEVEL);
-    await app.window.getByRole("button", { name: "Turn back into a folder" }).click();
+    await app.window.getByRole("button", { name: "Turn Back Into a Folder" }).click();
     await app.window.waitForTimeout(WRITTEN_MS);
 
     await reload(app);
 
     await openRowMenu(app, TOP_LEVEL);
-    expect(await menuItems(app)).toContain("Turn into a universe");
+    expect(await menuItems(app)).toContain("Turn Into a Universe");
     await closeMenu(app);
     await clearTreeSearch(app.window);
   });

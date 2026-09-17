@@ -29,8 +29,8 @@ describe("applying a template to a page that already has fields", () => {
     // A template of this world's own, made the way a person makes one.
     await openPage(app.window, SOURCE);
     await treeRow(app.window, SOURCE).first().click({ button: "right" });
-    await app.window.getByRole("button", { name: "Save as template" }).click();
-    await app.window.getByRole("button", { name: "Just this page" }).click();
+    await app.window.getByRole("button", { name: "Save as Template" }).click();
+    await app.window.getByRole("button", { name: "Just This Page" }).click();
     await app.window.waitForTimeout(600);
   });
 

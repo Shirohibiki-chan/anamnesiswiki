@@ -109,11 +109,11 @@ export function StartRail({
             is what the heading says this section is for — the two below it
             bring in a project that already exists. */}
         <button type="button" className="start-item" onClick={onStartFromTemplate} disabled={disabled}>
-          <b>Start from a template</b>
+          <b>Start from a Template</b>
           <span>A folder setup, ready to build in. Yours, or one you were sent.</span>
         </button>
         <button type="button" className="start-item" onClick={onOpenFolder} disabled={disabled}>
-          <b>A folder on disk</b>
+          <b>A Folder on Disk</b>
           <span>Open a project you already have, wherever it lives.</span>
         </button>
         <button type="button" className="start-item" onClick={onImport} disabled={disabled}>
@@ -127,7 +127,7 @@ export function StartRail({
             library says its name where that matters, since a first run is
             exactly when the grid beside this has nothing in it. */}
         <button type="button" className="start-item" onClick={onOpenExample} disabled={disabled}>
-          <b>The example world</b>
+          <b>The Example World</b>
           <span>A small world, already written. Yours to poke at or delete.</span>
         </button>
       </div>

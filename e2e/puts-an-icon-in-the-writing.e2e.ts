@@ -206,7 +206,7 @@ describe("an icon in the writing", () => {
     await callout.hover();
     await callout.locator(".editor-callout-icon").first().click();
     await app.window.locator(".icon-picker").waitFor({ state: "visible", timeout: 10_000 });
-    await app.window.getByRole("button", { name: "No icon" }).click();
+    await app.window.getByRole("button", { name: "No Icon" }).click();
     await app.window.waitForTimeout(600);
 
     // Gone, and it stays gone: the whole reason "no icon" is stored as a value

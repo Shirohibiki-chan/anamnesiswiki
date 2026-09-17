@@ -22,7 +22,7 @@ async function makeUniverse(app: RunningApp, name: string): Promise<void> {
   await searchTree(app.window, name);
   await treeRow(app.window, name).first().click({ button: "right" });
   await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
-  await app.window.getByRole("button", { name: "Turn into a universe" }).click();
+  await app.window.getByRole("button", { name: "Turn Into a Universe" }).click();
   await app.window.waitForTimeout(WRITTEN_MS);
   await clearTreeSearch(app.window);
 }
@@ -62,7 +62,7 @@ describe("the shared universe", () => {
     // The lesson from the switcher itself: a designation reachable only from a
     // row's right-click menu is one nobody finds.
     await openSwitcher(app);
-    await app.window.getByRole("button", { name: "Shared universe" }).click();
+    await app.window.getByRole("button", { name: "Shared Universe" }).click();
     await app.window.locator(".tree-universe-list").waitFor({ state: "visible", timeout: 10_000 });
     await app.window.locator(".tree-universe-list button").filter({ hasText: SHARED }).first().click();
     await app.window.waitForTimeout(WRITTEN_MS);

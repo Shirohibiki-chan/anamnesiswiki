@@ -26,7 +26,7 @@ describe("reporting a bug", () => {
     app = await launchApp();
     await waitForWorld(app.window);
     await openSettings(app.window);
-    await openSettingsSection(app.window, "Report a bug");
+    await openSettingsSection(app.window, "Report a Bug");
     const block = app.window.locator(".bug-report-details");
     await block.waitFor({ state: "visible", timeout: 20_000 });
     details = await block.innerText();
@@ -52,9 +52,9 @@ describe("reporting a bug", () => {
   });
 
   it("offers both ways out: the form and the clipboard", async () => {
-    await expect(app.window.getByRole("button", { name: "Open a bug report" })).toBeTruthy();
+    await expect(app.window.getByRole("button", { name: "Open a Bug Report" })).toBeTruthy();
     await expect(app.window.getByRole("button", { name: "Copy the details" })).toBeTruthy();
-    expect(await app.window.getByRole("button", { name: "Open a bug report" }).isEnabled()).toBe(true);
+    expect(await app.window.getByRole("button", { name: "Open a Bug Report" }).isEnabled()).toBe(true);
   });
 
   it("says nothing to the console while doing it", () => {

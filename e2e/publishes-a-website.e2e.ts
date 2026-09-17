@@ -28,13 +28,13 @@ async function openRowExports(app: RunningApp, name: string): Promise<void> {
   await treeRow(app.window, name).first().click({ button: "right" });
   await app.window.locator(".tree-context-menu").first().waitFor({ state: "visible", timeout: 10_000 });
   await app.window.getByText("Export", { exact: true }).click();
-  await app.window.getByText("As a website", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  await app.window.getByText("As a Website", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
 }
 
 async function openProjectExports(app: RunningApp): Promise<void> {
   await app.window.locator(".tree-project-header").first().click({ button: "right" });
-  await app.window.getByText("Export project", { exact: true }).click();
-  await app.window.getByText("As a website", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  await app.window.getByText("Export Project", { exact: true }).click();
+  await app.window.getByText("As a Website", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
 }
 
 async function closeModal(app: RunningApp): Promise<void> {
@@ -123,21 +123,21 @@ describe("publishing a world as a website", () => {
 
   it("counts one page for an empty page, and says the theme is being read before it lets her save", async () => {
     await openRowExports(app, "Deliberately Empty Page");
-    await app.window.getByText("As a website", { exact: true }).click();
+    await app.window.getByText("As a Website", { exact: true }).click();
 
     const modal = app.window.locator(MODAL);
     await modal.waitFor({ state: "visible", timeout: 10_000 });
-    expect((await modal.locator(".export-modal-title").innerText()).trim()).toBe("Publish as a website");
+    expect((await modal.locator(".export-modal-title").innerText()).trim()).toBe("Publish as a Website");
     expect(await modal.locator(".export-modal-summary").innerText()).toContain("1 page will be written");
     // The fonts arrive a moment after the modal opens; the button waits for
     // them rather than writing a site in the browser's own typeface.
-    await app.window.getByRole("button", { name: "Choose where to save", exact: true }).waitFor({ state: "visible", timeout: 20_000 });
+    await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).waitFor({ state: "visible", timeout: 20_000 });
     await closeModal(app);
   });
 
   it("counts the whole world from the project menu and names what stays behind", async () => {
     await openProjectExports(app);
-    await app.window.getByText("As a website", { exact: true }).click();
+    await app.window.getByText("As a Website", { exact: true }).click();
 
     const modal = app.window.locator(MODAL);
     await modal.waitFor({ state: "visible", timeout: 10_000 });
@@ -167,12 +167,12 @@ describe("publishing a world as a website", () => {
       }, destination);
 
       await openProjectExports(app);
-      await app.window.getByText("As a website", { exact: true }).click();
+      await app.window.getByText("As a Website", { exact: true }).click();
       const modal = app.window.locator(MODAL);
       await modal.waitFor({ state: "visible", timeout: 10_000 });
-      await app.window.getByRole("button", { name: "Choose where to save", exact: true }).waitFor({ state: "visible", timeout: 20_000 });
+      await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).waitFor({ state: "visible", timeout: 20_000 });
       const notes = await modal.locator(".export-modal-lossy").innerText();
-      await app.window.getByRole("button", { name: "Choose where to save", exact: true }).click();
+      await app.window.getByRole("button", { name: "Choose Where to Save", exact: true }).click();
 
       await expect.poll(() => modal.locator(".export-modal-path").count(), { timeout: 60_000 }).toBe(1);
       const written = (await modal.locator(".export-modal-path").innerText()).trim();

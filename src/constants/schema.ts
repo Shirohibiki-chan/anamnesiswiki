@@ -308,7 +308,7 @@ export const CHIP_PROPERTY_TYPES: CustomPropertySpec["type"][] = ["select", "mul
 // everywhere.
 export const PROPERTY_TYPE_LABELS: Record<CustomPropertySpec["type"], string> = {
   text: "Text",
-  longtext: "Long text",
+  longtext: "Long Text",
   number: "Number",
   select: "Select",
   multiselect: "Multi-select",
@@ -322,8 +322,8 @@ export const PROPERTY_TYPE_LABELS: Record<CustomPropertySpec["type"], string> = 
 // UUID; nothing depends on which kind an id is.
 export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
   { id: "draft", label: "Draft", color: "gray" },
-  { id: "in-progress", label: "In progress", color: "amber" },
-  { id: "needs-revision", label: "Needs revision", color: "rose" },
+  { id: "in-progress", label: "In Progress", color: "amber" },
+  { id: "needs-revision", label: "Needs Revision", color: "rose" },
   { id: "done", label: "Done", color: "sage" },
 ];
 
@@ -966,6 +966,16 @@ export type Project = {
   // trip a project only gets by being opened.
   coverImage?: string;
   expandedIds: string[];
+  /**
+   * Pages whose properties panel she has hidden or shown by hand, by page
+   * id. A page not in here follows the preference (`propertiesPanel` in
+   * preferences-service.ts). Per page rather than one switch for the app —
+   * her call, 2026-09-15: hiding the panel on a storyline must not hide it
+   * on every character page too. Kept in project.json with the other
+   * arrangement of the world (what is expanded, what is pinned), never in a
+   * page file: it is how she looks at the page, not what the page says.
+   */
+  propertiesPanel?: Record<string, "open" | "closed">;
   selectedId: string | null;
   // The name of the page `selectedId` pointed at, the moment it was set —
   // kept alongside the id rather than derived from it so the start screen can

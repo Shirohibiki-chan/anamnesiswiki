@@ -49,7 +49,7 @@ describe("starting a dashboard", () => {
     await makePageOfTemplate(app.window, NAME, "Dashboard");
     expect(await pageTemplateHook(app.window)).toBe("dashboard");
     const inPage = await pageBlockTitles(app.window);
-    expect(inPage).toEqual(["Quick capture", "Recently edited", "Shortcuts", "Jump to"]);
+    expect(inPage).toEqual(["Quick Capture", "Recently Edited", "Shortcuts", "Jump to"]);
     expect(await panelBlockTitles(app.window)).toEqual([]);
   });
 

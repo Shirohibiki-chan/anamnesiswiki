@@ -20,6 +20,7 @@ import {
   type FormattingBarMode,
   clampGraphNameZoom,
   type GraphEdgeLabels,
+  type PropertiesPanelDefault,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -28,6 +29,7 @@ export type PreferencesStoreState = {
   /** Called once at startup. See StartupRouter. */
   loadPreferences: () => Promise<void>;
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
+  setPropertiesPanelDefault: (mode: PropertiesPanelDefault) => void;
   setFormattingBar: (mode: FormattingBarMode) => void;
   setListPaging: (mode: ListPagingMode) => void;
   setListPageSize: (size: ListPageSize) => void;
@@ -91,6 +93,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setTreeDoubleClick(action) {
       apply({ ...get().preferences, treeDoubleClick: action });
+    },
+
+    setPropertiesPanelDefault(mode) {
+      apply({ ...get().preferences, propertiesPanel: mode });
     },
 
     setListPaging(mode) {

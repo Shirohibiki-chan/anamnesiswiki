@@ -48,7 +48,7 @@ describe("grouping blocks in an infobox", () => {
   });
 
   it("takes blocks from its own Add Block, and they leave the sidebar", async () => {
-    await addBlockToInfobox(app.window, "Text block");
+    await addBlockToInfobox(app.window, "Text Block");
     await app.window.waitForTimeout(800);
     await addBlockToInfobox(app.window, "Gauge");
     await app.window.waitForTimeout(800);

@@ -147,14 +147,14 @@ export function PageView() {
                 className="ui-btn ui-btn-lg ui-btn-secondary"
                 onClick={() => createPageIn(node!.id)}
               >
-                Add a page
+                Add a Page
               </button>
             </div>
           ) : (
             <div className="page-view-no-tabs">
               <p>This page doesn't have any tabs yet.</p>
               <button type="button" className="ui-btn ui-btn-lg ui-btn-secondary" onClick={handleAddTab}>
-                Add a tab
+                Add a Tab
               </button>
             </div>
           )

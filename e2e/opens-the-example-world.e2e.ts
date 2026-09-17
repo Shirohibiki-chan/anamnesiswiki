@@ -34,7 +34,7 @@ import {
 async function openExample(app: RunningApp): Promise<void> {
   await app.window.getByLabel("Switch project").click();
   await app.window.locator(".start").waitFor({ state: "visible", timeout: 20_000 });
-  await app.window.getByRole("button", { name: /The example world/ }).click();
+  await app.window.getByRole("button", { name: /The Example World/ }).click();
   await waitForWorld(app.window);
 }
 
