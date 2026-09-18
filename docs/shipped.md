@@ -6619,3 +6619,53 @@ lands against the old size — `toggleBoardExpand` now waits for the canvas
 to match its box. Scenario: six steps in `a-board-canvas.e2e.ts`, including
 that the file holds the id rather than the name and that following the
 link lands on the page.
+
+## Phase 32 — Boards, Full Pass
+
+Scoped 2026-09-17 against LegendKeeper's board tutorial; the phase and its
+fourteen steps are in `docs/plan.md`. Steps are logged here as they land.
+
+### Step 1 — Page cards ✅ Shipped 2026-09-18
+
+**What it delivered.** *Put a Page on It* in the board's top-right slot
+opens the storyline picker's search box; a pick puts a card for the page in
+the middle of the view and leaves the box open and focused for the next.
+A row dragged out of the tree lands as a card where it is dropped, and a
+dragged multi-selection lands as a cascade of them. A card reads its page
+live — name, icon, and the page's picture or, failing that, its banner —
+and presents in one of three ways by the size it is resized to: the icon
+alone under 110 wide, icon and name in a row under 110 tall, and the
+picture with the name over a fade otherwise. A second click on a card
+opens the page; the first selects it. A card for a page since deleted says
+so. Cards are counted among the page's connections, because a card's
+address is the same page link a linked shape carries.
+
+**How it is built** is in `docs/handoff.md` § Boards: the library's embed
+element with a page link for its address, drawn by `BoardPageCard`
+through `renderEmbeddable`, opened through the library's `onPointerUp`
+hook, with the library's own link popup hidden for a selected card.
+
+**Verified.** `board-service.test.ts` — four new suites over what a card
+is, what size means, where a batch lands, and what a tree drag may carry.
+`e2e/a-board-page-cards.e2e.ts` — six scenarios in the real app: a pick
+makes a card and keeps the picker open; the file holds an `embeddable`
+with the page's id; three resizes by the corner handle change the
+presentation and reach the file; a drag out of the tree lands a second
+card; a second click opens the page while the first only selects; both
+cards name their pages after a restart. Screenshots of all three
+presentations were taken during the run and read.
+
+**Three things the run taught.** A card put on arrives *selected*, so the
+first scenario's click on it opened the page — the test was wrong, not the
+code; the selection is cleared first now. The library's Escape ends the
+tool in hand and keeps the selection, so clearing it is a click on empty
+canvas. And a native drag cannot be started from the driven mouse inside
+Electron at all — not by `dragTo`, not by press-move-release — so the drag
+scenario dispatches the row's `dragstart` and the board's `drop` with one
+`DataTransfer` between them, which exercises both ends the app owns and
+nothing the browser owns.
+
+**Not in this step, on purpose.** A locked card still needs the second
+click — step 2. The picture is the page's, read through `useNodeImage`,
+so a board with cards costs no bytes in `_board.json`; a picture *dropped*
+on a board is still the spike's data URL until step 4.

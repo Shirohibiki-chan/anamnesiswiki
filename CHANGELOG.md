@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-18 — Pages on a board
+
+### Additions
+
+- **A page can be put on a board.** *Put a Page on It* in the board's top-right corner opens a search box; pick a page and it lands in the middle of the board as a card showing its icon, name and picture. The box stays open for the next one. A page can also be dragged straight out of the sidebar onto the board, and lands where it's dropped — several at once if several rows are selected.
+- **A card reads its page rather than copying it.** Rename the page or give it a new picture and the card on the board shows that the next time it's drawn. A card for a page that's since been deleted says so instead of drawing a blank.
+- **Resizing a card changes what it shows.** Big, it's the picture with the name across the bottom. Shorter, it's the icon and the name in a row. Narrower still, it's the icon alone with the name in its tooltip. Nothing to set; the size is the setting.
+- **Click a card twice to open its page.** The first click selects it, the way any shape on a board is selected; a second click on it opens the page. A card can be moved, resized, locked and grouped like anything else on the board, and it's in the page's connections along with linked shapes.
+
+### Changes
+
+- **The board's link button reads *Link to Page* and the picker's unlink row reads *Remove the Link*,** in Title Case with the rest of the app.
+
 ## 2026-09-17 — Tab between a scene's name and its description
 
 ### Additions
@@ -295,17 +308,3 @@
 - **Two things deliberately don't travel**: the marker saying the world is open right now, which would make a fresh copy look locked by somebody else, and the half-finished rename left behind by an interrupted move, which the app repairs by itself anyway.
 - **It's on the project menu only.** There's no such thing as a folder for a single character, so it isn't offered on a page.
 - **Internal: the first dependency this app has taken on in a while** — a small MIT-licensed zip library. The compression the app already had can only do one stream at a time and can't make an archive.
-
-## 2026-09-10 — a page you can actually print
-
-### Fixes
-
-- **Ctrl+P prints the page, not the app.** It always opened the print dialog and Windows always offered Print to PDF — what came out was the whole window, rail and tree and side panel included, in dark theme, and only the part of the page that happened to be on screen. Now it's the page's title and its writing, and nothing else.
-- **The whole page prints, however long it is.** The rest of it used to be cut off at the bottom of the window; that was the real bug, and the least obvious one.
-- **On white, whatever theme you're in.** Every theme but Daylight is dark, and a dark theme on paper is a solid black rectangle. Printing borrows Daylight's colours, which were measured against white when that theme was built.
-- **Callouts keep their colour**, because a Secret that prints as a plain paragraph has lost the one thing it was saying. Headings don't get stranded alone at the foot of a sheet, and pictures, tables and quotes aren't split across two.
-
-### Notes
-
-- **This is the nearest thing to a PDF export**, and it costs one stylesheet — Print to PDF in the print dialog does the rest.
-- **Untested on Linux.** Print styling is exactly what renders differently on the engine the Linux build uses, so it's built cautiously — plain boxes rather than the flexible ones the screen uses, and the older spelling of the page-break rules alongside the modern one. Worth someone actually trying it there.
