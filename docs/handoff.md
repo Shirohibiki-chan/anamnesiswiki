@@ -481,6 +481,23 @@ Board spike, closed 2026-09-13. What binds the code:
   hides it; hiding is right because the popup's *remove link* would leave
   an empty embed that draws nothing.
 
+- **The drawing library is patched, and `scripts/excalidraw-patch.mjs` is
+  the readable form of the patch.** `patches/@excalidraw__excalidraw@0.18.1.patch`
+  is applied by `pnpm install` (pnpm's `patchedDependencies`, in
+  `pnpm-workspace.yaml`); it is huge because the library ships single
+  minified lines, so the change is read from the script, not the diff. What
+  it changes so far: box selection takes what the box *touches* — the rule
+  of the whiteboard LK's boards run on — rather than only what it swallows,
+  with a hollow shape touched only on its outline so a box inside a big
+  empty rectangle leaves it be. Upgrading the library means re-running the
+  script against the new version (the how-to is at its top); every
+  replacement asserts its target once, so a moved or renamed line stops the
+  upgrade rather than quietly restoring the library's rule, and
+  `e2e/a-board-box-selection.e2e.ts` fails against an unpatched build. The
+  library's `getElementsWithinSelection` is also what decides which shapes
+  a *frame* holds, so the new rule is behind a flag only the marquee sets;
+  a frame still holds only what is wholly inside it.
+
 - **The dots are the app's, under a transparent canvas.** The library draws
   its background colour opaque over the whole canvas, so the only place a
   dotted background can live is behind it: `boardStartState` opens every

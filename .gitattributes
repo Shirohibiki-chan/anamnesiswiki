@@ -18,3 +18,7 @@ src/fonts-library.css -diff -merge
 # The bundled font files themselves. Marked explicitly so no eol normalisation
 # can ever touch them, `* text=auto` above notwithstanding.
 *.woff2 binary
+
+# pnpm applies these to the library's LF files at install time; a patch
+# checked out with CRLF line endings would not match a line of them.
+patches/*.patch text eol=lf

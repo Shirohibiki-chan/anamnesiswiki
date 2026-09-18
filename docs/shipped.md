@@ -6690,3 +6690,27 @@ mechanism is in `docs/handoff.md` § Boards. Verified by a scenario in
 `a-board-canvas.e2e.ts` — on by default, off after the toggle and written
 to the file as `dots: false`, still off after a restart, on again after a
 second toggle — and by screenshots at three zooms.
+
+### The selection box, the same evening — the first patch on the library
+
+Her screenshot: a selection box drawn across five things on a board, and
+one of them selected. The library selects only what the box swallows
+whole; tldraw, which LK's boards run on, selects what the box touches, and
+her hands expected that. There is no switch for it, so this is Phase 32's
+first patch on the library — ahead of step 3's, and the proof of the
+patching path the plan said step 3 would be. `scripts/excalidraw-patch.mjs`
+is the change and the way to re-apply it; `docs/handoff.md` § Boards has
+the rule. What "touches" means was decided against the case that would
+otherwise make frames unusable: a hollow shape is touched only on its
+outline, so a box inside a big empty rectangle does not take the
+rectangle, while a filled shape, text, a picture, a card or a scribble is
+taken wherever the box overlaps it, and a line or arrow where the box
+crosses one of its segments or holds one of its points.
+
+**Verified.** `e2e/a-board-box-selection.e2e.ts` — a box crossing into two
+hollow rectangles without holding either takes both, and a box drawn
+inside a big hollow rectangle leaves it. The first scenario fails against
+the library as shipped, which is what makes it the guard. Every patched
+file is syntax-checked by `node --check` before `pnpm patch-commit`, after
+the first attempt shipped a `var` in the middle of a comma list and the
+build refused it.
