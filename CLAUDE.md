@@ -92,7 +92,7 @@ pnpm test:app        # the scenarios in e2e/ — builds the page, then drives th
 
 **There are two shells** (Phase 29). `services/host-contract.ts` is the vocabulary, `host-service.ts` speaks Tauri, `host-service.electron.ts` speaks Electron, and both end with a `satisfies HostContract` block so neither can quietly lose a capability. `ANAMNESIS_SHELL=electron` picks the second one, in `vite.config.ts`; unset means Tauri, which still runs locally but has shipped nothing since v0.5.0. `electron/main.js` and `electron/preload.cjs` are the other side of the Electron door — the preload is the security boundary and exposes a fixed list of functions, so adding a capability means adding it in both files on purpose.
 
-State is **Zustand** in `src/state/`. Editor is **BlockNote** — custom Info/Quote/Secret callout blocks live in `src/services/editor-blocks/`; extend it via its documented API, never fork it. Tree is **react-arborist**.
+State is **Zustand** in `src/state/`. Editor is **BlockNote** — custom Info/Quote/Secret callout blocks live in `src/services/editor-blocks/`; extend it via its documented API, never fork it. Tree is **react-arborist**. Boards are **Excalidraw**, and it is the one dependency carried with a patch (`patches/`, applied by `pnpm install`): `scripts/excalidraw-patch.mjs` is the readable change and the way to re-apply it on an upgrade — `docs/handoff.md` § Boards.
 
 ### Strict layer order — imports only flow downward
 
