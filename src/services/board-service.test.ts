@@ -13,7 +13,9 @@ import {
   cardPlacement,
   cardPresentation,
   createBoard,
+  dotsLayout,
   draggedPageIds,
+  boardStartState,
   isPageCard,
   linkCandidates,
   pageLinkFor,
@@ -30,6 +32,7 @@ describe("readBoard", () => {
       elements: [],
       appState: {},
       files: {},
+      dots: true,
     });
   });
 
@@ -48,24 +51,27 @@ describe("boardFromScene", () => {
   const files = { pic: { id: "pic" }, orphan: { id: "orphan" } };
 
   it("drops deleted elements and the pictures nothing points at any more", () => {
-    const board = boardFromScene([kept, gone], {}, files);
+    const board = boardFromScene([kept, gone], {}, files, true);
     expect(board.elements).toEqual([kept]);
     expect(Object.keys(board.files)).toEqual(["pic"]);
   });
 
   it("keeps only the view state worth reopening to", () => {
-    const board = boardFromScene([], { viewBackgroundColor: "#fff", selectedElementIds: { a: true }, zoom: { value: 2 } }, {});
+    const board = boardFromScene([], { viewBackgroundColor: "#fff", selectedElementIds: { a: true }, zoom: { value: 2 } }, {}, false);
     expect(board.appState).toEqual({ viewBackgroundColor: "#fff", zoom: { value: 2 } });
+    expect(board.dots).toBe(false);
   });
 });
 
 describe("boardFingerprint", () => {
   it("changes when an element is edited or deleted, and not when the selection moves", () => {
     const a = { id: "a", version: 1, isDeleted: false };
-    const before = boardFingerprint([a], { selectedElementIds: { a: true } });
-    expect(boardFingerprint([a], { selectedElementIds: {} })).toBe(before);
-    expect(boardFingerprint([{ ...a, version: 2 }], {})).not.toBe(before);
-    expect(boardFingerprint([{ ...a, isDeleted: true }], {})).not.toBe(before);
+    const before = boardFingerprint([a], { selectedElementIds: { a: true } }, true);
+    expect(boardFingerprint([a], { selectedElementIds: {} }, true)).toBe(before);
+    expect(boardFingerprint([{ ...a, version: 2 }], {}, true)).not.toBe(before);
+    expect(boardFingerprint([{ ...a, isDeleted: true }], {}, true)).not.toBe(before);
+    // And when the dots are switched, which is the one thing the app owns.
+    expect(boardFingerprint([a], {}, false)).not.toBe(before);
   });
 });
 
@@ -161,5 +167,41 @@ describe("draggedPageIds", () => {
     expect(draggedPageIds("not json")).toEqual([]);
     expect(draggedPageIds(JSON.stringify({ id: "a" }))).toEqual([]);
     expect(draggedPageIds("")).toEqual([]);
+  });
+});
+
+// ---- The dots ----
+
+describe("readBoard's dots", () => {
+  it("are on unless the file says off, so older boards get them", () => {
+    expect(readBoard({ elements: [], appState: {}, files: {} }).dots).toBe(true);
+    expect(readBoard({ elements: [], appState: {}, files: {}, dots: false }).dots).toBe(false);
+    expect(readBoard({ elements: [], appState: {}, files: {}, dots: "no" }).dots).toBe(true);
+  });
+});
+
+describe("boardStartState", () => {
+  it("starts transparent, drops the library's default white, and keeps a chosen colour", () => {
+    expect(boardStartState({}).viewBackgroundColor).toBe("transparent");
+    expect(boardStartState({ viewBackgroundColor: "#ffffff" }).viewBackgroundColor).toBe("transparent");
+    expect(boardStartState({ viewBackgroundColor: "#a5d8ff", zoom: { value: 2 } })).toEqual({
+      viewBackgroundColor: "#a5d8ff",
+      zoom: { value: 2 },
+    });
+  });
+});
+
+describe("dotsLayout", () => {
+  it("scales the tile with the zoom and offsets it with the scroll", () => {
+    expect(dotsLayout(0, 0, 1)).toEqual({ size: 24, x: 0, y: 0 });
+    expect(dotsLayout(30, -7, 1)).toEqual({ size: 24, x: 6, y: 17 });
+    expect(dotsLayout(0, 0, 2).size).toBe(48);
+  });
+
+  it("doubles the spacing zoomed far out, so the dots never blur into a haze", () => {
+    // 24 × 0.25 = 6px apart: too close, doubled twice to 24px.
+    expect(dotsLayout(0, 0, 0.25).size).toBe(24);
+    expect(dotsLayout(0, 0, 0.5).size).toBe(24);
+    expect(dotsLayout(0, 0, 0.6).size).toBeCloseTo(14.4);
   });
 });

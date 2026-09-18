@@ -3,8 +3,9 @@
 // Drawn in the page rather than opened over it, for the reason PageStoryline
 // gives: it is what the page is *for*. Expand is a mode of the same element,
 // so the drawing carries across without a remount.
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useCallback, useRef, useState } from "react";
 import type { Node } from "../../constants/schema";
+import { dotsLayout } from "../../services/board-service";
 import { useBoardView } from "../../hooks/use-board-view";
 import { useBoardLinks } from "../../hooks/use-board-links";
 import "./board.css";
@@ -26,18 +27,37 @@ const BoardCanvas = lazy(() => import("./BoardCanvas"));
 export function PageBoard({ node }: { node: Node }) {
   const [expanded, setExpanded] = useState(false);
   const [surface, setSurface] = useState<HTMLDivElement | null>(null);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const takeSurface = useCallback((element: HTMLDivElement | null) => {
+    surfaceRef.current = element;
+    setSurface(element);
+  }, []);
+  // The dots are the board's own background, told where the library's view
+  // is on every scroll and zoom so they stay under the same points of the
+  // drawing. Set on the element directly rather than through state: the
+  // library reports every wheel tick, and a render per tick is what would
+  // make panning feel heavy.
+  const onView = useCallback((scrollX: number, scrollY: number, zoom: number) => {
+    const element = surfaceRef.current;
+    if (!element) return;
+    const { size, x, y } = dotsLayout(scrollX, scrollY, zoom);
+    element.style.setProperty("--board-dots-size", `${size}px`);
+    element.style.setProperty("--board-dots-x", `${x}px`);
+    element.style.setProperty("--board-dots-y", `${y}px`);
+  }, []);
   // Whether a page card is the selected shape: the stylesheet hides the
   // library's link popup for one, since the address in it is not for reading.
   const [cardSelected, setCardSelected] = useState(false);
-  const { initialData, theme, onChange } = useBoardView(node.id, surface);
+  const { initialData, theme, onChange, dots, toggleDots } = useBoardView(node.id, surface);
   const links = useBoardLinks(node.id);
 
   return (
     <div
-      ref={setSurface}
+      ref={takeSurface}
       className={expanded ? "board board-expanded" : "board"}
       data-testid="board"
       data-card-selected={cardSelected ? "true" : "false"}
+      data-dots={dots ? "true" : "false"}
     >
       <Suspense fallback={<div className="board-loading">Loading the board…</div>}>
         <BoardCanvas
@@ -49,6 +69,9 @@ export function PageBoard({ node }: { node: Node }) {
           links={links}
           surface={surface}
           onCardSelected={setCardSelected}
+          onView={onView}
+          dots={dots}
+          onToggleDots={toggleDots}
         />
       </Suspense>
       {/* A link that went nowhere, said once and briefly — the storyline's

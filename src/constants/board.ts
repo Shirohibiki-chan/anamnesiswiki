@@ -42,3 +42,19 @@ export const BOARD_CARD_ROW_MAX_HEIGHT = 110;
 
 /** How far each card put on in a row is stepped from the last, so several picks do not stack exactly. */
 export const BOARD_CARD_CASCADE = 24;
+
+/**
+ * The dotted background: how far apart the dots sit in the drawing's own
+ * units, and the closest two may come on screen before the spacing doubles
+ * — zoomed far out, dots a few pixels apart are a grey haze rather than a
+ * grid, so every halving of the zoom past that point drops every other dot.
+ */
+export const BOARD_DOT_SPACING = 24;
+export const BOARD_DOT_MIN_SCREEN_SPACING = 14;
+
+/**
+ * The library's own default canvas colour. A board whose file carries it is
+ * read as having no colour set, so the dots show through — the colour was
+ * the library's choice on the spike's boards, never hers.
+ */
+export const LIBRARY_DEFAULT_BACKGROUND = "#ffffff";

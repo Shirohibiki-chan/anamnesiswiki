@@ -1,9 +1,9 @@
 // How a board's drawing gets from the drawing library onto disk, and which
 // theme it is drawn in. Board spike, 2026-09-13. The component renders; this
 // decides when a change is worth writing.
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Board } from "../constants/schema";
-import { boardFingerprint, boardFromScene } from "../services/board-service";
+import { boardFingerprint, boardFromScene, boardStartState } from "../services/board-service";
 import { useBoard, useSetBoard } from "./use-board";
 
 /**
@@ -40,7 +40,18 @@ export function useBoardView(boardId: string, surface: Element | null) {
   // What is on disk, as a fingerprint, so a change report that changes
   // nothing — a hover, a selection, a menu opening — costs a string compare
   // and no write.
-  const savedRef = useRef(boardFingerprint(board.elements, board.appState));
+  // The dotted background, the one thing on a board that is the app's
+  // rather than the library's. Held here so a toggle writes the file the
+  // same way a stroke does, with whatever the library last reported.
+  const [dots, setDotsState] = useState(board.dots);
+  const dotsRef = useRef(board.dots);
+  const sceneRef = useRef<{ elements: readonly unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }>({
+    elements: board.elements,
+    appState: board.appState,
+    files: board.files,
+  });
+
+  const savedRef = useRef(boardFingerprint(board.elements, board.appState, board.dots));
   const timerRef = useRef<number | null>(null);
   const pendingRef = useRef<Board | null>(null);
 
@@ -57,15 +68,28 @@ export function useBoardView(boardId: string, surface: Element | null) {
 
   const onChange = useCallback(
     (elements: readonly unknown[], appState: Record<string, unknown>, files: Record<string, unknown>) => {
-      const fingerprint = boardFingerprint(elements, appState);
+      sceneRef.current = { elements, appState, files };
+      const fingerprint = boardFingerprint(elements, appState, dotsRef.current);
       if (fingerprint === savedRef.current) return;
       savedRef.current = fingerprint;
-      pendingRef.current = boardFromScene(elements, appState, files);
+      pendingRef.current = boardFromScene(elements, appState, files, dotsRef.current);
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
       timerRef.current = window.setTimeout(flush, SETTLE_MS);
     },
     [flush],
   );
+
+  // Written at once rather than after the settle delay: a toggle is one
+  // deliberate act, not the middle of a stroke.
+  const toggleDots = useCallback(() => {
+    const next = !dotsRef.current;
+    dotsRef.current = next;
+    setDotsState(next);
+    const { elements, appState, files } = sceneRef.current;
+    savedRef.current = boardFingerprint(elements, appState, next);
+    pendingRef.current = boardFromScene(elements, appState, files, next);
+    flush();
+  }, [flush]);
 
   // Leaving the page writes whatever was still settling, so a stroke drawn
   // a moment before clicking away is not the one that gets lost.
@@ -75,12 +99,12 @@ export function useBoardView(boardId: string, surface: Element | null) {
   // owns the scene and the store is only ever told about it, never the other
   // way round, so feeding store updates back in would echo every save.
   const initialData = useMemo(
-    () => ({ elements: board.elements, appState: board.appState, files: board.files }),
+    () => ({ elements: board.elements, appState: boardStartState(board.appState), files: board.files }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [boardId],
   );
 
   const theme = useMemo(() => boardThemeFor(surface), [surface]);
 
-  return { initialData, theme, onChange };
+  return { initialData, theme, onChange, dots, toggleDots };
 }

@@ -13,13 +13,16 @@ import {
   BOARD_CARD_ICON_MAX_WIDTH,
   BOARD_CARD_ROW_MAX_HEIGHT,
   BOARD_CARD_WIDTH,
+  BOARD_DOT_MIN_SCREEN_SPACING,
+  BOARD_DOT_SPACING,
   BOARD_PAGE_LINK_PREFIX,
+  LIBRARY_DEFAULT_BACKGROUND,
 } from "../constants/board";
 import { UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
 import { linkTargets } from "./storyline-service";
 
 export function createBoard(): Board {
-  return { version: 1, elements: [], appState: {}, files: {} };
+  return { version: 1, elements: [], appState: {}, files: {}, dots: true };
 }
 
 /**
@@ -35,6 +38,8 @@ export function readBoard(raw: unknown): Board {
     elements: Array.isArray(record.elements) ? record.elements : [],
     appState: plainObject(record.appState),
     files: plainObject(record.files),
+    // Absent means on: every board written before the dots existed gets them.
+    dots: record.dots !== false,
   };
 }
 
@@ -64,8 +69,8 @@ const KEPT_APP_STATE = ["viewBackgroundColor", "gridSize", "gridModeEnabled", "z
  * ids, versions and deletion of every element plus the kept view state,
  * which is what a save would actually change.
  */
-export function boardFingerprint(elements: readonly unknown[], appState: Record<string, unknown>): string {
-  const parts: string[] = [];
+export function boardFingerprint(elements: readonly unknown[], appState: Record<string, unknown>, dots: boolean): string {
+  const parts: string[] = [`dots=${dots ? 1 : 0}`];
   for (const entry of elements) {
     const element = entry as { id?: string; version?: number; isDeleted?: boolean };
     parts.push(`${element.id}:${element.version}:${element.isDeleted ? 1 : 0}`);
@@ -89,6 +94,7 @@ export function boardFromScene(
   elements: readonly unknown[],
   appState: Record<string, unknown>,
   files: Record<string, unknown>,
+  dots: boolean,
 ): Board {
   const kept = elements.filter((entry) => !(entry as { isDeleted?: boolean }).isDeleted);
   const referenced = new Set<string>();
@@ -104,7 +110,35 @@ export function boardFromScene(
   for (const key of KEPT_APP_STATE) {
     if (appState[key] !== undefined) keptState[key] = appState[key];
   }
-  return { version: 1, elements: kept, appState: keptState, files: keptFiles };
+  return { version: 1, elements: kept, appState: keptState, files: keptFiles, dots };
+}
+
+/**
+ * The view state the library starts a board from: what the file kept, over
+ * a transparent canvas so the dots show through. The library's own default
+ * white is dropped on the way in — the spike's boards carry it because the
+ * library wrote it, not because anyone chose it — and any other colour she
+ * picked is kept, dots or no dots.
+ */
+export function boardStartState(kept: Record<string, unknown>): Record<string, unknown> {
+  const state: Record<string, unknown> = { viewBackgroundColor: "transparent", ...kept };
+  if (state.viewBackgroundColor === LIBRARY_DEFAULT_BACKGROUND) state.viewBackgroundColor = "transparent";
+  return state;
+}
+
+/**
+ * Where the dots go for a view scrolled to (`scrollX`, `scrollY`) at `zoom`,
+ * as a tile size and offset in screen pixels — so a dot stays under the
+ * same point of the drawing as it is panned and zoomed. Zoomed far out the
+ * spacing doubles until the dots are at least `BOARD_DOT_MIN_SCREEN_SPACING`
+ * apart on screen.
+ */
+export function dotsLayout(scrollX: number, scrollY: number, zoom: number): { size: number; x: number; y: number } {
+  let spacing = BOARD_DOT_SPACING;
+  while (spacing * zoom < BOARD_DOT_MIN_SCREEN_SPACING) spacing *= 2;
+  const size = spacing * zoom;
+  const wrap = (value: number) => ((value % size) + size) % size;
+  return { size, x: wrap(scrollX * zoom), y: wrap(scrollY * zoom) };
 }
 
 // ---- Links: a shape that points at a page ----
