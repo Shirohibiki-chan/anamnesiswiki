@@ -11,12 +11,16 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
+  boardCardBox,
+  boardCardCount,
   boardCardNames,
   boardCardPresentation,
+  boxSelectOnBoard,
   boardPickerIsOpenAndFocused,
   clearTreeSearch,
   clickBoardCard,
   deselectOnBoard,
+  dragBoardCard,
   dragPageOntoBoard,
   makeBoard,
   openPage,
@@ -127,6 +131,34 @@ describe("page cards on a board", () => {
     expect(await boardCardNames(app.window)).toEqual([FIRST, SECOND]);
     const elements = await savedElements(app);
     expect(elements.map((element) => element.type)).toEqual(["embeddable", "embeddable"]);
+  });
+
+  it("moves when dragged by its middle, selected or not — a card is never woken", async () => {
+    // The library wakes an embed clicked in its middle and then hands it the
+    // pointer, which would make a selected card undraggable. A card's box
+    // takes no pointer events, so this drag reaches the canvas and moves it.
+    await deselectOnBoard(app.window);
+    await clickBoardCard(app.window, SECOND);
+    await app.window.waitForTimeout(400);
+    const before = await boardCardBox(app.window, SECOND);
+    await dragBoardCard(app.window, SECOND, 90, 40);
+    const after = await boardCardBox(app.window, SECOND);
+    expect(Math.round(after.x - before.x)).toBe(90);
+    expect(Math.round(after.y - before.y)).toBe(40);
+    // Still on the board: a drag is not a click.
+    expect(await pageTitle(app.window)).toBe(BOARD);
+  });
+
+  it("is selected along with everything else by a box drawn around it, and deleted with it", async () => {
+    await deselectOnBoard(app.window);
+    // From under the toolbar to short of the corner buttons: the box only
+    // needs to hold the two cards, which sit mid-canvas.
+    await boxSelectOnBoard(app.window, { x: 0.12, y: 0.15 }, { x: 0.9, y: 0.85 });
+    await app.window.keyboard.press("Delete");
+    expect(await boardCardCount(app.window)).toBe(0);
+    await app.window.keyboard.press("Control+z");
+    await waitForBoardCards(app.window, 2);
+    expect(await boardCardCount(app.window)).toBe(2);
   });
 
   it("opens the page on a second click: the first selects the card", async () => {

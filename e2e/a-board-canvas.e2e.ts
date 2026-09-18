@@ -10,6 +10,7 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
+  boardDotsShown,
   boardIsExpanded,
   boardIsShown,
   boardLinkLabel,
@@ -19,8 +20,11 @@ import {
   linkBoardShapeToPage,
   makeBoard,
   pageTitle,
+  openPage,
   selectBoardShape,
+  toggleBoardDots,
   toggleBoardExpand,
+  waitForBoard,
   waitForPageTitle,
   waitForWorld,
 } from "./harness/screen";
@@ -113,6 +117,23 @@ describe("a board's whiteboard", () => {
     await waitForPageTitle(app.window, EXISTING);
     expect(await pageTitle(app.window)).toBe(EXISTING);
     expect(app.errors).toEqual([]);
+  });
+
+  it("draws its dots by default, and remembers them switched off", async () => {
+    await openPage(app.window, BOARD);
+    await waitForBoard(app.window);
+    expect(await boardDotsShown(app.window)).toBe(true);
+    await toggleBoardDots(app.window);
+    expect(await boardDotsShown(app.window)).toBe(false);
+    await app.window.waitForTimeout(WRITTEN_MS);
+    const file = await findBoardFile(app.world!.path);
+    expect((JSON.parse(await fs.readFile(file!, "utf8")) as { dots?: boolean }).dots).toBe(false);
+    await reload(app);
+    await openPage(app.window, BOARD);
+    await waitForBoard(app.window);
+    expect(await boardDotsShown(app.window)).toBe(false);
+    await toggleBoardDots(app.window);
+    expect(await boardDotsShown(app.window)).toBe(true);
   });
 
   it("still has the shape and its link after a restart", async () => {

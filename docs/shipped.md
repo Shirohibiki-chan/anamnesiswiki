@@ -6669,3 +6669,24 @@ nothing the browser owns.
 click — step 2. The picture is the page's, read through `useNodeImage`,
 so a board with cards costs no bytes in `_board.json`; a picture *dropped*
 on a board is still the spike's data URL until step 4.
+
+### Step 1, the same day — selection fixed, and the dots
+
+She tested #452 within the hour: a page dragged from the tree landed, and
+then selecting anything went wrong. The cause was the library's own
+treatment of an embed clicked in its middle — it "wakes" it and hands it
+the pointer, which for a card meant a box that ate every click after the
+first. `board.css` now keeps a card's box inert to the pointer whatever the
+library decides, the woken state is put back from a `setTimeout`, and the
+scenarios grew two: a selected card dragged by its middle moves, and a box
+drawn around the cards selects and deletes them together. Finding the
+second one's cause took the debug log in `docs/handoff.md` § Boards' third
+bullet: a reset from inside `onChange` broke the marquee, and a quick
+drag-release counts as a wake.
+
+**The dots**, asked for at the same time: on by default for every board,
+following the drawing, toggled from the board's menu, per board. The
+mechanism is in `docs/handoff.md` § Boards. Verified by a scenario in
+`a-board-canvas.e2e.ts` — on by default, off after the toggle and written
+to the file as `dots: false`, still off after a restart, on again after a
+second toggle — and by screenshots at three zooms.

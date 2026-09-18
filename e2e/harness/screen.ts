@@ -1903,6 +1903,8 @@ const BOARD_PICKER_INPUT = ".board-picker input";
 // The library's own popup for a selected shape that carries a link.
 const BOARD_HYPERLINK = ".excalidraw-hyperlinkContainer-link";
 const BOARD_PUT_BUTTON = ".board-put-button";
+const BOARD_MENU_BUTTON = ".board [data-testid='main-menu-trigger']";
+const BOARD_DOTS_TOGGLE = "[data-testid='board-dots-toggle']";
 const BOARD_PAGE_CARD = "[data-testid='board-page-card']";
 
 /** The card showing the page called `name` — by the name it carries, since a card shrunk to its icon shows no text. */
@@ -2933,6 +2935,18 @@ export async function clickBoardCard(window: Page, name: string): Promise<void> 
   const box = await boardCard(window, name).first().boundingBox();
   if (!box) throw new Error(`no card for ${name} on the board`);
   await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await settlePastWake(window);
+}
+
+/**
+ * The library treats a quick press-and-release on an embed's middle as a
+ * "wake" and acts on it a hundred milliseconds later, setting the selection
+ * as it does. A gesture begun inside that window — which a driven mouse
+ * manages and a hand does not — is clobbered by it, so every helper that
+ * ends on a card's middle waits it out.
+ */
+async function settlePastWake(window: Page): Promise<void> {
+  await window.waitForTimeout(250);
 }
 
 /**
@@ -3005,4 +3019,61 @@ export async function deselectOnBoard(window: Page): Promise<void> {
   // No tool shortcut first: the keyboard may be in the tree's search box,
   // and a letter typed there filters the tree rather than picking a tool.
   await canvas.click({ position: { x: box.width / 2, y: box.height - 8 } });
+}
+
+/** Whether the board is drawing its dotted background. */
+export async function boardDotsShown(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD).first().getAttribute("data-dots")) === "true";
+}
+
+/** Switches the dots on or off, from the board's own menu. */
+export async function toggleBoardDots(window: Page): Promise<void> {
+  const before = await boardDotsShown(window);
+  await window.locator(BOARD_MENU_BUTTON).first().click();
+  await window.locator(BOARD_DOTS_TOGGLE).first().click();
+  await window.waitForFunction(
+    ([selector, was]) => document.querySelector(selector)?.getAttribute("data-dots") !== was,
+    [BOARD, before ? "true" : "false"],
+    { timeout: WAIT_MS },
+  );
+  await window.keyboard.press("Escape");
+}
+
+/** Where the card for `name` sits on screen, for telling whether it moved. */
+export async function boardCardBox(window: Page, name: string): Promise<{ x: number; y: number; width: number; height: number }> {
+  const box = await boardCard(window, name).first().boundingBox();
+  if (!box) throw new Error(`no card for ${name} on the board`);
+  return box;
+}
+
+/** Drags the card for `name` by its middle, `dx` and `dy` pixels — what a hand does to move a card. */
+export async function dragBoardCard(window: Page, name: string, dx: number, dy: number): Promise<void> {
+  const box = await boardCardBox(window, name);
+  const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + dx / 2, from.y + dy / 2, { steps: 4 });
+  await window.mouse.move(from.x + dx, from.y + dy, { steps: 4 });
+  await window.mouse.up();
+  await settlePastWake(window);
+}
+
+/**
+ * Draws a selection box from one corner of the canvas region to the other,
+ * the way everything inside is selected at once. The corners are given as
+ * fractions of the canvas.
+ */
+export async function boxSelectOnBoard(window: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await window.mouse.move(box.x + box.width * from.x, box.y + box.height * from.y);
+  await window.mouse.down();
+  await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 8 });
+  await window.mouse.up();
+}
+
+/** How many cards are on the board. */
+export async function boardCardCount(window: Page): Promise<number> {
+  return window.locator(BOARD_PAGE_CARD).count();
 }

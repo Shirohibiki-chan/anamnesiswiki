@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-18 — Dots on the board, and cards that select like anything else
+
+### Additions
+
+- **Boards have a dotted background.** On for every board, old ones included, and it moves with the drawing as you pan and zoom rather than sitting still behind it; zoomed far out, every other dot drops away so it never turns into a haze. *Hide the Dots* and *Show the Dots* are in the board's menu (the ☰ in the bottom-left corner), and each board remembers its own answer. A board's canvas is see-through now so the dots show; picking a canvas colour from the same menu still works and covers them.
+
+### Fixes
+
+- **Selecting on a board with page cards on it works properly.** Clicking the middle of a card used to "wake" it the way the drawing library wakes a web embed, and a woken card swallowed every click after that — it couldn't be dragged, a selection box couldn't be drawn through it, and clicking it did nothing. A card never takes the mouse now: click to select, click again to open, drag to move, and a box drawn around cards selects them like any other shape.
+
 ## 2026-09-18 — Pages on a board
 
 ### Additions
@@ -293,18 +303,3 @@
 - **This is not the same thing as a project template.** A `.antpl` is a whole project's shape — folders, and a blank starter page of each kind, with nobody's writing in it — and opens from the start screen. This is one page and its sub-pages, copied whole, prose and properties and pictures included. The extensions are deliberately unalike so they can't be confused in a folder.
 - **A file that isn't one says why.** Picking a project template by mistake points you at the start screen; a truncated download, a damaged file, or one made by a newer version of the app each get their own sentence.
 - **This finishes Phase 28.** A world can now leave as a LegendKeeper file, a folder of Markdown, one big Markdown file, a JSON zip, a printed page — or, one template at a time, as something you hand to a friend.
-
-## 2026-09-10 — Export as JSON
-
-### Additions
-
-- **Export as JSON (.zip)**, on the project's Export menu. Your writing is already JSON files on disk, so this zips up the folder exactly as it sits rather than converting anything — unzip it anywhere and you have a working world back.
-- **It tells you what's in there first**: how many files, how big before squashing, and how much of that is the earlier versions of your pages.
-- **Earlier versions come along.** They're the biggest thing in a project folder and the obvious thing to leave out, but they're yours, and because each one is nearly identical to the last they squash down to a fraction of their size.
-- **Everything sits inside one folder in the zip**, named after your project, so unzipping doesn't scatter ninety files into whatever folder you were in.
-
-### Notes
-
-- **Two things deliberately don't travel**: the marker saying the world is open right now, which would make a fresh copy look locked by somebody else, and the half-finished rename left behind by an interrupted move, which the app repairs by itself anyway.
-- **It's on the project menu only.** There's no such thing as a folder for a single character, so it isn't offered on a page.
-- **Internal: the first dependency this app has taken on in a while** — a small MIT-licensed zip library. The compression the app already had can only do one stream at a time and can't make an archive.

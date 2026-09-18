@@ -162,6 +162,7 @@ describe("linkIndex", () => {
         ],
         appState: {},
         files: {},
+        dots: true,
       },
     });
     expect(after).not.toBe(before);

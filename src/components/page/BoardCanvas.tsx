@@ -28,7 +28,7 @@ import {
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
-import { FilePlus2, Link2, Maximize2, Minimize2, Unlink } from "lucide-react";
+import { FilePlus2, Grip, Link2, Maximize2, Minimize2, Unlink } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_PAGE_LINK_PREFIX, PAGE_DRAG_TYPE } from "../../constants/board";
 import { cardPageId, cardPlacement, draggedPageIds, elementLink, isPageCard } from "../../services/board-service";
@@ -50,6 +50,10 @@ type Props = {
   surface: HTMLDivElement | null;
   /** Whether the one selected shape is a page card, for the board to style around. */
   onCardSelected: (selected: boolean) => void;
+  /** Where the library's view is, on every scroll and zoom, for the dots underneath. */
+  onView: (scrollX: number, scrollY: number, zoom: number) => void;
+  dots: boolean;
+  onToggleDots: () => void;
 };
 
 /** Which picker is open and what has been typed into it so far; null when closed. */
@@ -83,11 +87,26 @@ function viewCentre(appState: AppState): { x: number; y: number } {
   };
 }
 
-export default function BoardCanvas({ initialData, theme, onChange, expanded, onToggleExpand, links, surface, onCardSelected }: Props) {
+export default function BoardCanvas({
+  initialData,
+  theme,
+  onChange,
+  expanded,
+  onToggleExpand,
+  links,
+  surface,
+  onCardSelected,
+  onView,
+  dots,
+  onToggleDots,
+}: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const pickerInputRef = useRef<HTMLInputElement | null>(null);
+  // The last view the dots were told about, so a change report that moved
+  // nothing costs a string compare.
+  const viewRef = useRef("");
 
   // Clicking anywhere else closes the picker, the storyline picker's rule.
   useEffect(() => {
@@ -184,6 +203,27 @@ export default function BoardCanvas({ initialData, theme, onChange, expanded, on
         const selectedId = soleSelection(appState);
         const selected = selectedId ? elements.find((element) => element.id === selectedId) : undefined;
         onCardSelected(!!selected && isPageCard(selected));
+        // The library "wakes" an embed clicked in its middle, a hundred
+        // milliseconds after the click, and then refuses to drag it from the
+        // canvas — the pointer is meant to be the iframe's. A card's box takes
+        // no pointer events (board.css), so a woken card would be stuck. The
+        // state is put back, but only the *woken* state and only from outside
+        // this callback: the hover state flickers on every pointer move over a
+        // selected card, and an `updateScene` from inside the change report,
+        // mid-gesture, made the library drop the next box selection's first
+        // element.
+        const woken = appState.activeEmbeddable;
+        if (woken?.state === "active" && isPageCard(woken.element)) {
+          window.setTimeout(() => apiRef.current?.updateScene({ appState: { activeEmbeddable: null } }), 0);
+        }
+        // The dots underneath follow the view. Told from here rather than
+        // the library's scroll hook, which says nothing about where a
+        // reopened board starts.
+        const view = `${appState.scrollX}:${appState.scrollY}:${appState.zoom.value}`;
+        if (view !== viewRef.current) {
+          viewRef.current = view;
+          onView(appState.scrollX, appState.scrollY, appState.zoom.value);
+        }
         onChange(elements, appState as unknown as Record<string, unknown>, files);
       }}
       // Every link goes through the app: a page link opens the page, and a
@@ -196,8 +236,8 @@ export default function BoardCanvas({ initialData, theme, onChange, expanded, on
       // A card opens its page on the second click: the first selects it, as
       // it selects any shape, and a plain click on a card already selected —
       // no drag, nothing added to the selection — is the one that opens.
-      // The library would use that click to wake the embed; a page card has
-      // nothing to wake, and the page is what the click meant.
+      // Every click on a card reaches here, because the card's own box takes
+      // no pointer events (board.css).
       onPointerUp={(_tool, pointerDownState) => {
         const hit = pointerDownState.hit.element;
         if (!hit || pointerDownState.drag.hasOccurred || pointerDownState.hit.wasAddedToSelection) return;
@@ -210,14 +250,7 @@ export default function BoardCanvas({ initialData, theme, onChange, expanded, on
       renderEmbeddable={(element) => {
         const pageId = cardPageId(element);
         if (!pageId) return null;
-        return (
-          <BoardPageCard
-            pageId={pageId}
-            width={element.width}
-            height={element.height}
-            onOpen={() => links.openLink(`${BOARD_PAGE_LINK_PREFIX}${pageId}`)}
-          />
-        );
+        return <BoardPageCard pageId={pageId} width={element.width} height={element.height} />;
       }}
       // The library's own open/save-to-file actions are the desktop app's
       // job, not the board's: the drawing is already saved, in the page.
@@ -333,11 +366,15 @@ export default function BoardCanvas({ initialData, theme, onChange, expanded, on
       }}
     >
       {/* The default menu links out to Excalidraw's own site and socials.
-          This one keeps the three things that act on the drawing. */}
+          This one keeps the three things that act on the drawing, and the
+          dots, which are the app's. */}
       <MainMenu>
         <MainMenu.DefaultItems.SaveAsImage />
         <MainMenu.DefaultItems.ClearCanvas />
         <MainMenu.Separator />
+        <MainMenu.Item icon={<Grip size={16} />} onSelect={onToggleDots} selected={dots} data-testid="board-dots-toggle">
+          {dots ? "Hide the Dots" : "Show the Dots"}
+        </MainMenu.Item>
         <MainMenu.DefaultItems.ChangeCanvasBackground />
       </MainMenu>
     </Excalidraw>
