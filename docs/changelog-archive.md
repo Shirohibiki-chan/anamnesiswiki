@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — a page you can actually print
+
+### Fixes
+
+- **Ctrl+P prints the page, not the app.** It always opened the print dialog and Windows always offered Print to PDF — what came out was the whole window, rail and tree and side panel included, in dark theme, and only the part of the page that happened to be on screen. Now it's the page's title and its writing, and nothing else.
+- **The whole page prints, however long it is.** The rest of it used to be cut off at the bottom of the window; that was the real bug, and the least obvious one.
+- **On white, whatever theme you're in.** Every theme but Daylight is dark, and a dark theme on paper is a solid black rectangle. Printing borrows Daylight's colours, which were measured against white when that theme was built.
+- **Callouts keep their colour**, because a Secret that prints as a plain paragraph has lost the one thing it was saying. Headings don't get stranded alone at the foot of a sheet, and pictures, tables and quotes aren't split across two.
+
+### Notes
+
+- **This is the nearest thing to a PDF export**, and it costs one stylesheet — Print to PDF in the print dialog does the rest.
+- **Untested on Linux.** Print styling is exactly what renders differently on the engine the Linux build uses, so it's built cautiously — plain boxes rather than the flexible ones the screen uses, and the older spelling of the page-break rules alongside the modern one. Worth someone actually trying it there.
+
 ## 2026-09-10 — the whole world in one file, and an Export menu
 
 ### Additions

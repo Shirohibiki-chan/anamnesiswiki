@@ -1902,6 +1902,13 @@ const BOARD_PICKER_ROW = ".board-picker-row";
 const BOARD_PICKER_INPUT = ".board-picker input";
 // The library's own popup for a selected shape that carries a link.
 const BOARD_HYPERLINK = ".excalidraw-hyperlinkContainer-link";
+const BOARD_PUT_BUTTON = ".board-put-button";
+const BOARD_PAGE_CARD = "[data-testid='board-page-card']";
+
+/** The card showing the page called `name` — by the name it carries, since a card shrunk to its icon shows no text. */
+function boardCard(window: Page, name: string): Locator {
+  return window.locator(BOARD_PAGE_CARD).and(window.locator(`[data-page-name="${name.replace(/"/g, '\\"')}"]`));
+}
 
 /**
  * Waits for a just-typed page name to have left its box and been drawn as
@@ -2881,4 +2888,121 @@ export async function snippetStates(window: Page): Promise<{ file: string; on: b
   await window.keyboard.press("Escape");
   await window.waitForTimeout(200);
   return out;
+}
+
+/**
+ * Puts the page called `name` on the board, through the *Put a Page on It*
+ * picker, and waits for its card. The picker is left open, which is its
+ * behaviour: several pages in a row is how a board gets started.
+ */
+export async function putPageOnBoard(window: Page, name: string): Promise<void> {
+  const before = await window.locator(BOARD_PAGE_CARD).count();
+  const put = window.locator(BOARD_PUT_BUTTON);
+  if ((await put.getAttribute("aria-expanded")) !== "true") await put.click();
+  await window.locator(BOARD_PICKER_INPUT).fill(name);
+  await window.locator(BOARD_PICKER_ROW).filter({ hasText: name }).first().click();
+  await window.locator(BOARD_PAGE_CARD).nth(before).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Whether the put-a-page picker is open with its search box focused — what a pick leaves behind. */
+export async function boardPickerIsOpenAndFocused(window: Page): Promise<boolean> {
+  const input = window.locator(BOARD_PICKER_INPUT);
+  if (!(await input.isVisible())) return false;
+  return input.evaluate((element) => element === document.activeElement);
+}
+
+/** The cards on the board, by the page each one shows. */
+export async function boardCardNames(window: Page): Promise<string[]> {
+  return window.locator(BOARD_PAGE_CARD).evaluateAll((cards) => cards.map((card) => card.getAttribute("data-page-name") ?? ""));
+}
+
+/** How the card for `name` is presenting its page: "icon", "row" or "picture". */
+export async function boardCardPresentation(window: Page, name: string): Promise<string> {
+  return (await boardCard(window, name).first().getAttribute("data-presentation")) ?? "";
+}
+
+/**
+ * Clicks the card for `name` on the board, at its middle.
+ *
+ * **By coordinates, not through the element.** The library keeps a card's
+ * box from taking pointer events until the card is woken, so the click has
+ * to land on the canvas where the card is drawn — which is where a hand
+ * would put it. The first click selects the card; the second opens its page.
+ */
+export async function clickBoardCard(window: Page, name: string): Promise<void> {
+  const box = await boardCard(window, name).first().boundingBox();
+  if (!box) throw new Error(`no card for ${name} on the board`);
+  await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/**
+ * Resizes the card for `name` by dragging its bottom-right handle, so its
+ * box ends `width` by `height` on screen (the board at its default zoom is
+ * one unit to one pixel, so these are the drawing's own units too). The card
+ * must be selected already, since the handles are only drawn then.
+ */
+export async function resizeBoardCard(window: Page, name: string, width: number, height: number): Promise<void> {
+  const box = await boardCard(window, name).first().boundingBox();
+  if (!box) throw new Error(`no card for ${name} on the board`);
+  // The library draws the corner handle just outside the element's box —
+  // its centre sits six units out from the corner at this zoom — and the
+  // card's own box sits one unit inside the element's, for the stroke.
+  const grip = 7;
+  const from = { x: box.x + box.width + grip, y: box.y + box.height + grip };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(box.x - 1 + width + grip, box.y - 1 + height + grip, { steps: 8 });
+  await window.mouse.up();
+}
+
+/**
+ * Drags the tree row called `name` onto the board's middle, the way a hand
+ * would take a page from the sidebar to a board.
+ *
+ * **The drag's events are dispatched, not performed.** A native drag never
+ * starts from the driven mouse inside Electron — neither Playwright's
+ * `dragTo` nor a press-move-release produces a single `dragstart` — so the
+ * two ends the app owns are exercised directly: the row's `dragstart`, which
+ * writes the page ids onto the drag, and the board's `dragover` and `drop`,
+ * which read them back. One `DataTransfer` carries them between, as the
+ * browser's would. What the browser does in between is the browser's.
+ */
+export async function dragPageOntoBoard(window: Page, name: string): Promise<void> {
+  const before = await window.locator(BOARD_PAGE_CARD).count();
+  await searchTree(window, name);
+  const row = treeRow(window, name).first();
+  await row.evaluate((rowElement, boardSelector) => {
+    const board = document.querySelector(boardSelector);
+    if (!board) throw new Error("no board canvas to drop on");
+    const carried = new DataTransfer();
+    rowElement.dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer: carried }));
+    const box = board.getBoundingClientRect();
+    const over = { bubbles: true, cancelable: true, dataTransfer: carried, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+    board.dispatchEvent(new DragEvent("dragenter", over));
+    board.dispatchEvent(new DragEvent("dragover", over));
+    board.dispatchEvent(new DragEvent("drop", over));
+    rowElement.dispatchEvent(new DragEvent("dragend", { bubbles: true, dataTransfer: carried }));
+  }, BOARD_CANVAS);
+  await clearTreeSearch(window);
+  await window.locator(BOARD_PAGE_CARD).nth(before).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Waits until the board shows at least `count` cards — on a fresh load they arrive after the library does. */
+export async function waitForBoardCards(window: Page, count: number): Promise<void> {
+  await window.locator(BOARD_PAGE_CARD).nth(count - 1).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * Clears the board's selection by clicking an empty spot — the bottom
+ * middle of the canvas, which the library keeps clear of its own buttons
+ * and which cards, placed mid-view, do not reach. Escape does not do this:
+ * the library's Escape ends the tool in hand and leaves the selection.
+ */
+export async function deselectOnBoard(window: Page): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  // No tool shortcut first: the keyboard may be in the tree's search box,
+  // and a letter typed there filters the tree rather than picking a tool.
+  await canvas.click({ position: { x: box.width / 2, y: box.height - 8 } });
 }

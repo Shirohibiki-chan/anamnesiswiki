@@ -697,12 +697,10 @@ is built; it is all checked as present and not switched off.
 
 **What is not there, in the order it would matter to her:**
 
-1. **Page cards.** LK's centrepiece: a page put on the board becomes a live
-   card — icon, name and the page's picture — that reads its page rather
-   than copying it, so a rename or a new picture shows up on the board. The
-   card is resized into three presentations: small is the icon alone, medium
-   is icon and name, large adds the picture. Today a shape can *link* to a
-   page (the spike's second day); nothing on the board *is* a page.
+1. ~~**Page cards.**~~ Shipped 2026-09-18 — `docs/shipped.md` § Phase 32,
+   step 1. A page put on the board, from the picker or dragged out of the
+   tree, is a live card in one of three presentations by its size, and a
+   second click on it opens the page.
 2. **A card is a button.** Click a card and the page opens. Today a link is
    followed only through the small link mark at a shape's corner, because the
    library opens a link from the shape itself in its read-only mode alone.

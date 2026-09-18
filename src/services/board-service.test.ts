@@ -3,12 +3,18 @@
 // reads as, and what a save leaves out.
 import { describe, expect, it } from "vitest";
 import type { Node } from "../constants/schema";
+import { BOARD_CARD_CASCADE, BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH } from "../constants/board";
 import {
   boardFingerprint,
   boardFromScene,
   boardLinkTarget,
   boardPageLinks,
+  cardPageId,
+  cardPlacement,
+  cardPresentation,
   createBoard,
+  draggedPageIds,
+  isPageCard,
   linkCandidates,
   pageLinkFor,
   readBoard,
@@ -109,5 +115,51 @@ describe("links", () => {
     expect(linkCandidates("rivers", "board", nodes, 8)).toEqual([]);
     expect(linkCandidates("canon", "board", nodes, 8)).toEqual([]);
     expect(linkCandidates("sable", "board", nodes, 1)).toHaveLength(1);
+  });
+});
+
+// ---- Page cards (Phase 32, step 1) ----
+
+describe("isPageCard / cardPageId", () => {
+  it("is an embed carrying a page link, and nothing else", () => {
+    expect(isPageCard({ type: "embeddable", link: pageLinkFor("p1") })).toBe(true);
+    expect(cardPageId({ type: "embeddable", link: pageLinkFor("p1") })).toBe("p1");
+    // A shape with a page link is a linked shape, not a card.
+    expect(isPageCard({ type: "rectangle", link: pageLinkFor("p1") })).toBe(false);
+    // An embed of a website is the library's own kind of embed.
+    expect(isPageCard({ type: "embeddable", link: "https://youtube.com/watch?v=x" })).toBe(false);
+    expect(cardPageId({ type: "embeddable", link: null })).toBeNull();
+    expect(cardPageId({})).toBeNull();
+  });
+});
+
+describe("cardPresentation", () => {
+  it("is the icon when narrow, a row when short, and the picture otherwise", () => {
+    expect(cardPresentation(BOARD_CARD_WIDTH, BOARD_CARD_HEIGHT)).toBe("picture");
+    expect(cardPresentation(400, 300)).toBe("picture");
+    expect(cardPresentation(240, 60)).toBe("row");
+    expect(cardPresentation(80, 80)).toBe("icon");
+    // Narrow wins over short: a tiny square is the icon, not a squashed row.
+    expect(cardPresentation(60, 40)).toBe("icon");
+  });
+});
+
+describe("cardPlacement", () => {
+  it("centres the first card and steps the rest down and to the right", () => {
+    const centre = { x: 500, y: 300 };
+    expect(cardPlacement(centre, 0)).toEqual({ x: 500 - BOARD_CARD_WIDTH / 2, y: 300 - BOARD_CARD_HEIGHT / 2 });
+    const third = cardPlacement(centre, 2);
+    expect(third.x - cardPlacement(centre, 0).x).toBe(2 * BOARD_CARD_CASCADE);
+    expect(third.y - cardPlacement(centre, 0).y).toBe(2 * BOARD_CARD_CASCADE);
+  });
+});
+
+describe("draggedPageIds", () => {
+  it("reads the ids a tree drag wrote, and nothing it did not", () => {
+    expect(draggedPageIds(JSON.stringify(["a", "b"]))).toEqual(["a", "b"]);
+    expect(draggedPageIds(JSON.stringify(["a", 3, "", null]))).toEqual(["a"]);
+    expect(draggedPageIds("not json")).toEqual([]);
+    expect(draggedPageIds(JSON.stringify({ id: "a" }))).toEqual([]);
+    expect(draggedPageIds("")).toEqual([]);
   });
 });

@@ -14,3 +14,31 @@ export const BOARD_PAGE_LINK_PREFIX = "anamnesis://page/";
 
 /** How many pages the link picker offers at once, the storyline picker's number. */
 export const BOARD_PICKER_RESULTS = 8;
+
+/**
+ * The drag type a page row carries when it is dragged out of the tree, so a
+ * board can tell a page from a picture (`ASSET_DRAG_TYPE`) or a file. The
+ * data is a JSON list of page ids — one for a row, several for a dragged
+ * multi-selection. Phase 32, step 1.
+ */
+export const PAGE_DRAG_TYPE = "application/x-anamnesis-pages";
+
+/**
+ * A page card's size when it is first put on a board, in the drawing's own
+ * units: big enough to be the picture card, the presentation a page arrives
+ * in on LK's boards too. Resizing it is what changes the presentation — see
+ * `cardPresentation`.
+ */
+export const BOARD_CARD_WIDTH = 240;
+export const BOARD_CARD_HEIGHT = 160;
+
+/**
+ * Where a card stops being a picture and becomes a row, and where a row
+ * becomes an icon alone. Read off the card's box each time it is drawn,
+ * never stored — so resizing is the whole control.
+ */
+export const BOARD_CARD_ICON_MAX_WIDTH = 110;
+export const BOARD_CARD_ROW_MAX_HEIGHT = 110;
+
+/** How far each card put on in a row is stepped from the last, so several picks do not stack exactly. */
+export const BOARD_CARD_CASCADE = 24;

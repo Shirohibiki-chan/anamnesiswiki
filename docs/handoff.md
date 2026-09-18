@@ -436,6 +436,51 @@ Board spike, closed 2026-09-13. What binds the code:
   boards pass nothing and hit the cache through one shared empty object —
   a fresh `{}` per call would miss it every time.
 
+- **A page card is the library's embed element with a page link for its
+  address, and the app draws only what is inside the box** (Phase 32, step
+  1). The library's `renderEmbeddable` asks the host what to draw in an
+  embed whose address `validateEmbeddable` accepted; `BoardPageCard` is the
+  answer for `anamnesis://page/<id>`, and any other address is left to the
+  library's own list of sites. So a card is moved, resized, locked,
+  grouped, undone and saved by the library, and because its address is the
+  same string a linked shape carries, the link index and `onLinkOpen`
+  already understand it. **Reading `type` off an element for `isPageCard`
+  is the second named exception to "never read inside an element"**, beside
+  `link`: an embed's address and kind are the app's own because the app put
+  them there. Do not add a third for anything the library owns.
+
+- **The card's presentation comes off its box and is never stored.**
+  `cardPresentation(width, height)` — icon, row or picture — is computed
+  each draw from the element's size, so resizing is the whole control and
+  there is no field to get out of step with the box. A card element is
+  built by converting a rectangle skeleton and retyping it: the converter
+  passes an `embeddable` skeleton through untouched, so that is the one
+  way to get every field the library expects filled in.
+
+- **A card opens on the second click, through the library's pointer-up
+  hook, not through the card's own click.** Until the library "wakes" an
+  embed its box takes no pointer events, so a card's `onClick` never sees
+  the first clicks; `onPointerUp` is told what was hit, whether it was just
+  added to the selection and whether the pointer moved, and a plain click
+  on a card already selected is the one that opens. The card's `onClick`
+  is kept for the woken state, and the two cannot both fire for one click.
+  The library's link popup would show a selected card's raw address, so
+  `PageBoard` marks `data-card-selected` and the stylesheet hides it;
+  hiding is right because the popup's *remove link* would leave an empty
+  embed that draws nothing.
+
+- **A row dragged out of the tree carries page ids under `PAGE_DRAG_TYPE`,
+  written by `TreeItem`'s own `onDragStart` beside react-arborist's drag.**
+  The tree library puts nothing readable on the drag, and its own drop
+  targets never look for this type, so the two coexist. The board listens
+  in the capture phase on its own box, ahead of the library's drop handler
+  (which is for files), and reads the ids back with `draggedPageIds`, which
+  refuses any payload it did not write. **A native drag never starts from
+  the driven mouse inside Electron** — no `dragstart` from Playwright's
+  `dragTo` or from press-move-release — so the scenario dispatches the two
+  ends' events with one `DataTransfer` between them; the real drag from a
+  real mouse is the browser's and can only be checked in the running app.
+
 ## The graph
 
 - **The simulation is ticked to a stop and must not be animated.** `settleGraph`

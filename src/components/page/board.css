@@ -86,9 +86,18 @@
   display: inline;
 }
 
-/* The picker hangs under its button — the storyline picker's shape. */
+/* The picker hangs under its buttons — the storyline picker's shape. The
+   anchor holds Put a Page on It and, when a shape is selected, Link to Page,
+   side by side the way the library lays out its own top-right row. */
 .board-picker-anchor {
   position: relative;
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.board-expanded .board-put-button {
+  width: auto;
+  padding: 0 var(--space-sm);
 }
 
 .board-picker {
@@ -167,4 +176,104 @@
   font-size: var(--fs-sm);
   color: var(--color-text-primary);
   pointer-events: none;
+}
+
+/* ---- Page cards (Phase 32, step 1) ----
+   Drawn inside the library's embed box, which is scaled with the zoom, so
+   every size here is in the drawing's own units and the card grows and
+   shrinks with the board. Three presentations of one card, picked by the
+   box's size in BoardPageCard — see `cardPresentation`. */
+
+.board-page-card {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  user-select: none;
+}
+
+.board-page-card-picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.board-page-card-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.board-page-card-icon {
+  flex: 0 0 auto;
+}
+
+/* Wraps rather than ellipsising: a card whose name is cut off is a card
+   you cannot read. Line-clamped instead, which still shows as much as fits. */
+.board-page-card-name {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Icon alone: centred, large, the name in the tooltip. */
+.board-page-card[data-presentation="icon"] {
+  align-items: center;
+  justify-content: center;
+}
+
+/* A row: icon and name side by side, like the tree's own rows. */
+.board-page-card[data-presentation="row"] {
+  align-items: center;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+/* The picture card: the picture fills it and the name sits along the
+   bottom over a fade, so it reads on any picture. Without a picture the
+   name sits at the bottom of a plain panel, the same place. */
+.board-page-card[data-presentation="picture"] {
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.board-page-card[data-presentation="picture"] .board-page-card-label {
+  padding: 24px 12px 10px;
+  font-size: 14px;
+}
+
+.board-page-card[data-presentation="picture"]:has(.board-page-card-picture) .board-page-card-label {
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+}
+
+.board-page-card-missing {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  color: var(--color-text-secondary);
+}
+
+/* The library's own link popup would show a selected card's raw address;
+   the card's page is named by the top-right button instead. */
+.board[data-card-selected="true"] .excalidraw-hyperlinkContainer {
+  display: none;
 }

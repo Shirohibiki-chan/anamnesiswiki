@@ -7,7 +7,14 @@
 // the drawing safe between one open and the next: read it tolerantly, write
 // it whole, and never reach inside an element. Anything that reads inside
 // would be a second copy of the library's own rules.
-import { BOARD_PAGE_LINK_PREFIX } from "../constants/board";
+import {
+  BOARD_CARD_CASCADE,
+  BOARD_CARD_HEIGHT,
+  BOARD_CARD_ICON_MAX_WIDTH,
+  BOARD_CARD_ROW_MAX_HEIGHT,
+  BOARD_CARD_WIDTH,
+  BOARD_PAGE_LINK_PREFIX,
+} from "../constants/board";
 import { UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
 import { linkTargets } from "./storyline-service";
 
@@ -180,4 +187,69 @@ export function linkCandidates(query: string, boardId: string, nodes: Record<str
     matches.push(node);
   }
   return matches.sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit);
+}
+
+// ---- Page cards: a page that is on the board, not just pointed at ----
+//
+// A card is the library's *embed* element carrying a page link — the same
+// `anamnesis://page/<id>` a linked shape carries, so everything that follows
+// links (the index, the click handler, the picker's "Linked to") already
+// understands a card. What differs is only what is drawn inside the box,
+// and that is the app's card component rather than the library's iframe.
+// Reading `type` here is the second named exception to "never read inside
+// an element", beside `link` above: an embed's address and kind are the
+// app's own, because the app put them there.
+
+/** Whether `element` is a page card: an embed whose address is a page link. */
+export function isPageCard(element: unknown): boolean {
+  const record = element as { type?: unknown; link?: unknown };
+  return record.type === "embeddable" && typeof record.link === "string" && record.link.startsWith(BOARD_PAGE_LINK_PREFIX);
+}
+
+/** The page a card is for, or null for anything that is not a card. */
+export function cardPageId(element: unknown): string | null {
+  if (!isPageCard(element)) return null;
+  return (element as { link: string }).link.slice(BOARD_PAGE_LINK_PREFIX.length);
+}
+
+export type CardPresentation = "icon" | "row" | "picture";
+
+/**
+ * How a card of this size presents its page: the icon alone when it is
+ * narrow, icon and name in a row when it is short, and the picture with the
+ * name over it otherwise. LK's boards make the same three of one card by
+ * resizing, which is why the answer comes off the box and is never stored.
+ */
+export function cardPresentation(width: number, height: number): CardPresentation {
+  if (width < BOARD_CARD_ICON_MAX_WIDTH) return "icon";
+  if (height < BOARD_CARD_ROW_MAX_HEIGHT) return "row";
+  return "picture";
+}
+
+/**
+ * Where the `index`th card of a batch goes when the batch is centred on
+ * `centre`: the first card sits centred there, each later one a step down
+ * and to the right, so several pages put on in a row are all visible and
+ * all still under the hand. `x`/`y` are the card's top-left, the library's
+ * convention.
+ */
+export function cardPlacement(centre: { x: number; y: number }, index: number): { x: number; y: number } {
+  return {
+    x: centre.x - BOARD_CARD_WIDTH / 2 + index * BOARD_CARD_CASCADE,
+    y: centre.y - BOARD_CARD_HEIGHT / 2 + index * BOARD_CARD_CASCADE,
+  };
+}
+
+/**
+ * The page ids a drag from the tree carries, or none for any other drag or
+ * a payload something else wrote — a board drop must not act on a string
+ * it did not put there.
+ */
+export function draggedPageIds(payload: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(payload);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+  } catch {
+    return [];
+  }
 }

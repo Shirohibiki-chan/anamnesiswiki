@@ -5,6 +5,7 @@
 import { useState, type CSSProperties } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { ChevronDown, ChevronRight, Home, MoreHorizontal, Plus } from "lucide-react";
+import { PAGE_DRAG_TYPE } from "../../constants/board";
 import { TREE_INDENT } from "../../constants/layout";
 import { FOLDER_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY } from "../../constants/schema";
 import { getPaletteHex } from "../../constants/palette";
@@ -297,7 +298,21 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   }
 
   return (
-    <div className="tree-node" style={style} ref={dragHandle}>
+    <div
+      className="tree-node"
+      style={style}
+      ref={dragHandle}
+      // **A row dragged out of the tree carries its pages.** react-arborist
+      // owns the drag for reordering and puts nothing readable on it; this
+      // adds the page ids under the app's own type so a board can make cards
+      // of them where they are dropped (Phase 32, step 1). A row inside a
+      // multi-selection carries the whole selection, the tree's own rule for
+      // what a drag moves. Nothing outside the tree can read anything else
+      // off this drag, and the tree's own drop targets do not look for it.
+      onDragStart={(event) => {
+        event.dataTransfer.setData(PAGE_DRAG_TYPE, JSON.stringify(targetIds()));
+      }}
+    >
       {/* One vertical line per level of nesting above this row, drawn where
           that ancestor's chevron sits. Every row draws its own segment and the
           rows are flush, so the segments read as continuous lines down the

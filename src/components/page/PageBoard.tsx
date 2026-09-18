@@ -26,11 +26,19 @@ const BoardCanvas = lazy(() => import("./BoardCanvas"));
 export function PageBoard({ node }: { node: Node }) {
   const [expanded, setExpanded] = useState(false);
   const [surface, setSurface] = useState<HTMLDivElement | null>(null);
+  // Whether a page card is the selected shape: the stylesheet hides the
+  // library's link popup for one, since the address in it is not for reading.
+  const [cardSelected, setCardSelected] = useState(false);
   const { initialData, theme, onChange } = useBoardView(node.id, surface);
   const links = useBoardLinks(node.id);
 
   return (
-    <div ref={setSurface} className={expanded ? "board board-expanded" : "board"} data-testid="board">
+    <div
+      ref={setSurface}
+      className={expanded ? "board board-expanded" : "board"}
+      data-testid="board"
+      data-card-selected={cardSelected ? "true" : "false"}
+    >
       <Suspense fallback={<div className="board-loading">Loading the board…</div>}>
         <BoardCanvas
           initialData={initialData}
@@ -39,6 +47,8 @@ export function PageBoard({ node }: { node: Node }) {
           expanded={expanded}
           onToggleExpand={() => setExpanded((value) => !value)}
           links={links}
+          surface={surface}
+          onCardSelected={setCardSelected}
         />
       </Suspense>
       {/* A link that went nowhere, said once and briefly — the storyline's
