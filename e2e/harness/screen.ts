@@ -3096,3 +3096,22 @@ export async function drawBoardRectangleAt(window: Page, from: { x: number; y: n
   await window.mouse.up();
   await window.keyboard.press("Escape");
 }
+
+/** Clicks the board at a point given as fractions of the canvas, with the selection tool. */
+export async function clickBoardAt(window: Page, at: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await canvas.click({ position: { x: box.width * at.x, y: box.height * at.y } });
+}
+
+/** Drags on the board from one point to another, both as fractions of the canvas, with the selection tool. */
+export async function dragBoardFrom(window: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await window.mouse.move(box.x + box.width * from.x, box.y + box.height * from.y);
+  await window.mouse.down();
+  await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 8 });
+  await window.mouse.up();
+}

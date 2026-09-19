@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-19 — Click inside a shape to pick it up
+
+### Fixes
+
+- **Clicking anywhere inside a shape on a board selects it, filled or not.** An empty rectangle, diamond or ellipse could only be picked up by clicking exactly on its outline; a click in the middle went straight through to the board. Now it selects, and dragging from inside moves it — the way Canva behaves. Lines, arrows and scribbles still take the click on the stroke itself. Like the selection box the day before, this is a change to the drawing library, kept as a patch.
+
 ## 2026-09-18 — A selection box takes what it touches
 
 ### Fixes
@@ -274,23 +280,3 @@
 ### Changes
 
 - **The Character template's Secret prompt now says what a Secret does.** It used to say a Secret marks the passage and doesn't lock it, which was the whole truth until today; now it also says that a published website leaves it out.
-
-## 2026-09-10 — bring in a folder of notes
-
-### Additions
-
-- **Import a folder of Markdown notes as a new world.** *Import* on the start screen now has *Choose a folder* beside *Choose a file*. Point it at an Obsidian vault, or any folder of `.md` and `.txt` files, and it comes in as a world: a note beside a folder of the same name is one page holding pages, a folder with no such note is a folder page, and everything else is a page where its file was.
-- **Or drop it on the window.** A folder, a zip or a single note dragged onto the start screen imports straight away, with no picker. A hint appears at the bottom while you're dragging so you know it's a target. (Inside an open world a dropped picture still means a picture, so that's the one place this doesn't apply.)
-- **Zips and single files too.** A `.zip` of a vault unpacks in memory and imports the same way; a lone `.md` or `.txt` becomes a world of one page. The file picker lists everything importable together, and the app reads the file's first bytes rather than trusting its name, so a `.lk` that arrived as `world.lk.zip` still opens as what it is.
-- **What it reads.** Headings, paragraphs, bold, italic, strike, underline, code, bullet and numbered lists, task lists, tables, dividers, pictures with captions, links, `[[wikilinks]]` (by note name, by path when names collide, and by alias), Obsidian's `> [!info]` callouts, and `> [!note]-` collapsed sections as toggles. Front matter becomes the page's fields: `title`, `tags`, `aliases`, `template`, `hidden`, a portrait and a banner, and every other key becomes a property — filling a template's own field when the label matches, and a property of its own otherwise.
-- **The round trip closes.** A world exported as Markdown (Phase 28) comes back as the same tree with the same tabs, pictures, links and properties. The export now writes the tab names into each note's front matter so the split back into tabs is read rather than guessed — a page whose own writing starts with a `##` heading is no longer ambiguous.
-- **Pictures are copied in.** Every picture the notes refer to — relative paths, `![[picture.png]]` embeds, portraits and banners named in front matter — is copied into the new world's `assets/` once, however many pages use it, and every reference points at the copy. Web addresses stay as they are.
-- **The preview says what changed.** Links to pages that aren't in the folder became plain text; pictures it couldn't find; a picture in the middle of a sentence (kept as its words); callouts of a kind that doesn't exist here (they come in as Info); Details sections from the export (meters and index lists come back as the plain writing they were exported as, not as live blocks); property values that weren't one of the field's choices.
-
-### Notes
-
-- **Universes come back as folders.** The export gives a universe a folder and no note, and a folder is what that reads as on the way back. Everything inside it is intact; it's a folder page at the top of the tree rather than an entry in the switcher.
-- **Pages come back in name order.** A folder of files has no memory of how the tree was arranged; the pages sort by name, numbers counted properly, and you drag them where you want them.
-- **A warning callout comes in as a Secret.** That's the word the export uses for one — the one thing a reader has to know about a Secret is that it wasn't meant for them — so it's the word the import reads. An Obsidian user's own warnings come in the same way; a Secret is a callout like the others, only kept out of anything published.
-- **A JSON export is refused with directions**, not read: that zip is your project folder as it sits on disk, and the way to bring one back is to unzip it into your projects folder.
-- **This finishes Phase 20.** Text & Markdown, Obsidian, folder and zip were one importer wearing four hats, and it's built once.

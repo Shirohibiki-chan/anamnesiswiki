@@ -1,9 +1,10 @@
 // The source of `patches/@excalidraw__excalidraw@0.18.1.patch`. Phase 32.
 //
-// **Why a patch at all**: box selection in the drawing library takes only
-// what the box swallows whole; the whiteboard LegendKeeper's boards run on
-// takes what the box touches, and that is the rule her hands expect. The
-// library has no switch for it, so the rule is written into its two builds.
+// **Why a patch at all**: selecting on a board has to work the way her
+// hands expect from Canva and from LegendKeeper's boards, and two of the
+// library's rules do not: a selection box takes only what it swallows
+// whole, and a click inside an unfilled shape picks up nothing. The library
+// has no switch for either, so both are written into its two builds.
 //
 // **Why this script exists beside the patch**: the patch file is enormous
 // because the library's built files are single minified lines, so nobody
@@ -17,10 +18,10 @@
 // Each replacement asserts its target is present exactly once, so an
 // upgrade that moved or renamed anything stops here with the name of what
 // moved, rather than quietly shipping the library's own rule again. The
-// minified names in the prod half (`ui`, `Wt`, `Ea`, `zE`, `Ne`, `C`) are
+// minified names in the prod half (`ei`, `ui`, `Wt`, `Ea`, `zE`, `Ne`, `C`) are
 // the ones 0.18.1 happened to give those functions; a new version will
 // have new ones, found by grepping for the readable strings around them.
-// `e2e/a-board-box-selection.e2e.ts` is the other guard: it fails against
+// `e2e/a-board-selection.e2e.ts` is the other guard: it fails against
 // an unpatched library.
 import fs from "node:fs";
 import path from "node:path";
@@ -41,6 +42,19 @@ function edit(file, replacements) {
 }
 
 // ---- dev build ----
+
+// The second change: a click anywhere inside a hollow rectangle, diamond
+// or ellipse selects it, the way Canva and every drawing app she has used
+// behave — the library takes only the outline of an unfilled shape, which
+// reads as a shape that cannot be picked up. Lines, arrows and scribbles
+// keep the library's rule; a shape on top of another still wins the click,
+// which is what "send to back" is for.
+const devInside = `var shouldTestInside = (element) => {
+  if (element.type === "rectangle" || element.type === "diamond" || element.type === "ellipse") {
+    return true; // Anamnesis patch: a hollow shape is picked up from inside
+  }
+  if (element.type === "arrow") {`;
+
 const devTouch = `
 // Anamnesis patch: whether the selection box *touches* an element, for box
 // selection that takes what it crosses rather than only what it swallows
@@ -91,6 +105,11 @@ var getElementsWithinSelection = (elements, selection, elementsMap, excludeEleme
 
 edit("dist/dev/chunk-4FTI6OG3.js", [
   [
+    `var shouldTestInside = (element) => {
+  if (element.type === "arrow") {`,
+    devInside,
+  ],
+  [
     `var getElementsWithinSelection = (elements, selection, elementsMap, excludeElementsInFrames = true) => {`,
     devTouch,
   ],
@@ -132,6 +151,10 @@ const prodTouch =
   `ui=(e,t,n,r=!0,T=!1)=>{let[o,i,a,s]=C(t,n)`;
 
 edit("dist/prod/chunk-K2UTITRG.js", [
+  [
+    `ei=e=>{if(e.type==="arrow")return!1;let t=!Wt(e.backgroundColor)||bn(e)||gt(e)||k(e)`,
+    `ei=e=>{if(e.type==="rectangle"||e.type==="diamond"||e.type==="ellipse")return!0;if(e.type==="arrow")return!1;let t=!Wt(e.backgroundColor)||bn(e)||gt(e)||k(e)`,
+  ],
   [`ui=(e,t,n,r=!0)=>{let[o,i,a,s]=C(t,n)`, prodTouch],
   [
     `return c.locked===!1&&c.type!=="selection"&&!Ne(c)&&o<=l&&i<=U&&a>=p&&s>=m})`,
