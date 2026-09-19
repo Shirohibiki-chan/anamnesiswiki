@@ -6707,10 +6707,29 @@ rectangle, while a filled shape, text, a picture, a card or a scribble is
 taken wherever the box overlaps it, and a line or arrow where the box
 crosses one of its segments or holds one of its points.
 
-**Verified.** `e2e/a-board-box-selection.e2e.ts` — a box crossing into two
+**Verified.** `e2e/a-board-selection.e2e.ts` (named `a-board-box-selection` for a day) — a box crossing into two
 hollow rectangles without holding either takes both, and a box drawn
 inside a big hollow rectangle leaves it. The first scenario fails against
 the library as shipped, which is what makes it the guard. Every patched
 file is syntax-checked by `node --check` before `pnpm patch-commit`, after
 the first attempt shipped a `var` in the middle of a comma list and the
 build refused it.
+
+### Click inside, the next morning — and the restart nobody mentioned
+
+She reported the box still selecting one thing, with a screenshot, and
+asked for Canva's rules outright. Two findings. **Her app had been running
+the same dev server since the day before**, and Vite's pre-bundled copy of
+the library — `node_modules/.vite/deps`, dated the 13th — knows nothing of
+a patch applied since; a running server never re-bundles. The patch had
+never reached her screen, and I had not said a restart was needed. Second,
+the other half of "frustrating" was the library's rule that an unfilled
+shape is picked up only on its outline. Canva picks a shape up from
+anywhere inside it, so the patch gained its second rule: `shouldTestInside`
+is true for any rectangle, diamond or ellipse. Verified by a third scenario
+in `a-board-selection.e2e.ts` — a click in the dead middle of a hollow
+rectangle selects it — which fails on the stock library. The day-old
+scenario "a box drawn inside a big hollow rectangle leaves it" went with
+the rule: a press inside an empty rectangle now moves the rectangle, as it
+does in Canva, so that box cannot be drawn; a drag from a hollow shape's
+middle moving it is the scenario in its place.

@@ -488,12 +488,17 @@ Board spike, closed 2026-09-13. What binds the code:
   minified lines, so the change is read from the script, not the diff. What
   it changes so far: box selection takes what the box *touches* — the rule
   of the whiteboard LK's boards run on — rather than only what it swallows,
-  with a hollow shape touched only on its outline so a box inside a big
-  empty rectangle leaves it be. Upgrading the library means re-running the
+  with a hollow shape touched only where the box crosses its outline; and
+  **a click anywhere inside a hollow
+  rectangle, diamond or ellipse picks it up** (2026-09-19, her Canva rule),
+  where the library took only the outline. The second means a drag started
+  inside an empty rectangle moves the rectangle rather than drawing a
+  selection box — Canva's behaviour too, and what frames are for. Upgrading
+  the library means re-running the
   script against the new version (the how-to is at its top); every
   replacement asserts its target once, so a moved or renamed line stops the
   upgrade rather than quietly restoring the library's rule, and
-  `e2e/a-board-box-selection.e2e.ts` fails against an unpatched build. The
+  `e2e/a-board-selection.e2e.ts` fails against an unpatched build. The
   library's `getElementsWithinSelection` is also what decides which shapes
   a *frame* holds, so the new rule is behind a flag only the marquee sets;
   a frame still holds only what is wholly inside it.
