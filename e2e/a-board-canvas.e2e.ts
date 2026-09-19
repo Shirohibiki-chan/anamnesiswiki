@@ -15,9 +15,12 @@ import {
   boardIsShown,
   boardLinkLabel,
   clearTreeSearch,
+  clickBoardAt,
+  deselectOnBoard,
   drawBoardRectangle,
   followBoardLink,
   linkBoardShapeToPage,
+  lockBoardSelection,
   makeBoard,
   pageTitle,
   openPage,
@@ -134,6 +137,20 @@ describe("a board's whiteboard", () => {
     expect(await boardDotsShown(app.window)).toBe(false);
     await toggleBoardDots(app.window);
     expect(await boardDotsShown(app.window)).toBe(true);
+  });
+
+  it("opens the page on a click anywhere in the shape once it is locked", async () => {
+    // The same linked rectangle, locked: it can no longer be moved or
+    // edited, so a click inside it goes where its link goes — LK's rule for
+    // locked shapes, and step 2 of Phase 32.
+    await selectBoardShape(app.window);
+    await lockBoardSelection(app.window);
+    await deselectOnBoard(app.window);
+    // The rectangle was drawn across the middle of the canvas; this is well
+    // inside it and nowhere near its outline.
+    await clickBoardAt(app.window, { x: 0.45, y: 0.45 });
+    await waitForPageTitle(app.window, EXISTING);
+    expect(await pageTitle(app.window)).toBe(EXISTING);
   });
 
   it("still has the shape and its link after a restart", async () => {

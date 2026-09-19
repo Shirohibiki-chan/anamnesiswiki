@@ -15,13 +15,16 @@ import {
   boardCardCount,
   boardCardNames,
   boardCardPresentation,
-  boxSelectOnBoard,
   boardPickerIsOpenAndFocused,
+  boardShowsButtonCursor,
+  boxSelectOnBoard,
   clearTreeSearch,
   clickBoardCard,
   deselectOnBoard,
   dragBoardCard,
   dragPageOntoBoard,
+  hoverBoardCard,
+  lockBoardSelection,
   makeBoard,
   openPage,
   pageTitle,
@@ -167,6 +170,8 @@ describe("page cards on a board", () => {
     // Still on the board: one click selects, as it selects any shape.
     expect(await pageTitle(app.window)).toBe(BOARD);
     await app.window.waitForTimeout(400);
+    // It lies over the first card, which is not locked: the library hits
+    // the card underneath and the button on top still wins.
     await clickBoardCard(app.window, SECOND);
     await waitForPageTitle(app.window, SECOND);
     expect(await pageTitle(app.window)).toBe(SECOND);
@@ -179,5 +184,26 @@ describe("page cards on a board", () => {
     await waitForBoard(app.window);
     await waitForBoardCards(app.window, 2);
     expect((await boardCardNames(app.window)).sort()).toEqual([FIRST, SECOND].sort());
+  });
+
+  it("opens on the first click once locked, and the cursor says it is a button", async () => {
+    // Step 2: a locked card cannot be moved or edited, so a click on it can
+    // mean nothing but "go there". The library will not hit-test a locked
+    // shape at all, so this is the app finding the card by its box.
+    // The second card: it was dragged across the first earlier and sits on
+    // top of it, so its middle is the one a click surely lands on.
+    await deselectOnBoard(app.window);
+    await clickBoardCard(app.window, SECOND);
+    await lockBoardSelection(app.window);
+    await deselectOnBoard(app.window);
+    expect(await boardShowsButtonCursor(app.window)).toBe(false);
+    await hoverBoardCard(app.window, SECOND);
+    expect(await boardShowsButtonCursor(app.window)).toBe(true);
+    // It lies over the first card, which is not locked: the library hits
+    // the card underneath and the button on top still wins.
+    await clickBoardCard(app.window, SECOND);
+    await waitForPageTitle(app.window, SECOND);
+    expect(await pageTitle(app.window)).toBe(SECOND);
+    expect(app.errors).toEqual([]);
   });
 });

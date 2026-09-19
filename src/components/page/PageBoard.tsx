@@ -37,6 +37,14 @@ export function PageBoard({ node }: { node: Node }) {
   // drawing. Set on the element directly rather than through state: the
   // library reports every wheel tick, and a render per tick is what would
   // make panning feel heavy.
+  // Whether the pointer is over a locked linked shape — a button — set on
+  // the element for the same reason as the dots: it is told on every move.
+  const onOverButton = useCallback((over: boolean) => {
+    const element = surfaceRef.current;
+    if (!element) return;
+    const value = over ? "true" : "false";
+    if (element.getAttribute("data-over-button") !== value) element.setAttribute("data-over-button", value);
+  }, []);
   const onView = useCallback((scrollX: number, scrollY: number, zoom: number) => {
     const element = surfaceRef.current;
     if (!element) return;
@@ -72,6 +80,7 @@ export function PageBoard({ node }: { node: Node }) {
           onView={onView}
           dots={dots}
           onToggleDots={toggleDots}
+          onOverButton={onOverButton}
         />
       </Suspense>
       {/* A link that went nowhere, said once and briefly — the storyline's

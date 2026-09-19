@@ -701,12 +701,9 @@ is built; it is all checked as present and not switched off.
    step 1. A page put on the board, from the picker or dragged out of the
    tree, is a live card in one of three presentations by its size, and a
    second click on it opens the page.
-2. **A card is a button.** Click a card and the page opens. Today a link is
-   followed only through the small link mark at a shape's corner, because the
-   library opens a link from the shape itself in its read-only mode alone.
-   LK's rule is the better one: a *locked* shape with a link opens on a
-   click anywhere on it, since a locked shape cannot be moved or edited and
-   a click on it can mean nothing else.
+2. ~~**A card is a button.**~~ Shipped 2026-09-19 — `docs/shipped.md` §
+   Phase 32, step 2. A locked card, or any locked shape with a link, opens
+   on one click anywhere on it, with the pointer cursor saying so first.
 3. **Frames that nest and turn.** LK's frames panel: a frame inside a frame,
    and a frame at an angle — the tutorial's own example is a diamond-shaped
    frame with a straight frame inside it. Neither is in the library: it

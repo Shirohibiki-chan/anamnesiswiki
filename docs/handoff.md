@@ -481,6 +481,21 @@ Board spike, closed 2026-09-13. What binds the code:
   hides it; hiding is right because the popup's *remove link* would leave
   an empty embed that draws nothing.
 
+- **A locked shape with a link is a button, found by the app because the
+  library will not look** (Phase 32, step 2). The library skips locked
+  shapes when it hit-tests — that is what locking is for — and reports
+  whatever lies beneath, or nothing. `lockedButtonAt` walks the elements
+  for a locked one with a link whose turned box holds the point; it is the
+  third and last named reading of an element's fields, and the most stable,
+  since a box is a box in every version. `onPointerUp` opens the button's
+  link on a plain click when the button is drawn *above* what the library
+  hit (its index is later), so a locked card over an unlocked shape wins
+  and a locked shape under an unlocked one does not. The same test runs on
+  every pointer move through `onPointerUpdate` to set `data-over-button`
+  on the board, and the stylesheet forces the pointer cursor over the
+  library's own inline one. An unlocked card keeps its two clicks: the
+  first selects, as for any shape.
+
 - **The drawing library is patched, and `scripts/excalidraw-patch.mjs` is
   the readable form of the patch.** `patches/@excalidraw__excalidraw@0.18.1.patch`
   is applied by `pnpm install` (pnpm's `patchedDependencies`, in

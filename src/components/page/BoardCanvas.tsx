@@ -31,7 +31,7 @@ import type { AppState, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIA
 import { FilePlus2, Grip, Link2, Maximize2, Minimize2, Unlink } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_PAGE_LINK_PREFIX, PAGE_DRAG_TYPE } from "../../constants/board";
-import { cardPageId, cardPlacement, draggedPageIds, elementLink, isPageCard } from "../../services/board-service";
+import { cardPageId, cardPlacement, draggedPageIds, elementLink, isPageCard, lockedButtonAt } from "../../services/board-service";
 import type { BoardLinks } from "../../hooks/use-board-links";
 import { NodeIcon } from "../blocks/IconPicker";
 import { BoardPageCard } from "./BoardPageCard";
@@ -54,6 +54,8 @@ type Props = {
   onView: (scrollX: number, scrollY: number, zoom: number) => void;
   dots: boolean;
   onToggleDots: () => void;
+  /** Whether the pointer is over a locked shape with a link — a button — for the cursor. */
+  onOverButton: (over: boolean) => void;
 };
 
 /** Which picker is open and what has been typed into it so far; null when closed. */
@@ -99,6 +101,7 @@ export default function BoardCanvas({
   onView,
   dots,
   onToggleDots,
+  onOverButton,
 }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
@@ -238,11 +241,33 @@ export default function BoardCanvas({
       // no drag, nothing added to the selection — is the one that opens.
       // Every click on a card reaches here, because the card's own box takes
       // no pointer events (board.css).
+      // And a *locked* shape with a link — a card or any shape linked to a
+      // page or a site — opens on the first click, anywhere on it (Phase 32,
+      // step 2): locked, it cannot be moved or edited, so a click on it can
+      // mean nothing else. The library does not hit-test locked shapes at
+      // all, so the click arrives with nothing hit and the shape is found
+      // by its box.
       onPointerUp={(_tool, pointerDownState) => {
+        if (pointerDownState.drag.hasOccurred) return;
+        const elements = apiRef.current?.getSceneElements() ?? [];
         const hit = pointerDownState.hit.element;
-        if (!hit || pointerDownState.drag.hasOccurred || pointerDownState.hit.wasAddedToSelection) return;
+        // The library skips locked shapes and reports whatever lies beneath,
+        // so the button wins whenever it is drawn above what was hit.
+        const button = lockedButtonAt(elements, pointerDownState.origin);
+        if (button && (!hit || button.index > elements.findIndex((element) => element.id === hit.id))) {
+          links.openLink(button.link);
+          return;
+        }
+        if (!hit || pointerDownState.hit.wasAddedToSelection) return;
         const pageId = cardPageId(hit);
         if (pageId) links.openLink(`${BOARD_PAGE_LINK_PREFIX}${pageId}`);
+      }}
+      // The cursor says a locked linked shape is a button before it is
+      // clicked. Told on every pointer move; the test is a walk over the
+      // locked shapes, which are few.
+      onPointerUpdate={({ pointer }) => {
+        const api = apiRef.current;
+        onOverButton(!!api && lockedButtonAt(api.getSceneElements(), pointer) !== null);
       }}
       // An embed whose address is a page link is a card of ours; anything
       // else is left to the library's own list of sites it knows.

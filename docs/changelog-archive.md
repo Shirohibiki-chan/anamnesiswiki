@@ -2,6 +2,26 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — publish a world as a website
+
+### Additions
+
+- **Publish a world as a website.** *Export ▸ As a website*, on the project row or on any page's row, writes a folder of web pages: one page each, in folders that mirror your tree, with the whole tree down the left side, a search box, and pictures copied in. Anyone with the link can read it in a browser without installing anything. The done panel names three free places to put the folder — Netlify, Cloudflare Pages, GitHub Pages — and *Open in browser* shows you the site from your own disk first, which is a fair preview of what a reader gets.
+- **It looks the way your world looks here.** The colours are read off whatever theme you have on, and the theme's typefaces come along as files, so the site reads in the same type on every machine rather than falling back to Times. Callouts keep their colour and icon, meters are drawn as bars (or stars and tokens), a page shown as a database is a table with its columns, columns stay side by side, toggles open and close, and a contents block lists the headings on its tab.
+- **Hidden means not published.** A hidden page and everything under it stays off the site; a hidden tab stays off its page; a Secret callout is left out of the writing and out of the search index. There is no toggle for any of them — the one thing a reader must never see is the thing you marked private — and the modal counts each kind before you save, so a world you thought had secrets in it that reports none is something you catch before uploading. A link to a hidden page becomes plain words rather than a dead link.
+- **Tabs are tabs, and the site works with scripts off.** A page with several tabs gets a tab strip; without JavaScript the tabs run down the page under their own headings, the tree is the browser's own collapsible list, and every link is a real link. Search and tab-switching are what the script adds.
+- **Publishing from a page's row publishes that page and everything under it**, the same as the other exports — so "just this part of the world" is a right-click away, and the rest of the tree isn't in the sidebar.
+
+### Notes
+
+- **What changes on the way**, and the modal says so: a round meter (circle, gauge, pie) becomes a bar, and a database in cards or a board becomes a table. Nothing is lost; it just doesn't move. Graphs and storyline canvases aren't drawn — a storyline's scenes are still there as pages under it.
+- **Every publish writes a new folder** — `Your World website`, then `(2)`, `(3)` — rather than overwriting, the same rule as the Markdown export. Upload the newest one in place of the last.
+- **This finishes Phase 1.5**, the oldest unstarted phase on the plan.
+
+### Changes
+
+- **The Character template's Secret prompt now says what a Secret does.** It used to say a Secret marks the passage and doesn't lock it, which was the whole truth until today; now it also says that a published website leaves it out.
+
 ## 2026-09-10 — bring in a folder of notes
 
 ### Additions

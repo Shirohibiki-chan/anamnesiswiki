@@ -3115,3 +3115,20 @@ export async function dragBoardFrom(window: Page, from: { x: number; y: number }
   await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 8 });
   await window.mouse.up();
 }
+
+/** Locks whatever is selected on the board, with the library's own shortcut. */
+export async function lockBoardSelection(window: Page): Promise<void> {
+  await window.keyboard.press("Control+Shift+l");
+}
+
+/** Whether the board is showing the pointer cursor of a button — a locked shape with a link under the mouse. */
+export async function boardShowsButtonCursor(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD).first().getAttribute("data-over-button")) === "true";
+}
+
+/** Moves the mouse over the middle of the card for `name`, without clicking. */
+export async function hoverBoardCard(window: Page, name: string): Promise<void> {
+  const box = await boardCardBox(window, name);
+  await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await window.mouse.move(box.x + box.width / 2 + 1, box.y + box.height / 2 + 1);
+}

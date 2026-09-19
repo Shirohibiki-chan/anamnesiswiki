@@ -18,6 +18,7 @@ import {
   boardStartState,
   isPageCard,
   linkCandidates,
+  lockedButtonAt,
   pageLinkFor,
   readBoard,
 } from "./board-service";
@@ -203,5 +204,37 @@ describe("dotsLayout", () => {
     expect(dotsLayout(0, 0, 0.25).size).toBe(24);
     expect(dotsLayout(0, 0, 0.5).size).toBe(24);
     expect(dotsLayout(0, 0, 0.6).size).toBeCloseTo(14.4);
+  });
+});
+
+// ---- Locked shapes as buttons (Phase 32, step 2) ----
+
+describe("lockedButtonAt", () => {
+  const card = { x: 100, y: 100, width: 200, height: 100, angle: 0, locked: true, link: pageLinkFor("p1") };
+
+  it("finds a locked linked shape under the point, and nothing else", () => {
+    expect(lockedButtonAt([card], { x: 150, y: 150 })).toEqual({ link: pageLinkFor("p1"), index: 0 });
+    expect(lockedButtonAt([card], { x: 50, y: 150 })).toBeNull();
+    // Unlocked, deleted or linkless shapes are the library's to hit, not ours.
+    expect(lockedButtonAt([{ ...card, locked: false }], { x: 150, y: 150 })).toBeNull();
+    expect(lockedButtonAt([{ ...card, isDeleted: true }], { x: 150, y: 150 })).toBeNull();
+    expect(lockedButtonAt([{ ...card, link: null }], { x: 150, y: 150 })).toBeNull();
+    expect(lockedButtonAt([{ ...card, link: "  " }], { x: 150, y: 150 })).toBeNull();
+  });
+
+  it("takes the topmost when two overlap — the later one in the list — and says where it sits", () => {
+    const above = { ...card, link: pageLinkFor("p2") };
+    expect(lockedButtonAt([{ x: 0, y: 0, width: 400, height: 400 }, card, above], { x: 150, y: 150 })).toEqual({
+      link: pageLinkFor("p2"),
+      index: 2,
+    });
+  });
+
+  it("tests against the turned box, not the box before turning", () => {
+    // A 200×20 bar turned a quarter turn stands upright: a point 60 above
+    // its centre is inside it, and a point 60 to the right is not.
+    const bar = { ...card, width: 200, height: 20, angle: Math.PI / 2 };
+    expect(lockedButtonAt([bar], { x: 200, y: 50 })?.link).toBe(pageLinkFor("p1"));
+    expect(lockedButtonAt([bar], { x: 260, y: 110 })).toBeNull();
   });
 });
