@@ -6758,3 +6758,27 @@ once because the two cards overlapped and the click landed on the other,
 and once because the library hit the unlocked card *under* the locked one
 and the first version of the code deferred to it. The z-order clause is
 what that second failure taught.
+
+### The board's chrome, the same day — and a Layers panel asked for
+
+Her screenshot of the right-click menu, with "why is it ugly": the
+library's stock look, sentence case, its own greys and blue and font,
+inside a window that is otherwise one theme. Two things done. The
+library's CSS variables are remapped to the app's tokens on the board, so
+its toolbar, panel, menus and popups take the theme — the mechanism is in
+`docs/handoff.md` § Boards, and it is variables rather than classes so an
+upgrade costs nothing. And the patch gained a third job: forty of the
+library's English labels re-cased to Title Case, by value, in both builds,
+because every control in the app is Title Case and the library offers no
+way to hand it strings. The right-click menu is additionally styled to
+match the tree's, and two rows are hidden by their action name.
+
+Looked at in the real app at 1900px: the styles panel, the toolbar, the
+canvas menu, a card's menu. The test window at its default width puts the
+library in its "mobile" layout — palette button, no shortcuts in the menu
+— which is not a bug and not hers.
+
+Asked the same afternoon: why is there no Layers panel, meaning Canva's
+list of every element. There is none because the library has none — its
+"Layers" is four z-order buttons. Added to the phase as step 15; the plan
+has the shape it should take.

@@ -795,6 +795,19 @@ other people's cursors. In the order they would matter:
     catching up, and comes last because it is the heaviest patch of the
     phase for the smallest visible change.
 
+15. **A Layers panel.** Asked 2026-09-19, from Canva rather than LK: a list
+    of everything on the board from top to bottom, click a row to select
+    it, drag a row to change what is in front of what, with a name for
+    each — a card's page, a text's words, the shape's kind otherwise. The
+    library has only the four Layers buttons in its styles panel (send
+    backward and the rest), which act on the selection and show nothing.
+    Built by the app beside the board from the library's element list and
+    `updateScene` with the list reordered, so it is the app's own panel
+    and takes the app's look; a hidden shape and a locked one are marked
+    on their rows. Where it sits is the same question as the properties
+    panel's and gets the same answer: one place, the right-hand side,
+    never moving by state.
+
 **Not in this phase, and why, so it is not re-asked:**
 
 - **A map on a board.** LK nests its interactive maps with clickable pins.
@@ -855,8 +868,8 @@ rather than the way in, which is the fix available without forking.
 
 ### Order
 
-1 → 2 → 3 → 4 → 5 → 10 → 6 → 11 → 12 → 13 → 7 → 8 → 9 → 14, each its own
-PR. Steps 1 and 2 are the tutorial's two big panels and ship first; step 3
+1 → 2 → 3 → 4 → 5 → 10 → 6 → 11 → 12 → 13 → 15 → 7 → 8 → 9 → 14, each its
+own PR. Steps 1 and 2 are the tutorial's two big panels and ship first; step 3
 is the first patch on the library and proves that path before anything
 else leans on it; step 4 before step 5 so bookmark pictures never touch
 the data-URL path; step 10 right after 5 because notes are the third

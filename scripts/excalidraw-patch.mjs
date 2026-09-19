@@ -168,3 +168,61 @@ edit("dist/prod/index.js", [
     `zE(p,this.state.selectionElement,this.scene.getNonDeletedElementsMap(),!1,!0)`,
   ],
 ]);
+
+// ---- Title Case, both builds ----
+//
+// Every control in the app is Title Case (CLAUDE.md § Labels), and the
+// library's right-click menu and styles panel are controls she sees on
+// every board. The English strings live in one locale chunk per build,
+// keyed the same way in both, so each is replaced by its value: the value
+// is what a reader would grep for, and it is present exactly once. Small
+// words stay lowercase, as the rule says.
+const retitled = [
+  ["Paste as plaintext", "Paste as Plaintext"],
+  ["Select all", "Select All"],
+  ["Copy to clipboard as PNG", "Copy to Clipboard as PNG"],
+  ["Copy to clipboard as SVG", "Copy to Clipboard as SVG"],
+  ["Copy to clipboard as text", "Copy to Clipboard as Text"],
+  ["Bring forward", "Bring Forward"],
+  ["Send to back", "Send to Back"],
+  ["Bring to front", "Bring to Front"],
+  ["Send backward", "Send Backward"],
+  ["Copy styles", "Copy Styles"],
+  ["Paste styles", "Paste Styles"],
+  ["Add to library", "Add to Library"],
+  ["Group selection", "Group Selection"],
+  ["Ungroup selection", "Ungroup Selection"],
+  ["Flip horizontal", "Flip Horizontal"],
+  ["Flip vertical", "Flip Vertical"],
+  ["Wrap selection in frame", "Wrap Selection in Frame"],
+  ["Copy link to object", "Copy Link to Object"],
+  ["Edit link", "Edit Link"],
+  ["Edit embeddable link", "Edit Embed Link"],
+  ["Add link", "Add Link"],
+  ["Edit line", "Edit Line"],
+  ["Lock all", "Lock All"],
+  ["Unlock all", "Unlock All"],
+  ["Select all elements in frame", "Select All Elements in Frame"],
+  ["Remove all elements from frame", "Remove All Elements from Frame"],
+  ["Toggle grid", "Toggle Grid"],
+  ["View mode", "View Mode"],
+  ["Zen mode", "Zen Mode"],
+  ["Snap to objects", "Snap to Objects"],
+  ["Unbind text", "Unbind Text"],
+  ["Bind text to the container", "Bind Text to the Container"],
+  ["Wrap text in a container", "Wrap Text in a Container"],
+  ["Font size", "Font Size"],
+  ["Font family", "Font Family"],
+  ["Text align", "Text Align"],
+  ["Stroke width", "Stroke Width"],
+  ["Stroke style", "Stroke Style"],
+  ["Distribute horizontally", "Distribute Horizontally"],
+  ["Distribute vertically", "Distribute Vertically"],
+];
+
+for (const file of ["dist/dev/chunk-LMHBUWQS.js", "dist/prod/chunk-6U3AYISY.js"]) {
+  edit(
+    file,
+    retitled.map(([from, to]) => [`"${from}"`, `"${to}"`]),
+  );
+}

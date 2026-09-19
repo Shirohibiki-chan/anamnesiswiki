@@ -518,6 +518,24 @@ Board spike, closed 2026-09-13. What binds the code:
   a *frame* holds, so the new rule is behind a flag only the marquee sets;
   a frame still holds only what is wholly inside it.
 
+- **The library's chrome is dressed by remapping its CSS variables, not by
+  restyling its classes.** `board.css` sets the library's own variables —
+  `--island-bg-color`, `--color-primary`, `--color-surface-*` and the rest
+  — to the app's tokens on `.board .excalidraw`, so every theme she writes
+  reaches the toolbar, the styles panel and the popups without a rule per
+  widget, and an upgrade that renames a class costs nothing. The one place
+  classes are styled is the right-click menu, whose rows are made to match
+  the tree's menu; its rows are deliberately tight, since the menu has
+  nineteen of them and the board clips it. Rows are hidden by their
+  `data-testid`, which is the action's name: `stats` always, `hyperlink`
+  when a card is selected. **The library's labels go Title Case through the
+  patch**, by value, in the locale chunk of each build — it is the same
+  rule every control in the app follows (CLAUDE.md § Labels), and there is
+  no other way in: the library takes a language code, not strings. The
+  library calls its own layout "mobile" below about 730px of board width
+  and hides the menu's shortcuts there; the test window is that narrow with
+  both sidebars open, hers is not.
+
 - **The dots are the app's, under a transparent canvas.** The library draws
   its background colour opaque over the whole canvas, so the only place a
   dotted background can live is behind it: `boardStartState` opens every
