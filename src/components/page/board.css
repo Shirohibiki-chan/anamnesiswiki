@@ -318,3 +318,125 @@
 .board[data-over-button="true"] .excalidraw__canvas.interactive {
   cursor: pointer !important;
 }
+
+/* ---- The library's chrome wears the app's tokens (Phase 32, 2026-09-19) ----
+   The toolbar, the styles panel, the menus and the popups are the library's
+   own React, drawn from its own CSS variables. Those are remapped here onto
+   the app's tokens, so the board's furniture is the same panel, the same
+   accent and the same type as the rest of the window — and follows every
+   theme she writes, since it is tokens all the way down. The drawing itself
+   is untouched: the canvas is the library's, and its dark-mode filter still
+   applies to it alone. */
+.board .excalidraw {
+  --island-bg-color: var(--color-panel);
+  --popup-bg-color: var(--color-panel);
+  --popup-secondary-bg-color: var(--color-panel-edge);
+  --popup-text-color: var(--color-text-primary);
+  --popup-text-inverted-color: var(--color-accent-foreground);
+  --default-bg-color: var(--color-background);
+  --input-bg-color: var(--color-background);
+  --input-border-color: var(--color-border);
+  --input-hover-bg-color: var(--color-hover);
+  --input-label-color: var(--color-text-secondary);
+  --button-gray-1: var(--color-hover);
+  --button-gray-2: var(--color-hover-strong);
+  --button-gray-3: var(--color-border);
+  --dialog-border-color: var(--color-border-strong);
+  --keybinding-color: var(--color-text-muted);
+  --link-color: var(--color-accent-light);
+  --select-highlight-color: var(--color-accent);
+  --focus-highlight-color: var(--color-ring);
+  --color-primary: var(--color-accent);
+  --color-primary-darker: var(--color-accent-dark);
+  --color-primary-darkest: var(--color-accent-dark);
+  --color-primary-light: var(--color-accent-faint);
+  --color-primary-light-darker: var(--color-accent-faint-border);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-brand-hover: var(--color-accent-hover);
+  --color-brand-active: var(--color-accent-light);
+  --color-on-primary-container: var(--color-accent-light);
+  --color-surface-primary-container: var(--color-accent-faint);
+  --color-surface-high: var(--color-hover-strong);
+  --color-surface-mid: var(--color-panel-alt);
+  --color-surface-low: var(--color-panel);
+  --color-surface-lowest: var(--color-background);
+  --color-on-surface: var(--color-text-primary);
+  --color-border-outline: var(--color-border-strong);
+  --color-border-outline-variant: var(--color-border);
+  --shadow-island: var(--elev-modal);
+  --modal-shadow: var(--elev-modal);
+  --border-radius-lg: var(--radius-md);
+  --border-radius-md: var(--radius-sm);
+}
+
+/* The right-click menu, drawn like the app's own: the tree's menu surface,
+   its row spacing, its hover, and the shortcut as a quiet key on the right.
+   The library's version was its own panel colour, cramped rows and a
+   highlight that inverted the text. */
+.board .excalidraw .context-menu {
+  margin: 0;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel-edge);
+  box-shadow: var(--elev-modal);
+  font-family: var(--font-ui);
+}
+
+.board .excalidraw .context-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  min-width: 13rem;
+  /* Tight rows on purpose: the menu has nineteen of them and has to fit
+     inside the board, which clips it. */
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+.board .excalidraw .context-menu-item .context-menu-item__label {
+  margin: 0;
+}
+
+.board .excalidraw .context-menu-item:hover {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.board .excalidraw .context-menu-item.dangerous .context-menu-item__label,
+.board .excalidraw .context-menu-item:hover.dangerous .context-menu-item__label {
+  color: var(--color-destructive);
+}
+
+.board .excalidraw .context-menu-item:hover.dangerous {
+  background: var(--color-hover);
+}
+
+.board .excalidraw .context-menu-item .context-menu-item__shortcut {
+  opacity: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-text-secondary);
+}
+
+.board .excalidraw .context-menu-item.checkmark::before {
+  left: var(--space-xs);
+}
+
+.board .excalidraw .context-menu-item-separator {
+  margin: var(--space-xs) var(--space-sm);
+  border-color: var(--color-border-subtle);
+}
+
+/* Two rows that have no business on her board: the library's own "Canvas &
+   Shape properties" readout, and, for a page card, the row that would open
+   its raw address for editing — a card's page is changed from the Link to
+   Page button instead. */
+.board .excalidraw .context-menu li[data-testid="stats"],
+.board[data-card-selected="true"] .excalidraw .context-menu li[data-testid="hyperlink"] {
+  display: none;
+}

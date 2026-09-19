@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-19 — The board's menus and panels look like the app
+
+### Changes
+
+- **The board's toolbar, styles panel, menus and popups wear the app's own colours and type.** They were the drawing library's stock look — its own greys, its own blue, its own font — sitting inside a window that is otherwise all one theme. They now take the panel colour, the accent and the UI font from whatever theme is on, including ones you write yourself. The drawing itself is untouched.
+- **The right-click menu is drawn like the app's other menus** — same surface, same row spacing, same hover — with the keyboard shortcut as a quiet key on the right, and every row in Title Case: *Send to Back*, *Copy Styles*, *Wrap Selection in Frame*. The styles panel's headings are Title Case too (*Stroke Width*, *Font Family*).
+- **Two rows are gone from that menu:** the library's *Stats for nerds* readout, and, on a page card, *Edit embeddable link*, which would have shown the card's raw address — a card's page is changed from the *Link to Page* button instead.
+
 ## 2026-09-19 — A locked card is a button
 
 ### Additions
@@ -253,16 +261,3 @@
 ### Notes
 
 - **This finishes step 1 of Phase 30.** Next is a style class per page, so a snippet can skin one page.
-
-## 2026-09-13 — a box that files a thought where it belongs
-
-### Additions
-
-- **Quick capture, a new block.** *Add Block ▸ Quick capture*, or `/quick capture` in the writing. Type a thought into the box, press *Capture*, and it becomes a page under the destination the block shows — while you stay on the page you were on. The line under the box says what it was saved as and where, and both are links. Ctrl+Enter captures too; plain Enter is a new line, because a thought is allowed to be more than one.
-- **Destinations are pages.** The block files under its own page and the pages directly inside it — a `Quick capture` page with `Magic`, `Story` and `Characters` under it is the whole setup, and *Destinations are pages under…* at the foot of the block points it at a different page if the box lives somewhere else, like a home page. The picker is a box you type into rather than a dropdown: the whole list until you type, narrowing as you do, Enter takes the top match. It offers wherever the last capture went.
-- **Code words.** Start the text with a destination's name and a dash — `magic - i love witches!` — and the block picks that destination on its own and drops the word from the title. The control says *code word* while that's in effect, so nothing is routed quietly. A word that matches nothing changes nothing: the text is kept whole and goes where the picker says, so a typo turns up in a page's title where you can see it rather than in a bin.
-- **A captured page is a plain page.** Its name is the first line you typed and the rest is its writing, one paragraph per line. It carries a *Captured* field with the date and time in a form that sorts, so a Subpage index under the destination can show newest first. It skips the "what kind of page is this?" grid — it was made to hold three lines, not to be a Character yet — and *Add Block ▸ Apply a template* is still there when it grows up.
-
-### Notes
-
-- **This is the first piece of Phase 30**, Home Dashboards & Quick Capture. Next is the same box opening from anywhere, by shortcut and from the search palette.
