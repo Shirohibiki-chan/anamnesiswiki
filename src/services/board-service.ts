@@ -287,3 +287,55 @@ export function draggedPageIds(payload: string): string[] {
     return [];
   }
 }
+
+// ---- Locked shapes as buttons (Phase 32, step 2) ----
+
+/** The few fields of a shape a locked-button hit test needs; the library's elements have them all. */
+type BoxLike = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  angle?: number;
+  locked?: boolean;
+  isDeleted?: boolean;
+  link?: string | null;
+};
+
+/** A locked linked shape under the pointer: its link, and where it sits in the drawing order. */
+export type LockedButton = { link: string; index: number };
+
+/**
+ * The topmost locked shape with a link under `point`, or null.
+ *
+ * The library refuses to hit-test a locked shape at all — it is locked so
+ * that clicks go through it — so a locked shape with a link, which is a
+ * button in every sense, has to be found here. The box is the shape's own
+ * box, turned by its angle; the third and last named reading of an
+ * element's fields, and the most stable of them, since a box is a box in
+ * every version of the library. Later shapes are drawn on top, so the last
+ * match wins, and its place in the list is returned so the caller can tell
+ * whether it lies above whatever the library did hit underneath it.
+ */
+export function lockedButtonAt(elements: readonly unknown[], point: { x: number; y: number }): LockedButton | null {
+  let found: LockedButton | null = null;
+  elements.forEach((entry, index) => {
+    const element = entry as BoxLike;
+    if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim()) return;
+    if (insideBox(element, point)) found = { link: element.link, index };
+  });
+  return found;
+}
+
+function insideBox(box: BoxLike, point: { x: number; y: number }): boolean {
+  const centreX = box.x + box.width / 2;
+  const centreY = box.y + box.height / 2;
+  const angle = box.angle ?? 0;
+  const dx = point.x - centreX;
+  const dy = point.y - centreY;
+  // Turn the point back by the box's angle, so the test is against the
+  // unturned box.
+  const localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+  const localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+  return Math.abs(localX) <= box.width / 2 && Math.abs(localY) <= box.height / 2;
+}

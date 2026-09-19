@@ -6733,3 +6733,28 @@ scenario "a box drawn inside a big hollow rectangle leaves it" went with
 the rule: a press inside an empty rectangle now moves the rectangle, as it
 does in Canva, so that box cannot be drawn; a drag from a hollow shape's
 middle moving it is the scenario in its place.
+
+### Step 2 — A card is a button ✅ Shipped 2026-09-19
+
+**What it delivered.** A locked card, or any locked shape with a link,
+opens on a single click anywhere on it — its page, or the browser for a
+web address — and the cursor is the pointer over it. Unlocked, a card
+keeps the two clicks of step 1. LK's rule, and the reasoning in the plan:
+a locked shape cannot be moved or edited, so a click on it can mean
+nothing else.
+
+**How.** The library will not hit-test a locked shape, so `lockedButtonAt`
+in `board-service.ts` finds one by its turned box, and `BoardCanvas`'s
+pointer-up hook opens it when it is drawn above whatever the library hit
+beneath. `docs/handoff.md` § Boards has the rule and the z-order clause.
+
+**Verified.** Three unit suites over the hit test — what qualifies, the
+topmost winning with its index, and a rotated box. Two scenarios in the
+real app: a locked card lying over an unlocked card opens on the first
+click with the cursor reporting a button first (`a-board-page-cards`), and
+the spike's linked rectangle, locked, opens on a click in its empty middle
+(`a-board-canvas`). The first was found wrong twice before it was right:
+once because the two cards overlapped and the click landed on the other,
+and once because the library hit the unlocked card *under* the locked one
+and the first version of the code deferred to it. The z-order clause is
+what that second failure taught.

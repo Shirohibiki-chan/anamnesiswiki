@@ -311,3 +311,10 @@
 .excalidraw__embeddable-container:has(.board-page-card) .excalidraw__embeddable-hint {
   display: none;
 }
+
+/* A locked shape with a link is a button, and the cursor says so before
+   the click. The library writes its own cursor onto the canvas inline, so
+   this has to win outright. */
+.board[data-over-button="true"] .excalidraw__canvas.interactive {
+  cursor: pointer !important;
+}
