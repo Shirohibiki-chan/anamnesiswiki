@@ -12,6 +12,25 @@
   border-top: 1px solid var(--color-border);
   background: var(--color-background);
   overflow: hidden;
+  /* Where the dots are, set by PageBoard on every scroll and zoom. */
+  --board-dots-size: 24px;
+  --board-dots-x: 0px;
+  --board-dots-y: 0px;
+}
+
+/* The dotted background: the app's, drawn under the library's canvas, which
+   starts transparent so this shows through (see `boardStartState`). The
+   tile is sized and offset from the library's view, so a dot sits under the
+   same point of the drawing however it is panned or zoomed — a dot grid
+   that stayed put while the drawing moved would read as a screen smudge. */
+.board[data-dots="true"] {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-text-primary) 28%, transparent) 1px,
+    transparent 1.6px
+  );
+  background-size: var(--board-dots-size) var(--board-dots-size);
+  background-position: var(--board-dots-x) var(--board-dots-y);
 }
 
 .board-expanded {
@@ -196,7 +215,6 @@
   background: var(--color-panel);
   color: var(--color-text-primary);
   font-family: var(--font-ui);
-  cursor: pointer;
   user-select: none;
 }
 
@@ -275,5 +293,21 @@
 /* The library's own link popup would show a selected card's raw address;
    the card's page is named by the top-right button instead. */
 .board[data-card-selected="true"] .excalidraw-hyperlinkContainer {
+  display: none;
+}
+
+/* **A card never takes the pointer.** The library "wakes" an embed on a
+   click in its middle and then hands it every pointer event, which is right
+   for a web page in a box and wrong for a card: woken, it could not be
+   dragged, a box could not be drawn through it, and a click did nothing but
+   open. So the card's box stays inert whatever the library decides
+   (`!important` over the inline style it sets when woken), every click
+   reaches the canvas, and a card selects, moves and opens like any shape.
+   The "Click to interact" hint goes with it. */
+.excalidraw__embeddable-container:has(.board-page-card) .excalidraw__embeddable-container__inner {
+  pointer-events: none !important;
+}
+
+.excalidraw__embeddable-container:has(.board-page-card) .excalidraw__embeddable-hint {
   display: none;
 }

@@ -21,11 +21,13 @@ type Props = {
   /** The box the library gave the card, in the drawing's own units. */
   width: number;
   height: number;
-  /** A click on the card, once the library has let it through (see BoardCanvas). */
-  onOpen: () => void;
 };
 
-export function BoardPageCard({ pageId, width, height, onOpen }: Props) {
+// No click handler of its own: the card's box never takes the pointer (see
+// board.css), so clicks land on the canvas and BoardCanvas opens the page
+// from the library's pointer-up hook, where selecting and dragging already
+// are.
+export function BoardPageCard({ pageId, width, height }: Props) {
   const page = useProjectStore((state) => state.nodes[pageId]);
   // The page's own picture first; a page with only a banner shows that,
   // because a card with a picture on it is what LK's boards make and a page
@@ -53,7 +55,6 @@ export function BoardPageCard({ pageId, width, height, onOpen }: Props) {
       data-page-name={page.name}
       data-testid="board-page-card"
       title={presentation === "icon" ? page.name : undefined}
-      onClick={onOpen}
     >
       {presentation === "picture" && url && (
         <img

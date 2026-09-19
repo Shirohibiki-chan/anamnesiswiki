@@ -1272,6 +1272,13 @@ export type Board = {
   elements: unknown[];
   appState: Record<string, unknown>;
   files: Record<string, unknown>;
+  /**
+   * Whether the board draws its dotted background — the app's, not the
+   * library's, drawn under a transparent canvas so it follows the drawing
+   * as it is panned and zoomed. On for every board unless switched off;
+   * absent in a file written before this existed means on.
+   */
+  dots: boolean;
 };
 
 export type Storyline = {

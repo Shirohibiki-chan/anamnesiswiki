@@ -457,17 +457,43 @@ Board spike, closed 2026-09-13. What binds the code:
   passes an `embeddable` skeleton through untouched, so that is the one
   way to get every field the library expects filled in.
 
-- **A card opens on the second click, through the library's pointer-up
-  hook, not through the card's own click.** Until the library "wakes" an
-  embed its box takes no pointer events, so a card's `onClick` never sees
-  the first clicks; `onPointerUp` is told what was hit, whether it was just
-  added to the selection and whether the pointer moved, and a plain click
-  on a card already selected is the one that opens. The card's `onClick`
-  is kept for the woken state, and the two cannot both fire for one click.
-  The library's link popup would show a selected card's raw address, so
-  `PageBoard` marks `data-card-selected` and the stylesheet hides it;
-  hiding is right because the popup's *remove link* would leave an empty
-  embed that draws nothing.
+- **A card never takes the pointer, and opens on the second click through
+  the library's pointer-up hook.** The library "wakes" an embed on a quick
+  click in its middle third and then hands it every pointer event and
+  refuses to drag it from the canvas — right for a web page in a box, and
+  a dead card here: it could not be moved, a box could not be drawn through
+  it, and clicks did nothing. So `board.css` forces the card's box to
+  `pointer-events: none !important` over the library's own inline style,
+  every click reaches the canvas, and `onPointerUp` — told what was hit,
+  whether it was just added to the selection, whether the pointer moved —
+  opens the page on a plain click on a card already selected. The card has
+  no click handler of its own. The woken state is still set by the library
+  and still blocks dragging, so it is put back to null — **from a
+  `setTimeout`, never from inside `onChange`, and only the `active` state,
+  never `hover`**: an `updateScene` from inside the change report, while a
+  gesture was in flight, made the library drop the next box selection's
+  first element (2026-09-18, found by the scenario, not by reading). The
+  wake fires a hundred milliseconds after the click, and a quick drag
+  released on the middle counts as a click, so any driven gesture that ends
+  on a card's middle waits that out before the next (`settlePastWake` in
+  the harness). The library's link popup would show a selected card's raw
+  address, so `PageBoard` marks `data-card-selected` and the stylesheet
+  hides it; hiding is right because the popup's *remove link* would leave
+  an empty embed that draws nothing.
+
+- **The dots are the app's, under a transparent canvas.** The library draws
+  its background colour opaque over the whole canvas, so the only place a
+  dotted background can live is behind it: `boardStartState` opens every
+  board on `viewBackgroundColor: "transparent"` — dropping the library's
+  default white the spike's boards carry, keeping any colour she chose —
+  and `.board[data-dots]` draws the dots as its own background. They follow
+  the drawing because `dotsLayout` turns the library's scroll and zoom into
+  a tile size and offset that `PageBoard` writes onto the element as CSS
+  variables — on the element, not through state, because the library
+  reports every wheel tick and a render per tick is what would make panning
+  heavy. The setting is `Board.dots`, the one field of the file that is the
+  app's rather than the library's, part of the fingerprint so a toggle
+  writes, and read as on when absent so older boards get it.
 
 - **A row dragged out of the tree carries page ids under `PAGE_DRAG_TYPE`,
   written by `TreeItem`'s own `onDragStart` beside react-arborist's drag.**

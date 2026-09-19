@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — Export as JSON
+
+### Additions
+
+- **Export as JSON (.zip)**, on the project's Export menu. Your writing is already JSON files on disk, so this zips up the folder exactly as it sits rather than converting anything — unzip it anywhere and you have a working world back.
+- **It tells you what's in there first**: how many files, how big before squashing, and how much of that is the earlier versions of your pages.
+- **Earlier versions come along.** They're the biggest thing in a project folder and the obvious thing to leave out, but they're yours, and because each one is nearly identical to the last they squash down to a fraction of their size.
+- **Everything sits inside one folder in the zip**, named after your project, so unzipping doesn't scatter ninety files into whatever folder you were in.
+
+### Notes
+
+- **Two things deliberately don't travel**: the marker saying the world is open right now, which would make a fresh copy look locked by somebody else, and the half-finished rename left behind by an interrupted move, which the app repairs by itself anyway.
+- **It's on the project menu only.** There's no such thing as a folder for a single character, so it isn't offered on a page.
+- **Internal: the first dependency this app has taken on in a while** — a small MIT-licensed zip library. The compression the app already had can only do one stream at a time and can't make an archive.
+
 ## 2026-09-10 — a page you can actually print
 
 ### Fixes
