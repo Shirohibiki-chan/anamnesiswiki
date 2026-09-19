@@ -704,25 +704,12 @@ is built; it is all checked as present and not switched off.
 2. ~~**A card is a button.**~~ Shipped 2026-09-19 — `docs/shipped.md` §
    Phase 32, step 2. A locked card, or any locked shape with a link, opens
    on one click anywhere on it, with the pointer cursor saying so first.
-3. **Frames that nest and turn.** LK's frames panel: a frame inside a frame,
-   and a frame at an angle — the tutorial's own example is a diamond-shaped
-   frame with a straight frame inside it. Neither is in the library: it
-   refuses a frame as a child of a frame (`addElementsToFrame` skips
-   frame-like elements; upstream issue #8359, open), and it refuses to
-   rotate one (`angle` is locked on frames and the resize handles hide
-   the rotation grip). First written up here 2026-09-17 as not worth a
-   fork; she overruled that the same day, and rightly — a frame is how a
-   board gets its Canva-like layouts, and a frame that has to be straight
-   and cannot hold another is a frame with the useful half missing. So
-   this is the one step that patches the library rather than building
-   beside it: `pnpm patch` on the package, kept small and named, with a
-   scenario that fails the day an upgrade drops it. What the patch has to
-   deliver: a frame dragged into a frame becomes its child; the parent
-   moves, duplicates and deletes it with everything in it; the child is
-   clipped by the parent as any other child is; a frame rotates with its
-   label and clips its contents to the turned box. Third rather than last
-   because the same patching path is what step 9 needs, and it should be
-   proven on the step that matters more.
+3. ~~**Frames that nest and turn.**~~ Shipped 2026-09-19 — `docs/shipped.md` §
+   Phase 32, step 3. A frame holds frames, at any depth, and moves,
+   duplicates, deletes and clips them with everything in them; a frame
+   turns by its grip with its contents and its name, and clips to its
+   turned box. The patching path the step was meant to prove had been
+   proven the day before, on selection.
 4. **Pictures through the world's library.** A picture dropped on a board
    is held inside `_board.json` as a data URL — three photos make a
    three-megabyte file, and Assets cannot see them. The ideas list has had

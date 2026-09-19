@@ -2,6 +2,32 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-13 — a style name, so a snippet can skin one page
+
+### Additions
+
+- **Style name, on a page's right-click menu.** Give a page a short name — *Zen Home* saves as `zen-home` and the menu says so — and it lands on that page as `data-style="zen-home"`. A snippet in your snippets folder that starts `[data-style="zen-home"]` now reaches that page and no other. That's the gap between themes and the dashboards in the Obsidian gallery: a theme is the whole app, a skin is one page, and the name is how a stylesheet tells them apart. Names already used anywhere in the world are offered under the box so you pick rather than retype; *Clear* takes it off again.
+- **A template can carry one too.** Open a template from the Templates panel and there's a *Style name* chip beside its kind. Every page of that template picks the name up — every Character gets the character-sheet skin — unless the page names its own, which wins. A template with a style name counts as edited, so *Put back to the original* is offered for it. Saving a page as a template keeps its name, and a page made from that template starts with it.
+- **Every page also says what kind it is** — `data-template="character"`, `data-template="location"` and so on, on the same root — so a snippet can say "all my locations" without anyone naming a style first. A folder shown as a folder carries both hooks as well, and so does a template while you're editing it, so you can see a skin land while you write it.
+- **It travels with a Markdown export** as `style:` in the front matter, and an imported note carrying one gets it back, normalised the same way.
+
+### Notes
+
+- **Only the page's *own* name is exported**, never the one it inherits from its template — that belongs to the template, and writing it into every page would turn an inheritance into a hundred copies on the way back in.
+- **Names are lowercase letters, digits and hyphens**, and anything else is dropped rather than kept: a colon or a space in a name is a snippet that silently matches nothing, and "my styles don't work" is a worse day than "it saved as zen-home".
+- **This is step 2 of Phase 30.** Next are the two blocks a home page is missing: Recently edited and Pinned.
+
+## 2026-09-13 — capture a thought from anywhere
+
+### Additions
+
+- **Quick capture from anywhere.** Ctrl+Shift+N — one step out from New page, the way All properties sits one step out from Search — opens the capture box over whatever you're doing, and it's on the search palette's footer too. It's the same box as the one on your page, not a second one: the dialog names whose it is (*The box on your home page*, or the page it found one on), files under the same destinations, remembers the same last one, and reads the same code words. Type, capture, Escape, and you're back where you were. The shortcut can be rebound in Settings → Keyboard like every other.
+- **It reaches for the home page's box first**, then the first box anywhere in the world — so a world that keeps its box on a `Quick capture` page rather than on home works just as well. A world with no box yet is told so, and if it has a home page, offered a button that puts one there.
+
+### Notes
+
+- **This finishes step 1 of Phase 30.** Next is a style class per page, so a snippet can skin one page.
+
 ## 2026-09-13 — a box that files a thought where it belongs
 
 ### Additions

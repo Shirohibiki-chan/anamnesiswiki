@@ -501,7 +501,7 @@ Board spike, closed 2026-09-13. What binds the code:
   is applied by `pnpm install` (pnpm's `patchedDependencies`, in
   `pnpm-workspace.yaml`); it is huge because the library ships single
   minified lines, so the change is read from the script, not the diff. What
-  it changes so far: box selection takes what the box *touches* — the rule
+  it changes, first: box selection takes what the box *touches* — the rule
   of the whiteboard LK's boards run on — rather than only what it swallows,
   with a hollow shape touched only where the box crosses its outline; and
   **a click anywhere inside a hollow
@@ -517,6 +517,35 @@ Board spike, closed 2026-09-13. What binds the code:
   library's `getElementsWithinSelection` is also what decides which shapes
   a *frame* holds, so the new rule is behind a flag only the marquee sets;
   a frame still holds only what is wholly inside it.
+
+- **Frames nest and turn through the patch, on two helpers** (Phase 32,
+  step 3). The library refused a frame as a child of a frame (upstream
+  issue #8359) and pinned a frame's angle to zero; both are gone from both
+  builds. The nesting rests on `anamnesisFrameContents` — everything inside
+  a frame at any depth — and `anamnesisFrameAncestors` — every frame
+  enclosing an element, nearest first, only frames that exist and are not
+  deleted. Everywhere the library gathered "a frame's children" for a
+  drag, a duplicate, a delete, a selection or the eraser now takes the
+  contents; everywhere it asked "which frame holds this" walks the
+  ancestors; a frame may hold anything but itself and its own ancestors,
+  so no cycle can be made. The frame under the pointer is the *innermost*
+  one there (most ancestors, then latest drawn), never one the drag is
+  carrying, and a frame drawn inside a frame is its child from the first
+  pixel. Turning is the library's own multi-element rotation handed the
+  frame and its contents together, about the selection's centre, so the
+  contents keep their places in the frame; the frame is drawn, clipped,
+  hit and dropped-into by its turned box, and its name label is a DOM
+  element turned by CSS about the frame's corner. Clipping recurses up
+  the ancestors, so a shape in an inner frame is cut by the outer one too,
+  and a nested or turned frame always clips rather than only when a shape
+  crosses its edge. **Deleting a frame now deletes its contents** — the
+  library unframed them and left them selected, disagreeing with its own
+  eraser; Canva and tldraw take the contents, and so does the plan. Not
+  done: aligning or distributing a selection that holds a frame (the
+  library's own TODO), and a frame's z-order is still wherever it was
+  drawn — a frame wrapped around things later sits above them, which is
+  invisible because frames are hollow. `e2e/a-board-frames.e2e.ts` fails
+  against an unpatched build.
 
 - **The library's chrome is dressed by remapping its CSS variables, not by
   restyling its classes.** `board.css` sets the library's own variables —
