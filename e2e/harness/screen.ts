@@ -3077,3 +3077,22 @@ export async function boxSelectOnBoard(window: Page, from: { x: number; y: numbe
 export async function boardCardCount(window: Page): Promise<number> {
   return window.locator(BOARD_PAGE_CARD).count();
 }
+
+/**
+ * Draws a hollow rectangle on the board between two points given as
+ * fractions of the canvas — `drawBoardRectangle` with the corners chosen.
+ */
+export async function drawBoardRectangleAt(window: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  // A click on the empty starting corner first, so the keyboard is the
+  // board's — the tool shortcut typed anywhere else draws nothing.
+  await canvas.click({ position: { x: box.width * from.x, y: box.height * from.y } });
+  await window.keyboard.press("r");
+  await window.mouse.move(box.x + box.width * from.x, box.y + box.height * from.y);
+  await window.mouse.down();
+  await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 8 });
+  await window.mouse.up();
+  await window.keyboard.press("Escape");
+}

@@ -2,6 +2,21 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-10 — a template you can hand somebody
+
+### Additions
+
+- **Save one of your templates as a file.** Hover a template in the Templates panel and there's a share button beside the delete one. It writes the template and everything inside it to a single `.anpage` file you can send to somebody.
+- **Open one you've been sent**, from *Open a template file* at the bottom of the Templates panel. It lands in your world as another template and touches nothing you already have.
+- **Pictures come along, and you can turn them off.** The switch says how much they add, because that's the only reason you'd want to know. Off, the template still arrives — just without the images.
+- **Opening the same file twice gives you two templates**, not one quietly replacing the other.
+
+### Notes
+
+- **This is not the same thing as a project template.** A `.antpl` is a whole project's shape — folders, and a blank starter page of each kind, with nobody's writing in it — and opens from the start screen. This is one page and its sub-pages, copied whole, prose and properties and pictures included. The extensions are deliberately unalike so they can't be confused in a folder.
+- **A file that isn't one says why.** Picking a project template by mistake points you at the start screen; a truncated download, a damaged file, or one made by a newer version of the app each get their own sentence.
+- **This finishes Phase 28.** A world can now leave as a LegendKeeper file, a folder of Markdown, one big Markdown file, a JSON zip, a printed page — or, one template at a time, as something you hand to a friend.
+
 ## 2026-09-10 — Export as JSON
 
 ### Additions

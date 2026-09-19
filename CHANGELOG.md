@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-18 — A selection box takes what it touches
+
+### Fixes
+
+- **Dragging a selection box on a board selects everything the box touches.** It used to take only what the box swallowed whole — a box drawn across five things picked up the one that fitted inside it. Now a shape is selected the moment the box crosses its outline, a line or arrow where the box crosses it or holds one of its points, and text, pictures and cards wherever the box overlaps them. A box drawn *inside* a big empty rectangle still leaves the rectangle alone, so things inside one can be picked out on their own. This is a change to the drawing library itself, kept as a patch in the repo.
+
 ## 2026-09-18 — Dots on the board, and cards that select like anything else
 
 ### Additions
@@ -288,18 +294,3 @@
 - **A warning callout comes in as a Secret.** That's the word the export uses for one — the one thing a reader has to know about a Secret is that it wasn't meant for them — so it's the word the import reads. An Obsidian user's own warnings come in the same way; a Secret is a callout like the others, only kept out of anything published.
 - **A JSON export is refused with directions**, not read: that zip is your project folder as it sits on disk, and the way to bring one back is to unzip it into your projects folder.
 - **This finishes Phase 20.** Text & Markdown, Obsidian, folder and zip were one importer wearing four hats, and it's built once.
-
-## 2026-09-10 — a template you can hand somebody
-
-### Additions
-
-- **Save one of your templates as a file.** Hover a template in the Templates panel and there's a share button beside the delete one. It writes the template and everything inside it to a single `.anpage` file you can send to somebody.
-- **Open one you've been sent**, from *Open a template file* at the bottom of the Templates panel. It lands in your world as another template and touches nothing you already have.
-- **Pictures come along, and you can turn them off.** The switch says how much they add, because that's the only reason you'd want to know. Off, the template still arrives — just without the images.
-- **Opening the same file twice gives you two templates**, not one quietly replacing the other.
-
-### Notes
-
-- **This is not the same thing as a project template.** A `.antpl` is a whole project's shape — folders, and a blank starter page of each kind, with nobody's writing in it — and opens from the start screen. This is one page and its sub-pages, copied whole, prose and properties and pictures included. The extensions are deliberately unalike so they can't be confused in a folder.
-- **A file that isn't one says why.** Picking a project template by mistake points you at the start screen; a truncated download, a damaged file, or one made by a newer version of the app each get their own sentence.
-- **This finishes Phase 28.** A world can now leave as a LegendKeeper file, a folder of Markdown, one big Markdown file, a JSON zip, a printed page — or, one template at a time, as something you hand to a friend.
