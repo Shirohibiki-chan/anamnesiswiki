@@ -766,14 +766,11 @@ other people's cursors. In the order they would matter:
     lands as an embed drawn by the app: a still with a play mark, the
     window's own player once played. A YouTube address pasted on the
     board already played through the library's own embed.
-13. **Several pages in one board.** tldraw's boards have tabs along the
-    bottom, sheets in a workbook. Here a board is already a page that
-    holds pages (`CLAUDE.md`'s standing rule — a board's sub-boards are
-    in the tree like anything else), so the tabs are drawn
-    from that rather than invented: a strip along the bottom of a board
-    listing the boards directly inside it, with a + that makes one, and
-    clicking a tab opens that board in place. No second notion of "page",
-    nothing new on disk, and the tree stays the truth.
+13. ~~**Several pages in one board.**~~ Shipped 2026-09-20 —
+    `docs/shipped.md` § Phase 32, step 13. A strip along the bottom of
+    every board: the board and the boards inside it, read off the tree,
+    with a + that makes one; the same strip from any sheet of the
+    workbook. Nothing new on disk.
 14. **Bold, italic and links in ordinary text.** The one on this list that
     is the library's own text drawing and so a patch, like step 3: the
     library lays text out on a canvas from one style per box. Notes (step

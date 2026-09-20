@@ -22,10 +22,11 @@ import {
   BOARD_VIDEO_LINK,
   LIBRARY_DEFAULT_BACKGROUND,
 } from "../constants/board";
-import { UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
+import { BOARD_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
 import { noteOf, notePageIds } from "./board-notes";
 import { mimeForFileName, storedPicture } from "./board-pictures";
 import { linkTargets } from "./storyline-service";
+import { orderSiblings } from "./tree-service";
 
 export function createBoard(): Board {
   return { version: 1, elements: [], appState: {}, files: {}, dots: true };
@@ -264,6 +265,33 @@ export function linkCandidates(query: string, boardId: string, nodes: Record<str
 // Reading `type` here is the second named exception to "never read inside
 // an element", beside `link` above: an embed's address and kind are the
 // app's own, because the app put them there.
+
+/**
+ * The sheets of the board `boardId` (Phase 32, step 13): the boards that
+ * make a workbook with it, first sheet first. A board's sheets are the
+ * boards directly inside it, with the board itself as the first sheet —
+ * and seen from one of those, the same set, so the strip reads the same
+ * on every sheet and a click on any tab lands on the right one. Only the
+ * one level: a board inside a board inside a board has its parent's
+ * workbook, not its grandparent's. Nothing here is invented or stored —
+ * the tree is the truth, in the tree's own order.
+ */
+export function boardSheets(nodes: Record<string, Node>, childOrder: Record<string, string[]> | undefined, boardId: string): Node[] {
+  const board = nodes[boardId];
+  if (!board || board.templateKey !== BOARD_TEMPLATE_KEY) return [];
+  const parent = board.parentId ? nodes[board.parentId] : undefined;
+  const head = parent && parent.templateKey === BOARD_TEMPLATE_KEY ? parent : board;
+  const inside = Object.values(nodes).filter((node) => node.parentId === head.id && node.templateKey === BOARD_TEMPLATE_KEY);
+  return [head, ...orderSiblings(inside, childOrder?.[head.id])];
+}
+
+/** The name a new sheet gets: the next number in the workbook, so "Board 2", "Board 3". */
+export function nextSheetName(sheets: readonly { name: string }[]): string {
+  const taken = new Set(sheets.map((sheet) => sheet.name));
+  let n = sheets.length + 1;
+  while (taken.has(`Board ${n}`)) n += 1;
+  return `Board ${n}`;
+}
 
 /**
  * Whether `element` is a highlighter stroke: a pen stroke the highlighter

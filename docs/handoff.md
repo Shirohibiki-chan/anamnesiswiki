@@ -553,6 +553,28 @@ Board spike, closed 2026-09-13. What binds the code:
   keyboard focus is not a `wysiwyg` target, so Delete on one would delete
   the card.
 
+- **The sheets strip is the tree, read the boards' way** (Phase 32,
+  step 13). `boardSheets(nodes, childOrder, boardId)` is the workbook: the
+  board plus the boards directly inside it, in the tree's own order — and
+  seen from one of those children, the *parent's* workbook, so the strip
+  reads the same on every sheet and a click on any tab lands right. One
+  level only, on purpose: a board inside a board inside a board has its
+  parent's sheets, not its grandparent's. Nothing is stored; + is
+  `addNode` with the board template under the first sheet, named
+  `nextSheetName` ("Board 2"…), then `selectNode`. **The strip is the
+  app's own row under the drawing, never over it:** `.board` is a grid —
+  panel and drawing above, strip along the bottom, each placed by name
+  because the drawing is the library's own element and cannot be wrapped
+  — so nothing of the library's bottom row is covered. That made the
+  drawing 2rem shorter, which is what two harness helpers had assumed
+  about it: `toggleBoardExpand` now waits for the canvas to reach the
+  strip's top rather than the board's bottom, and `selectBoardShape`
+  deselects with a click on empty canvas rather than Escape — Escape
+  typed while the keyboard is nowhere in particular leaves the shape
+  selected, and a click on an already-selected shape is not the click
+  that brings the library's link popup up (2026-09-20, an afternoon
+  found it).
+
 - **A video is an embed whose link, `anamnesis://video`, only says what
   it is, with the file's name in `customData` — a file in the world's
   library** (Phase 32, step 12). The fourth thing drawn by the app inside

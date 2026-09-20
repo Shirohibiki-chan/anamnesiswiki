@@ -6934,6 +6934,32 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 13 — Several pages in one board ✅ Shipped 2026-09-20
+
+**What it delivered.** A tab strip along the bottom of every board: the
+board and the boards directly inside it, in the tree's order, with a +
+that makes one ("Board 2", "Board 3"…) and opens it. The strip reads the
+same from any sheet of the workbook; a tab opens its board. The new
+boards are ordinary pages in the tree, renamed there or by their title.
+
+**How.** `boardSheets` off the tree, `useBoardSheets`, `BoardSheets`
+under the drawing in a grid that also holds the View panel.
+`docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-sheets.e2e.ts`: a board is its own one sheet;
++ makes a board inside it, opens it, lists both, and the new board is a
+row in the tree; a tab opens its board and the strip reads the same from
+either; the next one is numbered past what is there; the strip reads the
+same after a restart. Unit tests for the workbook's shape and the
+numbering. Looked at in the real app: three tabs along the bottom, the
+third current, the three rows nested in the tree. Found on the way: two
+harness helpers had assumed the drawing filled the board to its bottom
+edge — see the handoff — and the second of those took most of an
+afternoon of logging to find, because the symptom (the library's link
+popup not appearing) was three steps from the cause (a strip 2rem tall
+under the drawing, a click that now landed differently, and an Escape
+that had never been reaching the library).
+
 ### Step 12 — Video on the board ✅ Shipped 2026-09-20
 
 **What it delivered.** A video file dropped on the board goes into the

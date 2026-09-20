@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-20 — Boards inside a board, as tabs
+
+### Additions
+
+- **A strip of tabs along the bottom of every board:** the board itself and the boards inside it, like sheets in a workbook, with a **+** that makes another. Click a tab to open that board; the strip reads the same from any of them. The new boards are ordinary pages inside the first one — they show up in the tree, and renaming one there (or by its title) renames its tab. Nothing new is stored: the tabs are the tree, read the boards' way.
+
 ## 2026-09-20 — Video on a board
 
 ### Additions
@@ -169,18 +175,3 @@
 - **Dragging a bubble narrower no longer collapses it into a column of single letters on the way.** The narrowest a bubble can be was only enforced when you let go; now it holds while you drag.
 - **A bubble made taller keeps its words at the top.** The name was floating halfway down and the description sitting at the bottom, with the empty room split between them.
 - **The corner resizes height as well as width.** Drag down to make a bubble taller. A bubble is never shorter than its words — drag up past them and it stays at the words — and dragging back down to the plain one-row size clears the height rather than remembering a number that changes nothing.
-
-## 2026-09-15 — Everything a bubble can do is on the bubble
-
-### Additions
-
-- **Right-click a scene on the storyline for everything you can do with it** — Open Page, Rename, Edit Description, Set Picture…, who's in the scene (each name opens its page), and Take Off the Canvas. The `⋯` in the bubble's corner opens the same menu. Notes, stretches and lines have their own right-click menus (edit or remove; remove). The strip of buttons along the bottom of the canvas is gone — it listed actions for the thing you were looking at somewhere other than the thing.
-- **Delete takes whatever's selected off the canvas.** A line, a note, a stretch, or a scene — a scene's page stays in the tree, as always.
-- **Give a scene a picture from its menu.** *Set Picture…* opens the picture library; the picture is the page's banner, so it's on the page too. *Remove Picture* clears it.
-- **Bubbles can be resized.** Drag the bottom-right corner to make one wider or narrower; the height follows the words. Kept with the canvas.
-
-### Changes
-
-- **Double-click a bubble's name to rename it.** Double-clicking anywhere else on the bubble edits the description, as before; renaming no longer needs a button.
-- **Enter finishes a description; Shift+Enter is a new line.** It was the other way round with Ctrl+Enter to finish, which is not what a box that size does anywhere else.
-- **The storyline's buttons and menu rows are Title Case** — *Existing Page*, *Tidy Up*, *Open Page*, *Take Off the Canvas*. Buttons and menu items across the app are meant to be Title Case; this is the storyline's share of that, and the rest of the app follows in its own change.
