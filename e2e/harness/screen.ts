@@ -3419,9 +3419,9 @@ const BOARD_OPEN_PAGE_BODY = ".board-open-page-body";
 const BOARD_OPEN_PAGE_OPEN = ".board-open-page-open";
 const BOARD_OPEN_PAGE_TAB = ".board-open-page-tab";
 
-/** Whether the card for `name`, opened as its page, has the page open for reading — the box holding the pointer and the keyboard. */
-export async function boardOpenPageIsBeingRead(window: Page, name: string): Promise<boolean> {
-  return (await boardCard(window, name).first().getAttribute("data-reading")) === "true";
+/** Whether the card for `name`, opened as its page, has the page open for writing — the box holding the pointer and the keyboard, with the editor in it. */
+export async function boardOpenPageIsBeingWritten(window: Page, name: string): Promise<boolean> {
+  return (await boardCard(window, name).first().getAttribute("data-writing")) === "true";
 }
 
 /** The writing the opened page for `name` is showing, as one string. */
@@ -3447,8 +3447,8 @@ export async function openBoardOpenPage(window: Page, name: string): Promise<voi
 
 /**
  * Double-clicks the card for `name` at its middle — the library's gesture
- * for waking an embed — and waits for the page to be open for reading with
- * the keyboard in it.
+ * for waking an embed — and waits for the page to be open for writing with
+ * the keyboard in its editor.
  */
 export async function doubleClickBoardCard(window: Page, name: string): Promise<void> {
   const box = await boardCardBox(window, name);
@@ -3456,8 +3456,8 @@ export async function doubleClickBoardCard(window: Page, name: string): Promise<
   await window.waitForFunction(
     ({ selector, wanted }) => {
       const card = [...document.querySelectorAll<HTMLElement>(selector)].find((candidate) => candidate.getAttribute("data-page-name") === wanted);
-      const body = card?.querySelector<HTMLElement>(".board-open-page-body");
-      return card?.getAttribute("data-reading") === "true" && !!body && body.contains(document.activeElement);
+      const editor = card?.querySelector<HTMLElement>(".board-open-page-body .bn-editor");
+      return card?.getAttribute("data-writing") === "true" && !!editor && editor === document.activeElement;
     },
     { selector: BOARD_PAGE_CARD, wanted: name },
     { timeout: WAIT_MS },

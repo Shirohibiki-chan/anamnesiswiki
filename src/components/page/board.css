@@ -386,26 +386,35 @@
   font-size: 14px;
 }
 
-/* The writing sits in from the edge by a card's padding rather than the
-   editor's own gutter, which is room for the side handles that are off here. */
+/* The writing sits in from the left by enough for the editor's side
+   handles and from the right by a card's padding — the same in both the
+   drawn and the written state, so the words do not shift when writing
+   starts. The page's own tab keeps the editor's wider gutter; a box on a
+   board is narrower than a page. */
 .board-open-page .bn-editor {
-  padding-inline: 16px;
+  padding-inline: 40px 16px;
   padding-block: 12px;
 }
 
-/* Being read, the page takes the pointer and the keyboard — the whole box,
-   over the library's own switch, as a note being written in does — and
-   says so with the same ring. */
-.excalidraw__embeddable-container:has(.board-open-page[data-reading="true"]) .excalidraw__embeddable-container__inner {
+/* The editor's wrapper wants a page's worth of height so a click below the
+   last line lands on it; in a box that is the box's height. */
+.board-open-page .editor-shell-wrapper {
+  min-height: 100%;
+}
+
+/* Being written in, the page takes the pointer and the keyboard — the
+   whole box, over the library's own switch, as a note being written in
+   does — and says so with the same ring. */
+.excalidraw__embeddable-container:has(.board-open-page[data-writing="true"]) .excalidraw__embeddable-container__inner {
   pointer-events: auto !important;
 }
 
-.board-open-page[data-reading="true"] {
+.board-open-page[data-writing="true"] {
   user-select: text;
   box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
-.board-open-page[data-reading="true"] .board-open-page-body {
+.board-open-page[data-writing="true"] .board-open-page-body {
   cursor: auto;
 }
 
@@ -660,9 +669,9 @@
    open. So the card's box stays inert whatever the library decides
    (`!important` over the inline style it sets when woken), every click
    reaches the canvas, and a card selects, moves and opens like any shape.
-   The "Click to interact" hint goes with it. A page opened for reading is
+   The "Click to interact" hint goes with it. A page being written in is
    the exception, the way a note being written in is: see above. */
-.excalidraw__embeddable-container:has(.board-card:not([data-reading="true"]), .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
+.excalidraw__embeddable-container:has(.board-card:not([data-writing="true"]), .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
   pointer-events: none !important;
 }
 

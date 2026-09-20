@@ -6934,6 +6934,37 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 6 — A page opened on the board, the writing half ✅ Shipped 2026-09-20
+
+**What it delivered.** The opened page takes typing: the double-click
+or second click that opened it for reading now makes the box the page's
+real editor — slash menu, mentions, formatting bar, the lot — saving to
+the page as its own tab does. Escape or a click elsewhere puts it back
+to being drawn. Locked, it is open for writing from the start. She had
+checked LK meanwhile: its page on a board has edit-in-box (a plain
+editor), a *View* side panel with the full editor, and open-in-full; so
+the box got the full editor because it was already there, and the panel
+is the half still to come.
+
+**How.** `BoardOpenPage` swaps `PageReader` for `Editor` while
+`writing`; `useEditor` puts the drawing library's `wysiwyg` marker on
+the editor element; the body catches Escape on the way up. The three
+keyboard rules are in `docs/handoff.md` § Boards.
+
+**Verified.** `e2e/a-board-open-pages.e2e.ts`, seven scenarios: the
+earlier six re-pointed at writing, plus typing in the box that reaches
+the page's file, Backspace and Ctrl+Z inside the box that leave the card
+alone, and the typed words drawn again after Escape and shown on the
+page in full through Open. Notes and page-card scenarios and the unit
+suite green beside it. Looked at in the real app: the slash menu opening
+under the caret inside the box, at the default zoom and zoomed out.
+Found on the way: Escape with a menu up let the key through to the
+library, which took the keyboard to its container, and the next
+Backspace deleted the card — now stopped on the body after the editor
+has had it. And a note for anyone testing: Escape does not close a slash
+menu on the page either (BlockNote 0.52 has no handler for it); typing
+on, or deleting the trigger, does.
+
 ### Step 6 — A page opened on the board, the reading half ✅ Shipped 2026-09-20
 
 **What it delivered.** A page card stretched past 400 by 300 units is

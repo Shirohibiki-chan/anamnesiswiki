@@ -134,6 +134,12 @@ export function useEditor(
       return uploadAsset(bytes, extensionFor(file));
     },
     resolveFileUrl: (url: string) => resolveAssetUrl(rootPath, url),
+    // The drawing library's own marker for a box that has the keyboard: it
+    // reads `data-type="wysiwyg"` off the element a key event targets and
+    // steps aside — no Delete of the shape, no tool switch, no undo of the
+    // drawing — so this editor can be written in inside a board's box
+    // (Phase 32, step 6). Meaningless anywhere else, and harmless.
+    domAttributes: { editor: { "data-type": "wysiwyg" } },
   });
 
   /**

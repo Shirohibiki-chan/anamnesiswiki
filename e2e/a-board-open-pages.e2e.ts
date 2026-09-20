@@ -3,25 +3,30 @@
 // What only the real app can answer: that a page card stretched past a
 // page's worth shows the page's own writing, the words the page holds on
 // disk; that the first click still selects it and the second opens it for
-// reading, with the keyboard in it, and Escape ends that; that being read it
+// writing, with the keyboard in its editor, and Escape ends that; that words
+// typed in the box reach the page's own file, that undo in the box is the
+// page's and Backspace is the editor's, not the board's; that while open it
 // scrolls under the wheel without the board panning; that its Open button
-// is the way to the page in full; that shrunk back it is a picture card
-// again and the file holds only the size; and that locked it reads without
-// being woken and still opens by its button.
+// is the way to the page in full, where the words typed on the board are;
+// that shrunk back it is a picture card again and the file holds only the
+// size; and that locked it is open without being woken and still opens by
+// its button.
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
   boardCardBox,
+  boardCardCount,
   boardCardPresentation,
-  boardOpenPageIsBeingRead,
+  boardOpenPageIsBeingWritten,
   boardOpenPageScroll,
   boardOpenPageText,
   clearTreeSearch,
   clickBoardCard,
   deselectOnBoard,
   doubleClickBoardCard,
+  editorText,
   dragBoardCard,
   lockBoardSelection,
   makeBoard,
@@ -42,6 +47,9 @@ const PAGE = "Greyharbour";
 
 /** Long enough for the settle delay and the queued write to reach the disk. */
 const WRITTEN_MS = 2500;
+
+/** What is typed into the page on the board. */
+const TYPED = "Typed on the board";
 
 /** A page's worth, and a little more: past both thresholds in `cardPresentation`. */
 const OPEN_WIDTH = 480;
@@ -122,29 +130,57 @@ describe("a page opened on a board", () => {
     expect(await boardCardPresentation(app.window, PAGE)).toBe("page");
     const words = await firstWordsOnDisk(app.world!.path, PAGE);
     expect(await boardOpenPageText(app.window, PAGE)).toContain(words);
-    // Stretched, not opened for reading: the box is still a shape.
-    expect(await boardOpenPageIsBeingRead(app.window, PAGE)).toBe(false);
+    // Stretched, not opened for writing: the box is still a shape.
+    expect(await boardOpenPageIsBeingWritten(app.window, PAGE)).toBe(false);
     expect(app.errors).toEqual([]);
   });
 
-  it("is opened for reading by a second click, with the keyboard in it, and Escape ends that", async () => {
+  it("is opened for writing by a second click, with the keyboard in its editor, and Escape ends that", async () => {
     await deselectOnBoard(app.window);
     await clickBoardCard(app.window, PAGE);
     // One click selects, as it selects any shape.
-    expect(await boardOpenPageIsBeingRead(app.window, PAGE)).toBe(false);
+    expect(await boardOpenPageIsBeingWritten(app.window, PAGE)).toBe(false);
     await app.window.waitForTimeout(400);
     await doubleClickBoardCard(app.window, PAGE);
-    expect(await boardOpenPageIsBeingRead(app.window, PAGE)).toBe(true);
-    // Still on the board: an opened page is read here, not left for.
+    expect(await boardOpenPageIsBeingWritten(app.window, PAGE)).toBe(true);
+    // Still on the board: an opened page is written in here, not left for.
     expect(await pageTitle(app.window)).toBe(BOARD);
     await app.window.keyboard.press("Escape");
     await app.window.waitForFunction(
-      () => document.querySelector("[data-testid='board-page-card']")?.getAttribute("data-reading") === "false",
+      () => document.querySelector("[data-testid='board-page-card']")?.getAttribute("data-writing") === "false",
     );
-    expect(await boardOpenPageIsBeingRead(app.window, PAGE)).toBe(false);
+    expect(await boardOpenPageIsBeingWritten(app.window, PAGE)).toBe(false);
   });
 
-  it("scrolls under the wheel while being read, and the board stays put", async () => {
+  it("takes typing that reaches the page's file, with undo and Backspace the editor's and not the board's", async () => {
+    await deselectOnBoard(app.window);
+    await clickBoardCard(app.window, PAGE);
+    await app.window.waitForTimeout(400);
+    await doubleClickBoardCard(app.window, PAGE);
+    // The keyboard lands at the start of the writing: a new first line.
+    await app.window.keyboard.type(TYPED);
+    await app.window.keyboard.press("Enter");
+    // Backspace in the editor takes back the line break, not the card.
+    await app.window.keyboard.press("Backspace");
+    expect(await boardCardCount(app.window)).toBe(1);
+    await app.window.waitForTimeout(WRITTEN_MS);
+    expect(await firstWordsOnDisk(app.world!.path, PAGE)).toContain(TYPED);
+    // Undo inside the box is the editor's, not the board's: whatever it takes
+    // back, the card stays, and so does the writing state.
+    await app.window.keyboard.press("Control+z");
+    expect(await boardCardCount(app.window)).toBe(1);
+    expect(await boardOpenPageIsBeingWritten(app.window, PAGE)).toBe(true);
+    await app.window.keyboard.press("Control+y");
+    await app.window.keyboard.press("Escape");
+    await app.window.waitForFunction(
+      () => document.querySelector("[data-testid='board-page-card']")?.getAttribute("data-writing") === "false",
+    );
+    // Drawn again, the page shows what was typed.
+    expect(await boardOpenPageText(app.window, PAGE)).toContain(TYPED);
+    expect(app.errors).toEqual([]);
+  });
+
+  it("scrolls under the wheel while open, and the board stays put", async () => {
     await deselectOnBoard(app.window);
     await clickBoardCard(app.window, PAGE);
     await app.window.waitForTimeout(400);
@@ -163,11 +199,12 @@ describe("a page opened on a board", () => {
     await app.window.keyboard.press("Escape");
   });
 
-  it("opens the page in full from its Open button", async () => {
+  it("opens the page in full from its Open button, where the words typed on the board are", async () => {
     await deselectOnBoard(app.window);
     await openBoardOpenPage(app.window, PAGE);
     await waitForPageTitle(app.window, PAGE);
     expect(await pageTitle(app.window)).toBe(PAGE);
+    expect(await editorText(app.window)).toContain(TYPED);
     await openPage(app.window, BOARD);
     await waitForBoard(app.window);
     await waitForBoardCards(app.window, 1);
@@ -188,20 +225,20 @@ describe("a page opened on a board", () => {
     expect(Math.abs(elements[0].height - 160)).toBeLessThanOrEqual(2);
   });
 
-  it("reads without being woken once locked, and still opens by its button", async () => {
+  it("is open without being woken once locked, and still opens by its button", async () => {
     await resizeBoardCard(app.window, PAGE, OPEN_WIDTH, OPEN_HEIGHT);
     expect(await boardCardPresentation(app.window, PAGE)).toBe("page");
     await lockBoardSelection(app.window);
     await deselectOnBoard(app.window);
     // Locked, the library will not hit it, so nothing could wake it; the
     // box is hers from the start.
-    expect(await boardOpenPageIsBeingRead(app.window, PAGE)).toBe(true);
+    expect(await boardOpenPageIsBeingWritten(app.window, PAGE)).toBe(true);
     await wheelOverBoardCard(app.window, PAGE, 120);
     await app.window.waitForFunction(
       () => (document.querySelector(".board-open-page-body")?.scrollTop ?? 0) > 0,
     );
-    // A click on its middle reads, it does not leave — a locked card at
-    // picture size would open its page here (step 2).
+    // A click on its middle lands in the page, it does not leave — a
+    // locked card at picture size would open its page here (step 2).
     await clickBoardCard(app.window, PAGE);
     expect(await pageTitle(app.window)).toBe(BOARD);
     await openBoardOpenPage(app.window, PAGE);
