@@ -553,6 +553,27 @@ Board spike, closed 2026-09-13. What binds the code:
   keyboard focus is not a `wysiwyg` target, so Delete on one would delete
   the card.
 
+- **The highlighter is the library's pen with the app holding a preset
+  over it** (Phase 32, step 11). `startHighlighting` puts the pen's
+  `currentItem*` colour, width and opacity aside, writes the highlighter's
+  in (`BOARD_HIGHLIGHT_*`, the colour remembered from last time), and sets
+  the freedraw tool; the library keeps that tool from stroke to stroke on
+  its own. `onChange` ends it the moment `activeTool` is anything else —
+  Escape, another tool — and puts the pen's style back, from a
+  `setTimeout` as every `updateScene` out of `onChange` must be. A stroke
+  is known to be a highlight by *when* it appeared, not what it looks
+  like: the ids on the board when the highlighter was picked up are kept,
+  and any finished freedraw element not among them is marked
+  `customData.highlight` and sunk with `sunkUnderInk` — just above the
+  last highlight, below everything else — with `CaptureUpdateAction.NEVER`,
+  so one undo takes the stroke and not first its place in the pile
+  (accepted: a redo of that stroke brings it back on top). `updateScene`
+  re-syncs the fractional indices of a reordered list itself. Shift+P
+  rather than the plan's H: H is the library's hand tool, and Shift+P is
+  the pen's key with a shift, which is the tldraw habit LK's users have.
+  None of the `currentItem*` state is in `KEPT_APP_STATE`, so a board
+  closed mid-highlight reopens with the pen as it was.
+
 - **A page viewed beside the board is `PageView` for another page, in a
   panel the board owns** (Phase 32, step 6, LK's *View*). `PageView` takes
   an optional `nodeId` and reads the selection only without one; the

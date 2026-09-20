@@ -3544,3 +3544,31 @@ export async function doubleClickBoardCardQuietly(window: Page, name: string): P
   await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
   await window.waitForTimeout(600);
 }
+
+// ---- The highlighter (Phase 32, step 11) ----
+
+const BOARD_HIGHLIGHTER_BUTTON = ".board-highlighter-button";
+
+/** Picks up the highlighter from the top-right row. */
+export async function pickBoardHighlighter(window: Page): Promise<void> {
+  await window.locator(BOARD_HIGHLIGHTER_BUTTON).click();
+}
+
+/** Whether the highlighter is the tool in hand, as its button says. */
+export async function boardHighlighterIsInHand(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_HIGHLIGHTER_BUTTON).getAttribute("aria-pressed")) === "true";
+}
+
+/**
+ * Draws one stroke with whatever pen is in hand, between two points given
+ * as fractions of the canvas — the highlighter, or the library's own pen.
+ */
+export async function drawBoardStrokeAt(window: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await window.mouse.move(box.x + box.width * from.x, box.y + box.height * from.y);
+  await window.mouse.down();
+  await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 12 });
+  await window.mouse.up();
+}

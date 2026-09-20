@@ -6934,6 +6934,31 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 11 — A highlighter ✅ Shipped 2026-09-20
+
+**What it delivered.** A *Highlighter* button in the top-right row and
+Shift+P: the pen with a marker's preset — stroke width 6, opacity 50,
+yellow to start with — each stroke sunk under everything drawn before
+it. Stays in hand for the next stroke; Escape or any other tool puts it
+down and gives the pen its own style back; a colour picked while it is
+in hand is remembered for next time.
+
+**How.** No new element kind and no patch: the app holds a preset over
+the library's pen and sinks each finished stroke. `docs/handoff.md` §
+Boards has the rules, including why Shift+P and not H.
+
+**Verified.** `e2e/a-board-highlighter.e2e.ts`: a stroke drawn over a
+rectangle reaches `_board.json` first in the list — under the rectangle
+— as a pen stroke with the highlighter's width, opacity and colour and
+the highlight mark; a second stroke without picking the tool again; Escape
+puts it down and the library's own pen then draws a solid thin stroke on
+top with no mark; Shift+P picks it up and puts it down. Unit tests for
+`isHighlight` and `sunkUnderInk`. Looked at in the real app in the dark
+look: two highlights under a rectangle with a pen stroke over them — the
+yellow reads as a muted ochre there, since the library inverts the
+canvas's colours for its dark theme, which is what it does to every
+colour.
+
 ### Step 6 — A page viewed beside the board, the View panel ✅ Shipped 2026-09-20
 
 **What it delivered.** LK's third way into a page card: a *View*

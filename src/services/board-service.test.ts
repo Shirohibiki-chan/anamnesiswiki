@@ -12,6 +12,7 @@ import {
   cardPageId,
   cardPlacement,
   cardPresentation,
+  isHighlight,
   isOpenPageCard,
   createBoard,
   dotsLayout,
@@ -20,6 +21,7 @@ import {
   isPageCard,
   linkCandidates,
   lockedButtonAt,
+  sunkUnderInk,
   pageLinkFor,
   readBoard,
 } from "./board-service";
@@ -178,6 +180,38 @@ describe("cardPresentation", () => {
     // still picture cards.
     expect(cardPresentation(900, 299)).toBe("picture");
     expect(cardPresentation(399, 700)).toBe("picture");
+  });
+});
+
+// ---- The highlighter (Phase 32, step 11) ----
+
+describe("isHighlight", () => {
+  it("is a pen stroke the highlighter marked, and nothing else", () => {
+    expect(isHighlight({ type: "freedraw", customData: { highlight: true } })).toBe(true);
+    expect(isHighlight({ type: "freedraw" })).toBe(false);
+    expect(isHighlight({ type: "freedraw", customData: { highlight: "yes" } })).toBe(false);
+    expect(isHighlight({ type: "rectangle", customData: { highlight: true } })).toBe(false);
+  });
+});
+
+describe("sunkUnderInk", () => {
+  const id = (element: { id: string }) => element.id;
+  const highlight = (name: string) => ({ id: name, type: "freedraw", customData: { highlight: true } });
+  const ink = (name: string) => ({ id: name, type: "rectangle" });
+
+  it("puts new strokes under everything else, in the order they were drawn", () => {
+    const elements = [ink("a"), ink("b"), highlight("new1"), ink("c"), highlight("new2")];
+    expect(sunkUnderInk(elements, new Set(["new1", "new2"]), id).map(id)).toEqual(["new1", "new2", "a", "b", "c"]);
+  });
+
+  it("keeps them above the highlights already there", () => {
+    const elements = [highlight("old"), ink("a"), highlight("new")];
+    expect(sunkUnderInk(elements, new Set(["new"]), id).map(id)).toEqual(["old", "new", "a"]);
+  });
+
+  it("leaves the order alone when nothing is named", () => {
+    const elements = [ink("a"), highlight("h"), ink("b")];
+    expect(sunkUnderInk(elements, new Set(), id).map(id)).toEqual(["a", "h", "b"]);
   });
 });
 
