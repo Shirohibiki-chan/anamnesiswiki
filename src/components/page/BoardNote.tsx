@@ -15,7 +15,6 @@
 // it changes and told to the canvas, which is the one that can make the
 // library's box taller.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type MutableRefObject, type ReactNode, type RefObject } from "react";
-import { BOARD_NOTE_PADDING } from "../../constants/board";
 import { noteHtml, noteLinesFromDom, type Note, type NoteLine } from "../../services/board-notes";
 
 /** What the canvas can ask of the note being edited: put a link in its words. */
@@ -37,8 +36,8 @@ type Props = {
   editorRef: MutableRefObject<NoteEditor | null>;
   /** The words as they stand, on every change while editing. */
   onEdit: (id: string, lines: NoteLine[]) => void;
-  /** The height the note needs for its words, whenever that changes. */
-  onMeasure: (id: string, height: number) => void;
+  /** The words' size changed, or may have: the canvas measures and grows the box. */
+  onMeasure: () => void;
   /** Escape, or anything else that means she is done writing. */
   onDone: (id: string) => void;
   /** Ctrl+K: she wants a link at the caret. */
@@ -58,16 +57,18 @@ export function BoardNote({ id, note, editing, editorRef, onEdit, onMeasure, onD
     if (words) onEdit(id, noteLinesFromDom(words));
   }, [id, onEdit]);
 
-  // The words' height, whenever it changes: a keystroke, a wider box that
-  // wraps less, a narrower one that wraps more. Watched on whichever of
-  // the two boxes is up.
+  // The words' size changing — a wider box that wraps less, a narrower
+  // one that wraps more, a keystroke — is the canvas's cue to measure.
+  // Watched on whichever of the two boxes is up, and told again straight
+  // from every keystroke below, since the observer alone was seen to fall
+  // silent mid-edit on one machine.
   useEffect(() => {
     const words = wordsRef.current;
     if (!words || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => onMeasure(id, words.offsetHeight + BOARD_NOTE_PADDING * 2));
+    const observer = new ResizeObserver(onMeasure);
     observer.observe(words);
     return () => observer.disconnect();
-  }, [id, editing, onMeasure]);
+  }, [editing, onMeasure]);
 
   // Editing starts: the keyboard goes into the box, at the end of the
   // words. And it is kept there through the first moments: the library's
@@ -114,7 +115,13 @@ export function BoardNote({ id, note, editing, editorRef, onEdit, onMeasure, onD
       const range = selection.getRangeAt(0);
       if (words.contains(range.commonAncestorContainer)) rangeRef.current = range.cloneRange();
     }
+    // The document's event, and the box's own key and mouse events too,
+    // which arrive in step with the typing where the document's is queued.
+    const words = wordsRef.current;
     document.addEventListener("selectionchange", onSelectionChange);
+    words?.addEventListener("keyup", onSelectionChange);
+    words?.addEventListener("mouseup", onSelectionChange);
+    words?.addEventListener("input", onSelectionChange);
     const focus = () => {
       const words = wordsRef.current;
       if (!words) return;
@@ -144,6 +151,9 @@ export function BoardNote({ id, note, editing, editorRef, onEdit, onMeasure, onD
     };
     return () => {
       document.removeEventListener("selectionchange", onSelectionChange);
+      words?.removeEventListener("keyup", onSelectionChange);
+      words?.removeEventListener("mouseup", onSelectionChange);
+      words?.removeEventListener("input", onSelectionChange);
       if (editorRef.current) editorRef.current = null;
     };
   }, [editing, editorRef, report]);
@@ -171,7 +181,7 @@ export function BoardNote({ id, note, editing, editorRef, onEdit, onMeasure, onD
   }
 
   return (
-    <div className="board-note" data-colour={note.colour} data-editing={editing ? "true" : "false"} data-testid="board-note" onClick={onLinkClick}>
+    <div className="board-note" data-note-id={id} data-colour={note.colour} data-editing={editing ? "true" : "false"} data-testid="board-note" onClick={onLinkClick}>
       {editing ? (
         <NoteEditorBox key="editor" lines={note.lines} wordsRef={wordsRef} onInput={report} onKeyDown={onKeyDown} />
       ) : (

@@ -37,7 +37,7 @@ import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
 import { FilePlus2, Grip, Link2, Maximize2, Minimize2, StickyNote, Unlink } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK, BOARD_NOTE_SIZE, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
+import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK, BOARD_NOTE_PADDING, BOARD_NOTE_SIZE, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import { DEFAULT_NOTE_COLOUR, NOTE_COLOURS, emptyNote, isNote, noteColourName, noteOf, type NoteColour, type NoteLine } from "../../services/board-notes";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
@@ -206,10 +206,8 @@ export default function BoardCanvas({
   // The note's handle on its editor while it is being written in, for
   // putting a link at the caret from the picker.
   const noteEditorRef = useRef<NoteEditor | null>(null);
-  // The words of the note being written in, as last reported, and the
-  // height every note on the board needs for its words.
+  // The words of the note being written in, as last reported.
   const noteDraftRef = useRef<NoteLine[] | null>(null);
-  const noteHeightsRef = useRef(new Map<string, number>());
   const growPendingRef = useRef(false);
   // Whether the last pointer gesture on the canvas moved anything, or was
   // the click that selected the shape: the library calls a quick drag a
@@ -295,21 +293,31 @@ export default function BoardCanvas({
   }, []);
 
   /**
-   * Makes every note as tall as its words need, in one edit, from the
-   * heights the notes have reported. Never shorter: a note she made
-   * taller stays so. Left alone while the library is mid-resize, since a
-   * box being dragged narrower wraps more and would be grown back under
-   * the hand; the pointer-up hook runs this again when the drag ends.
+   * Makes every note as tall as its words need, in one edit, measuring
+   * the words on the board itself: each note's box is in the drawing's
+   * own units, so what its words take up on screen is what the box needs.
+   * Measured here, at the moment of deciding, rather than from what the
+   * notes reported earlier — a resize observer inside the library's embed
+   * was seen to fall silent after the first report on CI's machine
+   * (2026-09-20), and the words were taller than the box by then. Never
+   * shorter: a note she made taller stays so. Left alone while the
+   * library is mid-resize, since a box being dragged narrower wraps more
+   * and would be grown back under the hand; the pointer-up hook runs this
+   * again when the drag ends.
    */
   const growNotes = useCallback(() => {
     growPendingRef.current = false;
     const api = apiRef.current;
-    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("grow api=" + !!api + " resizing=" + api?.getAppState().isResizing + " heights=" + JSON.stringify([...noteHeightsRef.current.values()]) + " scene=" + JSON.stringify(api?.getSceneElements().map((e) => [isNote(e), e.height])));
-    if (!api || api.getAppState().isResizing) return;
+    if (!api || !surface || api.getAppState().isResizing) return;
+    const needs = new Map<string, number>();
+    for (const words of surface.querySelectorAll<HTMLElement>(".board-note .board-note-words")) {
+      const id = words.parentElement?.getAttribute("data-note-id");
+      if (id) needs.set(id, words.offsetHeight + BOARD_NOTE_PADDING * 2);
+    }
     let changed = false;
     let captured = false;
     const elements = api.getSceneElementsIncludingDeleted().map((element) => {
-      const needed = noteHeightsRef.current.get(element.id);
+      const needed = needs.get(element.id);
       if (needed === undefined || element.isDeleted || !isNote(element) || element.height >= needed - 0.5) return element;
       changed = true;
       // Mid-edit the growth belongs to the edit; otherwise — a note dragged
@@ -319,20 +327,14 @@ export default function BoardCanvas({
       return newElementWith(element, { height: needed });
     });
     if (changed) api.updateScene({ elements, captureUpdate: captured ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY });
-  }, []);
+  }, [surface]);
 
-  const onNoteMeasure = useCallback(
-    (id: string, height: number) => {
-      ((window as unknown as { __diag?: string[] }).__diag ??= []).push("measure " + height + " pending=" + growPendingRef.current);
-      noteHeightsRef.current.set(id, height);
-      // Once per tick however many notes report, and never from inside a
-      // measurement — the library's re-render would be mid-layout.
-      if (growPendingRef.current) return;
-      growPendingRef.current = true;
-      window.setTimeout(growNotes, 0);
-    },
-    [growNotes],
-  );
+  /** Asks for the notes to be grown, once per tick however many ask, and never from inside a layout callback. */
+  const scheduleGrow = useCallback(() => {
+    if (growPendingRef.current) return;
+    growPendingRef.current = true;
+    window.setTimeout(growNotes, 0);
+  }, [growNotes]);
 
   /**
    * The words of the note being written in, on every change: written to
@@ -340,18 +342,23 @@ export default function BoardCanvas({
    * alone (see `withoutBump`), so the edit is one undo step and one write
    * when it ends.
    */
-  const onNoteEdit = useCallback((id: string, lines: NoteLine[]) => {
-    const api = apiRef.current;
-    if (!api) return;
-    noteDraftRef.current = lines;
-    api.updateScene({
-      elements: api.getSceneElementsIncludingDeleted().map((element) => {
-        const note = noteOf(element);
-        return element.id === id && note ? withoutBump(element, { customData: { note: { ...note, lines } } }) : element;
-      }),
-      captureUpdate: CaptureUpdateAction.EVENTUALLY,
-    });
-  }, []);
+  const onNoteEdit = useCallback(
+    (id: string, lines: NoteLine[]) => {
+      const api = apiRef.current;
+      if (!api) return;
+      noteDraftRef.current = lines;
+      api.updateScene({
+        elements: api.getSceneElementsIncludingDeleted().map((element) => {
+          const note = noteOf(element);
+          return element.id === id && note ? withoutBump(element, { customData: { note: { ...note, lines } } }) : element;
+        }),
+        captureUpdate: CaptureUpdateAction.EVENTUALLY,
+      });
+      // The words just changed, so the box may need to.
+      scheduleGrow();
+    },
+    [scheduleGrow],
+  );
 
   /** Writing ends: the words as they stand become one undoable edit, and the keyboard goes back to the board. */
   const endNoteEditing = useCallback(() => {
@@ -715,7 +722,7 @@ export default function BoardCanvas({
               editing={editingNoteId === element.id}
               editorRef={noteEditorRef}
               onEdit={onNoteEdit}
-              onMeasure={onNoteMeasure}
+              onMeasure={scheduleGrow}
               onDone={endNoteEditing}
               onWantLink={() => setPicker({ mode: "link", query: "" })}
               onOpenLink={links.openLink}
