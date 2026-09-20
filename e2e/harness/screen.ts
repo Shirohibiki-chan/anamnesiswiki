@@ -2007,7 +2007,12 @@ export async function selectBoardShape(window: Page): Promise<void> {
   const canvas = window.locator(BOARD_CANVAS).first();
   const box = await canvas.boundingBox();
   if (!box) throw new Error("the board's canvas has no size");
-  await window.keyboard.press("Escape");
+  // A click on empty canvas first, not Escape: the keyboard may be
+  // nowhere in particular after a picker closed, and Escape typed into
+  // nothing leaves the shape selected — and a click on a shape already
+  // selected is not the click that brings the library's link popup up.
+  // The click also puts the keyboard on the board for the tool key.
+  await canvas.click({ position: { x: box.width * 0.05, y: box.height * 0.85 } });
   await window.keyboard.press("v");
   const edge = await window.evaluate(() => {
     const drawn = document.querySelector<HTMLCanvasElement>(".board .excalidraw__canvas.static");
@@ -2017,11 +2022,15 @@ export async function selectBoardShape(window: Page): Promise<void> {
     const { width, height } = drawn;
     const pixels = context.getImageData(0, 0, width, height).data;
     // The background is whatever the top-left pixel is; the shape is the
-    // first run of anything else, scanning rows from a third of the way down.
+    // first run of anything else, scanning rows from four tenths of the way
+    // down — inside the rows the drawn rectangle spans, so the pixel found
+    // is on its left edge. From three tenths, where the rectangle starts,
+    // the first row could land on its top-left corner, and a click there
+    // selects the shape without the library's link popup (2026-09-20).
     const bg = [pixels[0], pixels[1], pixels[2]];
     const differs = (i: number) =>
       Math.abs(pixels[i] - bg[0]) + Math.abs(pixels[i + 1] - bg[1]) + Math.abs(pixels[i + 2] - bg[2]) > 60;
-    for (let y = Math.floor(height * 0.3); y < height; y += 4) {
+    for (let y = Math.floor(height * 0.4); y < height; y += 4) {
       for (let x = 0; x < width; x += 1) {
         if (differs((y * width + x) * 4)) {
           const scale = drawn.width / drawn.getBoundingClientRect().width;
@@ -2070,12 +2079,16 @@ export async function boardIsExpanded(window: Page): Promise<boolean> {
 export async function toggleBoardExpand(window: Page): Promise<void> {
   await window.locator(`${BOARD} .board-expand`).click();
   await window.waitForFunction(
-    ([boardSelector, canvasSelector]) => {
+    ([boardSelector, canvasSelector, sheetsSelector]) => {
       const board = document.querySelector(boardSelector)?.getBoundingClientRect();
       const canvas = document.querySelector(canvasSelector)?.getBoundingClientRect();
-      return !!board && !!canvas && Math.abs(board.width - canvas.width) < 4 && Math.abs(board.height - canvas.height) < 4;
+      // The drawing takes the board down to the sheet strip along its
+      // bottom (Phase 32, step 13), which is the board's own.
+      const sheets = document.querySelector(sheetsSelector)?.getBoundingClientRect();
+      const floor = sheets ? sheets.top : board?.bottom ?? 0;
+      return !!board && !!canvas && Math.abs(board.width - canvas.width) < 4 && Math.abs(floor - canvas.bottom) < 4;
     },
-    [BOARD, BOARD_CANVAS],
+    [BOARD, BOARD_CANVAS, "[data-testid='board-sheets']"],
     { timeout: WAIT_MS },
   );
 }
@@ -3655,4 +3668,30 @@ export async function boardVideoBox(window: Page, index: number): Promise<{ x: n
   const box = await window.locator(BOARD_VIDEO).nth(index).boundingBox();
   if (!box) throw new Error(`no video ${index} on the board`);
   return box;
+}
+
+// ---- Sheets: the boards inside a board (Phase 32, step 13) ----
+
+const BOARD_SHEETS = "[data-testid='board-sheets']";
+
+/** The tabs along the bottom of the board, in order. */
+export async function boardSheetNames(window: Page): Promise<string[]> {
+  return window.locator(`${BOARD_SHEETS} .board-sheet`).allTextContents();
+}
+
+/** The tab that is this board. */
+export async function boardCurrentSheet(window: Page): Promise<string> {
+  return normalize(await window.locator(`${BOARD_SHEETS} .board-sheet[aria-current="page"]`).innerText());
+}
+
+/** Clicks the tab reading `name` and waits for that board to be the page. */
+export async function openBoardSheet(window: Page, name: string): Promise<void> {
+  await window.locator(`${BOARD_SHEETS} .board-sheet`).filter({ hasText: name }).first().click();
+  await waitForPageTitle(window, name);
+  await waitForBoard(window);
+}
+
+/** The + at the end of the strip: a new board inside this one, opened. */
+export async function addBoardSheet(window: Page): Promise<void> {
+  await window.locator(`${BOARD_SHEETS} .board-sheet-add`).click();
 }

@@ -9,6 +9,7 @@ import { dotsLayout } from "../../services/board-service";
 import { useBoardBookmarks } from "../../hooks/use-board-bookmarks";
 import { useBoardView } from "../../hooks/use-board-view";
 import { useBoardLinks } from "../../hooks/use-board-links";
+import { BoardSheets } from "./BoardSheets";
 import { BoardViewPanel } from "./BoardViewPanel";
 import "./board.css";
 
@@ -104,6 +105,7 @@ export function PageBoard({ node }: { node: Node }) {
           onViewPage={setViewedPageId}
         />
       </Suspense>
+      <BoardSheets boardId={node.id} />
       {/* A link that went nowhere, said once and briefly — the storyline's
           refusal strip, in the same place for the same reason. */}
       {links.notice && (

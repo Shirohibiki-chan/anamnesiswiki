@@ -55,26 +55,91 @@
 
 .board[data-view-open="true"] {
   --board-view-width: 26rem;
-  display: flex;
-  align-items: stretch;
 }
 
 .board[data-dots="true"] {
   background-position: calc(var(--board-dots-x) + var(--board-view-width)) var(--board-dots-y);
 }
 
-.board[data-view-open="true"] > .excalidraw {
-  flex: 1 1 auto;
+/* The board is a grid: the viewed page's panel and the drawing side by
+   side above, the sheets along the bottom (step 13). The panel's column
+   is nothing wide when there is no panel. Each part is placed by name,
+   since the drawing is the library's own element and cannot be wrapped. */
+.board {
+  display: grid;
+  grid-template-columns: var(--board-view-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.board > .excalidraw,
+.board > .board-loading {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
+  min-height: 0;
 }
 
 .board-view-panel {
   display: flex;
-  flex: 0 0 var(--board-view-width);
   flex-direction: column;
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   border-right: 1px solid var(--color-border);
   background: var(--color-background);
+}
+
+/* ---- The sheets (Phase 32, step 13) ----
+   A strip along the bottom, the workbook's tabs: this board and the boards
+   inside it, and a + for one more. The app's own strip under the drawing
+   rather than over it, so nothing of the library's bottom row is covered. */
+.board-sheets {
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 2rem;
+  padding: 0 var(--space-sm);
+  overflow-x: auto;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.board-sheet,
+.board-sheet-add {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 14rem;
+  padding: 0 var(--space-md);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.board-sheet:hover,
+.board-sheet-add:hover {
+  color: var(--color-text-primary);
+}
+
+.board-sheet[aria-current="page"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  cursor: default;
+}
+
+.board-sheet-add {
+  padding: 0 var(--space-sm);
 }
 
 .board-view-panel-bar {

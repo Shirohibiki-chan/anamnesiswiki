@@ -21,6 +21,8 @@ import {
   isPageCard,
   linkCandidates,
   lockedButtonAt,
+  boardSheets,
+  nextSheetName,
   sunkUnderInk,
   pageLinkFor,
   readBoard,
@@ -180,6 +182,45 @@ describe("cardPresentation", () => {
     // still picture cards.
     expect(cardPresentation(900, 299)).toBe("picture");
     expect(cardPresentation(399, 700)).toBe("picture");
+  });
+});
+
+// ---- Sheets (Phase 32, step 13) ----
+
+describe("boardSheets", () => {
+  const node = (id: string, parentId: string | null, templateKey = "board", createdAt = 1): Node =>
+    ({ id, parentId, templateKey, name: id, createdAt, tabs: [], properties: {}, tags: [] }) as unknown as Node;
+  const nodes: Record<string, Node> = {
+    top: node("top", null),
+    a: node("a", "top", "board", 2),
+    b: node("b", "top", "board", 3),
+    page: node("page", "top", "note", 4),
+    deep: node("deep", "a", "board", 5),
+    other: node("other", null),
+  };
+
+  it("is the board and the boards inside it, in the tree's order", () => {
+    expect(boardSheets(nodes, { top: ["b", "a"] }, "top").map((sheet) => sheet.id)).toEqual(["top", "b", "a"]);
+    expect(boardSheets(nodes, undefined, "top").map((sheet) => sheet.id)).toEqual(["top", "a", "b"]);
+  });
+
+  it("reads the same from any sheet of the workbook", () => {
+    expect(boardSheets(nodes, undefined, "b").map((sheet) => sheet.id)).toEqual(["top", "a", "b"]);
+  });
+
+  it("goes one level only, and a board on its own is its one sheet", () => {
+    expect(boardSheets(nodes, undefined, "deep").map((sheet) => sheet.id)).toEqual(["a", "deep"]);
+    expect(boardSheets(nodes, undefined, "other").map((sheet) => sheet.id)).toEqual(["other"]);
+    expect(boardSheets(nodes, undefined, "page")).toEqual([]);
+    expect(boardSheets(nodes, undefined, "missing")).toEqual([]);
+  });
+});
+
+describe("nextSheetName", () => {
+  it("numbers the next sheet past what is there, skipping a name already taken", () => {
+    expect(nextSheetName([{ name: "Plans" }])).toBe("Board 2");
+    expect(nextSheetName([{ name: "Plans" }, { name: "Board 2" }])).toBe("Board 3");
+    expect(nextSheetName([{ name: "Board 2" }, { name: "Board 3" }])).toBe("Board 4");
   });
 });
 
