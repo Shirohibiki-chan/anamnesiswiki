@@ -35,13 +35,25 @@ import {
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
-import { FilePlus2, Grip, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
+import { FilePlus2, Grip, Highlighter, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK, BOARD_NOTE_PADDING, BOARD_NOTE_SIZE, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
+import {
+  BOARD_CARD_HEIGHT,
+  BOARD_CARD_WIDTH,
+  BOARD_HIGHLIGHT_COLOUR,
+  BOARD_HIGHLIGHT_OPACITY,
+  BOARD_HIGHLIGHT_WIDTH,
+  BOARD_NOTE_LINK,
+  BOARD_NOTE_PADDING,
+  BOARD_NOTE_SIZE,
+  BOARD_PAGE_LINK_PREFIX,
+  BOARD_PICTURE_MAX_SIDE,
+  PAGE_DRAG_TYPE,
+} from "../../constants/board";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import { DEFAULT_NOTE_COLOUR, NOTE_COLOURS, emptyNote, isNote, noteColourName, noteOf, type NoteColour, type NoteLine } from "../../services/board-notes";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
-import { cardPageId, cardPlacement, draggedPageIds, elementLink, isOpenPageCard, isPageCard, lockedButtonAt } from "../../services/board-service";
+import { cardPageId, cardPlacement, draggedPageIds, elementLink, isHighlight, isOpenPageCard, isPageCard, lockedButtonAt, sunkUnderInk } from "../../services/board-service";
 import { bookmarkOf, isBookmarkCard, placeholderBookmark, webAddressIn, type Bookmark } from "../../services/bookmark-service";
 import { BoardNote, type NoteEditor } from "./BoardNote";
 import type { BoardLinks } from "../../hooks/use-board-links";
@@ -234,6 +246,15 @@ export default function BoardCanvas({
   // reports close over nothing.
   const [writingCardId, setWritingCardId] = useState<string | null>(null);
   const writingCardRef = useRef<string | null>(null);
+  // The highlighter (step 11): whether it is the tool in hand, the pen's
+  // own style put aside while it is, the colour it was last used in, and
+  // which strokes were on the board before it was picked up — any pen
+  // stroke not among them is a highlight to sink under the ink.
+  const [highlighting, setHighlighting] = useState(false);
+  const highlightingRef = useRef(false);
+  const penStyleRef = useRef<Pick<AppState, "currentItemStrokeColor" | "currentItemStrokeWidth" | "currentItemOpacity"> | null>(null);
+  const highlightColourRef = useRef(BOARD_HIGHLIGHT_COLOUR);
+  const knownStrokesRef = useRef<Set<string>>(new Set());
   // The viewed page, readable from the library's change reports.
   const viewedPageRef = useRef(viewedPageId);
   useEffect(() => {
@@ -517,10 +538,68 @@ export default function BoardCanvas({
     if (card && cardPageId(card) === viewedPageId) endWriting();
   }, [viewedPageId, endWriting]);
 
+  // ---- The highlighter (Phase 32, step 11) ----
+
+  /**
+   * Picks up the highlighter: the library's pen, with the pen's style put
+   * aside and the highlighter's put in its place — wide, see-through, the
+   * colour it was last used in. The pen tool stays in hand from stroke to
+   * stroke, as the library's pen does; picking any other tool, or Escape,
+   * puts the pen's style back (see `endHighlighting`).
+   */
+  const startHighlighting = useCallback(() => {
+    const api = apiRef.current;
+    if (!api || highlightingRef.current) return;
+    const state = api.getAppState();
+    penStyleRef.current = {
+      currentItemStrokeColor: state.currentItemStrokeColor,
+      currentItemStrokeWidth: state.currentItemStrokeWidth,
+      currentItemOpacity: state.currentItemOpacity,
+    };
+    knownStrokesRef.current = new Set(api.getSceneElementsIncludingDeleted().map((element) => element.id));
+    api.updateScene({
+      appState: {
+        currentItemStrokeColor: highlightColourRef.current,
+        currentItemStrokeWidth: BOARD_HIGHLIGHT_WIDTH,
+        currentItemOpacity: BOARD_HIGHLIGHT_OPACITY,
+      },
+    });
+    api.setActiveTool({ type: "freedraw" });
+    highlightingRef.current = true;
+    setHighlighting(true);
+  }, []);
+
+  /** Puts the highlighter down: the pen gets its own style back, and the highlighter remembers its colour. */
+  const endHighlighting = useCallback(() => {
+    const api = apiRef.current;
+    if (!api || !highlightingRef.current) return;
+    highlightingRef.current = false;
+    setHighlighting(false);
+    highlightColourRef.current = api.getAppState().currentItemStrokeColor;
+    if (penStyleRef.current) api.updateScene({ appState: penStyleRef.current });
+    penStyleRef.current = null;
+  }, []);
+
+  /**
+   * Marks the finished strokes in `ids` as highlights and sinks them under
+   * the ink. Outside the undo history: the stroke itself was captured as
+   * it was drawn, and one undo should take the stroke, not first its
+   * place in the pile.
+   */
+  const sinkHighlights = useCallback((ids: ReadonlySet<string>) => {
+    const api = apiRef.current;
+    if (!api) return;
+    const marked = api
+      .getSceneElementsIncludingDeleted()
+      .map((element) => (ids.has(element.id) ? newElementWith(element, { customData: { ...element.customData, highlight: true } }) : element));
+    api.updateScene({ elements: sunkUnderInk(marked, ids, (element) => element.id), captureUpdate: CaptureUpdateAction.NEVER });
+  }, []);
+
   // A new note on N, and Enter on a selected note to write in it — the
   // library's own Enter on a shape with words — or on a selected opened
-  // page to write in it. All only when the keyboard is the board's and
-  // not a box's.
+  // page to write in it; the highlighter on Shift+P, the pen's key with a
+  // shift, as its neighbour's is. All only when the keyboard is the
+  // board's and not a box's.
   useEffect(() => {
     if (!surface) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -530,6 +609,11 @@ export default function BoardCanvas({
         event.preventDefault();
         event.stopPropagation();
         addNote(noteColour, viewCentre(api.getAppState()));
+      } else if (event.key.toLowerCase() === "p" && event.shiftKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (highlightingRef.current) api.setActiveTool({ type: "selection" });
+        else startHighlighting();
       } else if (event.key === "Enter") {
         const selectedId = soleSelection(api.getAppState());
         const selected = selectedId ? api.getSceneElements().find((element) => element.id === selectedId) : undefined;
@@ -548,7 +632,7 @@ export default function BoardCanvas({
     }
     surface.addEventListener("keydown", onKeyDown);
     return () => surface.removeEventListener("keydown", onKeyDown);
-  }, [surface, addNote, noteColour, setEditing, setWriting, mayWrite]);
+  }, [surface, addNote, noteColour, setEditing, setWriting, mayWrite, startHighlighting]);
 
   /**
    * Puts a bookmark card for `url` on the board with its middle at
@@ -693,6 +777,24 @@ export default function BoardCanvas({
             window.setTimeout(() => {
               if (editingNoteRef.current === editing) endNoteEditing();
             }, 0);
+          }
+        }
+        // The highlighter is down the moment any other tool is up; while it
+        // is up, each stroke it finishes is sunk under the ink. Both from
+        // outside this callback, for the woken state's reason below.
+        if (highlightingRef.current) {
+          if (appState.activeTool.type !== "freedraw") {
+            window.setTimeout(endHighlighting, 0);
+          } else {
+            const drawing = appState.newElement?.id;
+            const fresh = new Set<string>();
+            for (const element of elements) {
+              if (element.type === "freedraw" && !element.isDeleted && element.id !== drawing && !knownStrokesRef.current.has(element.id) && !isHighlight(element)) {
+                fresh.add(element.id);
+                knownStrokesRef.current.add(element.id);
+              }
+            }
+            if (fresh.size > 0) window.setTimeout(() => sinkHighlights(fresh), 0);
           }
         }
         // Writing in an opened page ends the same way, and also when the
@@ -928,6 +1030,17 @@ export default function BoardCanvas({
               >
                 <StickyNote size={16} />
                 <span className="board-link-label">Note</span>
+              </button>
+              <button
+                type="button"
+                className="board-top-button board-highlighter-button"
+                aria-pressed={highlighting}
+                onClick={() => (highlighting ? apiRef.current?.setActiveTool({ type: "selection" }) : startHighlighting())}
+                title="Highlighter (Shift+P)"
+                aria-label="Mark a region with the highlighter"
+              >
+                <Highlighter size={16} />
+                <span className="board-link-label">Highlighter</span>
               </button>
               {selectedNoteColour !== null && (
                 <button

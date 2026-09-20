@@ -95,3 +95,14 @@ export const BOARD_NOTE_SIZE = 200;
 
 /** How much of a note's box is margin around the words, in the drawing's units. */
 export const BOARD_NOTE_PADDING = 16;
+
+/**
+ * The highlighter (Phase 32, step 11): the library's pen with a preset —
+ * wide, see-through, in a marker's yellow to start with — offered as a
+ * tool of its own. The width is the pen's stroke width, which the library
+ * draws about four times as wide; the opacity is a percentage, the
+ * library's own scale.
+ */
+export const BOARD_HIGHLIGHT_COLOUR = "#ffd43b";
+export const BOARD_HIGHLIGHT_WIDTH = 6;
+export const BOARD_HIGHLIGHT_OPACITY = 50;

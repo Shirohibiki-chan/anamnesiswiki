@@ -264,6 +264,32 @@ export function linkCandidates(query: string, boardId: string, nodes: Record<str
 // an element", beside `link` above: an embed's address and kind are the
 // app's own, because the app put them there.
 
+/**
+ * Whether `element` is a highlighter stroke: a pen stroke the highlighter
+ * made, marked so on its `customData` when it was finished (step 11). The
+ * mark is what keeps highlights under the ink: a new one goes in just
+ * above the last of these, and below everything else.
+ */
+export function isHighlight(element: unknown): boolean {
+  const record = element as { type?: unknown; customData?: { highlight?: unknown } };
+  return record.type === "freedraw" && record.customData?.highlight === true;
+}
+
+/**
+ * The elements with the strokes in `ids` moved under the ink: just above
+ * the last highlight already there, below everything else, in the order
+ * they were drawn. Everything else keeps its order.
+ */
+export function sunkUnderInk<T>(elements: readonly T[], ids: ReadonlySet<string>, id: (element: T) => string): T[] {
+  const strokes = elements.filter((element) => ids.has(id(element)));
+  const rest = elements.filter((element) => !ids.has(id(element)));
+  let at = 0;
+  rest.forEach((element, index) => {
+    if (isHighlight(element)) at = index + 1;
+  });
+  return [...rest.slice(0, at), ...strokes, ...rest.slice(at)];
+}
+
 /** Whether `element` is a page card: an embed whose address is a page link. */
 export function isPageCard(element: unknown): boolean {
   const record = element as { type?: unknown; link?: unknown };

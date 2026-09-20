@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-20 — A highlighter for boards
+
+### Additions
+
+- **A *Highlighter* button in the board's top-right row, and Shift+P.** It is the pen with a marker's settings — wide, half see-through, yellow to start with — so it is a tool you pick, not three settings to remember. Each stroke goes *under* everything already drawn, so a highlight over words or a shape leaves them readable. It stays in hand for the next stroke; Escape or any other tool puts it down, and the pen gets its own colour, width and opacity back. Pick a different colour from the styles panel while it is in hand and the highlighter remembers it.
+
 ## 2026-09-20 — View a page beside the board
 
 ### Additions
@@ -177,15 +183,3 @@
 ### Fixes
 
 - **Scrolling the graph no longer jumps.** Every notch was taking one small step backwards before gliding forward — the animation's clock can read a few milliseconds earlier than the wheel event's, and the glide treated that as negative progress. The glide also no longer reads the view back from the screen when a notch arrives, which on a slower machine was a frame behind and snapped the picture back before gliding on.
-
-## 2026-09-14 — A big graph can be zoomed out to the whole of it
-
-### Fixes
-
-- **The greyed-out Reach on the whole-world graph says why.** It reads "Everything — open a page's graph to count from it" instead of just sitting grey with the reason hidden in a tooltip. Reach counts connections out from a page, and a graph opened from the rail has no page in the middle to count from.
-- **A graph no longer flashes at the wrong size for a frame as it opens.** It was drawn once before the window had reported its size and then jumped to fit; it stays hidden for that frame now.
-- **The wheel's glide takes the same fifth of a second on every screen.** It was a fixed fraction per frame, which is a slower glide on a faster monitor; it's a fixed length of time now.
-- **Zooming in really does zoom toward your pointer now.** It was meant to since yesterday, but each step of the glide was working from numbers a frame or two old, so the page under the pointer slid away as you zoomed — a few hundred pixels in five notches, off the screen by full zoom — and you landed in empty space. Measured now: the page under the pointer moves about ten pixels across the whole zoom range.
-
-- **Clicking Filter or Display while its menu is open closes it.** The press was closing the menu as a click outside it and the click that followed opened it again, so the button could only ever open. Same fix for the table's Filter, Sort and Columns buttons, which behaved the same way.
-- **The wheel zooms out far enough to see a whole big world.** The graph used to stop zooming out at a fixed size that happened to fit 835 pages before the ring of lone pages made worlds bigger; a large world couldn't be seen whole at all. The limit follows the world now — half the size the whole picture fits at, so there's air around it — and a small world keeps the old floor.

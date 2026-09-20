@@ -755,11 +755,12 @@ other people's cursors. In the order they would matter:
     italic and links, a page link among them, and the note grows with them.
     The third thing drawn by the app inside an embed, and the first written
     in.
-11. **A highlighter.** A pen that is wide, see-through and drawn under the
-    ink, for marking a region rather than writing in it. The library's pen
-    with a preset — wide, half-opacity, multiply blend — offered as its
-    own tool with its own shortcut (H), so it is a tool she picks and not
-    three settings she remembers.
+11. ~~**A highlighter.**~~ Shipped 2026-09-20 — `docs/shipped.md` § Phase
+    32, step 11. The pen with a preset, on a *Highlighter* button and
+    Shift+P (H is the library's hand tool), each stroke sunk under the
+    ink. No multiply blend: the library has no per-shape blend and the
+    dark look inverts the canvas anyway; half-opacity under the ink does
+    the job.
 12. **Video on the board.** A video file dropped on the board — through the
     world's library, step 4's mechanism — plays where it lands, in a
     player drawn by the app inside an embed; a YouTube address pasted on
