@@ -553,6 +553,32 @@ Board spike, closed 2026-09-13. What binds the code:
   keyboard focus is not a `wysiwyg` target, so Delete on one would delete
   the card.
 
+- **The Layers panel is the fourth named reading of an element, and the
+  widest** (Phase 32, step 15). `services/board-layers.ts` reads a shape's
+  kind, its words, which frame it is in and which text is bound to it —
+  the library's own vocabulary — to name a row, and nowhere above it
+  reads those fields. Rows are the library's list *reversed* (it draws the
+  last element on top); a frame's shapes are listed under the frame's row
+  because a frame is a container, though in the drawing they sit above
+  it. **A move is a move of the shape's unit** — a shape and its bound
+  words, a frame and everything in it — put beside the target row's unit
+  in the list and handed to `updateScene`, which re-numbers the moved
+  elements' fractional indices itself (`syncInvalidIndices`); a move
+  between a frame and the outside is refused with a notice, since which
+  frame a shape is in is decided on the drawing by where it is put.
+  **Hidden is the app's own mark:** the library has no such state, so a
+  hidden shape is opacity 0 *and* locked (a shape nobody can see must take
+  no click), with what it was kept in `customData.hidden` for showing
+  again; `isHidden` reads the mark, not the opacity, and
+  `lockedButtonAt` skips hidden shapes, or a hidden locked card would
+  still be a button, and `renderEmbeddable` draws nothing in a hidden
+  embed's box, or an opened page's editor (a locked one is open for
+  writing) and a note's links would take clicks unseen. The rows are read only while the panel is open and
+  set only when they read differently — the library reports on every
+  pointer move, and rows do not change with a shape's place. A row's
+  click focuses the library's container afterwards, or Delete would go
+  nowhere: the library binds its keys on that element, not the window.
+
 - **The sheets strip is the tree, read the boards' way** (Phase 32,
   step 13). `boardSheets(nodes, childOrder, boardId)` is the workbook: the
   board plus the boards directly inside it, in the tree's own order — and

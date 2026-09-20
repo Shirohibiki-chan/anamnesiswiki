@@ -6934,6 +6934,37 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 15 — A Layers panel ✅ Shipped 2026-09-20
+
+**What it delivered.** A **Layers** button in the board's top-right slot
+opens a panel on the board's right listing everything on it, top to
+bottom, each with a kind's icon and a name: a page card's page (live, so
+a rename follows), a text's or a note's first line, a video's file, a
+bookmark's title, a frame's name, the words on a shape, or the kind.
+Click a row to select (Shift+click adds; the board scrolls to a shape
+none of which was on screen); drag a row to reorder, undoable; the eye
+hides and shows, the lock locks and unlocks. Empty board: "Nothing on
+this board yet." One place, right-hand side, in the page and expanded.
+
+**How.** `services/board-layers.ts` (`boardLayers`, `movedLayer`,
+`layerUnit`, `hiddenFields`/`shownFields`, `layerOffScreen`),
+`isHidden` in `board-service.ts`, `BoardLayersPanel.tsx` (dnd-kit
+sortable rows, as the page's tabs), the panel rendered by `BoardCanvas`
+beside the library's element and placed by the board's grid (a third
+column, `auto`, so it is nothing wide when closed).
+`docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-layers.e2e.ts`: the empty panel's words; a
+rectangle, a page card and a note listed top to bottom by name and kind;
+a row selects and Shift+click adds, the rows showing it; a row dragged
+above another moves the shape over it and `_board.json` lists it last,
+and back; the eye writes opacity 0, locked, and the kept fields, and
+showing puts them back; the lock writes `locked`; a page card's row
+follows a rename by the title; the panel is right of the canvas in the
+page and expanded. Unit tests for the rows' shape and names, the unit
+of a move, the moves refused, and the hidden fields. Looked at in the
+real app.
+
 ### Step 13 — Several pages in one board ✅ Shipped 2026-09-20
 
 **What it delivered.** A tab strip along the bottom of every board: the
