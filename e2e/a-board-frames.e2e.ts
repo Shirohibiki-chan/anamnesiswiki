@@ -68,7 +68,7 @@ describe("frames on a board", () => {
     await app?.close();
   });
 
-  it("nests a frame drawn inside a frame, and the outer one carries it: moved, and deleted", async () => {
+  it("nests a frame drawn inside a frame, and the outer one carries it out and back", async () => {
     // An outer frame, an inner frame drawn inside it, and a shape drawn
     // inside the inner one: the shape belongs to the innermost frame.
     await drawBoardFrameAt(app.window, { x: 0.1, y: 0.2 }, { x: 0.55, y: 0.8 });
@@ -119,6 +119,16 @@ describe("frames on a board", () => {
     shapes = await shapesOnDisk(app);
     [outer, inner] = frames(shapes);
     expect(inner.frameId).toBe(outer.id);
+  }, 120_000);
+
+  it("duplicates the tree as one, and deletes it as one", async () => {
+    // Picks up where the last one left off: an outer frame holding an inner
+    // one holding a rectangle.
+    let shapes = await shapesOnDisk(app);
+    const [outer, inner] = frames(shapes);
+    const [rectangle] = byType(shapes, "rectangle");
+    expect(inner.frameId).toBe(outer.id);
+    const { width, height } = await boardCanvasSize(app.window);
 
     // Duplicating the outer frame copies the whole tree, wired the same way.
     await deselectOnBoard(app.window);
@@ -146,7 +156,7 @@ describe("frames on a board", () => {
     await clickBoardAt(app.window, { x: (outer.x + outer.width / 2) / width, y: outer.y / height });
     await app.window.keyboard.press("Delete");
     expect(await shapesOnDisk(app)).toHaveLength(0);
-  });
+  }, 120_000);
 
   it("turns a frame by its rotation grip, and what is in it turns with it", async () => {
     await drawBoardFrameAt(app.window, { x: 0.3, y: 0.3 }, { x: 0.6, y: 0.6 });
@@ -176,5 +186,5 @@ describe("frames on a board", () => {
     const turned = { x: rectangle.x + rectangle.width / 2, y: rectangle.y + rectangle.height / 2 };
     expect(turned.x - centre.x).toBeCloseTo(-(rectangleCentre.y - centre.y), 0);
     expect(turned.y - centre.y).toBeCloseTo(rectangleCentre.x - centre.x, 0);
-  });
+  }, 120_000);
 });

@@ -6802,7 +6802,7 @@ multi-element turn of frame and contents together. Twenty-odd small
 replacements per build, in `scripts/excalidraw-patch.mjs` § Frames;
 `docs/handoff.md` § Boards has the rules and the two things not done.
 
-**Verified.** `e2e/a-board-frames.e2e.ts`, against the built app and again
+**Verified.** `e2e/a-board-frames.e2e.ts` (three scenarios, each given the 120-second timeout the long ones have, after CI ran the first at five times local speed and hit the default), against the built app and again
 against the dev build served by Vite: an inner frame is the outer's child
 and a shape drawn inside is the inner's; dragging the outer by its edge
 moves all three by the same distance; dragging the inner out makes it its
