@@ -6934,6 +6934,33 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 12 — Video on the board ✅ Shipped 2026-09-20
+
+**What it delivered.** A video file dropped on the board goes into the
+world's library and lands where it was dropped as a wide-screen box —
+the first frame with a play mark; played, the window's own player with
+its controls; paused or finished, a still again that moves and locks like
+any shape. A video in the Library drags onto a board like a picture, no
+second copy made; the Library shows its first frame and counts the use.
+
+**How.** An embed with a video link and the file's name in `customData`,
+drawn by `BoardVideo`; the board's own drop handler for video files
+(the library's takes pictures only); the patch's iconless links now a
+list. `docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-videos.e2e.ts`: a WebM recorded off a canvas
+in the window and dropped on the board lands in `assets/` and in
+`_board.json` as an embed naming it, 480 by 270; it is a still with the
+mark until the mark is clicked, then playing with the player's controls
+up, then a still again when it ends; it drags as a still by the picture
+beside the mark; the same file dragged from the Assets tab lands with no
+second copy; both draw again after a restart. Unit tests for the file
+names, `videoOf` and the Library's usage count. Looked at in the real
+app: two boxes, one on its last frame and one on its first with the
+mark, and one playing with the controls. Found on the way: the scenario's
+first drag went by the middle of the box, which is the play mark, and
+moved nothing.
+
 ### Step 11 — A highlighter ✅ Shipped 2026-09-20
 
 **What it delivered.** A *Highlighter* button in the top-right row and

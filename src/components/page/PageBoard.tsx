@@ -62,7 +62,7 @@ export function PageBoard({ node }: { node: Node }) {
   // (step 6). This session's only: which page was being looked at is not
   // part of the drawing.
   const [viewedPageId, setViewedPageId] = useState<string | null>(null);
-  const { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture } = useBoardView(node.id, surface);
+  const { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture, placeVideo } = useBoardView(node.id, surface);
   const { fetchBookmark } = useBoardBookmarks();
   const links = useBoardLinks(node.id);
 
@@ -98,6 +98,7 @@ export function PageBoard({ node }: { node: Node }) {
           onOverButton={onOverButton}
           readPictures={readPictures}
           placePicture={placePicture}
+          placeVideo={placeVideo}
           fetchBookmark={fetchBookmark}
           viewedPageId={viewedPageId}
           onViewPage={setViewedPageId}

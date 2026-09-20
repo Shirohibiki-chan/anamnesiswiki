@@ -402,6 +402,75 @@
   color: var(--color-text-secondary);
 }
 
+/* ---- A video on the board (Phase 32, step 12) ----
+   The window's own player in the box, a still with a play mark until it
+   is played. Playing, the box takes the pointer so the player's controls
+   can be used; paused, it is a shape again. */
+
+.board-video {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #000;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  user-select: none;
+}
+
+.board-video-player {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.board-video-missing {
+  padding: 16px;
+  font-size: 14px;
+}
+
+/* The play mark: a disc over the middle of the still, live on a resting
+   box the way a note's links are. */
+.board-video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgb(255 255 255 / 0.85);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.board-video-play:hover {
+  background: rgb(0 0 0 / 0.75);
+}
+
+.board-video-play svg {
+  margin-left: 4px;
+}
+
+/* Playing, the box takes the pointer — the whole box, over the library's
+   own switch, as a note being written in does. */
+.excalidraw__embeddable-container:has(.board-video[data-playing="true"]) .excalidraw__embeddable-container__inner {
+  pointer-events: auto !important;
+}
+
 /* ---- A page opened on the board (Phase 32, step 6) ----
    The fourth presentation: the page's name across the top, its tabs beside
    it when it has more than one, an Open button, and its writing below in
@@ -790,7 +859,7 @@
    reaches the canvas, and a card selects, moves and opens like any shape.
    The "Click to interact" hint goes with it. A page being written in is
    the exception, the way a note being written in is: see above. */
-.excalidraw__embeddable-container:has(.board-card:not([data-writing="true"]), .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
+.excalidraw__embeddable-container:has(.board-card:not([data-writing="true"]):not([data-playing="true"]), .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
   pointer-events: none !important;
 }
 

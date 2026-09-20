@@ -19,6 +19,7 @@ import {
   BOARD_DOT_SPACING,
   BOARD_NOTE_LINK,
   BOARD_PAGE_LINK_PREFIX,
+  BOARD_VIDEO_LINK,
   LIBRARY_DEFAULT_BACKGROUND,
 } from "../constants/board";
 import { UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
@@ -388,11 +389,12 @@ export function lockedButtonAt(elements: readonly unknown[], point: { x: number;
   let found: LockedButton | null = null;
   elements.forEach((entry, index) => {
     const element = entry as BoxLike;
-    // A note's link says only that it is a note; locked, it is a note that
-    // stays put, not a button. A card opened as its page is a page to read,
-    // and locked it is one that stays put — its own Open button is the way
-    // to the page.
-    if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim() || element.link === BOARD_NOTE_LINK) return;
+    // A note's link says only that it is a note, and a video's that it is
+    // a video; locked, each stays put and is not a button. A card opened as
+    // its page is a page to read, and locked it is one that stays put — its
+    // own Open button is the way to the page.
+    if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim()) return;
+    if (element.link === BOARD_NOTE_LINK || element.link === BOARD_VIDEO_LINK) return;
     if (isOpenPageCard(element)) return;
     if (insideBox(element, point)) found = { link: element.link, index };
   });

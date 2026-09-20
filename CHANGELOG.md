@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-20 — Video on a board
+
+### Additions
+
+- **Drop a video file on a board and it plays there.** The file goes into *Library* like a picture would, the board only points at it, and it lands where you dropped it as a wide-screen box showing its first frame with a play mark. Click the mark and it plays with the usual controls; when it is paused or finished it is a still again, which is when it moves, resizes and locks like any shape. MP4, WebM, MOV, M4V and Ogg.
+- **A video in Library can be dragged onto a board** like a picture, with no second copy of the file made. Library shows a video's first frame on its tile and counts a board using it, so it cannot be deleted from under the board.
+
+### Adjustments
+
+- Internal: the drawing library's patch now also keeps its link icon off a video box, as it does off a sticky note. **After updating, restart the launcher rather than reloading the window.**
+
 ## 2026-09-20 — A highlighter for boards
 
 ### Additions
@@ -173,13 +184,3 @@
 - **Double-click a bubble's name to rename it.** Double-clicking anywhere else on the bubble edits the description, as before; renaming no longer needs a button.
 - **Enter finishes a description; Shift+Enter is a new line.** It was the other way round with Ctrl+Enter to finish, which is not what a box that size does anywhere else.
 - **The storyline's buttons and menu rows are Title Case** — *Existing Page*, *Tidy Up*, *Open Page*, *Take Off the Canvas*. Buttons and menu items across the app are meant to be Title Case; this is the storyline's share of that, and the rest of the app follows in its own change.
-
-## 2026-09-15 — The wheel stops jumping
-
-### Renames
-
-- **The graph's *Put it back* is *Reset positions*.** It forgets where you dragged pages and lays the graph out again, and the old name didn't say what it put back.
-
-### Fixes
-
-- **Scrolling the graph no longer jumps.** Every notch was taking one small step backwards before gliding forward — the animation's clock can read a few milliseconds earlier than the wheel event's, and the glide treated that as negative progress. The glide also no longer reads the view back from the screen when a notch arrives, which on a slower machine was a frame behind and snapped the picture back before gliding on.

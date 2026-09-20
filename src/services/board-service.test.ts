@@ -3,7 +3,7 @@
 // reads as, and what a save leaves out.
 import { describe, expect, it } from "vitest";
 import type { Node } from "../constants/schema";
-import { BOARD_CARD_CASCADE, BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK } from "../constants/board";
+import { BOARD_CARD_CASCADE, BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK, BOARD_VIDEO_LINK } from "../constants/board";
 import {
   boardFingerprint,
   boardFromScene,
@@ -293,8 +293,9 @@ describe("lockedButtonAt", () => {
     expect(lockedButtonAt([{ ...card, isDeleted: true }], { x: 150, y: 150 })).toBeNull();
     expect(lockedButtonAt([{ ...card, link: null }], { x: 150, y: 150 })).toBeNull();
     expect(lockedButtonAt([{ ...card, link: "  " }], { x: 150, y: 150 })).toBeNull();
-    // A locked note is a note that stays put, not a button.
+    // A locked note is a note that stays put, not a button; a locked video the same.
     expect(lockedButtonAt([{ ...card, link: BOARD_NOTE_LINK }], { x: 150, y: 150 })).toBeNull();
+    expect(lockedButtonAt([{ ...card, link: BOARD_VIDEO_LINK }], { x: 150, y: 150 })).toBeNull();
     // A locked card opened as its page is a page to read, not a button;
     // the same card at picture size is one.
     expect(lockedButtonAt([{ ...card, type: "embeddable", width: 500, height: 400 }], { x: 150, y: 150 })).toBeNull();
