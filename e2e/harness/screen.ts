@@ -11,6 +11,7 @@
 // **Nothing here reaches past the window into the app's state.** A helper that
 // called a store directly would pass while the thing on screen was broken,
 // which is the entire failure mode this harness exists to catch.
+import { deflateSync } from "node:zlib";
 import type { Locator, Page } from "playwright-core";
 
 const TREE_ROW = ".tree-row";
@@ -1906,6 +1907,7 @@ const BOARD_PUT_BUTTON = ".board-put-button";
 const BOARD_MENU_BUTTON = ".board [data-testid='main-menu-trigger']";
 const BOARD_DOTS_TOGGLE = "[data-testid='board-dots-toggle']";
 const BOARD_PAGE_CARD = "[data-testid='board-page-card']";
+const BOARD_BOOKMARK_CARD = "[data-testid='board-bookmark-card']";
 // The Assets tab's drag type — `ASSET_DRAG_TYPE` in src/constants/paths.ts,
 // written out here the way the tree's page drag is dispatched: what a drop
 // on the board is handed, not what the app calls it.
@@ -3040,6 +3042,83 @@ export async function pasteImageOnBoard(window: Page, png: Uint8Array): Promise<
     carried.items.add(new File([new Uint8Array(bytes)], "pasted.png", { type: "image/png" }));
     board.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: carried }));
   }, Array.from(png));
+}
+
+/**
+ * Pastes text onto the board, as Ctrl+V with it on the clipboard would —
+ * the board's own paste, so a web address becomes a bookmark card where
+ * the mouse is, which is the middle of the canvas here.
+ */
+export async function pasteTextOnBoard(window: Page, text: string): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await canvas.click({ position: { x: box.width / 2, y: box.height - 8 } });
+  await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await canvas.evaluate((board, pasted) => {
+    const carried = new DataTransfer();
+    carried.setData("text/plain", pasted);
+    board.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: carried }));
+  }, text);
+}
+
+/** The bookmark cards on the board, by their titles, in drawing order. */
+export async function boardBookmarkTitles(window: Page): Promise<string[]> {
+  return window.locator(BOARD_BOOKMARK_CARD).evaluateAll((cards) =>
+    cards.map((card) => card.querySelector(".board-bookmark-card-title")?.textContent ?? ""),
+  );
+}
+
+/** Waits until a bookmark card on the board has heard back from its page. */
+export async function waitForBookmarkFetched(window: Page, count: number): Promise<void> {
+  await window.locator(`${BOARD_BOOKMARK_CARD}[data-fetched="true"]`).nth(count - 1).waitFor({ state: "attached", timeout: WAIT_MS });
+}
+
+/** A small real PNG — a 12×8 orange block — for anything that refuses a file that will not decode. */
+export function smallPng(): Uint8Array {
+  const width = 12;
+  const height = 8;
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (bytes: Buffer) => {
+    let c = 0xffffffff;
+    for (const byte of bytes) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type: string, data: Buffer) => {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length, 0);
+    const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
+    const sum = Buffer.alloc(4);
+    sum.writeUInt32BE(crc(body), 0);
+    return Buffer.concat([length, body, sum]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 2;
+  const raw = Buffer.alloc(height * (width * 3 + 1));
+  let offset = 0;
+  for (let y = 0; y < height; y++) {
+    raw[offset++] = 0;
+    for (let x = 0; x < width; x++) {
+      raw[offset++] = 230;
+      raw[offset++] = 120;
+      raw[offset++] = 40;
+    }
+  }
+  return new Uint8Array(
+    Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      chunk("IHDR", header),
+      chunk("IDAT", deflateSync(raw)),
+      chunk("IEND", Buffer.alloc(0)),
+    ]),
+  );
 }
 
 /** Waits until the board shows at least `count` cards — on a fresh load they arrive after the library does. */

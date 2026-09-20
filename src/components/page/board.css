@@ -290,6 +290,95 @@
   color: var(--color-text-secondary);
 }
 
+/* ---- Bookmark cards (Phase 32, step 5) ----
+   The same box and the same three presentations as a page card, drawn from
+   what the page said about itself when its address was pasted. */
+
+.board-bookmark-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  user-select: none;
+}
+
+/* The picture takes the top half and a bit, the way a bookmark card does
+   everywhere she has seen one; the words sit under it. */
+.board-bookmark-card-picture {
+  flex: 0 0 50%;
+  width: 100%;
+  min-height: 0;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.board-bookmark-card-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 8px 12px;
+  overflow: hidden;
+}
+
+/* Line counts are set inline by the card, from its box. */
+.board-bookmark-card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.board-bookmark-card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.board-bookmark-card-site {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  overflow: hidden;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+
+.board-bookmark-card[data-presentation="icon"] {
+  align-items: center;
+  justify-content: center;
+}
+
+.board-bookmark-card[data-presentation="row"] .board-bookmark-card-text {
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.board-bookmark-card[data-presentation="row"] .board-bookmark-card-title {
+  -webkit-line-clamp: 1;
+}
+
 /* The library's own link popup would show a selected card's raw address;
    the card's page is named by the top-right button instead. */
 .board[data-card-selected="true"] .excalidraw-hyperlinkContainer {
@@ -304,11 +393,11 @@
    (`!important` over the inline style it sets when woken), every click
    reaches the canvas, and a card selects, moves and opens like any shape.
    The "Click to interact" hint goes with it. */
-.excalidraw__embeddable-container:has(.board-page-card) .excalidraw__embeddable-container__inner {
+.excalidraw__embeddable-container:has(.board-card) .excalidraw__embeddable-container__inner {
   pointer-events: none !important;
 }
 
-.excalidraw__embeddable-container:has(.board-page-card) .excalidraw__embeddable-hint {
+.excalidraw__embeddable-container:has(.board-card) .excalidraw__embeddable-hint {
   display: none;
 }
 

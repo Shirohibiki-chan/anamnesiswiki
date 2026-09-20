@@ -51,10 +51,17 @@ describe("a board picture's two forms", () => {
     expect(fittedSize(0, 0, 480)).toEqual({ width: 0, height: 0 });
   });
 
-  it("lists the assets a board's pictures live in, each once", () => {
+  it("lists the assets a board's pictures live in, each once — the pictures on it and the ones on its bookmark cards", () => {
+    const bookmark = (id: string, image: string | null, isDeleted = false) => ({
+      id,
+      type: "embeddable",
+      isDeleted,
+      link: "https://example.com",
+      customData: { bookmark: { url: "https://example.com", image } },
+    });
     const board = {
       version: 1 as const,
-      elements: [],
+      elements: [bookmark("b1", "three.png"), bookmark("b2", "one.png"), bookmark("b3", null), bookmark("b4", "gone.png", true)],
       appState: {},
       files: {
         a: { id: "a", mimeType: "image/png", asset: "one.png" },
@@ -64,6 +71,6 @@ describe("a board picture's two forms", () => {
       },
       dots: true,
     };
-    expect(boardAssetUses(board).sort()).toEqual(["one.png", "two.png"]);
+    expect(boardAssetUses(board).sort()).toEqual(["one.png", "three.png", "two.png"]);
   });
 });

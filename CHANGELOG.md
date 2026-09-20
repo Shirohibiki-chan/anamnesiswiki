@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-20 — Bookmark cards on a board
+
+### Additions
+
+- **Paste a web address onto a board and it becomes a card.** The card fills in with the page's title, description, picture and site name a moment later, and it lands where the mouse is. Click a card twice to open the address in your browser — the first click selects it, like any shape — or lock the card and one click does it. Before, a pasted address was a line of text with a link on it.
+- **The card keeps what it fetched.** Title, words and picture are stored on the board, and the picture goes into *Library* like any other, so the card draws the same with no internet, and in a world you hand to someone else. A page that will not answer, or says nothing about itself, gives a card with just the address on it.
+- Only a lone address becomes a card; a sentence with an address in it is still pasted as text.
+
 ## 2026-09-19 — A board's pictures live in the Library
 
 ### Changes
@@ -229,15 +237,3 @@
 
 - **This is a first cut — the spike that answers "does a real whiteboard library fit in a page here", and it does.** It is drawn by Excalidraw, which is MIT-licensed like the app. What it deliberately does not do yet: a picture dropped on a board is kept inside `_board.json` rather than in the world's picture library; a shape can't link to a page; a board doesn't appear in the Markdown, website or LegendKeeper exports; and the board's light/dark look is read from your theme when the page opens, not while it's open. The follow-ups are listed in `docs/ideas.md` § Canvas / board / whiteboard.
 - **It is the storyline's sibling, not its replacement.** A storyline knows its cards are pages and its arrows are the order of events; a board knows nothing about the world, and that's what it's for.
-
-## 2026-09-13 — a Dashboard template, and the snippet that dresses it
-
-### Additions
-
-- **Dashboard, a new template.** Pick it for a new page and the page arrives built: a Quick capture box across the top, Recently edited and Shortcuts side by side, a *Jump to* row of links you fill in, and a line under it all to write on. Everything on it is an ordinary block — retitle, recolour, drag, or take any of it out — and the page is an ordinary page, so it can be your project home, hold the thoughts it captures, or be saved as a template of your own. It's in the Templates panel like the rest, so this world's copy can be edited and *Put back to the original*.
-- **`dashboard.css`, written into your snippets folder once and switched on.** It's what makes a Dashboard page look like one — cards, small-caps headings, rows that light up — and it's a plain file: open it, change it, switch it off in Settings → Snippets, or delete it, and the app won't put it back. It reaches a page through `data-template="dashboard"` and through the style name `dashboard`, so it's also the worked example of both halves of the style-name feature: name any page *dashboard* and it gets the same look.
-
-### Notes
-
-- **This closes Phase 30.** The dashboard proves the four parts meet: the capture box, the per-page style name, the two home-page blocks, and a template that ships with blocks already in its body — the first template to.
-- **The snippet is written once, on the first scan after updating.** If you already have a `dashboard.css` of your own, yours is left alone.

@@ -8,7 +8,6 @@
 // again after a restart, read back out of the library.
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { deflateSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
 import {
@@ -16,6 +15,7 @@ import {
   dropAssetOntoBoard,
   makeBoard,
   pasteImageOnBoard,
+  smallPng,
   waitForBoard,
   waitForWorld,
 } from "./harness/screen";
@@ -60,53 +60,6 @@ async function assetsOnDisk(app: RunningApp): Promise<string[]> {
   return (await fs.readdir(path.join(app.world!.path, "assets"))).filter((name) => /\.(png|jpe?g|gif|webp)$/i.test(name)).sort();
 }
 
-/** A small real PNG — a 12×8 orange block — since the library refuses a file that will not decode. */
-function png(): Uint8Array {
-  const width = 12;
-  const height = 8;
-  const crcTable = Array.from({ length: 256 }, (_, n) => {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    return c >>> 0;
-  });
-  const crc = (bytes: Buffer) => {
-    let c = 0xffffffff;
-    for (const byte of bytes) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8);
-    return (c ^ 0xffffffff) >>> 0;
-  };
-  const chunk = (type: string, data: Buffer) => {
-    const length = Buffer.alloc(4);
-    length.writeUInt32BE(data.length, 0);
-    const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
-    const sum = Buffer.alloc(4);
-    sum.writeUInt32BE(crc(body), 0);
-    return Buffer.concat([length, body, sum]);
-  };
-  const header = Buffer.alloc(13);
-  header.writeUInt32BE(width, 0);
-  header.writeUInt32BE(height, 4);
-  header[8] = 8;
-  header[9] = 2;
-  const raw = Buffer.alloc(height * (width * 3 + 1));
-  let offset = 0;
-  for (let y = 0; y < height; y++) {
-    raw[offset++] = 0;
-    for (let x = 0; x < width; x++) {
-      raw[offset++] = 230;
-      raw[offset++] = 120;
-      raw[offset++] = 40;
-    }
-  }
-  return new Uint8Array(
-    Buffer.concat([
-      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-      chunk("IHDR", header),
-      chunk("IDAT", deflateSync(raw)),
-      chunk("IEND", Buffer.alloc(0)),
-    ]),
-  );
-}
-
 describe("pictures on a board", () => {
   let app: RunningApp;
   let libraryBefore: string[];
@@ -145,7 +98,7 @@ describe("pictures on a board", () => {
   });
 
   it("puts a pasted picture into the library and points at it", async () => {
-    await pasteImageOnBoard(app.window, png());
+    await pasteImageOnBoard(app.window, smallPng());
     const board = await boardOnDisk(app);
     const pictures = board.elements.filter((shape) => shape.type === "image");
     expect(pictures).toHaveLength(2);
@@ -187,7 +140,7 @@ describe("pictures on a board", () => {
     board.files["legacy-file"] = {
       id: "legacy-file",
       mimeType: "image/png",
-      dataURL: `data:image/png;base64,${Buffer.from(png()).toString("base64")}`,
+      dataURL: `data:image/png;base64,${Buffer.from(smallPng()).toString("base64")}`,
       created: Date.now(),
     };
     await fs.writeFile(file, JSON.stringify(board));

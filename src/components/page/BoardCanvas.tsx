@@ -34,8 +34,10 @@ import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_PAGE_LINK_PREFIX, BOARD_PICT
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
 import { cardPageId, cardPlacement, draggedPageIds, elementLink, isPageCard, lockedButtonAt } from "../../services/board-service";
+import { bookmarkOf, isBookmarkCard, placeholderBookmark, webAddressIn, type Bookmark } from "../../services/bookmark-service";
 import type { BoardLinks } from "../../hooks/use-board-links";
 import { NodeIcon } from "../blocks/IconPicker";
+import { BoardBookmarkCard } from "./BoardBookmarkCard";
 import { BoardPageCard } from "./BoardPageCard";
 
 // The app holds a drawing opaquely (see `Board` in constants/schema.ts); this
@@ -62,6 +64,8 @@ type Props = {
   readPictures: () => Promise<PictureFile[]>;
   /** A picture from the Assets tab, as the library takes it, or null if its file will not read. */
   placePicture: (fileName: string) => Promise<PictureFile | null>;
+  /** What a web address's page says about itself, with its picture put in the library. Never rejects. */
+  fetchBookmark: (url: string) => Promise<Bookmark>;
 };
 
 /** Which picker is open and what has been typed into it so far; null when closed. */
@@ -85,6 +89,25 @@ function pageCardElement(pageId: string, x: number, y: number): ExcalidrawElemen
     { type: "rectangle", x, y, width: BOARD_CARD_WIDTH, height: BOARD_CARD_HEIGHT, strokeWidth: 1, roundness: null },
   ]);
   return { ...rectangle, type: "embeddable", link: `${BOARD_PAGE_LINK_PREFIX}${pageId}` } as ExcalidrawElement;
+}
+
+/**
+ * A bookmark card, as the library's own element: an embed whose link is
+ * the web address and whose `customData` is what the card draws. Made the
+ * way a page card is, from a rectangle skeleton retyped.
+ */
+function bookmarkCardElement(bookmark: Bookmark, x: number, y: number): ExcalidrawElement {
+  const [rectangle] = convertToExcalidrawElements([
+    { type: "rectangle", x, y, width: BOARD_CARD_WIDTH, height: BOARD_CARD_HEIGHT, strokeWidth: 1, roundness: null },
+  ]);
+  return { ...rectangle, type: "embeddable", link: bookmark.url, customData: { bookmark } } as ExcalidrawElement;
+}
+
+/** Whether the keyboard is in something that takes typing — a paste there is that box's, not the board's. */
+function isWritable(element: Element | null): boolean {
+  if (!element) return false;
+  const tag = element.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || (element as HTMLElement).isContentEditable;
 }
 
 /**
@@ -124,6 +147,7 @@ export default function BoardCanvas({
   onOverButton,
   readPictures,
   placePicture,
+  fetchBookmark,
 }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
@@ -132,6 +156,10 @@ export default function BoardCanvas({
   // The last view the dots were told about, so a change report that moved
   // nothing costs a string compare.
   const viewRef = useRef("");
+  // Where the mouse last was over the board, in the window's coordinates,
+  // so a pasted address lands under it — the library's own rule for a
+  // pasted picture.
+  const mouseRef = useRef<{ x: number; y: number } | null>(null);
 
   // Clicking anywhere else closes the picker, the storyline picker's rule.
   useEffect(() => {
@@ -198,6 +226,67 @@ export default function BoardCanvas({
     },
     [placePicture],
   );
+
+  /**
+   * Puts a bookmark card for `url` on the board with its middle at
+   * `centre`, drawn from its address at once and from what the page says
+   * about itself when that arrives. The card is selected like a dropped
+   * one; the page's answer is written into it outside the undo history,
+   * so an undo takes the card, not the answer.
+   */
+  const addBookmark = useCallback(
+    (url: string, centre: { x: number; y: number }) => {
+      const api = apiRef.current;
+      if (!api) return;
+      const card = bookmarkCardElement(placeholderBookmark(url), centre.x - BOARD_CARD_WIDTH / 2, centre.y - BOARD_CARD_HEIGHT / 2);
+      api.updateScene({
+        elements: [...api.getSceneElements(), card],
+        appState: { selectedElementIds: { [card.id]: true } },
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+      void fetchBookmark(url).then((bookmark) => {
+        const current = apiRef.current;
+        if (!current) return;
+        current.updateScene({
+          elements: current.getSceneElements().map((element) => (element.id === card.id ? newElementWith(element, { customData: { bookmark } }) : element)),
+          captureUpdate: CaptureUpdateAction.NEVER,
+        });
+      });
+    },
+    [fetchBookmark],
+  );
+
+  // A web address pasted on the board is a bookmark card where the mouse
+  // is, or mid-view when the mouse is elsewhere. Taken ahead of the
+  // library's own paste, which would make it a line of text, and only when
+  // the paste is a lone address with nothing else on the clipboard and the
+  // keyboard is the board's — an address pasted into the picker's box is
+  // the picker's.
+  useEffect(() => {
+    if (!surface) return;
+    function onMouseMove(event: MouseEvent) {
+      mouseRef.current = { x: event.clientX, y: event.clientY };
+    }
+    function onPaste(event: ClipboardEvent) {
+      const api = apiRef.current;
+      const data = event.clipboardData;
+      if (!api || !data || data.files.length > 0 || isWritable(document.activeElement)) return;
+      const url = webAddressIn(data.getData("text/plain"));
+      if (!url) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const mouse = mouseRef.current;
+      const under = mouse ? document.elementFromPoint(mouse.x, mouse.y) : null;
+      const overCanvas = !!under && under instanceof HTMLCanvasElement && !!surface?.contains(under);
+      addBookmark(url, overCanvas && mouse ? viewportCoordsToSceneCoords({ clientX: mouse.x, clientY: mouse.y }, api.getAppState()) : viewCentre(api.getAppState()));
+    }
+    surface.addEventListener("mousemove", onMouseMove);
+    surface.addEventListener("paste", onPaste, true);
+    return () => {
+      surface.removeEventListener("mousemove", onMouseMove);
+      surface.removeEventListener("paste", onPaste, true);
+    };
+  }, [surface, addBookmark]);
 
   /** A pick from the *Put a Page on It* picker: the card lands mid-view and the box stays open for the next. */
   function putPageOn(pageId: string) {
@@ -277,7 +366,7 @@ export default function BoardCanvas({
         // mid-gesture, made the library drop the next box selection's first
         // element.
         const woken = appState.activeEmbeddable;
-        if (woken?.state === "active" && isPageCard(woken.element)) {
+        if (woken?.state === "active" && (isPageCard(woken.element) || isBookmarkCard(woken.element))) {
           window.setTimeout(() => apiRef.current?.updateScene({ appState: { activeEmbeddable: null } }), 0);
         }
         // The dots underneath follow the view. Told from here rather than
@@ -322,6 +411,7 @@ export default function BoardCanvas({
         if (!hit || pointerDownState.hit.wasAddedToSelection) return;
         const pageId = cardPageId(hit);
         if (pageId) links.openLink(`${BOARD_PAGE_LINK_PREFIX}${pageId}`);
+        else if (isBookmarkCard(hit) && hit.link) links.openLink(hit.link);
       }}
       // The cursor says a locked linked shape is a button before it is
       // clicked. Told on every pointer move; the test is a walk over the
@@ -330,13 +420,18 @@ export default function BoardCanvas({
         const api = apiRef.current;
         onOverButton(!!api && lockedButtonAt(api.getSceneElements(), pointer) !== null);
       }}
-      // An embed whose address is a page link is a card of ours; anything
-      // else is left to the library's own list of sites it knows.
-      validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) ? true : undefined)}
+      // An embed whose address is a page link is a card of ours, and so is
+      // one whose address is a web page: a bookmark. The library asks by
+      // the address alone and asks once, so every web address is taken —
+      // an embed of the library's own with one, from its embed tool, keeps
+      // its own drawing, since the card is drawn only for a bookmark.
+      validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) || /^https?:\/\//i.test(link) ? true : undefined)}
       renderEmbeddable={(element) => {
         const pageId = cardPageId(element);
-        if (!pageId) return null;
-        return <BoardPageCard pageId={pageId} width={element.width} height={element.height} />;
+        if (pageId) return <BoardPageCard pageId={pageId} width={element.width} height={element.height} />;
+        const bookmark = bookmarkOf(element);
+        if (bookmark) return <BoardBookmarkCard bookmark={bookmark} width={element.width} height={element.height} />;
+        return null;
       }}
       // The library's own open/save-to-file actions are the desktop app's
       // job, not the board's: the drawing is already saved, in the page.

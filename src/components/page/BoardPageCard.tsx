@@ -39,7 +39,7 @@ export function BoardPageCard({ pageId, width, height }: Props) {
     // The page was deleted after the card was made. Say so on the card
     // rather than drawing a blank — a blank box on a board is a bug report.
     return (
-      <div className="board-page-card board-page-card-missing" data-presentation={presentation} data-testid="board-page-card">
+      <div className="board-card board-page-card board-page-card-missing" data-presentation={presentation} data-testid="board-page-card">
         <span className="board-page-card-name">This page is gone</span>
       </div>
     );
@@ -49,7 +49,7 @@ export function BoardPageCard({ pageId, width, height }: Props) {
 
   return (
     <div
-      className="board-page-card"
+      className="board-card board-page-card"
       data-presentation={presentation}
       data-page-id={page.id}
       data-page-name={page.name}

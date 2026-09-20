@@ -6,6 +6,7 @@
 import { Suspense, lazy, useCallback, useRef, useState } from "react";
 import type { Node } from "../../constants/schema";
 import { dotsLayout } from "../../services/board-service";
+import { useBoardBookmarks } from "../../hooks/use-board-bookmarks";
 import { useBoardView } from "../../hooks/use-board-view";
 import { useBoardLinks } from "../../hooks/use-board-links";
 import "./board.css";
@@ -57,6 +58,7 @@ export function PageBoard({ node }: { node: Node }) {
   // library's link popup for one, since the address in it is not for reading.
   const [cardSelected, setCardSelected] = useState(false);
   const { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture } = useBoardView(node.id, surface);
+  const { fetchBookmark } = useBoardBookmarks();
   const links = useBoardLinks(node.id);
 
   return (
@@ -83,6 +85,7 @@ export function PageBoard({ node }: { node: Node }) {
           onOverButton={onOverButton}
           readPictures={readPictures}
           placePicture={placePicture}
+          fetchBookmark={fetchBookmark}
         />
       </Suspense>
       {/* A link that went nowhere, said once and briefly — the storyline's

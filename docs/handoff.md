@@ -518,6 +518,40 @@ Board spike, closed 2026-09-13. What binds the code:
   a *frame* holds, so the new rule is behind a flag only the marquee sets;
   a frame still holds only what is wholly inside it.
 
+- **A bookmark card is an embed whose link is the address and whose
+  `customData.bookmark` is what it draws** (Phase 32, step 5) — the plan's
+  one named exception to "the app never reads inside an element", and the
+  same mechanism as a page card. `services/bookmark-service.ts` says what
+  a lone address is (`webAddressIn`: the whole paste, `http(s)`, nothing
+  else — a sentence with an address in it stays the library's text), what
+  a page's HTML says about itself (`pageSummary`: Open Graph, then
+  Twitter's tags, then `<title>` and the plain description, the picture's
+  address resolved against the page's and only if it is a web address),
+  and what a picture's first bytes say it is (`imageTypeOf`, because a
+  server will answer a picture's address with an HTML page). The hook
+  (`use-board-bookmarks.ts`) fetches through `hostFetch` — the main
+  process, so the page's origin rules never apply — reads at most the
+  first half-megabyte for the summary, and puts the picture into `assets/`
+  through `uploadAsset`, so a bookmark's picture is a library picture like
+  any other and the usage index counts it (`boardAssetUses` reads it off
+  the element). The paste is taken on the board's box in the capture
+  phase, ahead of the library's, only when the clipboard is a lone address
+  with no files and the keyboard is not in a box that takes typing; the
+  card lands under the mouse when the mouse is over the canvas (a
+  `mousemove` on the box remembers where) and mid-view otherwise. It is
+  made at once from the address alone with `fetched: false`, and the
+  page's answer is written into it with `CaptureUpdateAction.NEVER`, so an
+  undo takes the card and never leaves a half-fetched one. The library
+  validates an embed by its address alone and once per element, so
+  `validateEmbeddable` says yes to every web address; a bookmark draws the
+  card and any other embed with a web address falls through to the
+  library's own iframe. Opening is the page card's rule: second click, or
+  first when locked, through `links.openLink`, which sends a web address
+  to the browser. Not done: the library's link popup still shows for a
+  selected bookmark (it shows the address, which for a bookmark is
+  honest), and a page that answers slowly keeps "Looking it up…" on the
+  card with no way to give up early.
+
 - **A board's pictures are assets, and the board file holds only their
   names** (Phase 32, step 4). The library takes a picture as a data URL in
   its `files` map and hands the map back on every change; the spike wrote
