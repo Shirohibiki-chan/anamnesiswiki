@@ -3412,3 +3412,70 @@ export async function hoverBoardCard(window: Page, name: string): Promise<void> 
   await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await window.mouse.move(box.x + box.width / 2 + 1, box.y + box.height / 2 + 1);
 }
+
+// ---- A page opened on a board (Phase 32, step 6) ----
+
+const BOARD_OPEN_PAGE_BODY = ".board-open-page-body";
+const BOARD_OPEN_PAGE_OPEN = ".board-open-page-open";
+const BOARD_OPEN_PAGE_TAB = ".board-open-page-tab";
+
+/** Whether the card for `name`, opened as its page, has the page open for reading — the box holding the pointer and the keyboard. */
+export async function boardOpenPageIsBeingRead(window: Page, name: string): Promise<boolean> {
+  return (await boardCard(window, name).first().getAttribute("data-reading")) === "true";
+}
+
+/** The writing the opened page for `name` is showing, as one string. */
+export async function boardOpenPageText(window: Page, name: string): Promise<string> {
+  const body = boardCard(window, name).first().locator(BOARD_OPEN_PAGE_BODY);
+  return ((await body.textContent()) ?? "").replace(/\s+/g, " ").trim();
+}
+
+/** The tab labels the opened page for `name` offers, in order — none when the page has one tab. */
+export async function boardOpenPageTabs(window: Page, name: string): Promise<string[]> {
+  return boardCard(window, name).first().locator(BOARD_OPEN_PAGE_TAB).allTextContents();
+}
+
+/** Picks the tab reading `label` on the opened page for `name`. */
+export async function pickBoardOpenPageTab(window: Page, name: string, label: string): Promise<void> {
+  await boardCard(window, name).first().locator(BOARD_OPEN_PAGE_TAB).filter({ hasText: label }).first().click();
+}
+
+/** Clicks the opened page's Open button — the page in full. */
+export async function openBoardOpenPage(window: Page, name: string): Promise<void> {
+  await boardCard(window, name).first().locator(BOARD_OPEN_PAGE_OPEN).click();
+}
+
+/**
+ * Double-clicks the card for `name` at its middle — the library's gesture
+ * for waking an embed — and waits for the page to be open for reading with
+ * the keyboard in it.
+ */
+export async function doubleClickBoardCard(window: Page, name: string): Promise<void> {
+  const box = await boardCardBox(window, name);
+  await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await window.waitForFunction(
+    ({ selector, wanted }) => {
+      const card = [...document.querySelectorAll<HTMLElement>(selector)].find((candidate) => candidate.getAttribute("data-page-name") === wanted);
+      const body = card?.querySelector<HTMLElement>(".board-open-page-body");
+      return card?.getAttribute("data-reading") === "true" && !!body && body.contains(document.activeElement);
+    },
+    { selector: BOARD_PAGE_CARD, wanted: name },
+    { timeout: WAIT_MS },
+  );
+  await settlePastWake(window);
+}
+
+/** How far down the opened page for `name` is scrolled, and how far it could be. */
+export async function boardOpenPageScroll(window: Page, name: string): Promise<{ top: number; room: number }> {
+  return boardCard(window, name)
+    .first()
+    .locator(BOARD_OPEN_PAGE_BODY)
+    .evaluate((body) => ({ top: body.scrollTop, room: body.scrollHeight - body.clientHeight }));
+}
+
+/** Turns the wheel over the middle of the card for `name`, `dy` down. */
+export async function wheelOverBoardCard(window: Page, name: string, dy: number): Promise<void> {
+  const box = await boardCardBox(window, name);
+  await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await window.mouse.wheel(0, dy);
+}

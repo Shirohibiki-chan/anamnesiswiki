@@ -290,6 +290,125 @@
   color: var(--color-text-secondary);
 }
 
+/* ---- A page opened on the board (Phase 32, step 6) ----
+   The fourth presentation: the page's name across the top, its tabs beside
+   it when it has more than one, an Open button, and its writing below in
+   the page's own editor with the typing off. Sizes are in the drawing's
+   units like the rest of the card, so the page zooms with the board. */
+
+.board-open-page {
+  flex-direction: column;
+}
+
+.board-open-page-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.board-open-page-head .board-page-card-name {
+  flex: 1 1 auto;
+  -webkit-line-clamp: 1;
+}
+
+.board-open-page-tabs {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  max-width: 50%;
+  overflow: hidden;
+}
+
+.board-open-page-tab {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.board-open-page-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.board-open-page-tab[aria-selected="true"] {
+  background: var(--color-accent-faint);
+  color: var(--color-text-primary);
+}
+
+/* A hidden tab is drawn the way the page's own strip draws it: there, dimmer. */
+.board-open-page-tab[data-hidden="true"] {
+  opacity: 0.55;
+}
+
+/* The way to the page in full. Live on a resting card too — the one part
+   of it that takes the pointer, as a resting note's links are — so it needs
+   no waking, and it is the only thing a locked opened page still does. */
+.board-open-page-open {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-edge);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.board-open-page-open:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-light);
+}
+
+.board-open-page-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+}
+
+.board-open-page-empty {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* The writing sits in from the edge by a card's padding rather than the
+   editor's own gutter, which is room for the side handles that are off here. */
+.board-open-page .bn-editor {
+  padding-inline: 16px;
+  padding-block: 12px;
+}
+
+/* Being read, the page takes the pointer and the keyboard — the whole box,
+   over the library's own switch, as a note being written in does — and
+   says so with the same ring. */
+.excalidraw__embeddable-container:has(.board-open-page[data-reading="true"]) .excalidraw__embeddable-container__inner {
+  pointer-events: auto !important;
+}
+
+.board-open-page[data-reading="true"] {
+  user-select: text;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.board-open-page[data-reading="true"] .board-open-page-body {
+  cursor: auto;
+}
+
 /* ---- Bookmark cards (Phase 32, step 5) ----
    The same box and the same three presentations as a page card, drawn from
    what the page said about itself when its address was pasted. */
@@ -541,8 +660,9 @@
    open. So the card's box stays inert whatever the library decides
    (`!important` over the inline style it sets when woken), every click
    reaches the canvas, and a card selects, moves and opens like any shape.
-   The "Click to interact" hint goes with it. */
-.excalidraw__embeddable-container:has(.board-card, .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
+   The "Click to interact" hint goes with it. A page opened for reading is
+   the exception, the way a note being written in is: see above. */
+.excalidraw__embeddable-container:has(.board-card:not([data-reading="true"]), .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
   pointer-events: none !important;
 }
 

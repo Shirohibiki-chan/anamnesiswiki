@@ -126,7 +126,7 @@
 | The full-size picture viewer | `src/components/shell/Lightbox.tsx` |
 | What one page is connected to, and the whole universe, drawn over the page | `src/components/page/GraphOverlay.tsx` |
 | A storyline's canvas — scenes in narrative order, notes, labelled stretches | `src/components/page/PageStoryline.tsx` |
-| A board's whiteboard — the drawing, Expand, the link and put-a-page pickers, and the page cards drawn inside the library's embeds | `src/components/page/PageBoard.tsx`, `BoardCanvas.tsx`, `BoardPageCard.tsx`, `src/services/board-service.ts` |
+| A board's whiteboard — the drawing, Expand, the link and put-a-page pickers, and the page cards drawn inside the library's embeds; a card stretched to a page's worth is the page, read through the page's own editor with the typing off | `src/components/page/PageBoard.tsx`, `BoardCanvas.tsx`, `BoardPageCard.tsx`, `BoardOpenPage.tsx`, `PageReader.tsx`, `src/hooks/use-page-reader.ts`, `src/services/board-service.ts` |
 | Start from a template, and managing pinned projects | `src/components/start/TemplatePickerDialog.tsx`, `src/components/start/ManagePinsDialog.tsx` |
 | All properties & tags | `src/components/properties/AllPropertiesModal.tsx` |
 

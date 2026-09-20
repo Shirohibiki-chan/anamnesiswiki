@@ -496,6 +496,45 @@ Board spike, closed 2026-09-13. What binds the code:
   library's own inline one. An unlocked card keeps its two clicks: the
   first selects, as for any shape.
 
+- **A page card past 400 by 300 is the page itself, drawn by the page's
+  own editor with the typing off** (Phase 32, step 6). The fourth
+  presentation, read off the box like the other three (`cardPresentation`
+  returns `"page"`; `isOpenPageCard` asks it of an element).
+  `BoardOpenPage` draws the name, the tabs and an *Open* button over
+  `PageReader`, which is `BlockNoteView` with `editable={false}` on an
+  editor from `usePageReader` — the page's schema, the page's asset
+  resolver, the same block renderers `Editor.tsx` hands down. **It is the
+  real editor and not a second renderer on purpose:** every block the page
+  can hold is drawn by the block's own component, so a change to a block
+  reaches the board for free, and turning the typing on is a prop rather
+  than a build. It reads the tab's stored content once and `replaceBlocks`
+  when that object changes. Reading is a state the canvas owns, on the
+  note's pattern exactly: `readingCardId` and its ref, set from the
+  library's woken state with the same drag-and-first-click gates, ended
+  from a deferred check when the card is deselected, deleted or shrunk
+  back below the threshold, and on Escape from the body. Resting, the
+  card is inert like any card; being read, `board.css` lets the inner
+  take the pointer (the "never takes the pointer" rule excludes a card
+  with `data-reading="true"`), and the body wears `data-type="wysiwyg"`
+  and holds the focus, so the library's Delete and tool keys step aside —
+  `isWritable` in the canvas counts that marker too, so N does not drop a
+  note into a page being read. The library's wheel handler ignores any
+  target that is not its canvas, so the body scrolls with no help. An
+  opened page **does not open its page on the second click** — that click
+  starts reading — and a locked one is not a button (`lockedButtonAt`
+  skips it): locked, it is drawn as being read from the start, since the
+  library will never wake a locked shape, and its Open button is the way
+  to the page. The Open button is `pointer-events: auto` under the inert
+  box, as a resting note's links are. A plain link in the writing is
+  caught on the body's click and sent through `links.openLink`, because
+  read-only, nothing else stands between an `<a href>` and the window
+  navigating to it; mention chips open their pages themselves. Known and
+  accepted: a property field in an infobox on the opened page is live
+  while the page is being read (the block components edit the store
+  directly and have no read-only mode), and a mention chip with the
+  keyboard focus is not a `wysiwyg` target, so Delete on one would delete
+  the card.
+
 - **The drawing library is patched, and `scripts/excalidraw-patch.mjs` is
   the readable form of the patch.** `patches/@excalidraw__excalidraw@0.18.1.patch`
   is applied by `pnpm install` (pnpm's `patchedDependencies`, in

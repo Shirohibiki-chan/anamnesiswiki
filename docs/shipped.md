@@ -6933,3 +6933,39 @@ the key events starved the timer of its turn, so the note never grew
 the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
+
+### Step 6 — A page opened on the board, the reading half ✅ Shipped 2026-09-20
+
+**What it delivered.** A page card stretched past 400 by 300 units is
+the page: its icon and name across the top, its tabs beside them when it
+has more than one, an *Open* button, and its writing filling the box —
+drawn by the page's own editor with the typing off, so callouts, columns,
+pictures, mention chips and infoboxes all draw as the page's own tab
+draws them. Double-click, or a second click on a selected one, opens it
+for reading: the box takes the wheel and the keyboard, its words select,
+its links and mentions open; Escape or a click elsewhere hands the board
+back. Locked, it is read from the start and its button is the way out.
+Shrunk back, it is a picture card again; nothing is stored.
+
+**How.** The fourth presentation of the page card, off the box like the
+other three; `PageReader` over `usePageReader`; reading as a canvas-owned
+state on the note's pattern. `docs/handoff.md` § Boards has the rules.
+The editable half is the open question, put to her with this running.
+
+**Verified.** `e2e/a-board-open-pages.e2e.ts`: a card stretched past a
+page's worth shows the first line the page holds on disk; the first click
+selects only, the second opens it for reading with the keyboard in it and
+Escape ends that; the wheel scrolls the page and the board stays put; the
+Open button reaches the page in full; shrunk back it is a picture card and
+the file holds one embed with the page link and the new size; locked, it
+reads without being woken, a click on its middle stays on the board, and
+Open still opens. Looked at in the real app: the card with its head, the
+two tabs, the writing with an info callout and a quote, and the accent
+ring while being read. Found on the way: the "never takes the pointer"
+rule and the reading rule had the same specificity, and the never rule
+came later in the file, so the first wheel over a page being read panned
+the board instead — the card sailed up under the toolbar and every
+scenario after fell over on it; the never rule now excludes a card being
+read. And the scenario itself had to move the card up and left before
+growing it: a page's worth grows from the top-left corner, and from the
+middle of the view the far corner's handle was off the canvas.

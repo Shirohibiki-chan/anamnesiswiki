@@ -12,6 +12,7 @@ import {
   cardPageId,
   cardPlacement,
   cardPresentation,
+  isOpenPageCard,
   createBoard,
   dotsLayout,
   draggedPageIds,
@@ -163,11 +164,29 @@ describe("isPageCard / cardPageId", () => {
 describe("cardPresentation", () => {
   it("is the icon when narrow, a row when short, and the picture otherwise", () => {
     expect(cardPresentation(BOARD_CARD_WIDTH, BOARD_CARD_HEIGHT)).toBe("picture");
-    expect(cardPresentation(400, 300)).toBe("picture");
+    expect(cardPresentation(380, 280)).toBe("picture");
     expect(cardPresentation(240, 60)).toBe("row");
     expect(cardPresentation(80, 80)).toBe("icon");
     // Narrow wins over short: a tiny square is the icon, not a squashed row.
     expect(cardPresentation(60, 40)).toBe("icon");
+  });
+
+  it("is the page itself once stretched past a page's worth both ways (step 6)", () => {
+    expect(cardPresentation(400, 300)).toBe("page");
+    expect(cardPresentation(900, 700)).toBe("page");
+    // One way is not enough: a wide short card and a tall narrow one are
+    // still picture cards.
+    expect(cardPresentation(900, 299)).toBe("picture");
+    expect(cardPresentation(399, 700)).toBe("picture");
+  });
+});
+
+describe("isOpenPageCard", () => {
+  it("is a page card at the page presentation, and nothing else", () => {
+    expect(isOpenPageCard({ type: "embeddable", link: pageLinkFor("p1"), width: 500, height: 400 })).toBe(true);
+    expect(isOpenPageCard({ type: "embeddable", link: pageLinkFor("p1"), width: 240, height: 160 })).toBe(false);
+    expect(isOpenPageCard({ type: "embeddable", link: "https://example.org", width: 500, height: 400 })).toBe(false);
+    expect(isOpenPageCard({ type: "rectangle", link: pageLinkFor("p1"), width: 500, height: 400 })).toBe(false);
   });
 });
 
@@ -242,6 +261,10 @@ describe("lockedButtonAt", () => {
     expect(lockedButtonAt([{ ...card, link: "  " }], { x: 150, y: 150 })).toBeNull();
     // A locked note is a note that stays put, not a button.
     expect(lockedButtonAt([{ ...card, link: BOARD_NOTE_LINK }], { x: 150, y: 150 })).toBeNull();
+    // A locked card opened as its page is a page to read, not a button;
+    // the same card at picture size is one.
+    expect(lockedButtonAt([{ ...card, type: "embeddable", width: 500, height: 400 }], { x: 150, y: 150 })).toBeNull();
+    expect(lockedButtonAt([{ ...card, type: "embeddable", width: 240, height: 160 }], { x: 150, y: 150 })).toEqual({ link: pageLinkFor("p1"), index: 0 });
   });
 
   it("takes the topmost when two overlap — the later one in the list — and says where it sits", () => {

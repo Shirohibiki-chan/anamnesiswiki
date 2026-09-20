@@ -11,6 +11,8 @@ import {
   BOARD_CARD_CASCADE,
   BOARD_CARD_HEIGHT,
   BOARD_CARD_ICON_MAX_WIDTH,
+  BOARD_CARD_PAGE_MIN_HEIGHT,
+  BOARD_CARD_PAGE_MIN_WIDTH,
   BOARD_CARD_ROW_MAX_HEIGHT,
   BOARD_CARD_WIDTH,
   BOARD_DOT_MIN_SCREEN_SPACING,
@@ -274,18 +276,28 @@ export function cardPageId(element: unknown): string | null {
   return (element as { link: string }).link.slice(BOARD_PAGE_LINK_PREFIX.length);
 }
 
-export type CardPresentation = "icon" | "row" | "picture";
+export type CardPresentation = "icon" | "row" | "picture" | "page";
 
 /**
  * How a card of this size presents its page: the icon alone when it is
- * narrow, icon and name in a row when it is short, and the picture with the
- * name over it otherwise. LK's boards make the same three of one card by
- * resizing, which is why the answer comes off the box and is never stored.
+ * narrow, icon and name in a row when it is short, the picture with the
+ * name over it otherwise — and, stretched past a page's worth in both
+ * directions, the page itself, opened in the box (step 6). LK's boards
+ * make the same four of one card by resizing, which is why the answer
+ * comes off the box and is never stored.
  */
 export function cardPresentation(width: number, height: number): CardPresentation {
   if (width < BOARD_CARD_ICON_MAX_WIDTH) return "icon";
   if (height < BOARD_CARD_ROW_MAX_HEIGHT) return "row";
+  if (width >= BOARD_CARD_PAGE_MIN_WIDTH && height >= BOARD_CARD_PAGE_MIN_HEIGHT) return "page";
   return "picture";
+}
+
+/** Whether this element is a page card big enough to be showing its page (see `cardPresentation`). */
+export function isOpenPageCard(element: unknown): boolean {
+  if (!isPageCard(element)) return false;
+  const { width, height } = element as { width: number; height: number };
+  return cardPresentation(width, height) === "page";
 }
 
 /**
@@ -320,6 +332,7 @@ export function draggedPageIds(payload: string): string[] {
 
 /** The few fields of a shape a locked-button hit test needs; the library's elements have them all. */
 type BoxLike = {
+  type?: string;
   x: number;
   y: number;
   width: number;
@@ -350,8 +363,11 @@ export function lockedButtonAt(elements: readonly unknown[], point: { x: number;
   elements.forEach((entry, index) => {
     const element = entry as BoxLike;
     // A note's link says only that it is a note; locked, it is a note that
-    // stays put, not a button.
+    // stays put, not a button. A card opened as its page is a page to read,
+    // and locked it is one that stays put — its own Open button is the way
+    // to the page.
     if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim() || element.link === BOARD_NOTE_LINK) return;
+    if (isOpenPageCard(element)) return;
     if (insideBox(element, point)) found = { link: element.link, index };
   });
   return found;
