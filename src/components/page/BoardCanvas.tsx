@@ -27,10 +27,12 @@ import {
 } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
-import type { AppState, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
+import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
 import { FilePlus2, Grip, Link2, Maximize2, Minimize2, Unlink } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_PAGE_LINK_PREFIX, PAGE_DRAG_TYPE } from "../../constants/board";
+import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
+import { ASSET_DRAG_TYPE } from "../../constants/paths";
+import { fittedSize, type PictureFile } from "../../services/board-pictures";
 import { cardPageId, cardPlacement, draggedPageIds, elementLink, isPageCard, lockedButtonAt } from "../../services/board-service";
 import type { BoardLinks } from "../../hooks/use-board-links";
 import { NodeIcon } from "../blocks/IconPicker";
@@ -56,6 +58,10 @@ type Props = {
   onToggleDots: () => void;
   /** Whether the pointer is over a locked shape with a link — a button — for the cursor. */
   onOverButton: (over: boolean) => void;
+  /** The board's pictures, read out of the world's library once the drawing is up. */
+  readPictures: () => Promise<PictureFile[]>;
+  /** A picture from the Assets tab, as the library takes it, or null if its file will not read. */
+  placePicture: (fileName: string) => Promise<PictureFile | null>;
 };
 
 /** Which picker is open and what has been typed into it so far; null when closed. */
@@ -81,6 +87,20 @@ function pageCardElement(pageId: string, x: number, y: number): ExcalidrawElemen
   return { ...rectangle, type: "embeddable", link: `${BOARD_PAGE_LINK_PREFIX}${pageId}` } as ExcalidrawElement;
 }
 
+/**
+ * A picture's own size, read by letting the browser decode it — the only
+ * way to know how big a data URL's picture is, and what the library does
+ * itself when a file is dropped on it.
+ */
+function measurePicture(dataURL: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = () => resolve({ width: BOARD_CARD_WIDTH, height: BOARD_CARD_HEIGHT });
+    image.src = dataURL;
+  });
+}
+
 /** The middle of what the board is showing, in the drawing's own units. */
 function viewCentre(appState: AppState): { x: number; y: number } {
   return {
@@ -102,6 +122,8 @@ export default function BoardCanvas({
   dots,
   onToggleDots,
   onOverButton,
+  readPictures,
+  placePicture,
 }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
@@ -151,6 +173,32 @@ export default function BoardCanvas({
     });
   }, []);
 
+  /**
+   * Puts a picture from the Assets tab on the board with its middle at
+   * `centre`, at its own size unless that is more than a wall's worth,
+   * selected like a dropped card. The library is handed the bytes first,
+   * so the picture is never a placeholder.
+   */
+  const addPicture = useCallback(
+    async (fileName: string, centre: { x: number; y: number }) => {
+      const api = apiRef.current;
+      const file = await placePicture(fileName);
+      if (!api || !file) return;
+      const natural = await measurePicture(file.dataURL);
+      const { width, height } = fittedSize(natural.width, natural.height, BOARD_PICTURE_MAX_SIDE);
+      api.addFiles([file as BinaryFileData]);
+      const [picture] = convertToExcalidrawElements([
+        { type: "image", fileId: file.id as BinaryFileData["id"], x: centre.x - width / 2, y: centre.y - height / 2, width, height, status: "saved" },
+      ]);
+      api.updateScene({
+        elements: [...api.getSceneElements(), picture],
+        appState: { selectedElementIds: { [picture.id]: true } },
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+    },
+    [placePicture],
+  );
+
   /** A pick from the *Put a Page on It* picker: the card lands mid-view and the box stays open for the next. */
   function putPageOn(pageId: string) {
     const api = apiRef.current;
@@ -164,24 +212,32 @@ export default function BoardCanvas({
   }
 
   // A page row dragged out of the tree and dropped here becomes a card
-  // where it was dropped. Listened for in the capture phase on the board's
-  // own box, ahead of the library's drop handler, which is for files and
-  // would otherwise be handed a drag it has no answer to.
+  // where it was dropped, and a picture dragged out of the Assets tab
+  // becomes a picture there. Listened for in the capture phase on the
+  // board's own box, ahead of the library's drop handler, which is for
+  // files from outside the app and would otherwise be handed a drag it has
+  // no answer to.
   useEffect(() => {
     if (!surface) return;
+    const carried = (event: DragEvent): "page" | "picture" | null => {
+      const types = event.dataTransfer?.types ?? [];
+      return types.includes(PAGE_DRAG_TYPE) ? "page" : types.includes(ASSET_DRAG_TYPE) ? "picture" : null;
+    };
     function onDragOver(event: DragEvent) {
-      if (!event.dataTransfer?.types.includes(PAGE_DRAG_TYPE)) return;
+      if (!carried(event) || !event.dataTransfer) return;
       event.preventDefault();
       event.stopPropagation();
       event.dataTransfer.dropEffect = "copy";
     }
     function onDrop(event: DragEvent) {
       const api = apiRef.current;
-      if (!api || !event.dataTransfer?.types.includes(PAGE_DRAG_TYPE)) return;
+      const kind = carried(event);
+      if (!api || !kind || !event.dataTransfer) return;
       event.preventDefault();
       event.stopPropagation();
-      const pageIds = draggedPageIds(event.dataTransfer.getData(PAGE_DRAG_TYPE));
-      addCards(pageIds, viewportCoordsToSceneCoords(event, api.getAppState()));
+      const at = viewportCoordsToSceneCoords(event, api.getAppState());
+      if (kind === "page") addCards(draggedPageIds(event.dataTransfer.getData(PAGE_DRAG_TYPE)), at);
+      else void addPicture(event.dataTransfer.getData(ASSET_DRAG_TYPE), at);
     }
     surface.addEventListener("dragover", onDragOver, true);
     surface.addEventListener("drop", onDrop, true);
@@ -189,12 +245,17 @@ export default function BoardCanvas({
       surface.removeEventListener("dragover", onDragOver, true);
       surface.removeEventListener("drop", onDrop, true);
     };
-  }, [surface, addCards]);
+  }, [surface, addCards, addPicture]);
 
   return (
     <Excalidraw
       excalidrawAPI={(api) => {
         apiRef.current = api;
+        // The pictures come from the world's library, after the drawing is
+        // up; until they land each is the library's own placeholder.
+        void readPictures().then((files) => {
+          if (apiRef.current === api && files.length > 0) api.addFiles(files as BinaryFileData[]);
+        });
       }}
       initialData={initialData as unknown as ExcalidrawInitialDataState}
       theme={theme}

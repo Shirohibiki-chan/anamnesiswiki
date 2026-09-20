@@ -6815,3 +6815,33 @@ clipping to its turned box with its label turned; a duplicated tree; the
 innermost turned frame lit as the drop target with a shape dragged over
 it. Found on the way: the board file lists elements newest first, so the
 scenario picks frames by width rather than order.
+
+### Step 4 — Pictures through the world's library ✅ Shipped 2026-09-19
+
+**What it delivered.** A picture on a board is a file in the world's
+library, like a page's portrait: pasted, dropped from outside, or added
+with the picture tool, it is uploaded to `assets/` and the board file
+holds its name and type and nothing more. A picture dragged from the
+Assets tab lands on the board as the file it already is, at its own size
+with a wall-sized photograph scaled to fit. The Assets tab counts a
+board's pictures as uses, so one cannot be deleted from under a board.
+Boards the spike wrote — the bytes as data URLs in the file — move their
+pictures into the library the first time they are opened.
+
+**How.** `services/board-pictures.ts` for the stored shape and the data
+URL arithmetic; the board view hook keeps file id → asset and uploads
+whatever the library holds only as bytes; `boardFromScene` writes a known
+picture as its name even before the library has read the bytes back, so
+an early write cannot lose it. `docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-pictures.e2e.ts`: a picture dropped from the
+Assets tab is written as a pointer at its file with no second copy in
+`assets/`, scaled to at most 480 wide; a pasted PNG appears in `assets/`
+as a 12×8 PNG (the library redraws what it pastes, so the header is
+compared, not the bytes) with the board pointing at it and no data URL
+anywhere in the file; both are still pointers after a restart; and a
+board file rewritten by hand into the spike's form — a data URL — has its
+picture in the library and its name in the file after a reload. Looked
+at in the real app: both pictures drawn after the reload, read out of the
+library, and the Library tab counting the banner's board among its pages.
+Unit suites over the picture service and the usage index's third record.

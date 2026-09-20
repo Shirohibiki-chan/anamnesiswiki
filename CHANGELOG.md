@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-19 — A board's pictures live in the Library
+
+### Changes
+
+- **A picture on a board is now a picture in the world's Library, like a page's portrait.** Paste one onto a board, drop a file on it, or add one with the picture tool, and it goes into *Library* and the board only points at it. Before, the picture's bytes were written into the board's own file: three photos made a three-megabyte board, and the Library could not see them. Boards drawn before this move their pictures across the first time they are opened, on their own.
+- **Drag a picture from the Library onto a board.** It lands where it was dropped, at its own size — a big photograph scaled to fit — with no second copy made: one picture on six boards is one file.
+- **The Library counts a board's pictures as in use.** A picture that is only on a board says so on its tile and cannot be deleted out from under the board.
+
 ## 2026-09-19 — Frames inside frames, and frames that turn
 
 ### Additions
@@ -233,16 +241,3 @@
 
 - **This closes Phase 30.** The dashboard proves the four parts meet: the capture box, the per-page style name, the two home-page blocks, and a template that ships with blocks already in its body — the first template to.
 - **The snippet is written once, on the first scan after updating.** If you already have a `dashboard.css` of your own, yours is left alone.
-
-## 2026-09-13 — Recently edited and Shortcuts, two blocks for a home page
-
-### Additions
-
-- **Recently edited.** *Add Block ▸ Recently edited*, or `/recent` in the writing: the pages you touched last, newest first. Writing in a page moves it to the top. It never lists the page it sits on — a home page is edited every time its dashboard is rearranged, and a list that opened with *Home* would never say anything — and it leaves universes out for the same reason. Its menu has a *How many* row: 5, 8, 12 or 20.
-- **Shortcuts.** *Add Block ▸ Shortcuts*, or `/shortcuts`: the pages you've *Set as shortcut*, in the rail's order. It's the rail's own list drawn as a block, so the two can't disagree — set a shortcut and it's in both; remove it and it's gone from both.
-- **Both are the same collection block as Manual links, Subpage index, Tag index and Backlinks**, so they get the same menu, colour, title and drag as the rest, can sit in the page body or an infobox, and both switch to any of the other sources from *Where these come from*.
-
-### Notes
-
-- **They export.** A Recently edited or Shortcuts block writes the same list it shows into a Markdown export or a published website, because the sidebar and the exports now share one resolver for every collection source — an internal tidy-up, nothing visible on the older four.
-- **This is step 3 of Phase 30.** Left in the phase: one example dashboard, shipped as a page template with a snippet beside it.

@@ -1263,9 +1263,11 @@ export type StorylineBand = {
  *
  * The three fields are Excalidraw's own scene shape, held opaquely. The app
  * never reads inside an element; it stores what the drawing library hands
- * back and hands it back on the next open. `files` is the pictures dropped
- * on the board, keyed by the library's own file ids and carried as data URLs
- * — the spike's one known shortcut, see docs/plan.md.
+ * back and hands it back on the next open. `files` is the pictures on the
+ * board, keyed by the library's own file ids: each is the asset in the
+ * world's library the picture lives in (services/board-pictures.ts), or,
+ * in a board the spike wrote, the data URL itself, which the next open
+ * moves into the library.
  */
 export type Board = {
   version: 1;

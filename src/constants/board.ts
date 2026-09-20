@@ -12,6 +12,15 @@
  */
 export const BOARD_PAGE_LINK_PREFIX = "anamnesis://page/";
 
+/**
+ * The longest side a picture from the Assets tab is put on a board at, in
+ * the drawing's units. A picture smaller than this arrives at its own size;
+ * a photograph straight off a camera is scaled to fit, since it would
+ * otherwise cover the whole board — resizing is the whole control after
+ * that. Phase 32, step 4.
+ */
+export const BOARD_PICTURE_MAX_SIDE = 480;
+
 /** How many pages the link picker offers at once, the storyline picker's number. */
 export const BOARD_PICKER_RESULTS = 8;
 

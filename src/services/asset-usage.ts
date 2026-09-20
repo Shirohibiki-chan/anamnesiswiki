@@ -10,8 +10,9 @@
 // for the store: the template library is the one everything else forgets, and
 // making it a parameter means a caller cannot leave it out by accident.
 import { ASSET_REF_PREFIX } from "../constants/paths";
-import type { Node, TemplateLibrary } from "../constants/schema";
+import type { Board, Node, TemplateLibrary } from "../constants/schema";
 import { blockImageFiles } from "./block-service";
+import { boardAssetUses } from "./board-pictures";
 
 /** Where one use of a picture is. */
 export type AssetUse = {
@@ -24,8 +25,12 @@ export type AssetUse = {
    * (Phase 19.5) — the fourth route, and the one that arrived last. Before it
    * existed an image block could only be a window onto the portrait, so
    * everything an image block showed was already counted as `portrait`.
+   *
+   * `board` is a picture on a board page's drawing (Phase 32, step 4), held
+   * in the drawing file rather than on the node — the one route that is not
+   * read off a `Node` at all.
    */
-  where: "portrait" | "banner" | "page" | "block";
+  where: "portrait" | "banner" | "page" | "block" | "board";
   /** The node holding it, in whichever record `source` names. */
   nodeId: string;
   nodeName: string;
@@ -108,15 +113,20 @@ function usesIn(node: Node): { fileName: string; where: AssetUse["where"] }[] {
 
 /**
  * Filename → everywhere it's used, across the project *and* the template
- * library.
+ * library *and* the boards.
  *
  * The template half is the one that's easy to leave out and expensive to get
  * wrong: `saveAsTemplate` copies a page's portrait and banner files but not the
  * pictures written inside its tabs, so a template and the page it came from can
  * legitimately share one file. Nothing has ever deleted an asset before, so
  * that has been harmless — this is what makes it reachable.
+ *
+ * The boards are the third record, and a parameter for the same reason the
+ * templates are: a board's pictures live in its drawing file, not on its
+ * node, so a walk of the nodes alone reports a picture on a board as unused
+ * and offers to delete it.
  */
-export function indexAssetUsage(nodes: Record<string, Node>, templates: TemplateLibrary): AssetUsageIndex {
+export function indexAssetUsage(nodes: Record<string, Node>, templates: TemplateLibrary, boards: Record<string, Board>): AssetUsageIndex {
   const index: AssetUsageIndex = new Map();
 
   const add = (fileName: string, use: AssetUse) => {
@@ -134,6 +144,12 @@ export function indexAssetUsage(nodes: Record<string, Node>, templates: Template
   for (const node of Object.values(templates.nodes)) {
     for (const { fileName, where } of usesIn(node)) {
       add(fileName, { where, nodeId: node.id, nodeName: node.name, source: "template" });
+    }
+  }
+
+  for (const [boardId, board] of Object.entries(boards)) {
+    for (const fileName of boardAssetUses(board)) {
+      add(fileName, { where: "board", nodeId: boardId, nodeName: nodes[boardId]?.name ?? "", source: "project" });
     }
   }
 
@@ -155,12 +171,15 @@ export function indexAssetUsage(nodes: Record<string, Node>, templates: Template
  * Early-exits rather than building the whole index: the callers are asking
  * about one file at a time, on a path that's about to touch the disk anyway.
  */
-export function isAssetInUse(nodes: Record<string, Node>, templates: TemplateLibrary, fileName: string): boolean {
+export function isAssetInUse(nodes: Record<string, Node>, templates: TemplateLibrary, boards: Record<string, Board>, fileName: string): boolean {
   for (const node of Object.values(nodes)) {
     if (usesIn(node).some((use) => use.fileName === fileName)) return true;
   }
   for (const node of Object.values(templates.nodes)) {
     if (usesIn(node).some((use) => use.fileName === fileName)) return true;
+  }
+  for (const board of Object.values(boards)) {
+    if (boardAssetUses(board).includes(fileName)) return true;
   }
   return false;
 }

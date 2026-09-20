@@ -3,7 +3,20 @@
 // decides when a change is worth writing.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Board } from "../constants/schema";
+import { assetFileName } from "../services/asset-urls";
+import {
+  decodeDataUrl,
+  extensionForMime,
+  mimeForFileName,
+  newPictureId,
+  pictureAsset,
+  pictureDataUrl,
+  pictureFile,
+  type PictureFile,
+} from "../services/board-pictures";
 import { boardFingerprint, boardFromScene, boardStartState } from "../services/board-service";
+import { readAssetImage } from "../services/filesystem-service";
+import { useProjectStore } from "../state/project-store";
 import { useBoard, useSetBoard } from "./use-board";
 
 /**
@@ -36,6 +49,20 @@ function boardThemeFor(element: Element | null): "light" | "dark" {
 export function useBoardView(boardId: string, surface: Element | null) {
   const board = useBoard(boardId);
   const setBoard = useSetBoard();
+  const rootPath = useProjectStore((state) => state.rootPath);
+  const uploadAsset = useProjectStore((state) => state.uploadAsset);
+  const pageName = useProjectStore((state) => state.nodes[boardId]?.name ?? "");
+
+  // Which of the library's file ids live in which asset (Phase 32, step
+  // 4): everything the file already said, plus every upload that lands
+  // and every picture dropped from the Assets tab. What the board is
+  // written with, so a picture's bytes never go back into the file once
+  // the library has them.
+  const assetsRef = useRef<Map<string, string>>(new Map());
+  // Uploads in flight or given up on, by file id, so a change report — one
+  // per pointer move — starts each upload once.
+  const uploadsRef = useRef<Set<string>>(new Set());
+  const mountedRef = useRef(true);
 
   // What is on disk, as a fingerprint, so a change report that changes
   // nothing — a hover, a selection, a menu opening — costs a string compare
@@ -66,18 +93,121 @@ export function useBoardView(boardId: string, surface: Element | null) {
     setBoard(boardId, pending);
   }, [boardId, setBoard]);
 
+  /**
+   * Puts every picture the library holds only as bytes into the world's
+   * library, and writes the board again once each is there. A picture
+   * pasted or dropped on the board arrives this way, and so does one the
+   * spike wrote into the file as a data URL — that is the migration, and
+   * it happens the first time such a board is opened.
+   */
+  const adoptPictures = useCallback(
+    (files: Record<string, unknown>) => {
+      for (const [id, file] of Object.entries(files)) {
+        if (assetsRef.current.has(id) || uploadsRef.current.has(id)) continue;
+        const dataURL = pictureDataUrl(file);
+        if (!dataURL) continue;
+        const decoded = decodeDataUrl(dataURL);
+        if (!decoded) continue;
+        uploadsRef.current.add(id);
+        const extension = extensionForMime(decoded.mimeType);
+        void uploadAsset(decoded.bytes, extension, `${pageName}.${extension}`)
+          .then((ref) => {
+            const fileName = assetFileName(ref);
+            if (!fileName) return;
+            assetsRef.current.set(id, fileName);
+            // Written now rather than on the next stroke, and only while
+            // the board is still open: a write from a board she has left
+            // could land on top of edits made since.
+            if (!mountedRef.current) return;
+            const { elements, appState, files: current } = sceneRef.current;
+            pendingRef.current = boardFromScene(elements, appState, current, dotsRef.current, assetsRef.current);
+            flush();
+          })
+          .catch(() => {
+            // Left as the data URL in the file, which is no worse than the
+            // spike; tried again on the next open, not on the next pointer move.
+          });
+      }
+    },
+    [flush, pageName, uploadAsset],
+  );
+
   const onChange = useCallback(
     (elements: readonly unknown[], appState: Record<string, unknown>, files: Record<string, unknown>) => {
       sceneRef.current = { elements, appState, files };
+      adoptPictures(files);
       const fingerprint = boardFingerprint(elements, appState, dotsRef.current);
       if (fingerprint === savedRef.current) return;
       savedRef.current = fingerprint;
-      pendingRef.current = boardFromScene(elements, appState, files, dotsRef.current);
+      pendingRef.current = boardFromScene(elements, appState, files, dotsRef.current, assetsRef.current);
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
       timerRef.current = window.setTimeout(flush, SETTLE_MS);
     },
-    [flush],
+    [adoptPictures, flush],
   );
+
+  /**
+   * The board's pictures, read out of the library into the form the
+   * drawing library takes. The board's elements start without them and
+   * the canvas adds them as they arrive — a picture is a placeholder for
+   * the moment it takes to read, which is how the library itself treats a
+   * picture whose bytes are on their way.
+   */
+  const readPictures = useCallback(async (): Promise<PictureFile[]> => {
+    if (!rootPath) return [];
+    const read = await Promise.all(
+      Object.entries(board.files).map(async ([id, file]) => {
+        const asset = pictureAsset(file);
+        if (!asset) return null;
+        try {
+          return pictureFile(id, mimeForFileName(asset), await readAssetImage(rootPath, asset));
+        } catch {
+          // A picture whose file is gone stays a placeholder, the honest
+          // outcome; its reference is kept, so nothing is written away.
+          return null;
+        }
+      }),
+    );
+    return read.filter((file): file is PictureFile => file !== null);
+    // Read once, for the same reason `initialData` is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId, rootPath]);
+
+  /**
+   * A picture from the Assets tab, dropped on the board: the library gets
+   * it under a fresh id, and the board is written pointing at the asset
+   * the picture already is — a second copy of the bytes is what the
+   * library exists to avoid.
+   */
+  const placePicture = useCallback(
+    async (fileName: string): Promise<PictureFile | null> => {
+      if (!rootPath) return null;
+      try {
+        const file = pictureFile(newPictureId(), mimeForFileName(fileName), await readAssetImage(rootPath, fileName));
+        assetsRef.current.set(file.id, fileName);
+        return file;
+      } catch {
+        return null;
+      }
+    },
+    [rootPath],
+  );
+
+  // What the file already knew, and the spike's data URLs put into the
+  // library on the way in.
+  useEffect(() => {
+    mountedRef.current = true;
+    for (const [id, file] of Object.entries(board.files)) {
+      const asset = pictureAsset(file);
+      if (asset) assetsRef.current.set(id, asset);
+    }
+    adoptPictures(board.files);
+    return () => {
+      mountedRef.current = false;
+    };
+    // Once per board, like `initialData`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
 
   // Written at once rather than after the settle delay: a toggle is one
   // deliberate act, not the middle of a stroke.
@@ -87,7 +217,7 @@ export function useBoardView(boardId: string, surface: Element | null) {
     setDotsState(next);
     const { elements, appState, files } = sceneRef.current;
     savedRef.current = boardFingerprint(elements, appState, next);
-    pendingRef.current = boardFromScene(elements, appState, files, next);
+    pendingRef.current = boardFromScene(elements, appState, files, next, assetsRef.current);
     flush();
   }, [flush]);
 
@@ -98,13 +228,19 @@ export function useBoardView(boardId: string, surface: Element | null) {
   // The drawing the library starts from. Read once: after mount the library
   // owns the scene and the store is only ever told about it, never the other
   // way round, so feeding store updates back in would echo every save.
+  // Pictures in the library arrive through `readPictures`; the spike's data
+  // URLs, which the library can take as they are, go straight in.
   const initialData = useMemo(
-    () => ({ elements: board.elements, appState: boardStartState(board.appState), files: board.files }),
+    () => ({
+      elements: board.elements,
+      appState: boardStartState(board.appState),
+      files: Object.fromEntries(Object.entries(board.files).filter(([, file]) => pictureDataUrl(file) !== null)),
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [boardId],
   );
 
   const theme = useMemo(() => boardThemeFor(surface), [surface]);
 
-  return { initialData, theme, onChange, dots, toggleDots };
+  return { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture };
 }

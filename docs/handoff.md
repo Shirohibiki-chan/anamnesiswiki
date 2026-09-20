@@ -518,6 +518,36 @@ Board spike, closed 2026-09-13. What binds the code:
   a *frame* holds, so the new rule is behind a flag only the marquee sets;
   a frame still holds only what is wholly inside it.
 
+- **A board's pictures are assets, and the board file holds only their
+  names** (Phase 32, step 4). The library takes a picture as a data URL in
+  its `files` map and hands the map back on every change; the spike wrote
+  it to `_board.json` as it came. `services/board-pictures.ts` is the
+  shape now stored — `{ id, mimeType, asset }`, the library's file id to a
+  name in `assets/` — and the arithmetic between a data URL and bytes.
+  The hook (`use-board-view.ts`) keeps a map of file id → asset: seeded
+  from the file, added to by every upload that lands and every picture
+  dropped from the Assets tab. `boardFromScene` writes a referenced picture
+  as its name whenever the map knows it, *whether or not the library has
+  the bytes yet* — a board written while its pictures are still being read
+  back must not lose them — and as the data URL otherwise, so nothing is
+  lost while an upload is in flight. Uploads start from the change report
+  (`adoptPictures`, once per file id) for anything the library holds only
+  as bytes: a paste, a drop from outside the app, the picture tool, and a
+  board the spike wrote — which is the migration, and it runs on the first
+  open. On the way in, the elements go to the library at once and the
+  pictures follow through `readPictures` → `api.addFiles` once their bytes
+  are read; the library draws its own placeholder for the moment between.
+  A drop from the Assets tab (`ASSET_DRAG_TYPE`, beside the tree's page
+  drag on the same capture listener) reads the asset, hands the library
+  the bytes under a fresh id, records the id in the map, and puts an image
+  element there at its own size capped by `BOARD_PICTURE_MAX_SIDE`. The
+  usage index takes `boards` as a third record for the same reason it
+  takes the templates: a board's pictures are on no `Node`, and a walk of
+  the nodes alone would offer to delete them. Not done: a picture's name
+  in the Library is the board's page name, since the library drops the
+  file's own; and an upload that fails stays a data URL in the file until
+  the next open, silently.
+
 - **Frames nest and turn through the patch, on two helpers** (Phase 32,
   step 3). The library refused a frame as a child of a frame (upstream
   issue #8359) and pinned a frame's angle to zero; both are gone from both
