@@ -305,17 +305,24 @@ export default function BoardCanvas({
    * and would be grown back under the hand; the pointer-up hook runs this
    * again when the drag ends.
    */
+  /** The height the note with `id` needs for its words, measured off the board, or null when it is not drawn. */
+  const noteNeeds = useCallback(
+    (id: string): number | null => {
+      const words = surface?.querySelector<HTMLElement>(`.board-note[data-note-id="${CSS.escape(id)}"] .board-note-words`);
+      return words ? words.offsetHeight + BOARD_NOTE_PADDING * 2 : null;
+    },
+    [surface],
+  );
+
   const growNotes = useCallback(() => {
     growPendingRef.current = false;
     const api = apiRef.current;
-    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("grow api=" + !!api + " surface=" + !!surface + " resizing=" + api?.getAppState().isResizing);
     if (!api || !surface || api.getAppState().isResizing) return;
     const needs = new Map<string, number>();
     for (const words of surface.querySelectorAll<HTMLElement>(".board-note .board-note-words")) {
       const id = words.parentElement?.getAttribute("data-note-id");
       if (id) needs.set(id, words.offsetHeight + BOARD_NOTE_PADDING * 2);
     }
-    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("needs=" + JSON.stringify([...needs.entries()]) + " scene=" + JSON.stringify(api.getSceneElementsIncludingDeleted().filter(isNote).map((e) => [e.id, e.height, e.version])));
     let changed = false;
     let captured = false;
     const elements = api.getSceneElementsIncludingDeleted().map((element) => {
@@ -328,21 +335,11 @@ export default function BoardCanvas({
       captured = true;
       return newElementWith(element, { height: needed });
     });
-    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("changed=" + changed + " captured=" + captured);
-    if (changed) {
-      try {
-        api.updateScene({ elements, captureUpdate: captured ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY });
-        ((window as unknown as { __diag?: string[] }).__diag ??= []).push("after update scene=" + JSON.stringify(api.getSceneElementsIncludingDeleted().filter(isNote).map((e) => [e.id, e.height])));
-      } catch (error) {
-        ((window as unknown as { __diag?: string[] }).__diag ??= []).push("update threw " + String(error));
-        throw error;
-      }
-    }
+    if (changed) api.updateScene({ elements, captureUpdate: captured ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY });
   }, [surface]);
 
   /** Asks for the notes to be grown, once per tick however many ask, and never from inside a layout callback. */
   const scheduleGrow = useCallback(() => {
-    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("schedule pending=" + growPendingRef.current);
     if (growPendingRef.current) return;
     growPendingRef.current = true;
     window.setTimeout(growNotes, 0);
@@ -352,25 +349,28 @@ export default function BoardCanvas({
    * The words of the note being written in, on every change: written to
    * the element at once so the note draws them, but with its version left
    * alone (see `withoutBump`), so the edit is one undo step and one write
-   * when it ends.
+   * when it ends. The box's growth goes in the same update, measured off
+   * the box the keystroke just changed — not on a timer: under steady
+   * typing on a slow machine the key events starve a timer of its turn,
+   * and a note that grows "next tick" never grows at all (CI, 2026-09-20).
    */
   const onNoteEdit = useCallback(
     (id: string, lines: NoteLine[]) => {
       const api = apiRef.current;
       if (!api) return;
       noteDraftRef.current = lines;
+      const needed = noteNeeds(id);
       api.updateScene({
         elements: api.getSceneElementsIncludingDeleted().map((element) => {
           const note = noteOf(element);
-          return element.id === id && note ? withoutBump(element, { customData: { note: { ...note, lines } } }) : element;
+          if (element.id !== id || !note) return element;
+          const height = needed !== null && needed > element.height ? needed : element.height;
+          return withoutBump(element, { customData: { note: { ...note, lines } }, height });
         }),
         captureUpdate: CaptureUpdateAction.EVENTUALLY,
       });
-      // The words just changed, so the box may need to.
-      ((window as unknown as { __diag?: string[] }).__diag ??= []).push("edit lines=" + lines.length);
-      scheduleGrow();
     },
-    [scheduleGrow],
+    [noteNeeds],
   );
 
   /** Writing ends: the words as they stand become one undoable edit, and the keyboard goes back to the board. */

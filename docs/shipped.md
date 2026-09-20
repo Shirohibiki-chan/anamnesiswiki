@@ -6926,8 +6926,10 @@ the box takes the keyboard back for its first moments whenever it finds
 it on the body or the library's container (`BoardNote`, keep-focus),
 and the harness waits for the keyboard to be in the box before typing.
 And, with the keyboard shown to be fine there after all, the real CI
-failure: the resize observer inside the embed reported once and never
-again on that machine, so the note never grew — growth now measures
-the words off the board on every keystroke rather than trusting the
-observer, and the caret is saved from the box's own key and mouse
-events as well as the document's selection event.
+failure, found by logging the grow path from CI itself: the growth ran
+on a "next tick" timer, and under steady typing on that slow machine
+the key events starved the timer of its turn, so the note never grew
+— growth now goes in the same update as each keystroke, measured off
+the box the key just changed, and the caret is saved from the box's
+own key and mouse events as well as the document's selection event.
+Three pushes went to the PR on guesses before that logging.

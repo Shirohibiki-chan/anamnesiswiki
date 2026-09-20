@@ -561,12 +561,16 @@ Board spike, closed 2026-09-13. What binds the code:
   board write per edit. Growth is the canvas measuring every note's words
   off the board itself (`growNotes`; the embed's box is scaled with the
   zoom, so the words' height on screen is in the drawing's units) and
-  making the box taller and never shorter — on every keystroke, on the
-  note's own resize observer, and on pointer-up after a drag, deferred
-  while the library is mid-resize. Measured at the moment of deciding
-  rather than from what the notes reported: the observer inside the
-  library's embed fell silent after its first report on CI (2026-09-20),
-  and a growth that trusted it left the words taller than the box. The library draws a link icon at the corner of every
+  making the box taller and never shorter. On a keystroke the growth
+  goes in the same update as the words, measured off the box the key
+  just changed, and never on a timer: under steady typing on a slow
+  machine the key events starve a "next tick" timer of its turn, and a
+  note that grows next tick never grows at all (CI, 2026-09-20, found
+  only by logging from CI itself after two wrong guesses). The timer
+  path stays for what is not a keystroke — the note's own resize observer
+  and pointer-up after a drag, deferred while the library is mid-resize —
+  and measures off the board at the moment of deciding rather than from
+  anything reported earlier. The library draws a link icon at the corner of every
   unselected linked element and opens the link on a click; a note's would
   open an address that is not one, so the patch skips the note link in
   `renderLinkIcon` and `isPointHittingLink`, and `onLinkOpen` and
